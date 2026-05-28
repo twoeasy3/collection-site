@@ -14,8 +14,7 @@ function json(data, status = 200) {
 function isAuthorized(request, env) {
   if (!env.API_KEY) return false;
   const sent = (request.headers.get('Authorization') || '').trim();
-  const expected = `Bearer ${env.API_KEY.trim()}`;
-  return sent === expected;
+  return sent === `Bearer ${env.API_KEY.trim()}`;
 }
 
 async function handleAPI(request, env, url) {
