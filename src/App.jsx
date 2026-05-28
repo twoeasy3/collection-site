@@ -91,7 +91,7 @@ const useImagePreloader = (cars, imageUpdates, visibleCars, gridPaneRef, gallery
 
     const allUrls = cars.map(car => {
       const t = imageUpdates[car.ID] ? `?t=${imageUpdates[car.ID]}` : '';
-      return `${BASE_PATH}/standard_cars/${car.ID} (1).jpg${t}`;
+      return `${BASE_PATH}/half_standard_cars/${car.ID} (1).jpg${t}`;
     });
 
     const next = () => {
@@ -130,6 +130,7 @@ const useImagePreloader = (cars, imageUpdates, visibleCars, gridPaneRef, gallery
   // with images the user is actually looking at.
   useEffect(() => {
     if (!galleryActive || !visibleCars.length) return;
+    if (window.innerWidth < 700) return; // mobile: native loading="lazy" handles this
 
     const container = gridPaneRef?.current;
     if (!container) return;
@@ -144,7 +145,7 @@ const useImagePreloader = (cars, imageUpdates, visibleCars, gridPaneRef, gallery
       // Phase 1's idle cache or fetched at fetchPriority="high" by the img element
       // on selection — bulk-preloading them here at default priority creates
       // in-flight requests that can block the high-priority hero fetch.
-      const url = `${BASE_PATH}/standard_cars/${id} (1).jpg${t}`;
+      const url = `${BASE_PATH}/half_standard_cars/${id} (1).jpg${t}`;
       if (preloadedRef.current.has(url)) return;
       preloadedRef.current.add(url);
       new Image().src = url;
@@ -403,7 +404,7 @@ HoverPreview._raf = null;
 
 const CarListRow = React.memo(({ car, isSelected, isListEditing, draft, imageUpdate, handleSelectRow, handleCellChange, hideId, categories }) => {
   const getVal = (field) => draft?.[field] !== undefined ? draft[field] : (car[field] || '');
-  const imgUrl = `${BASE_PATH}/standard_cars/${car.ID} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;
+  const imgUrl = `${BASE_PATH}/half_standard_cars/${car.ID} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;
   const fallbackUrl = `${BASE_PATH}/mystery_side.jpg`;
 
   const inlineInputStyle = { width: '100%', padding: '4px', boxSizing: 'border-box', backgroundColor: 'var(--bg-input)', color: 'var(--tx)', border: '1px solid var(--bd-2)', borderRadius: '3px' };
@@ -444,7 +445,7 @@ const CarListRow = React.memo(({ car, isSelected, isListEditing, draft, imageUpd
 // imageUpdate changes, which busts both React's reconciler cache and the browser's
 // in-memory image cache for that specific URL.
 const CarCardImage = React.memo(({ id, model, imageUpdate, fallbackSrc, eagerLoad }) => {
-  const src = `${BASE_PATH}/standard_cars/${id} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;
+  const src = `${BASE_PATH}/half_standard_cars/${id} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;
   return (
     <img
       key={src}
@@ -536,7 +537,7 @@ const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpdate, sid
   const nameWithoutYear = sidebarView === 'make'
     ? [customPrefix, firstCar.Model].filter(Boolean).join(' ')
     : [customPrefix, firstCar.Make, firstCar.Model].filter(Boolean).join(' ');
-  const src = `${BASE_PATH}/standard_cars/${firstCar.ID} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;
+  const src = `${BASE_PATH}/half_standard_cars/${firstCar.ID} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;
 
   return (
     <div
@@ -747,7 +748,7 @@ function App({ isPublic = false }) {
   useEffect(() => {
     if (!selectedCar) return;
     const t = imageUpdates[selectedCar.ID] ? `?t=${imageUpdates[selectedCar.ID]}` : '';
-    new Image().src = `${BASE_PATH}/standard_cars/${selectedCar.ID} (1).jpg${t}`;
+    new Image().src = `${BASE_PATH}/half_standard_cars/${selectedCar.ID} (1).jpg${t}`;
     if (carInfoRef.current) carInfoRef.current.scrollTop = 0;
   }, [selectedCar?.ID, imageUpdates]);
 
@@ -757,7 +758,7 @@ function App({ isPublic = false }) {
     for (const car of cars) {
       if (expandedStacks.has(getStackKey(car))) {
         const t = imageUpdates[car.ID] ? `?t=${imageUpdates[car.ID]}` : '';
-        new Image().src = `${BASE_PATH}/standard_cars/${car.ID} (1).jpg${t}`;
+        new Image().src = `${BASE_PATH}/half_standard_cars/${car.ID} (1).jpg${t}`;
       }
     }
   }, [expandedStacks, cars, imageUpdates]);
@@ -1356,6 +1357,7 @@ function App({ isPublic = false }) {
   // Desktop: no change — full groupedAndFilteredCars.
   const galleryGroups = useMemo(() => {
     if (!isMobile) return groupedAndFilteredCars;
+    if (debouncedSearchTerm.trim()) return groupedAndFilteredCars; // search overrides letter filter
     if (!selectedLetter) return [];
 
     if (sidebarView === 'make') {
@@ -1377,13 +1379,19 @@ function App({ isPublic = false }) {
 
     // Brand / Category: exact group match
     return groupedAndFilteredCars.filter(({ groupName }) => groupName === selectedLetter);
-  }, [isMobile, sidebarView, selectedLetter, groupedAndFilteredCars]);
+  }, [isMobile, sidebarView, selectedLetter, groupedAndFilteredCars, debouncedSearchTerm]);
 
   const visibleCarsForPreload = useMemo(
     () => viewMode === 'gallery' ? galleryGroups.flatMap(g => g.visibleGroupCars) : [],
     [galleryGroups, viewMode]
   );
   useImagePreloader(cars, imageUpdates, visibleCarsForPreload, gridPaneRef, viewMode === 'gallery');
+
+  useEffect(() => {
+    if (!debouncedSearchTerm.trim()) return;
+    const firstCar = groupedAndFilteredCars[0]?.visibleGroupCars[0];
+    if (firstCar) setSelectedCar(firstCar);
+  }, [debouncedSearchTerm]);
 
   const brokenCars = useMemo(() => cars.filter(c => c.Broken_image === 'TRUE'), [cars]);
 

@@ -1,6 +1,7 @@
 # Image folders (large binary assets — not committed to git)
 standard_cars/
 standard_hero_shots/
+half_standard_cars/
 makes/
 exile/
 raw/

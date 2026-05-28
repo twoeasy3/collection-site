@@ -18,6 +18,7 @@ BACKUP_FILE_PATH = './data/collection.csv.bak'
 
 # Ensure output directories exist
 os.makedirs('./standard_cars', exist_ok=True)
+os.makedirs('./half_standard_cars', exist_ok=True)
 os.makedirs('./standard_hero_shots', exist_ok=True)
 os.makedirs('./exile', exist_ok=True)
 
@@ -382,6 +383,10 @@ def process_brightness_only(img):
 
     return adjust_exposure_and_wb(img, bg_mask)
 
+def save_half_side(img, filename):
+    half = cv2.resize(img, (400, 150), interpolation=cv2.INTER_AREA)
+    cv2.imwrite(os.path.join('./half_standard_cars', filename), half, [cv2.IMWRITE_JPEG_QUALITY, 85])
+
 # ==========================================
 # API ENDPOINTS
 # ==========================================
@@ -409,6 +414,7 @@ def upload_images():
             final_img = process_side_profile(img)
             if final_img is not None:
                 cv2.imwrite(os.path.join('./standard_cars', file.filename), final_img)
+                save_half_side(final_img, file.filename)
                 processed_count += 1
                 
         # Route 2: Hero Shot Standardizer
@@ -444,6 +450,7 @@ def upload_images_monster():
             final_img = process_side_profile_monster_truck(img)
             if final_img is not None:
                 cv2.imwrite(os.path.join('./standard_cars', file.filename), final_img)
+                save_half_side(final_img, file.filename)
                 processed_count += 1
 
         elif "(2).jpg" in filename_lower:
@@ -517,6 +524,7 @@ def save_sensitive():
         if img is None:
             return jsonify({"error": "Could not decode image."}), 400
         cv2.imwrite(os.path.join('./standard_cars', filename), img)
+        save_half_side(img, filename)
         return jsonify({"message": f"Saved {filename}!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -543,6 +551,7 @@ def upload_images_sensitive():
             final_img = process_side_profile_sensitive(img)
             if final_img is not None:
                 cv2.imwrite(os.path.join('./standard_cars', file.filename), final_img)
+                save_half_side(final_img, file.filename)
                 processed_count += 1
 
     if processed_count > 0:
@@ -570,6 +579,7 @@ def upload_images_brightness():
         if "(1).jpg" in filename_lower:
             final_img = process_brightness_only(img)
             cv2.imwrite(os.path.join('./standard_cars', file.filename), final_img)
+            save_half_side(final_img, file.filename)
             processed_count += 1
 
         elif "(2).jpg" in filename_lower:
