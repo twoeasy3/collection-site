@@ -8,7 +8,7 @@ import 'flag-icons/css/flag-icons.min.css';
 import './App.css';
 
 const BASE_PATH = window.location.pathname.startsWith('/display')
-  ? 'https://collection-images.twoeasythree.workers.dev'
+  ? 'https://pingmathehippo.com'
   : '';
 
 const FICTIONAL_MAKES = new Set(Array.isArray(fictionalData) ? fictionalData : []);
@@ -1022,13 +1022,14 @@ function App({ isPublic = false }) {
 
   useEffect(() => {
     if (!selectedLetter) return;
+    if (isMobile) return; // mobile: tapping cards must not clear the sidebar filter
     const handle = (e) => {
       if (e.target.closest('.sidebar') || e.target.closest('.secondary-sidebar')) return;
       setSelectedLetter(null);
     };
     document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
-  }, [selectedLetter]);
+  }, [selectedLetter, isMobile]);
 
   const handleDragEnter = (e) => { e.preventDefault(); if (e.dataTransfer.types.includes('Files')) setIsDragging(true); };
   const handleOverlayDragLeave = (e) => { e.preventDefault(); if (!e.currentTarget.contains(e.relatedTarget)) { setIsDragging(false); setDragTarget(null); } };
@@ -1354,10 +1355,36 @@ function App({ isPublic = false }) {
   }, [cars, brands, makes, yearsSorted, categoriesOrdered, sidebarView, isMatch, debouncedSearchTerm, searchMode, isPublic, publicMissingIds]);
   groupedAndFilteredCarsRef.current = groupedAndFilteredCars;
 
+  // Mobile: restrict gallery to the active filter selection.
+  // Desktop: no change — full groupedAndFilteredCars.
+  const galleryGroups = useMemo(() => {
+    if (!isMobile) return groupedAndFilteredCars;
+    if (!selectedLetter) return [];
+
+    if (sidebarView === 'make') {
+      return groupedAndFilteredCars.filter(({ groupName }) => {
+        if (selectedLetter === 'Fictional') return FICTIONAL_MAKES.has(groupName);
+        return !FICTIONAL_MAKES.has(groupName) && groupName.charAt(0).toUpperCase() === selectedLetter;
+      });
+    }
+
+    if (sidebarView === 'decade') {
+      return groupedAndFilteredCars.filter(({ groupName }) => {
+        if (selectedLetter === 'Unknown') return groupName === 'Unknown' || groupName.toUpperCase() === 'N/A';
+        const parsed = parseInt(groupName, 10);
+        if (isNaN(parsed)) return false;
+        const floor = parseInt(selectedLetter, 10);
+        return parsed >= floor && parsed < floor + 10;
+      });
+    }
+
+    // Brand / Category: exact group match
+    return groupedAndFilteredCars.filter(({ groupName }) => groupName === selectedLetter);
+  }, [isMobile, sidebarView, selectedLetter, groupedAndFilteredCars]);
 
   const visibleCarsForPreload = useMemo(
-    () => viewMode === 'gallery' ? groupedAndFilteredCars.flatMap(g => g.visibleGroupCars) : [],
-    [groupedAndFilteredCars, viewMode]
+    () => viewMode === 'gallery' ? galleryGroups.flatMap(g => g.visibleGroupCars) : [],
+    [galleryGroups, viewMode]
   );
   useImagePreloader(cars, imageUpdates, visibleCarsForPreload, gridPaneRef, viewMode === 'gallery');
 
@@ -1403,7 +1430,12 @@ function App({ isPublic = false }) {
   const carsOnPage = currentListItems.filter(i => i.type === 'car').length;
 
   const handleSidebarClick = useCallback((groupName) => {
-    if (isMobileRef.current) setSidebarOpen(false);
+    if (isMobileRef.current) {
+      setSidebarOpen(false);
+      if (sidebarView === 'brand' || sidebarView === 'category') {
+        setSelectedLetter(groupName);
+      }
+    }
 
     const group = groupedAndFilteredCars.find(g => g.groupName === groupName);
     const firstCar = group?.visibleGroupCars[0];
@@ -1426,7 +1458,7 @@ function App({ isPublic = false }) {
     }
 
     document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [viewMode, flatListItems, currentPage, itemsPerPage, groupedAndFilteredCars]);
+  }, [viewMode, flatListItems, currentPage, itemsPerPage, groupedAndFilteredCars, sidebarView]);
 
   const handleSelectAll = () => {
     if (selectedIds.size === visibleCarsCount && visibleCarsCount > 0) {
@@ -1510,13 +1542,13 @@ function App({ isPublic = false }) {
             ← Back
           </div>
           {makesForLetter && makesForLetter.map(({ groupName }) => (
-            <div key={groupName} onClick={() => { handleSidebarClick(groupName); setSelectedLetter(null); }} style={{ padding: '6px', cursor: 'pointer', textAlign: 'center', borderBottom: '1px solid var(--sb-item-border)', backgroundColor: '#fff' }} title={groupName}>
+            <div key={groupName} onClick={() => { handleSidebarClick(groupName); }} style={{ padding: '6px', cursor: 'pointer', textAlign: 'center', borderBottom: '1px solid var(--sb-item-border)', backgroundColor: '#fff' }} title={groupName}>
               <img src={`${BASE_PATH}/makes/${groupName}.png`} alt={groupName} style={{ width: '100%', maxHeight: '52px', objectFit: 'contain', display: 'block' }} onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'block'; }} />
               <span style={{ display: 'none', fontSize: '11px', color: 'var(--sb-tx)', wordBreak: 'break-word', fontWeight: '600' }}>{groupName}</span>
             </div>
           ))}
           {yearsForDecade && yearsForDecade.map(({ groupName, visibleGroupCars }) => (
-            <div key={groupName} onClick={() => { handleSidebarClick(groupName); setSelectedLetter(null); }} style={{ padding: '12px 8px', cursor: 'pointer', borderBottom: '1px solid var(--sb-item-border)', textAlign: 'center' }}>
+            <div key={groupName} onClick={() => { handleSidebarClick(groupName); }} style={{ padding: '12px 8px', cursor: 'pointer', borderBottom: '1px solid var(--sb-item-border)', textAlign: 'center' }}>
               <span style={{ fontSize: '1.1em', fontWeight: 'bold', color: 'var(--sb-tx)', display: 'block' }}>{groupName}</span>
               <span style={{ fontSize: '0.7em', color: '#cc2200', fontWeight: '600' }}>{visibleGroupCars.length} Cars</span>
             </div>
@@ -1634,10 +1666,29 @@ function App({ isPublic = false }) {
   // Each GalleryCard only receives imageUpdates[car.ID] for its own car,
   // so uploading one photo only re-renders that one card.
   const memoizedGalleryNodes = useMemo(() => {
+    if (isMobile && galleryGroups.length === 0) {
+      return [<div key="mobile-empty" style={{ gridColumn: '1 / -1', padding: '40px 16px', textAlign: 'center', color: 'var(--tx-3)', fontSize: '0.95em' }}>
+        Open the sidebar and select a filter to browse cars
+      </div>];
+    }
+
+    const TILE_LIMIT = 300;
+    let tileCount = 0;
+    const groupsToRender = [];
+    for (const group of galleryGroups) {
+      if (tileCount >= TILE_LIMIT) break;
+      const remaining = TILE_LIMIT - tileCount;
+      const sliced = group.visibleGroupCars.slice(0, remaining);
+      tileCount += sliced.length;
+      groupsToRender.push({ ...group, visibleGroupCars: sliced });
+    }
+    const totalCars = galleryGroups.reduce((s, g) => s + g.visibleGroupCars.length, 0);
+    const wasTruncated = totalCars > TILE_LIMIT;
+
     let renderedNodes = [];
     let visiblePos = 0;
 
-    groupedAndFilteredCars.forEach(({ groupName, visibleGroupCars }) => {
+    groupsToRender.forEach(({ groupName, visibleGroupCars }) => {
       if (visiblePos % columnCount === columnCount - 1 && columnCount > 1) {
         renderedNodes.push(
           <div key={`spacer-${groupName}`} style={{ position: 'relative', minWidth: 0, height: '100%' }}>
@@ -1663,7 +1714,7 @@ function App({ isPublic = false }) {
                 {!isPublic && <button onClick={() => handleCreateNew({ make: sidebarView === 'make' ? groupName : '', brand: sidebarView === 'brand' ? groupName : '' })} style={{ width: '100%', padding: '2px 0', fontSize: '0.85em', backgroundColor: '#cc2200', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '6px' }} title={`Add new entry to ${groupName}`}>+ Add</button>}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}>
                   <span style={{ fontSize: '1.4em', fontWeight: '900', color: 'var(--tx)', lineHeight: '1' }}>{visibleGroupCars.length}</span>
-                  <span style={{ fontSize: '0.65em', fontWeight: 'bold', color: 'var(--tx-3)', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '2px' }}>{visibleGroupCars.length === 1 ? 'Vehicle' : 'Vehicles'}</span>
+                  <img src="/car-icon.svg" alt="vehicles" className="car-icon" style={{ width: '16px', height: '16px', marginTop: '3px', display: 'block' }} />
                 </div>
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-surface)', borderRadius: '4px 4px 0 0', overflow: 'hidden', position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
@@ -1822,8 +1873,17 @@ function App({ isPublic = false }) {
       }
       } // end else (stackingEnabled)
     });
+
+    if (wasTruncated) {
+      renderedNodes.push(
+        <div key="truncated-notice" style={{ gridColumn: '1 / -1', padding: '16px', textAlign: 'center', color: 'var(--tx-3)', fontSize: '0.85em', borderTop: '1px solid var(--bd)', marginTop: '8px' }}>
+          Showing first 300 results — use search or sidebar filters to narrow down
+        </div>
+      );
+    }
+
     return renderedNodes;
-  }, [groupedAndFilteredCars, sidebarView, isGalleryEditingRef, columnCount, imageUpdates, handleSelectCar, showToast, expandedStacks, toggleStack, stackingEnabled]);
+  }, [galleryGroups, isMobile, sidebarView, isGalleryEditingRef, columnCount, imageUpdates, handleSelectCar, showToast, expandedStacks, toggleStack, stackingEnabled]);
 
 
   if (loading) return <div className="loading">Loading Car Collection...</div>;
@@ -2154,7 +2214,7 @@ function App({ isPublic = false }) {
                     {/* key includes the cache-busting timestamp so a new upload forces a full img remount */}
                     <img key={getHeroImage(selectedCar.ID)} src={getHeroImage(selectedCar.ID)} alt={selectedCarFullName} onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }} className="hero-image" fetchPriority="high" />
                   </div>
-                  <div className="car-info" ref={carInfoRef}>
+                  <div className="car-info" ref={carInfoRef} key={selectedCar?.ID}>
                     {!isGalleryEditing ? (
                       <>
                         <h2 style={{ margin: '0 0 4px 0' }}>{selectedCarFullName}</h2>
