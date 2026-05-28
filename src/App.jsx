@@ -8,7 +8,7 @@ import 'flag-icons/css/flag-icons.min.css';
 import './App.css';
 
 const BASE_PATH = window.location.pathname.startsWith('/display')
-  ? 'https://pub-7ab8470e3f7b4185bc835b3744152ec6.r2.dev'
+  ? 'https://collection-images.twoeasythree.workers.dev'
   : '';
 
 const FICTIONAL_MAKES = new Set(Array.isArray(fictionalData) ? fictionalData : []);
