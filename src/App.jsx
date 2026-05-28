@@ -1677,24 +1677,7 @@ function App({ isPublic = false }) {
       </div>];
     }
 
-    const TILE_LIMIT = 300;
-    let groupsToRender;
-    let wasTruncated = false;
-    if (isMobile) {
-      let tileCount = 0;
-      groupsToRender = [];
-      for (const group of galleryGroups) {
-        if (tileCount >= TILE_LIMIT) break;
-        const remaining = TILE_LIMIT - tileCount;
-        const sliced = group.visibleGroupCars.slice(0, remaining);
-        tileCount += sliced.length;
-        groupsToRender.push({ ...group, visibleGroupCars: sliced });
-      }
-      const totalCars = galleryGroups.reduce((s, g) => s + g.visibleGroupCars.length, 0);
-      wasTruncated = totalCars > TILE_LIMIT;
-    } else {
-      groupsToRender = galleryGroups;
-    }
+    const groupsToRender = galleryGroups;
 
     let renderedNodes = [];
     let visiblePos = 0;
@@ -1884,14 +1867,6 @@ function App({ isPublic = false }) {
       }
       } // end else (stackingEnabled)
     });
-
-    if (wasTruncated) {
-      renderedNodes.push(
-        <div key="truncated-notice" style={{ gridColumn: '1 / -1', padding: '16px', textAlign: 'center', color: 'var(--tx-3)', fontSize: '0.85em', borderTop: '1px solid var(--bd)', marginTop: '8px' }}>
-          Showing first 300 results — use search or sidebar filters to narrow down
-        </div>
-      );
-    }
 
     return renderedNodes;
   }, [galleryGroups, isMobile, sidebarView, isGalleryEditingRef, columnCount, imageUpdates, handleSelectCar, showToast, expandedStacks, toggleStack, stackingEnabled]);
