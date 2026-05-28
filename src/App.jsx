@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import Papa from 'papaparse';
 import fictionalData from './fictional_makes.json';
@@ -585,10 +585,14 @@ function App({ isPublic = false }) {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [sidebarView, setSidebarView] = useState('make');
-  const [selectedLetter, setSelectedLetter] = useState(null);
+  const [sidebarView, _setSidebarView] = useState('make');
+  const [selectedLetter, _setSelectedLetter] = useState(null);
   const [searchMode, setSearchMode] = useState('car');
-  const [viewMode, setViewMode] = useState('gallery');
+  const [viewMode, _setViewMode] = useState('gallery');
+
+  const setSidebarView   = useCallback((v) => startTransition(() => _setSidebarView(v)),   []);
+  const setSelectedLetter = useCallback((v) => startTransition(() => _setSelectedLetter(v)), []);
+  const setViewMode      = useCallback((v) => startTransition(() => _setViewMode(v)),      []);
   const [searchInput, setSearchInput] = useState('');
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
 
