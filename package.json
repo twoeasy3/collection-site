@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node -e \"const fs=require('fs');fs.mkdirSync('dist/display',{recursive:true});fs.copyFileSync('dist/index.html','dist/display/index.html')\"",
     "preview": "vite preview"
   },
   "dependencies": {
