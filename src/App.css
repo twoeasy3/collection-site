@@ -163,9 +163,9 @@ img {
     color: var(--accent);
   }
 
-  /* Gallery grid: smaller cards (2 per row on a 375px phone) */
+  /* Gallery grid: 3 columns minimum on mobile */
   .car-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+    grid-template-columns: repeat(3, 1fr) !important;
   }
 
   .grid-pane {

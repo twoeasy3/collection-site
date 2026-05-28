@@ -78,8 +78,11 @@ const useImagePreloader = (cars, imageUpdates, visibleCars, gridPaneRef, gallery
   const preloadedRef = useRef(new Set());
 
   // Phase 1: background idle preloading — full list, low concurrency.
+  // Skipped on mobile: Phase 2 (viewport observer) is sufficient and Phase 1
+  // saturates mobile bandwidth, blocking touch responsiveness.
   useEffect(() => {
     if (!cars.length) return;
+    if (window.innerWidth < 700) return;
 
     let i = 0;
     let activeCount = 0;
@@ -173,8 +176,9 @@ const useImagePreloader = (cars, imageUpdates, visibleCars, gridPaneRef, gallery
       );
     };
 
-    const viewportObserver = makeDebouncedObserver('0px 0px',   100);
-    const bufferObserver   = makeDebouncedObserver('600px 0px', 400);
+    const isMobileDevice = window.innerWidth < 700;
+    const viewportObserver = makeDebouncedObserver('0px 0px',                    100);
+    const bufferObserver   = makeDebouncedObserver(isMobileDevice ? '200px 0px' : '600px 0px', 400);
 
     const elements = container.querySelectorAll('[data-car-id]');
     elements.forEach(el => { viewportObserver.observe(el); bufferObserver.observe(el); });
