@@ -13,10 +13,22 @@ function json(data, status = 200) {
 
 function isAuthorized(request, env) {
   if (!env.API_KEY) return false;
-  return request.headers.get('Authorization') === `Bearer ${env.API_KEY}`;
+  const sent = (request.headers.get('Authorization') || '').trim();
+  const expected = `Bearer ${env.API_KEY.trim()}`;
+  return sent === expected;
 }
 
 async function handleAPI(request, env, url) {
+  // Temporary: check what key the Worker has stored
+  if (url.pathname === '/api/debug-auth') {
+    return json({
+      keySet: !!env.API_KEY,
+      keyLength: env.API_KEY?.length ?? 0,
+      keyPreview: env.API_KEY ? env.API_KEY.substring(0, 4) + '...' : null,
+      sentHeader: request.headers.get('Authorization') ?? null,
+    });
+  }
+
   // Public display: non-broken cars only
   if (url.pathname === '/api/cars/public' && request.method === 'GET') {
     const { results } = await env.DB.prepare(
