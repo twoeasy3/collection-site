@@ -89,12 +89,9 @@ const useImagePreloader = (cars, imageUpdates, visibleCars, gridPaneRef, gallery
     const CONCURRENCY = 2;
     let cancelled = false;
 
-    const allUrls = cars.flatMap(car => {
+    const allUrls = cars.map(car => {
       const t = imageUpdates[car.ID] ? `?t=${imageUpdates[car.ID]}` : '';
-      return [
-        `${BASE_PATH}/standard_cars/${car.ID} (1).jpg${t}`,
-        `${BASE_PATH}/standard_hero_shots/${car.ID} (2).jpg${t}`,
-      ];
+      return `${BASE_PATH}/standard_cars/${car.ID} (1).jpg${t}`;
     });
 
     const next = () => {
@@ -1673,17 +1670,23 @@ function App({ isPublic = false }) {
     }
 
     const TILE_LIMIT = 300;
-    let tileCount = 0;
-    const groupsToRender = [];
-    for (const group of galleryGroups) {
-      if (tileCount >= TILE_LIMIT) break;
-      const remaining = TILE_LIMIT - tileCount;
-      const sliced = group.visibleGroupCars.slice(0, remaining);
-      tileCount += sliced.length;
-      groupsToRender.push({ ...group, visibleGroupCars: sliced });
+    let groupsToRender;
+    let wasTruncated = false;
+    if (isMobile) {
+      let tileCount = 0;
+      groupsToRender = [];
+      for (const group of galleryGroups) {
+        if (tileCount >= TILE_LIMIT) break;
+        const remaining = TILE_LIMIT - tileCount;
+        const sliced = group.visibleGroupCars.slice(0, remaining);
+        tileCount += sliced.length;
+        groupsToRender.push({ ...group, visibleGroupCars: sliced });
+      }
+      const totalCars = galleryGroups.reduce((s, g) => s + g.visibleGroupCars.length, 0);
+      wasTruncated = totalCars > TILE_LIMIT;
+    } else {
+      groupsToRender = galleryGroups;
     }
-    const totalCars = galleryGroups.reduce((s, g) => s + g.visibleGroupCars.length, 0);
-    const wasTruncated = totalCars > TILE_LIMIT;
 
     let renderedNodes = [];
     let visiblePos = 0;
@@ -1714,7 +1717,7 @@ function App({ isPublic = false }) {
                 {!isPublic && <button onClick={() => handleCreateNew({ make: sidebarView === 'make' ? groupName : '', brand: sidebarView === 'brand' ? groupName : '' })} style={{ width: '100%', padding: '2px 0', fontSize: '0.85em', backgroundColor: '#cc2200', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '6px' }} title={`Add new entry to ${groupName}`}>+ Add</button>}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}>
                   <span style={{ fontSize: '1.4em', fontWeight: '900', color: 'var(--tx)', lineHeight: '1' }}>{visibleGroupCars.length}</span>
-                  <img src="/car-icon.svg" alt="vehicles" className="car-icon" style={{ width: '16px', height: '16px', marginTop: '3px', display: 'block' }} />
+                  <img src="/car-icon.svg" alt="vehicles" className="car-icon" style={{ width: '32px', height: '32px', marginTop: '3px', display: 'block' }} />
                 </div>
               </div>
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-surface)', borderRadius: '4px 4px 0 0', overflow: 'hidden', position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
