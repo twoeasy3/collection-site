@@ -1,0 +1,30 @@
+# Image folders (large binary assets — not committed to git)
+standard_cars/
+standard_hero_shots/
+makes/
+exile/
+raw/
+
+# Placeholder images are the exception — keep them
+!mystery_side.jpg
+!mystery_hero.jpg
+
+# Generated static export
+public/public_cars.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+
+# Misc
+.DS_Store
+Thumbs.db
+*.bak

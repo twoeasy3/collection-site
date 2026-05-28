@@ -1,0 +1,179 @@
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg);
+}
+
+.details-pane {
+  flex: 0 0 45%;
+  padding: 20px 40px;
+  border-bottom: 3px solid var(--bd);
+  overflow-y: auto;
+  background-color: var(--bg-surface);
+}
+
+.car-details {
+  display: flex;
+  gap: 40px;
+  height: 100%;
+  align-items: center;
+}
+
+.hero-image-container {
+  flex: 0 0 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+.hero-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.car-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.car-info h2 {
+  margin-top: 0;
+  font-size: 2.2rem;
+  color: var(--accent);
+  margin-bottom: 20px;
+}
+
+.grid-pane {
+  flex: 1;
+  overflow-y: scroll;
+  padding: 20px 40px;
+  contain: layout style;
+}
+
+.car-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 6px;
+  width: 100%;
+}
+
+.make-header-card {
+  grid-column: 1 / -1;
+}
+
+.car-card {
+  background-color: var(--bg-card);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+  overflow: hidden;
+  border: 2px solid transparent;
+  min-width: 0;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 110px;
+}
+
+.car-card:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.stacked-card-face {
+  border: 2px solid var(--bd-3);
+}
+
+.stacked-card.selected .stacked-card-face {
+  border-color: var(--accent);
+}
+
+.car-card.selected {
+  border-color: var(--accent);
+  background-color: var(--bg-card-sel);
+}
+
+.car-card img {
+  width: 100%;
+  height: 130px;
+  object-fit: contain;
+  background-color: #fff;
+}
+
+.car-card-title {
+  padding: 12px;
+  font-size: 0.95rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5rem;
+}
+
+img {
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* ===================== MOBILE ===================== */
+@media (max-width: 699px) {
+  /* Details pane: fixed height — never grows or shrinks with content */
+  .details-pane {
+    flex: 0 0 44vh !important;
+    height: 44vh;
+    padding: 8px 10px !important;
+    overflow-y: hidden;
+  }
+
+  .car-details {
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+    align-items: flex-start;
+  }
+
+  .hero-image-container {
+    flex: 0 0 130px;
+    width: 100%;
+    height: 130px;
+  }
+
+  .car-info {
+    flex: 1;
+    width: 100%;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .car-info h2 {
+    font-size: 1.1rem;
+    margin-bottom: 6px;
+    color: var(--accent);
+  }
+
+  /* Gallery grid: smaller cards (2 per row on a 375px phone) */
+  .car-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
+  }
+
+  .grid-pane {
+    padding: 4px !important;
+  }
+
+  /* List: allow horizontal scroll so no columns are hidden */
+  .table-container {
+    overflow-x: auto !important;
+  }
+}

@@ -1,0 +1,89 @@
+:root {
+  /* backgrounds */
+  --bg: #111111;
+  --bg-surface: #1a1a1a;
+  --bg-raised: #222222;
+  --bg-card: #242424;
+  --bg-card-hover: #2a2a2a;
+  --bg-card-sel: #333333;
+  --bg-input: #222222;
+  /* borders */
+  --bd: #333333;
+  --bd-2: #444444;
+  --bd-3: #555555;
+  /* text */
+  --tx: #ffffff;
+  --tx-2: #cccccc;
+  --tx-3: #888888;
+  /* accent */
+  --accent: #ff4444;
+  --year-color: #ffd5d5;
+  /* specific components */
+  --stack-1: #3a3a3a;
+  --stack-2: #2f2f2f;
+  --expand-hdr: #2b1515;
+  --row-sel: #3e2020;
+  --pg-btn: #333333;
+  /* sidebar */
+  --sb-bg: #000000;
+  --sb-border: #1a1a1a;
+  --sb-item-border: #111111;
+  --sb-tx: #cccccc;
+  --sb-controls-bg: #0d0d0d;
+  --sb-tab-active-bg: #1a1a1a;
+  --sb-tab-active-tx: #ffffff;
+  --sb-btn-off: #111111;
+  --sb-search-border: #444444;
+  --sb-back-bg: #1a1a1a;
+  --sb-gap: #111111;
+}
+
+[data-theme="light"] {
+  --bg: #f0f4f8;
+  --bg-surface: #ffffff;
+  --bg-raised: #f5f7fa;
+  --bg-card: #ffffff;
+  --bg-card-hover: #eef2f7;
+  --bg-card-sel: #fce8e8;
+  --bg-input: #ffffff;
+  --bd: #d0d6de;
+  --bd-2: #c4cbd5;
+  --bd-3: #b8c0cc;
+  --tx: #111111;
+  --tx-2: #444444;
+  --tx-3: #888888;
+  --accent: #cc2200;
+  --year-color: #8b1a1a;
+  --stack-1: #d4d8de;
+  --stack-2: #dce0e6;
+  --expand-hdr: #fce8e8;
+  --row-sel: #fce8e8;
+  --pg-btn: #dce0e6;
+  /* sidebar */
+  --sb-bg: #ffffff;
+  --sb-border: #dddddd;
+  --sb-item-border: #eeeeee;
+  --sb-tx: #333333;
+  --sb-controls-bg: #f8f9fa;
+  --sb-tab-active-bg: #e9ecef;
+  --sb-tab-active-tx: #000000;
+  --sb-btn-off: #f0f0f0;
+  --sb-search-border: #cccccc;
+  --sb-back-bg: #e9ecef;
+  --sb-gap: #dddddd;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg);
+  color: var(--tx);
+}
+
+* {
+  box-sizing: border-box;
+}
