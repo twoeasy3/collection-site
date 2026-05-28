@@ -1,14 +1,23 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "collection-site",
+  "main": "./src/worker.js",
   "compatibility_date": "2026-05-28",
   "observability": {
     "enabled": true
   },
   "assets": {
+    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "collection-data",
+      "database_id": "71ef7435-01a9-4f96-bb70-ad678d95362d"
+    }
   ]
 }

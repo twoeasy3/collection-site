@@ -5,7 +5,15 @@ import path from 'path'
 
 import { cloudflare } from "@cloudflare/vite-plugin";
 
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://collection-site.twoeasythree.workers.dev',
+        changeOrigin: true,
+      }
+    }
+  },
   plugins: [react(), {
     name: 'image-cache-headers',
     configureServer(server) {
@@ -46,5 +54,5 @@ export default defineConfig({
         next();
       });
     }
-  }, cloudflare()]
-})
+  }, ...(command === 'build' ? [cloudflare()] : [])]
+}))

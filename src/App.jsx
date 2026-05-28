@@ -579,6 +579,36 @@ const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpdate, sid
 );
 
 
+// Map D1 row (lowercase) → app car object (capitalized)
+const toAppCar = (row) => ({
+  ID: String(row.id),
+  Year: row.year || '',
+  Make: row.make || '',
+  Model: row.model || '',
+  Supername: row.supername || '',
+  Brand: row.brand || '',
+  Series: row.series || '',
+  Country: row.country || '',
+  Category: row.category || '',
+  Description: row.description || '',
+  Broken_image: row.broken_image ? 'TRUE' : 'FALSE',
+});
+
+// Map app car object → D1 row
+const toDBRow = (car) => ({
+  id: parseInt(car.ID),
+  year: car.Year || '',
+  make: car.Make || '',
+  model: car.Model || '',
+  supername: car.Supername || '',
+  brand: car.Brand || '',
+  series: car.Series || '',
+  country: car.Country || '',
+  category: car.Category || '',
+  description: car.Description || '',
+  broken_image: car.Broken_image === 'TRUE' ? 1 : 0,
+});
+
 function App({ isPublic = false }) {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -981,41 +1011,19 @@ function App({ isPublic = false }) {
 
   useEffect(() => {
     setLoading(true);
-    if (isPublic) {
-      fetch('/public_cars.json')
-        .then(r => r.json())
-        .then(data => {
-          const sortedCars = sortCars(data);
-          if (sortedCars.length > 0) setSelectedCar(sortedCars[0]);
-          setLoading(false);
-          startTransition(() => setCars(sortedCars));
-        })
-        .catch(() => setLoading(false));
-    } else {
-      fetch(`/data/collection.csv?t=${new Date().getTime()}`)
-        .then((response) => response.text())
-        .then((csvText) => {
-          const cleanCsvText = csvText.replace(/^\uFEFF/, '');
-          Papa.parse(cleanCsvText, {
-            header: true,
-            skipEmptyLines: 'greedy',
-            transform: (value) => (typeof value === 'string' ? value.trim() : value),
-            complete: (results) => {
-              const sortedCars = sortCars(results.data.map(car => ({ Broken_image: 'FALSE', ...car })));
-              setCars(sortedCars);
-              if (sortedCars.length > 0) {
-                const stillExists = selectedCar ? sortedCars.find(c => c.ID === selectedCar.ID) : null;
-                setSelectedCar(stillExists || sortedCars[0]);
-              }
-              setLoading(false);
-            },
-          });
-        })
-        .catch((err) => {
-          console.error("Error loading CSV: ", err);
-          setLoading(false);
-        });
-    }
+    const endpoint = isPublic ? '/api/cars/public' : '/api/cars';
+    fetch(endpoint)
+      .then(r => r.json())
+      .then(data => {
+        const sortedCars = sortCars(data.map(toAppCar));
+        if (sortedCars.length > 0) {
+          const stillExists = selectedCar ? sortedCars.find(c => c.ID === selectedCar.ID) : null;
+          setSelectedCar(stillExists || sortedCars[0]);
+        }
+        setLoading(false);
+        startTransition(() => setCars(sortedCars));
+      })
+      .catch(() => setLoading(false));
   }, [refreshTrigger]);
 
   useEffect(() => {
@@ -1066,24 +1074,28 @@ function App({ isPublic = false }) {
       setCars(sortCars(dataToSave));
     }
 
-    const csv = Papa.unparse(sortCars(dataToSave));
+    const payload = sortCars(dataToSave).map(toDBRow);
+    const key = localStorage.getItem('adminApiKey');
 
     try {
-      const response = await fetch('http://localhost:5000/api/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'text/csv' },
-        body: csv
+      const response = await fetch('/api/cars/bulk', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(key ? { 'Authorization': `Bearer ${key}` } : {}),
+        },
+        body: JSON.stringify(payload),
       });
 
       if (response.ok) {
-        showToast('Changes saved successfully!', 'success');
-        setBackupAvailable(true);
+        showToast('Changes saved to database!', 'success');
+        setBackupAvailable(false);
       } else {
-        const errorData = await response.json();
-        showToast(`Failed to save: ${errorData.error}`, 'error');
+        const err = await response.json();
+        showToast(`Failed to save: ${err.error}`, 'error');
       }
-    } catch (error) {
-      showToast("Server unreachable. Is server.py running?", 'error');
+    } catch {
+      showToast('API unreachable.', 'error');
     }
   };
 
@@ -1182,7 +1194,9 @@ function App({ isPublic = false }) {
       setCars(updatedCars);
       setSelectedCar(updatedCars.length > 0 ? updatedCars[0] : null);
       setIsGalleryEditing(false);
-      downloadCSV(updatedCars);
+      const key = localStorage.getItem('adminApiKey');
+      const authHeader = key ? { 'Authorization': `Bearer ${key}` } : {};
+      await fetch(`/api/cars/${id}`, { method: 'DELETE', headers: authHeader });
       const res = await fetch('http://localhost:5000/api/exile-images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [id] }) });
       const data = await res.json();
       const moved = data.moved?.length ?? 0;
@@ -1202,7 +1216,9 @@ function App({ isPublic = false }) {
         return newDrafts;
       });
       setSelectedIds(new Set());
-      downloadCSV(updatedCars);
+      const key = localStorage.getItem('adminApiKey');
+      const authHeader = key ? { 'Authorization': `Bearer ${key}` } : {};
+      await fetch('/api/cars/bulk-delete', { method: 'POST', headers: { ...authHeader, 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
       const res = await fetch('http://localhost:5000/api/exile-images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
       const data = await res.json();
       const moved = data.moved?.length ?? 0;
