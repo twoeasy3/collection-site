@@ -637,6 +637,7 @@ function App({ isPublic = false }) {
   const [columnCount, setColumnCount] = useState(1);
   const carGridRef = useRef(null);
   const gridPaneRef = useRef(null);
+  const carInfoRef = useRef(null);
 
   const [soundEnabled, setSoundEnabled] = useState(false);
   const bgAudioRef = useRef(null);
@@ -750,6 +751,7 @@ function App({ isPublic = false }) {
     if (!selectedCar) return;
     const t = imageUpdates[selectedCar.ID] ? `?t=${imageUpdates[selectedCar.ID]}` : '';
     new Image().src = `${BASE_PATH}/standard_cars/${selectedCar.ID} (1).jpg${t}`;
+    if (carInfoRef.current) carInfoRef.current.scrollTop = 0;
   }, [selectedCar?.ID, imageUpdates]);
 
   // Preload side images for all cars in expanded stacks immediately on expansion.
@@ -986,9 +988,9 @@ function App({ isPublic = false }) {
         .then(r => r.json())
         .then(data => {
           const sortedCars = sortCars(data);
-          setCars(sortedCars);
           if (sortedCars.length > 0) setSelectedCar(sortedCars[0]);
           setLoading(false);
+          startTransition(() => setCars(sortedCars));
         })
         .catch(() => setLoading(false));
     } else {
@@ -2152,7 +2154,7 @@ function App({ isPublic = false }) {
                     {/* key includes the cache-busting timestamp so a new upload forces a full img remount */}
                     <img key={getHeroImage(selectedCar.ID)} src={getHeroImage(selectedCar.ID)} alt={selectedCarFullName} onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }} className="hero-image" fetchPriority="high" />
                   </div>
-                  <div className="car-info">
+                  <div className="car-info" ref={carInfoRef}>
                     {!isGalleryEditing ? (
                       <>
                         <h2 style={{ margin: '0 0 4px 0' }}>{selectedCarFullName}</h2>
