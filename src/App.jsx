@@ -7,7 +7,9 @@ import makesData from '../makes.json';
 import 'flag-icons/css/flag-icons.min.css';
 import './App.css';
 
-const BASE_PATH = '';
+const BASE_PATH = window.location.pathname.startsWith('/display')
+  ? 'https://pub-7ab8470e3f7b4185bc835b3744152ec6.r2.dev'
+  : '';
 
 const FICTIONAL_MAKES = new Set(Array.isArray(fictionalData) ? fictionalData : []);
 
@@ -1319,6 +1321,8 @@ function App({ isPublic = false }) {
       : `${car.Brand || ''} ${car.Series || ''}`.toLowerCase();
     return searchWords.every(word => combinedText.includes(word));
   }, []);
+
+  const publicMissingIds = useMemo(() => new Set(), []);
 
   // FIX: groupedAndFilteredCars now explicitly depends only on what it needs.
   // debouncedSearchTerm and searchMode are passed into isMatch directly.
