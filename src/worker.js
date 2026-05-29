@@ -18,14 +18,45 @@ function isAuthorized(request, env) {
 }
 
 async function handleAPI(request, env, url) {
-  // Temporary: check what key the Worker has stored
-  if (url.pathname === '/api/debug-auth') {
-    return json({
-      keySet: !!env.API_KEY,
-      keyLength: env.API_KEY?.length ?? 0,
-      keyPreview: env.API_KEY ? env.API_KEY.substring(0, 4) + '...' : null,
-      sentHeader: request.headers.get('Authorization') ?? null,
-    });
+  // All makes with their countries (public)
+  if (url.pathname === '/api/makes' && request.method === 'GET') {
+    const { results } = await env.DB.prepare('SELECT name, countries FROM makes ORDER BY name').all();
+    return json(results);
+  }
+
+  // Cars in D1 with no corresponding image in R2
+  if (url.pathname === '/api/cars/missing-images' && request.method === 'GET') {
+    if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
+
+    const listIds = async (prefix, pattern) => {
+      const ids = new Set();
+      let cursor;
+      do {
+        const listed = await env.IMAGES.list({ prefix, limit: 1000, cursor });
+        for (const obj of listed.objects) {
+          const m = obj.key.match(pattern);
+          if (m) ids.add(m[1]);
+        }
+        cursor = listed.truncated ? listed.cursor : undefined;
+      } while (cursor);
+      return ids;
+    };
+
+    const [sideIds, heroIds] = await Promise.all([
+      listIds('half_standard_cars/', /\/(\d+) \(1\)\.jpg$/i),
+      listIds('standard_hero_shots/', /\/(\d+) \(2\)\.jpg$/i),
+    ]);
+
+    const { results } = await env.DB.prepare('SELECT id FROM cars').all();
+    const missing = results
+      .filter(r => !sideIds.has(String(r.id)) || !heroIds.has(String(r.id)))
+      .map(r => ({
+        id: r.id,
+        missing_side: !sideIds.has(String(r.id)),
+        missing_hero: !heroIds.has(String(r.id)),
+      }));
+
+    return json({ missing, dbTotal: results.length });
   }
 
   // Public display: non-broken cars only

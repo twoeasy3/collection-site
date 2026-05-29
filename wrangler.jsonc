@@ -13,6 +13,12 @@
   "compatibility_flags": [
     "nodejs_compat"
   ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "collection-images"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "DB",

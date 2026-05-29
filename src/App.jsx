@@ -13,11 +13,21 @@ const BASE_PATH = window.location.pathname.startsWith('/display')
 
 const FICTIONAL_MAKES = new Set(Array.isArray(fictionalData) ? fictionalData : []);
 
+// Initialised from static bundle; overwritten from D1 on load
 const MAKE_COUNTRY = new Map(makesData.map(m => [m.Name, m.Country]));
-const CountryFlags = ({ make, style }) => {
-  const codes = MAKE_COUNTRY.get(make);
-  if (!codes || !codes.length) return null;
-  return codes.map(code => (
+
+// carCountry: [] → inherit make | ["US"] → additive | ["~","US"] → override
+const resolveCountries = (carCountry, makeCountries) => {
+  const data = Array.isArray(carCountry) ? carCountry : [];
+  if (!data.length) return Array.isArray(makeCountries) ? makeCountries : [];
+  if (data[0] === '~') return data.slice(1);
+  return [...new Set([...(Array.isArray(makeCountries) ? makeCountries : []), ...data])];
+};
+
+const CountryFlags = ({ make, carCountry, style }) => {
+  const resolved = resolveCountries(carCountry, MAKE_COUNTRY.get(make) || []);
+  if (!resolved.length) return null;
+  return resolved.map(code => (
     <span key={code} className={`fi fi-${code.toLowerCase()}`} style={{ marginLeft: '4px', verticalAlign: 'middle', fontSize: '0.75em', ...style }} />
   ));
 };
@@ -272,18 +282,54 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSaveCsv
         <strong style={{ width: '80px' }}>Series:</strong>
         <input style={{ ...detailsInputLabelStyle, flex: 1 }} value={draft?.Series || ''} onChange={(e) => handleChange('Series', e.target.value)} spellCheck="false" autoComplete="off" />
       </div>
-      <div style={{ margin: '2px 0', display: 'flex', alignItems: 'center' }}>
-        <strong style={{ width: '80px' }}>Country:</strong>
-        <input style={{ ...detailsInputLabelStyle, flex: 1 }} value={draft?.Country || ''} onChange={(e) => handleChange('Country', e.target.value)} spellCheck="false" autoComplete="off" />
+      <div style={{ margin: '2px 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+          <strong style={{ width: '80px' }}>Country:</strong>
+          <input
+            style={{ ...detailsInputLabelStyle, flex: 1 }}
+            value={(Array.isArray(draft?.Country) ? draft.Country.filter(c => c !== '~') : []).join(', ')}
+            onChange={(e) => {
+              const codes = e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
+              const override = Array.isArray(draft?.Country) && draft.Country[0] === '~';
+              handleChange('Country', override ? ['~', ...codes] : codes);
+            }}
+            placeholder="e.g. US, JP (leave blank to inherit from make)"
+            spellCheck="false" autoComplete="off"
+          />
+          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap', fontSize: '0.8em', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={Array.isArray(draft?.Country) && draft.Country[0] === '~'}
+              onChange={(e) => {
+                const codes = Array.isArray(draft?.Country) ? draft.Country.filter(c => c !== '~') : [];
+                handleChange('Country', e.target.checked ? ['~', ...codes] : codes);
+              }}
+            />
+            Override make
+          </label>
+        </div>
       </div>
-      <div style={{ margin: '2px 0', display: 'flex', alignItems: 'center' }}>
-        <strong style={{ width: '80px' }}>Category:</strong>
-        <select style={{ ...detailsInputLabelStyle, flex: 1 }} value={draft?.Category || ''} onChange={(e) => handleChange('Category', e.target.value)}>
-          <option value="">— none —</option>
-          {(categories || []).filter(c => c !== 'Uncategorised').map(cat => (
-            <option key={cat} value={cat}>{cat}</option>
-          ))}
-        </select>
+      <div style={{ margin: '2px 0' }}>
+        <strong style={{ display: 'block', marginBottom: '4px' }}>Category:</strong>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', padding: '4px', border: '1px solid var(--bd-2)', borderRadius: '3px', backgroundColor: 'var(--bg-input)', maxHeight: '100px', overflowY: 'auto' }}>
+          {(categories || []).filter(c => c !== 'Uncategorised').map(cat => {
+            const selected = Array.isArray(draft?.Category) && draft.Category.includes(cat);
+            return (
+              <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '3px', padding: '2px 6px', borderRadius: '3px', backgroundColor: selected ? 'var(--accent)' : 'var(--bg-raised)', color: selected ? '#fff' : 'var(--tx-2)', cursor: 'pointer', fontSize: '0.8em', border: '1px solid var(--bd-2)', userSelect: 'none' }}>
+                <input
+                  type="checkbox"
+                  style={{ display: 'none' }}
+                  checked={selected}
+                  onChange={(e) => {
+                    const current = Array.isArray(draft?.Category) ? draft.Category : [];
+                    handleChange('Category', e.target.checked ? [...current, cat] : current.filter(c => c !== cat));
+                  }}
+                />
+                {cat}
+              </label>
+            );
+          })}
+        </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', margin: '4px 0' }}>
         <strong style={{ marginBottom: '2px' }}>Description:</strong>
@@ -428,13 +474,13 @@ const CarListRow = React.memo(({ car, isSelected, isListEditing, draft, imageUpd
       <td style={tdStyle}>{isListEditing ? <FastInput style={inlineInputStyle} value={getVal('Country')} onChange={(val) => handleCellChange(car.ID, 'Country', val)} /> : car.Country}</td>
       <td style={tdStyle}>
         {isListEditing
-          ? <select style={inlineInputStyle} value={getVal('Category')} onChange={(e) => handleCellChange(car.ID, 'Category', e.target.value)}>
-              <option value=""></option>
-              {(categories || []).filter(c => c !== 'Uncategorised').map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-          : car.Category}
+          ? <FastInput
+              style={inlineInputStyle}
+              value={Array.isArray(getVal('Category')) ? getVal('Category').join(', ') : (getVal('Category') || '')}
+              onChange={(val) => handleCellChange(car.ID, 'Category', val.split(',').map(c => c.trim()).filter(Boolean))}
+              placeholder="Category1, Category2"
+            />
+          : (Array.isArray(car.Category) ? car.Category.join(', ') : car.Category)}
       </td>
     </tr>
   );
@@ -513,7 +559,7 @@ const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, imageUp
         {!hideId && <span style={{ color: 'var(--tx-3)', marginRight: '5px' }}>#{car.ID}</span>}
         {sidebarView !== 'decade' && validYear && <span style={{ color: 'var(--year-color)', marginRight: '4px', fontWeight: 'bold' }}>{validYear}</span>}
         {nameWithoutYear}
-        {car.Make && <CountryFlags make={car.Make} />}
+        {car.Make && <CountryFlags make={car.Make} carCountry={car.Country} />}
         {car.Broken_image === 'TRUE' && <span style={{ color: '#ff4d4d', marginLeft: '5px', fontWeight: 'bold' }}>[Broken]</span>}
       </div>
     </div>
@@ -559,7 +605,7 @@ const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpdate, sid
         <div style={{ fontSize: '0.8em', padding: '2px 4px', color: 'var(--tx)', lineHeight: '1em', height: '2em', whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis', wordWrap: 'break-word', boxSizing: 'content-box' }}>
           {sidebarView !== 'decade' && validYear && <span style={{ color: 'var(--year-color)', marginRight: '4px', fontWeight: 'bold' }}>{validYear}</span>}
           {nameWithoutYear}
-          {firstCar.Make && <CountryFlags make={firstCar.Make} />}
+          {firstCar.Make && <CountryFlags make={firstCar.Make} carCountry={firstCar.Country} />}
           {firstCar.Brand && firstCar.Brand.trim() && <span style={{ color: 'var(--tx-3)', marginLeft: '4px' }}>{firstCar.Brand.trim()}</span>}
         </div>
       </div>
@@ -579,6 +625,8 @@ const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpdate, sid
 );
 
 
+const parseArr = (val) => { try { const p = JSON.parse(val || '[]'); return Array.isArray(p) ? p : []; } catch { return []; } };
+
 // Map D1 row (lowercase) → app car object (capitalized)
 const toAppCar = (row) => ({
   ID: String(row.id),
@@ -588,8 +636,8 @@ const toAppCar = (row) => ({
   Supername: row.supername || '',
   Brand: row.brand || '',
   Series: row.series || '',
-  Country: row.country || '',
-  Category: row.category || '',
+  Country: parseArr(row.country),
+  Category: parseArr(row.category),
   Description: row.description || '',
   Broken_image: row.broken_image ? 'TRUE' : 'FALSE',
 });
@@ -603,8 +651,8 @@ const toDBRow = (car) => ({
   supername: car.Supername || '',
   brand: car.Brand || '',
   series: car.Series || '',
-  country: car.Country || '',
-  category: car.Category || '',
+  country: JSON.stringify(Array.isArray(car.Country) ? car.Country : []),
+  category: JSON.stringify(Array.isArray(car.Category) ? car.Category : []),
   description: car.Description || '',
   broken_image: car.Broken_image === 'TRUE' ? 1 : 0,
 });
@@ -926,20 +974,37 @@ function App({ isPublic = false }) {
 
   const fetchMissingData = useCallback(async () => {
     setMissingLoading(true);
+    const key = localStorage.getItem('adminApiKey');
     try {
-      const response = await fetch('http://localhost:5000/api/missing-images');
+      const response = await fetch('/api/cars/missing-images', {
+        headers: key ? { 'Authorization': `Bearer ${key}` } : {},
+      });
       if (response.ok) {
         const data = await response.json();
-        setMissingData(data.missing);
+        const enriched = data.missing.map(item => {
+          const car = cars.find(c => String(c.ID) === String(item.id)) || {};
+          return {
+            id: item.id,
+            year: car.Year || '',
+            make: car.Make || '',
+            model: car.Model || '',
+            supername: car.Supername || '',
+            brand: car.Brand || '',
+            series: car.Series || '',
+            missing_side: item.missing_side,
+            missing_hero: item.missing_hero,
+          };
+        });
+        setMissingData(enriched);
       } else {
         showToast('Failed to fetch missing image data', 'error');
       }
     } catch {
-      showToast('Server unreachable. Is server.py running?', 'error');
+      showToast('API unreachable.', 'error');
     } finally {
       setMissingLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, cars]);
 
   useEffect(() => {
     if (viewMode === 'missing') fetchMissingData();
@@ -1025,6 +1090,14 @@ function App({ isPublic = false }) {
       })
       .catch(() => setLoading(false));
   }, [refreshTrigger]);
+
+  // Keep MAKE_COUNTRY fresh from D1 (static bundle is the initial fallback)
+  useEffect(() => {
+    fetch('/api/makes')
+      .then(r => r.json())
+      .then(data => data.forEach(m => MAKE_COUNTRY.set(m.name, parseArr(m.countries))))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!selectedLetter) return;
@@ -1132,7 +1205,7 @@ function App({ isPublic = false }) {
 
   const handleCreateNew = ({ make = '', brand = '' } = {}) => {
     const newId = getNextAvailableId(cars);
-    const newCar = { ID: newId, Make: make, Model: '', Supername: '', Year: sidebarView === 'decade' && selectedLetter && selectedLetter !== 'Unknown' ? selectedLetter : '', Brand: brand, Series: '', Country: '', Description: '', Broken_image: 'FALSE' };
+    const newCar = { ID: newId, Make: make, Model: '', Supername: '', Year: sidebarView === 'decade' && selectedLetter && selectedLetter !== 'Unknown' ? selectedLetter : '', Brand: brand, Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE' };
 
     if (viewMode === 'gallery') {
       setSelectedCar(newCar);
@@ -1156,7 +1229,7 @@ function App({ isPublic = false }) {
     const newCars = [];
     for (let id = 1; id <= targetId; id++) {
       if (!existingIds.has(id)) {
-        newCars.push({ ID: id, Make: '', Model: 'UNNAMED_CAR', Supername: '', Year: '', Brand: '', Series: '', Country: '', Category: '', Description: '', Broken_image: 'FALSE' });
+        newCars.push({ ID: id, Make: '', Model: 'UNNAMED_CAR', Supername: '', Year: '', Brand: '', Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE' });
       }
     }
     if (newCars.length === 0) return showToast('No gaps found up to ID ' + targetId, 'success');
@@ -1177,8 +1250,8 @@ function App({ isPublic = false }) {
       Year: selectedCar.Year || '',
       Brand: selectedCar.Brand || '',
       Series: '',
-      Country: selectedCar.Country || '',
-      Category: selectedCar.Category || '',
+      Country: [],
+      Category: Array.isArray(selectedCar.Category) ? [...selectedCar.Category] : [],
       Description: selectedCar.Description || '',
       Broken_image: 'FALSE',
     };
@@ -1297,22 +1370,22 @@ function App({ isPublic = false }) {
   const brands = useMemo(() => [...new Set(cars.map(c => c.Brand || 'Unknown'))].sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: 'base' })), [cars]);
 
   const categories = useMemo(() => {
-    const cats = [...new Set(cars.map(c => (c.Category || '').trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    if (cars.some(c => !(c.Category || '').trim())) cats.push('Uncategorised');
+    const cats = [...new Set(cars.flatMap(c => Array.isArray(c.Category) ? c.Category : []).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    if (cars.some(c => !(Array.isArray(c.Category) ? c.Category.length : (c.Category || '').trim()))) cats.push('Uncategorised');
     return cats;
   }, [cars]);
 
   const categoriesOrdered = useMemo(() => {
     const order = categoryOrderData.categories;
     const orderIndex = new Map(order.map((c, i) => [c, i]));
-    const actual = [...new Set(cars.map(c => (c.Category || '').trim()).filter(Boolean))];
+    const actual = [...new Set(cars.flatMap(c => Array.isArray(c.Category) ? c.Category : []).filter(Boolean))];
     actual.sort((a, b) => {
       const ia = orderIndex.has(a) ? orderIndex.get(a) : Infinity;
       const ib = orderIndex.has(b) ? orderIndex.get(b) : Infinity;
       if (ia !== ib) return ia - ib;
       return a.localeCompare(b, undefined, { sensitivity: 'base' });
     });
-    if (cars.some(c => !(c.Category || '').trim())) actual.push('Uncategorised');
+    if (cars.some(c => !(Array.isArray(c.Category) ? c.Category.length : (c.Category || '').trim()))) actual.push('Uncategorised');
     return actual;
   }, [cars]);
 
@@ -1357,7 +1430,7 @@ function App({ isPublic = false }) {
       const groupCars = cars.filter(c => {
         if (sidebarView === 'brand') return (c.Brand || 'Unknown') === groupName;
         if (sidebarView === 'decade') return (c.Year || 'Unknown') === groupName;
-        if (sidebarView === 'category') return groupName === 'Uncategorised' ? !(c.Category || '').trim() : (c.Category || '').trim() === groupName;
+        if (sidebarView === 'category') { const cats = Array.isArray(c.Category) ? c.Category : []; return groupName === 'Uncategorised' ? cats.length === 0 : cats.includes(groupName); }
         return (c.Make || 'Unknown') === groupName;
       });
       const visibleGroupCars = groupCars.filter(c =>
@@ -2224,7 +2297,17 @@ function App({ isPublic = false }) {
                         <p style={{ margin: '2px 0' }}><strong>Brand:</strong> {selectedCar.Brand || 'N/A'}</p>
                         <p style={{ margin: '2px 0' }}><strong>Series:</strong> {selectedCar.Series || 'N/A'}</p>
                         <p style={{ margin: '2px 0' }}><strong>Country:</strong> {selectedCar.Country || 'N/A'}</p>
-                        {selectedCar.Category && <p style={{ margin: '2px 0' }}><strong>Category:</strong> <span style={{ color: 'var(--accent)', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => { setSidebarView('category'); handleSidebarClick(selectedCar.Category); }}>{selectedCar.Category}</span></p>}
+                        {Array.isArray(selectedCar.Category) && selectedCar.Category.length > 0 && (
+                          <p style={{ margin: '2px 0' }}>
+                            <strong>Categor{selectedCar.Category.length === 1 ? 'y' : 'ies'}:</strong>{' '}
+                            {selectedCar.Category.map((cat, i) => (
+                              <span key={cat}>
+                                <span style={{ color: 'var(--accent)', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => { setSidebarView('category'); handleSidebarClick(cat); }}>{cat}</span>
+                                {i < selectedCar.Category.length - 1 ? ', ' : ''}
+                              </span>
+                            ))}
+                          </p>
+                        )}
                         <p style={{ margin: '2px 0' }}><strong>Description:</strong> {selectedCar.Description || 'No description available.'}</p>
                         {selectedCar.Broken_image === 'TRUE' && <p style={{ margin: '2px 0', color: '#ff4d4d', fontWeight: 'bold' }}>⚠️ Flagged as Broken Image</p>}
                         {!isPublic && <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>

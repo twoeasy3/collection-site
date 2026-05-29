@@ -1,3 +1,8 @@
+CREATE TABLE IF NOT EXISTS makes (
+  name      TEXT PRIMARY KEY,
+  countries TEXT NOT NULL DEFAULT '[]'
+);
+
 CREATE TABLE IF NOT EXISTS cars (
   id          INTEGER PRIMARY KEY,
   year        TEXT,
