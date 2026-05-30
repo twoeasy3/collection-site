@@ -81,8 +81,8 @@ async function handleAPI(request, env, url) {
     for (let i = 0; i < cars.length; i += CHUNK) {
       const stmts = cars.slice(i, i + CHUNK).map(c =>
         env.DB.prepare(
-          'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
-        ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image)
+          'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+        ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0)
       );
       await env.DB.batch(stmts);
     }
@@ -98,11 +98,21 @@ async function handleAPI(request, env, url) {
     return json({ ok: true });
   }
 
-  // Delete one car
-  const delMatch = url.pathname.match(/^\/api\/cars\/(\d+)$/);
-  if (delMatch && request.method === 'DELETE') {
+  // Upsert single car
+  const carMatch = url.pathname.match(/^\/api\/cars\/(\d+)$/);
+  if (carMatch && request.method === 'PUT') {
     if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
-    await env.DB.prepare('DELETE FROM cars WHERE id = ?').bind(parseInt(delMatch[1])).run();
+    const c = await request.json();
+    await env.DB.prepare(
+      'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
+    ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0).run();
+    return json({ ok: true });
+  }
+
+  // Delete one car
+  if (carMatch && request.method === 'DELETE') {
+    if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
+    await env.DB.prepare('DELETE FROM cars WHERE id = ?').bind(parseInt(carMatch[1])).run();
     return json({ ok: true });
   }
 

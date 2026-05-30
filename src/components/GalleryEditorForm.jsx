@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { NAME_FORMATS } from '../utils/carUtils';
 
-const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSaveCsv, showToast, categories }) => {
+const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, showToast, categories }) => {
   const [draft, setDraft] = useState(initialCar);
 
   useEffect(() => { setDraft(initialCar); }, [initialCar]);
@@ -17,12 +18,12 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSaveCsv
     onApply(draft);
   };
 
-  const handleSaveCsvClick = () => {
+  const handleSaveClick = () => {
     if (!draft.Model || draft.Model.trim() === '') {
       showToast("A Model name is required to save an entry.", "error");
       return;
     }
-    onSaveCsv(draft);
+    onSave(draft);
   };
 
   const inp = { flex: 1, minWidth: 0, backgroundColor: 'var(--bg-input)', color: 'var(--tx)', border: '1px solid var(--bd-2)', borderRadius: '3px', padding: '4px', fontWeight: 'bold', fontSize: '1.2em' };
@@ -100,6 +101,12 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSaveCsv
           })}
         </div>
       </div>
+      <div style={{ margin: '4px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <strong style={{ flexShrink: 0 }}>Name format:</strong>
+        {NAME_FORMATS.map(({ value, label, pattern }) => (
+          <button key={value} onClick={() => handleChange('NameFormat', value)} title={pattern} style={{ padding: '2px 8px', fontSize: '0.75em', backgroundColor: (draft?.NameFormat || 0) === value ? 'var(--accent)' : 'var(--bg-card-sel)', color: (draft?.NameFormat || 0) === value ? '#fff' : 'var(--tx-2)', border: '1px solid var(--bd-3)', borderRadius: '3px', cursor: 'pointer', fontWeight: 'bold' }}>{label}</button>
+        ))}
+      </div>
       <div style={{ display: 'flex', flexDirection: 'column', margin: '4px 0' }}>
         <strong style={{ marginBottom: '2px' }}>Description:</strong>
         <textarea style={{ width: '100%', minHeight: '40px', resize: 'vertical', backgroundColor: 'var(--bg-input)', color: 'var(--tx)', border: '1px solid var(--bd-2)', borderRadius: '3px', padding: '4px' }} value={draft?.Description || ''} onChange={(e) => handleChange('Description', e.target.value)} spellCheck="false" autoComplete="off" />
@@ -118,7 +125,7 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSaveCsv
         <div style={{ display: 'flex', gap: '10px' }}>
           <button onClick={onCancel} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Cancel</button>
           <button onClick={handleDone} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Done</button>
-          <button onClick={handleSaveCsvClick} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Save CSV</button>
+          <button onClick={handleSaveClick} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Save</button>
         </div>
       </div>
     </>

@@ -32,8 +32,8 @@ export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, 
   const validYear = car.Year && car.Year.toUpperCase() !== 'N/A' ? car.Year : null;
   const isCustom = car.Supername && car.Supername.trim().toLowerCase() === 'custom';
   const customPrefix = isCustom ? car.Supername.trim() : null;
-
-  const nameWithoutYear = sidebarView === 'make'
+  const hideMake = (car.NameFormat || 0) === 2 || sidebarView === 'make';
+  const nameWithoutYear = hideMake
     ? [customPrefix, car.Model].filter(Boolean).join(' ')
     : [customPrefix, car.Make, car.Model].filter(Boolean).join(' ');
 
@@ -84,7 +84,8 @@ export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpda
   const validYear = firstCar.Year && firstCar.Year.toUpperCase() !== 'N/A' ? firstCar.Year : null;
   const isCustom = firstCar.Supername && firstCar.Supername.trim().toLowerCase() === 'custom';
   const customPrefix = isCustom ? firstCar.Supername.trim() : null;
-  const nameWithoutYear = sidebarView === 'make'
+  const hideMake = (firstCar.NameFormat || 0) === 2 || sidebarView === 'make';
+  const nameWithoutYear = hideMake
     ? [customPrefix, firstCar.Model].filter(Boolean).join(' ')
     : [customPrefix, firstCar.Make, firstCar.Model].filter(Boolean).join(' ');
   const src = `${BASE_PATH}/half_standard_cars/${firstCar.ID} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;

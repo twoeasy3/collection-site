@@ -3,7 +3,7 @@ import categoryOrderData from './category_order.json';
 import './App.css';
 
 import { BASE_PATH, FICTIONAL_MAKES, MAKE_COUNTRY, thStyle, tdStyle } from './constants';
-import { sortCars, getNextAvailableId, parseArr, toAppCar, toDBRow } from './utils/carUtils';
+import { sortCars, getNextAvailableId, parseArr, toAppCar, toDBRow, getCarDisplayName } from './utils/carUtils';
 import { useImagePreloader } from './hooks/useImagePreloader';
 import CountryFlags from './components/CountryFlags';
 import GalleryEditorForm from './components/GalleryEditorForm';
@@ -400,7 +400,7 @@ function App({ isPublic = false }) {
 
   const toggleListEditMode = () => { if (isListEditing) flushListDrafts(); setIsListEditing(!isListEditing); };
 
-  const downloadCSV = async (explicitData) => {
+  const saveToDB = async (explicitData) => {
     let dataToSave = Array.isArray(explicitData) ? explicitData : cars;
     if (!Array.isArray(explicitData) && viewMode === 'list' && isListEditing) {
       dataToSave = flushListDrafts();
@@ -420,6 +420,37 @@ function App({ isPublic = false }) {
     } catch { showToast('API unreachable.', 'error'); }
   };
 
+  const saveSingleCar = useCallback(async (car) => {
+    const key = localStorage.getItem('adminApiKey');
+    try {
+      const response = await fetch(`/api/cars/${car.ID}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'Authorization': `Bearer ${key}` } : {}) },
+        body: JSON.stringify(toDBRow(car)),
+      });
+      if (response.ok) showToast('Saved!', 'success');
+      else showToast(`Failed to save: ${(await response.json()).error}`, 'error');
+    } catch { showToast('API unreachable.', 'error'); }
+  }, [showToast]);
+
+  const saveListChanges = useCallback(async () => {
+    const changedIds = Object.keys(listDrafts);
+    if (changedIds.length === 0) return showToast('No unsaved changes', 'success');
+    const payload = changedIds
+      .map(id => { const base = cars.find(c => String(c.ID) === String(id)); return base ? toDBRow({ ...base, ...listDrafts[id] }) : null; })
+      .filter(Boolean);
+    const key = localStorage.getItem('adminApiKey');
+    try {
+      const response = await fetch('/api/cars/bulk', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...(key ? { 'Authorization': `Bearer ${key}` } : {}) },
+        body: JSON.stringify(payload),
+      });
+      if (response.ok) { flushListDrafts(); showToast(`Saved ${payload.length} car${payload.length === 1 ? '' : 's'} to database!`, 'success'); }
+      else showToast(`Failed to save: ${(await response.json()).error}`, 'error');
+    } catch { showToast('API unreachable.', 'error'); }
+  }, [listDrafts, cars, showToast]);
+
   const handlePublish = async () => {
     try {
       const response = await fetch('http://localhost:5000/api/publish', { method: 'POST' });
@@ -438,7 +469,7 @@ function App({ isPublic = false }) {
 
   const handleCreateNew = ({ make = '', brand = '' } = {}) => {
     const newId = getNextAvailableId(cars);
-    const newCar = { ID: newId, Make: make, Model: '', Supername: '', Year: sidebarView === 'decade' && selectedLetter && selectedLetter !== 'Unknown' ? selectedLetter : '', Brand: brand, Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false };
+    const newCar = { ID: newId, Make: make, Model: '', Supername: '', Year: sidebarView === 'decade' && selectedLetter && selectedLetter !== 'Unknown' ? selectedLetter : '', Brand: brand, Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: 0 };
     if (viewMode === 'gallery') {
       setSelectedCar(newCar);
       setIsGalleryEditing(true);
@@ -460,19 +491,19 @@ function App({ isPublic = false }) {
     const existingIds = new Set(cars.map(c => Number(c.ID)));
     const newCars = [];
     for (let id = 1; id <= targetId; id++) {
-      if (!existingIds.has(id)) newCars.push({ ID: id, Make: '', Model: 'UNNAMED_CAR', Supername: '', Year: '', Brand: '', Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false });
+      if (!existingIds.has(id)) newCars.push({ ID: id, Make: '', Model: 'UNNAMED_CAR', Supername: '', Year: '', Brand: '', Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: 0 });
     }
     if (newCars.length === 0) return showToast('No gaps found up to ID ' + targetId, 'success');
     const updated = sortCars([...cars, ...newCars]);
     setCars(updated);
-    downloadCSV(updated);
+    saveToDB(updated);
     showToast(`Added ${newCars.length} UNNAMED_CAR entr${newCars.length === 1 ? 'y' : 'ies'} up to ID ${targetId}`, 'success');
   };
 
   const handleCreateSameCasting = () => {
     if (!selectedCar) return;
     const newId = getNextAvailableId(cars);
-    const newCar = { ID: newId, Make: selectedCar.Make || '', Model: selectedCar.Model || '', Supername: '', Year: selectedCar.Year || '', Brand: selectedCar.Brand || '', Series: '', Country: [], Category: Array.isArray(selectedCar.Category) ? [...selectedCar.Category] : [], Description: selectedCar.Description || '', Broken_image: 'FALSE', Cover: false };
+    const newCar = { ID: newId, Make: selectedCar.Make || '', Model: selectedCar.Model || '', Supername: '', Year: selectedCar.Year || '', Brand: selectedCar.Brand || '', Series: '', Country: [], Category: Array.isArray(selectedCar.Category) ? [...selectedCar.Category] : [], Description: selectedCar.Description || '', Broken_image: 'FALSE', Cover: false, NameFormat: 0 };
     setSelectedCar(newCar);
     setIsGalleryEditing(true);
   };
@@ -544,7 +575,7 @@ function App({ isPublic = false }) {
     }));
     setCars(swappedCars);
     setSelectedCar(prev => ({ ...prev, ID: targetCar.ID }));
-    downloadCSV(swappedCars);
+    saveToDB(swappedCars);
   };
 
   const handleCellChange = useCallback((id, field, value) => {
@@ -782,8 +813,7 @@ function App({ isPublic = false }) {
 
   if (loading) return <div className="loading">Loading Car Collection...</div>;
 
-  const validSelectedYear = selectedCar && selectedCar.Year && selectedCar.Year.toUpperCase() !== 'N/A' ? selectedCar.Year : null;
-  const selectedCarFullName = selectedCar ? [selectedCar.Supername, validSelectedYear, selectedCar.Make, selectedCar.Model].filter(Boolean).join(' ') : '';
+  const selectedCarFullName = selectedCar ? getCarDisplayName(selectedCar) : '';
 
   return (
     <div className="main-layout" onDragEnter={handleDragEnter} style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative', backgroundColor: 'var(--bg)' }}>
@@ -885,7 +915,7 @@ function App({ isPublic = false }) {
             <div style={{ padding: '8px', borderBottom: '1px solid var(--sb-border)' }}>
               <button onClick={handleCreateNew} style={{ width: '100%', padding: '6px', fontSize: '0.8em', fontWeight: 'bold', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>+ New Car</button>
               <button onClick={handleFillToId} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: '#17a2b8', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Fill to ID</button>
-              {backupAvailable && <button onClick={undoSave} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Undo CSV Save</button>}
+              {backupAvailable && <button onClick={undoSave} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Undo Save</button>}
               <button onClick={handlePublish} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: '#0077cc', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Publish</button>
             </div>
           )}
@@ -1074,7 +1104,7 @@ function App({ isPublic = false }) {
                         <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <button onClick={() => setIsGalleryEditing(true)} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#cc2200', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Edit Details</button>
                           <button onClick={handleSwapIds} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Swap ID</button>
-                          <button onClick={downloadCSV} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Save CSV</button>
+                          <button onClick={saveToDB} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Save All</button>
                           <button onClick={handleCreateSameCasting} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#e67e22', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Add same casting</button>
                           <button onClick={handleDeleteGallery} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', marginLeft: 'auto' }}>Delete Car</button>
                         </div>
@@ -1087,14 +1117,13 @@ function App({ isPublic = false }) {
                       initialCar={selectedCar}
                       onApply={handleApplyGalleryEdits}
                       onCancel={cancelGalleryEdits}
-                      onSaveCsv={(draft) => {
+                      onSave={(draft) => {
                         const exists = cars.some(c => c.ID === draft.ID);
                         const newCars = exists ? cars.map(c => c.ID === draft.ID ? draft : c) : [...cars, draft];
-                        const sortedNewCars = sortCars(newCars);
                         setSelectedCar(draft);
-                        setCars(sortedNewCars);
+                        setCars(sortCars(newCars));
                         setIsGalleryEditing(false);
-                        downloadCSV(sortedNewCars);
+                        saveSingleCar(draft);
                       }}
                       showToast={showToast}
                       categories={categories}
@@ -1137,7 +1166,7 @@ function App({ isPublic = false }) {
                 <button onClick={toggleListEditMode} style={{ padding: '6px 12px', backgroundColor: isListEditing ? '#dc3545' : '#cc2200', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>
                   {isListEditing ? 'Close & Apply Edits' : 'Enable Edit Mode'}
                 </button>
-                <button onClick={downloadCSV} style={{ padding: '6px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Save CSV</button>
+                <button onClick={saveListChanges} style={{ padding: '6px 12px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Save</button>
               </div>
               {isListEditing && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--bg-raised)', padding: '4px 8px', borderRadius: '6px' }}>

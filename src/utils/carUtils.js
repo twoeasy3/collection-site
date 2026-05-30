@@ -28,6 +28,21 @@ export const getNextAvailableId = (currentCars) => {
   return nextId.toString();
 };
 
+export const NAME_FORMATS = [
+  { value: 0, label: 'Default',    pattern: 'Supername · Year · Make · Model' },
+  { value: 1, label: 'Year First', pattern: 'Year · Supername · Make · Model' },
+  { value: 2, label: 'No Make',    pattern: 'Supername · Year · Model' },
+];
+
+export const getCarDisplayName = (car) => {
+  const y = car.Year && car.Year.toUpperCase() !== 'N/A' ? car.Year : null;
+  switch (car.NameFormat || 0) {
+    case 1:  return [y, car.Supername, car.Make, car.Model].filter(Boolean).join(' ');
+    case 2:  return [car.Supername, y, car.Model].filter(Boolean).join(' ');
+    default: return [car.Supername, y, car.Make, car.Model].filter(Boolean).join(' ');
+  }
+};
+
 export const parseArr = (val) => {
   try { const p = JSON.parse(val || '[]'); return Array.isArray(p) ? p : []; } catch { return []; }
 };
@@ -45,6 +60,7 @@ export const toAppCar = (row) => ({
   Description: row.description || '',
   Broken_image: row.broken_image ? 'TRUE' : 'FALSE',
   Cover: row.cover === 1,
+  NameFormat: row.name_format || 0,
 });
 
 export const toDBRow = (car) => ({
@@ -60,4 +76,5 @@ export const toDBRow = (car) => ({
   description: car.Description || '',
   broken_image: car.Broken_image === 'TRUE' ? 1 : 0,
   cover: car.Cover ? 1 : 0,
+  name_format: car.NameFormat || 0,
 });
