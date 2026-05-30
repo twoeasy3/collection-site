@@ -140,10 +140,10 @@ img {
 
 /* ===================== MOBILE ===================== */
 @media (max-width: 699px) {
-  /* Details pane: auto-height driven by 8:3 side image */
+  /* Details pane: locked to the 4:3 image height (40vw * 3/4) + padding */
   .details-pane {
     flex: none;
-    height: auto;
+    height: calc(30vw + 8px);
     padding: 4px 6px !important;
     overflow: hidden;
   }
