@@ -46,6 +46,7 @@ function App({ isPublic = false }) {
   const [isDragging, setIsDragging] = useState(false);
   const [dragTarget, setDragTarget] = useState(null);
   const [sensitivePreview, setSensitivePreview] = useState(null);
+  const [heroPopupOpen, setHeroPopupOpen] = useState(false);
   const [backupAvailable, setBackupAvailable] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [toast, setToast] = useState({ message: '', type: 'success', visible: false });
@@ -164,6 +165,7 @@ function App({ isPublic = false }) {
 
   useEffect(() => {
     if (!selectedCar) return;
+    setHeroPopupOpen(false);
     const t = imageUpdates[selectedCar.ID] ? `?t=${imageUpdates[selectedCar.ID]}` : '';
     new Image().src = `${BASE_PATH}/half_standard_cars/${selectedCar.ID} (1).jpg${t}`;
     if (carInfoRef.current) carInfoRef.current.scrollTop = 0;
@@ -833,6 +835,17 @@ function App({ isPublic = false }) {
         </div>
       )}
 
+      {heroPopupOpen && selectedCar && (
+        <div onClick={() => setHeroPopupOpen(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.93)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <img
+            src={getHeroImage(selectedCar.ID)}
+            alt={selectedCarFullName}
+            onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }}
+            style={{ maxWidth: '95vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,0.8)' }}
+          />
+        </div>
+      )}
+
       {!isPublic && isDragging && (
         <div onDragLeave={handleOverlayDragLeave} onDragOver={(e) => e.preventDefault()} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, display: 'flex', flexDirection: 'column' }}>
           <div style={{ height: '26%', display: 'flex', borderBottom: '4px dashed rgba(255,255,255,0.5)' }}>
@@ -1072,8 +1085,17 @@ function App({ isPublic = false }) {
         <div className="details-pane" style={{ display: viewMode === 'gallery' ? undefined : 'none' }}>
           {selectedCar ? (
             <div className="car-details">
-              <div className="hero-image-container">
-                <img key={getHeroImage(selectedCar.ID)} src={getHeroImage(selectedCar.ID)} alt={selectedCarFullName} onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }} className="hero-image" fetchPriority="high" />
+              <div className="hero-image-container" onClick={isMobile ? () => setHeroPopupOpen(true) : undefined}>
+                {isMobile ? (
+                  <img
+                    src={getHeroImage(selectedCar.ID)}
+                    alt={selectedCarFullName}
+                    onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }}
+                    className="hero-image"
+                  />
+                ) : (
+                  <img key={getHeroImage(selectedCar.ID)} src={getHeroImage(selectedCar.ID)} alt={selectedCarFullName} onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }} className="hero-image" fetchPriority="high" />
+                )}
               </div>
               <div className="car-info" key={selectedCar?.ID}>
                 {!isGalleryEditing ? (

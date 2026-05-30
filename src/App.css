@@ -140,24 +140,35 @@ img {
 
 /* ===================== MOBILE ===================== */
 @media (max-width: 699px) {
-  /* Details pane: fixed height — side-by-side image + info */
+  /* Details pane: auto-height driven by 8:3 side image */
   .details-pane {
-    flex: 0 0 38vh !important;
-    height: 38vh;
-    padding: 6px 8px !important;
+    flex: none;
+    height: auto;
+    padding: 4px 6px !important;
     overflow: hidden;
   }
 
   .car-details {
     flex-direction: row;
     gap: 8px;
-    height: 100%;
     align-items: stretch;
   }
 
   .hero-image-container {
     flex: 0 0 40%;
-    height: 100%;
+    cursor: pointer;
+  }
+
+  /* Hero image thumbnail: 4:3 box (double the old 8:3 height) */
+  .hero-image {
+    width: 100%;
+    height: auto;
+    max-height: none;
+    aspect-ratio: 4 / 3;
+    object-fit: contain;
+    background-color: #fff;
+    display: block;
+    border-radius: 4px;
   }
 
   /* Info side: pinned name at top, rest scrolls */
@@ -170,8 +181,8 @@ img {
   }
 
   .car-info h2 {
-    font-size: 1rem;
-    margin: 0 0 4px 0;
+    font-size: 0.9rem;
+    margin: 0 0 2px 0;
     flex-shrink: 0;
     color: var(--accent);
   }
