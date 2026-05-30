@@ -1083,7 +1083,7 @@ function App({ isPublic = false }) {
                       <CountryFlags make={selectedCar.Make} carCountry={selectedCar.Country} style={{ fontSize: '1em' }} />
                     </h2>
                     <div ref={carInfoRef} className="car-info-scroll">
-                      {!isPublic && <p style={{ margin: '2px 0' }}><strong>ID:</strong> {selectedCar.ID}</p>}
+{!isPublic && <p style={{ margin: '2px 0' }}><strong>ID:</strong> {selectedCar.ID}</p>}
                       <p style={{ margin: '2px 0' }}><strong>Brand:</strong> {selectedCar.Brand || 'N/A'}</p>
                       {selectedCar.Series && <p style={{ margin: '2px 0' }}><strong>Series:</strong> {selectedCar.Series}</p>}
                       {Array.isArray(selectedCar.Category) && selectedCar.Category.length > 0 && (

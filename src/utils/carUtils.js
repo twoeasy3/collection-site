@@ -17,7 +17,10 @@ export const sortCars = (carArray) => {
 
     const brandA = String(a.Brand || '');
     const brandB = String(b.Brand || '');
-    return brandA.localeCompare(brandB, undefined, { sensitivity: 'base' });
+    const brandComparison = brandA.localeCompare(brandB, undefined, { sensitivity: 'base' });
+    if (brandComparison !== 0) return brandComparison;
+
+    return (b.Cover ? 1 : 0) - (a.Cover ? 1 : 0);
   });
 };
 
@@ -59,7 +62,7 @@ export const toAppCar = (row) => ({
   Category: parseArr(row.category),
   Description: row.description || '',
   Broken_image: row.broken_image ? 'TRUE' : 'FALSE',
-  Cover: row.cover === 1,
+  Cover: !!(row.Cover ?? row.cover),
   NameFormat: row.name_format || 0,
 });
 

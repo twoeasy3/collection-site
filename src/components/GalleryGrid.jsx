@@ -111,11 +111,7 @@ const GalleryGrid = React.memo(({
         }
 
         for (const stackKey of stackOrder) {
-          const rawStack = stackMap.get(stackKey);
-          const coverIdx = rawStack.findIndex(c => c.Cover);
-          const stackCars = coverIdx > 0
-            ? [rawStack[coverIdx], ...rawStack.slice(0, coverIdx), ...rawStack.slice(coverIdx + 1)]
-            : rawStack;
+          const stackCars = stackMap.get(stackKey);
 
           if (stackCars.length === 1) {
             renderedNodes.push(
