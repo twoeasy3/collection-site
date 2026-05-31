@@ -1,9 +1,10 @@
 import fictionalData from './fictional_makes.json';
 import makesData from '../makes.json';
 
+const REMOTE_BASE = 'https://pingmathehippo.com';
 export const BASE_PATH = window.location.pathname.startsWith('/display')
-  ? 'https://pingmathehippo.com'
-  : '';
+  ? REMOTE_BASE
+  : localStorage.getItem('useRemoteImages') === 'true' ? REMOTE_BASE : '';
 
 export const FICTIONAL_MAKES = new Set(Array.isArray(fictionalData) ? fictionalData : []);
 

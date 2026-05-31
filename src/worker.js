@@ -59,12 +59,28 @@ async function handleAPI(request, env, url) {
     return json({ missing, dbTotal: results.length });
   }
 
-  // Public display: non-broken cars only
+  // Public display: non-broken cars that have a side image in R2
   if (url.pathname === '/api/cars/public' && request.method === 'GET') {
-    const { results } = await env.DB.prepare(
-      'SELECT * FROM cars WHERE broken_image = 0'
-    ).all();
-    return json(results);
+    const listSideIds = async () => {
+      const ids = new Set();
+      let cursor;
+      do {
+        const listed = await env.IMAGES.list({ prefix: 'half_standard_cars/', limit: 1000, cursor });
+        for (const obj of listed.objects) {
+          const m = obj.key.match(/\/(\d+) \(1\)\.jpg$/i);
+          if (m) ids.add(m[1]);
+        }
+        cursor = listed.truncated ? listed.cursor : undefined;
+      } while (cursor);
+      return ids;
+    };
+
+    const [{ results }, sideIds] = await Promise.all([
+      env.DB.prepare('SELECT * FROM cars WHERE broken_image = 0').all(),
+      listSideIds(),
+    ]);
+
+    return json(results.filter(r => sideIds.has(String(r.id))));
   }
 
   // Admin: all cars

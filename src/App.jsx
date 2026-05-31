@@ -74,6 +74,11 @@ function App({ isPublic = false }) {
   const carInfoRef = useRef(null);
 
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const useRemoteImages = localStorage.getItem('useRemoteImages') === 'true';
+  const toggleImageSource = () => {
+    localStorage.setItem('useRemoteImages', String(!useRemoteImages));
+    window.location.reload();
+  };
   const bgAudioRef = useRef(null);
   const audioCtxRef = useRef(null);
   const selectBufferRef = useRef(null);
@@ -952,6 +957,11 @@ function App({ isPublic = false }) {
                 </div>
                 <button onClick={() => setSoundEnabled(s => !s)} title={soundEnabled ? 'Sound ON — click to mute' : 'Sound OFF — click to enable'} style={{ padding: '4px 8px', fontSize: '0.85em', fontWeight: 'bold', backgroundColor: soundEnabled ? '#6f42c1' : 'transparent', color: soundEnabled ? '#fff' : '#888', border: '1px solid #bbb', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>{soundEnabled ? '♪' : '♩'}</button>
               </div>
+              {!isPublic && (
+                <button onClick={toggleImageSource} title={useRemoteImages ? 'Using remote images — click to switch to local' : 'Using local images — click to switch to remote'} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: useRemoteImages ? '#0077cc' : 'transparent', color: useRemoteImages ? '#fff' : '#888', border: '1px solid #0077cc', borderRadius: '4px', cursor: 'pointer' }}>
+                  {useRemoteImages ? 'REMOTE IMGS' : 'LOCAL IMGS'}
+                </button>
+              )}
             </div>
           )}
           <div style={{ padding: '8px', borderBottom: '1px solid var(--sb-border)' }}>
