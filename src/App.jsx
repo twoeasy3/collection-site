@@ -74,6 +74,8 @@ function App({ isPublic = false }) {
   const carInfoRef = useRef(null);
 
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(() => localStorage.getItem('autoScroll') !== 'false');
+  const toggleAutoScroll = () => setAutoScroll(prev => { const next = !prev; localStorage.setItem('autoScroll', String(next)); return next; });
   const useRemoteImages = localStorage.getItem('useRemoteImages') === 'true';
   const toggleImageSource = () => {
     localStorage.setItem('useRemoteImages', String(!useRemoteImages));
@@ -310,7 +312,7 @@ function App({ isPublic = false }) {
   useEffect(() => { setCurrentPage(1); }, [debouncedSearchTerm, searchMode, sidebarView, viewMode]);
 
   useEffect(() => {
-    if (viewMode !== 'gallery' || !selectedCar) return;
+    if (!autoScroll || viewMode !== 'gallery' || !selectedCar) return;
     const raf = requestAnimationFrame(() => {
       const card = gridPaneRef.current?.querySelector(`[data-car-id="${selectedCar.ID}"]`);
       if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
@@ -327,7 +329,7 @@ function App({ isPublic = false }) {
       if (gridPaneRef.current) gridPaneRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     });
     return () => cancelAnimationFrame(raf);
-  }, [debouncedSearchTerm, searchMode, sidebarView, viewMode, selectedCar]);
+  }, [autoScroll, debouncedSearchTerm, searchMode, sidebarView, viewMode, selectedCar]);
 
   useEffect(() => {
     if (viewMode !== 'gallery') return;
@@ -503,7 +505,7 @@ function App({ isPublic = false }) {
     if (newCars.length === 0) return showToast('No gaps found up to ID ' + targetId, 'success');
     const updated = sortCars([...cars, ...newCars]);
     setCars(updated);
-    saveToDB(updated);
+    saveToDB(newCars);
     showToast(`Added ${newCars.length} UNNAMED_CAR entr${newCars.length === 1 ? 'y' : 'ies'} up to ID ${targetId}`, 'success');
   };
 
@@ -582,7 +584,9 @@ function App({ isPublic = false }) {
     }));
     setCars(swappedCars);
     setSelectedCar(prev => ({ ...prev, ID: targetCar.ID }));
-    saveToDB(swappedCars);
+    const swappedA = swappedCars.find(c => String(c.ID) === String(targetCar.ID));
+    const swappedB = swappedCars.find(c => String(c.ID) === String(selectedCar.ID));
+    Promise.all([saveSingleCar(swappedA), saveSingleCar(swappedB)]);
   };
 
   const handleCellChange = useCallback((id, field, value) => {
@@ -612,24 +616,11 @@ function App({ isPublic = false }) {
 
   const brands = useMemo(() => [...new Set(cars.map(c => c.Brand || 'Unknown'))].sort((a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: 'base' })), [cars]);
 
-  const categories = useMemo(() => {
-    const cats = [...new Set(cars.flatMap(c => Array.isArray(c.Category) ? c.Category : []).filter(Boolean))].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
-    if (cars.some(c => !(Array.isArray(c.Category) ? c.Category.length : (c.Category || '').trim()))) cats.push('Uncategorised');
-    return cats;
-  }, [cars]);
+  const categories = categoryOrderData.categories;
 
   const categoriesOrdered = useMemo(() => {
-    const order = categoryOrderData.categories;
-    const orderIndex = new Map(order.map((c, i) => [c, i]));
-    const actual = [...new Set(cars.flatMap(c => Array.isArray(c.Category) ? c.Category : []).filter(Boolean))];
-    actual.sort((a, b) => {
-      const ia = orderIndex.has(a) ? orderIndex.get(a) : Infinity;
-      const ib = orderIndex.has(b) ? orderIndex.get(b) : Infinity;
-      if (ia !== ib) return ia - ib;
-      return a.localeCompare(b, undefined, { sensitivity: 'base' });
-    });
-    if (cars.some(c => !(Array.isArray(c.Category) ? c.Category.length : (c.Category || '').trim()))) actual.push('Uncategorised');
-    return actual;
+    const hasUncategorised = cars.some(c => !(Array.isArray(c.Category) ? c.Category.length : (c.Category || '').trim()));
+    return hasUncategorised ? [...categoryOrderData.categories, 'Uncategorised'] : categoryOrderData.categories;
   }, [cars]);
 
   const makes = useMemo(() => {
@@ -764,9 +755,9 @@ function App({ isPublic = false }) {
         if (item.type === 'car') carsBeforeGroup++;
       }
       const targetPage = Math.floor(carsBeforeGroup / itemsPerPage) + 1;
-      if (currentPage !== targetPage) { setCurrentPage(targetPage); setTimeout(() => document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); return; }
+      if (currentPage !== targetPage) { setCurrentPage(targetPage); if (autoScroll) setTimeout(() => document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); return; }
     }
-    document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (autoScroll) document.getElementById(elId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [viewMode, flatListItems, currentPage, itemsPerPage, groupedAndFilteredCars, sidebarView]);
 
   const handleSelectAll = () => {
@@ -957,6 +948,9 @@ function App({ isPublic = false }) {
                 </div>
                 <button onClick={() => setSoundEnabled(s => !s)} title={soundEnabled ? 'Sound ON — click to mute' : 'Sound OFF — click to enable'} style={{ padding: '4px 8px', fontSize: '0.85em', fontWeight: 'bold', backgroundColor: soundEnabled ? '#6f42c1' : 'transparent', color: soundEnabled ? '#fff' : '#888', border: '1px solid #bbb', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>{soundEnabled ? '♪' : '♩'}</button>
               </div>
+              <button onClick={toggleAutoScroll} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: autoScroll ? 'transparent' : '#6c757d', color: autoScroll ? '#888' : '#fff', border: '1px solid #6c757d', borderRadius: '4px', cursor: 'pointer' }}>
+                {autoScroll ? 'AUTO SCROLL' : 'SCROLL OFF'}
+              </button>
               {!isPublic && (
                 <button onClick={toggleImageSource} title={useRemoteImages ? 'Using remote images — click to switch to local' : 'Using local images — click to switch to remote'} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: useRemoteImages ? '#0077cc' : 'transparent', color: useRemoteImages ? '#fff' : '#888', border: '1px solid #0077cc', borderRadius: '4px', cursor: 'pointer' }}>
                   {useRemoteImages ? 'REMOTE IMGS' : 'LOCAL IMGS'}

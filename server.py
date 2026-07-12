@@ -6,6 +6,7 @@ import re
 import csv
 import json
 import base64
+import subprocess
 import cv2
 import numpy as np
 import math
@@ -15,6 +16,12 @@ CORS(app)
 
 CSV_FILE_PATH = './data/collection.csv'
 BACKUP_FILE_PATH = './data/collection.csv.bak'
+
+# rclone remote + bucket, e.g. 'cloudflare:my-images-bucket'
+R2_DEST = 'r2:collection-images'
+
+def r2_upload(local_path, r2_key):
+    subprocess.run(['rclone', 'copyto', local_path, f'{R2_DEST}/{r2_key}'], check=True)
 
 # Ensure output directories exist
 os.makedirs('./standard_cars', exist_ok=True)
@@ -384,8 +391,10 @@ def process_brightness_only(img):
     return adjust_exposure_and_wb(img, bg_mask)
 
 def save_half_side(img, filename):
+    local_path = os.path.join('./half_standard_cars', filename)
     half = cv2.resize(img, (400, 150), interpolation=cv2.INTER_AREA)
-    cv2.imwrite(os.path.join('./half_standard_cars', filename), half, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    cv2.imwrite(local_path, half, [cv2.IMWRITE_JPEG_QUALITY, 85])
+    r2_upload(local_path, f'half_standard_cars/{filename}')
 
 # ==========================================
 # API ENDPOINTS
@@ -421,7 +430,9 @@ def upload_images():
         elif "(2).jpg" in filename_lower:
             final_img = process_hero_profile(img)
             if final_img is not None:
-                cv2.imwrite(os.path.join('./standard_hero_shots', file.filename), final_img)
+                local_path = os.path.join('./standard_hero_shots', file.filename)
+                cv2.imwrite(local_path, final_img)
+                r2_upload(local_path, f'standard_hero_shots/{file.filename}')
                 processed_count += 1
 
     if processed_count > 0:
@@ -456,7 +467,9 @@ def upload_images_monster():
         elif "(2).jpg" in filename_lower:
             final_img = process_hero_profile(img)
             if final_img is not None:
-                cv2.imwrite(os.path.join('./standard_hero_shots', file.filename), final_img)
+                local_path = os.path.join('./standard_hero_shots', file.filename)
+                cv2.imwrite(local_path, final_img)
+                r2_upload(local_path, f'standard_hero_shots/{file.filename}')
                 processed_count += 1
 
     if processed_count > 0:
@@ -584,7 +597,9 @@ def upload_images_brightness():
 
         elif "(2).jpg" in filename_lower:
             final_img = process_brightness_only(img)
-            cv2.imwrite(os.path.join('./standard_hero_shots', file.filename), final_img)
+            local_path = os.path.join('./standard_hero_shots', file.filename)
+            cv2.imwrite(local_path, final_img)
+            r2_upload(local_path, f'standard_hero_shots/{file.filename}')
             processed_count += 1
 
     if processed_count > 0:
