@@ -251,7 +251,14 @@
   font-size: 11px;
   color: var(--tx-3);
   flex-shrink: 0;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+}
+
+/* The date + visit-count sit over the opaque right side of a banner image,
+   where muted grey is unreadable — force white with a drop shadow there. */
+.cr-card.has-banner .cr-card-date,
+.cr-card.has-banner .cr-card-visits {
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
 .cr-card-badges {
@@ -265,7 +272,6 @@
 .cr-card-visits {
   position: relative;
   z-index: 1;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
   font-size: 11px;
   color: var(--tx-3);
   margin-left: auto;
@@ -287,12 +293,141 @@
 
 .cr-detail-panel {
   flex: 1;
+  min-width: 0;
   overflow-y: auto;
   padding: 28px 32px;
 }
 
 .cr-detail {
   max-width: 560px;
+}
+
+/* ---------- Calendar column (desktop, right of the details) ---------- */
+
+.cr-calendar-col {
+  flex: 0 0 340px;
+  overflow-y: auto;
+  border-left: 1px solid var(--bd);
+  background: var(--bg-surface);
+  padding: 16px;
+}
+
+.cr-cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cr-cal-nav {
+  background: var(--bg-card);
+  border: 1px solid var(--bd-2);
+  color: var(--tx);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 17px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.cr-cal-nav:hover { background: var(--bg-card-hover); }
+
+.cr-cal-title {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.cr-cal-title > span:first-child { font-size: 14.5px; font-weight: 700; }
+.cr-cal-sub { font-size: 11px; color: var(--tx-3); }
+
+.cr-cal-today {
+  display: block;
+  margin: 8px auto 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--bd-2);
+  color: var(--tx-2);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 12px;
+  cursor: pointer;
+}
+.cr-cal-today:hover { background: var(--bg-card-hover); color: var(--tx); }
+
+.cr-cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  margin-bottom: 3px;
+}
+.cr-cal-weekdays > div {
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tx-3);
+  text-transform: uppercase;
+}
+
+.cr-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.cr-cal-cell {
+  min-height: 54px;
+  border: 1px solid var(--bd);
+  border-radius: 6px;
+  padding: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow: hidden;
+}
+.cr-cal-empty { border: none; background: transparent; }
+.cr-cal-today-cell { border-color: #c2542d; }
+
+.cr-cal-daynum {
+  font-size: 10px;
+  color: var(--tx-3);
+  text-align: right;
+  line-height: 1;
+  padding: 1px 2px 0;
+}
+.cr-cal-today-cell .cr-cal-daynum { color: #c2542d; font-weight: 700; }
+
+.cr-cal-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 0;
+}
+
+.cr-cal-chip {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  border-radius: 3px;
+  color: #fff;
+  font-size: 9.5px;
+  font-weight: 600;
+  line-height: 1.3;
+  padding: 1px 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 1px rgba(0,0,0,0.4);
+}
+.cr-cal-chip.active { box-shadow: 0 0 0 2px var(--tx); }
+
+.cr-cal-more {
+  font-size: 9px;
+  color: var(--tx-3);
+  padding-left: 4px;
 }
 
 .cr-detail-empty {
@@ -650,6 +785,7 @@
 @media (max-width: 860px) {
   .cr-main { flex-direction: column; overflow-y: auto; -webkit-overflow-scrolling: touch; }
   .cr-left { width: 100%; border-right: none; border-bottom: 1px solid var(--bd); }
+  .cr-calendar-col { display: none; } /* desktop-only feature */
   .cr-map-wrap { aspect-ratio: auto; height: 42vh; min-height: 200px; max-height: 320px; }
   .cr-list-panel { overflow-y: visible; }
   .cr-detail-panel { padding: 18px; }

@@ -7,6 +7,7 @@ import { GenreBadge } from './GenreSlider';
 import { PriceBadge } from './PriceScale';
 import StopForm from './StopForm';
 import DetailPanel from './DetailPanel';
+import CalendarPanel from './CalendarPanel';
 import { stopIcon, colorForStop, placingIcon } from './markerIcon';
 import { asVisitDates } from './visitDates';
 
@@ -264,7 +265,7 @@ function CoffeeRuns() {
 
             <div className="cr-card-grid">
               {sortedStops.map(stop => (
-                <button key={stop.id} className={`cr-card${selectedId === stop.id ? ' active' : ''}`} onClick={() => focusStop(stop)}>
+                <button key={stop.id} className={`cr-card${selectedId === stop.id ? ' active' : ''}${stop.image_url ? ' has-banner' : ''}`} onClick={() => focusStop(stop)}>
                   {stop.image_url && (
                     <img
                       className="cr-card-banner"
@@ -299,6 +300,10 @@ function CoffeeRuns() {
         <div className={`cr-detail-panel${selectedStop ? ' cr-open' : ''}`}>
           <button className="cr-detail-panel-close" onClick={() => setSelectedId(null)} aria-label="Close details">×</button>
           <DetailPanel stop={selectedStop} isAdmin={isAdmin} onEdit={setEditing} onLogVisit={logVisitToday} />
+        </div>
+
+        <div className="cr-calendar-col">
+          <CalendarPanel stops={stops} selectedId={selectedId} onSelectStop={focusStop} />
         </div>
       </div>
 
