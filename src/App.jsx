@@ -56,6 +56,11 @@ function App({ isPublic = false }) {
   const mobileFileInputRef = useRef(null);
   const isMobileRef = useRef(isMobile);
 
+  // Admin write access = the API key stored in localStorage (sent as a Bearer
+  // token on every save). No key => saves 401. This lets the key be entered on
+  // a device without DevTools (e.g. a phone).
+  const [hasAdminKey, setHasAdminKey] = useState(() => !!localStorage.getItem('adminApiKey'));
+
   const [missingData, setMissingData] = useState([]);
   const [missingLoading, setMissingLoading] = useState(false);
   const [missingSubTab, setMissingSubTab] = useState('missing');
@@ -160,6 +165,20 @@ function App({ isPublic = false }) {
     setToast({ message, type, visible: true });
     setTimeout(() => { setToast(prev => ({ ...prev, visible: false })); }, 3000);
   }, []);
+
+  const handleAdminLogin = useCallback(() => {
+    const key = window.prompt('Enter admin key');
+    if (!key || !key.trim()) return;
+    localStorage.setItem('adminApiKey', key.trim());
+    setHasAdminKey(true);
+    showToast('Logged in', 'success');
+  }, [showToast]);
+
+  const handleAdminLogout = useCallback(() => {
+    localStorage.removeItem('adminApiKey');
+    setHasAdminKey(false);
+    showToast('Logged out', 'success');
+  }, [showToast]);
 
   const toggleStack = useCallback((key) => {
     setExpandedStacks(prev => {
@@ -813,6 +832,26 @@ function App({ isPublic = false }) {
 
   const selectedCarFullName = selectedCar ? getCarDisplayName(selectedCar) : '';
 
+  // The gallery editor form, reused inline (desktop) and inside the full-screen
+  // mobile overlay so the two never drift apart.
+  const galleryEditorEl = selectedCar ? (
+    <GalleryEditorForm
+      initialCar={selectedCar}
+      onApply={handleApplyGalleryEdits}
+      onCancel={cancelGalleryEdits}
+      onSave={(draft) => {
+        const exists = cars.some(c => c.ID === draft.ID);
+        const newCars = exists ? cars.map(c => c.ID === draft.ID ? draft : c) : [...cars, draft];
+        setSelectedCar(draft);
+        setCars(sortCars(newCars));
+        setIsGalleryEditing(false);
+        saveSingleCar(draft);
+      }}
+      showToast={showToast}
+      categories={categories}
+    />
+  ) : null;
+
   return (
     <div className="main-layout" onDragEnter={handleDragEnter} style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', position: 'relative', backgroundColor: 'var(--bg)' }}>
 
@@ -824,9 +863,13 @@ function App({ isPublic = false }) {
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '48px', backgroundColor: '#fff', borderBottom: '1px solid #ddd', display: 'flex', alignItems: 'center', padding: '0 8px', gap: '6px', zIndex: 50, flexShrink: 0 }}>
           <button onClick={() => setSidebarOpen(true)} style={{ padding: '8px 10px', fontSize: '1.1em', backgroundColor: 'transparent', border: 'none', cursor: 'pointer', color: '#333', lineHeight: 1, flexShrink: 0 }}>☰</button>
           <span style={{ fontWeight: 'bold', color: '#333', flex: 1, fontSize: '0.9em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Car Collection</span>
-          {!isPublic && backupAvailable && <button onClick={undoSave} style={{ padding: '5px 8px', fontSize: '0.72em', fontWeight: 'bold', backgroundColor: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>Undo</button>}
-          {!isPublic && <button onClick={() => mobileFileInputRef.current?.click()} style={{ padding: '5px 10px', fontSize: '0.75em', fontWeight: 'bold', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>Upload</button>}
-          {!isPublic && <button onClick={handleCreateNew} style={{ padding: '5px 10px', fontSize: '0.75em', fontWeight: 'bold', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>+ New</button>}
+          {!isPublic && (hasAdminKey
+            ? <button onClick={handleAdminLogout} style={{ padding: '5px 10px', fontSize: '0.75em', fontWeight: 'bold', backgroundColor: 'transparent', color: '#6c757d', border: '1px solid #6c757d', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>Log out</button>
+            : <button onClick={handleAdminLogin} style={{ padding: '5px 10px', fontSize: '0.75em', fontWeight: 'bold', backgroundColor: '#cc2200', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>Log in</button>
+          )}
+          {!isPublic && hasAdminKey && backupAvailable && <button onClick={undoSave} style={{ padding: '5px 8px', fontSize: '0.72em', fontWeight: 'bold', backgroundColor: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>Undo</button>}
+          {!isPublic && hasAdminKey && <button onClick={() => mobileFileInputRef.current?.click()} style={{ padding: '5px 10px', fontSize: '0.75em', fontWeight: 'bold', backgroundColor: '#6c757d', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>Upload</button>}
+          {!isPublic && hasAdminKey && <button onClick={handleCreateNew} style={{ padding: '5px 10px', fontSize: '0.75em', fontWeight: 'bold', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>+ New</button>}
           <input ref={mobileFileInputRef} type="file" multiple accept=".jpg" style={{ display: 'none' }} onChange={handleMobileFileSelect} />
         </div>
       )}
@@ -839,6 +882,26 @@ function App({ isPublic = false }) {
             onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }}
             style={{ maxWidth: '95vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,0.8)' }}
           />
+        </div>
+      )}
+
+      {/* Full-screen mobile edit menu — gives the editor real room instead of
+          the cramped ~120px detail strip. Desktop keeps the inline editor. */}
+      {isMobile && !isPublic && isGalleryEditing && selectedCar && (
+        <div className="mobile-edit-overlay">
+          <div className="mobile-edit-overlay-header">
+            <span>Edit · #{selectedCar.ID}</span>
+            <button onClick={cancelGalleryEdits} aria-label="Close editor">✕</button>
+          </div>
+          <div className="mobile-edit-overlay-body">
+            {galleryEditorEl}
+            <div className="mobile-edit-overlay-actions">
+              <button onClick={handleSwapIds} style={{ backgroundColor: '#17a2b8' }}>Swap ID</button>
+              <button onClick={handleCreateSameCasting} style={{ backgroundColor: '#e67e22' }}>Add same casting</button>
+              <button onClick={saveToDB} style={{ backgroundColor: '#28a745' }}>Save All</button>
+              <button onClick={handleDeleteGallery} style={{ backgroundColor: '#dc3545' }}>Delete Car</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -922,6 +985,7 @@ function App({ isPublic = false }) {
         <div style={{ position: 'sticky', top: 0, zIndex: 10, backgroundColor: 'var(--sb-bg)' }}>
           {!isMobile && !isPublic && (
             <div style={{ padding: '8px', borderBottom: '1px solid var(--sb-border)' }}>
+              <button onClick={hasAdminKey ? handleAdminLogout : handleAdminLogin} style={{ width: '100%', padding: '6px', marginBottom: '4px', fontSize: '0.8em', fontWeight: 'bold', backgroundColor: hasAdminKey ? 'transparent' : '#cc2200', color: hasAdminKey ? '#6c757d' : '#fff', border: hasAdminKey ? '1px solid #6c757d' : 'none', borderRadius: '4px', cursor: 'pointer' }}>{hasAdminKey ? 'Log out' : 'Log in'}</button>
               <button onClick={handleCreateNew} style={{ width: '100%', padding: '6px', fontSize: '0.8em', fontWeight: 'bold', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>+ New Car</button>
               <button onClick={handleFillToId} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: '#17a2b8', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Fill to ID</button>
               {backupAvailable && <button onClick={undoSave} style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: '#ffc107', color: '#000', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Undo Save</button>}
@@ -1126,7 +1190,12 @@ function App({ isPublic = false }) {
                       {selectedCar.Description && <p style={{ margin: '2px 0' }}><strong>Description:</strong> {selectedCar.Description}</p>}
                       {selectedCar.Cover && <p style={{ margin: '2px 0', color: '#f0a500', fontWeight: 'bold' }}>★ Stack Cover</p>}
                       {selectedCar.Broken_image === 'TRUE' && <p style={{ margin: '2px 0', color: '#ff4d4d', fontWeight: 'bold' }}>⚠️ Flagged as Broken Image</p>}
-                      {!isPublic && (
+                      {!isPublic && !hasAdminKey && (
+                        <div style={{ marginTop: '8px' }}>
+                          <button onClick={handleAdminLogin} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#cc2200', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Log in to edit</button>
+                        </div>
+                      )}
+                      {!isPublic && hasAdminKey && (
                         <div style={{ marginTop: '8px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                           <button onClick={() => setIsGalleryEditing(true)} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#cc2200', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Edit Details</button>
                           <button onClick={handleSwapIds} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#17a2b8', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Swap ID</button>
@@ -1138,23 +1207,13 @@ function App({ isPublic = false }) {
                     </div>
                   </>
                 ) : (
-                  <div ref={carInfoRef} className="car-info-scroll">
-                    <GalleryEditorForm
-                      initialCar={selectedCar}
-                      onApply={handleApplyGalleryEdits}
-                      onCancel={cancelGalleryEdits}
-                      onSave={(draft) => {
-                        const exists = cars.some(c => c.ID === draft.ID);
-                        const newCars = exists ? cars.map(c => c.ID === draft.ID ? draft : c) : [...cars, draft];
-                        setSelectedCar(draft);
-                        setCars(sortCars(newCars));
-                        setIsGalleryEditing(false);
-                        saveSingleCar(draft);
-                      }}
-                      showToast={showToast}
-                      categories={categories}
-                    />
-                  </div>
+                  // On mobile the editor renders in a full-screen overlay (below);
+                  // inline here would be crushed into the ~120px detail strip.
+                  !isMobile ? (
+                    <div ref={carInfoRef} className="car-info-scroll">
+                      {galleryEditorEl}
+                    </div>
+                  ) : null
                 )}
               </div>
             </div>

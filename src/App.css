@@ -139,6 +139,64 @@ img {
 }
 
 /* ===================== MOBILE ===================== */
+/* ---------- Mobile full-screen edit menu ---------- */
+.mobile-edit-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.mobile-edit-overlay-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--bd);
+  background: var(--bg-surface);
+  font-weight: bold;
+  color: var(--tx);
+}
+.mobile-edit-overlay-header button {
+  background: transparent;
+  border: 1px solid var(--bd-2);
+  color: var(--tx-2);
+  border-radius: 6px;
+  width: 34px;
+  height: 34px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.mobile-edit-overlay-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px;
+}
+
+.mobile-edit-overlay-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--bd);
+}
+.mobile-edit-overlay-actions button {
+  padding: 12px 10px;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  font-size: 0.85em;
+  cursor: pointer;
+}
+
 @media (max-width: 699px) {
   /* Details pane: locked to the 4:3 image height (40vw * 3/4) + padding */
   .details-pane {

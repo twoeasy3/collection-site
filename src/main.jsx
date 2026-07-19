@@ -5,9 +5,14 @@ import Universe from './racingLeague/Universe.jsx'
 import CoffeeRuns from './coffeeRuns/CoffeeRuns.jsx'
 import './index.css'
 
-const isRacingLeague = window.location.pathname.startsWith('/racing-league')
-const isCoffeeRuns = window.location.pathname.startsWith('/coffee')
-const isPublic = window.location.pathname.startsWith('/display')
+const path = window.location.pathname
+const isRacingLeague = path.startsWith('/racing-league')
+const isCoffeeRuns = path.startsWith('/coffee')
+// Public (read-only) view lives at /display; the editable admin app is served
+// at /admin. On the deployed site the root `/` redirects to /display (see
+// public/_redirects), so /admin is the stable way to reach the admin app —
+// including from a phone. In dev, `/` also renders the admin app (no redirect).
+const isPublic = path.startsWith('/display')
 
 function Root() {
   if (isRacingLeague) return <Universe />
