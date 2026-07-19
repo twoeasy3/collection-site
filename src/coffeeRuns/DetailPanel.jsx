@@ -1,4 +1,4 @@
-import RatingStars from './RatingStars';
+import { TierDisplay } from './RatingTier';
 import { GenreDisplay } from './GenreSlider';
 import { PriceDisplay } from './PriceScale';
 import { asVisitDates } from './visitDates';
@@ -37,7 +37,7 @@ function DetailPanel({ stop, isAdmin, onEdit, onLogVisit }) {
         {isAdmin && <button className="cr-btn" onClick={() => onEdit(stop)}>Edit</button>}
       </div>
 
-      <RatingStars value={stop.rating} size={26} />
+      <TierDisplay value={stop.rating} />
 
       <div className="cr-detail-section">
         <div className="cr-detail-label">Genre</div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import RatingStars from './RatingStars';
+import { TierInput } from './RatingTier';
 import { GenreInput } from './GenreSlider';
 import { PriceInput } from './PriceScale';
 import { asVisitDates } from './visitDates';
@@ -133,7 +133,7 @@ function StopForm({ initial, onCancel, onSave, onDelete }) {
 
         <label className="cr-field">
           <span>Rating</span>
-          <RatingStars value={rating} onChange={setRating} size={22} />
+          <TierInput value={rating} onChange={setRating} />
         </label>
 
         <label className="cr-field">

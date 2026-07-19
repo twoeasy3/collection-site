@@ -1,20 +1,12 @@
 import L from 'leaflet';
 import { genreColor } from './GenreSlider';
 import { priceColor } from './PriceScale';
-
-// Sequential coffee-brown ramp, light -> dark as rating goes up. Wide swing
-// (cream to near-black) so adjacent steps stay visually distinct at pin size.
-const RATING_RAMP = ['#fde4c0', '#f0b366', '#d97f2e', '#a34e14', '#5c2a08'];
-
-function ratingColor(rating) {
-  const idx = Math.max(0, Math.min(4, Math.round(rating || 0) - 1));
-  return RATING_RAMP[Number.isFinite(idx) && idx >= 0 ? idx : 0];
-}
+import { tierColor } from './RatingTier';
 
 export function colorForStop(stop, colorBy) {
   if (colorBy === 'genre') return genreColor(stop.genre ?? 5);
   if (colorBy === 'price') return priceColor(stop.price ?? 5);
-  return ratingColor(stop.rating ?? 0);
+  return tierColor(stop.rating ?? 0);
 }
 
 function escapeHtml(str) {
@@ -32,8 +24,12 @@ function escapeHtml(str) {
 const PIN_W = 30, PIN_H = 39, PAD = 3;
 const LABEL_H = 20;
 
-export function stopIcon(color, label, { active = false } = {}) {
-  const scale = active ? 1.25 : 1;
+// active: this is the selected pin — larger, label shown.
+// dimmed: some OTHER pin is selected — smaller, label hidden, so the
+// selected one reads as the clear focal point.
+export function stopIcon(color, label, { active = false, dimmed = false } = {}) {
+  const scale = active ? 1.3 : dimmed ? 0.6 : 1;
+  const showLabel = !dimmed;
   const svgW = (PIN_W + PAD * 2) * scale;
   const svgH = (PIN_H + PAD * 2) * scale;
   const pinSvg = `
@@ -42,19 +38,22 @@ export function stopIcon(color, label, { active = false } = {}) {
       <circle cx="15" cy="15" r="6.5" fill="#fff8ee"/>
     </svg>`;
 
-  const html = `
-    <div style="display:flex; flex-direction:column; align-items:center; overflow:visible;">
+  const labelHtml = showLabel ? `
       <span style="
         max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
         font-size:11px; font-weight:600; line-height:1.4; padding:2px 7px; border-radius:9px;
         background:var(--bg-surface,#1a1a1a); color:var(--tx,#fff); border:1px solid var(--bd-2,#444);
         box-shadow:0 1px 4px rgba(0,0,0,0.35); margin-bottom:2px; pointer-events:none;
-      ">${escapeHtml(label)}</span>
+      ">${escapeHtml(label)}</span>` : '';
+
+  const html = `
+    <div style="display:flex; flex-direction:column; align-items:center; overflow:visible;">
+      ${labelHtml}
       ${pinSvg}
     </div>`;
 
-  const totalW = 140;
-  const totalH = LABEL_H + svgH;
+  const totalW = showLabel ? 140 : svgW;
+  const totalH = (showLabel ? LABEL_H : 0) + svgH;
   return L.divIcon({
     html,
     className: 'cr-pin',

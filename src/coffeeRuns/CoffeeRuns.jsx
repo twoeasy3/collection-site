@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import './CoffeeRuns.css';
-import RatingStars from './RatingStars';
+import { TierBadge } from './RatingTier';
 import { GenreBadge } from './GenreSlider';
 import { PriceBadge } from './PriceScale';
 import StopForm from './StopForm';
@@ -164,7 +164,7 @@ function CoffeeRuns() {
 
   const focusStop = (stop) => {
     setSelectedId(stop.id);
-    mapRef.current?.flyTo([stop.lat, stop.lng], 15, { duration: 0.6 });
+    mapRef.current?.flyTo([stop.lat, stop.lng], 17, { duration: 0.6 });
   };
 
   const logVisitToday = (stop) => {
@@ -214,7 +214,11 @@ function CoffeeRuns() {
                 <Marker
                   key={stop.id}
                   position={[stop.lat, stop.lng]}
-                  icon={stopIcon(colorForStop(stop, colorBy), stop.name, { active: selectedId === stop.id })}
+                  icon={stopIcon(colorForStop(stop, colorBy), stop.name, {
+                    active: selectedId === stop.id,
+                    dimmed: selectedId != null && selectedId !== stop.id,
+                  })}
+                  zIndexOffset={selectedId === stop.id ? 10000 : 0}
                   eventHandlers={{ click: () => focusStop(stop) }}
                 />
               ))}
@@ -277,8 +281,8 @@ function CoffeeRuns() {
                     </div>
                     {latestVisit(stop) && <div className="cr-card-date">{latestVisit(stop)}</div>}
                   </div>
-                  <RatingStars value={stop.rating} size={15} />
                   <div className="cr-card-badges">
+                    <TierBadge value={stop.rating} />
                     <GenreBadge value={stop.genre ?? 5} width={60} />
                     <PriceBadge value={stop.price ?? 5} size={13} />
                     {asVisitDates(stop.visit_dates).length > 0 && (
