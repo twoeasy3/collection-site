@@ -17,6 +17,21 @@ function isAuthorized(request, env) {
   return sent === `Bearer ${env.API_KEY.trim()}`;
 }
 
+// Tolerant parse for coffee_stops.visit_dates: handles a clean JSON array,
+// a stray double-encoded value ("\"[]\"" -> the string "[]"), or garbage —
+// always returns an array of date strings, never a bare string a caller
+// could accidentally spread into individual characters.
+function parseVisitDates(raw) {
+  if (!raw) return [];
+  try {
+    let v = JSON.parse(raw);
+    if (typeof v === 'string') v = JSON.parse(v);
+    return Array.isArray(v) ? v.filter(d => typeof d === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 async function handleAPI(request, env, url) {
   // All makes with their countries (public)
   if (url.pathname === '/api/makes' && request.method === 'GET') {
@@ -129,6 +144,42 @@ async function handleAPI(request, env, url) {
   if (carMatch && request.method === 'DELETE') {
     if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
     await env.DB.prepare('DELETE FROM cars WHERE id = ?').bind(parseInt(carMatch[1])).run();
+    return json({ ok: true });
+  }
+
+  // Coffee stops: list (public)
+  if (url.pathname === '/api/coffee-stops' && request.method === 'GET') {
+    const { results } = await env.DB.prepare('SELECT * FROM coffee_stops ORDER BY id DESC').all();
+    const withVisits = results.map(r => ({ ...r, visit_dates: parseVisitDates(r.visit_dates) }));
+    return json(withVisits);
+  }
+
+  // Coffee stops: create
+  if (url.pathname === '/api/coffee-stops' && request.method === 'POST') {
+    if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
+    const s = await request.json();
+    const { meta } = await env.DB.prepare(
+      'INSERT INTO coffee_stops (name,lat,lng,rating,genre,price,notes,location,image_url,visit_dates) VALUES (?,?,?,?,?,?,?,?,?,?)'
+    ).bind(s.name, s.lat, s.lng, s.rating ?? 0, s.genre ?? 5, s.price ?? 5, s.notes ?? '', s.location ?? '', s.image_url ?? '', JSON.stringify(Array.isArray(s.visit_dates) ? s.visit_dates : [])).run();
+    return json({ ok: true, id: meta.last_row_id });
+  }
+
+  const coffeeMatch = url.pathname.match(/^\/api\/coffee-stops\/(\d+)$/);
+
+  // Coffee stops: update
+  if (coffeeMatch && request.method === 'PUT') {
+    if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
+    const s = await request.json();
+    await env.DB.prepare(
+      'UPDATE coffee_stops SET name=?, lat=?, lng=?, rating=?, genre=?, price=?, notes=?, location=?, image_url=?, visit_dates=? WHERE id=?'
+    ).bind(s.name, s.lat, s.lng, s.rating ?? 0, s.genre ?? 5, s.price ?? 5, s.notes ?? '', s.location ?? '', s.image_url ?? '', JSON.stringify(Array.isArray(s.visit_dates) ? s.visit_dates : []), parseInt(coffeeMatch[1])).run();
+    return json({ ok: true });
+  }
+
+  // Coffee stops: delete
+  if (coffeeMatch && request.method === 'DELETE') {
+    if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
+    await env.DB.prepare('DELETE FROM coffee_stops WHERE id = ?').bind(parseInt(coffeeMatch[1])).run();
     return json({ ok: true });
   }
 
