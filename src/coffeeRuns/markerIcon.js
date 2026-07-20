@@ -27,9 +27,9 @@ const LABEL_H = 20;
 // active: this is the selected pin — larger, label shown.
 // dimmed: some OTHER pin is selected — smaller, label hidden, so the
 // selected one reads as the clear focal point.
-export function stopIcon(color, label, { active = false, dimmed = false } = {}) {
+export function stopIcon(color, label, { active = false, dimmed = false, showLabels = true } = {}) {
   const scale = active ? 1.3 : dimmed ? 0.6 : 1;
-  const showLabel = !dimmed;
+  const showLabel = !dimmed && showLabels;
   const svgW = (PIN_W + PAD * 2) * scale;
   const svgH = (PIN_H + PAD * 2) * scale;
   const pinSvg = `

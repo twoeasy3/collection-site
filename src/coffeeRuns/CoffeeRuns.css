@@ -97,6 +97,76 @@
   background: var(--bg);
 }
 
+.cr-map-wrap.cr-map-wrap-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  aspect-ratio: auto;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 0;
+  max-height: none;
+  border-bottom: none;
+}
+
+/* While the map is fullscreen, nothing else should render on top of or
+   behind it — hide the list, detail sheet, and calendar column outright
+   rather than relying on stacking order (the mobile detail sheet is a
+   fixed, high-z-index overlay that would otherwise slide up over the map). */
+.cr-map-is-fullscreen .cr-list-panel,
+.cr-map-is-fullscreen .cr-detail-panel,
+.cr-map-is-fullscreen .cr-calendar-col {
+  display: none;
+}
+
+.cr-fullscreen-toggle {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 1000;
+  background: var(--bg-surface);
+  border: 1px solid var(--bd-2);
+  color: var(--tx-2);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.cr-fullscreen-toggle:hover { background: var(--bg-card-hover); color: var(--tx); }
+
+.cr-map-wrap-fullscreen .cr-fullscreen-toggle {
+  width: 44px;
+  height: 44px;
+  font-size: 20px;
+}
+
+.cr-reset-north {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 1000;
+  background: var(--bg-surface);
+  border: 1px solid var(--bd-2);
+  color: var(--tx-2);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.cr-reset-north:hover { background: var(--bg-card-hover); color: var(--tx); }
+
 .cr-placing-hint {
   position: absolute;
   top: 10px;
@@ -141,6 +211,13 @@
 }
 .cr-color-toggle-btn:hover { background: var(--bg-card-hover); }
 .cr-color-toggle-btn.active { background: var(--bg-card-sel); color: var(--tx); }
+
+.cr-color-toggle-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--bd-2);
+  margin: 2px 1px;
+}
 
 .cr-pin { background: transparent; border: none; overflow: visible; }
 
@@ -798,8 +875,10 @@
   .cr-sort-btn { padding: 7px 12px; font-size: 12.5px; }
   .cr-card { padding: 14px; }
 
-  /* Detail panel becomes a full-screen overlay instead of a side column,
-     since there's no room to show list + detail at once on a phone */
+  /* Detail panel becomes a bottom-sheet overlay instead of a side column,
+     since there's no room to show list + detail at once on a phone. Capped
+     at half the screen (rather than growing to fit content) so the map
+     stays visible above it; content scrolls internally past that. */
   .cr-detail-panel {
     position: fixed;
     inset: 0;
@@ -808,8 +887,8 @@
     background: var(--bg);
     transform: translateY(100%);
     transition: transform 0.25s ease;
-    max-height: 88vh;
-    max-height: 88dvh;
+    height: 50vh;
+    height: 50dvh;
     border-top: 1px solid var(--bd-2);
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -4px 24px rgba(0,0,0,0.3);

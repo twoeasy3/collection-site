@@ -899,8 +899,8 @@ function App({ isPublic = false }) {
               <button onClick={handleSwapIds} style={{ backgroundColor: '#17a2b8' }}>Swap ID</button>
               <button onClick={handleCreateSameCasting} style={{ backgroundColor: '#e67e22' }}>Add same casting</button>
               <button onClick={saveToDB} style={{ backgroundColor: '#28a745' }}>Save All</button>
-              <button onClick={handleDeleteGallery} style={{ backgroundColor: '#dc3545' }}>Delete Car</button>
             </div>
+            <button className="mobile-edit-overlay-delete" onClick={handleDeleteGallery}>Delete Car</button>
           </div>
         </div>
       )}

@@ -12,6 +12,7 @@
   "dependencies": {
     "flag-icons": "^7.5.0",
     "leaflet": "^1.9.4",
+    "leaflet-rotate": "^0.2.8",
     "papaparse": "^5.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import './leafletRotateGlobal';
+import 'leaflet-rotate';
 import './CoffeeRuns.css';
 import { TierBadge } from './RatingTier';
 import { GenreBadge } from './GenreSlider';
@@ -46,7 +48,7 @@ const SORTERS = {
   price: (a, b) => (b.price ?? 5) - (a.price ?? 5), // priciest first
 };
 
-function MapRefSetter({ mapRef }) {
+function MapRefSetter({ mapRef, onBearingChange }) {
   const map = useMap();
   useEffect(() => {
     mapRef.current = map;
@@ -63,6 +65,11 @@ function MapRefSetter({ mapRef }) {
     ro.observe(container);
     return () => ro.disconnect();
   }, [map]);
+  useEffect(() => {
+    const onRotate = () => onBearingChange(map.getBearing());
+    map.on('rotate', onRotate);
+    return () => map.off('rotate', onRotate);
+  }, [map, onBearingChange]);
   return null;
 }
 
@@ -85,7 +92,10 @@ function CoffeeRuns() {
   const [editing, setEditing] = useState(null);
   const [selectedId, setSelectedId] = useState(null);
   const [colorBy, setColorBy] = useState('rating');
+  const [showLabels, setShowLabels] = useState(true);
   const [sortBy, setSortBy] = useState('date');
+  const [mapFullscreen, setMapFullscreen] = useState(false);
+  const [bearing, setBearing] = useState(0);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -100,6 +110,13 @@ function CoffeeRuns() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (!mapFullscreen) return;
+    const onKeyDown = (e) => { if (e.key === 'Escape') setMapFullscreen(false); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mapFullscreen]);
 
   useEffect(() => {
     if (loading || !mapRef.current) return;
@@ -203,12 +220,20 @@ function CoffeeRuns() {
         </div>
       </header>
 
-      <div className="cr-main">
+      <div className={`cr-main${mapFullscreen ? ' cr-map-is-fullscreen' : ''}`}>
         <div className="cr-left">
-          <div className="cr-map-wrap">
-            <MapContainer center={DEFAULT_CENTER} zoom={12} className="cr-map">
+          <div className={`cr-map-wrap${mapFullscreen ? ' cr-map-wrap-fullscreen' : ''}`}>
+            <MapContainer
+              center={DEFAULT_CENTER}
+              zoom={12}
+              className="cr-map"
+              rotate
+              rotateControl={false}
+              touchRotate
+              bearing={0}
+            >
               <TileLayer url={TILE_URLS[theme]} attribution={TILE_ATTRIBUTION} />
-              <MapRefSetter mapRef={mapRef} />
+              <MapRefSetter mapRef={mapRef} onBearingChange={setBearing} />
               <ClickCapture active={placing} onClick={(latlng) => setDraft({ lat: latlng.lat, lng: latlng.lng })} />
 
               {stops.map(stop => (
@@ -218,6 +243,7 @@ function CoffeeRuns() {
                   icon={stopIcon(colorForStop(stop, colorBy), stop.name, {
                     active: selectedId === stop.id,
                     dimmed: selectedId != null && selectedId !== stop.id,
+                    showLabels,
                   })}
                   zIndexOffset={selectedId === stop.id ? 10000 : 0}
                   eventHandlers={{ click: () => focusStop(stop) }}
@@ -231,6 +257,26 @@ function CoffeeRuns() {
 
             {placing && !draft && <div className="cr-placing-hint">Click the map to drop a pin</div>}
 
+            <button
+              className="cr-fullscreen-toggle"
+              onClick={() => setMapFullscreen(f => !f)}
+              aria-label={mapFullscreen ? 'Exit fullscreen' : 'Fullscreen map'}
+              title={mapFullscreen ? 'Exit fullscreen' : 'Fullscreen map'}
+            >
+              {mapFullscreen ? '✕' : '⛶'}
+            </button>
+
+            {bearing !== 0 && (
+              <button
+                className="cr-reset-north"
+                onClick={() => mapRef.current?.setBearing(0)}
+                aria-label="Reset north"
+                title="Reset north"
+              >
+                <span style={{ display: 'inline-block', transform: `rotate(${-bearing}deg)` }}>↑</span>
+              </button>
+            )}
+
             <div className="cr-color-toggle">
               {COLOR_MODES.map(m => (
                 <button
@@ -241,6 +287,15 @@ function CoffeeRuns() {
                   {m.label}
                 </button>
               ))}
+              <span className="cr-color-toggle-divider" />
+              <button
+                className={`cr-color-toggle-btn${showLabels ? ' active' : ''}`}
+                onClick={() => setShowLabels(s => !s)}
+                aria-label={showLabels ? 'Hide labels' : 'Show labels'}
+                title={showLabels ? 'Hide labels' : 'Show labels'}
+              >
+                Labels
+              </button>
             </div>
           </div>
 
