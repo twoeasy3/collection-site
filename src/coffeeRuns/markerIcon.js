@@ -34,7 +34,7 @@ export function stopIcon(color, label, { active = false, dimmed = false, showLab
   const svgH = (PIN_H + PAD * 2) * scale;
   const pinSvg = `
     <svg width="${svgW}" height="${svgH}" viewBox="${-PAD} ${-PAD} ${PIN_W + PAD * 2} ${PIN_H + PAD * 2}" xmlns="http://www.w3.org/2000/svg">
-      <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 24 15 24s15-13.5 15-24C30 6.7 23.3 0 15 0z" fill="${color}" stroke="#1a1a1a" stroke-width="1.5"/>
+      <path d="M15 0C6.7 0 0 6.7 0 15c0 10.5 15 24 15 24s15-13.5 15-24C30 6.7 23.3 0 15 0z" fill="${color}" stroke="#1a1a1a" stroke-width="1.5" style="pointer-events:auto;"/>
       <circle cx="15" cy="15" r="6.5" fill="#fff8ee"/>
     </svg>`;
 

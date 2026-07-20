@@ -73,10 +73,11 @@ function MapRefSetter({ mapRef, onBearingChange }) {
   return null;
 }
 
-function ClickCapture({ active, onClick }) {
+function ClickCapture({ active, onClick, onBackgroundClick }) {
   useMapEvents({
     click(e) {
       if (active) onClick(e.latlng);
+      else onBackgroundClick();
     },
   });
   return null;
@@ -234,7 +235,11 @@ function CoffeeRuns() {
             >
               <TileLayer url={TILE_URLS[theme]} attribution={TILE_ATTRIBUTION} />
               <MapRefSetter mapRef={mapRef} onBearingChange={setBearing} />
-              <ClickCapture active={placing} onClick={(latlng) => setDraft({ lat: latlng.lat, lng: latlng.lng })} />
+              <ClickCapture
+                active={placing}
+                onClick={(latlng) => setDraft({ lat: latlng.lat, lng: latlng.lng })}
+                onBackgroundClick={() => setSelectedId(null)}
+              />
 
               {stops.map(stop => (
                 <Marker

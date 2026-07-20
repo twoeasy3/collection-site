@@ -219,7 +219,15 @@
   margin: 2px 1px;
 }
 
+/* Only the painted pin shape (marked pointer-events:auto in markerIcon.js)
+   should be tappable — otherwise each pin's full bounding box (padding,
+   label whitespace, up to 140px wide) is clickable and swallows taps meant
+   for a neighboring pin whenever two pins sit close together. Leaflet's own
+   stylesheet sets `.leaflet-marker-icon.leaflet-interactive { pointer-events:
+   auto; }` (specificity 0,2,0), which beats a plain `.cr-pin` rule — these
+   selectors have to match that same compound to win the cascade. */
 .cr-pin { background: transparent; border: none; overflow: visible; }
+.leaflet-marker-icon.leaflet-interactive.cr-pin { pointer-events: none; }
 
 /* ---------- List panel (below map, left column) ---------- */
 
@@ -866,6 +874,7 @@
   .cr-map-wrap { aspect-ratio: auto; height: 42vh; min-height: 200px; max-height: 320px; }
   .cr-list-panel { overflow-y: visible; }
   .cr-detail-panel { padding: 18px; }
+  .cr-detail-banner { max-height: 182px; margin-bottom: 13px; } /* 70% of desktop size, to fit the shorter mobile sheet */
 
   /* Bigger, thumb-friendly tap targets */
   .cr-header { padding: 10px 14px; }
