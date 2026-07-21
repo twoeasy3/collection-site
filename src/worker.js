@@ -159,8 +159,8 @@ async function handleAPI(request, env, url) {
     if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
     const s = await request.json();
     const { meta } = await env.DB.prepare(
-      'INSERT INTO coffee_stops (name,lat,lng,rating,genre,price,notes,location,image_url,visit_dates) VALUES (?,?,?,?,?,?,?,?,?,?)'
-    ).bind(s.name, s.lat, s.lng, s.rating ?? 0, s.genre ?? 5, s.price ?? 5, s.notes ?? '', s.location ?? '', s.image_url ?? '', JSON.stringify(Array.isArray(s.visit_dates) ? s.visit_dates : [])).run();
+      'INSERT INTO coffee_stops (name,lat,lng,rating,genre,price,notes,location,image_url,visit_dates,is_lunch) VALUES (?,?,?,?,?,?,?,?,?,?,?)'
+    ).bind(s.name, s.lat, s.lng, s.rating ?? 0, s.genre ?? 5, s.price ?? 5, s.notes ?? '', s.location ?? '', s.image_url ?? '', JSON.stringify(Array.isArray(s.visit_dates) ? s.visit_dates : []), s.is_lunch ? 1 : 0).run();
     return json({ ok: true, id: meta.last_row_id });
   }
 
@@ -171,8 +171,8 @@ async function handleAPI(request, env, url) {
     if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
     const s = await request.json();
     await env.DB.prepare(
-      'UPDATE coffee_stops SET name=?, lat=?, lng=?, rating=?, genre=?, price=?, notes=?, location=?, image_url=?, visit_dates=? WHERE id=?'
-    ).bind(s.name, s.lat, s.lng, s.rating ?? 0, s.genre ?? 5, s.price ?? 5, s.notes ?? '', s.location ?? '', s.image_url ?? '', JSON.stringify(Array.isArray(s.visit_dates) ? s.visit_dates : []), parseInt(coffeeMatch[1])).run();
+      'UPDATE coffee_stops SET name=?, lat=?, lng=?, rating=?, genre=?, price=?, notes=?, location=?, image_url=?, visit_dates=?, is_lunch=? WHERE id=?'
+    ).bind(s.name, s.lat, s.lng, s.rating ?? 0, s.genre ?? 5, s.price ?? 5, s.notes ?? '', s.location ?? '', s.image_url ?? '', JSON.stringify(Array.isArray(s.visit_dates) ? s.visit_dates : []), s.is_lunch ? 1 : 0, parseInt(coffeeMatch[1])).run();
     return json({ ok: true });
   }
 

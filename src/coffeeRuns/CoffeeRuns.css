@@ -229,6 +229,15 @@
 .cr-pin { background: transparent; border: none; overflow: visible; }
 .leaflet-marker-icon.leaflet-interactive.cr-pin { pointer-events: none; }
 
+/* While a two-finger touch gesture (rotate/zoom) is in progress, pins must
+   not be tappable at all — a stray click on one mid-gesture (e.g. from the
+   finger that lifts off last) yanks the map to that stop and breaks the
+   gesture. This has to beat the pin path's own inline pointer-events:auto
+   (set in markerIcon.js), hence !important. */
+.cr-gesture-active .cr-pin svg path {
+  pointer-events: none !important;
+}
+
 /* ---------- List panel (below map, left column) ---------- */
 
 .cr-list-panel {
@@ -329,6 +338,21 @@
 
 .cr-card-title { position: relative; z-index: 1; }
 .cr-card-name { font-size: 14px; font-weight: 700; }
+
+.cr-lunch-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--tx-2);
+  background: var(--bg-raised);
+  border: 1px solid var(--bd-2);
+  border-radius: 999px;
+  padding: 1px 7px;
+  vertical-align: middle;
+}
 .cr-card-location { font-size: 11.5px; color: var(--tx-3); margin-top: 2px; }
 .cr-card-date {
   position: relative;
@@ -638,6 +662,16 @@
   align-items: center;
 }
 .cr-field-row .cr-field { flex: 1; }
+
+.cr-field-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--tx-2);
+  cursor: pointer;
+}
+.cr-field-checkbox input { cursor: pointer; }
 
 .cr-field-hint {
   font-size: 11.5px;

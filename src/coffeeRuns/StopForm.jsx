@@ -49,6 +49,7 @@ function StopForm({ initial, onCancel, onSave, onDelete }) {
   const [visitDates, setVisitDates] = useState(asVisitDates(initial.visit_dates));
   const [lat, setLat] = useState(initial.lat ?? '');
   const [lng, setLng] = useState(initial.lng ?? '');
+  const [isLunch, setIsLunch] = useState(!!initial.is_lunch);
   const [saving, setSaving] = useState(false);
 
   const latNum = parseFloat(lat);
@@ -85,6 +86,7 @@ function StopForm({ initial, onCancel, onSave, onDelete }) {
       visit_dates: visitDates,
       lat: latNum,
       lng: lngNum,
+      is_lunch: isLunch,
     });
     setSaving(false);
   };
@@ -130,6 +132,11 @@ function StopForm({ initial, onCancel, onSave, onDelete }) {
           "@1.2785,103.8459,1172m" from the address bar — and paste it into either box above;
           both fields fill in automatically.
         </p>
+
+        <label className="cr-field-checkbox">
+          <input type="checkbox" checked={isLunch} onChange={e => setIsLunch(e.target.checked)} />
+          <span>This is a lunch spot, not a coffee stop</span>
+        </label>
 
         <label className="cr-field">
           <span>Rating</span>

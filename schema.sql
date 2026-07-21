@@ -30,5 +30,6 @@ CREATE TABLE IF NOT EXISTS coffee_stops (
   image_url    TEXT,                        -- banner image, optional
   date_visited TEXT,                        -- deprecated, superseded by visit_dates; left in place, unused
   visit_dates  TEXT NOT NULL DEFAULT '[]',   -- JSON array of ISO date strings, one per visit
+  is_lunch     INTEGER NOT NULL DEFAULT 0,   -- 1 if this is a lunch spot rather than a coffee stop
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );

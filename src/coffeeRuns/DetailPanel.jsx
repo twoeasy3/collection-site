@@ -31,7 +31,7 @@ function DetailPanel({ stop, isAdmin, onEdit, onLogVisit }) {
 
       <div className="cr-detail-head">
         <div>
-          <h2 className="cr-detail-name">{stop.name}</h2>
+          <h2 className="cr-detail-name">{stop.name}{stop.is_lunch && <span className="cr-lunch-tag">Lunch</span>}</h2>
           {stop.location && <div className="cr-detail-building">{stop.location}</div>}
         </div>
         {isAdmin && <button className="cr-btn" onClick={() => onEdit(stop)}>Edit</button>}

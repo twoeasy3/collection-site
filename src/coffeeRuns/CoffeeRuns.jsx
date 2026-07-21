@@ -48,7 +48,7 @@ const SORTERS = {
   price: (a, b) => (b.price ?? 5) - (a.price ?? 5), // priciest first
 };
 
-function MapRefSetter({ mapRef, onBearingChange }) {
+function MapRefSetter({ mapRef, onBearingChange, onGestureChange }) {
   const map = useMap();
   useEffect(() => {
     mapRef.current = map;
@@ -70,6 +70,24 @@ function MapRefSetter({ mapRef, onBearingChange }) {
     map.on('rotate', onRotate);
     return () => map.off('rotate', onRotate);
   }, [map, onBearingChange]);
+  useEffect(() => {
+    // A two-finger rotate/zoom gesture landing partly on a pin can end up
+    // firing that pin's click (e.g. a stray synthetic click from the touch
+    // that lifts off last), yanking the map to that stop mid-gesture. As
+    // soon as a second finger is down, make pins un-clickable until the
+    // gesture fully ends so they can't interfere.
+    const container = map.getContainer();
+    const onTouchStart = (e) => { if (e.touches.length >= 2) onGestureChange(true); };
+    const onTouchEnd = (e) => { if (e.touches.length < 2) onGestureChange(false); };
+    container.addEventListener('touchstart', onTouchStart, { passive: true });
+    container.addEventListener('touchend', onTouchEnd, { passive: true });
+    container.addEventListener('touchcancel', onTouchEnd, { passive: true });
+    return () => {
+      container.removeEventListener('touchstart', onTouchStart);
+      container.removeEventListener('touchend', onTouchEnd);
+      container.removeEventListener('touchcancel', onTouchEnd);
+    };
+  }, [map, onGestureChange]);
   return null;
 }
 
@@ -94,9 +112,11 @@ function CoffeeRuns() {
   const [selectedId, setSelectedId] = useState(null);
   const [colorBy, setColorBy] = useState('rating');
   const [showLabels, setShowLabels] = useState(true);
+  const [hideLunch, setHideLunch] = useState(false);
   const [sortBy, setSortBy] = useState('date');
   const [mapFullscreen, setMapFullscreen] = useState(false);
   const [bearing, setBearing] = useState(0);
+  const [gestureActive, setGestureActive] = useState(false);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -193,8 +213,9 @@ function CoffeeRuns() {
     saveStop({ ...stop, visit_dates: [...dates, today] });
   };
 
-  const sortedStops = [...stops].sort(SORTERS[sortBy]);
-  const selectedStop = stops.find(s => s.id === selectedId) || null;
+  const visibleStops = hideLunch ? stops.filter(s => !s.is_lunch) : stops;
+  const sortedStops = [...visibleStops].sort(SORTERS[sortBy]);
+  const selectedStop = visibleStops.find(s => s.id === selectedId) || null;
 
   return (
     <div className="cr-page">
@@ -223,7 +244,7 @@ function CoffeeRuns() {
 
       <div className={`cr-main${mapFullscreen ? ' cr-map-is-fullscreen' : ''}`}>
         <div className="cr-left">
-          <div className={`cr-map-wrap${mapFullscreen ? ' cr-map-wrap-fullscreen' : ''}`}>
+          <div className={`cr-map-wrap${mapFullscreen ? ' cr-map-wrap-fullscreen' : ''}${gestureActive ? ' cr-gesture-active' : ''}`}>
             <MapContainer
               center={DEFAULT_CENTER}
               zoom={12}
@@ -234,14 +255,14 @@ function CoffeeRuns() {
               bearing={0}
             >
               <TileLayer url={TILE_URLS[theme]} attribution={TILE_ATTRIBUTION} />
-              <MapRefSetter mapRef={mapRef} onBearingChange={setBearing} />
+              <MapRefSetter mapRef={mapRef} onBearingChange={setBearing} onGestureChange={setGestureActive} />
               <ClickCapture
                 active={placing}
                 onClick={(latlng) => setDraft({ lat: latlng.lat, lng: latlng.lng })}
                 onBackgroundClick={() => setSelectedId(null)}
               />
 
-              {stops.map(stop => (
+              {visibleStops.map(stop => (
                 <Marker
                   key={stop.id}
                   position={[stop.lat, stop.lng]}
@@ -305,7 +326,7 @@ function CoffeeRuns() {
           </div>
 
           <div className="cr-list-panel">
-            <div className="cr-sidebar-count">{stops.length} stop{stops.length === 1 ? '' : 's'}</div>
+            <div className="cr-sidebar-count">{visibleStops.length} stop{visibleStops.length === 1 ? '' : 's'}</div>
 
             <div className="cr-sort-row">
               <span className="cr-sort-label">Sort</span>
@@ -318,10 +339,18 @@ function CoffeeRuns() {
                   {opt.label}
                 </button>
               ))}
+              <span className="cr-color-toggle-divider" />
+              <button
+                className={`cr-sort-btn${hideLunch ? ' active' : ''}`}
+                onClick={() => setHideLunch(h => !h)}
+              >
+                Hide lunch
+              </button>
             </div>
 
             {loading && <div className="cr-empty">Loading…</div>}
             {!loading && !stops.length && <div className="cr-empty">No coffee stops yet.</div>}
+            {!loading && !!stops.length && !visibleStops.length && <div className="cr-empty">All stops are hidden by the lunch filter.</div>}
 
             <div className="cr-card-grid">
               {sortedStops.map(stop => (
@@ -337,7 +366,7 @@ function CoffeeRuns() {
                   )}
                   <div className="cr-card-head">
                     <div className="cr-card-title">
-                      <div className="cr-card-name">{stop.name}</div>
+                      <div className="cr-card-name">{stop.name}{stop.is_lunch && <span className="cr-lunch-tag">Lunch</span>}</div>
                       {stop.location && <div className="cr-card-location">{stop.location}</div>}
                     </div>
                     {latestVisit(stop) && <div className="cr-card-date">{latestVisit(stop)}</div>}
