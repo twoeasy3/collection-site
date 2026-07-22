@@ -361,12 +361,13 @@ function CoffeeRuns() {
                       src={stop.image_url}
                       alt=""
                       loading="lazy"
+                      referrerPolicy="no-referrer"
                       onError={(e) => { e.currentTarget.style.display = 'none'; }}
                     />
                   )}
                   <div className="cr-card-head">
                     <div className="cr-card-title">
-                      <div className="cr-card-name">{stop.name}{stop.is_lunch && <span className="cr-lunch-tag">Lunch</span>}</div>
+                      <div className="cr-card-name">{stop.name}{!!stop.is_lunch && <span className="cr-lunch-tag">Lunch</span>}</div>
                       {stop.location && <div className="cr-card-location">{stop.location}</div>}
                     </div>
                     {latestVisit(stop) && <div className="cr-card-date">{latestVisit(stop)}</div>}
