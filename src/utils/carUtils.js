@@ -50,6 +50,10 @@ export const parseArr = (val) => {
   try { const p = JSON.parse(val || '[]'); return Array.isArray(p) ? p : []; } catch { return []; }
 };
 
+export const parseObj = (val) => {
+  try { const p = JSON.parse(val || '{}'); return (p && typeof p === 'object' && !Array.isArray(p)) ? p : {}; } catch { return {}; }
+};
+
 export const toAppCar = (row) => ({
   ID: String(row.id),
   Year: row.year || '',
@@ -64,6 +68,7 @@ export const toAppCar = (row) => ({
   Broken_image: row.broken_image ? 'TRUE' : 'FALSE',
   Cover: !!(row.Cover ?? row.cover),
   NameFormat: row.name_format || 0,
+  AiSuggested: parseObj(row.ai_suggested),
 });
 
 export const toDBRow = (car) => ({
@@ -80,4 +85,5 @@ export const toDBRow = (car) => ({
   broken_image: car.Broken_image === 'TRUE' ? 1 : 0,
   cover: car.Cover ? 1 : 0,
   name_format: car.NameFormat || 0,
+  ai_suggested: JSON.stringify(car.AiSuggested || {}),
 });

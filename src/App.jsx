@@ -12,6 +12,10 @@ import { getStackKey } from './components/GalleryCards';
 import { SidebarContent, SecondarySidebar } from './components/SidebarContent';
 import GalleryGrid from './components/GalleryGrid';
 
+const AI_FIELD_TO_APP_FIELD = { year: 'Year', series: 'Series', category: 'Category', description: 'Description', country: 'Country' };
+const AI_FIELD_EMPTY_VALUE = { year: '', series: '', description: '', category: [], country: [] };
+const omitKey = (obj, key) => { const { [key]: _omitted, ...rest } = obj || {}; return rest; };
+
 function App({ isPublic = false }) {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +68,7 @@ function App({ isPublic = false }) {
   const [missingData, setMissingData] = useState([]);
   const [missingLoading, setMissingLoading] = useState(false);
   const [missingSubTab, setMissingSubTab] = useState('missing');
+  const [prioritizeAiPending, setPrioritizeAiPending] = useState(false);
 
   const [expandedStacks, setExpandedStacks] = useState(new Set());
   const [stackingEnabled, setStackingEnabled] = useState(true);
@@ -531,7 +536,7 @@ function App({ isPublic = false }) {
   const handleCreateSameCasting = () => {
     if (!selectedCar) return;
     const newId = getNextAvailableId(cars);
-    const newCar = { ID: newId, Make: selectedCar.Make || '', Model: selectedCar.Model || '', Supername: '', Year: selectedCar.Year || '', Brand: selectedCar.Brand || '', Series: '', Country: [], Category: Array.isArray(selectedCar.Category) ? [...selectedCar.Category] : [], Description: selectedCar.Description || '', Broken_image: 'FALSE', Cover: false, NameFormat: 0 };
+    const newCar = { ID: newId, Make: selectedCar.Make || '', Model: selectedCar.Model || '', Supername: '', Year: selectedCar.Year || '', Brand: selectedCar.Brand || '', Series: selectedCar.Series || '', Country: Array.isArray(selectedCar.Country) ? [...selectedCar.Country] : [], Category: Array.isArray(selectedCar.Category) ? [...selectedCar.Category] : [], Description: selectedCar.Description || '', Broken_image: 'FALSE', Cover: false, NameFormat: selectedCar.NameFormat || 0 };
     setSelectedCar(newCar);
     setIsGalleryEditing(true);
   };
@@ -682,16 +687,23 @@ function App({ isPublic = false }) {
         if (sidebarView === 'category') { const cats = Array.isArray(c.Category) ? c.Category : []; return groupName === 'Uncategorised' ? cats.length === 0 : cats.includes(groupName); }
         return (c.Make || 'Unknown') === groupName;
       });
-      const visibleGroupCars = groupCars.filter(c => {
+      let visibleGroupCars = groupCars.filter(c => {
         if (seenIds && seenIds.has(c.ID)) return false;
         const passes = isMatch(c, debouncedSearchTerm, searchMode) &&
           (!isPublic || (c.Broken_image !== 'TRUE' && !publicMissingIds.has(String(c.ID))));
         if (passes && seenIds) seenIds.add(c.ID);
         return passes;
       });
+      if (prioritizeAiPending) {
+        visibleGroupCars = [...visibleGroupCars].sort((a, b) => {
+          const aPending = a.AiSuggested && Object.keys(a.AiSuggested).length > 0 ? 0 : 1;
+          const bPending = b.AiSuggested && Object.keys(b.AiSuggested).length > 0 ? 0 : 1;
+          return aPending - bPending;
+        });
+      }
       return { groupName, visibleGroupCars };
     }).filter(g => g.visibleGroupCars.length > 0);
-  }, [cars, brands, makes, yearsSorted, categoriesOrdered, sidebarView, isMatch, debouncedSearchTerm, searchMode, isPublic, publicMissingIds]);
+  }, [cars, brands, makes, yearsSorted, categoriesOrdered, sidebarView, isMatch, debouncedSearchTerm, searchMode, isPublic, publicMissingIds, prioritizeAiPending]);
   groupedAndFilteredCarsRef.current = groupedAndFilteredCars;
 
   const galleryGroups = useMemo(() => {
@@ -725,6 +737,10 @@ function App({ isPublic = false }) {
   }, [debouncedSearchTerm]);
 
   const brokenCars = useMemo(() => cars.filter(c => c.Broken_image === 'TRUE'), [cars]);
+  const pendingAiSuggestions = useMemo(() =>
+    cars.flatMap(c => Object.entries(c.AiSuggested || {}).map(([field, confidence]) => ({ car: c, field, confidence }))),
+    [cars]
+  );
   const visibleCarsCount = useMemo(() => groupedAndFilteredCars.reduce((acc, curr) => acc + curr.visibleGroupCars.length, 0), [groupedAndFilteredCars]);
 
   const flatListItems = useMemo(() => {
@@ -1028,6 +1044,11 @@ function App({ isPublic = false }) {
               <button onClick={() => setSearchMode('release')} style={{ flex: 1, padding: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: searchMode === 'release' ? '#6c757d' : 'var(--sb-btn-off)', color: searchMode === 'release' ? '#fff' : 'var(--tx-3)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>RELEASE</button>
             </div>
             <input type="text" placeholder="Search..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} style={{ width: '100%', padding: '6px', boxSizing: 'border-box', borderRadius: '4px', border: '1px solid var(--sb-search-border)', fontSize: '0.8em', backgroundColor: 'var(--sb-bg)', color: 'var(--sb-tx)' }} />
+            {!isPublic && pendingAiSuggestions.length > 0 && (
+              <button onClick={() => setPrioritizeAiPending(p => !p)} title="Sort cars with pending AI suggestions to the front of each group" style={{ width: '100%', padding: '4px', marginTop: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: prioritizeAiPending ? 'var(--ai-badge-bg)' : 'var(--sb-btn-off)', color: prioritizeAiPending ? 'var(--ai-badge-tx)' : 'var(--tx-3)', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
+                {prioritizeAiPending ? `AI-PENDING FIRST (${pendingAiSuggestions.length})` : 'MIX IN AI-PENDING'}
+              </button>
+            )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid var(--sb-border)', gap: '1px', backgroundColor: 'var(--sb-gap)' }}>
             {[['make','MAKES'],['brand','BRANDS'],['decade','DECADES'],['category','CATEGORIES']].map(([view, label]) => (
@@ -1074,6 +1095,7 @@ function App({ isPublic = false }) {
               <div style={{ display: 'flex', border: '1px solid #fd7e14', borderRadius: '4px', overflow: 'hidden' }}>
                 <button onClick={() => setMissingSubTab('missing')} style={{ padding: '5px 12px', fontSize: '0.8em', fontWeight: 'bold', backgroundColor: missingSubTab === 'missing' ? '#fd7e14' : 'transparent', color: missingSubTab === 'missing' ? '#fff' : '#fd7e14', border: 'none', cursor: 'pointer' }}>Missing Files {!missingLoading && `(${missingData.length})`}</button>
                 <button onClick={() => setMissingSubTab('broken')} style={{ padding: '5px 12px', fontSize: '0.8em', fontWeight: 'bold', backgroundColor: missingSubTab === 'broken' ? '#fd7e14' : 'transparent', color: missingSubTab === 'broken' ? '#fff' : '#fd7e14', border: 'none', cursor: 'pointer' }}>Broken Images ({brokenCars.length})</button>
+                <button onClick={() => setMissingSubTab('aiSuggestions')} style={{ padding: '5px 12px', fontSize: '0.8em', fontWeight: 'bold', backgroundColor: missingSubTab === 'aiSuggestions' ? '#fd7e14' : 'transparent', color: missingSubTab === 'aiSuggestions' ? '#fff' : '#fd7e14', border: 'none', cursor: 'pointer' }}>AI Suggestions ({pendingAiSuggestions.length})</button>
               </div>
               {missingSubTab === 'missing' && (
                 <button onClick={fetchMissingData} disabled={missingLoading} style={{ padding: '5px 12px', fontSize: '0.8em', backgroundColor: 'var(--bg-card-sel)', color: 'var(--tx-2)', border: '1px solid var(--bd-3)', borderRadius: '4px', fontWeight: 'bold', cursor: missingLoading ? 'not-allowed' : 'pointer', opacity: missingLoading ? 0.6 : 1 }}>
@@ -1081,7 +1103,7 @@ function App({ isPublic = false }) {
                 </button>
               )}
             </div>
-            {missingSubTab === 'missing' ? (
+            {missingSubTab === 'missing' && (
               <div style={{ flexGrow: 1, overflow: 'auto', padding: '0 10px', contain: 'content' }}>
                 <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.85em' }}>
                   <thead><tr>
@@ -1115,7 +1137,8 @@ function App({ isPublic = false }) {
                   </tbody>
                 </table>
               </div>
-            ) : (
+            )}
+            {missingSubTab === 'broken' && (
               <div style={{ flexGrow: 1, overflow: 'auto', padding: '0 10px', contain: 'content' }}>
                 <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.85em' }}>
                   <thead><tr>
@@ -1141,6 +1164,44 @@ function App({ isPublic = false }) {
                     ))}
                     {brokenCars.length === 0 && (
                       <tr><td colSpan="7" style={{ ...tdStyle, textAlign: 'center', color: '#28a745', fontWeight: 'bold', padding: '30px' }}>No cars flagged as broken!</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {missingSubTab === 'aiSuggestions' && (
+              <div style={{ flexGrow: 1, overflow: 'auto', padding: '0 10px', contain: 'content' }}>
+                <table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', fontSize: '0.85em' }}>
+                  <thead><tr>
+                    <th style={{ ...thStyle, width: '60px' }}>ID</th>
+                    <th style={{ ...thStyle, width: '16%' }}>Make</th>
+                    <th style={{ ...thStyle, width: '18%' }}>Model</th>
+                    <th style={{ ...thStyle, width: '12%' }}>Field</th>
+                    <th style={thStyle}>Suggested value</th>
+                    <th style={{ ...thStyle, width: '90px', textAlign: 'center' }}>Confidence</th>
+                    <th style={{ ...thStyle, width: '140px', textAlign: 'center' }}>Action</th>
+                  </tr></thead>
+                  <tbody>
+                    {pendingAiSuggestions.map(({ car, field, confidence }) => {
+                      const appField = AI_FIELD_TO_APP_FIELD[field];
+                      const valuePreview = Array.isArray(car[appField]) ? car[appField].join(', ') : car[appField];
+                      return (
+                        <tr key={`${car.ID}-${field}`}>
+                          <td style={{ ...tdStyle, color: '#888', fontWeight: 'bold', cursor: 'pointer' }} onClick={() => { setSelectedCar(car); setViewMode('gallery'); setIsGalleryEditing(true); }}>#{car.ID}</td>
+                          <td style={tdStyle}>{car.Make}</td>
+                          <td style={{ ...tdStyle, fontWeight: 'bold', color: 'var(--tx)' }}>{car.Model}</td>
+                          <td style={tdStyle}>{field}</td>
+                          <td style={tdStyle}>{valuePreview}</td>
+                          <td style={{ ...tdStyle, textAlign: 'center' }}>{Math.round(confidence * 100)}%</td>
+                          <td style={{ ...tdStyle, textAlign: 'center' }}>
+                            <button onClick={() => saveSingleCar({ ...car, AiSuggested: omitKey(car.AiSuggested, field) })} style={{ padding: '3px 8px', fontSize: '0.85em', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', marginRight: '4px' }}>Approve</button>
+                            <button onClick={() => saveSingleCar({ ...car, [appField]: AI_FIELD_EMPTY_VALUE[field], AiSuggested: omitKey(car.AiSuggested, field) })} style={{ padding: '3px 8px', fontSize: '0.85em', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Reject</button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {pendingAiSuggestions.length === 0 && (
+                      <tr><td colSpan="7" style={{ ...tdStyle, textAlign: 'center', color: '#28a745', fontWeight: 'bold', padding: '30px' }}>No AI suggestions pending review!</td></tr>
                     )}
                   </tbody>
                 </table>

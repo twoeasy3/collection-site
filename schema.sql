@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS cars (
   country     TEXT,
   category    TEXT,
   description TEXT,
-  broken_image INTEGER NOT NULL DEFAULT 0
+  broken_image INTEGER NOT NULL DEFAULT 0,
+  ai_suggested TEXT NOT NULL DEFAULT '{}' -- JSON {field: confidence} for AI-suggested fields still pending review
 );
 
 CREATE TABLE IF NOT EXISTS coffee_stops (

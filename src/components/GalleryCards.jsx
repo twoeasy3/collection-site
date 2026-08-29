@@ -30,6 +30,9 @@ export const CarCardImage = React.memo(({ id, model, imageUpdate, eagerLoad }) =
 // Receives imageUpdate only for its own car ID so uploads don't re-render other cards.
 export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, imageUpdate, fallbackGridImage, onSelect, showToast, eagerLoad, hideId }) => {
   const validYear = car.Year && car.Year.toUpperCase() !== 'N/A' ? car.Year : null;
+  const aiPendingFields = car.AiSuggested ? Object.keys(car.AiSuggested) : [];
+  const aiYearPending = aiPendingFields.includes('year');
+  const aiOtherPending = aiPendingFields.some(f => f !== 'year');
   const isCustom = car.Supername && car.Supername.trim().toLowerCase() === 'custom';
   const customPrefix = isCustom ? car.Supername.trim() : null;
   const hideMake = (car.NameFormat || 0) === 2 || sidebarView === 'make';
@@ -58,6 +61,11 @@ export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, 
         backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'
       }}>
         <CarCardImage id={car.ID} model={car.Model} imageUpdate={imageUpdate} eagerLoad={eagerLoad} />
+        {aiOtherPending && (
+          <span title="Has pending AI-suggested field(s)" style={{ position: 'absolute', top: '3px', right: '3px', zIndex: 2, backgroundColor: 'var(--ai-badge-bg)', color: 'var(--ai-badge-tx)', borderRadius: '10px', padding: '1px 6px', fontWeight: '800', fontSize: '0.65em', lineHeight: '1.5', boxShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
+            AI
+          </span>
+        )}
       </div>
       <div className="car-card-title" style={{
         fontSize: '0.8em', padding: '2px 4px', color: 'var(--tx)', lineHeight: '1em',
@@ -66,7 +74,7 @@ export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, 
         textOverflow: 'ellipsis', wordWrap: 'break-word', boxSizing: 'content-box'
       }}>
         {!hideId && <span style={{ color: 'var(--tx-3)', marginRight: '5px' }}>#{car.ID}</span>}
-        {sidebarView !== 'decade' && validYear && <span style={{ color: 'var(--year-color)', marginRight: '4px', fontWeight: 'bold' }}>{validYear}</span>}
+        {sidebarView !== 'decade' && validYear && <span style={{ color: aiYearPending ? 'var(--ai-year-color)' : 'var(--year-color)', marginRight: '4px', fontWeight: 'bold' }}>{validYear}</span>}
         {nameWithoutYear}
         {car.Make && <CountryFlags make={car.Make} carCountry={car.Country} />}
         {car.Broken_image === 'TRUE' && <span style={{ color: '#ff4d4d', marginLeft: '5px', fontWeight: 'bold' }}>[Broken]</span>}
@@ -82,6 +90,9 @@ export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, 
 
 export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpdate, sidebarView, onToggle, onSelect, fallbackGridImage }) => {
   const validYear = firstCar.Year && firstCar.Year.toUpperCase() !== 'N/A' ? firstCar.Year : null;
+  const aiPendingFields = firstCar.AiSuggested ? Object.keys(firstCar.AiSuggested) : [];
+  const aiYearPending = aiPendingFields.includes('year');
+  const aiOtherPending = aiPendingFields.some(f => f !== 'year');
   const isCustom = firstCar.Supername && firstCar.Supername.trim().toLowerCase() === 'custom';
   const customPrefix = isCustom ? firstCar.Supername.trim() : null;
   const hideMake = (firstCar.NameFormat || 0) === 2 || sidebarView === 'make';
@@ -106,7 +117,7 @@ export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpda
           <img src={src} alt={firstCar.Model} decoding="async" onError={(e) => { e.target.style.display = 'none'; }} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
         </div>
         <div style={{ fontSize: '0.8em', padding: '2px 4px', color: 'var(--tx)', lineHeight: '1em', height: '2em', whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis', wordWrap: 'break-word', boxSizing: 'content-box' }}>
-          {sidebarView !== 'decade' && validYear && <span style={{ color: 'var(--year-color)', marginRight: '4px', fontWeight: 'bold' }}>{validYear}</span>}
+          {sidebarView !== 'decade' && validYear && <span style={{ color: aiYearPending ? 'var(--ai-year-color)' : 'var(--year-color)', marginRight: '4px', fontWeight: 'bold' }}>{validYear}</span>}
           {nameWithoutYear}
           {firstCar.Make && <CountryFlags make={firstCar.Make} carCountry={firstCar.Country} />}
           {firstCar.Brand && firstCar.Brand.trim() && <span style={{ color: 'var(--tx-3)', marginLeft: '4px' }}>{firstCar.Brand.trim()}</span>}
@@ -115,6 +126,11 @@ export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpda
       <div style={{ position: 'absolute', top: '-6px', right: '-6px', zIndex: 10, backgroundColor: 'var(--accent)', color: '#fff', borderRadius: '10px', padding: '1px 7px', fontWeight: '800', fontSize: '0.68em', lineHeight: '1.6', boxShadow: '0 2px 5px rgba(0,0,0,0.6)' }}>
         ×{count}
       </div>
+      {aiOtherPending && (
+        <div title="Has pending AI-suggested field(s)" style={{ position: 'absolute', top: '-6px', left: '-6px', zIndex: 10, backgroundColor: 'var(--ai-badge-bg)', color: 'var(--ai-badge-tx)', borderRadius: '10px', padding: '1px 7px', fontWeight: '800', fontSize: '0.68em', lineHeight: '1.6', boxShadow: '0 2px 5px rgba(0,0,0,0.6)' }}>
+          AI
+        </div>
+      )}
     </div>
   );
 }, (prev, next) =>

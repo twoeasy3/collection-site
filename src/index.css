@@ -18,6 +18,9 @@
   /* accent */
   --accent: #ff4444;
   --year-color: #ffd5d5;
+  --ai-year-color: #ffb84d;
+  --ai-badge-bg: #fd7e14;
+  --ai-badge-tx: #ffffff;
   /* specific components */
   --stack-1: #3a3a3a;
   --stack-2: #2f2f2f;
@@ -54,6 +57,9 @@
   --tx-3: #888888;
   --accent: #cc2200;
   --year-color: #8b1a1a;
+  --ai-year-color: #b35900;
+  --ai-badge-bg: #fd7e14;
+  --ai-badge-tx: #ffffff;
   --stack-1: #d4d8de;
   --stack-2: #dce0e6;
   --expand-hdr: #fce8e8;

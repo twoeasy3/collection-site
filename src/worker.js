@@ -112,8 +112,8 @@ async function handleAPI(request, env, url) {
     for (let i = 0; i < cars.length; i += CHUNK) {
       const stmts = cars.slice(i, i + CHUNK).map(c =>
         env.DB.prepare(
-          'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
-        ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0)
+          'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format,ai_suggested) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+        ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0, c.ai_suggested ?? '{}')
       );
       await env.DB.batch(stmts);
     }
@@ -135,8 +135,8 @@ async function handleAPI(request, env, url) {
     if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
     const c = await request.json();
     await env.DB.prepare(
-      'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)'
-    ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0).run();
+      'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format,ai_suggested) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+    ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0, c.ai_suggested ?? '{}').run();
     return json({ ok: true });
   }
 

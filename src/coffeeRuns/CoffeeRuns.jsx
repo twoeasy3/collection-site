@@ -254,7 +254,7 @@ function CoffeeRuns() {
               touchRotate
               bearing={0}
             >
-              <TileLayer url={TILE_URLS[theme]} attribution={TILE_ATTRIBUTION} />
+              <TileLayer url={TILE_URLS[theme]} attribution={TILE_ATTRIBUTION} maxZoom={20} />
               <MapRefSetter mapRef={mapRef} onBearingChange={setBearing} onGestureChange={setGestureActive} />
               <ClickCapture
                 active={placing}
