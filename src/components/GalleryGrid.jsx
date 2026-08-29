@@ -96,6 +96,7 @@ const GalleryGrid = React.memo(({
               fallbackGridImage={fallbackGridImage}
               onSelect={handleSelectCar}
               hideId={isPublic}
+              isPublic={isPublic}
               showToast={showToast}
             />
           );
@@ -124,6 +125,7 @@ const GalleryGrid = React.memo(({
                 fallbackGridImage={fallbackGridImage}
                 onSelect={handleSelectCar}
                 hideId={isPublic}
+              isPublic={isPublic}
                 showToast={showToast}
               />
             );
@@ -160,6 +162,7 @@ const GalleryGrid = React.memo(({
                     fallbackGridImage={fallbackGridImage}
                     onSelect={handleSelectCar}
                     hideId={isPublic}
+              isPublic={isPublic}
                     showToast={showToast}
                     eagerLoad
                   />
@@ -180,6 +183,7 @@ const GalleryGrid = React.memo(({
                     fallbackGridImage={fallbackGridImage}
                     onSelect={handleSelectCar}
                     hideId={isPublic}
+              isPublic={isPublic}
                     showToast={showToast}
                     eagerLoad
                   />
@@ -200,6 +204,7 @@ const GalleryGrid = React.memo(({
                 onToggle={() => toggleStack(stackKey)}
                 onSelect={handleSelectCar}
                 fallbackGridImage={fallbackGridImage}
+                isPublic={isPublic}
               />
             );
             visiblePos++;

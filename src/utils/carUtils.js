@@ -71,6 +71,10 @@ export const toAppCar = (row) => ({
   AiSuggested: parseObj(row.ai_suggested),
 });
 
+export const AI_FIELD_TO_APP_FIELD = { year: 'Year', series: 'Series', category: 'Category', description: 'Description', country: 'Country' };
+export const AI_FIELD_EMPTY_VALUE = { year: '', series: '', description: '', category: [], country: [] };
+export const omitKey = (obj, key) => { const { [key]: _omitted, ...rest } = obj || {}; return rest; };
+
 export const toDBRow = (car) => ({
   id: parseInt(car.ID),
   year: car.Year || '',

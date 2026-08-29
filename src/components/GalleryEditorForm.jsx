@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NAME_FORMATS } from '../utils/carUtils';
+import { NAME_FORMATS, AI_FIELD_TO_APP_FIELD, AI_FIELD_EMPTY_VALUE, omitKey } from '../utils/carUtils';
 
 const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, showToast, categories }) => {
   const [draft, setDraft] = useState(initialCar);
@@ -8,6 +8,14 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
 
   const handleChange = (field, value) => {
     setDraft(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleApproveAiField = (field) => {
+    setDraft(prev => ({ ...prev, AiSuggested: omitKey(prev.AiSuggested, field) }));
+  };
+
+  const handleRejectAiField = (field) => {
+    setDraft(prev => ({ ...prev, [AI_FIELD_TO_APP_FIELD[field]]: AI_FIELD_EMPTY_VALUE[field], AiSuggested: omitKey(prev.AiSuggested, field) }));
   };
 
   const handleDone = () => {
@@ -38,6 +46,18 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
         <input style={{ ...inp, flex: 1.5 }} value={draft?.Make || ''} onChange={(e) => handleChange('Make', e.target.value)} placeholder="Make" spellCheck="false" autoComplete="off" />
         <input style={{ ...inp, flex: 3 }} value={draft?.Model || ''} onChange={(e) => handleChange('Model', e.target.value)} placeholder="Model" spellCheck="false" autoComplete="off" />
       </div>
+      {draft?.AiSuggested && Object.keys(draft.AiSuggested).length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', margin: '2px 0 8px 0', padding: '6px 8px', backgroundColor: 'var(--bg-raised)', border: '1px solid var(--ai-badge-bg)', borderRadius: '4px' }}>
+          {Object.entries(draft.AiSuggested).map(([field, confidence]) => (
+            <div key={field} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8em', backgroundColor: 'var(--bg-card-sel)', padding: '2px 4px 2px 8px', borderRadius: '3px' }}>
+              <span style={{ fontWeight: 'bold', color: 'var(--ai-badge-bg)' }}>AI</span>
+              <span style={{ color: 'var(--tx-2)' }}>{field} ({Math.round(confidence * 100)}%)</span>
+              <button onClick={() => handleApproveAiField(field)} title="Approve suggestion" style={{ padding: '1px 6px', fontSize: '0.95em', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', fontWeight: 'bold' }}>✓</button>
+              <button onClick={() => handleRejectAiField(field)} title="Reject suggestion (clears the field)" style={{ padding: '1px 6px', fontSize: '0.95em', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '3px', cursor: 'pointer', fontWeight: 'bold' }}>✗</button>
+            </div>
+          ))}
+        </div>
+      )}
       <p style={{ margin: '2px 0' }}><strong>ID:</strong> {draft?.ID}</p>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '2px 0' }}>
         <strong>Brand:</strong>

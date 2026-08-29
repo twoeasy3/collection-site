@@ -36,3 +36,9 @@ Thumbs.db
 !.dev.vars.example
 .env*
 !.env.example
+
+# AI field-completion working files (see scratchpad.md)
+scratchpad.md
+batch*.json
+backups/
+scripts/deduce_fields.py

@@ -3,7 +3,7 @@ import categoryOrderData from './category_order.json';
 import './App.css';
 
 import { BASE_PATH, FICTIONAL_MAKES, MAKE_COUNTRY, thStyle, tdStyle } from './constants';
-import { sortCars, getNextAvailableId, parseArr, toAppCar, toDBRow, getCarDisplayName } from './utils/carUtils';
+import { sortCars, getNextAvailableId, parseArr, toAppCar, toDBRow, getCarDisplayName, AI_FIELD_TO_APP_FIELD, AI_FIELD_EMPTY_VALUE, omitKey } from './utils/carUtils';
 import { useImagePreloader } from './hooks/useImagePreloader';
 import CountryFlags from './components/CountryFlags';
 import GalleryEditorForm from './components/GalleryEditorForm';
@@ -11,10 +11,6 @@ import CarListRow from './components/CarListRow';
 import { getStackKey } from './components/GalleryCards';
 import { SidebarContent, SecondarySidebar } from './components/SidebarContent';
 import GalleryGrid from './components/GalleryGrid';
-
-const AI_FIELD_TO_APP_FIELD = { year: 'Year', series: 'Series', category: 'Category', description: 'Description', country: 'Country' };
-const AI_FIELD_EMPTY_VALUE = { year: '', series: '', description: '', category: [], country: [] };
-const omitKey = (obj, key) => { const { [key]: _omitted, ...rest } = obj || {}; return rest; };
 
 function App({ isPublic = false }) {
   const [cars, setCars] = useState([]);
@@ -687,42 +683,56 @@ function App({ isPublic = false }) {
         if (sidebarView === 'category') { const cats = Array.isArray(c.Category) ? c.Category : []; return groupName === 'Uncategorised' ? cats.length === 0 : cats.includes(groupName); }
         return (c.Make || 'Unknown') === groupName;
       });
-      let visibleGroupCars = groupCars.filter(c => {
+      const visibleGroupCars = groupCars.filter(c => {
         if (seenIds && seenIds.has(c.ID)) return false;
         const passes = isMatch(c, debouncedSearchTerm, searchMode) &&
           (!isPublic || (c.Broken_image !== 'TRUE' && !publicMissingIds.has(String(c.ID))));
         if (passes && seenIds) seenIds.add(c.ID);
         return passes;
       });
-      if (prioritizeAiPending) {
-        visibleGroupCars = [...visibleGroupCars].sort((a, b) => {
-          const aPending = a.AiSuggested && Object.keys(a.AiSuggested).length > 0 ? 0 : 1;
-          const bPending = b.AiSuggested && Object.keys(b.AiSuggested).length > 0 ? 0 : 1;
-          return aPending - bPending;
-        });
-      }
       return { groupName, visibleGroupCars };
     }).filter(g => g.visibleGroupCars.length > 0);
-  }, [cars, brands, makes, yearsSorted, categoriesOrdered, sidebarView, isMatch, debouncedSearchTerm, searchMode, isPublic, publicMissingIds, prioritizeAiPending]);
+  }, [cars, brands, makes, yearsSorted, categoriesOrdered, sidebarView, isMatch, debouncedSearchTerm, searchMode, isPublic, publicMissingIds]);
   groupedAndFilteredCarsRef.current = groupedAndFilteredCars;
 
+  // When prioritizeAiPending is on, pull every AI-pending car out of its normal
+  // group into one flat block at the very front -- not just reordered within
+  // each category/brand/make/decade group.
+  const prioritizedGroups = useMemo(() => {
+    if (!prioritizeAiPending) return groupedAndFilteredCars;
+    const seenPendingIds = new Set();
+    const pending = [];
+    const rest = groupedAndFilteredCars
+      .map(({ groupName, visibleGroupCars }) => ({
+        groupName,
+        visibleGroupCars: visibleGroupCars.filter(c => {
+          const isPending = c.AiSuggested && Object.keys(c.AiSuggested).length > 0;
+          if (!isPending) return true;
+          if (!seenPendingIds.has(c.ID)) { seenPendingIds.add(c.ID); pending.push(c); }
+          return false;
+        }),
+      }))
+      .filter(g => g.visibleGroupCars.length > 0);
+    return pending.length > 0 ? [{ groupName: 'AI Suggestions Pending', visibleGroupCars: pending }, ...rest] : groupedAndFilteredCars;
+  }, [groupedAndFilteredCars, prioritizeAiPending]);
+
   const galleryGroups = useMemo(() => {
-    if (!isMobile) return groupedAndFilteredCars;
-    if (debouncedSearchTerm.trim()) return groupedAndFilteredCars;
+    if (!isMobile) return prioritizedGroups;
+    if (debouncedSearchTerm.trim()) return prioritizedGroups;
     if (!selectedLetter) return [];
-    if (sidebarView === 'make') return groupedAndFilteredCars.filter(({ groupName }) => {
+    if (sidebarView === 'make') return prioritizedGroups.filter(({ groupName }) => {
       if (selectedLetter === 'Fictional') return FICTIONAL_MAKES.has(groupName);
       return !FICTIONAL_MAKES.has(groupName) && groupName.charAt(0).toUpperCase() === selectedLetter;
     });
-    if (sidebarView === 'decade') return groupedAndFilteredCars.filter(({ groupName }) => {
+    if (sidebarView === 'decade') return prioritizedGroups.filter(({ groupName }) => {
       if (selectedLetter === 'Unknown') return groupName === 'Unknown' || groupName.toUpperCase() === 'N/A';
       const parsed = parseInt(groupName, 10);
       if (isNaN(parsed)) return false;
       const floor = parseInt(selectedLetter, 10);
       return parsed >= floor && parsed < floor + 10;
     });
-    return groupedAndFilteredCars.filter(({ groupName }) => groupName === selectedLetter);
-  }, [isMobile, sidebarView, selectedLetter, groupedAndFilteredCars, debouncedSearchTerm]);
+    return prioritizedGroups.filter(({ groupName }) => groupName === selectedLetter);
+  }, [isMobile, sidebarView, selectedLetter, prioritizedGroups, debouncedSearchTerm]);
 
   const visibleCarsForPreload = useMemo(
     () => viewMode === 'gallery' ? galleryGroups.flatMap(g => g.visibleGroupCars) : [],
@@ -745,12 +755,12 @@ function App({ isPublic = false }) {
 
   const flatListItems = useMemo(() => {
     const items = [];
-    groupedAndFilteredCars.forEach(group => {
+    prioritizedGroups.forEach(group => {
       items.push({ type: 'header', groupName: group.groupName, count: group.visibleGroupCars.length });
       group.visibleGroupCars.forEach(car => { items.push({ type: 'car', car, groupName: group.groupName }); });
     });
     return items;
-  }, [groupedAndFilteredCars]);
+  }, [prioritizedGroups]);
 
   const totalPages = Math.max(1, Math.ceil(visibleCarsCount / itemsPerPage));
   const pageCarStart = (currentPage - 1) * itemsPerPage;

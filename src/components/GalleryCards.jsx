@@ -28,11 +28,11 @@ export const CarCardImage = React.memo(({ id, model, imageUpdate, eagerLoad }) =
 );
 
 // Receives imageUpdate only for its own car ID so uploads don't re-render other cards.
-export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, imageUpdate, fallbackGridImage, onSelect, showToast, eagerLoad, hideId }) => {
+export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, imageUpdate, fallbackGridImage, onSelect, showToast, eagerLoad, hideId, isPublic }) => {
   const validYear = car.Year && car.Year.toUpperCase() !== 'N/A' ? car.Year : null;
   const aiPendingFields = car.AiSuggested ? Object.keys(car.AiSuggested) : [];
   const aiYearPending = aiPendingFields.includes('year');
-  const aiOtherPending = aiPendingFields.some(f => f !== 'year');
+  const aiOtherPending = !isPublic && aiPendingFields.some(f => f !== 'year');
   const isCustom = car.Supername && car.Supername.trim().toLowerCase() === 'custom';
   const customPrefix = isCustom ? car.Supername.trim() : null;
   const hideMake = (car.NameFormat || 0) === 2 || sidebarView === 'make';
@@ -85,14 +85,15 @@ export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, 
   prev.car === next.car &&
   prev.sidebarView === next.sidebarView &&
   prev.imageUpdate === next.imageUpdate &&
-  prev.onSelect === next.onSelect
+  prev.onSelect === next.onSelect &&
+  prev.isPublic === next.isPublic
 );
 
-export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpdate, sidebarView, onToggle, onSelect, fallbackGridImage }) => {
+export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpdate, sidebarView, onToggle, onSelect, fallbackGridImage, isPublic }) => {
   const validYear = firstCar.Year && firstCar.Year.toUpperCase() !== 'N/A' ? firstCar.Year : null;
   const aiPendingFields = firstCar.AiSuggested ? Object.keys(firstCar.AiSuggested) : [];
   const aiYearPending = aiPendingFields.includes('year');
-  const aiOtherPending = aiPendingFields.some(f => f !== 'year');
+  const aiOtherPending = !isPublic && aiPendingFields.some(f => f !== 'year');
   const isCustom = firstCar.Supername && firstCar.Supername.trim().toLowerCase() === 'custom';
   const customPrefix = isCustom ? firstCar.Supername.trim() : null;
   const hideMake = (firstCar.NameFormat || 0) === 2 || sidebarView === 'make';
@@ -139,5 +140,6 @@ export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpda
   prev.stackCarIds === next.stackCarIds &&
   prev.imageUpdate === next.imageUpdate &&
   prev.sidebarView === next.sidebarView &&
-  prev.onSelect === next.onSelect
+  prev.onSelect === next.onSelect &&
+  prev.isPublic === next.isPublic
 );
