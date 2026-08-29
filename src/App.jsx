@@ -462,6 +462,13 @@ function App({ isPublic = false }) {
     } catch { showToast('API unreachable.', 'error'); }
   }, [showToast]);
 
+  const handleRejectAiSuggestion = useCallback((car, field) => {
+    const appField = AI_FIELD_TO_APP_FIELD[field];
+    const note = window.prompt('Note for why this is being rejected (helps the next AI pass avoid the same mistake):', car.AiRejected || '');
+    if (note === null) return;
+    saveSingleCar({ ...car, [appField]: AI_FIELD_EMPTY_VALUE[field], AiSuggested: omitKey(car.AiSuggested, field), AiRejected: note });
+  }, [saveSingleCar]);
+
   const saveListChanges = useCallback(async () => {
     const changedIds = Object.keys(listDrafts);
     if (changedIds.length === 0) return showToast('No unsaved changes', 'success');
@@ -1205,7 +1212,7 @@ function App({ isPublic = false }) {
                           <td style={{ ...tdStyle, textAlign: 'center' }}>{Math.round(confidence * 100)}%</td>
                           <td style={{ ...tdStyle, textAlign: 'center' }}>
                             <button onClick={() => saveSingleCar({ ...car, AiSuggested: omitKey(car.AiSuggested, field) })} style={{ padding: '3px 8px', fontSize: '0.85em', backgroundColor: '#28a745', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', marginRight: '4px' }}>Approve</button>
-                            <button onClick={() => saveSingleCar({ ...car, [appField]: AI_FIELD_EMPTY_VALUE[field], AiSuggested: omitKey(car.AiSuggested, field) })} style={{ padding: '3px 8px', fontSize: '0.85em', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Reject</button>
+                            <button onClick={() => handleRejectAiSuggestion(car, field)} style={{ padding: '3px 8px', fontSize: '0.85em', backgroundColor: '#dc3545', color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer' }}>Reject</button>
                           </td>
                         </tr>
                       );

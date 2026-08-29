@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS cars (
   category    TEXT,
   description TEXT,
   broken_image INTEGER NOT NULL DEFAULT 0,
-  ai_suggested TEXT NOT NULL DEFAULT '{}' -- JSON {field: confidence} for AI-suggested fields still pending review
+  ai_suggested TEXT NOT NULL DEFAULT '{}', -- JSON {field: confidence} for AI-suggested fields still pending review
+  ai_rejected  TEXT NOT NULL DEFAULT ''    -- plain-text note left when rejecting an AI suggestion on this car, surfaced to the next AI attempt then cleared
 );
 
 CREATE TABLE IF NOT EXISTS coffee_stops (

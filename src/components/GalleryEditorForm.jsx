@@ -15,7 +15,9 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
   };
 
   const handleRejectAiField = (field) => {
-    setDraft(prev => ({ ...prev, [AI_FIELD_TO_APP_FIELD[field]]: AI_FIELD_EMPTY_VALUE[field], AiSuggested: omitKey(prev.AiSuggested, field) }));
+    const note = window.prompt('Note for why this is being rejected (helps the next AI pass avoid the same mistake):', draft?.AiRejected || '');
+    if (note === null) return;
+    setDraft(prev => ({ ...prev, [AI_FIELD_TO_APP_FIELD[field]]: AI_FIELD_EMPTY_VALUE[field], AiSuggested: omitKey(prev.AiSuggested, field), AiRejected: note }));
   };
 
   const handleDone = () => {
