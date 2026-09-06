@@ -11,6 +11,7 @@ import cv2
 import numpy as np
 import math
 import requests
+from urllib.parse import quote
 
 app = Flask(__name__)
 CORS(app)
@@ -51,13 +52,23 @@ def purge_cf_cache(url):
         print(f'Cache purge request failed for {url}: {e}')
 
 
+def log_img(msg):
+    print(f'[img] {msg}', flush=True)
+
+
 def r2_upload(local_path, r2_key):
     # --s3-no-check-bucket: rclone's S3 backend otherwise calls CreateBucket before
     # every copy to verify the destination exists, which this R2 token isn't scoped
     # for (object read/write only, no bucket-admin) and gets rejected with a 403 --
     # even though the bucket already exists and the actual upload would succeed.
+    log_img(f'uploading to R2: {r2_key}')
     subprocess.run(['rclone', 'copyto', '--s3-no-check-bucket', local_path, f'{R2_DEST}/{r2_key}'], check=True)
-    purge_cf_cache(f'{PUBLIC_IMAGE_BASE}/{r2_key}')
+    # Must match the URL byte-for-byte as the browser actually requests it, or the
+    # purge misses the cached object entirely. Browsers percent-encode spaces (but
+    # not parentheses) when turning "1799 (2).jpg" into a request path, so the raw
+    # r2_key (with a literal space) doesn't match what's cached under the %20 form --
+    # encode the same way here, or overwritten images keep serving stale content.
+    purge_cf_cache(f'{PUBLIC_IMAGE_BASE}/{quote(r2_key, safe="/()")}')
 
 # Ensure output directories exist
 os.makedirs('./standard_cars', exist_ok=True)
@@ -446,14 +457,17 @@ def upload_images():
     
     for file in files:
         if file.filename == '': continue
-        
+        log_img(f'upload: received {file.filename}')
+
         # Read directly from memory into OpenCV
         file_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        if img is None: continue
+        if img is None:
+            log_img(f'upload: {file.filename} could not be decoded, skipping')
+            continue
 
         filename_lower = file.filename.lower()
-        
+
         # Route 1: Side Profile Standardizer
         if "(1).jpg" in filename_lower:
             final_img = process_side_profile(img)
@@ -461,7 +475,10 @@ def upload_images():
                 cv2.imwrite(os.path.join('./standard_cars', file.filename), final_img)
                 save_half_side(final_img, file.filename)
                 processed_count += 1
-                
+                log_img(f'upload: {file.filename} side profile processed')
+            else:
+                log_img(f'upload: {file.filename} side profile processing failed (no car contour found)')
+
         # Route 2: Hero Shot Standardizer
         elif "(2).jpg" in filename_lower:
             final_img = process_hero_profile(img)
@@ -470,6 +487,11 @@ def upload_images():
                 cv2.imwrite(local_path, final_img)
                 r2_upload(local_path, f'standard_hero_shots/{file.filename}')
                 processed_count += 1
+                log_img(f'upload: {file.filename} hero shot processed')
+            else:
+                log_img(f'upload: {file.filename} hero shot processing failed')
+        else:
+            log_img(f'upload: {file.filename} does not match (1).jpg or (2).jpg, skipping')
 
     if processed_count > 0:
         return jsonify({"message": f"Successfully processed {processed_count} image(s)!"}), 200
@@ -486,10 +508,13 @@ def upload_images_monster():
 
     for file in files:
         if file.filename == '': continue
+        log_img(f'upload-monster: received {file.filename}')
 
         file_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        if img is None: continue
+        if img is None:
+            log_img(f'upload-monster: {file.filename} could not be decoded, skipping')
+            continue
 
         filename_lower = file.filename.lower()
 
@@ -499,6 +524,9 @@ def upload_images_monster():
                 cv2.imwrite(os.path.join('./standard_cars', file.filename), final_img)
                 save_half_side(final_img, file.filename)
                 processed_count += 1
+                log_img(f'upload-monster: {file.filename} side profile processed')
+            else:
+                log_img(f'upload-monster: {file.filename} side profile processing failed')
 
         elif "(2).jpg" in filename_lower:
             final_img = process_hero_profile(img)
@@ -507,6 +535,11 @@ def upload_images_monster():
                 cv2.imwrite(local_path, final_img)
                 r2_upload(local_path, f'standard_hero_shots/{file.filename}')
                 processed_count += 1
+                log_img(f'upload-monster: {file.filename} hero shot processed')
+            else:
+                log_img(f'upload-monster: {file.filename} hero shot processing failed')
+        else:
+            log_img(f'upload-monster: {file.filename} does not match (1).jpg or (2).jpg, skipping')
 
     if processed_count > 0:
         return jsonify({"message": f"Successfully processed {processed_count} image(s) as Monster Truck!"}), 200
@@ -527,10 +560,12 @@ def upload_sensitive_preview():
     file = files[0]
     if '(1).jpg' not in file.filename.lower():
         return jsonify({"error": "File must be a (1).jpg side profile."}), 400
+    log_img(f'upload-sensitive-preview: received {file.filename}')
 
     file_bytes = np.frombuffer(file.read(), np.uint8)
     img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
     if img is None:
+        log_img(f'upload-sensitive-preview: {file.filename} could not be decoded')
         return jsonify({"error": "Could not read image."}), 400
 
     start_pct = float(request.form.get('start_pct', 0.0))
@@ -540,6 +575,7 @@ def upload_sensitive_preview():
     for cap in steps:
         result = process_side_profile_sensitive(img, cap_pct=cap)
         if result is None:
+            log_img(f'upload-sensitive-preview: {file.filename} variant at cap {cap} failed')
             continue
 
         _, clean_buf = cv2.imencode('.jpg', result, [cv2.IMWRITE_JPEG_QUALITY, 90])
@@ -554,13 +590,16 @@ def upload_sensitive_preview():
         variants.append({'label': label, 'preview_b64': preview_b64, 'save_b64': save_b64})
 
     if not variants:
+        log_img(f'upload-sensitive-preview: {file.filename} all variants failed')
         return jsonify({"error": "Processing failed for all variants."}), 400
 
+    log_img(f'upload-sensitive-preview: {file.filename} generated {len(variants)} variant(s)')
     return jsonify({'filename': file.filename, 'variants': variants}), 200
 
 
 @app.route('/api/save-sensitive', methods=['POST'])
 def save_sensitive():
+    filename = '?'
     try:
         data = request.get_json()
         filename = data.get('filename', '')
@@ -571,11 +610,14 @@ def save_sensitive():
         img_array = np.frombuffer(img_bytes, np.uint8)
         img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
         if img is None:
+            log_img(f'save-sensitive: {filename} could not be decoded')
             return jsonify({"error": "Could not decode image."}), 400
         cv2.imwrite(os.path.join('./standard_cars', filename), img)
         save_half_side(img, filename)
+        log_img(f'save-sensitive: {filename} saved')
         return jsonify({"message": f"Saved {filename}!"}), 200
     except Exception as e:
+        log_img(f'save-sensitive: {filename} failed: {e}')
         return jsonify({"error": str(e)}), 500
 
 
@@ -589,10 +631,13 @@ def upload_images_sensitive():
 
     for file in files:
         if file.filename == '': continue
+        log_img(f'upload-sensitive: received {file.filename}')
 
         file_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        if img is None: continue
+        if img is None:
+            log_img(f'upload-sensitive: {file.filename} could not be decoded, skipping')
+            continue
 
         filename_lower = file.filename.lower()
 
@@ -602,6 +647,11 @@ def upload_images_sensitive():
                 cv2.imwrite(os.path.join('./standard_cars', file.filename), final_img)
                 save_half_side(final_img, file.filename)
                 processed_count += 1
+                log_img(f'upload-sensitive: {file.filename} processed')
+            else:
+                log_img(f'upload-sensitive: {file.filename} processing failed')
+        else:
+            log_img(f'upload-sensitive: {file.filename} does not match (1).jpg, skipping')
 
     if processed_count > 0:
         return jsonify({"message": f"Successfully processed {processed_count} image(s) with sensitive detection!"}), 200
@@ -618,10 +668,13 @@ def upload_images_brightness():
 
     for file in files:
         if file.filename == '': continue
+        log_img(f'upload-brightness: received {file.filename}')
 
         file_bytes = np.frombuffer(file.read(), np.uint8)
         img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
-        if img is None: continue
+        if img is None:
+            log_img(f'upload-brightness: {file.filename} could not be decoded, skipping')
+            continue
 
         filename_lower = file.filename.lower()
 
@@ -630,6 +683,7 @@ def upload_images_brightness():
             cv2.imwrite(os.path.join('./standard_cars', file.filename), final_img)
             save_half_side(final_img, file.filename)
             processed_count += 1
+            log_img(f'upload-brightness: {file.filename} processed (side)')
 
         elif "(2).jpg" in filename_lower:
             final_img = process_brightness_only(img)
@@ -637,6 +691,9 @@ def upload_images_brightness():
             cv2.imwrite(local_path, final_img)
             r2_upload(local_path, f'standard_hero_shots/{file.filename}')
             processed_count += 1
+            log_img(f'upload-brightness: {file.filename} processed (hero)')
+        else:
+            log_img(f'upload-brightness: {file.filename} does not match (1).jpg or (2).jpg, skipping')
 
     if processed_count > 0:
         return jsonify({"message": f"Brightness adjusted {processed_count} image(s)!"}), 200
@@ -655,6 +712,9 @@ def exile_images():
                 if os.path.exists(src):
                     shutil.move(src, os.path.join('./exile', filename))
                     moved.append(filename)
+                    log_img(f'exile: moved {filename} from {folder} to ./exile')
+                else:
+                    log_img(f'exile: {filename} not found in {folder}, nothing to move')
         return jsonify({'moved': moved}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
