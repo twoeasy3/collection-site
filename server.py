@@ -37,7 +37,7 @@ def purge_cf_cache(url):
     device except the one that just uploaded. Best-effort: a failed purge shouldn't
     fail the upload itself, since the file is already safely in R2 either way."""
     if not CF_CACHE_PURGE_TOKEN:
-        print('CF_CACHE_PURGE_TOKEN not set -- skipping cache purge (image is uploaded, but may be stale at the edge until it expires on its own).')
+        log_img(f'purge SKIPPED (no CF_CACHE_PURGE_TOKEN) for {url}')
         return
     try:
         resp = requests.post(
@@ -46,10 +46,13 @@ def purge_cf_cache(url):
             json={'files': [url]},
             timeout=10,
         )
-        if not resp.ok or not resp.json().get('success'):
-            print(f'Cache purge failed for {url}: {resp.status_code} {resp.text}')
+        body = resp.json()
+        if not resp.ok or not body.get('success'):
+            log_img(f'purge FAILED for {url}: {resp.status_code} {resp.text}')
+        else:
+            log_img(f'purge ok (id={body.get("result", {}).get("id")}) for {url}')
     except requests.RequestException as e:
-        print(f'Cache purge request failed for {url}: {e}')
+        log_img(f'purge request FAILED for {url}: {e}')
 
 
 def log_img(msg):
@@ -62,7 +65,13 @@ def r2_upload(local_path, r2_key):
     # for (object read/write only, no bucket-admin) and gets rejected with a 403 --
     # even though the bucket already exists and the actual upload would succeed.
     log_img(f'uploading to R2: {r2_key}')
-    subprocess.run(['rclone', 'copyto', '--s3-no-check-bucket', local_path, f'{R2_DEST}/{r2_key}'], check=True)
+    # R2 objects otherwise carry no Cache-Control header at all, so with nothing to go
+    # on browsers fall back to heuristic freshness (a fraction of the Date/Last-Modified
+    # gap) and can keep serving an old image for hours after an overwrite even though
+    # Cloudflare's edge (confirmed via cf-cache-status: DYNAMIC) was never the problem --
+    # it isn't caching this path either way. must-revalidate forces a conditional GET
+    # (cheap 304 via ETag/Last-Modified) on every load instead of blind reuse.
+    subprocess.run(['rclone', 'copyto', '--s3-no-check-bucket', '--header-upload', 'Cache-Control: no-cache, must-revalidate', local_path, f'{R2_DEST}/{r2_key}'], check=True)
     # Must match the URL byte-for-byte as the browser actually requests it, or the
     # purge misses the cached object entirely. Browsers percent-encode spaces (but
     # not parentheses) when turning "1799 (2).jpg" into a request path, so the raw
@@ -706,7 +715,12 @@ def exile_images():
         ids = request.get_json().get('ids', [])
         moved = []
         for car_id in ids:
-            for folder, suffix in [('./standard_cars', '(1).jpg'), ('./standard_hero_shots', '(2).jpg')]:
+            # R2 keys mirror worker.js's delete: half_standard_cars/hero shots, never
+            # the full-res standard_cars/ local folder (that copy is never uploaded).
+            for folder, suffix, r2_prefix in [
+                ('./standard_cars', '(1).jpg', 'half_standard_cars'),
+                ('./standard_hero_shots', '(2).jpg', 'standard_hero_shots'),
+            ]:
                 filename = f'{car_id} {suffix}'
                 src = os.path.join(folder, filename)
                 if os.path.exists(src):
@@ -715,6 +729,9 @@ def exile_images():
                     log_img(f'exile: moved {filename} from {folder} to ./exile')
                 else:
                     log_img(f'exile: {filename} not found in {folder}, nothing to move')
+                # Purge regardless of whether a local copy existed -- the R2 object
+                # (deleted separately by the worker) may still be cached at the edge.
+                purge_cf_cache(f'{PUBLIC_IMAGE_BASE}/{quote(f"{r2_prefix}/{filename}", safe="/()")}')
         return jsonify({'moved': moved}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500

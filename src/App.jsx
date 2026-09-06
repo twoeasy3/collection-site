@@ -18,15 +18,15 @@ function App({ isPublic = false }) {
 
   const [sidebarView, _setSidebarView] = useState('make');
   const [selectedLetter, _setSelectedLetter] = useState(null);
-  const [searchMode, setSearchMode] = useState('car');
+  const [searchMode, setSearchMode] = useState(() => (new URLSearchParams(window.location.search).get('mode') === 'release' ? 'release' : 'car'));
   const [viewMode, _setViewMode] = useState('gallery');
 
   const setSidebarView    = useCallback((v) => startTransition(() => _setSidebarView(v)),    []);
   const setSelectedLetter = useCallback((v) => startTransition(() => _setSelectedLetter(v)), []);
   const setViewMode       = useCallback((v) => startTransition(() => _setViewMode(v)),       []);
 
-  const [searchInput, setSearchInput] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState(() => new URLSearchParams(window.location.search).get('q') || '');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(() => new URLSearchParams(window.location.search).get('q') || '');
 
   const [selectedCar, setSelectedCar] = useState(null);
   const [isGalleryEditing, setIsGalleryEditing] = useState(false);
@@ -67,7 +67,7 @@ function App({ isPublic = false }) {
   const [prioritizeAiPending, setPrioritizeAiPending] = useState(false);
 
   const [expandedStacks, setExpandedStacks] = useState(new Set());
-  const [stackingEnabled, setStackingEnabled] = useState(true);
+  const [stackingEnabled, setStackingEnabled] = useState(() => localStorage.getItem('stackingEnabled') !== 'false');
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('theme') || 'dark';
     document.documentElement.dataset.theme = saved;
@@ -161,6 +161,8 @@ function App({ isPublic = false }) {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => { localStorage.setItem('stackingEnabled', String(stackingEnabled)); }, [stackingEnabled]);
 
   const showToast = useCallback((message, type = 'success') => {
     setToast({ message, type, visible: true });
@@ -330,6 +332,15 @@ function App({ isPublic = false }) {
   useEffect(() => { if (viewMode === 'missing') fetchMissingData(); }, [viewMode, fetchMissingData]);
   useEffect(() => { const h = setTimeout(() => setDebouncedSearchTerm(searchInput), 1000); return () => clearTimeout(h); }, [searchInput]);
   useEffect(() => { setCurrentPage(1); }, [debouncedSearchTerm, searchMode, sidebarView, viewMode]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (debouncedSearchTerm) params.set('q', debouncedSearchTerm); else params.delete('q');
+    if (searchMode !== 'car') params.set('mode', searchMode); else params.delete('mode');
+    const qs = params.toString();
+    const newUrl = window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash;
+    window.history.replaceState(null, '', newUrl);
+  }, [debouncedSearchTerm, searchMode]);
 
   useEffect(() => {
     if (!autoScroll || viewMode !== 'gallery' || !selectedCar) return;
