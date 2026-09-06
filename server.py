@@ -10,6 +10,7 @@ import subprocess
 import cv2
 import numpy as np
 import math
+import requests
 
 app = Flask(__name__)
 CORS(app)
@@ -20,8 +21,43 @@ BACKUP_FILE_PATH = './data/collection.csv.bak'
 # rclone remote + bucket, e.g. 'cloudflare:my-images-bucket'
 R2_DEST = 'r2:collection-images'
 
+# Public domain fronting the R2 bucket (see src/constants.js REMOTE_BASE) and its
+# Cloudflare zone ID (not a secret -- just an identifier, safe to hardcode).
+PUBLIC_IMAGE_BASE = 'https://pingmathehippo.com'
+CF_ZONE_ID = 'cb76dc8b155c3063e3039c162d6326dc'
+CF_CACHE_PURGE_TOKEN = os.environ.get('CF_CACHE_PURGE_TOKEN')
+
+
+def purge_cf_cache(url):
+    """rclone writes straight to R2's S3 API, which never touches Cloudflare's edge
+    cache in front of PUBLIC_IMAGE_BASE -- so without this, anyone who hit this exact
+    URL before the upload (e.g. a 404 for a car that never had an image yet) keeps
+    seeing that stale response for the full Cache-Control max-age (4 hours), on every
+    device except the one that just uploaded. Best-effort: a failed purge shouldn't
+    fail the upload itself, since the file is already safely in R2 either way."""
+    if not CF_CACHE_PURGE_TOKEN:
+        print('CF_CACHE_PURGE_TOKEN not set -- skipping cache purge (image is uploaded, but may be stale at the edge until it expires on its own).')
+        return
+    try:
+        resp = requests.post(
+            f'https://api.cloudflare.com/client/v4/zones/{CF_ZONE_ID}/purge_cache',
+            headers={'Authorization': f'Bearer {CF_CACHE_PURGE_TOKEN}', 'Content-Type': 'application/json'},
+            json={'files': [url]},
+            timeout=10,
+        )
+        if not resp.ok or not resp.json().get('success'):
+            print(f'Cache purge failed for {url}: {resp.status_code} {resp.text}')
+    except requests.RequestException as e:
+        print(f'Cache purge request failed for {url}: {e}')
+
+
 def r2_upload(local_path, r2_key):
-    subprocess.run(['rclone', 'copyto', local_path, f'{R2_DEST}/{r2_key}'], check=True)
+    # --s3-no-check-bucket: rclone's S3 backend otherwise calls CreateBucket before
+    # every copy to verify the destination exists, which this R2 token isn't scoped
+    # for (object read/write only, no bucket-admin) and gets rejected with a 403 --
+    # even though the bucket already exists and the actual upload would succeed.
+    subprocess.run(['rclone', 'copyto', '--s3-no-check-bucket', local_path, f'{R2_DEST}/{r2_key}'], check=True)
+    purge_cf_cache(f'{PUBLIC_IMAGE_BASE}/{r2_key}')
 
 # Ensure output directories exist
 os.makedirs('./standard_cars', exist_ok=True)

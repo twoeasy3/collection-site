@@ -519,15 +519,37 @@ function App({ isPublic = false }) {
     }
   };
 
+  const makeUnnamedCar = (id) => ({ ID: id, Make: '', Model: 'UNNAMED_CAR', Supername: '', Year: '', Brand: '', Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: 0 });
+
   const handleFillToId = () => {
-    const input = window.prompt('Fill empty cars up to ID:');
+    const input = window.prompt('Fill empty cars up to ID (or type "x" followed by a count, e.g. "x5", to add that many new cars instead):');
     if (input === null) return;
-    const targetId = parseInt(input, 10);
+    const trimmed = input.trim();
+
+    const countMatch = trimmed.match(/^x\s*(\d+)$/i);
+    if (countMatch) {
+      const count = parseInt(countMatch[1], 10);
+      if (isNaN(count) || count < 1) return showToast('Invalid count', 'error');
+      const existingIds = new Set(cars.map(c => Number(c.ID)));
+      const newCars = [];
+      let id = 1;
+      while (newCars.length < count) {
+        if (!existingIds.has(id)) { newCars.push(makeUnnamedCar(id)); existingIds.add(id); }
+        id++;
+      }
+      const updated = sortCars([...cars, ...newCars]);
+      setCars(updated);
+      saveToDB(newCars);
+      showToast(`Added ${newCars.length} UNNAMED_CAR entr${newCars.length === 1 ? 'y' : 'ies'}`, 'success');
+      return;
+    }
+
+    const targetId = parseInt(trimmed, 10);
     if (isNaN(targetId) || targetId < 1) return showToast('Invalid ID', 'error');
     const existingIds = new Set(cars.map(c => Number(c.ID)));
     const newCars = [];
     for (let id = 1; id <= targetId; id++) {
-      if (!existingIds.has(id)) newCars.push({ ID: id, Make: '', Model: 'UNNAMED_CAR', Supername: '', Year: '', Brand: '', Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: 0 });
+      if (!existingIds.has(id)) newCars.push(makeUnnamedCar(id));
     }
     if (newCars.length === 0) return showToast('No gaps found up to ID ' + targetId, 'success');
     const updated = sortCars([...cars, ...newCars]);

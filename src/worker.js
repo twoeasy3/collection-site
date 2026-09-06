@@ -126,6 +126,8 @@ async function handleAPI(request, env, url) {
     const { ids } = await request.json();
     const stmts = ids.map(id => env.DB.prepare('DELETE FROM cars WHERE id = ?').bind(parseInt(id)));
     await env.DB.batch(stmts);
+    const imageKeys = ids.flatMap(id => [`half_standard_cars/${id} (1).jpg`, `standard_hero_shots/${id} (2).jpg`]);
+    if (imageKeys.length) await env.IMAGES.delete(imageKeys);
     return json({ ok: true });
   }
 
@@ -143,7 +145,9 @@ async function handleAPI(request, env, url) {
   // Delete one car
   if (carMatch && request.method === 'DELETE') {
     if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
-    await env.DB.prepare('DELETE FROM cars WHERE id = ?').bind(parseInt(carMatch[1])).run();
+    const id = carMatch[1];
+    await env.DB.prepare('DELETE FROM cars WHERE id = ?').bind(parseInt(id)).run();
+    await env.IMAGES.delete([`half_standard_cars/${id} (1).jpg`, `standard_hero_shots/${id} (2).jpg`]);
     return json({ ok: true });
   }
 
