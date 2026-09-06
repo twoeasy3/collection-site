@@ -18,7 +18,8 @@ export const useImagePreloader = (cars, imageUpdates, visibleCars, gridPaneRef, 
     let cancelled = false;
 
     const allUrls = cars.map(car => {
-      const t = imageUpdates[car.ID] ? `?t=${imageUpdates[car.ID]}` : '';
+      const v = imageUpdates[car.ID] || car.ImageVersion;
+      const t = v ? `?t=${v}` : '';
       return `${BASE_PATH}/half_standard_cars/${car.ID} (1).jpg${t}`;
     });
 
@@ -58,7 +59,8 @@ export const useImagePreloader = (cars, imageUpdates, visibleCars, gridPaneRef, 
     const preloadCard = (id) => {
       const car = carById.get(id);
       if (!car) return;
-      const t = imageUpdates[id] ? `?t=${imageUpdates[id]}` : '';
+      const v = imageUpdates[id] || car.ImageVersion;
+      const t = v ? `?t=${v}` : '';
       const url = `${BASE_PATH}/half_standard_cars/${id} (1).jpg${t}`;
       if (preloadedRef.current.has(url)) return;
       preloadedRef.current.add(url);

@@ -112,8 +112,8 @@ async function handleAPI(request, env, url) {
     for (let i = 0; i < cars.length; i += CHUNK) {
       const stmts = cars.slice(i, i + CHUNK).map(c =>
         env.DB.prepare(
-          'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format,ai_suggested,ai_rejected) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-        ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0, c.ai_suggested ?? '{}', c.ai_rejected ?? '')
+          'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format,ai_suggested,ai_rejected,image_version) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+        ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0, c.ai_suggested ?? '{}', c.ai_rejected ?? '', c.image_version ?? 0)
       );
       await env.DB.batch(stmts);
     }
@@ -137,8 +137,8 @@ async function handleAPI(request, env, url) {
     if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
     const c = await request.json();
     await env.DB.prepare(
-      'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format,ai_suggested,ai_rejected) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
-    ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0, c.ai_suggested ?? '{}', c.ai_rejected ?? '').run();
+      'INSERT OR REPLACE INTO cars (id,year,make,model,supername,brand,series,country,category,description,broken_image,cover,name_format,ai_suggested,ai_rejected,image_version) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+    ).bind(c.id, c.year, c.make, c.model, c.supername, c.brand, c.series, c.country, c.category, c.description, c.broken_image, c.cover ?? 0, c.name_format ?? 0, c.ai_suggested ?? '{}', c.ai_rejected ?? '', c.image_version ?? 0).run();
     return json({ ok: true });
   }
 
@@ -148,6 +148,16 @@ async function handleAPI(request, env, url) {
     const id = carMatch[1];
     await env.DB.prepare('DELETE FROM cars WHERE id = ?').bind(parseInt(id)).run();
     await env.IMAGES.delete([`half_standard_cars/${id} (1).jpg`, `standard_hero_shots/${id} (2).jpg`]);
+    return json({ ok: true });
+  }
+
+  // Bump image_version after the local processing server writes a fresh image to
+  // R2 -- lets every client's image URL become content-addressed (?t=<version>)
+  // instead of relying on browser cache headers/revalidation to catch changes.
+  const touchMatch = url.pathname.match(/^\/api\/cars\/(\d+)\/touch-image$/);
+  if (touchMatch && request.method === 'POST') {
+    if (!isAuthorized(request, env)) return json({ error: 'Unauthorized' }, 401);
+    await env.DB.prepare('UPDATE cars SET image_version = ? WHERE id = ?').bind(Date.now(), parseInt(touchMatch[1])).run();
     return json({ ok: true });
   }
 

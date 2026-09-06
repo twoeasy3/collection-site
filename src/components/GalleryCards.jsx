@@ -60,7 +60,7 @@ export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, 
         overflow: 'hidden', backgroundImage: `url(${fallbackGridImage})`,
         backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'
       }}>
-        <CarCardImage id={car.ID} model={car.Model} imageUpdate={imageUpdate} eagerLoad={eagerLoad} />
+        <CarCardImage id={car.ID} model={car.Model} imageUpdate={imageUpdate || car.ImageVersion} eagerLoad={eagerLoad} />
         {aiOtherPending && (
           <span title="Has pending AI-suggested field(s)" style={{ position: 'absolute', top: '3px', right: '3px', zIndex: 2, backgroundColor: 'var(--ai-badge-bg)', color: 'var(--ai-badge-tx)', borderRadius: '10px', padding: '1px 6px', fontWeight: '800', fontSize: '0.65em', lineHeight: '1.5', boxShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
             AI
@@ -100,7 +100,8 @@ export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpda
   const nameWithoutYear = hideMake
     ? [customPrefix, firstCar.Model].filter(Boolean).join(' ')
     : [customPrefix, firstCar.Make, firstCar.Model].filter(Boolean).join(' ');
-  const src = `${BASE_PATH}/half_standard_cars/${firstCar.ID} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;
+  const version = imageUpdate || firstCar.ImageVersion;
+  const src = `${BASE_PATH}/half_standard_cars/${firstCar.ID} (1).jpg${version ? `?t=${version}` : ''}`;
 
   return (
     <div

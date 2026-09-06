@@ -195,7 +195,8 @@ function App({ isPublic = false }) {
   useEffect(() => {
     if (!selectedCar) return;
     setHeroPopupOpen(false);
-    const t = imageUpdates[selectedCar.ID] ? `?t=${imageUpdates[selectedCar.ID]}` : '';
+    const v = imageUpdates[selectedCar.ID] || selectedCar.ImageVersion;
+    const t = v ? `?t=${v}` : '';
     new Image().src = `${BASE_PATH}/half_standard_cars/${selectedCar.ID} (1).jpg${t}`;
     if (carInfoRef.current) carInfoRef.current.scrollTop = 0;
   }, [selectedCar?.ID, imageUpdates]);
@@ -204,7 +205,8 @@ function App({ isPublic = false }) {
     if (!expandedStacks.size) return;
     for (const car of cars) {
       if (expandedStacks.has(getStackKey(car))) {
-        const t = imageUpdates[car.ID] ? `?t=${imageUpdates[car.ID]}` : '';
+        const v = imageUpdates[car.ID] || car.ImageVersion;
+        const t = v ? `?t=${v}` : '';
         new Image().src = `${BASE_PATH}/half_standard_cars/${car.ID} (1).jpg${t}`;
       }
     }
@@ -425,7 +427,10 @@ function App({ isPublic = false }) {
   const handleDropSensitive = async (e) => { e.preventDefault(); setIsDragging(false); setDragTarget(null); uploadFilesSensitive(Array.from(e.dataTransfer.files)); };
   const handleMobileFileSelect = (e) => { uploadFiles(Array.from(e.target.files)); e.target.value = ''; };
 
-  const getHeroImage = (id) => `${BASE_PATH}/standard_hero_shots/${id} (2).jpg${imageUpdates[id] ? `?t=${imageUpdates[id]}` : ''}`;
+  const getHeroImage = (car) => {
+    const v = imageUpdates[car.ID] || car.ImageVersion;
+    return `${BASE_PATH}/standard_hero_shots/${car.ID} (2).jpg${v ? `?t=${v}` : ''}`;
+  };
   const fallbackGridImage = `${BASE_PATH}/mystery_side.jpg`;
   const fallbackHeroImage = `${BASE_PATH}/mystery_hero.jpg`;
 
@@ -943,7 +948,7 @@ function App({ isPublic = false }) {
       {heroPopupOpen && selectedCar && (
         <div onClick={() => setHeroPopupOpen(false)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.93)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img
-            src={getHeroImage(selectedCar.ID)}
+            src={getHeroImage(selectedCar)}
             alt={selectedCarFullName}
             onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }}
             style={{ maxWidth: '95vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 8px 32px rgba(0,0,0,0.8)' }}
@@ -1267,13 +1272,13 @@ function App({ isPublic = false }) {
               <div className="hero-image-container" onClick={isMobile ? () => setHeroPopupOpen(true) : undefined}>
                 {isMobile ? (
                   <img
-                    src={getHeroImage(selectedCar.ID)}
+                    src={getHeroImage(selectedCar)}
                     alt={selectedCarFullName}
                     onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }}
                     className="hero-image"
                   />
                 ) : (
-                  <img key={getHeroImage(selectedCar.ID)} src={getHeroImage(selectedCar.ID)} alt={selectedCarFullName} onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }} className="hero-image" fetchPriority="high" />
+                  <img key={getHeroImage(selectedCar)} src={getHeroImage(selectedCar)} alt={selectedCarFullName} onError={(e) => { e.target.onerror = null; e.target.src = fallbackHeroImage; }} className="hero-image" fetchPriority="high" />
                 )}
               </div>
               <div className="car-info" key={selectedCar?.ID}>

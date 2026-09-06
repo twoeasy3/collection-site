@@ -5,7 +5,8 @@ import HoverPreview from './HoverPreview';
 
 const CarListRow = React.memo(({ car, isSelected, isListEditing, draft, imageUpdate, handleSelectRow, handleCellChange, hideId, categories }) => {
   const getVal = (field) => draft?.[field] !== undefined ? draft[field] : (car[field] || '');
-  const imgUrl = `${BASE_PATH}/half_standard_cars/${car.ID} (1).jpg${imageUpdate ? `?t=${imageUpdate}` : ''}`;
+  const imgVersion = imageUpdate || car.ImageVersion;
+  const imgUrl = `${BASE_PATH}/half_standard_cars/${car.ID} (1).jpg${imgVersion ? `?t=${imgVersion}` : ''}`;
   const fallbackUrl = `${BASE_PATH}/mystery_side.jpg`;
   const inp = { width: '100%', padding: '4px', boxSizing: 'border-box', backgroundColor: 'var(--bg-input)', color: 'var(--tx)', border: '1px solid var(--bd-2)', borderRadius: '3px' };
 

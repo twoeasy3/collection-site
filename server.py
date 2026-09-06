@@ -28,6 +28,15 @@ PUBLIC_IMAGE_BASE = 'https://pingmathehippo.com'
 CF_ZONE_ID = 'cb76dc8b155c3063e3039c162d6326dc'
 CF_CACHE_PURGE_TOKEN = os.environ.get('CF_CACHE_PURGE_TOKEN')
 
+# The Worker/D1 API (NOT the same host as PUBLIC_IMAGE_BASE -- pingmathehippo.com
+# is only a custom domain in front of the R2 bucket and has no /api/* routes at
+# all; confirmed pingmathehippo.com/api/cars 404s while this host 200s).
+API_BASE = os.environ.get('API_BASE_URL', 'https://collection-site.twoeasythree.workers.dev')
+
+# Same secret the Worker checks in isAuthorized() (env.API_KEY there) -- lets this
+# server bump a car's image_version after writing a fresh image to R2.
+ADMIN_API_KEY = os.environ.get('ADMIN_API_KEY')
+
 
 def purge_cf_cache(url):
     """rclone writes straight to R2's S3 API, which never touches Cloudflare's edge
@@ -59,25 +68,50 @@ def log_img(msg):
     print(f'[img] {msg}', flush=True)
 
 
+def touch_image_version(car_id):
+    """Tells the Worker a fresh image just landed in R2 for this car, so it can bump
+    cars.image_version. The frontend appends that version to every image URL
+    (?t=<version>), making URLs content-addressed -- a changed image is a new URL,
+    so browsers never need to guess (or be told) whether a cached copy is stale.
+    Best-effort: a failed bump shouldn't fail the upload, since the R2 object is
+    already correct either way -- it just means this one car keeps serving its old
+    cached image until the next successful upload/version bump."""
+    if not ADMIN_API_KEY:
+        log_img(f'touch-image SKIPPED (no ADMIN_API_KEY) for car {car_id}')
+        return
+    try:
+        resp = requests.post(
+            f'{API_BASE}/api/cars/{car_id}/touch-image',
+            headers={'Authorization': f'Bearer {ADMIN_API_KEY}'},
+            timeout=10,
+        )
+        if not resp.ok:
+            log_img(f'touch-image FAILED for car {car_id}: {resp.status_code} {resp.text}')
+        else:
+            log_img(f'touch-image ok for car {car_id}')
+    except requests.RequestException as e:
+        log_img(f'touch-image request FAILED for car {car_id}: {e}')
+
+
 def r2_upload(local_path, r2_key):
     # --s3-no-check-bucket: rclone's S3 backend otherwise calls CreateBucket before
     # every copy to verify the destination exists, which this R2 token isn't scoped
     # for (object read/write only, no bucket-admin) and gets rejected with a 403 --
     # even though the bucket already exists and the actual upload would succeed.
     log_img(f'uploading to R2: {r2_key}')
-    # R2 objects otherwise carry no Cache-Control header at all, so with nothing to go
-    # on browsers fall back to heuristic freshness (a fraction of the Date/Last-Modified
-    # gap) and can keep serving an old image for hours after an overwrite even though
-    # Cloudflare's edge (confirmed via cf-cache-status: DYNAMIC) was never the problem --
-    # it isn't caching this path either way. must-revalidate forces a conditional GET
-    # (cheap 304 via ETag/Last-Modified) on every load instead of blind reuse.
-    subprocess.run(['rclone', 'copyto', '--s3-no-check-bucket', '--header-upload', 'Cache-Control: no-cache, must-revalidate', local_path, f'{R2_DEST}/{r2_key}'], check=True)
+    # Every image URL now carries a ?t=<image_version> cache-buster (see
+    # touch_image_version), so a changed image is always a brand new URL rather than
+    # the same URL meaning different things over time -- safe to cache forever.
+    subprocess.run(['rclone', 'copyto', '--s3-no-check-bucket', '--header-upload', 'Cache-Control: public, max-age=31536000, immutable', local_path, f'{R2_DEST}/{r2_key}'], check=True)
     # Must match the URL byte-for-byte as the browser actually requests it, or the
     # purge misses the cached object entirely. Browsers percent-encode spaces (but
     # not parentheses) when turning "1799 (2).jpg" into a request path, so the raw
     # r2_key (with a literal space) doesn't match what's cached under the %20 form --
     # encode the same way here, or overwritten images keep serving stale content.
     purge_cf_cache(f'{PUBLIC_IMAGE_BASE}/{quote(r2_key, safe="/()")}')
+    car_id_match = re.match(r'^(\d+)', os.path.basename(r2_key))
+    if car_id_match:
+        touch_image_version(car_id_match.group(1))
 
 # Ensure output directories exist
 os.makedirs('./standard_cars', exist_ok=True)

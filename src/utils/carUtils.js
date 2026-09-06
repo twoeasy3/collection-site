@@ -70,6 +70,7 @@ export const toAppCar = (row) => ({
   NameFormat: row.name_format || 0,
   AiSuggested: parseObj(row.ai_suggested),
   AiRejected: row.ai_rejected || '',
+  ImageVersion: row.image_version || 0,
 });
 
 export const AI_FIELD_TO_APP_FIELD = { year: 'Year', series: 'Series', category: 'Category', description: 'Description', country: 'Country' };
@@ -92,4 +93,5 @@ export const toDBRow = (car) => ({
   name_format: car.NameFormat || 0,
   ai_suggested: JSON.stringify(car.AiSuggested || {}),
   ai_rejected: car.AiRejected || '',
+  image_version: car.ImageVersion || 0,
 });
