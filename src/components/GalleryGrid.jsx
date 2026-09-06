@@ -90,6 +90,7 @@ const GalleryGrid = React.memo(({
             <GalleryCard
               key={`${groupName}-${car.ID}`}
               car={car}
+              groupName={groupName}
               isGalleryEditingRef={isGalleryEditingRef}
               sidebarView={sidebarView}
               imageUpdate={imageUpdates[car.ID]}
@@ -113,12 +114,19 @@ const GalleryGrid = React.memo(({
 
         for (const stackKey of stackOrder) {
           const stackCars = stackMap.get(stackKey);
+          // A car with multiple categories legitimately appears in more than one
+          // group here (category view doesn't dedupe across groups) -- so the same
+          // physical stack can render once per category it spans. expandedStacks
+          // must be scoped per-group, or expanding it in one category silently
+          // expands the identically-keyed stack in every other category too.
+          const scopedStackKey = `${groupName}::${stackKey}`;
 
           if (stackCars.length === 1) {
             renderedNodes.push(
               <GalleryCard
                 key={`${groupName}-${stackCars[0].ID}`}
                 car={stackCars[0]}
+                groupName={groupName}
                 isGalleryEditingRef={isGalleryEditingRef}
                 sidebarView={sidebarView}
                 imageUpdate={imageUpdates[stackCars[0].ID]}
@@ -130,7 +138,7 @@ const GalleryGrid = React.memo(({
               />
             );
             visiblePos++;
-          } else if (expandedStacks.has(stackKey)) {
+          } else if (expandedStacks.has(scopedStackKey)) {
             const fc = stackCars[0];
             const vy = fc.Year && fc.Year.toUpperCase() !== 'N/A' ? fc.Year : null;
 
@@ -146,7 +154,7 @@ const GalleryGrid = React.memo(({
               renderedNodes.push(
                 <div key={`sv-${groupName}-${firstCar.ID}`} style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                   <div
-                    onClick={() => toggleStack(stackKey)}
+                    onClick={() => toggleStack(scopedStackKey)}
                     style={{ width: headerWidth, cursor: 'pointer', backgroundColor: 'var(--expand-hdr)', border: '1px solid var(--accent)', borderRadius: '6px', padding: '5px 14px', marginBottom: '2px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.8em', whiteSpace: 'nowrap', opacity: 0.85 }}
                   >
                     <span style={{ color: 'var(--accent)', fontWeight: 'bold', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -156,6 +164,7 @@ const GalleryGrid = React.memo(({
                   </div>
                   <GalleryCard
                     car={firstCar}
+                    groupName={groupName}
                     isGalleryEditingRef={isGalleryEditingRef}
                     sidebarView={sidebarView}
                     imageUpdate={imageUpdates[firstCar.ID]}
@@ -177,6 +186,7 @@ const GalleryGrid = React.memo(({
                   <GalleryCard
                     key={`${groupName}-${car.ID}`}
                     car={car}
+                    groupName={groupName}
                     isGalleryEditingRef={isGalleryEditingRef}
                     sidebarView={sidebarView}
                     imageUpdate={imageUpdates[car.ID]}
@@ -197,11 +207,12 @@ const GalleryGrid = React.memo(({
               <StackedCard
                 key={`stack-${groupName}-${stackKey}`}
                 firstCar={stackCars[0]}
+                groupName={groupName}
                 count={stackCars.length}
                 stackCarIds={stackCars.map(c => c.ID).join(' ')}
                 imageUpdate={imageUpdates[stackCars[0].ID]}
                 sidebarView={sidebarView}
-                onToggle={() => toggleStack(stackKey)}
+                onToggle={() => toggleStack(scopedStackKey)}
                 onSelect={handleSelectCar}
                 fallbackGridImage={fallbackGridImage}
                 isPublic={isPublic}

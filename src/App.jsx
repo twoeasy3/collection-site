@@ -29,6 +29,11 @@ function App({ isPublic = false }) {
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(() => new URLSearchParams(window.location.search).get('q') || '');
 
   const [selectedCar, setSelectedCar] = useState(null);
+  // Which group's rendering of selectedCar was actually clicked -- a car spanning
+  // multiple categories renders once per category, all sharing the same data-car-id,
+  // so scroll/highlight logic needs this to target the right DOM instance instead of
+  // whichever one document order happens to put first.
+  const [selectedCarGroup, setSelectedCarGroup] = useState(null);
   const [isGalleryEditing, setIsGalleryEditing] = useState(false);
   const isGalleryEditingRef = useRef(false);
   isGalleryEditingRef.current = isGalleryEditing;
@@ -138,6 +143,8 @@ function App({ isPublic = false }) {
 
   const selectedIdRef = useRef(null);
   selectedIdRef.current = selectedCar?.ID ?? null;
+  const selectedGroupRef = useRef(null);
+  selectedGroupRef.current = selectedCarGroup ?? null;
   const selectedCardElRef = useRef(null);
 
   // Applies .selected CSS class imperatively so card selection doesn't rebuild gallery nodes.
@@ -145,12 +152,17 @@ function App({ isPublic = false }) {
     const container = gridPaneRef.current;
     if (!container) return;
     const id = selectedIdRef.current;
+    const group = selectedGroupRef.current;
 
     selectedCardElRef.current?.classList.remove('selected');
     selectedCardElRef.current = null;
     if (id == null) return;
 
-    const cardEl = container.querySelector(`.car-card[data-car-id="${id}"]`);
+    // A car spanning multiple categories renders one .car-card per category, all
+    // sharing data-car-id -- prefer the instance actually clicked (data-group) so
+    // the highlight doesn't land on a different category's copy of the same car.
+    const cardEl = (group && container.querySelector(`.car-card[data-car-id="${id}"][data-group="${group}"]`))
+      || container.querySelector(`.car-card[data-car-id="${id}"]`);
     if (cardEl) { cardEl.classList.add('selected'); selectedCardElRef.current = cardEl; return; }
 
     const stackEl = container.querySelector(`[data-stack-car-ids~="${id}"]`);
@@ -203,8 +215,12 @@ function App({ isPublic = false }) {
 
   useEffect(() => {
     if (!expandedStacks.size) return;
+    // expandedStacks entries are "groupName::stackKey" (see GalleryGrid) so that a
+    // stack expanded under one category doesn't also appear expanded under another
+    // category the same cars belong to -- strip the group prefix to match here.
+    const expandedBareKeys = new Set([...expandedStacks].map(k => k.slice(k.indexOf('::') + 2)));
     for (const car of cars) {
-      if (expandedStacks.has(getStackKey(car))) {
+      if (expandedBareKeys.has(getStackKey(car))) {
         const v = imageUpdates[car.ID] || car.ImageVersion;
         const t = v ? `?t=${v}` : '';
         new Image().src = `${BASE_PATH}/half_standard_cars/${car.ID} (1).jpg${t}`;
@@ -347,13 +363,21 @@ function App({ isPublic = false }) {
   useEffect(() => {
     if (!autoScroll || viewMode !== 'gallery' || !selectedCar) return;
     const raf = requestAnimationFrame(() => {
-      const card = gridPaneRef.current?.querySelector(`[data-car-id="${selectedCar.ID}"]`);
+      // A car spanning multiple categories renders once per category, all sharing
+      // data-car-id -- scope to the group actually clicked (selectedCarGroup) first,
+      // or every lookup here just grabs whichever instance is first in DOM order.
+      const card = (selectedCarGroup && gridPaneRef.current?.querySelector(`[data-car-id="${selectedCar.ID}"][data-group="${selectedCarGroup}"]`))
+        || gridPaneRef.current?.querySelector(`[data-car-id="${selectedCar.ID}"]`);
       if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
       const selectedKey = getStackKey(selectedCar);
-      for (const { visibleGroupCars } of groupedAndFilteredCarsRef.current) {
+      const orderedGroups = selectedCarGroup
+        ? [...groupedAndFilteredCarsRef.current].sort((a, b) => (a.groupName === selectedCarGroup ? -1 : b.groupName === selectedCarGroup ? 1 : 0))
+        : groupedAndFilteredCarsRef.current;
+      for (const { groupName, visibleGroupCars } of orderedGroups) {
         for (const car of visibleGroupCars) {
           if (getStackKey(car) === selectedKey) {
-            const coverEl = gridPaneRef.current?.querySelector(`[data-car-id="${car.ID}"]`);
+            const coverEl = gridPaneRef.current?.querySelector(`[data-car-id="${car.ID}"][data-group="${groupName}"]`)
+              || gridPaneRef.current?.querySelector(`[data-car-id="${car.ID}"]`);
             if (coverEl) { coverEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
             break;
           }
@@ -362,7 +386,7 @@ function App({ isPublic = false }) {
       if (gridPaneRef.current) gridPaneRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     });
     return () => cancelAnimationFrame(raf);
-  }, [autoScroll, debouncedSearchTerm, searchMode, sidebarView, viewMode, selectedCar]);
+  }, [autoScroll, debouncedSearchTerm, searchMode, sidebarView, viewMode, selectedCar, selectedCarGroup]);
 
   useEffect(() => {
     if (viewMode !== 'gallery') return;
@@ -836,7 +860,7 @@ function App({ isPublic = false }) {
     }
     const group = groupedAndFilteredCars.find(g => g.groupName === groupName);
     const firstCar = group?.visibleGroupCars[0];
-    if (firstCar) setSelectedCar(firstCar);
+    if (firstCar) { setSelectedCar(firstCar); setSelectedCarGroup(groupName); }
     const elId = `header-${groupName}`;
     if (viewMode === 'list') {
       let carsBeforeGroup = 0;
@@ -895,7 +919,7 @@ function App({ isPublic = false }) {
   const showDecadeDrawer = sidebarView === 'decade';
   const showDrawer = (showAlphabetDrawer && selectedLetter) || (showDecadeDrawer && selectedLetter);
 
-  const handleSelectCar = useCallback((car) => { setSelectedCar(car); playSelectSound(); }, [playSelectSound]);
+  const handleSelectCar = useCallback((car, groupName) => { setSelectedCar(car); setSelectedCarGroup(groupName ?? null); playSelectSound(); }, [playSelectSound]);
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
 

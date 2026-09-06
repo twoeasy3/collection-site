@@ -28,7 +28,7 @@ export const CarCardImage = React.memo(({ id, model, imageUpdate, eagerLoad }) =
 );
 
 // Receives imageUpdate only for its own car ID so uploads don't re-render other cards.
-export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, imageUpdate, fallbackGridImage, onSelect, showToast, eagerLoad, hideId, isPublic }) => {
+export const GalleryCard = React.memo(({ car, groupName, isGalleryEditingRef, sidebarView, imageUpdate, fallbackGridImage, onSelect, showToast, eagerLoad, hideId, isPublic }) => {
   const validYear = car.Year && car.Year.toUpperCase() !== 'N/A' ? car.Year : null;
   const aiPendingFields = car.AiSuggested ? Object.keys(car.AiSuggested) : [];
   const aiYearPending = aiPendingFields.includes('year');
@@ -45,13 +45,14 @@ export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, 
       showToast("Please save or cancel your current edits first.", "error");
       return;
     }
-    onSelect(car);
-  }, [isGalleryEditingRef, onSelect, car, showToast]);
+    onSelect(car, groupName);
+  }, [isGalleryEditingRef, onSelect, car, groupName, showToast]);
 
   return (
     <div
       className="car-card"
       data-car-id={car.ID}
+      data-group={groupName}
       onClick={handleClick}
       style={{ cursor: 'pointer', backgroundColor: 'var(--bg-card)', borderRadius: '4px', overflow: 'hidden', display: 'block', minWidth: 0 }}
     >
@@ -83,13 +84,14 @@ export const GalleryCard = React.memo(({ car, isGalleryEditingRef, sidebarView, 
   );
 }, (prev, next) =>
   prev.car === next.car &&
+  prev.groupName === next.groupName &&
   prev.sidebarView === next.sidebarView &&
   prev.imageUpdate === next.imageUpdate &&
   prev.onSelect === next.onSelect &&
   prev.isPublic === next.isPublic
 );
 
-export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpdate, sidebarView, onToggle, onSelect, fallbackGridImage, isPublic }) => {
+export const StackedCard = React.memo(({ firstCar, groupName, count, stackCarIds, imageUpdate, sidebarView, onToggle, onSelect, fallbackGridImage, isPublic }) => {
   const validYear = firstCar.Year && firstCar.Year.toUpperCase() !== 'N/A' ? firstCar.Year : null;
   const aiPendingFields = firstCar.AiSuggested ? Object.keys(firstCar.AiSuggested) : [];
   const aiYearPending = aiPendingFields.includes('year');
@@ -107,8 +109,9 @@ export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpda
     <div
       className="stacked-card"
       data-car-id={firstCar.ID}
+      data-group={groupName}
       data-stack-car-ids={stackCarIds}
-      onClick={() => { onSelect(firstCar); onToggle(); }}
+      onClick={() => { onSelect(firstCar, groupName); onToggle(); }}
       title={`${count} variants — click to expand`}
       style={{ position: 'relative', minWidth: 0, cursor: 'pointer' }}
     >
@@ -137,6 +140,7 @@ export const StackedCard = React.memo(({ firstCar, count, stackCarIds, imageUpda
   );
 }, (prev, next) =>
   prev.firstCar === next.firstCar &&
+  prev.groupName === next.groupName &&
   prev.count === next.count &&
   prev.stackCarIds === next.stackCarIds &&
   prev.imageUpdate === next.imageUpdate &&
