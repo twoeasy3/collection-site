@@ -12,6 +12,32 @@ import { getStackKey } from './components/GalleryCards';
 import { SidebarContent, SecondarySidebar } from './components/SidebarContent';
 import GalleryGrid from './components/GalleryGrid';
 
+// Fields offered in the "Add same casting" copy picker -- deliberately excludes
+// per-instance/housekeeping fields (ID, Broken_image, Cover, ImageVersion,
+// AiSuggested/AiRejected, NameFormat) since those describe a specific unit's own
+// image/status rather than the casting itself.
+const CASTING_COPY_FIELDS = [
+  { key: 'Make', label: 'Make' },
+  { key: 'Model', label: 'Model' },
+  { key: 'Supername', label: 'Supername' },
+  { key: 'Year', label: 'Year' },
+  { key: 'Brand', label: 'Brand' },
+  { key: 'Series', label: 'Series' },
+  { key: 'Country', label: 'Country' },
+  { key: 'Category', label: 'Category' },
+  { key: 'Description', label: 'Description' },
+];
+
+const isCastingFieldFilled = (car, key) => {
+  const v = car[key];
+  return Array.isArray(v) ? v.length > 0 : !!String(v || '').trim();
+};
+
+const formatCastingFieldValue = (car, key) => {
+  const v = car[key];
+  return Array.isArray(v) ? v.join(', ') : String(v || '');
+};
+
 function App({ isPublic = false }) {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,6 +60,9 @@ function App({ isPublic = false }) {
   // so scroll/highlight logic needs this to target the right DOM instance instead of
   // whichever one document order happens to put first.
   const [selectedCarGroup, setSelectedCarGroup] = useState(null);
+  // { sourceCar, fields: { [fieldKey]: boolean } } while the "Add same casting"
+  // field picker is open, else null.
+  const [castingCopyState, setCastingCopyState] = useState(null);
   const [isGalleryEditing, setIsGalleryEditing] = useState(false);
   const isGalleryEditingRef = useRef(false);
   isGalleryEditingRef.current = isGalleryEditing;
@@ -600,10 +629,46 @@ function App({ isPublic = false }) {
 
   const handleCreateSameCasting = () => {
     if (!selectedCar) return;
+    const fields = {};
+    CASTING_COPY_FIELDS.forEach(({ key }) => { fields[key] = key !== 'Supername' && isCastingFieldFilled(selectedCar, key); });
+    setCastingCopyState({ sourceCar: selectedCar, fields });
+  };
+
+  const toggleCastingField = (key) => setCastingCopyState(prev => ({ ...prev, fields: { ...prev.fields, [key]: !prev.fields[key] } }));
+
+  const applyCopyToNewCar = () => {
+    const { sourceCar, fields } = castingCopyState;
     const newId = getNextAvailableId(cars);
-    const newCar = { ID: newId, Make: selectedCar.Make || '', Model: selectedCar.Model || '', Supername: '', Year: selectedCar.Year || '', Brand: selectedCar.Brand || '', Series: selectedCar.Series || '', Country: Array.isArray(selectedCar.Country) ? [...selectedCar.Country] : [], Category: Array.isArray(selectedCar.Category) ? [...selectedCar.Category] : [], Description: selectedCar.Description || '', Broken_image: 'FALSE', Cover: false, NameFormat: selectedCar.NameFormat || 0, ImageVersion: Date.now() };
+    const newCar = { ID: newId, Make: '', Model: '', Supername: '', Year: '', Brand: '', Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: sourceCar.NameFormat || 0, ImageVersion: Date.now() };
+    CASTING_COPY_FIELDS.forEach(({ key }) => {
+      if (!fields[key]) return;
+      const v = sourceCar[key];
+      newCar[key] = Array.isArray(v) ? [...v] : (v || '');
+    });
     setSelectedCar(newCar);
     setIsGalleryEditing(true);
+    setCastingCopyState(null);
+  };
+
+  const applyCopyToId = () => {
+    const { sourceCar, fields } = castingCopyState;
+    const targetIdInput = window.prompt(`Copy the selected fields from #${sourceCar.ID} onto which ID?`);
+    if (!targetIdInput || !targetIdInput.trim()) return;
+    const cleanTargetId = String(targetIdInput.trim());
+    if (cleanTargetId === String(sourceCar.ID)) return showToast("Can't copy a casting onto itself.", 'error');
+    const targetCar = cars.find(c => String(c.ID) === cleanTargetId);
+    if (!targetCar) return showToast(`Car with ID #${cleanTargetId} not found.`, 'error');
+    if (!window.confirm(`Overwrite fields on #${targetCar.ID}: ${targetCar.Make} ${targetCar.Model} with values from #${sourceCar.ID}: ${sourceCar.Make} ${sourceCar.Model}?`)) return;
+    const updatedTarget = { ...targetCar };
+    CASTING_COPY_FIELDS.forEach(({ key }) => {
+      if (!fields[key]) return;
+      const v = sourceCar[key];
+      updatedTarget[key] = Array.isArray(v) ? [...v] : (v || '');
+    });
+    setCars(prevCars => sortCars(prevCars.map(c => String(c.ID) === String(targetCar.ID) ? updatedTarget : c)));
+    setSelectedCar(updatedTarget);
+    saveSingleCar(updatedTarget);
+    setCastingCopyState(null);
   };
 
   const handleDeleteGallery = async () => {
@@ -1055,6 +1120,34 @@ function App({ isPublic = false }) {
                     <div style={{ padding: '4px 10px', color: '#ccc', fontWeight: 'bold', fontSize: '0.85rem' }}>{label}</div>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {castingCopyState && (() => {
+        const { sourceCar, fields } = castingCopyState;
+        const filledFields = CASTING_COPY_FIELDS.filter(f => isCastingFieldFilled(sourceCar, f.key));
+        return (
+          <div onClick={() => setCastingCopyState(null)} style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.75)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: 'var(--bg-raised)', borderRadius: '8px', padding: '20px', width: '100%', maxWidth: '420px', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.6)' }}>
+              <h3 style={{ margin: '0 0 4px', color: 'var(--tx)' }}>Copy casting from #{sourceCar.ID}</h3>
+              <p style={{ margin: '0 0 12px', color: 'var(--tx-3)', fontSize: '0.85em' }}>Choose which fields to carry over, then pick a destination.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+                {filledFields.length === 0 && <div style={{ color: 'var(--tx-3)', fontSize: '0.85em' }}>This car has no filled fields to copy.</div>}
+                {filledFields.map(({ key, label }) => (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.9em', color: 'var(--tx)', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!fields[key]} onChange={() => toggleCastingField(key)} />
+                    <span style={{ fontWeight: 'bold', minWidth: '90px', flexShrink: 0 }}>{label}</span>
+                    <span style={{ color: 'var(--tx-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{formatCastingFieldValue(sourceCar, key)}</span>
+                  </label>
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                <button onClick={() => setCastingCopyState(null)} style={{ padding: '7px 14px', backgroundColor: 'transparent', color: 'var(--tx-3)', border: '1px solid var(--bd-2)', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Cancel</button>
+                <button onClick={applyCopyToId} style={{ padding: '7px 14px', backgroundColor: '#17a2b8', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Copy to ID</button>
+                <button onClick={applyCopyToNewCar} style={{ padding: '7px 14px', backgroundColor: '#e67e22', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Copy to New Car</button>
               </div>
             </div>
           </div>
