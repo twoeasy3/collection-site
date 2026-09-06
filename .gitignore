@@ -42,3 +42,6 @@ scratchpad.md
 batch*.json
 backups/
 scripts/deduce_fields.py
+
+# Wheel-leveling batch scan output (see scripts/scan_wheel_angles.py)
+wheel_level_test/
