@@ -521,7 +521,7 @@ function App({ isPublic = false }) {
 
   const handleCreateNew = ({ make = '', brand = '' } = {}) => {
     const newId = getNextAvailableId(cars);
-    const newCar = { ID: newId, Make: make, Model: '', Supername: '', Year: sidebarView === 'decade' && selectedLetter && selectedLetter !== 'Unknown' ? selectedLetter : '', Brand: brand, Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: 0 };
+    const newCar = { ID: newId, Make: make, Model: '', Supername: '', Year: sidebarView === 'decade' && selectedLetter && selectedLetter !== 'Unknown' ? selectedLetter : '', Brand: brand, Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: 0, ImageVersion: Date.now() };
     if (viewMode === 'gallery') {
       setSelectedCar(newCar);
       setIsGalleryEditing(true);
@@ -535,7 +535,7 @@ function App({ isPublic = false }) {
     }
   };
 
-  const makeUnnamedCar = (id) => ({ ID: id, Make: '', Model: 'UNNAMED_CAR', Supername: '', Year: '', Brand: '', Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: 0 });
+  const makeUnnamedCar = (id) => ({ ID: id, Make: '', Model: 'UNNAMED_CAR', Supername: '', Year: '', Brand: '', Series: '', Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false, NameFormat: 0, ImageVersion: Date.now() });
 
   const handleFillToId = () => {
     const input = window.prompt('Fill empty cars up to ID (or type "x" followed by a count, e.g. "x5", to add that many new cars instead):');
@@ -577,7 +577,7 @@ function App({ isPublic = false }) {
   const handleCreateSameCasting = () => {
     if (!selectedCar) return;
     const newId = getNextAvailableId(cars);
-    const newCar = { ID: newId, Make: selectedCar.Make || '', Model: selectedCar.Model || '', Supername: '', Year: selectedCar.Year || '', Brand: selectedCar.Brand || '', Series: selectedCar.Series || '', Country: Array.isArray(selectedCar.Country) ? [...selectedCar.Country] : [], Category: Array.isArray(selectedCar.Category) ? [...selectedCar.Category] : [], Description: selectedCar.Description || '', Broken_image: 'FALSE', Cover: false, NameFormat: selectedCar.NameFormat || 0 };
+    const newCar = { ID: newId, Make: selectedCar.Make || '', Model: selectedCar.Model || '', Supername: '', Year: selectedCar.Year || '', Brand: selectedCar.Brand || '', Series: selectedCar.Series || '', Country: Array.isArray(selectedCar.Country) ? [...selectedCar.Country] : [], Category: Array.isArray(selectedCar.Category) ? [...selectedCar.Category] : [], Description: selectedCar.Description || '', Broken_image: 'FALSE', Cover: false, NameFormat: selectedCar.NameFormat || 0, ImageVersion: Date.now() };
     setSelectedCar(newCar);
     setIsGalleryEditing(true);
   };
