@@ -1,5 +1,6 @@
 import React from 'react';
-import { BASE_PATH, FICTIONAL_MAKES } from '../constants';
+import { BASE_PATH, FICTIONAL_MAKES, getCountryName } from '../constants';
+import 'flag-icons/css/flag-icons.min.css';
 
 const getMakeLogo = (make) => `${BASE_PATH}/makes/${make}.png`;
 
@@ -53,6 +54,12 @@ export const SidebarContent = React.memo(({
       {sidebarView === 'category' && groupedAndFilteredCars.map(({ groupName }) => (
         <div key={groupName} onClick={() => handleSidebarClick(groupName)} style={{ padding: '4px 5px', cursor: 'pointer', textAlign: 'center', borderBottom: '1px solid var(--sb-item-border)', fontSize: '0.85em', color: 'var(--sb-tx)', fontWeight: '500' }} title={groupName}>
           {groupName}
+        </div>
+      ))}
+      {sidebarView === 'country' && groupedAndFilteredCars.map(({ groupName }) => (
+        <div key={groupName} onClick={() => handleSidebarClick(groupName)} style={{ padding: '4px 5px', cursor: 'pointer', textAlign: 'center', borderBottom: '1px solid var(--sb-item-border)', fontSize: '0.85em', color: 'var(--sb-tx)', fontWeight: '500' }} title={groupName}>
+          <span className={`fi fi-${groupName.toLowerCase()}`} style={{ marginRight: '6px', verticalAlign: 'middle' }} />
+          {getCountryName(groupName)}
         </div>
       ))}
       {showDirectLogos && groupedAndFilteredCars.map(({ groupName }) => (

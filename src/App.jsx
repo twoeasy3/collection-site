@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, startTransition } from 'react';
 import categoryOrderData from './category_order.json';
 import './App.css';
+import 'flag-icons/css/flag-icons.min.css';
 
-import { BASE_PATH, FICTIONAL_MAKES, MAKE_COUNTRY, thStyle, tdStyle } from './constants';
+import { BASE_PATH, FICTIONAL_MAKES, MAKE_COUNTRY, getCountryName, thStyle, tdStyle } from './constants';
 import { sortCars, getNextAvailableId, parseArr, toAppCar, toDBRow, getCarDisplayName, AI_FIELD_TO_APP_FIELD, AI_FIELD_EMPTY_VALUE, omitKey } from './utils/carUtils';
 import { useImagePreloader } from './hooks/useImagePreloader';
-import CountryFlags from './components/CountryFlags';
+import CountryFlags, { resolveCountries, makeCountriesFor } from './components/CountryFlags';
 import GalleryEditorForm from './components/GalleryEditorForm';
 import CarListRow from './components/CarListRow';
 import { getStackKey } from './components/GalleryCards';
@@ -777,6 +778,17 @@ function App({ isPublic = false }) {
     return hasUncategorised ? [...categoryOrderData.categories, 'Uncategorised'] : categoryOrderData.categories;
   }, [cars]);
 
+  // A car's real countries come from resolveCountries (its own Country field
+  // combined with/overriding its make's default countries) -- grouping on the
+  // raw Country field alone would miss every car that just inherits from its make.
+  const countriesOrdered = useMemo(() => {
+    const codes = new Set();
+    cars.forEach(c => {
+      resolveCountries(c.Country, makeCountriesFor(c.Make)).forEach(code => { if (code && code !== '~') codes.add(code); });
+    });
+    return [...codes].sort((a, b) => getCountryName(a).localeCompare(getCountryName(b)));
+  }, [cars]);
+
   const makes = useMemo(() => {
     const uniqueMakes = [...new Set(cars.map(c => c.Make || 'Unknown'))];
     return uniqueMakes.sort((a, b) => {
@@ -808,13 +820,17 @@ function App({ isPublic = false }) {
   const publicMissingIds = useMemo(() => new Set(), []);
 
   const groupedAndFilteredCars = useMemo(() => {
-    const groups = sidebarView === 'brand' ? brands : sidebarView === 'decade' ? yearsSorted : sidebarView === 'category' ? categoriesOrdered : makes;
-    const seenIds = sidebarView !== 'category' ? new Set() : null;
+    const groups = sidebarView === 'brand' ? brands : sidebarView === 'decade' ? yearsSorted : sidebarView === 'category' ? categoriesOrdered : sidebarView === 'country' ? countriesOrdered : makes;
+    // Category and country are the two views where a car can legitimately belong
+    // to more than one group (multiple categories, multiple resolved countries) --
+    // every other view dedupes a car to its first matching group only.
+    const seenIds = (sidebarView !== 'category' && sidebarView !== 'country') ? new Set() : null;
     return groups.map(groupName => {
       const groupCars = cars.filter(c => {
         if (sidebarView === 'brand') return (c.Brand || 'Unknown') === groupName;
         if (sidebarView === 'decade') return (c.Year || 'Unknown') === groupName;
         if (sidebarView === 'category') { const cats = Array.isArray(c.Category) ? c.Category : []; return groupName === 'Uncategorised' ? cats.length === 0 : cats.includes(groupName); }
+        if (sidebarView === 'country') return resolveCountries(c.Country, makeCountriesFor(c.Make)).includes(groupName);
         return (c.Make || 'Unknown') === groupName;
       });
       const visibleGroupCars = groupCars.filter(c => {
@@ -826,7 +842,7 @@ function App({ isPublic = false }) {
       });
       return { groupName, visibleGroupCars };
     }).filter(g => g.visibleGroupCars.length > 0);
-  }, [cars, brands, makes, yearsSorted, categoriesOrdered, sidebarView, isMatch, debouncedSearchTerm, searchMode, isPublic, publicMissingIds]);
+  }, [cars, brands, makes, yearsSorted, categoriesOrdered, countriesOrdered, sidebarView, isMatch, debouncedSearchTerm, searchMode, isPublic, publicMissingIds]);
   groupedAndFilteredCarsRef.current = groupedAndFilteredCars;
 
   // When prioritizeAiPending is on, pull every AI-pending car out of its normal
@@ -921,7 +937,7 @@ function App({ isPublic = false }) {
   const handleSidebarClick = useCallback((groupName) => {
     if (isMobileRef.current) {
       setSidebarOpen(false);
-      if (sidebarView === 'brand' || sidebarView === 'category') setSelectedLetter(groupName);
+      if (sidebarView === 'brand' || sidebarView === 'category' || sidebarView === 'country') setSelectedLetter(groupName);
     }
     const group = groupedAndFilteredCars.find(g => g.groupName === groupName);
     const firstCar = group?.visibleGroupCars[0];
@@ -1223,7 +1239,7 @@ function App({ isPublic = false }) {
             )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', borderBottom: '1px solid var(--sb-border)', gap: '1px', backgroundColor: 'var(--sb-gap)' }}>
-            {[['make','MAKES'],['brand','BRANDS'],['decade','DECADES'],['category','CATEGORIES']].map(([view, label]) => (
+            {[['make','MAKES'],['brand','BRANDS'],['decade','DECADES'],['category','CATEGORIES'],['country','COUNTRIES']].map(([view, label]) => (
               <button key={view} onClick={() => { setSidebarView(view); setSelectedLetter(null); }} style={{ flex: 1, padding: '8px 0', fontSize: '0.75em', fontWeight: 'bold', border: 'none', cursor: 'pointer', backgroundColor: sidebarView === view ? 'var(--sb-tab-active-bg)' : 'var(--sb-bg)', color: sidebarView === view ? 'var(--sb-tab-active-tx)' : 'var(--tx-3)' }}>{label}</button>
             ))}
           </div>
@@ -1526,7 +1542,7 @@ function App({ isPublic = false }) {
                     return (
                       <tr key={`header-${item.groupName}-${index}`} id={`header-${item.groupName}`}>
                         <td colSpan={isPublic ? 9 : 12} style={{ padding: '12px 8px 4px 8px', fontSize: '1.2em', fontWeight: 'bold', color: '#cc2200', borderBottom: '1px solid var(--bd-2)', backgroundColor: 'var(--bg-surface)' }}>
-                          {sidebarView === 'decade' ? `Year: ${item.groupName}` : item.groupName} <span style={{ color: '#666', fontSize: '0.7em' }}>({item.count})</span>
+                          {sidebarView === 'decade' ? `Year: ${item.groupName}` : sidebarView === 'country' ? <><span className={`fi fi-${item.groupName.toLowerCase()}`} style={{ marginRight: '8px', verticalAlign: 'middle' }} />{getCountryName(item.groupName)}</> : item.groupName} <span style={{ color: '#666', fontSize: '0.7em' }}>({item.count})</span>
                         </td>
                       </tr>
                     );

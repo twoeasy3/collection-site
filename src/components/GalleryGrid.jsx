@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
-import { BASE_PATH } from '../constants';
+import { BASE_PATH, getCountryName } from '../constants';
 import CountryFlags from './CountryFlags';
+import 'flag-icons/css/flag-icons.min.css';
 import { GalleryCard, StackedCard, getStackKey } from './GalleryCards';
 
 const getMakeLogo = (make) => `${BASE_PATH}/makes/${make}.png`;
@@ -46,7 +47,7 @@ const GalleryGrid = React.memo(({
         visiblePos++;
       }
 
-      const displayHeaderTitle = sidebarView === 'decade' ? `Year: ${groupName}` : groupName;
+      const displayHeaderTitle = sidebarView === 'decade' ? `Year: ${groupName}` : sidebarView === 'country' ? getCountryName(groupName) : groupName;
 
       renderedNodes.push(
         <div key={`header-${groupName}`} id={`header-${groupName}`} style={{ position: 'relative', minWidth: 0 }}>
@@ -64,7 +65,9 @@ const GalleryGrid = React.memo(({
               <div style={{ flex: 1, display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-surface)', borderRadius: '4px 4px 0 0', overflow: 'hidden', position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
                 <div style={{ flexGrow: 1, backgroundColor: '#fff', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', backgroundColor: '#cc2200', zIndex: 10 }}></div>
-                  {sidebarView !== 'decade' ? (
+                  {sidebarView === 'country' ? (
+                    <span className={`fi fi-${groupName.toLowerCase()}`} style={{ fontSize: '3.5em', lineHeight: 1, boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} title={getCountryName(groupName)} />
+                  ) : sidebarView !== 'decade' ? (
                     <>
                       <img src={getMakeLogo(groupName)} alt={groupName} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', objectFit: 'contain', paddingLeft: '4px' }} onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }} />
                       <span style={{ display: 'none', width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', color: '#000', fontWeight: 'bold', fontSize: '1.2em', textAlign: 'center', wordBreak: 'break-word', padding: '0 10px', boxSizing: 'border-box' }}>{groupName}</span>
