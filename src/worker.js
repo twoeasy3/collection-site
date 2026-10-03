@@ -74,7 +74,8 @@ async function handleAPI(request, env, url) {
     return json({ missing, dbTotal: results.length });
   }
 
-  // Public display: non-broken cars that have a side image in R2
+  // Public display: non-broken cars that have a side image in R2. UNNAMED_CAR
+  // rows are admin placeholders (see "Fill to ID") and never belong here.
   if (url.pathname === '/api/cars/public' && request.method === 'GET') {
     const listSideIds = async () => {
       const ids = new Set();
@@ -91,7 +92,7 @@ async function handleAPI(request, env, url) {
     };
 
     const [{ results }, sideIds] = await Promise.all([
-      env.DB.prepare('SELECT * FROM cars WHERE broken_image = 0').all(),
+      env.DB.prepare("SELECT * FROM cars WHERE broken_image = 0 AND UPPER(TRIM(model)) != 'UNNAMED_CAR'").all(),
       listSideIds(),
     ]);
 

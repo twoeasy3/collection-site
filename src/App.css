@@ -44,15 +44,24 @@
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
 
+/* Info column: centred when short. When the body outgrows the pane (the
+   Stats tab in edit mode with suggestions open) the name stays put and the
+   body scrolls inside, instead of the centred block overflowing both ends. */
 .car-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   justify-content: center;
+  max-height: 100%;
+  min-height: 0;
 }
 
 .car-info-scroll {
-  overflow-y: visible;
+  overflow-y: auto;
+  flex: 0 1 auto;
+  min-height: 0;
+  padding-right: 4px;
 }
 
 .car-info h2 {
@@ -213,6 +222,22 @@ img {
   cursor: pointer;
 }
 .mobile-edit-overlay-delete:active { background: rgba(220,53,69,0.12); }
+
+/* Tablet: desktop layout, but the 130px sidebar + 40px padding + 50% hero
+   left the inline editor ~240px wide, pushing its rows off the right edge. */
+@media (min-width: 700px) and (max-width: 1099px) {
+  .details-pane {
+    padding: 12px 16px;
+  }
+
+  .car-details {
+    gap: 16px;
+  }
+
+  .car-details.editing .hero-image-container {
+    flex-basis: 30%;
+  }
+}
 
 @media (max-width: 699px) {
   /* Details pane: locked to the 4:3 image height (40vw * 3/4) + padding */

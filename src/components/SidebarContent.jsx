@@ -1,5 +1,7 @@
 import React from 'react';
 import { BASE_PATH, FICTIONAL_MAKES, getCountryName } from '../constants';
+import { CLASS_COLORS, CLASS_TEXT, CLASS_LABELS } from '../utils/carStats';
+import { CLASS_GROUPS } from '../hooks/useCarFilters';
 import 'flag-icons/css/flag-icons.min.css';
 
 const getMakeLogo = (make) => `${BASE_PATH}/makes/${make}.png`;
@@ -8,7 +10,25 @@ export const SidebarContent = React.memo(({
   groupedAndFilteredCars, sidebarView, selectedLetter, setSelectedLetter,
   handleSidebarClick, visibleLetters, visibleDecades,
   showDirectLogos, showAlphabetDrawer, showDecadeDrawer, isMobile, showDrawer,
+  classFilter, setClassFilter, classCounts,
 }) => {
+  // Rating sort: one row per class plus ALL. A class row narrows the gallery
+  // to that class (click again, or ALL, to widen back out).
+  if (sidebarView === 'class') {
+    const rowStyle = (active, bg, fg) => ({ padding: '10px 5px', cursor: 'pointer', textAlign: 'center', borderBottom: '1px solid var(--sb-item-border)', fontWeight: 'bold', backgroundColor: active ? bg : 'transparent', color: active ? fg : bg, transition: 'background-color 0.2s ease, color 0.2s ease' });
+    return (
+      <div style={{ overflowY: 'auto', flexGrow: 1 }}>
+        <div onClick={() => setClassFilter(null)} style={{ ...rowStyle(!classFilter, 'var(--sb-tab-active-bg)', 'var(--sb-tab-active-tx)'), color: classFilter ? 'var(--sb-tx)' : 'var(--sb-tab-active-tx)', fontSize: '0.85em' }}>ALL</div>
+        {CLASS_GROUPS.filter(cl => (classCounts?.[cl] || 0) > 0).map(cl => (
+          <div key={cl} onClick={() => handleSidebarClick(cl)} title={`${CLASS_LABELS[cl]}: ${classFilter === cl ? 'show all classes' : 'show only this class'}`} style={rowStyle(classFilter === cl, CLASS_COLORS[cl], CLASS_TEXT[cl])}>
+            <span style={{ fontSize: '1.3em', lineHeight: 1 }}>{cl}</span>
+            <span style={{ display: 'block', fontSize: '0.65em', opacity: 0.85 }}>{classCounts[cl]} {classCounts[cl] === 1 ? 'car' : 'cars'}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   // Mobile: when a letter/decade is selected, show the sub-navigation inline.
   if (isMobile && showDrawer) {
     const makesForLetter = sidebarView === 'make' ? groupedAndFilteredCars.filter(({ groupName }) => {

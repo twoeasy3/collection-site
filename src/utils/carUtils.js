@@ -95,3 +95,16 @@ export const toDBRow = (car) => ({
   ai_rejected: car.AiRejected || '',
   image_version: car.ImageVersion || 0,
 });
+
+// Placeholder rows created by "Fill to ID" to reserve IDs. Hidden from the
+// public display (also enforced server-side in worker.js).
+export const UNNAMED_CAR_MODEL = 'UNNAMED_CAR';
+export const isUnnamedCar = (car) => String(car.Model || '').trim().toUpperCase() === UNNAMED_CAR_MODEL;
+
+// Template for a brand-new car row; pass overrides for anything non-empty.
+export const makeBlankCar = (overrides = {}) => ({
+  ID: '', Make: '', Model: '', Supername: '', Year: '', Brand: '', Series: '',
+  Country: [], Category: [], Description: '', Broken_image: 'FALSE', Cover: false,
+  NameFormat: 0, ImageVersion: Date.now(),
+  ...overrides,
+});

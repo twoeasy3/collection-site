@@ -45,3 +45,6 @@ scripts/deduce_fields.py
 
 # Wheel-leveling batch scan output (see scripts/scan_wheel_angles.py)
 wheel_level_test/
+
+# Car stats generation working files
+stats_draft/

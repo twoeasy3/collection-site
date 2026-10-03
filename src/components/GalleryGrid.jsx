@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { CLASS_COLORS, CLASS_TEXT, CLASS_LABELS } from '../utils/carStats';
 import { BASE_PATH, getCountryName } from '../constants';
 import CountryFlags from './CountryFlags';
 import 'flag-icons/css/flag-icons.min.css';
@@ -22,6 +23,7 @@ const GalleryGrid = React.memo(({
   isPublic,
   handleCreateNew,
   fallbackGridImage,
+  getStats,
 }) => {
   const nodes = useMemo(() => {
     if (isMobile && groups.length === 0) {
@@ -47,7 +49,7 @@ const GalleryGrid = React.memo(({
         visiblePos++;
       }
 
-      const displayHeaderTitle = sidebarView === 'decade' ? `Year: ${groupName}` : sidebarView === 'country' ? getCountryName(groupName) : groupName;
+      const displayHeaderTitle = sidebarView === 'decade' ? `Year: ${groupName}` : sidebarView === 'country' ? getCountryName(groupName) : sidebarView === 'class' ? CLASS_LABELS[groupName] || groupName : groupName;
 
       renderedNodes.push(
         <div key={`header-${groupName}`} id={`header-${groupName}`} style={{ position: 'relative', minWidth: 0 }}>
@@ -56,7 +58,7 @@ const GalleryGrid = React.memo(({
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex', flexDirection: 'column' }}>
             <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
               <div style={{ width: '33.33%', paddingRight: '8px', display: 'flex', flexDirection: 'column' }}>
-                {!isPublic && <button onClick={() => handleCreateNew({ make: sidebarView === 'make' ? groupName : '', brand: sidebarView === 'brand' ? groupName : '' })} style={{ width: '100%', padding: '2px 0', fontSize: '0.85em', backgroundColor: '#cc2200', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '6px' }} title={`Add new entry to ${groupName}`}>+ Add</button>}
+                {!isPublic && sidebarView !== 'class' && <button onClick={() => handleCreateNew({ make: sidebarView === 'make' ? groupName : '', brand: sidebarView === 'brand' ? groupName : '' })} style={{ width: '100%', padding: '2px 0', fontSize: '0.85em', backgroundColor: '#cc2200', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)', marginBottom: '6px' }} title={`Add new entry to ${groupName}`}>+ Add</button>}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}>
                   <span style={{ fontSize: '1.4em', fontWeight: '900', color: 'var(--tx)', lineHeight: '1' }}>{visibleGroupCars.length}</span>
                   <img src="/car-icon.svg" alt="vehicles" className="car-icon" style={{ width: '32px', height: '32px', marginTop: '3px', display: 'block' }} />
@@ -67,6 +69,8 @@ const GalleryGrid = React.memo(({
                   <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '4px', backgroundColor: '#cc2200', zIndex: 10 }}></div>
                   {sidebarView === 'country' ? (
                     <span className={`fi fi-${groupName.toLowerCase()}`} style={{ fontSize: '3.5em', lineHeight: 1, boxShadow: '0 1px 4px rgba(0,0,0,0.3)' }} title={getCountryName(groupName)} />
+                  ) : sidebarView === 'class' ? (
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: CLASS_COLORS[groupName] || '#888', color: CLASS_TEXT[groupName] || '#fff', fontSize: '3em', fontWeight: 900, letterSpacing: '-1px' }}>{groupName}</div>
                   ) : sidebarView !== 'decade' ? (
                     <>
                       <img src={getMakeLogo(groupName)} alt={groupName} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%', objectFit: 'contain', paddingLeft: '4px' }} onError={(e) => { e.target.style.display = 'none'; if (e.target.nextSibling) e.target.nextSibling.style.display = 'flex'; }} />
@@ -102,6 +106,7 @@ const GalleryGrid = React.memo(({
               hideId={isPublic}
               isPublic={isPublic}
               showToast={showToast}
+              stats={getStats ? getStats(car) : null}
             />
           );
           visiblePos++;
@@ -138,6 +143,7 @@ const GalleryGrid = React.memo(({
                 hideId={isPublic}
               isPublic={isPublic}
                 showToast={showToast}
+                stats={getStats ? getStats(stackCars[0]) : null}
               />
             );
             visiblePos++;
@@ -176,6 +182,7 @@ const GalleryGrid = React.memo(({
                     hideId={isPublic}
               isPublic={isPublic}
                     showToast={showToast}
+                    stats={getStats ? getStats(firstCar) : null}
                     eagerLoad
                   />
                 </div>
@@ -198,6 +205,7 @@ const GalleryGrid = React.memo(({
                     hideId={isPublic}
               isPublic={isPublic}
                     showToast={showToast}
+                    stats={getStats ? getStats(car) : null}
                     eagerLoad
                   />
                 );
@@ -219,6 +227,7 @@ const GalleryGrid = React.memo(({
                 onSelect={handleSelectCar}
                 fallbackGridImage={fallbackGridImage}
                 isPublic={isPublic}
+                stats={getStats ? getStats(stackCars[0]) : null}
               />
             );
             visiblePos++;
@@ -228,7 +237,7 @@ const GalleryGrid = React.memo(({
     });
 
     return renderedNodes;
-  }, [groups, isMobile, sidebarView, isGalleryEditingRef, columnCount, imageUpdates, handleSelectCar, showToast, expandedStacks, toggleStack, stackingEnabled, isPublic, handleCreateNew, fallbackGridImage]);
+  }, [groups, isMobile, sidebarView, isGalleryEditingRef, columnCount, imageUpdates, handleSelectCar, showToast, expandedStacks, toggleStack, stackingEnabled, isPublic, handleCreateNew, fallbackGridImage, getStats]);
 
   return (
     <div

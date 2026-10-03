@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { localPost, localPostJson, LOCAL_SERVER_UNREACHABLE } from '../utils/api';
 
 // Image upload/processing flows against the local Flask helper (server.py),
 // plus the cache-busting timestamps (imageUpdates) that fresh uploads produce
@@ -15,7 +16,7 @@ export function useImageUploads(showToast) {
     const formData = new FormData();
     valid.forEach(f => formData.append('files', f));
     try {
-      const response = await fetch(`http://localhost:5000/api/${endpoint}`, { method: 'POST', body: formData });
+      const response = await localPost(`/api/${endpoint}`, { body: formData });
       if (response.ok) {
         const data = await response.json();
         showToast(data.message, 'success');
@@ -24,7 +25,7 @@ export function useImageUploads(showToast) {
         valid.forEach(f => { const m = f.name.match(/^(\d+)/); if (m) newUpdates[m[1]] = now; });
         setImageUpdates(prev => ({ ...prev, ...newUpdates }));
       } else { showToast(`Processing failed: ${(await response.json()).error}`, 'error'); }
-    } catch { showToast('Server unreachable. Is server.py running?', 'error'); }
+    } catch { showToast(LOCAL_SERVER_UNREACHABLE, 'error'); }
   }, [showToast]);
 
   const uploadFiles = useCallback((files) => postImages('upload', files, n => `Processing ${n} image(s)...`), [postImages]);
@@ -38,12 +39,12 @@ export function useImageUploads(showToast) {
     formData.append('start_pct', String(startPct));
     formData.append('count', '20');
     try {
-      const response = await fetch('http://localhost:5000/api/upload-sensitive-preview', { method: 'POST', body: formData });
+      const response = await localPost('/api/upload-sensitive-preview', { body: formData });
       if (response.ok) {
         const data = await response.json();
         setSensitivePreview({ file, filename: data.filename, variants: data.variants, startPct });
       } else { showToast(`Processing failed: ${(await response.json()).error}`, 'error'); }
-    } catch { showToast('Server unreachable. Is server.py running?', 'error'); }
+    } catch { showToast(LOCAL_SERVER_UNREACHABLE, 'error'); }
   }, [showToast]);
 
   const uploadFilesSensitive = useCallback((files) => {
@@ -55,16 +56,13 @@ export function useImageUploads(showToast) {
 
   const handleSaveSensitive = useCallback(async (filename, b64) => {
     try {
-      const response = await fetch('http://localhost:5000/api/save-sensitive', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filename, b64 }),
-      });
+      const response = await localPostJson('/api/save-sensitive', { filename, b64 });
       if (response.ok) {
         showToast((await response.json()).message, 'success');
         const m = filename.match(/^(\d+)/);
         if (m) setImageUpdates(prev => ({ ...prev, [m[1]]: Date.now() }));
       } else { showToast(`Save failed: ${(await response.json()).error}`, 'error'); }
-    } catch { showToast('Server unreachable. Is server.py running?', 'error'); }
+    } catch { showToast(LOCAL_SERVER_UNREACHABLE, 'error'); }
     setSensitivePreview(null);
   }, [showToast]);
 

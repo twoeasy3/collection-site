@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NAME_FORMATS, AI_FIELD_TO_APP_FIELD, AI_FIELD_EMPTY_VALUE, omitKey } from '../utils/carUtils';
 
-const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, showToast, categories }) => {
+const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, showToast, categories, dialog }) => {
   const [draft, setDraft] = useState(initialCar);
 
   useEffect(() => { setDraft(initialCar); }, [initialCar]);
@@ -14,8 +14,8 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
     setDraft(prev => ({ ...prev, AiSuggested: omitKey(prev.AiSuggested, field) }));
   };
 
-  const handleRejectAiField = (field) => {
-    const note = window.prompt('Note for why this is being rejected (helps the next AI pass avoid the same mistake):', draft?.AiRejected || '');
+  const handleRejectAiField = async (field) => {
+    const note = await dialog.prompt({ title: `Reject AI ${field}`, message: 'Note for why this is being rejected (helps the next AI pass avoid the same mistake).', defaultValue: draft?.AiRejected || '', multiline: true, confirmLabel: 'Reject', danger: true });
     if (note === null) return;
     setDraft(prev => ({ ...prev, [AI_FIELD_TO_APP_FIELD[field]]: AI_FIELD_EMPTY_VALUE[field], AiSuggested: omitKey(prev.AiSuggested, field), AiRejected: note }));
   };
@@ -61,9 +61,9 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
         </div>
       )}
       <p style={{ margin: '2px 0' }}><strong>ID:</strong> {draft?.ID}</p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', margin: '2px 0' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', margin: '2px 0' }}>
         <strong>Brand:</strong>
-        <input style={{ ...inpLbl, flex: 1, minWidth: 0 }} value={draft?.Brand || ''} onChange={(e) => handleChange('Brand', e.target.value)} spellCheck="false" autoComplete="off" />
+        <input style={{ ...inpLbl, flex: '1 1 120px', minWidth: 0 }} value={draft?.Brand || ''} onChange={(e) => handleChange('Brand', e.target.value)} spellCheck="false" autoComplete="off" />
         <div style={{ display: 'flex', gap: '4px' }}>
           {[{ label: 'HW', value: 'Hot Wheels' }, { label: 'MB', value: 'Matchbox' }, { label: 'TM', value: 'Tomica' }, { label: 'MJ', value: 'Majorette' }].map(s => (
             <button key={s.label} onClick={() => handleChange('Brand', s.value)} style={{ padding: '2px 6px', fontSize: '0.75em', backgroundColor: 'var(--bg-card-sel)', color: 'var(--tx-2)', border: '1px solid var(--bd-3)', borderRadius: '3px', cursor: 'pointer', fontWeight: 'bold' }} title={`Set to ${s.value}`}>{s.label}</button>
@@ -75,10 +75,10 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
         <input style={{ ...inpLbl, flex: 1 }} value={draft?.Series || ''} onChange={(e) => handleChange('Series', e.target.value)} spellCheck="false" autoComplete="off" />
       </div>
       <div style={{ margin: '2px 0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
           <strong style={{ width: '80px' }}>Country:</strong>
           <input
-            style={{ ...inpLbl, flex: 1 }}
+            style={{ ...inpLbl, flex: '1 1 140px', minWidth: 0 }}
             value={(Array.isArray(draft?.Country) ? draft.Country.filter(c => c !== '~') : []).join(', ')}
             onChange={(e) => {
               const codes = e.target.value.split(',').map(c => c.trim().toUpperCase()).filter(Boolean);
@@ -123,7 +123,7 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
           })}
         </div>
       </div>
-      <div style={{ margin: '4px 0', display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div style={{ margin: '4px 0', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px' }}>
         <strong style={{ flexShrink: 0 }}>Name format:</strong>
         {NAME_FORMATS.map(({ value, label, pattern }) => (
           <button key={value} onClick={() => handleChange('NameFormat', value)} title={pattern} style={{ padding: '2px 8px', fontSize: '0.75em', backgroundColor: (draft?.NameFormat || 0) === value ? 'var(--accent)' : 'var(--bg-card-sel)', color: (draft?.NameFormat || 0) === value ? '#fff' : 'var(--tx-2)', border: '1px solid var(--bd-3)', borderRadius: '3px', cursor: 'pointer', fontWeight: 'bold' }}>{label}</button>
@@ -133,8 +133,8 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
         <strong style={{ marginBottom: '2px' }}>Description:</strong>
         <textarea style={{ width: '100%', minHeight: '40px', resize: 'vertical', backgroundColor: 'var(--bg-input)', color: 'var(--tx)', border: '1px solid var(--bd-2)', borderRadius: '3px', padding: '4px' }} value={draft?.Description || ''} onChange={(e) => handleChange('Description', e.target.value)} spellCheck="false" autoComplete="off" />
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-        <div style={{ display: 'flex', gap: '16px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 16px' }}>
           <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#ff4d4d', fontWeight: 'bold', margin: 0 }}>
             <input type="checkbox" checked={draft?.Broken_image === 'TRUE'} onChange={(e) => handleChange('Broken_image', e.target.checked ? 'TRUE' : 'FALSE')} style={{ marginRight: '5px', transform: 'scale(1.2)' }} />
             Flag Broken Image
@@ -144,7 +144,7 @@ const GalleryEditorForm = React.memo(({ initialCar, onApply, onCancel, onSave, s
             Stack Cover
           </label>
         </div>
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', marginLeft: 'auto' }}>
           <button onClick={onCancel} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Cancel</button>
           <button onClick={handleDone} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Done</button>
           <button onClick={handleSaveClick} style={{ padding: '4px 12px', cursor: 'pointer', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>Save</button>

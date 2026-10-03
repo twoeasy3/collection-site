@@ -1,6 +1,9 @@
 import React, { useCallback } from 'react';
 import { BASE_PATH } from '../constants';
 import CountryFlags from './CountryFlags';
+import ClassBadge from './ClassBadge';
+
+const CARD_BADGE_STYLE = { position: 'absolute', right: '3px', bottom: '3px', zIndex: 2 };
 
 export const getStackKey = (car) =>
   `${(car.Year || '').trim()}||${(car.Make || '').trim()}||${(car.Model || '').trim()}||${(car.Brand || '').trim()}`;
@@ -28,7 +31,7 @@ export const CarCardImage = React.memo(({ id, model, imageUpdate, eagerLoad }) =
 );
 
 // Receives imageUpdate only for its own car ID so uploads don't re-render other cards.
-export const GalleryCard = React.memo(({ car, groupName, isGalleryEditingRef, sidebarView, imageUpdate, fallbackGridImage, onSelect, showToast, eagerLoad, hideId, isPublic }) => {
+export const GalleryCard = React.memo(({ car, groupName, isGalleryEditingRef, sidebarView, imageUpdate, fallbackGridImage, onSelect, showToast, eagerLoad, hideId, isPublic, stats }) => {
   const validYear = car.Year && car.Year.toUpperCase() !== 'N/A' ? car.Year : null;
   const aiPendingFields = car.AiSuggested ? Object.keys(car.AiSuggested) : [];
   const aiYearPending = aiPendingFields.includes('year');
@@ -62,6 +65,7 @@ export const GalleryCard = React.memo(({ car, groupName, isGalleryEditingRef, si
         backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center'
       }}>
         <CarCardImage id={car.ID} model={car.Model} imageUpdate={imageUpdate || car.ImageVersion} eagerLoad={eagerLoad} />
+        {stats && <ClassBadge cls={stats.cl} rating={stats.r} style={CARD_BADGE_STYLE} />}
         {aiOtherPending && (
           <span title="Has pending AI-suggested field(s)" style={{ position: 'absolute', top: '3px', right: '3px', zIndex: 2, backgroundColor: 'var(--ai-badge-bg)', color: 'var(--ai-badge-tx)', borderRadius: '10px', padding: '1px 6px', fontWeight: '800', fontSize: '0.65em', lineHeight: '1.5', boxShadow: '0 1px 4px rgba(0,0,0,0.5)' }}>
             AI
@@ -88,10 +92,11 @@ export const GalleryCard = React.memo(({ car, groupName, isGalleryEditingRef, si
   prev.sidebarView === next.sidebarView &&
   prev.imageUpdate === next.imageUpdate &&
   prev.onSelect === next.onSelect &&
-  prev.isPublic === next.isPublic
+  prev.isPublic === next.isPublic &&
+  prev.stats === next.stats
 );
 
-export const StackedCard = React.memo(({ firstCar, groupName, count, stackCarIds, imageUpdate, sidebarView, onToggle, onSelect, fallbackGridImage, isPublic }) => {
+export const StackedCard = React.memo(({ firstCar, groupName, count, stackCarIds, imageUpdate, sidebarView, onToggle, onSelect, fallbackGridImage, isPublic, stats }) => {
   const validYear = firstCar.Year && firstCar.Year.toUpperCase() !== 'N/A' ? firstCar.Year : null;
   const aiPendingFields = firstCar.AiSuggested ? Object.keys(firstCar.AiSuggested) : [];
   const aiYearPending = aiPendingFields.includes('year');
@@ -118,8 +123,9 @@ export const StackedCard = React.memo(({ firstCar, groupName, count, stackCarIds
       <div style={{ position: 'absolute', top: '5px', left: '5px', right: '-5px', bottom: '-5px', backgroundColor: 'var(--stack-1)', borderRadius: '4px' }} />
       <div style={{ position: 'absolute', top: '2px', left: '2px', right: '-2px', bottom: '-2px', backgroundColor: 'var(--stack-2)', borderRadius: '4px' }} />
       <div className="stacked-card-face" style={{ position: 'relative', zIndex: 2, backgroundColor: 'var(--bg-card)', borderRadius: '4px', overflow: 'hidden' }}>
-        <div style={{ width: '100%', aspectRatio: '8 / 3', backgroundColor: 'var(--bg-surface)', backgroundImage: `url(${fallbackGridImage})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
+        <div style={{ width: '100%', aspectRatio: '8 / 3', position: 'relative', backgroundColor: 'var(--bg-surface)', backgroundImage: `url(${fallbackGridImage})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat', backgroundPosition: 'center' }}>
           <img src={src} alt={firstCar.Model} decoding="async" onError={(e) => { e.target.style.display = 'none'; }} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
+          {stats && <ClassBadge cls={stats.cl} rating={stats.r} style={CARD_BADGE_STYLE} />}
         </div>
         <div style={{ fontSize: '0.8em', padding: '2px 4px', color: 'var(--tx)', lineHeight: '1em', height: '2em', whiteSpace: 'normal', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis', wordWrap: 'break-word', boxSizing: 'content-box' }}>
           {sidebarView !== 'decade' && validYear && <span style={{ color: aiYearPending ? 'var(--ai-year-color)' : 'var(--year-color)', marginRight: '4px', fontWeight: 'bold' }}>{validYear}</span>}
@@ -146,5 +152,6 @@ export const StackedCard = React.memo(({ firstCar, groupName, count, stackCarIds
   prev.imageUpdate === next.imageUpdate &&
   prev.sidebarView === next.sidebarView &&
   prev.onSelect === next.onSelect &&
-  prev.isPublic === next.isPublic
+  prev.isPublic === next.isPublic &&
+  prev.stats === next.stats
 );
