@@ -35,11 +35,21 @@
   ],
   "targets": [],
   "pickups": [
+    { "type": "ghost", "s": 150, "lane": 4 },
+    { "type": "ghost", "s": 450, "lane": 2 },
+    { "type": "ghost", "s": 750, "lane": 6 },
+    { "type": "ghost", "s": 1050, "lane": 3 },
+    { "type": "ghost", "s": 1350, "lane": 5 },
+    { "type": "ghost", "s": 1650, "lane": 1 },
+    { "type": "ghost", "s": 1950, "lane": 4 },
+    { "type": "ghost", "s": 2250, "lane": 6 },
+    { "type": "ghost", "s": 2550, "lane": 2 },
+    { "type": "ghost", "s": 2850, "lane": 5 },
+    { "type": "wrench", "s": 420, "lane": 3 },
     { "type": "turbo", "s": 600, "lane": 2 },
     { "type": "wrench", "s": 900, "lane": 5 },
     { "type": "turbo", "s": 1300, "lane": 6 },
-    { "type": "ghost", "s": 1700, "lane": 3 },
+    { "type": "wrench", "s": 1950, "lane": 6 },
     { "type": "wrench", "s": 2400, "lane": 1 },
     { "type": "turbo", "s": 2800, "lane": 4 }
-  ]
-}
+  ]}

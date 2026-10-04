@@ -2,7 +2,9 @@
   "id": "expressway",
   "name": "Expressway",
   "time": 105,
-  "traffic": { "car": 0.44, "compact": 0.16, "van": 0.18, "bus": 0.12, "police": 0.10 },
+  "traffic": { "car": 0.47, "compact": 0.17, "van": 0.19, "bus": 0.12, "police": 0.05 },
+  "trafficCount": 11,
+  "oncomingCount": 8,
   "tip": 50,
   "segments": [
     { "length": 600, "curve": 0 },
@@ -33,6 +35,8 @@
     { "s": 450, "side": "right", "road": "side" }
   ],
   "pickups": [
+    { "type": "wrench", "s": 2720, "lane": 3 },
+    { "type": "wrench", "s": 1150, "lane": 2 },
     { "type": "passenger", "s": 250, "lane": 3 },
     { "type": "turbo", "s": 450, "lane": 3 },
     { "type": "wrench", "s": 560, "lane": 2 },

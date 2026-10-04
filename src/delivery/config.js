@@ -26,6 +26,9 @@ export const CONFIG = {
   // shoulder policing
   dangerTime: 3,           // s of shoulder driving allowed before the police step in
   dangerCooldown: 0.75,    // s of allowance regained per second back in the lanes
+  dangerBeepSlow: 0.45,    // s between the meter's beeps on first touching the shoulder...
+  dangerBeepFast: 0.06,    // ...and just before the bust (the beeps speed up in between)
+  dangerBeepPitch: 330,    // Hz of the first beep; they rise to nearly double that
   policeApproachTime: 2.5, // s a busted car keeps driving, slowing, before it is grabbed
   policeCrawlSpeed: 8,     // m/s it is slowed to in that time
   policeHoldTime: 4,       // s from being grabbed to being dropped back in a lane

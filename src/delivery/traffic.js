@@ -206,7 +206,7 @@ export const Traffic = (() => {
     placeFixed();
     if (!mix().length) return; // otherwise an empty road
     // (when everything is oncoming, the first of it starts further off)
-    for (const car of cars) if (!car.active) spawn(car, Track.flow === 'south' ? 200 : 60, CONFIG.spawnMax);
+    for (const car of cars) if (!car.active && !car.unused) spawn(car, Track.flow === 'south' ? 200 : 60, CONFIG.spawnMax);
   };
 
   const update = (dt) => {

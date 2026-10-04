@@ -2,7 +2,9 @@
   "id": "back-roads",
   "name": "Back Roads",
   "time": 90,
-  "traffic": { "car": 0.40, "compact": 0.25, "van": 0.20, "bus": 0.05, "police": 0.10 },
+  "traffic": { "car": 0.43, "compact": 0.27, "van": 0.21, "bus": 0.04, "police": 0.05 },
+  "trafficCount": 11,
+  "oncomingCount": 8,
   "tip": 40,
   "segments": [
     { "length": 400, "curve": 0 },
@@ -32,6 +34,8 @@
     { "s": 460, "side": "right", "road": "side" }
   ],
   "pickups": [
+    { "type": "wrench", "s": 2370, "lane": 3 },
+    { "type": "wrench", "s": 1250, "lane": 2 },
     { "type": "turbo", "s": 100, "lane": 3 },
     { "type": "wrench", "s": 500, "lane": 2 },
     { "type": "passenger", "s": 620, "lane": 3 },

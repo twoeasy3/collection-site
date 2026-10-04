@@ -248,11 +248,16 @@ try {
     // a normal run keeps its usual traffic counts
     levels.selectLevel(1);
     Game.start();
-    check(Traffic.cars.filter(c => !c.unused).length === CONFIG.trafficCount + CONFIG.oncomingCount && !Game.screensaver,
-      'a normal run: the usual number of vehicles, and a player car');
+    const L1 = levels.LEVEL;
+    const usual = (L1.trafficCount ?? CONFIG.trafficCount) + (L1.oncomingCount ?? CONFIG.oncomingCount);
+    let most = 0;
+    for (let i = 0; i < 120 * 20; i++) { Game.update(1 / 120); FxQueue.length = 0; most = Math.max(most, Traffic.cars.filter(c => c.active).length); }
+    check(Traffic.cars.filter(c => !c.unused).length === usual && most <= usual && usual < CONFIG.trafficPool && !Game.screensaver,
+      `a normal run (${L1.name}): never more than its ${usual} vehicles on the road (at most ${most} in 20 s), and a player car`);
+    const clock = Game.time;
     Game.togglePause();
     Game.update(1 / 120);
-    check(Game.paused && Game.time === 0, 'a run can be paused: the clock stops too');
+    check(Game.paused && Game.time === clock, 'a run can be paused: the clock stops too');
     Game.exit();
     check(Game.state === 'start' && !Game.paused, 'Exit level: back on the menu');
   }

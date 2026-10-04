@@ -9,7 +9,7 @@ import { Pickups, Targets } from '../pickups.js';
 import { Game } from '../game.js';
 import { scene, tmp, clearGroup } from './scene.js';
 import { buildStrip } from './road.js';
-import { carMesh, playerMats, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh } from './cars.js';
+import { carMesh, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh } from './cars.js';
 import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
 
@@ -164,21 +164,105 @@ OBSTACLE_MODELS.asteroid = (o) => {
 
 // ---- pickups and targets ------------------------------------------------------------------------
 const TURBO_COLOR = 0x29e0ff;
-const PICKUP_LOOK = {
-  turbo: { color: TURBO_COLOR, geo: () => new THREE.OctahedronGeometry(0.9) },
-  ghost: { color: 0xf0f0ff, geo: () => new THREE.IcosahedronGeometry(0.9, 1) },
-  wrench: { color: 0xffa726, geo: () => new THREE.BoxGeometry(1.5, 0.5, 0.5) },
-  passenger: { color: 0xff8fb1, geo: () => new THREE.SphereGeometry(0.8, 14, 10) },
+// the colour of each pickup's pad (and its glow in the HUD)
+const PICKUP_COLOR = { turbo: TURBO_COLOR, ghost: 0xf0f0ff, wrench: 0xffa726, passenger: 0xff8fb1 };
+// a part of a pickup model: a mesh at (x, y, z), optionally turned (rx, ry, rz)
+const part = (group, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0) => {
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(x, y, z);
+  mesh.rotation.set(rx, ry, rz);
+  group.add(mesh);
+  return mesh;
 };
-// a spinning marker over a glowing pad
+// each pickup is a little model of what it does, about 1.5 m across, centred on the origin
+const PICKUP_MODELS = {
+  // a turbocharger: a snail-shell compressor housing with its wheel showing, an inlet pipe
+  // on the front, the turbine housing behind, and an exhaust flange
+  turbo: () => {
+    const group = new THREE.Group();
+    const steel = lambert(0xb8bcc4), dark = lambert(0x4a4e57), glow = new THREE.MeshBasicMaterial({ color: TURBO_COLOR });
+    part(group, new THREE.TorusGeometry(0.42, 0.26, 10, 24), steel, 0, 0, 0.1);          // compressor snail
+    part(group, new THREE.CylinderGeometry(0.3, 0.3, 0.2, 12), glow, 0, 0, 0.3, Math.PI / 2); // the wheel's glowing eye
+    for (let i = 0; i < 6; i++) { // compressor blades
+      part(group, new THREE.BoxGeometry(0.08, 0.5, 0.06), dark, 0, 0, 0.34, 0, 0, i * Math.PI / 6);
+    }
+    part(group, new THREE.CylinderGeometry(0.22, 0.22, 0.6, 12), steel, 0, 0, 0.6, Math.PI / 2);  // inlet pipe
+    part(group, new THREE.CylinderGeometry(0.34, 0.34, 0.5, 14), dark, 0, 0, -0.35, Math.PI / 2); // turbine housing
+    part(group, new THREE.BoxGeometry(0.9, 0.16, 0.5), dark, 0, -0.5, -0.3);                       // exhaust flange
+    part(group, new THREE.CylinderGeometry(0.18, 0.18, 0.4, 10), steel, 0.5, 0.3, -0.3, 0, 0, Math.PI / 2); // oil line
+    return group;
+  },
+  // a cartoon ghost: a sheet with a round head, a wavy hem, two arms and two eyes
+  ghost: () => {
+    const group = new THREE.Group();
+    const sheet = new THREE.MeshLambertMaterial({ color: 0xf4f4ff, transparent: true, opacity: 0.85 });
+    const ink = new THREE.MeshBasicMaterial({ color: 0x1b1b2a });
+    part(group, new THREE.SphereGeometry(0.62, 16, 12), sheet, 0, 0.35, 0);                 // head
+    part(group, new THREE.CylinderGeometry(0.62, 0.52, 0.9, 16), sheet, 0, -0.1, 0);        // body
+    for (let i = 0; i < 5; i++) { // the hem's waves
+      const a = i * Math.PI * 2 / 5;
+      part(group, new THREE.SphereGeometry(0.2, 10, 8), sheet, Math.cos(a) * 0.42, -0.58, Math.sin(a) * 0.42);
+    }
+    part(group, new THREE.SphereGeometry(0.17, 10, 8), sheet, -0.68, 0.05, 0.1);           // arms, raised: boo
+    part(group, new THREE.SphereGeometry(0.17, 10, 8), sheet, 0.68, 0.05, 0.1);
+    part(group, new THREE.SphereGeometry(0.1, 8, 6), ink, -0.22, 0.42, 0.52);               // eyes
+    part(group, new THREE.SphereGeometry(0.1, 8, 6), ink, 0.22, 0.42, 0.52);
+    part(group, new THREE.SphereGeometry(0.09, 8, 6), ink, 0, 0.18, 0.56);                  // an open mouth
+    return group;
+  },
+  // a combination wrench: an open jaw at one end, a ring at the other
+  wrench: () => {
+    const group = new THREE.Group();
+    const orange = lambert(PICKUP_COLOR.wrench), dark = lambert(0x3a3a40);
+    part(group, new THREE.BoxGeometry(1.3, 0.2, 0.3), orange, 0, 0, 0);                            // handle
+    part(group, new THREE.CylinderGeometry(0.42, 0.42, 0.2, 14), orange, 0.85, 0, 0);               // open-end head
+    part(group, new THREE.BoxGeometry(0.34, 0.26, 0.26), dark, 1.0, 0, 0);                          // its jaw
+    part(group, new THREE.TorusGeometry(0.3, 0.13, 8, 18), orange, -0.85, 0, 0, Math.PI / 2);       // ring end
+    return group;
+  },
+  // an inflatable passenger: a pink balloon figure, arms up, standing in the road
+  passenger: () => {
+    const group = new THREE.Group();
+    const pink = new THREE.MeshLambertMaterial({ color: PICKUP_COLOR.passenger, emissive: 0x3a1020 });
+    const ink = new THREE.MeshBasicMaterial({ color: 0x1b1b2a });
+    part(group, new THREE.SphereGeometry(0.34, 14, 10), pink, 0, 0.62, 0);                      // head
+    part(group, new THREE.CylinderGeometry(0.3, 0.36, 0.75, 12), pink, 0, 0.0, 0);              // body
+    part(group, new THREE.CylinderGeometry(0.11, 0.11, 0.55, 8), pink, -0.42, 0.45, 0, 0, 0, 0.7);  // arms, raised
+    part(group, new THREE.CylinderGeometry(0.11, 0.11, 0.55, 8), pink, 0.42, 0.45, 0, 0, 0, -0.7);
+    part(group, new THREE.CylinderGeometry(0.12, 0.12, 0.5, 8), pink, -0.16, -0.6, 0);          // legs
+    part(group, new THREE.CylinderGeometry(0.12, 0.12, 0.5, 8), pink, 0.16, -0.6, 0);
+    part(group, new THREE.SphereGeometry(0.05, 6, 5), ink, -0.11, 0.68, 0.3);                   // eyes
+    part(group, new THREE.SphereGeometry(0.05, 6, 5), ink, 0.11, 0.68, 0.3);
+    part(group, new THREE.SphereGeometry(0.06, 6, 5), ink, 0, 0.52, 0.32);                      // a surprised mouth
+    return group;
+  },
+};
+// ---- the player as a ghost --------------------------------------------------------------------
+// Every part of the car, whatever model and livery it has, is drawn in this one pale, glowing,
+// see-through material while the ghost lasts: the parts' own materials are put aside and
+// given back afterwards. Colour changes meanwhile go to the part's own paint (paintOf).
+const GHOST_MAT = new THREE.MeshLambertMaterial({ color: 0xdfe9ff, emissive: 0x4a6cff, transparent: true, opacity: 0.45 });
+const ghostify = (group, on) => group.traverse((mesh) => {
+  if (!mesh.isMesh) return;
+  if (on && !mesh.userData.solidMat) { mesh.userData.solidMat = mesh.material; mesh.material = GHOST_MAT; }
+  else if (!on && mesh.userData.solidMat) { mesh.material = mesh.userData.solidMat; mesh.userData.solidMat = null; }
+});
+const paintOf = (mesh) => mesh.userData.solidMat || mesh.material;
+// ...and a cartoon ghost hovers over the car for as long as it lasts (it follows the car,
+// rather than riding on it, so that it is never turned ghostly itself)
+const hoverGhost = PICKUP_MODELS.ghost();
+hoverGhost.scale.setScalar(1.3);
+hoverGhost.visible = false;
+scene.add(hoverGhost);
+
+// a spinning model over a glowing pad
 const makePickup = (p) => {
-  const look = PICKUP_LOOK[p.type];
   const group = new THREE.Group();
-  const gem = new THREE.Mesh(look.geo(), new THREE.MeshBasicMaterial({
-    color: look.color, transparent: p.type === 'ghost', opacity: p.type === 'ghost' ? 0.6 : 1 }));
-  gem.position.y = 1.4;
+  const gem = PICKUP_MODELS[p.type]();
+  gem.scale.setScalar(1.5); // (big enough to make out from the chase camera)
+  gem.position.y = 1.7;
   const pad = new THREE.Mesh(new THREE.BoxGeometry(CONFIG.laneWidth * 0.8, 0.02, 5), new THREE.MeshBasicMaterial({
-    color: look.color, transparent: true, opacity: 0.45, depthWrite: false }));
+    color: PICKUP_COLOR[p.type], transparent: true, opacity: 0.45, depthWrite: false }));
   pad.position.y = 0.04;
   group.add(gem, pad);
   group.rotation.y = Track.toWorld(p.s, p.lat, tmp);
@@ -277,9 +361,9 @@ export const syncPickups = (dt) => {
       mesh.position.set(tmp.x, tmp.y + o.h, tmp.z);
     }
   }
-  // ghost: the player's car goes see-through, flickering as it runs out
+  // ghost: the whole car turns pale and see-through (see ghostify), flickering as it runs out
   const ghostly = Player.ghost > 0 && (Player.ghost > 1.5 || Math.floor(Player.ghost * 8) % 2 === 0);
-  for (const mat of playerMats) mat.opacity = ghostly ? 0.35 : 1;
+  const livery = Player.evil ? CAR.evilColor : CAR.color; // each car has a livery per side
   if (shownCar !== CAR) { // a different car (the garage's, or a level's own): take its shape
     shapeCarMesh(carMesh, CAR);
     shownCar = CAR;
@@ -291,25 +375,31 @@ export const syncPickups = (dt) => {
   if (ufo) {
     ufoMesh.position.y = 1.0 + Math.sin(performance.now() / 300) * 0.15;
     ufoMesh.userData.lamps.rotation.y += dt * 4;
-    ufoMesh.userData.body.material.color.setHex(Player.evil ? CAR.evilColor : CAR.color);
+    paintOf(ufoMesh.userData.body).color.setHex(livery);
   }
   tankMesh.visible = tank;
   // the garage's Tank wears its own liveries; a car in TANK RAGE turns army olive
-  tankMesh.userData.body.material.color.setHex(!CAR.tank ? TANK_OLIVE : Player.evil ? CAR.evilColor : CAR.color);
-  carMesh.userData.body.material.color.setHex(Player.evil ? CAR.evilColor : CAR.color); // each car has a livery per side
+  paintOf(tankMesh.userData.body).color.setHex(!CAR.tank ? TANK_OLIVE : livery);
+  paintOf(carMesh.userData.body).color.setHex(livery);
   // a car with an animated model of its own shows that in place of the standard box car,
   // and its animation runs for as long as it is on screen
   const custom = CAR.model && !tank ? playerModel(CAR) : null;
   for (const id in playerModels) playerModels[id].visible = playerModels[id] === custom;
   if (custom) {
     custom.userData.animate(performance.now() / 1000);
-    custom.userData.body.material.color.setHex(Player.evil ? CAR.evilColor : CAR.color);
-    custom.userData.body.material.opacity = ghostly ? 0.35 : 1;
+    paintOf(custom.userData.body).color.setHex(livery);
   }
   const standard = !tank && !ufo && !custom;
   carMesh.userData.body.visible = carMesh.userData.cabin.visible = standard;
   for (const part of [...carMesh.userData.lights, ...carMesh.userData.trim]) part.visible = standard;
   passengerMesh.visible = Player.passenger > 0 && !tank && !ufo;
+  ghostify(carMesh, ghostly);
+  hoverGhost.visible = Player.ghost > 0 && Player.active && !Game.screensaver;
+  if (hoverGhost.visible) { // bobbing over the car, swaying a little
+    const t = performance.now() / 1000;
+    hoverGhost.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.6 + Math.sin(t * 2.6) * 0.25, carMesh.position.z);
+    hoverGhost.rotation.y = carMesh.rotation.y + Math.sin(t * 1.7) * 0.35;
+  }
   // turbo exhaust
   if (Player.active && Player.turbo > 0) {
     const h = Track.toWorld(Player.s - Player.hl, Player.lat, tmp);

@@ -22,6 +22,8 @@
     { "s": 1700, "side": "left" }
   ],
   "pickups": [
+    { "type": "wrench", "s": 2050, "lane": 4 },
+    { "type": "wrench", "s": 450, "lane": 6 },
     { "type": "ghost", "s": 300, "lane": 4 },
     { "type": "turbo", "s": 520, "lane": 6 },
     { "type": "wrench", "s": 800, "lane": 3 },

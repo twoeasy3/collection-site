@@ -4,9 +4,11 @@
 // effects. Sound.engine() is fed the player's speed every frame.
 // Browsers only allow sound after the player has clicked or pressed a key, so nothing is
 // set up until then. M mutes; the choice is saved with the player's progress.
+import { CONFIG } from '../config.js';
 import { Progress } from '../progress.js';
 
 let ctx = null, master = null, noiseBuffer = null;
+let nextBeep = 0; // when the shoulder's danger meter next beeps
 let engine = null; // { osc, lfo, lfoGain, filter, gain }
 let siren = null;  // { gain }: a police siren that runs all the time, silent until Sound.siren(true)
 const lastPlayed = {};
@@ -131,6 +133,18 @@ export const Sound = {
   // on while a police car is close enough to bust the player
   siren(on) {
     if (siren) siren.gain.gain.setTargetAtTime(on ? 0.05 : 0, ctx.currentTime, 0.15);
+  },
+  // the shoulder's danger meter, fed every frame: beeps while the player is on the shoulder,
+  // faster and higher the nearer the meter is to a bust. level: 0 = the full allowance is
+  // left, 1 = about to be busted; a negative number = not on the shoulder (silent).
+  danger(level) {
+    if (!ctx || ctx.state !== 'running') return;
+    if (level < 0) { nextBeep = 0; return; } // (the first beep comes as soon as the shoulder is touched)
+    const now = ctx.currentTime;
+    if (now < nextBeep) return;
+    const pitch = CONFIG.dangerBeepPitch * (1 + level * 0.8);
+    tone(pitch, pitch, 0.05, 0.22, 'square');
+    nextBeep = now + CONFIG.dangerBeepSlow + (CONFIG.dangerBeepFast - CONFIG.dangerBeepSlow) * level;
   },
   get muted() { return !!Progress.data.muted; },
   toggleMute() {

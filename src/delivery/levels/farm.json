@@ -3,7 +3,9 @@
   "name": "Farm Lanes",
   "theme": "farm",
   "time": 125,
-  "traffic": { "car": 0.40, "compact": 0.18, "van": 0.32, "bus": 0.04, "police": 0.06 },
+  "traffic": { "car": 0.42, "compact": 0.19, "van": 0.33, "bus": 0.03, "police": 0.03 },
+  "trafficCount": 11,
+  "oncomingCount": 8,
   "tip": 70,
   "segments": [
     { "length": 300, "curve": 0, "grade": 0 },
@@ -55,6 +57,8 @@
     { "s": 2200, "side": "left" }
   ],
   "pickups": [
+    { "type": "wrench", "s": 2720, "lane": 2 },
+    { "type": "wrench", "s": 1350, "lane": 3 },
     { "type": "turbo", "s": 120, "lane": 2 },
     { "type": "passenger", "s": 380, "lane": 2 },
     { "type": "wrench", "s": 800, "lane": 2 },

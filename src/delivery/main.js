@@ -91,6 +91,8 @@ const frame = (now) => {
     Sound.engine(live ? Player.speed : -1, CAR.ufo ? 'ufo' : Player.tank > 0 ? 'tank' : 'car');
     // a siren while a police car is near enough to bust you (nobody busts a tank)
     Sound.siren(live && Player.tank <= 0 && Traffic.policeNear());
+    // beeps while on the shoulder with the danger meter running down, faster the nearer the bust
+    Sound.danger(live && Player.onShoulder ? 1 - Player.danger / CONFIG.dangerTime : -1);
     renderer.render(scene, camera);
   }
   if (Game.state === 'start') { // (back on the menu)
