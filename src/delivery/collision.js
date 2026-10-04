@@ -151,6 +151,10 @@ export const Collision = (() => {
     barrier: [1.2, 0.6, 1.2], bale: [1.1, 1.1, 1.5], frog: [1.4, 1.4, 1.6], cow: [0.7, 1.3, 1.5],
     asteroid: [1, 1, 2], // replaced by each asteroid's own radius
     cone: [0.3, 0.3, 0.8], sign: [1.1, 0.15, 3.0],
+    // the beach's own junk (Hurricane): a beach umbrella, a surfboard stuck upright, an ice
+    // box, a lifeguard chair, and a wrecked car (which spins on the spot as it drifts)
+    umbrella: [1.2, 1.2, 3.0], surfboard: [0.6, 0.25, 2.6], cooler: [0.8, 0.6, 1.2], chair: [1.0, 1.0, 3.4],
+    wreck: [1.0, 2.1, 1.4],
   };
   const obstacles = [];
   const add = (kind, s, lat, extra) => {
@@ -188,6 +192,28 @@ export const Collision = (() => {
     for (const z of LEVEL.herds || []) {
       // a cow walks across the road, so its hitbox lies across it too
       for (let i = 0; i < (z.count || 3); i++) add(z.kind || 'cow', 0, 0, { ...stretch(z), yaw: Math.PI / 2, dir: 1, rest: 0 });
+    }
+    // (seeded, so every drifter moves the same way every run)
+    let driftSeed = 2654435761;
+    const driftRand = () => {
+      driftSeed = (driftSeed + 0x6D2B79F5) >>> 0;
+      let x = Math.imul(driftSeed ^ (driftSeed >>> 15), 1 | driftSeed);
+      x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+    for (const z of LEVEL.drifters || []) {
+      // each has a centre of its own along the stretch, spaced out, with the pattern's
+      // reach along the road kept inside the stretch, and a rhythm of its own: its own
+      // pace, and a second, unrelated wobble on top, so no two move quite alike
+      const { from, to } = stretch(z), count = z.count || 4, kind = z.kind || 'cone';
+      const reach = Math.max(CONFIG.drifters.circleRadius, CONFIG.drifters.eightLength) + 5;
+      for (let i = 0; i < count; i++) {
+        const centre = from + reach + (count > 1 ? i / (count - 1) : 0.5) * (to - from - 2 * reach);
+        add(kind, centre, 0, { from, to, drift: z.pattern || 'circle', centre, time: 0,
+          phase: driftRand() * Math.PI * 2, phase2: driftRand() * Math.PI * 2,
+          pace: 0.7 + driftRand() * 0.6, pace2: 1.37 + driftRand() * 0.9, // (the second never a multiple of the first)
+          spin: kind === 'wreck' ? CONFIG.drifters.wreckSpin * (driftRand() < 0.5 ? -1 : 1) * (0.6 + driftRand() * 0.8) : 0 });
+      }
     }
     (LEVEL.asteroidFields || []).forEach((z, k) => {
       // seeded, so a field is laid out the same way every run
@@ -246,6 +272,36 @@ export const Collision = (() => {
     const lo = Track.lo(s) + o.hl, hi = Track.hi(s) - o.hl;
     return lo + Math.random() * (hi - lo);
   };
+  // puts a drifter where its pattern has it at o.time, facing the way it is moving. The
+  // pattern runs at the drifter's own pace, with its own slower wobble laid over it, both
+  // along and across the road, so the path never quite repeats.
+  const driftTo = (o) => {
+    const D = CONFIG.drifters, t = o.time * o.pace, p = o.phase;
+    const wobble = D.wobble * Math.sin(o.time * o.pace2 + o.phase2);     // -wobble .. wobble
+    const wobbleS = D.wobble * Math.sin(o.time * o.pace2 * 0.61 + o.phase2);
+    let s = o.centre, across = 0; // across: -1 .. 1 of the road's reach either side of the centre
+    if (o.drift === 'circle') {
+      s += D.circleRadius * (1 - D.wobble + wobbleS) * Math.cos(t * D.circleRate + p);
+      across = Math.sin(t * D.circleRate + p) + wobble;
+    } else if (o.drift === 'zigzag') { // up and down the stretch, turning back at each end, weaving
+      const span = o.to - o.from, u = (o.centre - o.from + D.zigzagSpeed * t) % (2 * span);
+      s = o.from + (u < span ? u : 2 * span - u);
+      across = Math.sin(t * D.zigzagRate + p) + wobble;
+    } else if (o.drift === 'sweep') {
+      across = Math.sin(t * D.sweepRate + p) + wobble;
+      s += D.circleRadius * wobbleS;
+    } else if (o.drift === 'figure8') {
+      s += D.eightLength * (1 - D.wobble + wobbleS) * Math.sin(t * D.eightRate + p);
+      across = Math.sin(2 * (t * D.eightRate + p)) + wobble;
+    }
+    s = clamp(s, o.from + o.hl, o.to - o.hl);
+    const lo = Track.lo(s) + o.hl, hi = Track.hi(s) - o.hl;
+    const lat = (lo + hi) / 2 + clamp(across, -1, 1) * (hi - lo) / 2 * D.across;
+    if (o.time > 0 && !o.spin) o.face = Math.atan2(lat - o.lat, s - o.s);
+    if (o.spin) o.face = o.yaw = o.time * o.spin; // (a wreck spins on the spot, hitbox and all)
+    o.s = s;
+    o.lat = lat;
+  };
   const updateObstacles = (dt) => {
     for (const o of obstacles) {
       if (o.gone) continue;
@@ -274,6 +330,9 @@ export const Collision = (() => {
           o.dir = -o.dir;
           o.rest = CONFIG.cowRestMin + Math.random() * (CONFIG.cowRestMax - CONFIG.cowRestMin);
         }
+      } else if (o.drift) {
+        o.time += dt;
+        driftTo(o);
       } else if (o.kind === 'asteroid') {
         o.time += dt;
         o.h = o.h0 + o.bob * Math.sin(o.time / o.period * Math.PI * 2 + o.phase);
@@ -320,6 +379,12 @@ export const Collision = (() => {
         o.h = o.h0;
         o.time = 0;
         o.dir = 1;
+        continue;
+      }
+      if (o.drift) { // back to the start of its pattern
+        o.time = 0;
+        o.face = 0;
+        driftTo(o);
         continue;
       }
       if (o.from === undefined) continue; // barriers and bales stay where they were put

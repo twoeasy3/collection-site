@@ -23,7 +23,7 @@
 //              joins up; the expressway has to swing away in between, and be straight
 //              for 250 m before the exit and after the merge (room for the flyovers).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger
-//   theme      'city' (default), 'farm', 'hell' or 'space': the look of the ground, sky and roadside.
+//   theme      'city' (default), 'farm', 'beach', 'hell' or 'space': the look of the ground, sky and roadside.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo')
 //   traffic    which vehicles turn up as traffic and how often, relative to each other:
@@ -39,8 +39,14 @@
 //              sit at road level; the rest pass just under or over it, unmarked. `moving` is the share that
 //              drift across the road or bob up and down through it.
 //   obstacles  { s, lane, kind }   things on the road that explode when hit. kind: 'barrier'
-//                                  (default), 'bale', 'cone' or 'sign'
+//                                  (default), 'bale', 'cone', 'sign', or the beach's 'umbrella',
+//                                  'surfboard', 'cooler' and 'chair' (a lifeguard chair)
 //   herds      { from, to, count } animals (cows) wandering back and forth across that stretch
+//   drifters   { from, to, kind, count, pattern } obstacles of that kind moving about the road
+//              in a pattern: 'circle', 'zigzag' (along the road, weaving), 'sweep' (across
+//              and back) or 'figure8'. They are hit like any obstacle of their kind.
+//   storm      { from, to, count, seed } vehicles blown through the air above that stretch,
+//              tumbling, looping round when they reach its end. Only a sight: nothing can hit them.
 //   tractors   { s, lane }         a tractor: slow traffic that starts from that spot every run
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
 //   id         unique name, used as the level's key in saved progress
@@ -56,11 +62,13 @@ import expressway from './levels/expressway.json';
 import backRoads from './levels/back-roads.json';
 import farm from './levels/farm.json';
 import bigBusiness from './levels/big-business.json';
+import hurricane from './levels/hurricane.json';
 import allHeck from './levels/all-heck.json';
 import ufo from './levels/ufo.json';
 import chaos from './levels/chaos.json';
 
-export const LEVELS = [expressway, backRoads, farm, bigBusiness, allHeck, ufo];
+// (the order is the order they unlock in, and saved progress counts unlocked levels by position)
+export const LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, allHeck, ufo];
 // the screensaver's level: not on the menu, driven round and round with no player car
 export const SCREENSAVER_LEVEL = chaos;
 

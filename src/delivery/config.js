@@ -63,6 +63,25 @@ export const CONFIG = {
     // (light: true = a small thing: it doesn't knock the steering, and barely shakes the camera)
     cone: { damage: 3, speedKept: 0.94, light: true },
     sign: { damage: 12, speedKept: 0.8 },
+    // the beach's junk (Hurricane)
+    umbrella: { damage: 15, speedKept: 0.85 },
+    surfboard: { damage: 18, speedKept: 0.8 },
+    cooler: { damage: 6, speedKept: 0.92, light: true },
+    chair: { damage: 30, speedKept: 0.6 },
+    wreck: { damage: 35, speedKept: 0.5 },
+  },
+  // drifters: obstacles moving about the road in patterns (a level's "drifters")
+  drifters: {
+    across: 0.85,          // share of the road's half-width a pattern reaches out to from the centre
+    circleRadius: 25,      // m along the road a circle spans either side of its centre
+    circleRate: 0.9,       // radians/s round the circle
+    zigzagSpeed: 12,       // m/s along the road (looping round the stretch), weaving as it goes
+    zigzagRate: 1.4,       // radians/s of weave
+    sweepRate: 1.1,        // radians/s across the road and back
+    eightLength: 30,       // m along the road a figure of eight spans either side of its centre
+    eightRate: 0.7,        // radians/s round the eight
+    wobble: 0.3,           // how much of each pattern is an unrelated, slower wobble (0 = clean, predictable sine waves)
+    wreckSpin: 2.5,        // radians/s a drifting wreck spins on the spot (each has its own share of this, either way)
   },
   cowSpeed: 2.2,           // m/s a cow ambles across the road
   cowRestMin: 0.5,         // s it stands at each side before turning back, random between min and max

@@ -45,6 +45,52 @@ const boxModel = (parts) => {
 
 // ---- obstacle models, one builder per kind; all face local +z -------------------------------
 const OBSTACLE_MODELS = {
+  // a beach umbrella: a pole with a striped canopy
+  umbrella: (o) => {
+    const group = boxModel([[lambert(0xf4f4f4), 0.1, o.height - 0.5, 0.1, 0, (o.height - 0.5) / 2, 0]]);
+    const canopy = new THREE.Mesh(new THREE.ConeGeometry(o.hw * 1.4, 0.7, 10), lambert(0xff6a5a));
+    canopy.position.y = o.height - 0.35;
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(o.hw * 0.7, 0.36, 10), lambert(0xf4f4f4));
+    cap.position.y = o.height - 0.1;
+    group.add(canopy, cap);
+    return group;
+  },
+  // a surfboard stuck upright in the road, nose up, with a stripe and a fin
+  surfboard: (o) => boxModel([
+    [lambert(0xffd23f), o.hw * 2, o.height * 0.8, o.hl * 2, 0, o.height * 0.4, 0],
+    [lambert(0xffd23f), o.hw * 1.1, o.height * 0.2, o.hl * 2, 0, o.height * 0.9, 0],   // nose
+    [lambert(0x2f7de1), 0.14, o.height * 0.9, o.hl * 2 + 0.04, 0, o.height * 0.45, 0], // stripe
+    [lambert(0x2b2f38), 0.08, 0.5, 0.45, 0, o.height * 0.2, -o.hl - 0.2],             // fin
+  ]),
+  // a wrecked car: a crumpled box car on four wheels, in a paint of its own
+  wreck: (o) => {
+    const paint = lambert([0x9a5a34, 0x4fc3f7, 0xe23b3b, 0x7ee081, 0xffd23f][Math.floor(Math.random() * 5)]);
+    const parts = [
+      [paint, o.hw * 2, o.height * 0.5, o.hl * 2, 0, 0.3 + o.height * 0.25, 0],                 // body
+      [lambert(0x2b2f38), o.hw * 1.7, o.height * 0.42, o.hl * 0.95, 0, 0.3 + o.height * 0.7, -o.hl * 0.1], // cabin
+      [lambert(0x3a3a40), o.hw * 2.1, 0.14, 0.2, 0, 0.45, o.hl],                               // bumpers
+      [lambert(0x3a3a40), o.hw * 2.1, 0.14, 0.2, 0, 0.45, -o.hl],
+    ];
+    for (const x of [-1, 1]) for (const z of [-1, 1]) parts.push([lambert(0x141414), 0.28, 0.66, 0.66, x * (o.hw - 0.1), 0.33, z * o.hl * 0.6]);
+    const group = boxModel(parts);
+    group.children[0].rotation.z = 0.06; // (a little bent)
+    return group;
+  },
+  // an ice box with a white lid
+  cooler: (o) => boxModel([
+    [lambert(0x2f7de1), o.hw * 2, o.height * 0.75, o.hl * 2, 0, o.height * 0.375, 0],
+    [lambert(0xf4f4f4), o.hw * 2 + 0.06, o.height * 0.25, o.hl * 2 + 0.06, 0, o.height * 0.875, 0],
+  ]),
+  // a lifeguard chair: a tall white frame with a seat, back and roof
+  chair: (o) => {
+    const white = lambert(0xf4f4f4), red = lambert(0xff3b30);
+    const parts = [];
+    for (const x of [-1, 1]) for (const z of [-1, 1]) parts.push([white, 0.12, o.height * 0.65, 0.12, x * o.hw * 0.8, o.height * 0.325, z * o.hl * 0.8]);
+    parts.push([white, o.hw * 2, 0.12, o.hl * 2, 0, o.height * 0.65, 0]);                        // seat
+    parts.push([white, o.hw * 2, o.height * 0.3, 0.12, 0, o.height * 0.8, -o.hl * 0.8]);        // back
+    parts.push([red, o.hw * 2.2, 0.1, o.hl * 2.2, 0, o.height, 0]);                              // roof
+    return boxModel(parts);
+  },
   // an orange block with a white stripe
   barrier: (o) => boxModel([
     [lambert(0xff6a00), o.hw * 2, o.height, o.hl * 2, 0, o.height / 2, 0],
@@ -347,7 +393,7 @@ export const syncPickups = (dt) => {
   for (let i = 0; i < obstacleMeshes.length; i++) {
     const o = Collision.obstacles[i], mesh = obstacleMeshes[i];
     // (nothing is drawn beyond the fog: a level can have hundreds of cones)
-    mesh.visible = !o.gone && Math.abs(Track.along(o.s) - here) < 620;
+    mesh.visible = !o.gone && Math.abs(Track.along(o.s) - here) < 700; // (well inside the fog, so nothing is seen to appear)
     if (!mesh.visible) continue;
     // follow it (most don't move, but it costs little) and face the way it is going
     mesh.rotation.y = Track.toWorld(o.s, o.lat, tmp) - o.face;

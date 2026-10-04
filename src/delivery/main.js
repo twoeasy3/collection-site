@@ -16,6 +16,7 @@ import { syncPackages } from './render/packages.js';
 import { syncEmotes } from './render/emotes.js';
 import { syncPickups, syncTargets } from './render/items.js';
 import { syncHelicopter } from './render/helicopter.js';
+import { syncStorm } from './render/storm.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
 import './render/touch.js';
@@ -76,6 +77,7 @@ const frame = (now) => {
     // which otherwise shows it again.
     if (Game.screensaver) carMesh.visible = false;
     syncTraffic();
+    syncStorm(dt);
     emitVehicleSmoke(dt);
     syncPackages(dt);
     syncPickups(dt);

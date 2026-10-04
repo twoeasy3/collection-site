@@ -52,6 +52,8 @@ const buildDashes = (sFrom, sTo, lat, show) => {
 const THEMES = {
   city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city' },
   farm: { sky: 0xc4e6f5, ground: 0x8fb556, road: 0x57514a, scenery: 'farm' },
+  // beach: sand, a stormy sky, the sea along the right, palms and beach huts
+  beach: { sky: 0x7e8d9e, ground: 0xdccb95, road: 0x45484e, scenery: 'beach' },
   // space: no ground and no road surface, only glowing lane lines among the stars
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
   space: { sky: 0x05060d, ground: null, road: null, scenery: 'space', line: 0x7fe8ff, centre: 0xff62d6 },
@@ -362,6 +364,41 @@ const buildRoad = () => {
     instances(tube, 0xc9ccd1, silos);
     instances(cone, 0x8a8f96, caps);
     instances(tube, 0xe0c060, stacks);
+  } else if (theme.scenery === 'beach') {
+    // ---- beach: the sea along the right with a line of surf, palms, umbrellas and huts ---------
+    for (const [a, b, color, order] of [[30, 600, 0x2f6f9f, -1], [28, 32, 0xd8e6ea, -0.9]]) {
+      const water = new THREE.Mesh(buildStrip(Track.start, Track.end, (q) => beside(1, q, a), (q) => beside(1, q, b), -0.03, 8),
+        new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthWrite: false }));
+      water.renderOrder = order;
+      levelGroup.add(water);
+    }
+    const trunks = [], crowns = [], poles = [], shades = [], huts = [], roofs = [];
+    for (let s = Track.start; s < Track.end; s += 18) {
+      for (const side of [-1, 1]) {
+        const roll = Math.random(), at = s + Math.random() * 12;
+        // the sea side has the beach: umbrellas and huts between the road and the water,
+        // palms behind the road on the land side and here and there along the shore
+        if (side > 0 && roll < 0.35) {
+          const lat = beside(1, at, 6 + Math.random() * 18);
+          poles.push([at, lat, 1.2, 0.12, 2.4, 0.12]);
+          shades.push([at, lat, 2.5, 3, 0.9, 3]);
+        } else if (side > 0 && roll < 0.45) {
+          const lat = beside(1, at, 8 + Math.random() * 12);
+          huts.push([at, lat, 1.4, 3.2, 2.8, 3.2]);
+          roofs.push([at, lat, 3.3, 3.8, 1.2, 3.8]);
+        } else if (roll < (side > 0 ? 0.6 : 0.5)) {
+          const h = 6 + Math.random() * 5, lat = beside(side, at, side > 0 ? 4 + Math.random() * 20 : 5 + Math.random() * 50);
+          trunks.push([at, lat, h / 2, 0.5, h, 0.5]);
+          crowns.push([at, lat, h + 0.4, 6, 1.8, 6]);
+        }
+      }
+    }
+    instances(tube, 0x8a6a45, trunks);
+    instances(cone, 0x3f9f4f, crowns);
+    instances(tube, 0xf4f4f4, poles);
+    instances(cone, 0xff6a5a, shades, true);
+    instances(cube, 0x62b0d8, huts);
+    instances(cone, 0xf2e3c4, roofs);
   } else if (theme.scenery === 'hell') {
     // ---- hell: rivers of lava, black spires of rock, and fires along the roadside ------------------
     const glow = (color) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthWrite: false });

@@ -169,6 +169,26 @@ try {
       check(!cars.CAR.ufo, 'the garage car is back on this level');
     }
 
+    if ((levels.LEVEL.drifters || []).length) {
+      // drifters: obstacles that move about the road in patterns, all of them on the move
+      Game.start();
+      const drifters = Collision.obstacles.filter(o => o.drift);
+      const before = drifters.map(o => [o.s, o.lat]), furthest = drifters.map(() => 0);
+      let jump = 0; // the biggest move in one step: none of them may teleport
+      for (let i = 0; i < 120 * 3; i++) {
+        const last = drifters.map(o => [o.s, o.lat]);
+        Collision.updateObstacles(1 / 120);
+        drifters.forEach((o, k) => {
+          furthest[k] = Math.max(furthest[k], Math.hypot(o.s - before[k][0], o.lat - before[k][1]));
+          jump = Math.max(jump, Math.hypot(o.s - last[k][0], o.lat - last[k][1]));
+        });
+      }
+      const moved = furthest.filter(d => d > 1).length;
+      const patterns = [...new Set(drifters.map(o => o.drift))];
+      check(drifters.length > 10 && moved === drifters.length && jump < 1,
+        `${drifters.length} drifters (${patterns.join(', ')}): every one moves within 3 s, none jumps (largest step ${jump.toFixed(2)} m)`);
+    }
+
     if ((levels.LEVEL.tractors || []).length) {
       // tractors: traffic vehicles, starting from the same spots every run
       const spots = () => Traffic.cars.filter(c => c.active && c.kind === 'tractor').map(c => c.s.toFixed(1) + '/' + c.lane).sort().join(' ');
@@ -391,7 +411,11 @@ try {
       for (const c of Traffic.cars) if (c.active && !c.fixed) { seen[c.kind] = (seen[c.kind] || 0) + 1; count++; }
     }
     const total = kinds.reduce((sum, k) => sum + want[k], 0);
-    const close = kinds.every(k => Math.abs((seen[k] || 0) / count - want[k] / total) < 0.05);
+    // (within three standard deviations of the listed share, plus a little: a sparse level gives few samples)
+    const close = kinds.every(k => {
+      const share = want[k] / total;
+      return Math.abs((seen[k] || 0) / count - share) < 0.03 + 3 * Math.sqrt(share * (1 - share) / Math.max(1, count));
+    });
     const extra = Object.keys(seen).filter(k => !kinds.includes(k));
     check(kinds.length ? close && !extra.length : count === 0, kinds.length
       ? `${levels.LEVEL.name}: ${kinds.map(k => k + ' ' + ((seen[k] || 0) / count * 100).toFixed(0) + '%').join(', ')} (as listed)`
@@ -417,9 +441,11 @@ try {
       }
     }
     const T = track.Track;
-    if (L.flow) check(live > 100 && wrongWay === 0 && lanes.size === T.laneCount && T.flow === L.flow,
-      `${L.name}: every vehicle is ${L.flow}bound, and they use all ${T.laneCount} lanes`);
-    const rows = Collision.obstacles.filter(o => o.kind === 'cone' || o.kind === 'sign');
+    const inPlay = (L.trafficCount ?? CONFIG.trafficCount) + (L.oncomingCount ?? CONFIG.oncomingCount);
+    if (L.flow) check(live > inPlay * 10 * 0.5 && wrongWay === 0 && lanes.size === T.laneCount && T.flow === L.flow,
+      `${L.name}: every vehicle is ${L.flow}bound (${live} seen over 10 starts), and they use all ${T.laneCount} lanes`);
+    if (!L.shoulderRows) continue;
+    const rows = Collision.obstacles.filter(o => !o.drift && (o.kind === 'cone' || o.kind === 'sign'));
     const kind = rows[0].kind, cost = CONFIG.obstacleKinds[kind];
     check(rows.length > 20 && rows.every(o => T.onShoulder(o.lat, o.s)),
       `${L.name}: ${rows.length} ${kind}s, every one on a shoulder and none in an exit or merge lane`);
