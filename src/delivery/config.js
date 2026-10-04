@@ -86,9 +86,10 @@ export const CONFIG = {
   yawSmoothing: 12,        // 1/s
 
   // traffic: the right-hand half of the lanes travels with the player, the left half comes at you
-  trafficCount: 16,        // same-direction cars alive at once (density)
-  oncomingCount: 12,       // oncoming cars alive at once
-  trafficMinSpeed: 14,     // m/s
+  trafficPool: 80,         // vehicles there are meshes for; a level's counts can't add up to more
+  trafficCount: 16,        // same-direction cars alive at once (density; a level can set "trafficCount")
+  oncomingCount: 12,       // oncoming cars alive at once (a level can set "oncomingCount")
+  trafficMinSpeed: 14,     // m/s (a level can set its own with "trafficSpeed": { "min", "max" })
   trafficMaxSpeed: 28,
   spawnMin: 480,           // spawn window ahead of the player, metres (inside the fog)
   spawnMax: 640,
@@ -124,6 +125,19 @@ export const CONFIG = {
   startMood: {             // chance of each starting emotion (the remainder start neutral)
     good: { happy: 0.45, angry: 0.15 },
     evil: { happy: 0.1, angry: 0.6 },
+  },                       // (a level can override both: "drivers": { "evil", "happy", "angry" })
+
+  // the screensaver: no player car, just a point gliding along the road that the camera follows
+  screensaver: {
+    speed: 20,             // m/s it glides at (slower than most traffic, so the traffic passes by)
+    swayCentre: 0,         // lat it holds: 0 is the centre line of the road, between the two directions
+    sway: 0,               // m it sways either side of that (0 = dead straight)
+    swayPeriod: 18,        // s for one sway there and back
+    camBack: 18,           // the camera stands further back and higher than the chase camera
+    camHeight: 14,
+    camLookAhead: 16,
+    fadeDistance: 25,      // m either side of the join between laps over which the picture fades to black
+    soundRange: 110,       // m within which traffic crashes are heard (in a run only the player's are)
   },
 
   // evil cars lob packages at the road (never straight at a car); the splash does the damage
@@ -186,6 +200,7 @@ export const CONFIG = {
   throwCooldown: 0.6,      // s
   packageDamage: 4,        // a care package barely scratches what it hits
   evilPackageDamage: 35,   // an Evil player's flaming package: real damage, and it makes enemies
+  completeBank: 10000,     // $ in the bank after "Unlock everything" on the menu
   // the clock: a level allows its `time` seconds, scaled by the side the player picked
   timeScale: { good: 1.2, evil: 0.85 },
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing

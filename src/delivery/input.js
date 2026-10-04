@@ -6,7 +6,7 @@ export const Input = (() => {
   const on = (action, fn) => (listeners[action] ||= []).push(fn);
   const emit = (action) => (listeners[action] || []).forEach(fn => fn());
 
-  const KEYS = { Enter: 'confirm', Space: 'throw' };
+  const KEYS = { Enter: 'confirm', Space: 'throw', KeyP: 'pause' };
   // steer and throttle are held axes (-1 .. +1), not one-shot actions
   const STEER_KEYS = { ArrowLeft: -1, KeyA: -1, ArrowRight: 1, KeyD: 1 };
   const THROTTLE_KEYS = { ArrowUp: 1, KeyW: 1, ArrowDown: -1, KeyS: -1 };

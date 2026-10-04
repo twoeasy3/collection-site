@@ -190,6 +190,9 @@ export const Packages = (() => {
     }
   };
 
-  return { list, reset, update, throwOne, throwAtGround,
+  // the screensaver going round again: packages in the air move back a lap with the road
+  const lap = (length) => { for (const p of list) if (p.active) p.s -= length; };
+
+  return { list, reset, update, lap, throwOne, throwAtGround,
     get ready() { return cooldown <= 0; } };
 })();

@@ -128,6 +128,25 @@ export const Player = {
       if (lead) this.speed = Math.max(Math.max(0, lead.vs), this.speed - CONFIG.autoBrake * dt);
     }
   },
+  // The screensaver's camera dolly: no car (nothing of the player is drawn), just this point
+  // gliding down the centre line at a steady speed for the chase camera to follow. It is a
+  // ghost the whole time, so the traffic drives through it, but the traffic still sees it:
+  // angry drivers crowd its lane and evil ones lob packages near it.
+  dolly(dt, time) {
+    const S = CONFIG.screensaver;
+    this.speed = S.speed;
+    this.s += this.speed * dt;
+    const lat = S.swayCentre + S.sway * Math.sin(time * 2 * Math.PI / S.swayPeriod);
+    this.latVel = (lat - this.lat) / dt;
+    this.lat = lat;
+    this.ghost = 1;
+    this.shield = 0;
+    this.health = this.maxHealth; // (a package splash near it does it no harm)
+    this.yaw = 0;
+    this.launching = false;
+    this.onShoulder = false;
+    this.danger = CONFIG.dangerTime;
+  },
   update(dt, throttle, steer, stopping) {
     this.stun = Math.max(0, this.stun - dt);
     this.shield = Math.max(0, this.shield - dt);

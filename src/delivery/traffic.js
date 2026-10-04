@@ -15,12 +15,12 @@ import { Packages } from './packages.js';
 // and won't brake for the player, happy ones clear the lane, neutral ones ignore the player.
 export const Traffic = (() => {
   const cars = [];
-  const total = CONFIG.trafficCount + CONFIG.oncomingCount;
-  for (let i = 0; i < total; i++) {
+  for (let i = 0; i < CONFIG.trafficPool; i++) {
     // bound: 'north' is the way the player is going, 'south' is oncoming. It never changes
-    // during a run (reset() deals the directions out again for the level being started).
+    // during a run (reset() deals the directions out again for the level being started, and
+    // marks the cars beyond the level's counts unused).
     const north = i < CONFIG.trafficCount;
-    cars.push({ active: false, dir: north ? 1 : -1, bound: north ? 'north' : 'south', mass: 1,
+    cars.push({ active: false, unused: false, dir: north ? 1 : -1, bound: north ? 'north' : 'south', mass: 1,
       s: 0, lat: 0, vs: 0, latVel: 0, yaw: 0, yawVel: 0, stun: 0,
       lane: 0, baseSpeed: 0, kind: 'car', evil: false, emotion: 'neutral', mood: 0, paint: 0, think: 0,
       health: 1, maxHealth: 1, smoke: 0, hw: 1, hl: 2.1, height: 1.4 });
@@ -65,11 +65,16 @@ export const Traffic = (() => {
     Math.abs(c.s - Player.s) < CONFIG.policeSightRange && Math.abs(c.lat - Player.lat) < 25);
 
   const MOOD_START = { happy: 0.7, neutral: 0, angry: -0.7 };
-  // evil cars are more likely to start out angry
+  // evil cars are more likely to start out angry (a level's "drivers" can set the chances
+  // for every driver, and the share of evil ones)
+  const drivers = () => LEVEL.drivers || {};
   const pickEmotion = (evil) => {
-    const r = Math.random(), chance = CONFIG.startMood[evil ? 'evil' : 'good'];
+    const d = drivers(), r = Math.random();
+    const chance = d.happy !== undefined || d.angry !== undefined
+      ? { happy: d.happy || 0, angry: d.angry || 0 } : CONFIG.startMood[evil ? 'evil' : 'good'];
     return r < chance.happy ? 'happy' : r < chance.happy + chance.angry ? 'angry' : 'neutral';
   };
+  const speeds = () => LEVEL.trafficSpeed || { min: CONFIG.trafficMinSpeed, max: CONFIG.trafficMaxSpeed };
 
   const laneClear = (car, lane, gap) => cars.every(o =>
     o === car || !o.active || o.lane !== lane || Math.abs(o.s - car.s) > gap);
@@ -110,10 +115,11 @@ export const Traffic = (() => {
     car.yaw = 0;
     car.yawVel = 0;
     car.stun = 0;
-    car.baseSpeed = type.speed * (CONFIG.trafficMinSpeed +
-      Math.random() * (CONFIG.trafficMaxSpeed - CONFIG.trafficMinSpeed));
+    const { min, max } = speeds();
+    car.baseSpeed = type.speed * (min + Math.random() * (max - min));
     car.vs = car.dir * car.baseSpeed;
-    car.evil = !type.special && Math.random() < CONFIG.evilShare; // fixed for this car's life
+    const evilShare = drivers().evil !== undefined ? drivers().evil : CONFIG.evilShare;
+    car.evil = !type.special && Math.random() < evilShare; // fixed for this car's life
     car.emotion = pickEmotion(car.evil);
     car.mood = MOOD_START[car.emotion];
     car.paint = Math.floor(Math.random() * 1000);
@@ -135,7 +141,7 @@ export const Traffic = (() => {
       const s = Track.place(t);
       const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1
         : t.lane < Track.lanesEachWay ? -1 : 1; // (the left half of a two-way road is oncoming)
-      const car = cars.find(c => !c.active && c.dir === dir);
+      const car = cars.find(c => !c.active && !c.unused && c.dir === dir);
       if (!car) continue;
       car.s = s;
       outfit(car, 'tractor', t.lane);
@@ -186,11 +192,15 @@ export const Traffic = (() => {
   };
 
   const reset = () => {
+    // how many are about, each way: the level's counts, or the usual ones
+    const count = LEVEL.trafficCount !== undefined ? LEVEL.trafficCount : CONFIG.trafficCount;
+    const oncoming = LEVEL.oncomingCount !== undefined ? LEVEL.oncomingCount : CONFIG.oncomingCount;
     cars.forEach((car, i) => {
-      const north = Track.flow === 'north' || (Track.flow !== 'south' && i < CONFIG.trafficCount);
+      const north = Track.flow === 'north' || (Track.flow !== 'south' && i < count);
       car.dir = north ? 1 : -1;
       car.bound = north ? 'north' : 'south';
       car.active = false;
+      car.unused = i >= count + oncoming; // (never spawned on this level)
       car.fixed = false;
     });
     placeFixed();
@@ -203,7 +213,7 @@ export const Traffic = (() => {
     for (const car of cars) {
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
-        if (!car.fixed && mix().length) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
+        if (!car.fixed && !car.unused && mix().length) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
         continue;
       }
       const ahead = Track.along(car.s) - Track.along(Player.s); // along the course, whichever road
@@ -323,5 +333,15 @@ export const Traffic = (() => {
     }
   };
 
-  return { cars, reset, update, policeNear };
+  // the screensaver going round again: everything on the expressway is moved back a lap
+  // (the road's s runs from 0 again), and the level's fixed vehicles are put out afresh
+  const lap = (length) => {
+    for (const car of cars) {
+      if (car.active && car.fixed) car.active = false;
+      else if (car.active && Track.isMain(car.s)) car.s -= length;
+    }
+    placeFixed();
+  };
+
+  return { cars, reset, update, lap, policeNear };
 })();

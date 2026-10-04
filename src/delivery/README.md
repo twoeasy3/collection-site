@@ -58,4 +58,17 @@ distance along a road (`s`) plus a sideways offset (`lat`).
   `theme` picks the look (`city` or `farm`; themes are in `src/delivery/render/road.js`).
 - **An obstacle kind:** give it a size and behaviour in `src/delivery/collision.js`, a cost in
   `obstacleKinds` in `src/delivery/config.js`, and a model in `src/delivery/render/items.js`.
-- **A car:** add an entry to `CARS` in `src/delivery/cars.js`.
+- **A car:** add an entry to `CARS` in `src/delivery/cars.js`. A car that should stay out of
+  the garage goes in `SECRET_CARS` there instead, with its own way in (the City Bus: type
+  B U S on the start screen, or `?autostart&car=bus`).
+- **Savegames:** "Unlock everything" on the start screen writes a complete game to the
+  progress cookie; "Reset progress" wipes it.
+- **The screensaver** ("Screensaver" on the start screen) runs `src/delivery/levels/chaos.json`,
+  which is not on the menu: eight lanes, two-way, dense angry traffic and tractors in every
+  lane, with no player car. A ghost dolly glides along for the camera to follow, and at the
+  end of the road everything goes round again. `/delivery/?screensaver` opens it directly;
+  the "Screensaver link" on the start screen goes there, for bookmarking. Its tuning is `CONFIG.screensaver`, and the
+  level's own knobs (`trafficCount`, `oncomingCount`, `drivers`, `trafficSpeed`) are
+  described at the top of `src/delivery/levels.js`.
+- **Pause and Exit level** buttons sit at the bottom of the screen during a run and the
+  screensaver; P also pauses.

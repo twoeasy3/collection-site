@@ -1,0 +1,43 @@
+{
+  "id": "chaos",
+  "name": "Pile-Up Parade",
+  "theme": "city",
+  "flow": "south",
+  "lanes": 8,
+  "time": 9999,
+  "tip": 0,
+  "traffic": { "car": 0.16, "compact": 0.12, "van": 0.12, "bus": 0.1, "police": 0.08, "junker": 0.12, "sport": 0.14, "wagon": 0.08, "lovebus": 0.08 },
+  "trafficCount": 0,
+  "oncomingCount": 80,
+  "drivers": { "evil": 0.75, "happy": 0.05, "angry": 0.8 },
+  "trafficSpeed": { "min": 9, "max": 36 },
+  "segments": [
+    { "length": 500, "curve": 0 },
+    { "length": 500, "curve": 0.002 },
+    { "length": 400, "curve": 0 },
+    { "length": 600, "curve": -0.0025 },
+    { "length": 500, "curve": 0 },
+    { "length": 400, "curve": 0.003 },
+    { "length": 600, "curve": 0 },
+    { "length": 500, "curve": -0.0025 },
+    { "length": 500, "curve": 0 }
+  ],
+  "tractors": [
+    { "s": 260, "lane": 5 },
+    { "s": 410, "lane": 2 },
+    { "s": 700, "lane": 7 },
+    { "s": 980, "lane": 4 },
+    { "s": 1240, "lane": 1 },
+    { "s": 1500, "lane": 6 },
+    { "s": 1760, "lane": 3 },
+    { "s": 2050, "lane": 5 },
+    { "s": 2300, "lane": 0 },
+    { "s": 2600, "lane": 4 },
+    { "s": 2900, "lane": 7 },
+    { "s": 3150, "lane": 2 },
+    { "s": 3400, "lane": 6 },
+    { "s": 3700, "lane": 1 },
+    { "s": 3950, "lane": 5 },
+    { "s": 4250, "lane": 3 }
+  ]
+}

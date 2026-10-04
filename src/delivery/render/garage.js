@@ -3,7 +3,7 @@
 // sale to buy it (hovering shows the price). The Good / Evil toggle swaps every car to its
 // other livery: buying a car buys both.
 import * as THREE from 'three';
-import { CARS, CAR, selectCar } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, selectCar } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { renderer } from './scene.js';
@@ -123,10 +123,12 @@ const carAt = (event) => {
 };
 
 const refresh = () => {
-  const inUse = CARS.find(car => car.id === Progress.data.car) || CARS[0];
+  // (a secret vehicle in use has no bay, so no ring)
+  const inUse = CARS.find(car => car.id === Progress.data.car) || SECRET_CARS[Progress.data.car] || CARS[0];
   bank.textContent = 'Bank ' + money(Progress.data.money);
   liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
   info.textContent = inUse.name + '  -  ' + stats(inUse);
+  ring.visible = parked.some(mesh => mesh.userData.car === inUse);
   for (const mesh of parked) {
     const car = mesh.userData.car;
     mesh.userData.body.material.color.setHex(Garage.evil ? car.evilColor : car.color);

@@ -3,7 +3,7 @@
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel } from '../levels.js';
-import { CAR, useLevelCar } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime } from '../game.js';
 import { Garage } from './garage.js';
@@ -68,6 +68,33 @@ muteBtn.addEventListener('click', toggleMute);
 window.addEventListener('keydown', (e) => { if (e.code === 'KeyM' && !e.repeat) toggleMute(); });
 showMute();
 
+// a complete savegame, written to the progress cookie like any other progress
+document.getElementById('completeBtn').addEventListener('click', () => {
+  if (!confirm('Open every level, buy every car and fill the bank?')) return;
+  Progress.complete({
+    levels: LEVELS.length,
+    best: Object.fromEntries(LEVELS.map(level => [level.id, level.tip])),
+    cars: CARS.map(car => car.id),
+    money: CONFIG.completeBank,
+  });
+  draw();
+});
+
+// a secret: typing B U S on the start screen puts you in a city bus. It is yours from then
+// on (pick another car in the garage to get out of it; Reset progress takes it away).
+{
+  let typed = '';
+  window.addEventListener('keydown', (e) => {
+    if (Game.state !== 'start' || Game.inMenu || e.repeat || e.key.length !== 1) return;
+    typed = (typed + e.key.toLowerCase()).slice(-3);
+    if (typed !== 'bus') return;
+    typed = '';
+    Progress.buy(SECRET_CARS.bus);
+    selectCar('bus');
+    window.dispatchEvent(new Event('carchange'));
+  });
+}
+
 document.getElementById('resetBtn').addEventListener('click', () => {
   if (!confirm('Erase your bank, unlocked levels and cars?')) return;
   Progress.reset();
@@ -75,6 +102,12 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   window.dispatchEvent(new Event('carchange')); // (the car in use may have been one that was bought)
   draw();
 });
+
+// the screensaver: the chaos level with no player car, round and round until Exit
+document.getElementById('screensaverBtn').addEventListener('click', () => Game.startScreensaver());
+// pause and exit, during a run or the screensaver
+document.getElementById('pauseBtn').addEventListener('click', () => Game.togglePause());
+document.getElementById('exitBtn').addEventListener('click', () => Game.exit());
 
 // results screen buttons
 const next = document.getElementById('nextBtn');

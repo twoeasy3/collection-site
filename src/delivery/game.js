@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { LEVEL, LEVEL_INDEX, LEVELS, selectLevel } from './levels.js';
+import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial } from './levels.js';
 import { Progress } from './progress.js';
 import { useLevelCar } from './cars.js';
 import { Input } from './input.js';
@@ -19,6 +19,9 @@ export const Game = {
   state: 'start', // start | playing | finished
   evil: false,    // the side picked on the start screen
   inMenu: false,  // a menu other than the start screen is open (the garage)
+  paused: false,  // a run (or the screensaver) is frozen: nothing moves until it is resumed
+  screensaver: false, // the screensaver is running: no player car, the road goes round and round
+  menuLevel: 0,   // the level the menu had picked when the screensaver started, to put back
   outcome: '',    // delivered | late | timeout | busted
   time: 0,        // s since the start
   allowed: 0,     // s on the clock for this run
@@ -52,8 +55,34 @@ export const Game = {
   // back to the start screen, which is only a menu: nothing of the level is shown behind it
   toMenu() {
     this.state = 'start';
+    this.paused = false;
+    if (this.screensaver) { // the menu's own level is picked again
+      this.screensaver = false;
+      selectLevel(this.menuLevel);
+      useLevelCar(LEVEL.car);
+    }
+    document.body.classList.remove('screensaver');
     resultScreen.classList.add('hidden');
     startScreen.classList.remove('hidden');
+  },
+  // the Exit button during a run or the screensaver: straight back to the menu
+  exit() {
+    this.toMenu();
+    for (const hook of this.onFinish) hook();
+  },
+  togglePause() {
+    if (this.state !== 'playing') return;
+    this.paused = !this.paused;
+  },
+  // the screensaver: its own level, no player car (the camera follows a ghost dolly), no
+  // clock and no finish: at the end of the road everything goes round again
+  startScreensaver() {
+    this.menuLevel = LEVEL_INDEX;
+    selectSpecial(SCREENSAVER_LEVEL);
+    this.start();
+    this.screensaver = true;
+    Player.ghost = 1;
+    document.body.classList.add('screensaver');
   },
   // from the results screen: on to the next level, on the same side
   nextLevel() {
@@ -81,6 +110,8 @@ export const Game = {
     this.wrecks = 0;
     this.busts = 0;
     this.over = false;
+    this.paused = false;
+    this.screensaver = false;
     this.state = 'playing';
     startScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');
@@ -147,7 +178,22 @@ export const Game = {
   },
   update(dt) {
     this.shake = Math.max(0, this.shake - dt / CONFIG.shakeTime);
-    if (this.state === 'start') return;
+    if (this.state === 'start' || this.paused) return;
+    if (this.screensaver) {
+      this.time += dt;
+      Player.dolly(dt, this.time);
+      if (Player.s >= Track.length) { // round again: the road's s starts from 0
+        Player.s -= Track.length;
+        Traffic.lap(Track.length);
+        Packages.lap(Track.length);
+        Collision.resetObstacles();
+      }
+      Traffic.update(dt);
+      Packages.update(dt);
+      Collision.updateObstacles(dt);
+      Collision.check();
+      return;
+    }
 
     const playing = this.state === 'playing';
     if (playing) {
@@ -192,8 +238,9 @@ export const formatTime = (t) => {
 };
 
 const playing = () => Game.state === 'playing';
-Input.on('throw', () => playing() && Packages.throwOne());
+Input.on('throw', () => playing() && !Game.paused && !Game.screensaver && Packages.throwOne());
 Input.on('confirm', () => !playing() && !Game.inMenu && Game.start());
+Input.on('pause', () => Game.togglePause());
 
 const startScreen = document.getElementById('startScreen');
 const resultScreen = document.getElementById('resultScreen');

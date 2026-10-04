@@ -468,6 +468,9 @@ const createTrack = () => {
     for (const kind of Object.keys(LEVEL.traffic || {})) {
       if (!CONFIG.vehicles[kind]) problems.push('traffic: there is no vehicle called "' + kind + '"');
     }
+    const counts = (LEVEL.trafficCount !== undefined ? LEVEL.trafficCount : CONFIG.trafficCount) +
+      (LEVEL.oncomingCount !== undefined ? LEVEL.oncomingCount : CONFIG.oncomingCount);
+    if (counts > CONFIG.trafficPool) problems.push('traffic: trafficCount + oncomingCount is ' + counts + ', more than the pool of ' + CONFIG.trafficPool);
     for (const t of LEVEL.targets || []) {
       const s = place(t), name = 'target at ' + t.s + (t.road === 'side' ? ' (side road)' : '');
       if (t.road === 'side' ? (!exits[t.exit || 0] || t.s < 0 || t.s > exits[t.exit || 0].length) : (t.s < 0 || t.s > length)) {

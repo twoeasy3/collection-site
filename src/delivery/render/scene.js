@@ -57,11 +57,12 @@ export const updateCamera = (dt, snap) => {
   camLat += Player.camShift; // the car changed road: lat is measured from a different line now
   Player.camShift = 0;
   camLat = snap ? Player.lat : camLat + (Player.lat - camLat) * damp(CONFIG.camLateralLag, dt);
-  Track.toWorld(Player.s - CONFIG.camBack, camLat, tmp);
+  const cam = Game.screensaver ? CONFIG.screensaver : CONFIG; // (the screensaver's camera stands further back)
+  Track.toWorld(Player.s - cam.camBack, camLat, tmp);
   const shake = CONFIG.hitShake * Game.shake;
   camera.position.set(tmp.x + (Math.random() - 0.5) * shake,
-    tmp.y + CONFIG.camHeight + (Math.random() - 0.5) * shake, tmp.z);
-  Track.toWorld(Player.s + CONFIG.camLookAhead, camLat, tmp2);
+    tmp.y + cam.camHeight + (Math.random() - 0.5) * shake, tmp.z);
+  Track.toWorld(Player.s + cam.camLookAhead, camLat, tmp2);
   tmp2.y += 1; // (so the camera looks up a climb and down a descent)
   camera.lookAt(tmp2);
 

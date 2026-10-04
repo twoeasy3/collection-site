@@ -40,9 +40,19 @@ export const LEVEL_CARS = {
     maxSpeed: 90, accel: 30, agility: 2.8, health: 100, hw: 1.3, hl: 1.3, height: 1.2 },
 };
 
+// Secret vehicles: never parked in the garage or for sale, but once owned they are driven
+// like any other car, and the garage can swap back to a normal car. The way into each:
+//   bus   type B U S on the start screen (see render/menu.js), or ?autostart&car=bus
+//         (kind: 'bus' makes it the traffic bus's tall, boxy shape)
+export const SECRET_CARS = {
+  bus: { id: 'bus', name: 'City Bus', price: 0, color: 0xf2a33a, evilColor: 0x2e2a33, kind: 'bus',
+    maxSpeed: 38, accel: 5, health: 220, hw: 1.3, hl: 5.5, height: 3.1 },
+};
+
 // The car in use. It is a live binding: every module that imports CAR sees the new car as
 // soon as selectCar() changes it, so swapping cars needs no reload.
-const find = () => CARS.find(car => car.id === Progress.data.car && Progress.owns(car.id)) || CARS[0];
+const find = () => [...CARS, ...Object.values(SECRET_CARS)]
+  .find(car => car.id === Progress.data.car && Progress.owns(car.id)) || CARS[0];
 export let CAR = find();
 
 // A level with a vehicle of its own puts the player in that; any other level gives back

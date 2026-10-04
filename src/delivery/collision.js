@@ -33,6 +33,10 @@ export const Collision = (() => {
 
   let tick = 0; // counts calls to check(), to space out repeated damage from one long contact
 
+  // is a crash between these two heard? The player's always; in the screensaver, any near the camera
+  const heard = (a, b) => a.isPlayer || b.isPlayer ||
+    (Game.screensaver && Math.abs(a.s - Player.s) < CONFIG.screensaver.soundRange);
+
   const resolve = (a, b) => {
     const ds = b.s - a.s, dl = b.lat - a.lat;
     const penS = Math.max(0.02, a.hl + b.hl - Math.abs(ds));
@@ -63,8 +67,8 @@ export const Collision = (() => {
       // both are wrecked outright
       a.health = 0;
       b.health = 0;
-      if (a.isPlayer || b.isPlayer) {
-        Game.shake = 1;
+      if (heard(a, b)) {
+        if (a.isPlayer || b.isPlayer) Game.shake = 1;
         sfx('crash');
       }
       return;
@@ -94,10 +98,13 @@ export const Collision = (() => {
       const j = (1 + CONFIG.bounce) * closing;
       a.vs -= n * j * pushA;
       b.vs += n * j * pushB;
-      // an off-centre hit swings the car round a little (its heading, not its position)
-      const spin = n * clamp(dl / (a.hw + b.hw), -1, 1) * CONFIG.spinKick * closing * 0.5;
-      a.yawVel += spin * pushA * 2;
-      b.yawVel += spin * pushB * 2;
+      // (a rear-end swings nobody round: only a side-on contact that is also closing along
+      // the road turns the cars, by how far off-centre it is)
+      if (sideOn) {
+        const spin = n * clamp(dl / (a.hw + b.hw), -1, 1) * CONFIG.spinKick * closing * 0.5;
+        a.yawVel += spin * pushA * 2;
+        b.yawVel += spin * pushB * 2;
+      }
       impact = closing;
     }
     if (sideOn) {
@@ -125,8 +132,8 @@ export const Collision = (() => {
       const stun = CONFIG.stunTime * clamp(impact / 10, 0.3, 1);
       a.stun = Math.max(a.stun, stun);
       b.stun = Math.max(b.stun, stun);
-      if (a.isPlayer || b.isPlayer) {
-        Game.shake = Math.max(Game.shake, clamp(impact / 15, 0.25, 1));
+      if (heard(a, b)) {
+        if (a.isPlayer || b.isPlayer) Game.shake = Math.max(Game.shake, clamp(impact / 15, 0.25, 1));
         sfx('crash', clamp(impact / 18, 0.3, 1));
       }
     }

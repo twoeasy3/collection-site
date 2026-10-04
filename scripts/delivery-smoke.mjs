@@ -7,7 +7,7 @@ const element = () => ({ classList: { add() {}, remove() {} }, addEventListener(
 globalThis.window = { addEventListener() {} };
 // every level unlocked and every car owned, so each can be loaded and tested
 const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['hatch', 'junker', 'coupe', 'lowrider', 'wagon', 'sport', 'lovebus', 'tank'] }));
-globalThis.document = { getElementById: element, cookie: 'delivery_racer_progress=' + allOpen };
+globalThis.document = { getElementById: element, body: element(), cookie: 'delivery_racer_progress=' + allOpen };
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
 let failures = 0;
@@ -202,6 +202,61 @@ try {
     check(Game.outcome === 'timeout' && Game.tip === 0, `standing still ends in a timeout with no tip (outcome: ${Game.outcome}, tip: ${Game.tip})`);
   }
 
+  // the screensaver: its own level, no player car, traffic that crashes on its own, and the
+  // road goes round and round until Exit
+  console.log('screensaver');
+  {
+    levels.selectLevel(2);
+    Game.startScreensaver();
+    const T = track.Track;
+    check(Game.state === 'playing' && Game.screensaver && levels.LEVEL === levels.SCREENSAVER_LEVEL && T.problems.length === 0 &&
+      T.laneCount === 8 && T.flow === 'south' && Traffic.cars.every(c => c.unused || c.dir < 0),
+    `starts on "${levels.LEVEL.name}": ${T.laneCount} lanes, everything oncoming, no level problems`);
+    const inPlay = Traffic.cars.filter(c => !c.unused).length;
+    let crashes = 0, wrecks = 0, laps = 0, ghost = true, lowest = Infinity, highest = -Infinity, maxActive = 0, lastS = 0;
+    for (let i = 0; i < 120 * 300; i++) { // five minutes
+      Game.update(1 / 120);
+      for (const e of FxQueue) {
+        if (e.type === 'sound' && e.name === 'crash') crashes++;
+        if (e.type === 'explode' && e.tyres) wrecks++;
+      }
+      FxQueue.length = 0;
+      if (Player.ghost <= 0 || Player.speed !== CONFIG.screensaver.speed) ghost = false;
+      lowest = Math.min(lowest, Player.lat); highest = Math.max(highest, Player.lat);
+      if (Player.s < lastS) laps++;
+      lastS = Player.s;
+      maxActive = Math.max(maxActive, Traffic.cars.filter(c => c.active).length);
+    }
+    check(inPlay === levels.SCREENSAVER_LEVEL.trafficCount + levels.SCREENSAVER_LEVEL.oncomingCount && maxActive > CONFIG.trafficCount + CONFIG.oncomingCount,
+      `${inPlay} vehicles in play, up to ${maxActive} on the road at once (a normal level has ${CONFIG.trafficCount + CONFIG.oncomingCount})`);
+    check(ghost && Player.health === Player.maxHealth && Game.busts === 0 && lowest === 0 && highest === 0,
+      `the dolly is a ghost at a steady ${CONFIG.screensaver.speed} m/s, never hurt, on the centre line (lat ${lowest} to ${highest})`);
+    check(laps >= 1 && Game.state === 'playing' && Game.outcome === '', `went round ${laps} time(s) with no finish and no timeout`);
+    check(crashes > 50 && wrecks > 20, `chaos: ${crashes} crashes heard and ${wrecks} vehicles wrecked in five minutes, with no player`);
+    const tractors = Traffic.cars.filter(c => c.active && c.kind === 'tractor').length;
+    check(tractors > 0, `${tractors} tractors are out again on the new lap`);
+    Game.togglePause();
+    const s = Player.s;
+    Game.update(1 / 120);
+    check(Game.paused && Player.s === s, 'paused: nothing moves');
+    Game.togglePause();
+    Game.update(1 / 120);
+    check(!Game.paused && Player.s > s, 'resumed: it moves again');
+    Game.exit();
+    check(Game.state === 'start' && !Game.screensaver && !Game.paused && levels.LEVEL === levels.LEVELS[2],
+      'Exit: back on the menu with the level the menu had picked');
+    // a normal run keeps its usual traffic counts
+    levels.selectLevel(1);
+    Game.start();
+    check(Traffic.cars.filter(c => !c.unused).length === CONFIG.trafficCount + CONFIG.oncomingCount && !Game.screensaver,
+      'a normal run: the usual number of vehicles, and a player car');
+    Game.togglePause();
+    Game.update(1 / 120);
+    check(Game.paused && Game.time === 0, 'a run can be paused: the clock stops too');
+    Game.exit();
+    check(Game.state === 'start' && !Game.paused, 'Exit level: back on the menu');
+  }
+
   // going back to the menu and picking another level loads that one on the next start
   console.log('menu');
   Game.toMenu();
@@ -267,6 +322,12 @@ try {
     FxQueue.length = 0;
     check(Player.speed < 30 && o.vs < 35 && Player.speed < o.vs,
       `ramming a bus doing 15 from behind at 45 leaves the player at ${Player.speed.toFixed(1)} m/s, behind the bus at ${o.vs.toFixed(1)}`);
+    // a rear-end, even an off-centre one, turns neither vehicle
+    o = stage('car', 'north', (c) => { c.s = 204; c.lat = Player.lat + 1.2; c.vs = 15; });
+    Player.speed = 45;
+    Collision.check();
+    FxQueue.length = 0;
+    check(Player.yawVel === 0 && o.yawVel === 0, 'an off-centre rear-end gives neither vehicle any yaw');
 
     // a spinning car is not kept on the road
     o = stage('car', 'north', (c) => { c.s = 260; c.lat = track.Track.laneOffset(3, 260); c.vs = 25; });
@@ -431,6 +492,21 @@ try {
       `${car.name}: in use straight away (health ${Player.maxHealth}, top speed ${top.toFixed(1)} m/s, tank: ${Player.tank > 0})`);
   }
   cars.selectCar('hatch');
+  // the secret bus: not in the garage, but once owned it is driven like any other car
+  const { Progress } = await load('/src/delivery/progress.js');
+  Progress.buy(cars.SECRET_CARS.bus);
+  cars.selectCar('bus');
+  Game.start();
+  check(!cars.CARS.some(car => car.id === 'bus') && cars.CAR === cars.SECRET_CARS.bus && Player.hl === 5.5 && Player.maxHealth === 220,
+    `the secret City Bus: not in the garage, but in use once owned (hitbox ${Player.hl * 2} m long, health ${Player.maxHealth})`);
+  cars.selectCar('hatch');
+  // a complete savegame: every level open and delivered, every car bought, a full bank
+  Progress.reset();
+  Progress.complete({ levels: levels.LEVELS.length, best: Object.fromEntries(levels.LEVELS.map(l => [l.id, l.tip])),
+    cars: cars.CARS.map(car => car.id), money: CONFIG.completeBank });
+  check(Progress.data.unlocked === levels.LEVELS.length && cars.CARS.every(car => Progress.owns(car.id)) &&
+    !Progress.owns('bus') && Progress.data.money === CONFIG.completeBank && Progress.data.best.expressway === levels.LEVELS[0].tip,
+    `a complete savegame: ${Progress.data.unlocked} levels open, ${Progress.data.cars.length} cars owned, $${Progress.data.money} banked, the bus still secret`);
 } catch (error) {
   failures++;
   console.error(error);

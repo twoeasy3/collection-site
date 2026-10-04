@@ -21,7 +21,11 @@ const hudTurbo = document.getElementById('turbo');
 const hudDanger = document.getElementById('danger');
 const hudBusts = document.getElementById('busts');
 const hudDangerFill = document.getElementById('dangerFill');
+const hudFade = document.getElementById('fade');
+const runButtons = document.getElementById('runButtons');
+const pauseBtn = document.getElementById('pauseBtn');
 const BANNERS = {
+  paused: 'PAUSED<small>Resume, or press P</small>',
   wreck: 'WRECKED<small>new car on the way</small>',
   'police:shoulder': 'BUSTED<small>too long on the shoulder</small>',
   'police:seen': 'BUSTED<small>the police saw you on the shoulder</small>',
@@ -30,6 +34,11 @@ const BANNERS = {
 };
 let bannerKind = '';
 const kmh = (ms) => Math.round(ms * 3.6);
+// (the HUD is not updated on the menu, so a run's buttons and fade are cleared as it ends)
+Game.onFinish.push(() => {
+  runButtons.style.display = 'none';
+  hudFade.style.opacity = 0;
+});
 export const updateHud = () => {
   // the clock counts down; below zero is the tip countdown, with the tip draining away
   const left = Game.state === 'start' ? LEVEL.time * CONFIG.timeScale.good : Game.remaining;
@@ -50,8 +59,15 @@ export const updateHud = () => {
   throwBtn.style.opacity = Packages.ready ? 1 : 0.4;
   const throwLabel = Player.tank > 0 ? 'FIRE' : 'THROW';
   if (throwBtn.textContent !== throwLabel) throwBtn.textContent = throwLabel;
-  let banner = Game.policeApproach >= 0 ? 'police' : Game.respawn >= 0 ? Game.respawnKind : '';
+  let banner = Game.paused ? 'paused' : Game.policeApproach >= 0 ? 'police' : Game.respawn >= 0 ? Game.respawnKind : '';
   if (banner === 'police') banner += ':' + Player.bustReason;
+  // pause and exit: shown during a run and the screensaver
+  runButtons.style.display = Game.state === 'playing' ? 'flex' : 'none';
+  const pauseLabel = Game.paused ? 'Resume' : 'Pause';
+  if (pauseBtn.textContent !== pauseLabel) pauseBtn.textContent = pauseLabel;
+  // the screensaver fades to black and back where one lap joins the next
+  hudFade.style.opacity = Game.screensaver
+    ? 1 - Math.min(1, Math.min(Math.abs(Player.s), Math.abs(Track.length - Player.s)) / CONFIG.screensaver.fadeDistance) : 0;
   hudBanner.style.display = banner ? 'block' : 'none';
   if (banner && bannerKind !== banner) {
     bannerKind = banner;

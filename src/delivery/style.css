@@ -19,6 +19,15 @@ canvas { display: block; width: 100%; height: 100%; }
 #banner { display: none; position: fixed; left: 0; right: 0; top: 24%; text-align: center;
   pointer-events: none; font-size: 34px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
 #banner small { display: block; font-size: 15px; font-weight: 400; }
+/* pause / exit during a run or the screensaver, bottom centre (clear of the on-screen controls) */
+#runButtons { display: none; position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: max(14px, env(safe-area-inset-bottom)); gap: 8px; }
+#runButtons button { font: inherit; font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 8px;
+  border: 2px solid rgba(255,255,255,.5); background: rgba(10,14,20,.55); color: #fff; cursor: pointer; touch-action: none; }
+#runButtons button:hover { background: rgba(10,14,20,.8); }
+/* the screensaver: no HUD (the road is the show), and a fade to black between laps */
+#fade { position: fixed; inset: 0; background: #000; pointer-events: none; opacity: 0; }
+body.screensaver #hud, body.screensaver #throwBtn, body.screensaver #touchControls { display: none; }
 #throwBtn { display: none; position: fixed; width: 104px; height: 104px; border-radius: 50%;
   right: max(20px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom));
   border: 3px solid rgba(255,255,255,.7); background: rgba(255,122,26,.75); color: #fff;
@@ -54,6 +63,9 @@ body.touch-controls #throwBtn { display: block; width: 88px; height: 88px; backg
   border: 0; border-radius: 10px; background: #ffd23f; color: #222; cursor: pointer; }
 .overlay button.level { font-size: 15px; padding: 8px 16px; margin: 0 4px 6px; background: #e9e9e9; }
 .overlay button.level.current { background: #ffd23f; }
+/* a link to the screensaver's own address, styled as one of the small buttons */
+.overlay a.level { display: inline-block; font-size: 15px; font-weight: 700; padding: 8px 16px; margin: 0 4px 6px;
+  border-radius: 10px; background: #e9e9e9; color: #222; text-decoration: none; }
 .overlay.menu { justify-content: flex-start; overflow-y: auto; gap: 10px; background: #1b2029; }
 .overlay h2 { margin: 6px 0 0; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; }
 #bank { font-size: 20px; font-weight: 700; color: #ffd23f; }

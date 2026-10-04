@@ -51,6 +51,15 @@ export const Progress = {
     this.save();
     return true;
   },
+  // a finished game, all at once: every level open and delivered for its full tip, every
+  // car in the garage bought, and a full bank (the "Unlock everything" button on the menu)
+  complete({ levels, best, cars, money }) {
+    this.data.unlocked = Math.max(this.data.unlocked, levels);
+    for (const id in best) this.data.best[id] = Math.max(this.data.best[id] || 0, best[id]);
+    for (const id of cars) if (!this.data.cars.includes(id)) this.data.cars.push(id);
+    this.data.money = Math.max(this.data.money, money);
+    this.save();
+  },
   useCar(carId) {
     if (!this.owns(carId)) return;
     this.data.car = carId;

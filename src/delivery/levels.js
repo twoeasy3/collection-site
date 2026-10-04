@@ -29,6 +29,11 @@
 //   traffic    which vehicles turn up as traffic and how often, relative to each other:
 //              { "car": 0.44, "van": 0.18, "police": 0.1 }. The kinds are those in
 //              CONFIG.vehicles. An empty list ({}) means no traffic at all.
+//   trafficCount, oncomingCount  how many vehicles are about at once, each way (defaults in
+//              CONFIG; together no more than CONFIG.trafficPool)
+//   drivers    { evil, happy, angry }: the share of drivers that are evil, and the chance a
+//              driver starts out happy or angry (defaults: CONFIG.evilShare and startMood)
+//   trafficSpeed  { min, max } m/s the traffic cruises at (default CONFIG.trafficMin/MaxSpeed)
 //   asteroidFields  { from, to, count, moving, seed }: `count` asteroids of assorted sizes
 //              scattered over that stretch, the same every run for a given seed. About half
 //              sit at road level; the rest pass just under or over it, unmarked. `moving` is the share that
@@ -53,8 +58,11 @@ import farm from './levels/farm.json';
 import bigBusiness from './levels/big-business.json';
 import allHeck from './levels/all-heck.json';
 import ufo from './levels/ufo.json';
+import chaos from './levels/chaos.json';
 
 export const LEVELS = [expressway, backRoads, farm, bigBusiness, allHeck, ufo];
+// the screensaver's level: not on the menu, driven round and round with no player car
+export const SCREENSAVER_LEVEL = chaos;
 
 // The level picked on the menu. These are live bindings: importers see the new level as soon
 // as selectLevel() changes it. Nothing is built from it until a run starts (see Game.load).
@@ -63,4 +71,9 @@ export let LEVEL = LEVELS[0];
 export const selectLevel = (index) => {
   LEVEL_INDEX = Math.max(0, Math.min(LEVELS.length - 1, index));
   LEVEL = LEVELS[LEVEL_INDEX];
+};
+// a level that isn't on the menu (the screensaver's); selectLevel() puts the menu's back
+export const selectSpecial = (level) => {
+  LEVEL_INDEX = -1;
+  LEVEL = level;
 };

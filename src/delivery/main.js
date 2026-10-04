@@ -33,8 +33,12 @@ if (params.get('garage') !== null) {
   Garage.open();
   if (params.get('hover')) Garage.hover(params.get('hover'));
 }
+// ?screensaver starts the screensaver straight away (with ?ff=5 as above)
 const autostart = params.get('autostart');
-if (autostart !== null) {
+if (params.get('screensaver') !== null) {
+  Game.startScreensaver();
+  for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
+} else if (autostart !== null) {
   Game.evil = autostart === 'evil';
   selectLevel((Number(params.get('level')) || 1) - 1);
   if (params.get('car')) { // ?car=lowrider: drive that car for this visit, owned or not (nothing is saved)
@@ -57,8 +61,8 @@ const frame = (now) => {
     Sound.engine(-1);
     Sound.siren(false);
   } else if (Game.state !== 'start') { // (on the start screen there is no level: it is only a menu)
-    // game logic, in small fixed-size steps so fast head-ons can't tunnel
-    const steps = Math.ceil(dt / CONFIG.maxStep);
+    // game logic, in small fixed-size steps so fast head-ons can't tunnel (frozen while paused)
+    const steps = Game.paused ? 0 : Math.ceil(dt / CONFIG.maxStep);
     for (let i = 0; i < steps; i++) Game.update(dt / steps);
 
     // then bring the scene up to date with it
@@ -66,7 +70,11 @@ const frame = (now) => {
     carMesh.position.copy(tmp);
     carMesh.rotation.y = heading - Player.yaw; // swerving right turns the nose toward +lat
     carMesh.rotation.x = -Math.atan(Track.grade(Player.s)); // nose up on a climb
-    syncHelicopter(dt, now);
+    syncHelicopter(dt, now); // (decides whether the car is shown: blinking under a shield, dangling from the helicopter)
+    // The screensaver has no player car: the mesh, and everything attached to it (the garage
+    // models, the tank, the UFO, the passenger), is hidden. This comes after the helicopter,
+    // which otherwise shows it again.
+    if (Game.screensaver) carMesh.visible = false;
     syncTraffic();
     emitVehicleSmoke(dt);
     syncPackages(dt);
@@ -78,10 +86,11 @@ const frame = (now) => {
     syncEmotes(dt, now);
     updateHud();
     // the engine note follows the speed; silent once the run is over or the car is gone
-    Sound.engine(Game.state === 'playing' && Player.active ? Player.speed : -1,
-      CAR.ufo ? 'ufo' : Player.tank > 0 ? 'tank' : 'car');
+    // (and in the screensaver, where there is no car, or while paused)
+    const live = Game.state === 'playing' && Player.active && !Game.paused && !Game.screensaver;
+    Sound.engine(live ? Player.speed : -1, CAR.ufo ? 'ufo' : Player.tank > 0 ? 'tank' : 'car');
     // a siren while a police car is near enough to bust you (nobody busts a tank)
-    Sound.siren(Game.state === 'playing' && Player.active && Player.tank <= 0 && Traffic.policeNear());
+    Sound.siren(live && Player.tank <= 0 && Traffic.policeNear());
     renderer.render(scene, camera);
   }
   if (Game.state === 'start') { // (back on the menu)
