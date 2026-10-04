@@ -61,7 +61,7 @@ export function useSelectedCardHighlight(gridPaneRef, selectedId, selectedGroup)
 // Scrolls the selected car's card (or the collapsed stack containing it)
 // into view. `scrollKey` bundles the filter inputs whose change should
 // re-trigger the scroll even when the selection itself didn't move.
-export function useAutoScrollToSelection({ enabled, gridPaneRef, selectedCar, selectedCarGroup, groupsRef, scrollKey }) {
+export function useAutoScrollToSelection({ enabled, gridPaneRef, selectedCar, selectedCarGroup, groupsRef, scrollKey, ignoreBrand }) {
   useEffect(() => {
     if (!enabled || !selectedCar) return;
     const raf = requestAnimationFrame(() => {
@@ -72,13 +72,13 @@ export function useAutoScrollToSelection({ enabled, gridPaneRef, selectedCar, se
         || pane?.querySelector(`[data-car-id="${selectedCar.ID}"]`);
       if (card) { card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }
 
-      const selectedKey = getStackKey(selectedCar);
+      const selectedKey = getStackKey(selectedCar, ignoreBrand);
       const orderedGroups = selectedCarGroup
         ? [...groupsRef.current].sort((a, b) => (a.groupName === selectedCarGroup ? -1 : b.groupName === selectedCarGroup ? 1 : 0))
         : groupsRef.current;
       for (const { groupName, visibleGroupCars } of orderedGroups) {
         for (const car of visibleGroupCars) {
-          if (getStackKey(car) === selectedKey) {
+          if (getStackKey(car, ignoreBrand) === selectedKey) {
             const coverEl = pane?.querySelector(`[data-car-id="${car.ID}"][data-group="${groupName}"]`)
               || pane?.querySelector(`[data-car-id="${car.ID}"]`);
             if (coverEl) { coverEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); return; }

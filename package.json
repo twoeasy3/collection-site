@@ -7,7 +7,8 @@
     "dev": "concurrently -n vite,flask -c blue,green \"vite\" \"python server.py\"",
     "build": "vite build",
     "preview": "npm run build && wrangler dev",
-    "deploy": "npm run build && wrangler deploy"
+    "deploy": "npm run build && wrangler deploy",
+    "test:delivery": "node scripts/delivery-smoke.mjs"
   },
   "dependencies": {
     "flag-icons": "^7.5.0",
@@ -16,7 +17,8 @@
     "papaparse": "^5.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-leaflet": "^4.2.1"
+    "react-leaflet": "^4.2.1",
+    "three": "0.160.0"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.39.0",

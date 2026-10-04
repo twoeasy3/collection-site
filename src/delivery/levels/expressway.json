@@ -1,0 +1,64 @@
+{
+  "id": "expressway",
+  "name": "Expressway",
+  "time": 105,
+  "traffic": { "car": 0.44, "compact": 0.16, "van": 0.18, "bus": 0.12, "police": 0.10 },
+  "tip": 50,
+  "segments": [
+    { "length": 600, "curve": 0 },
+    { "length": 400, "curve": 0.0012 },
+    { "length": 700, "curve": 0 },
+    { "length": 300, "curve": -0.004 },
+    { "length": 600, "curve": 0.004 },
+    { "length": 300, "curve": -0.004 },
+    { "length": 400, "curve": 0 }
+  ],
+  "narrows": [
+    { "from": 600, "to": 1000, "lanesPerSide": 1 }
+  ],
+  "bridges": [
+    { "from": 1040, "to": 1300 }
+  ],
+  "exits": [
+    { "exitAt": 1700, "mergeAt": 2900 }
+  ],
+  "frogs": [
+    { "from": 1330, "to": 1500 },
+    { "from": 2000, "to": 2250 },
+    { "from": 560, "to": 760, "road": "side" }
+  ],
+  "targets": [
+    { "s": 480, "side": "right" },
+    { "s": 2350, "side": "left" },
+    { "s": 450, "side": "right", "road": "side" }
+  ],
+  "pickups": [
+    { "type": "passenger", "s": 250, "lane": 3 },
+    { "type": "turbo", "s": 450, "lane": 3 },
+    { "type": "wrench", "s": 560, "lane": 2 },
+    { "type": "turbo", "s": 1020, "lane": 2 },
+    { "type": "ghost", "s": 1200, "lane": 3 },
+    { "type": "passenger", "s": 1400, "lane": 2 },
+    { "type": "turbo", "s": 1560, "lane": 1 },
+    { "type": "wrench", "s": 1950, "lane": 2 },
+    { "type": "ghost", "s": 2300, "lane": 2 },
+    { "type": "turbo", "s": 2500, "lane": 3 },
+    { "type": "turbo", "s": 3000, "lane": 3 },
+    { "type": "turbo", "s": 160, "lane": 1, "road": "side" },
+    { "type": "wrench", "s": 700, "lane": 1, "road": "side" }
+  ],
+  "obstacles": [
+    { "s": 300, "lane": 2 },
+    { "s": 500, "lane": 3 },
+    { "s": 1100, "lane": 2 },
+    { "s": 1250, "lane": 3 },
+    { "s": 1400, "lane": 1 },
+    { "s": 1900, "lane": 2 },
+    { "s": 2150, "lane": 3 },
+    { "s": 2600, "lane": 2 },
+    { "s": 3100, "lane": 2 },
+    { "s": 330, "lane": 1, "road": "side" },
+    { "s": 560, "lane": 0, "road": "side" },
+    { "s": 800, "lane": 1, "road": "side" }
+  ]
+}

@@ -6,6 +6,17 @@ import path from 'path'
 import { cloudflare } from "@cloudflare/vite-plugin";
 
 export default defineConfig(({ command }) => ({
+  // two pages: the site itself, and the Delivery Racer game at /delivery/ (src/delivery)
+  // (set on the client environment only: the Worker has an entry of its own)
+  environments: {
+    client: {
+      build: {
+        rollupOptions: {
+          input: { main: 'index.html', delivery: 'delivery/index.html' },
+        },
+      },
+    },
+  },
   server: {
     proxy: {
       '/api': {

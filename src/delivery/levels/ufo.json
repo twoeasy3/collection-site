@@ -1,0 +1,45 @@
+{
+  "id": "ufo",
+  "name": "Asteroid Run",
+  "theme": "space",
+  "car": "ufo",
+  "traffic": {},
+  "lanes": 8,
+  "shoulderTimer": false,
+  "helicopter": false,
+  "time": 75,
+  "tip": 90,
+  "segments": [
+    { "length": 300, "curve": 0, "grade": 0 },
+    { "length": 250, "curve": 0.002, "grade": 0.7 },
+    { "length": 200, "curve": 0, "grade": 0 },
+    { "length": 300, "curve": -0.0025, "grade": -0.6 },
+    { "length": 200, "curve": 0, "grade": 0 },
+    { "length": 250, "curve": 0, "grade": 0.5 },
+    { "length": 150, "curve": 0, "grade": 0 },
+    { "length": 300, "curve": 0.002, "grade": -0.7 },
+    { "length": 250, "curve": -0.0015, "grade": 0 },
+    { "length": 300, "curve": 0, "grade": 0.6 },
+    { "length": 200, "curve": 0, "grade": 0 },
+    { "length": 200, "curve": 0.002, "grade": -0.4 },
+    { "length": 300, "curve": 0, "grade": 0 }
+  ],
+  "narrows": [],
+  "bridges": [],
+  "exits": [],
+  "obstacles": [],
+  "asteroidFields": [
+    { "from": 200, "to": 1100, "count": 150, "moving": 0.3, "seed": 11 },
+    { "from": 1100, "to": 2200, "count": 210, "moving": 0.55, "seed": 12 },
+    { "from": 2200, "to": 3120, "count": 210, "moving": 0.75, "seed": 13 }
+  ],
+  "targets": [],
+  "pickups": [
+    { "type": "turbo", "s": 600, "lane": 2 },
+    { "type": "wrench", "s": 900, "lane": 5 },
+    { "type": "turbo", "s": 1300, "lane": 6 },
+    { "type": "ghost", "s": 1700, "lane": 3 },
+    { "type": "wrench", "s": 2400, "lane": 1 },
+    { "type": "turbo", "s": 2800, "lane": 4 }
+  ]
+}

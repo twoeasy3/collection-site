@@ -1,0 +1,327 @@
+import { CONFIG } from './config.js';
+import { LEVEL } from './levels.js';
+import { clamp, damp } from './util.js';
+import { Track } from './track.js';
+import { updateYaw, keepOnRoad, emotionOf, startRivalry, spinOut } from './physics.js';
+import { Player } from './player.js';
+import { Packages } from './packages.js';
+
+// ---- traffic ---------------------------------------------------------------
+// One pool of cars recycled ahead of the player: some northbound (the player's way), the
+// rest southbound (oncoming), or all one way on a level with a "flow". Set when a run starts.
+// Cars hold a lane with a spring, so they can be shoved around and then recover.
+// Morality is fixed per car: evil cars throw packages at the road, good cars never do.
+// Emotion changes with what happens to the car: angry cars drift into the player's lane
+// and won't brake for the player, happy ones clear the lane, neutral ones ignore the player.
+export const Traffic = (() => {
+  const cars = [];
+  const total = CONFIG.trafficCount + CONFIG.oncomingCount;
+  for (let i = 0; i < total; i++) {
+    // bound: 'north' is the way the player is going, 'south' is oncoming. It never changes
+    // during a run (reset() deals the directions out again for the level being started).
+    const north = i < CONFIG.trafficCount;
+    cars.push({ active: false, dir: north ? 1 : -1, bound: north ? 'north' : 'south', mass: 1,
+      s: 0, lat: 0, vs: 0, latVel: 0, yaw: 0, yawVel: 0, stun: 0,
+      lane: 0, baseSpeed: 0, kind: 'car', evil: false, emotion: 'neutral', mood: 0, paint: 0, think: 0,
+      health: 1, maxHealth: 1, smoke: 0, hw: 1, hl: 2.1, height: 1.4 });
+  }
+
+  // ramps: the expressway's shoulder is the exit / merge lane there, lane index -1 on the
+  // left and laneCount on the right. Returns the lane this car should be heading for.
+  const rampLane = (car) => {
+    if (!Track.isMain(car.s)) return car.lane;
+    const zone = CONFIG.ramps.laneZone, last = Track.laneCount - 1;
+    let leaving = false;
+    if (car.viaSide) {
+      for (const x of Track.exits) {
+        if (car.dir > 0 ? car.s > x.exitAt - zone && car.s < x.exitAt
+          : car.s > x.flyoverAt && car.s < x.flyoverAt + zone) leaving = true;
+      }
+    }
+    if (car.dir > 0) {
+      if (car.lane === last && leaving) return last + 1;   // out onto the exit lane
+      if (car.lane === last + 1 && !leaving) return last;  // in from the merge lane
+    } else {
+      if (car.lane === 0 && leaving) return -1;            // out toward the flyover
+      if (car.lane === -1 && !leaving) return 0;           // in from the flyover
+    }
+    return car.lane;
+  };
+
+  // the level's "traffic" list: which kinds of vehicle turn up, and how often relative to
+  // each other. An empty list means no traffic.
+  const mix = () => Object.entries(LEVEL.traffic || {}).filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0);
+  const pickKind = () => {
+    const kinds = mix();
+    let r = Math.random() * kinds.reduce((sum, [, rate]) => sum + rate, 0);
+    for (const [kind, rate] of kinds) {
+      r -= rate;
+      if (r < 0) return kind;
+    }
+    return kinds[0][0];
+  };
+  // is a police car close enough to see what the player is doing?
+  const policeNear = () => cars.some(c => c.active && c.kind === 'police' && c.stun <= 0 &&
+    Math.abs(c.s - Player.s) < CONFIG.policeSightRange && Math.abs(c.lat - Player.lat) < 25);
+
+  const MOOD_START = { happy: 0.7, neutral: 0, angry: -0.7 };
+  // evil cars are more likely to start out angry
+  const pickEmotion = (evil) => {
+    const r = Math.random(), chance = CONFIG.startMood[evil ? 'evil' : 'good'];
+    return r < chance.happy ? 'happy' : r < chance.happy + chance.angry ? 'angry' : 'neutral';
+  };
+
+  const laneClear = (car, lane, gap) => cars.every(o =>
+    o === car || !o.active || o.lane !== lane || Math.abs(o.s - car.s) > gap);
+
+  const playerInWay = (car, lane) => Player.active &&
+    Math.abs(Player.lat - Track.laneOffset(lane, car.s)) < CONFIG.laneWidth * 0.9 &&
+    Player.s > car.s - 30 && Player.s < car.s + 12;
+
+  // puts the car on the road somewhere between minAhead and maxAhead metres in front of the player
+  const spawn = (car, minAhead, maxAhead) => {
+    car.active = false;
+    for (let tries = 0; tries < 5; tries++) {
+      car.s = Track.spawnAt(Player.s, minAhead + Math.random() * (maxAhead - minAhead), car.dir);
+      if (Number.isNaN(car.s)) continue;
+      const [first, last] = Track.laneRange(car.dir, car.s);
+      const lane = Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), car.s);
+      if (!laneClear(car, lane, 25)) continue;
+      outfit(car, pickKind(), lane);
+      return;
+    }
+  };
+
+  // makes the car a vehicle of that kind, in that lane at car.s, fresh off the line
+  const outfit = (car, kind, lane) => {
+    car.fixed = false;
+    car.viaSide = Math.random() < CONFIG.ramps.trafficShare; // will take a ramp / flyover if it meets one
+    car.kind = kind;
+    const type = CONFIG.vehicles[car.kind];
+    car.hw = type.hw;
+    car.hl = type.hl;
+    car.height = type.height;
+    car.mass = type.mass;
+    car.maxHealth = car.health = type.health;
+    car.smoke = 0;
+    car.lane = lane;
+    car.lat = Track.laneOffset(lane, car.s);
+    car.latVel = 0;
+    car.yaw = 0;
+    car.yawVel = 0;
+    car.stun = 0;
+    car.baseSpeed = type.speed * (CONFIG.trafficMinSpeed +
+      Math.random() * (CONFIG.trafficMaxSpeed - CONFIG.trafficMinSpeed));
+    car.vs = car.dir * car.baseSpeed;
+    car.evil = !type.special && Math.random() < CONFIG.evilShare; // fixed for this car's life
+    car.emotion = pickEmotion(car.evil);
+    car.mood = MOOD_START[car.emotion];
+    car.paint = Math.floor(Math.random() * 1000);
+    car.showMood = false;
+    car.wobble = 0;     // s left of wobbling after a critical hit, before it spins out
+    car.spin = 0;       // s left of an uncontrolled spin, which ends in an explosion
+    car.rival = null;   // another traffic car this one is bullying
+    car.rivalTime = 0;
+    car.grudge = false; // set once the player has upset this driver
+    car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
+    car.think = Math.random() * 2;
+    car.active = true;
+  };
+
+  // Vehicles the level puts in a fixed place (its tractors): each takes a car from the pool,
+  // waits where it was put until the player comes within range, and is never recycled.
+  const placeFixed = () => {
+    for (const t of LEVEL.tractors || []) {
+      const s = Track.place(t);
+      const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1
+        : t.lane < Track.lanesEachWay ? -1 : 1; // (the left half of a two-way road is oncoming)
+      const car = cars.find(c => !c.active && c.dir === dir);
+      if (!car) continue;
+      car.s = s;
+      outfit(car, 'tractor', t.lane);
+      car.fixed = true;
+      car.viaSide = false;
+      car.baseSpeed = CONFIG.tractorSpeed;
+      car.vs = 0; // parked until the player is near
+    }
+  };
+
+  const tryMove = (car, dir, ignorePlayer) => {
+    const lane = car.lane + dir;
+    const [first, last] = Track.laneRange(car.dir, car.s);
+    if (lane < first || lane > last) return false;
+    if (Track.openLane(lane, car.s) !== lane || Track.openLane(lane, car.s + car.dir * 70) !== lane) {
+      return false; // that lane isn't there, or ends just ahead
+    }
+    if (!laneClear(car, lane, CONFIG.laneChangeGap)) return false;
+    if (!ignorePlayer && playerInWay(car, lane)) return false;
+    car.lane = lane;
+    return true;
+  };
+
+  const think = (car) => {
+    if (car.kind === 'tractor') return; // a tractor just trundles along its lane
+    // angry drivers pick on whoever is nearest
+    if (car.emotion === 'angry' && !car.rival && Math.random() < CONFIG.rivalryPickChance) {
+      let best = null, bestGap = CONFIG.rivalryRange;
+      for (const o of cars) {
+        if (o === car || !o.active || o.dir !== car.dir) continue;
+        const gap = Math.abs(o.s - car.s);
+        if (gap < bestGap) { best = o; bestGap = gap; }
+      }
+      if (best) startRivalry(car, best);
+    }
+    const ahead = car.s - Player.s; // how far this car is ahead of the player
+    const playerLane = Track.nearestLane(Player.lat, Player.s);
+    const inRange = Player.active && car.dir > 0 && ahead > 8 && ahead < CONFIG.attitudeRange;
+    if (car.emotion === 'angry' && inRange) {
+      const dir = Math.sign(playerLane - car.lane);
+      if (dir) tryMove(car, dir, true);
+    } else if (car.emotion === 'happy' && inRange && playerLane === car.lane) {
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      tryMove(car, dir) || tryMove(car, -dir);
+    } else if (Math.random() < CONFIG.laneChangeChance) {
+      tryMove(car, Math.random() < 0.5 ? 1 : -1);
+    }
+  };
+
+  const reset = () => {
+    cars.forEach((car, i) => {
+      const north = Track.flow === 'north' || (Track.flow !== 'south' && i < CONFIG.trafficCount);
+      car.dir = north ? 1 : -1;
+      car.bound = north ? 'north' : 'south';
+      car.active = false;
+      car.fixed = false;
+    });
+    placeFixed();
+    if (!mix().length) return; // otherwise an empty road
+    // (when everything is oncoming, the first of it starts further off)
+    for (const car of cars) if (!car.active) spawn(car, Track.flow === 'south' ? 200 : 60, CONFIG.spawnMax);
+  };
+
+  const update = (dt) => {
+    for (const car of cars) {
+      if (!car.active) {
+        // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
+        if (!car.fixed && mix().length) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
+        continue;
+      }
+      const ahead = Track.along(car.s) - Track.along(Player.s); // along the course, whichever road
+      if (car.fixed && ahead > CONFIG.spawnMax) continue; // still waiting where the level put it
+      if (ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 150 || !Track.inBounds(car.s)) {
+        car.active = false;
+        continue;
+      }
+
+      if (car.spin > 0) {
+        // spun out: no control at all. Its momentum swings round in an arc while the body
+        // slowly turns a full circle; it can still hit, and be hit by, anything in its way
+        // (a head-on included). When the time is up it blows.
+        // (the turn goes into yaw, which is what the hitbox and the model are both drawn from,
+        // so the two keep turning together)
+        car.spin -= dt;
+        car.yaw -= car.spinTurn * dt * 2 * Math.PI / CONFIG.spinTime;
+        const speed = Math.hypot(car.vs, car.latVel) * (1 - CONFIG.spinDrag * dt);
+        const angle = Math.atan2(car.latVel, car.vs) + car.spinRate * dt;
+        car.vs = Math.cos(angle) * speed;
+        car.latVel = Math.sin(angle) * speed;
+        car.s += car.vs * dt;
+        Track.transfer(car);
+        car.lat += car.latVel * dt; // (nothing keeps it on the road: it can spin off onto the grass)
+        if (car.spin <= 0) car.health = 0;
+        continue;
+      }
+
+      if (car.wobble > 0) {
+        // a critical hit: it shakes from side to side for a moment, then goes
+        car.wobble -= dt;
+        car.yawVel = Math.sin(car.wobble * 24) * 4;
+        if (car.wobble <= 0) spinOut(car);
+      }
+
+      car.emotion = emotionOf(car.mood);
+
+      if (car.stun > 0) {
+        // knocked out of control: coast, scrub off sideways speed, no lane keeping
+        car.stun = Math.max(0, car.stun - dt);
+        car.vs -= car.vs * CONFIG.stunDrag * dt;
+        car.latVel -= car.latVel * damp(CONFIG.stunGrip, dt);
+        const [first, last] = Track.laneRange(car.dir, car.s);
+        car.lane = clamp(Track.nearestLane(car.lat, car.s), first, last);
+      } else {
+        // evil cars lob packages at the road; ones the player has upset aim near the player
+        if (car.evil && Player.active &&
+            Math.abs(car.s - Player.s) < CONFIG.enemyThrowRange) {
+          car.throwTimer -= dt;
+          if (car.throwTimer <= 0) {
+            car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
+            Packages.throwAtGround(car);
+          }
+        }
+
+        // a rival nearby: this car chases it, crowds it and won't brake for it
+        let rival = car.rival;
+        if (rival) {
+          car.rivalTime -= dt;
+          if (car.rivalTime <= 0 || !rival.active || rival.dir !== car.dir ||
+              Math.abs(rival.s - car.s) > CONFIG.rivalryRange * 1.5) rival = car.rival = null;
+        }
+
+        // heading for a ramp, or the lane ends ahead: change lane, or ease off until there is room
+        const ramp = rampLane(car);
+        const open = ramp !== car.lane ? ramp : Track.openLane(car.lane, car.s + car.dir * 70);
+        let squeezed = false;
+        if (open !== car.lane) {
+          if (laneClear(car, open, 12)) car.lane = open;
+          else squeezed = true;
+        }
+
+        car.think -= dt;
+        if (car.think <= 0) {
+          car.think = 1 + Math.random() * 2;
+          think(car);
+        }
+
+        // hold back behind anything directly ahead (in this car's direction of travel)
+        let target = squeezed ? car.baseSpeed * 0.6 : car.baseSpeed;
+        if (rival) {
+          // get into its lane, then catch it up or drop back onto it
+          const [first, last] = Track.laneRange(car.dir, car.s);
+          car.lane = clamp(rival.lane, first, last);
+          target = car.baseSpeed * ((rival.s - car.s) * car.dir > 0 ? 1.35 : 0.7);
+        }
+        for (const o of cars) {
+          if (o === car || !o.active || o === rival) continue;
+          const gap = (o.s - car.s) * car.dir;
+          if (gap > 0 && gap < o.hl + car.hl + 8 && Math.abs(o.lat - car.lat) < o.hw + car.hw) {
+            target = Math.min(target, Math.abs(o.vs) * 0.9);
+          }
+        }
+        // held up behind a slow player: mood sours; angry cars don't brake for you
+        const gap = Player.s - car.s;
+        if (Player.active && Player.shield <= 0 && Player.ghost <= 0 && car.dir > 0 && gap > 0 && gap < Player.hl + car.hl + 8 &&
+            Math.abs(Player.lat - car.lat) < Player.hw + car.hw && Player.speed < car.baseSpeed) {
+          car.mood = Math.max(-1, car.mood - CONFIG.moodHoldUp * dt);
+          car.grudge = true;
+          if (car.emotion !== 'angry') target = Math.min(target, Player.speed * 0.9);
+        }
+        car.vs += (car.dir * target - car.vs) * damp(1.2, dt);
+
+        // spring back to the lane centre
+        // (alongside its rival it steers straight at it)
+        const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
+        const aimLat = beside ? rival.lat : Track.laneOffset(car.lane, car.s);
+        const wantVel = clamp((aimLat - car.lat) * CONFIG.trafficLaneChangeRate, -6, 6);
+        car.latVel += (wantVel - car.latVel) * damp(6, dt);
+      }
+
+      car.s += car.vs * dt;
+      Track.transfer(car); // onto the side road, a flyover or back, where the roads join
+      car.lat += car.latVel * dt;
+      keepOnRoad(car, 0.3);
+      updateYaw(car, dt);
+    }
+  };
+
+  return { cars, reset, update, policeNear };
+})();

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Delivery Racer</title>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud">
+  <div>
+    <div id="timer">0:00.0</div>
+    <div id="tip"></div>
+    <div id="health"><div id="healthFill"></div></div>
+    <div id="busts"></div>
+    <div id="levelProblems"></div>
+    <div id="danger">SHOULDER - POLICE<div class="bar"><div id="dangerFill"></div></div></div>
+  </div>
+  <div id="progress"><div id="progressFill"></div></div>
+  <div>
+    <div id="speed">0 <small>km/h</small></div>
+    <div id="turbo"></div>
+  </div>
+</div>
+
+<div id="banner">WRECKED<small>new car on the way</small></div>
+<button id="throwBtn">THROW</button>
+<div id="touchControls">
+  <div class="pad steer" data-hold="left,right"><button>&#9664;</button><button>&#9654;</button></div>
+  <div class="pad pedals" data-hold="brake,gas"><button>&#9660;</button><button>&#9650;</button></div>
+</div>
+
+<div id="startScreen" class="overlay menu">
+  <h1>Delivery Run</h1>
+  <div id="bank"></div>
+  <h2>Level</h2>
+  <div id="levels" class="cards"></div>
+  <h2>Car</h2>
+  <div id="shop" class="cards"></div>
+  <div class="side">
+    <div><button id="startGoodBtn">Start Good</button><br>More time. Care packages cheer good cars
+      up and barely hurt.</div>
+    <div><button id="startEvilBtn">Start Evil</button><br>Less time. Flaming packages do real
+      damage, and the police bust you for them.</div>
+  </div>
+  <details>
+  <summary>How to play</summary>
+  <p>Hold Left / Right (A / D) or drag sideways: steer<br>
+     Hold Up / Down (W / S) or drag up / down: accelerate / brake<br>
+     Space or THROW: a package at the nearest car ahead.<br>
+     On a phone or tablet there are on-screen buttons for all of it (the menu can switch them on or off).<br>
+     Reach the finish before the clock hits zero to keep the tip. After zero the tip drains
+     for 10 seconds, and the level is failed.<br>
+     Hit a spinning green target beside the road with a package for TANK RAGE: you wreck
+     whatever you touch, and Space fires the cannon.<br>
+     The shoulders are free of traffic, but stay too long and the police lift you off.<br>
+     Police cars (white, flashing lights) bust you for bumping them, or for shoulder driving
+     while they are near. Three busts and it's over.<br>
+     Pickups: cyan turbo, white ghost (drive through things), orange wrench (repair),
+     pink inflatable passenger (shoulders are legal).<br>
+     Giant frogs hop about on parts of the road; hitting one is like hitting a barrier.<br>
+     On the bridge the shoulders are solid steel: arrive on the shoulder and you are wrecked.<br>
+     A signed exit leaves from the right shoulder onto a two-lane side road with oncoming
+     traffic; it rejoins the expressway further on.<br>
+     Left lanes are oncoming traffic. A head-on wrecks you, and a new car costs time.<br>
+     Some levels are one-way: in Big Business everything goes your way, and in All Heck
+     everything comes at you.</p>
+  </details>
+  <div>
+    <button id="muteBtn" class="level">Sound: on</button>
+    <button id="touchBtn" class="level">On-screen controls: off</button>
+    <button id="resetBtn" class="level">Reset progress</button>
+  </div>
+</div>
+
+<div id="garageUi" class="hidden">
+  <div class="bar">
+    <strong>Garage</strong>
+    <span id="garageBank"></span>
+    <button id="liveryBtn">Livery: Good</button>
+    <button id="garageBackBtn">Back</button>
+  </div>
+  <div id="garageInfo"></div>
+</div>
+<div id="garageTip"></div>
+
+<div id="resultScreen" class="overlay hidden">
+  <h1 id="resultTitle">Delivered!</h1>
+  <div id="resultTime"></div>
+  <p id="resultNote"></p>
+  <button id="restartBtn">Restart</button>
+  <button id="nextBtn" class="level">Next level</button>
+  <button id="menuBtn" class="level">Menu</button>
+</div>
+
+<script type="module" src="/src/delivery/main.js"></script>
+</body>
+</html>

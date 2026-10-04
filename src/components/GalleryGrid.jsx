@@ -115,7 +115,7 @@ const GalleryGrid = React.memo(({
         const stackMap = new Map();
         const stackOrder = [];
         for (const car of visibleGroupCars) {
-          const key = getStackKey(car);
+          const key = getStackKey(car, sidebarView === 'class');
           if (!stackMap.has(key)) { stackMap.set(key, []); stackOrder.push(key); }
           stackMap.get(key).push(car);
         }

@@ -35,3 +35,23 @@ CREATE TABLE IF NOT EXISTS coffee_stops (
   is_lunch     INTEGER NOT NULL DEFAULT 0,   -- 1 if this is a lunch spot rather than a coffee stop
   created_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Per-vehicle stats, keyed like statsKeyFor() in src/utils/carStats.js. Shared by
+-- every car with the same Make|Model|Year. Rating is not stored: the site computes
+-- it from the stats plus hd. Seeded by stats_to_sql.py; rows with edited = 1 keep
+-- their stats on re-seed, and base holds the pipeline values for Reset.
+CREATE TABLE IF NOT EXISTS vehicle_stats (
+  key        TEXT PRIMARY KEY,
+  cl         TEXT NOT NULL DEFAULT 'U',
+  ar         TEXT NOT NULL DEFAULT 'balanced',
+  ts         REAL NOT NULL DEFAULT 0,
+  ac         REAL NOT NULL DEFAULT 0,
+  ha         REAL NOT NULL DEFAULT 0,
+  ni         REAL NOT NULL DEFAULT 0,
+  st         REAL NOT NULL DEFAULT 0,
+  cr         REAL NOT NULL DEFAULT 0,
+  hd         INTEGER NOT NULL DEFAULT 0,
+  base       TEXT NOT NULL DEFAULT '{}',
+  edited     INTEGER NOT NULL DEFAULT 0,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
