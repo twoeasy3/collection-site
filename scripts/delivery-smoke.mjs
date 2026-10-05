@@ -143,7 +143,7 @@ try {
         sideSpeed = Math.max(sideSpeed, Player.latVel);
       }
       steerNow = 0;
-      check(topSpeed > 85 && sideSpeed > 20, `the UFO reaches ${(topSpeed * 3.6).toFixed(0)} km/h and moves sideways at ${sideSpeed.toFixed(0)} m/s (a car manages ${CONFIG.steerSpeed})`);
+      check(topSpeed > 55 && sideSpeed > 20, `the UFO reaches ${(topSpeed * 3.6).toFixed(0)} km/h and moves sideways at ${sideSpeed.toFixed(0)} m/s (a car manages ${CONFIG.steerSpeed})`);
       // this level has the shoulder timer off: the shoulder is there and can be driven on
       // for as long as you like
       Game.start();
@@ -237,7 +237,7 @@ try {
     for (let i = 0; i < 120 * 300; i++) { // five minutes
       Game.update(1 / 120);
       for (const e of FxQueue) {
-        if (e.type === 'sound' && e.name === 'crash') crashes++;
+        if (e.type === 'sound' && ['crash', 'crashHard', 'sideswipe', 'headOn'].includes(e.name)) crashes++;
         if (e.type === 'explode' && e.tyres) wrecks++;
       }
       FxQueue.length = 0;
@@ -503,6 +503,56 @@ try {
   }
 
   // swapping cars takes effect at once, with no reload
+  console.log('flyovers');
+  {
+    const n = levels.LEVELS.findIndex(l => (l.exits || []).length && !l.flow);
+    levels.selectLevel(n);
+    Game.start();
+    const T = track.Track, x = T.exits[0], FLY = CONFIG.ramps.flyoverLength;
+    Player.s = x.landingAt - 30; Player.lat = T.laneOffset(-1, Player.s); // the left shoulder
+    Player.speed = 25; Player.launching = false; Player.shield = 0;
+    const seen = new Set();
+    for (let i = 0; i < 120 * 60 && !(T.isMain(Player.s) && Player.s > x.flyoverAt + 20); i++) {
+      for (const c of Traffic.cars) c.active = false;
+      for (const o of Collision.obstacles) o.gone = true;
+      Player.danger = CONFIG.dangerTime; // (the shoulder timer isn't what is being tested)
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      const s = Player.s;
+      seen.add(T.isMain(s) ? 'main' : s >= x.flyA0 && s < x.flyA0 + FLY ? 'A' : s >= x.flyB0 && s < x.flyB0 + FLY ? 'B' : 'side');
+    }
+    const order = [...seen].join(' > ');
+    check(order === 'main > A > side > B' && Player.active && T.isMain(Player.s) && Player.s > x.flyoverAt,
+      `${levels.LEVEL.name}: the player drives up flyover A from the left shoulder, along the side road's oncoming lane, over flyover B and back (${order})`);
+  }
+
+  console.log('busted');
+  levels.selectLevel(0);
+  Game.start();
+  Player.s = 200; Player.speed = 20; Player.launching = false; Player.shield = 0;
+  const bustLat = Player.lat;
+  Player.bust('shoulder');
+  let bustTop = 0;
+  for (let i = 0; i < 60; i++) { // half a second, steering hard right with the accelerator down
+    Player.update(1 / 120, 1, 1, false);
+    bustTop = Math.max(bustTop, Player.speed);
+  }
+  check(Math.abs(Player.lat - bustLat) < 1e-6 && bustTop <= 20 && Player.speed < 20,
+    `busted: steering and the accelerator do nothing (moved ${(Player.lat - bustLat).toFixed(2)} m sideways, slowed to ${Player.speed.toFixed(1)} m/s)`);
+
+  console.log('powerups');
+  levels.selectLevel(0);
+  Game.start();
+  Player.collect('turbo');
+  Player.collect('ghost');
+  const afterGhost = { turbo: Player.turbo, ghost: Player.ghost };
+  Player.collect('passenger');
+  Player.update(0.3, 0, 0, false);
+  Player.collect('wrench');
+  check(afterGhost.turbo === 0 && afterGhost.ghost === CONFIG.ghostTime && Player.turbo === 0 && Player.ghost === 0 &&
+    Math.abs(Player.passenger - (CONFIG.passengerTime - 0.3)) < 1e-9 && Player.powerLeft === Player.passenger,
+    `one powerup at a time: a ghost replaces a turbo, a passenger the ghost, and a wrench leaves the passenger running (${Player.powerLeft.toFixed(1)} s left)`);
+
   console.log('cars');
   levels.selectLevel(0); // (a level with no vehicle of its own)
   for (const car of cars.CARS) {
@@ -517,7 +567,7 @@ try {
       FxQueue.length = 0;
       top = Math.max(top, Player.speed);
     }
-    const wantTop = car.tank ? 52 : car.maxSpeed;
+    const wantTop = car.tank ? CONFIG.tankMaxSpeed : car.maxSpeed;
     check(cars.CAR === car && Player.maxHealth === car.health && Player.hl === car.hl &&
       Math.abs(top - wantTop) < 0.5 && (Player.tank > 0) === !!car.tank,
       `${car.name}: in use straight away (health ${Player.maxHealth}, top speed ${top.toFixed(1)} m/s, tank: ${Player.tank > 0})`);

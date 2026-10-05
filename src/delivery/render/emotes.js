@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { Track } from '../track.js';
 import { Collision } from '../collision.js';
+import { Player } from '../player.js';
 import { scene, camera, tmp } from './scene.js';
 
 // ---- mood faces: emoji spheres that pop up over cars now and then ---------------
@@ -33,7 +34,9 @@ const makeFace = (fill, kind) => {
   ctx.stroke();
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
-  return new THREE.MeshBasicMaterial({ map });
+  // shaded like a glossy ball, with a little glow of its own so it still shows at night
+  return new THREE.MeshPhongMaterial({ map, shininess: 60, specular: 0x555555,
+    emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.2 });
 };
 const MOOD_FACES = {
   happy: makeFace('#4caf50', 'smile'),
@@ -48,14 +51,19 @@ const emotes = Collision.bodies.map(() => {
   return { mesh, wait: Math.random() * CONFIG.emoteEvery, show: 0, last: null };
 });
 export const syncEmotes = (dt, now) => {
+  // an angel or a jerk (mysteries): every face stays up for as long as it lasts, held once it
+  // has popped up and swung round to the front (see below)
+  const held = Player.mystery === 'angel' || Player.mystery === 'jerk';
   for (let i = 0; i < emotes.length; i++) {
     const v = Collision.bodies[i], e = emotes[i];
-    if (!v.active || v.isPlayer) { e.mesh.visible = false; e.show = 0; e.last = null; continue; }
+    if (!v.active || v.isPlayer || v.toad) { e.mesh.visible = false; e.show = 0; e.last = null; continue; } // (toads have no moods)
     if (e.last !== null && e.last !== v.emotion) e.show = CONFIG.emoteTime; // mood swing: show it now
     e.last = v.emotion;
     if (v.showMood) { e.show = CONFIG.emoteTime; v.showMood = false; } // hit by a package
+    if (held && e.show <= 0) e.show = CONFIG.emoteTime;
     if (e.show > 0) {
       e.show -= dt;
+      if (held) e.show = Math.max(e.show, CONFIG.emoteTime - 0.25);
     } else if ((e.wait -= dt) <= 0) {
       e.wait = CONFIG.emoteEvery * (0.6 + Math.random() * 0.8);
       e.show = CONFIG.emoteTime;
@@ -68,5 +76,9 @@ export const syncEmotes = (dt, now) => {
     e.mesh.scale.setScalar(Math.max(0.01, pop));
     e.mesh.position.set(tmp.x, tmp.y + v.height + 1.0 + Math.sin(now / 250 + i) * 0.1, tmp.z);
     e.mesh.lookAt(camera.position);
+    // the face swings round to the front as it pops up, then glances about a little
+    const swing = Math.max(0, 1 - (CONFIG.emoteTime - e.show) * 4);
+    e.mesh.rotateY((i % 2 ? 1 : -1) * 1.4 * swing * swing + Math.sin(now / 420 + i * 1.7) * 0.3);
+    e.mesh.rotateX(Math.sin(now / 530 + i * 2.3) * 0.15);
   }
 };

@@ -7,7 +7,7 @@
   "lanes": 8,
   "shoulderTimer": false,
   "helicopter": false,
-  "time": 75,
+  "time": 120,
   "tip": 90,
   "segments": [
     { "length": 300, "curve": 0, "grade": 0 },

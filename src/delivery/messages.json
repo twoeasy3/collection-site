@@ -1,0 +1,102 @@
+{
+  "powerups": {
+    "turbo": ["Your car is now supercharged!"],
+    "ghost": ["Your car is now a ghost!"],
+    "wrench": ["Can has been repaired by 25 percent."],
+    "passenger": ["Inflatable HOV passenger. Use extra lanes."],
+    "tankRage": ["TANK RAGE!"],
+    "radarDetector": ["Radar detector, police can't bust you."],
+    "heavyMass": ["You car is 1000 pounds heavier!"],
+    "badGas": ["Your car has a tank full of cheap gas."],
+    "cashBonus": ["${dollar} Cash Bonus!"],
+    "timePlus": ["Time Bonus! Plus 10 seconds"],
+    "timeMinus": ["Time Penalty! Minus 10 seconds"],
+    "siren": ["Code 3! Everyone out of my way!"],
+    "mystery":{
+      "rickety": ["Your car has become rickety!"],
+      "toad": ["TOAD RAGE!!"],
+      "angel": ["You're an angel! Everyone likes you."],
+      "jerk": ["You're a jerk! Everyone hates you."],
+      "invincible": ["SuperCar!! Invulnerability!"],
+      "noBrakes": ["Oh no! Your brakes have gone out!"],
+      "insuranceUp": ["Your insurance just went up $250"],
+      "insuranceDown": ["Your insurance just went down $250"],
+      "ufo": ["UFO AIR STRIKE!!!"]
+    }
+  },
+  "busts": {
+    "shoulder": ["BUSTED - driving in an illegal lane!!"],
+    "seen": ["BUSTED - the police saw you on the shoulder!!"],
+    "assault": ["BUSTED - the police witnessed vehicular assault!!"],
+    "assaultCop": ["BUSTED - assault on a POLICE CAR!!"],
+    "bump": ["BUSTED - you hit a cop car!!"]
+  },
+  "reactions": {
+    "goodOnGood": [
+  "Hey thanks man!",
+  "Woe! You're the coolest!",
+  "Free magazines eh?",
+  "Thanks for the cookies! Yum!",
+  "Lingerie? Er..thanks?",
+  "Wow, a free puppy!",
+  "Ah, today's newspaper.",
+  "Yum! Free pepperoni pizza!",
+  "A six pack of soda. Refreshing.",
+  "Freeze dried hot dogs???",
+  "Plastic army toys ay? BANG!",
+  "Oh, I needed a new muffler!",
+  "A rock hard fruit cake?",
+  "Neat! A free CD full of RealGames.",
+  "A corbic zargonia diamondell.",
+  "Hey thanks buddy! Have a nice day.",
+  "Thank's for the surf board dude.",
+  "Chicken curry! Oh I love that smell!",
+  "Hey you're nice. Thanks dude.",
+  "Eek! A Freedonian Polecat! Help!",
+  "Thank you sir, may I have another?"
+],
+    "evilOnGood": [
+  "Please don't hurt me!",
+  "Aaaahhh! Help me!",
+  "Get away from me! Someone help!",
+  "Help police! He's crazy!",
+  "No, please sir!",
+  "Aaaaeeeiiii!!!",
+  "He's a psycho, run!",
+  "He's gonna kill me! Help!",
+  "Yikes! I'm outta here!",
+  "Creep! Leave me alone!",
+  "Get away from me jerk!",
+  "Freak! Get lost!",
+  "Noooooooooo!",
+  "Help! Police!",
+  "Thankyou sir, may I have another?",
+  "Bugger off and leave me be!",
+  "Lay off man!",
+  "Take off loser! Get away!",
+  "What'd I do to you anyway?",
+  "Do you really want to hurt me?"
+],
+    "anyOnEvil": [
+  "You're toast man!",
+  "You're mine pal!",
+  "I'm gonna nail you to the ground!",
+  "Oh you are so dead meat!",
+  "Wha? Huh? Why you!",
+  "Why I oughta!",
+  "How dare you bother me!",
+  "I'm gonna make you eat that package!",
+  "I'll show you no mercy! Hah!",
+  "I eat wimps like you for breakfast!",
+  "Aaaaahh! You and me pal!",
+  "Time to throw down on you busta!",
+  "Let's rock!",
+  "Time to rumble!",
+  "I own you wimp!",
+  "You are so pathetic!"
+]
+  },
+  "wrecks": {
+    "byPlayer": ["You've destroyed a car!"]
+  }
+}

@@ -1,7 +1,7 @@
 {
   "id": "expressway",
   "name": "Expressway",
-  "time": 105,
+  "time": 165,
   "traffic": { "car": 0.47, "compact": 0.17, "van": 0.19, "bus": 0.12, "police": 0.05 },
   "trafficCount": 11,
   "oncomingCount": 8,

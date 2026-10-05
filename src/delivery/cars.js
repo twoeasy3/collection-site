@@ -17,27 +17,27 @@ import { Progress } from './progress.js';
 
 export const CARS = [
   { id: 'hatch', name: 'Delivery Hatch', price: 0, color: 0xe23b3b, evilColor: 0x4a1c1c, model: 'hatch',
-    maxSpeed: 45, accel: 9, health: 100, hw: 0.95, hl: 2.1, height: 1.4 },
+    maxSpeed: 29, accel: 9, health: 100, hw: 0.95, hl: 2.1, height: 1.4 },
   { id: 'junker', name: 'Junker', price: 30, color: 0x9a5a34, evilColor: 0x33211a, model: 'junker',
-    maxSpeed: 40, accel: 7, health: 90, hw: 1.0, hl: 2.5, height: 1.5 },
+    maxSpeed: 26, accel: 7, health: 90, hw: 1.0, hl: 2.5, height: 1.5 },
   { id: 'coupe', name: 'Courier Coupe', price: 80, color: 0x2f7de1, evilColor: 0x1b1f4d, model: 'coupe',
-    maxSpeed: 50, accel: 11, health: 80, hw: 0.9, hl: 2.25, height: 1.2 },
+    maxSpeed: 33, accel: 11, health: 80, hw: 0.9, hl: 2.25, height: 1.2 },
   { id: 'lowrider', name: 'Low Rider', price: 150, color: 0x9b3fd1, evilColor: 0x2c1140, model: 'lowrider',
-    maxSpeed: 43, accel: 8, health: 120, hw: 1.0, hl: 2.5, height: 1.1 },
+    maxSpeed: 28, accel: 8, health: 120, hw: 1.0, hl: 2.5, height: 1.1 },
   { id: 'wagon', name: 'Family Wagon', price: 180, color: 0x2f7a57, evilColor: 0x152a20, model: 'wagon',
-    maxSpeed: 44, accel: 8, health: 150, hw: 1.05, hl: 2.4, height: 1.9 },
+    maxSpeed: 29, accel: 8, health: 150, hw: 1.05, hl: 2.4, height: 1.9 },
   { id: 'sport', name: 'Sport Compact', price: 220, color: 0xf6c21c, evilColor: 0x3a300a, model: 'sport',
-    maxSpeed: 54, accel: 13, health: 70, hw: 0.85, hl: 1.9, height: 1.1 },
+    maxSpeed: 35, accel: 13, health: 70, hw: 0.85, hl: 1.9, height: 1.1 },
   { id: 'lovebus', name: 'Love Bus', price: 260, color: 0x58bcd6, evilColor: 0x4a2a5c, model: 'lovebus',
-    maxSpeed: 40, accel: 7, health: 180, hw: 1.0, hl: 2.3, height: 2.1 },
+    maxSpeed: 26, accel: 7, health: 180, hw: 1.0, hl: 2.3, height: 2.1 },
   { id: 'tank', name: 'Tank', price: 5000, color: 0x4b5a2a, evilColor: 0x2a2d33, tank: true, corner: true,
-    maxSpeed: 45, accel: 8, health: 100, hw: 1.25, hl: 2.3, height: 1.9 },
+    maxSpeed: 29, accel: 8, health: 100, hw: 1.25, hl: 2.3, height: 1.9 },
 ];
 
 // Vehicles that belong to a level, not to the garage (a level's "car" field).
 export const LEVEL_CARS = {
   ufo: { id: 'ufo', name: 'UFO', price: 0, color: 0xc9d2dc, evilColor: 0x4a3a66, ufo: true,
-    maxSpeed: 90, accel: 30, agility: 2.8, health: 100, hw: 1.3, hl: 1.3, height: 1.2 },
+    maxSpeed: 58, accel: 30, agility: 2.8, health: 100, hw: 1.3, hl: 1.3, height: 1.2 },
 };
 
 // Secret vehicles: never parked in the garage or for sale, but once owned they are driven
@@ -46,7 +46,7 @@ export const LEVEL_CARS = {
 //         (kind: 'bus' makes it the traffic bus's tall, boxy shape)
 export const SECRET_CARS = {
   bus: { id: 'bus', name: 'City Bus', price: 0, color: 0xf2a33a, evilColor: 0x2e2a33, kind: 'bus',
-    maxSpeed: 38, accel: 5, health: 220, hw: 1.3, hl: 5.5, height: 3.1 },
+    maxSpeed: 25, accel: 5, health: 220, hw: 1.3, hl: 5.5, height: 3.1 },
 };
 
 // The car in use. It is a live binding: every module that imports CAR sees the new car as

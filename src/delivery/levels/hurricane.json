@@ -3,7 +3,7 @@
   "name": "Hurricane",
   "theme": "beach",
   "flow": "north",
-  "time": 150,
+  "time": 235,
   "tip": 130,
   "traffic": {"car": 0.4, "compact": 0.2, "van": 0.2, "wagon": 0.1, "police": 0.1},
   "trafficCount": 7,

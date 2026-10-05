@@ -4,7 +4,7 @@
   "theme": "hell",
   "flow": "south",
   "lanes": 8,
-  "time": 85,
+  "time": 130,
   "tip": 120,
   "traffic": { "junker": 0.24, "wagon": 0.15, "sport": 0.15, "lovebus": 0.12, "car": 0.12, "van": 0.1, "bus": 0.06, "police": 0.06 },
   "segments": [

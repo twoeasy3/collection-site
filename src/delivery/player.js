@@ -3,21 +3,27 @@ import { LEVEL } from './levels.js';
 import { CAR } from './cars.js';
 import { clamp, damp } from './util.js';
 import { Track } from './track.js';
-import { updateYaw, keepOnRoad } from './physics.js';
+import { updateYaw, keepOnRoad, sfx } from './physics.js';
 import { Traffic } from './traffic.js';
+import { Message } from './messages.js';
+import { UfoStrike } from './ufostrike.js';
 
 export const Player = {
   isPlayer: true, active: true, dir: 1, bound: 'north', mass: 1,
   evil: false,         // the player is one of the good ones: its packages are gifts
   shield: 0,           // s of invulnerability left after a helicopter drop
   launching: true,     // pulling away to startSpeed on its own
+  braking: false,      // braking hard by itself for a car ahead (the tyres squeal as it starts)
   turbo: 0,            // s of turbocharger left
   ghost: 0,            // s of passing through cars and barriers left
   passenger: 0,        // s of legal shoulder driving left
+  mystery: '',         // the mystery effect running (see startMystery), '' = none...
+  mysteryTime: 0,      // ...and s of it left
+  nextMystery: '',     // the effect the next mystery will be, if not left to chance (?mystery= in the URL)
   tank: 0,             // 1 once TANK RAGE has started; it lasts for the rest of the level
   danger: CONFIG.dangerTime, // s of shoulder driving left before the police come
   busted: false,
-  bustReason: '',      // why the police are after the car: shoulder | seen | assault | bump
+  bustReason: '',      // why the police are after the car: shoulder | seen | assault | assaultCop | bump
   onShoulder: false,   // illegally on the shoulder right now
   camShift: 0,         // lat jump from changing road, for the camera to follow at once
   s: 0, lat: 0, latVel: 0, yaw: 0, yawVel: 0, stun: 0,
@@ -55,6 +61,7 @@ export const Player = {
     this.turbo = 0;
     this.ghost = 0;
     this.passenger = 0;
+    this.endMystery();
     this.latVel = 0;
     this.yaw = 0;
     this.yawVel = 0;
@@ -67,6 +74,7 @@ export const Player = {
     if (this.busted || this.tank > 0) return; // nobody busts a tank
     this.busted = true;
     this.bustReason = reason;
+    Message.say('busts', reason);
   },
   // TANK RAGE: fully repaired, wrecks what it touches, fires a cannon (see Collision, Packages)
   startTank() {
@@ -74,12 +82,45 @@ export const Player = {
     this.health = this.maxHealth;
   },
   collect(type) {
+    if (type === 'wrench') {
+      this.health = Math.min(this.maxHealth, this.health + this.maxHealth * CONFIG.wrenchRepair);
+      return;
+    }
+    // one powerup at a time: a new one cuts short whichever is running
+    // (a ghost is let go of gently: it stays see-through until it is clear of every car)
+    this.turbo = 0;
+    this.passenger = 0;
+    this.ghost = Math.min(this.ghost, 0.01);
+    this.endMystery();
     if (type === 'turbo') this.turbo = CONFIG.turboTime;
     else if (type === 'ghost') this.ghost = CONFIG.ghostTime;
     else if (type === 'passenger') this.passenger = CONFIG.passengerTime;
-    else if (type === 'wrench') {
-      this.health = Math.min(this.maxHealth, this.health + this.maxHealth * CONFIG.wrenchRepair);
-    }
+    else if (type === 'mystery') this.startMystery();
+  },
+  // s left of the powerup that is running (0 = none)
+  get powerLeft() { return Math.max(this.turbo, this.ghost, this.passenger, this.mysteryTime); },
+  // the mystery pickup: a random effect. Most last CONFIG.mystery.time; the insurance ones
+  // and the UFO air strike are over at once (the strike's show goes on by itself: UfoStrike)
+  startMystery() {
+    const { effects, time } = CONFIG.mystery;
+    const effect = effects.find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || // (?mystery=UFO works too)
+      effects[Math.floor(Math.random() * effects.length)];
+    Message.say('powerups', 'mystery', effect);
+    if (effect === 'ufo') UfoStrike.start();
+    if (effect === 'ufo' || effect.startsWith('insurance')) return;
+    this.mystery = effect;
+    this.mysteryTime = time;
+    if (effect === 'toad') Traffic.toadify(true);
+    if (effect === 'angel' || effect === 'jerk') for (const car of Traffic.cars) car.showMood = true; // (moods: see Traffic)
+  },
+  endMystery() {
+    if (this.mystery === 'toad') Traffic.toadify(false);
+    this.mystery = '';
+    this.mysteryTime = 0;
+  },
+  // how much of any damage the car takes (see hurt): none while invincible, more while rickety
+  get damageScale() {
+    return this.mystery === 'invincible' ? 0 : this.mystery === 'rickety' ? CONFIG.mystery.rickety : 1;
   },
   // nearest slower car in our path that we are closing on too fast, if any
   carAhead() {
@@ -100,7 +141,8 @@ export const Player = {
       this.speed = Math.max(0, this.speed - CONFIG.brake * dt);
       return;
     }
-    if (this.busted) { // caught: the police slow the car to a crawl, it keeps rolling
+    if (this.mystery === 'noBrakes') throttle = Math.max(0, throttle); // (and no braking by itself, below)
+    if (this.busted) { // caught: the police slow the car to a crawl, it keeps rolling (no throttle or brake)
       this.speed = Math.max(Math.min(this.speed, CONFIG.policeCrawlSpeed), this.speed - CONFIG.brake * dt);
       return;
     }
@@ -109,7 +151,7 @@ export const Player = {
     const boosted = this.turbo > 0;
     this.turbo = Math.max(0, this.turbo - dt);
     // (a turbo always adds something, even to a vehicle already faster than the turbo's own top speed)
-    const top = boosted ? Math.max(CONFIG.turboMaxSpeed, CAR.maxSpeed + 25)
+    const top = boosted ? Math.max(CONFIG.turboMaxSpeed, CAR.maxSpeed + 16)
       : this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed;
     let drive = throttle;
     if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed)) drive = 1;
@@ -123,10 +165,11 @@ export const Player = {
       this.speed = Math.max(CONFIG.minSpeed, this.speed + drive * CONFIG.brake * dt);
     }
     // off the accelerator, the car brakes by itself for a slower car ahead
-    if (throttle <= 0) {
-      const lead = this.carAhead();
-      if (lead) this.speed = Math.max(Math.max(0, lead.vs), this.speed - CONFIG.autoBrake * dt);
-    }
+    const lead = throttle <= 0 && this.mystery !== 'noBrakes' ? this.carAhead() : null;
+    const hard = !!lead && this.speed - lead.vs > CONFIG.brakeScreech;
+    if (hard && !this.braking) sfx('brake', 0.7);
+    this.braking = hard;
+    if (lead) this.speed = Math.max(Math.max(0, lead.vs), this.speed - CONFIG.autoBrake * dt);
   },
   // The screensaver's camera dolly: no car (nothing of the player is drawn), just this point
   // gliding down the centre line at a steady speed for the chase camera to follow. It is a
@@ -152,6 +195,7 @@ export const Player = {
     this.shield = Math.max(0, this.shield - dt);
     this.ghost = Math.max(0, this.ghost - dt);
     this.passenger = Math.max(0, this.passenger - dt);
+    if (this.mystery && (this.mysteryTime -= dt) <= 0) this.endMystery();
     this.updateSpeed(dt, throttle, stopping);
     this.s += this.speed * dt;
     // on the right shoulder at the exit = taking the side road; at its end, back onto the expressway
@@ -159,9 +203,12 @@ export const Player = {
     Track.transfer(this);
     this.camShift += this.lat - latBefore;
 
-    // steering moves the car freely; hands off, it stays where it is within its lane
+    // steering moves the car freely; hands off, it stays where it is within its lane.
+    // Busted, it can't be steered: it rolls straight on until the helicopter has it.
     let wantVel;
-    if (steer !== 0) {
+    if (this.busted) {
+      wantVel = 0;
+    } else if (steer !== 0) {
       wantVel = steer * CONFIG.steerSpeed * (CAR.agility || 1);
     } else {
       // only a faint nudge, and only once the car is close to a lane line: within

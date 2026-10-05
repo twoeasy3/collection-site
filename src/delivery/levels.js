@@ -22,7 +22,7 @@
 //              The side road's shape is worked out from those two points, so it always
 //              joins up; the expressway has to swing away in between, and be straight
 //              for 250 m before the exit and after the merge (room for the flyovers).
-//   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger
+//   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery
 //   theme      'city' (default), 'farm', 'beach', 'hell' or 'space': the look of the ground, sky and roadside.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo')
@@ -66,9 +66,10 @@ import hurricane from './levels/hurricane.json';
 import allHeck from './levels/all-heck.json';
 import ufo from './levels/ufo.json';
 import chaos from './levels/chaos.json';
+import night from './levels/night.json';
 
 // (the order is the order they unlock in, and saved progress counts unlocked levels by position)
-export const LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, allHeck, ufo];
+export const LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, allHeck, ufo, night];
 // the screensaver's level: not on the menu, driven round and round with no player car
 export const SCREENSAVER_LEVEL = chaos;
 

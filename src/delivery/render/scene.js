@@ -15,7 +15,8 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 export const scene = new THREE.Scene();
 scene.background = new THREE.Color(SKY);
 scene.fog = new THREE.Fog(SKY, 120, 520);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x556655, 1.6));
+const skyLight = new THREE.HemisphereLight(0xffffff, 0x556655, 1.6);
+scene.add(skyLight);
 // the sky and the fog take the colour of the loaded level's theme
 export const applySky = (color) => {
   scene.background.set(color);
@@ -35,6 +36,18 @@ export const clearGroup = (group) => {
 const sun = new THREE.DirectionalLight(0xffffff, 1.4);
 sun.position.set(-40, 80, -20);
 scene.add(sun);
+// the light of the loaded level's theme: daylight, unless the theme says otherwise
+// (sky / ground: the colours the sky light comes from above and below; ambient: its strength;
+// sun: the sun's colour, sunlight: its strength)
+const DAYLIGHT = { sky: 0xffffff, ground: 0x556655, ambient: 1.6, sun: 0xffffff, sunlight: 1.4 };
+export const applyLight = (look) => {
+  const l = { ...DAYLIGHT, ...look };
+  skyLight.color.set(l.sky);
+  skyLight.groundColor.set(l.ground);
+  skyLight.intensity = l.ambient;
+  sun.color.set(l.sun);
+  sun.intensity = l.sunlight;
+};
 
 export const camera = new THREE.PerspectiveCamera(CONFIG.camFov, 1, 0.5, 700);
 let baseFov = CONFIG.camFov;

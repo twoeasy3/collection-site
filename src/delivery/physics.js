@@ -12,9 +12,11 @@ export const yawFor = (lateralSpeed, forwardSpeed) => clamp(
   Math.atan2(lateralSpeed, Math.max(Math.abs(forwardSpeed), CONFIG.yawMinSpeed)) * CONFIG.yawGain, -MAX_YAW, MAX_YAW);
 
 // Game logic -> rendering. Entries are either visual effects ({ type: 'explode' | 'burst' | 'gift', s, lat, ... }) or
-// requests for a sound ({ type: 'sound', name, volume }); see sfx() below.
+// requests for a sound ({ type: 'sound', name, volume, s }); see sfx() below.
 export const FxQueue = [];
 export const sfx = (name, volume = 1) => FxQueue.push({ type: 'sound', name, volume });
+// a sound from a spot on the road (s), quieter the further it is from the player
+export const sfxAt = (name, s, volume = 1) => FxQueue.push({ type: 'sound', name, volume, s });
 
 // every vehicle (player and traffic) shares these fields so collision can treat them alike:
 // s, lat, vs (signed speed along the track), latVel, yaw, yawVel, stun, dir, mass, hw, hl, health
@@ -41,16 +43,18 @@ export const keepOnRoad = (v, bounce) => {
 // emotion follows mood; taking damage sours it
 export const emotionOf = (mood) => mood > 1 / 3 ? 'happy' : mood < -1 / 3 ? 'angry' : 'neutral';
 // a damaged traffic car may spin out: the more of its health is gone, the likelier
-export const maybeSpinOut = (v, amount, scale = 1) => {
+// (crit: how much likelier than usual a critical hit is)
+export const maybeSpinOut = (v, amount, scale = 1, crit = 1) => {
   if (v.isPlayer || v.spin > 0 || v.health <= 0) return;
   const lost = 1 - v.health / v.maxHealth;
   const chance = scale * CONFIG.spinPerDamage * (amount / v.maxHealth) * (1 + CONFIG.spinRamp * lost * lost);
   // a critical hit: the car wobbles for a moment, then spins out whatever state it was in
-  if (!(v.wobble > 0) && Math.random() < CONFIG.critChance * scale) v.wobble = CONFIG.critWobbleTime;
+  if (!(v.wobble > 0) && Math.random() < CONFIG.critChance * scale * crit) v.wobble = CONFIG.critWobbleTime;
   if (Math.random() < chance) spinOut(v);
 };
 // the car loses all control: it arcs away, turning a full circle, and then blows up
 export const spinOut = (v) => {
+  sfxAt('screech', v.s);
   v.wobble = 0;
   v.spin = CONFIG.spinTime;
   v.spinTurn = Math.random() < 0.5 ? -1 : 1; // which way the body rotates
@@ -66,8 +70,8 @@ export const startRivalry = (car, other) => {
   car.mood = Math.max(-1, car.mood - 0.3);
   car.showMood = true;
 };
-export const hurt = (v, amount) => {
-  v.health -= amount;
-  maybeSpinOut(v, amount);
+export const hurt = (v, amount, crit = 1) => {
+  v.health -= amount * (v.damageScale ?? 1); // (the player's car: see Player.damageScale)
+  maybeSpinOut(v, amount, 1, crit);
   if (!v.isPlayer) v.mood = Math.max(-1, v.mood - amount * CONFIG.moodPerDamage);
 };

@@ -144,18 +144,20 @@ const explode = (e) => {
   const h = Track.toWorld(e.s, e.lat, tmp);
   const vx = Math.sin(h) * e.vs * 0.4, vz = Math.cos(h) * e.vs * 0.4;
   if (e.tyres) throwTyres(tmp.x, tmp.y, tmp.z, vx, vz);
-  const k = e.big ? 1.5 : 1;
+  // (scale: a bigger blast, the tank's shell; smoke: how much smoke, if not the usual)
+  const k = (e.big ? 1.5 : 1) * (e.scale || 1);
+  const ks = (e.big ? 1.5 : 1) * (e.smoke ?? 1);
   for (let i = 0; i < 35 * k; i++) { // fireball
     Fire.emit(tmp.x + rnd(1), tmp.y + 0.5 + Math.random() * 1.2, tmp.z + rnd(1),
       vx + rnd(6), 2 + Math.random() * 8, vz + rnd(6),
       0.4 + Math.random() * 0.6, (0.5 + Math.random() * 0.7) * k, 1.2, 8,
       FIRE_COLORS[Math.floor(Math.random() * FIRE_COLORS.length)]);
   }
-  for (let i = 0; i < 7 * k; i++) { // smoke column
+  for (let i = 0; i < 7 * ks; i++) { // smoke column
     const grey = 20 + Math.floor(Math.random() * 50);
     Smoke.emit(tmp.x + rnd(2), tmp.y + 1 + Math.random() * 2, tmp.z + rnd(2),
       vx * 0.5 + rnd(3), 3 + Math.random() * 6, vz * 0.5 + rnd(3),
-      1.2 + Math.random() * 1.3, (0.8 + Math.random() * 0.8) * k, 1.5, 0,
+      1.2 + Math.random() * 1.3, (0.8 + Math.random() * 0.8) * ks, 1.5, 0,
       grey << 16 | grey << 8 | grey);
   }
   for (let i = 0; i < 22 * k; i++) { // debris
@@ -202,11 +204,12 @@ export const emitVehicleSmoke = (dt) => {
 // plays the effects the game logic queued this frame, then advances every particle and tyre
 export const updateEffects = (dt) => {
   for (const e of FxQueue) {
-    if (e.type === 'sound') { Sound.play(e.name, e.volume); continue; }
+    // (a sound from a spot on the road, and every visual effect, is quieter the further away it is)
+    const near = e.s === undefined ? 1 : 1 - Math.abs(Track.along(e.s) - Track.along(Player.s)) / 160;
+    if (e.type === 'sound') { Sound.play(e.name, e.volume * near); continue; }
     (e.type === 'burst' ? burst : e.type === 'gift' ? gift : explode)(e);
-    // each visual effect has a sound of the same name, quieter the further away it is
-    const far = Math.abs(Track.along(e.s) - Track.along(Player.s));
-    Sound.play(e.type, 1 - far / 160);
+    // each visual effect has a sound of its own, unless it names another
+    Sound.play(e.sound || (e.type === 'explode' && e.big ? 'explodeBig' : e.type), near);
   }
   FxQueue.length = 0;
   Particles.update(dt);

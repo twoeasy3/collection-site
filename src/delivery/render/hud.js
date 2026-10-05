@@ -4,6 +4,7 @@ import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Packages } from '../packages.js';
 import { Game, formatTime } from '../game.js';
+import { Message } from '../messages.js';
 
 // ---- HUD -------------------------------------------------------------------
 const hudTimer = document.getElementById('timer');
@@ -24,15 +25,8 @@ const hudDangerFill = document.getElementById('dangerFill');
 const hudFade = document.getElementById('fade');
 const runButtons = document.getElementById('runButtons');
 const pauseBtn = document.getElementById('pauseBtn');
-const BANNERS = {
-  paused: 'PAUSED<small>Resume, or press P</small>',
-  wreck: 'WRECKED<small>new car on the way</small>',
-  'police:shoulder': 'BUSTED<small>too long on the shoulder</small>',
-  'police:seen': 'BUSTED<small>the police saw you on the shoulder</small>',
-  'police:assault': 'BUSTED<small>the police saw you attack a vehicle</small>',
-  'police:bump': 'BUSTED<small>you hit a police car</small>',
-};
-let bannerKind = '';
+const hudMessage = document.getElementById('message');
+let messageId = 0, messageAt = 0;
 const kmh = (ms) => Math.round(ms * 3.6);
 // (the HUD is not updated on the menu, so a run's buttons and fade are cleared as it ends)
 Game.onFinish.push(() => {
@@ -53,14 +47,13 @@ export const updateHud = () => {
     if (Player.turbo > 0) effects += 'TURBO ' + Player.turbo.toFixed(1) + '  ';
     if (Player.ghost > 0) effects += 'GHOST ' + Player.ghost.toFixed(1) + '  ';
     if (Player.passenger > 0) effects += 'PASSENGER ' + Player.passenger.toFixed(1) + '  ';
+    if (Player.mystery) effects += 'MYSTERY ' + Player.mysteryTime.toFixed(1) + '  ';
     if (Player.tank > 0) effects += 'TANK RAGE';
   }
   hudTurbo.textContent = effects;
   throwBtn.style.opacity = Packages.ready ? 1 : 0.4;
   const throwLabel = Player.tank > 0 ? 'FIRE' : 'THROW';
   if (throwBtn.textContent !== throwLabel) throwBtn.textContent = throwLabel;
-  let banner = Game.paused ? 'paused' : Game.policeApproach >= 0 ? 'police' : Game.respawn >= 0 ? Game.respawnKind : '';
-  if (banner === 'police') banner += ':' + Player.bustReason;
   // pause and exit: shown during a run and the screensaver
   runButtons.style.display = Game.state === 'playing' ? 'flex' : 'none';
   const pauseLabel = Game.paused ? 'Resume' : 'Pause';
@@ -68,11 +61,17 @@ export const updateHud = () => {
   // the screensaver fades to black and back where one lap joins the next
   hudFade.style.opacity = Game.screensaver
     ? 1 - Math.min(1, Math.min(Math.abs(Player.s), Math.abs(Track.length - Player.s)) / CONFIG.screensaver.fadeDistance) : 0;
-  hudBanner.style.display = banner ? 'block' : 'none';
-  if (banner && bannerKind !== banner) {
-    bannerKind = banner;
-    hudBanner.innerHTML = BANNERS[bannerKind];
+  hudBanner.style.display = Game.paused ? 'block' : 'none'; // (the only banner: paused)
+  // the latest message (see messages.js): up for CONFIG.messageTime, fading away at the end
+  const now = performance.now();
+  if (Message.id !== messageId) {
+    messageId = Message.id;
+    messageAt = now;
+    hudMessage.textContent = Message.text;
   }
+  const age = (now - messageAt) / 1000;
+  hudMessage.style.opacity = Game.paused || Game.state !== 'playing' || !Message.text ? 0
+    : Math.min(1, Math.max(0, (CONFIG.messageTime - age) / CONFIG.messageFade));
   hudBusts.textContent = 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
   const danger = Player.danger / CONFIG.dangerTime;
   hudDanger.style.display = Player.active && danger < 1 ? 'block' : 'none';

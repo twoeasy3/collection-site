@@ -21,7 +21,14 @@ export const syncPackages = (dt) => {
     const [color, size] = PACKAGE_LOOK[p.kind];
     mesh.material.color.setHex(color);
     mesh.scale.setScalar(size);
-    Track.toWorld(p.s, p.lat, tmp);
+    if (p.from) { // a cannon shell: a straight line between muzzle and landing spot
+      const u = Math.min(1, p.t / p.flight);
+      tmp.x = p.from.x + (p.to.x - p.from.x) * u;
+      tmp.y = p.from.y + (p.to.y - p.from.y) * u;
+      tmp.z = p.from.z + (p.to.z - p.from.z) * u;
+    } else {
+      Track.toWorld(p.s, p.lat, tmp); // everything else follows the road
+    }
     mesh.position.set(tmp.x, tmp.y + p.h, tmp.z);
     mesh.rotation.x += dt * 9;
     mesh.rotation.z += dt * 6;

@@ -7,6 +7,7 @@ import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
 import { Targets } from './pickups.js';
 import { Game } from './game.js';
+import { Message } from './messages.js';
 
 // ============================================================================
 // PACKAGES - thrown at the nearest car ahead within range; each flies an arc in
@@ -41,14 +42,17 @@ export const Packages = (() => {
     p.h = 1.2;
     p.endH = aim.height || 0.6;
     p.arc = kind === 'shell' ? 0.4 : CONFIG.throwArc;
-    p.flight = flight || clamp(Math.hypot(aim.s - p.s, aim.lat - p.lat) / CONFIG.throwSpeed, 0.35, 1.5);
+    p.flight = flight || clamp(Math.hypot(aim.s - p.s, aim.lat - p.lat) / CONFIG.throwSpeed,
+      CONFIG.throwFlightMin, CONFIG.throwFlightMax);
     p.vs = (aim.s + aim.vs * p.flight - p.s) / p.flight;
     p.vlat = (aim.lat + aim.latVel * p.flight - p.lat) / p.flight;
+    p.from = p.to = null; // (see the cannon)
     p.active = true;
-    return true;
+    return p;
   };
 
   // the player throws at the nearest car ahead within range, or at a TANK RAGE target if one is
+  // (null if there is nothing to throw at)
   const findTarget = () => {
     let best = null, bestDist = CONFIG.throwRange;
     for (const t of Targets.items) {
@@ -67,28 +71,53 @@ export const Packages = (() => {
   const throwOne = () => {
     if (!Player.active || cooldown > 0) return;
     if (Player.tank > 0) {
-      // the cannon isn't aimed: the shell lands a fixed distance straight ahead
-      const aim = { s: Player.s + CONFIG.cannonRange, lat: Player.lat, vs: Player.speed, latVel: 0 };
-      if (launch(Player, aim, 'shell', 0.3)) {
+      // The cannon isn't aimed: the shell flies dead straight the way the tank is pointing, not
+      // round a bend with the road, and lands cannonRange ahead of where the tank will be by
+      // then. It is drawn flying between the two world points (from, to); where it lands is
+      // that point's place on the road.
+      const flight = 0.3, centre = {};
+      const h = Track.toWorld(Player.s, Player.lat, centre) - Player.yaw; // (the way the nose points)
+      const reach = CONFIG.cannonRange + Player.speed * flight;
+      const to = { x: centre.x + Math.sin(h) * reach, z: centre.z + Math.cos(h) * reach };
+      const land = Track.fromWorld(to.x, to.z, Player.s + reach);
+      Track.toWorld(land.s, land.lat, to); // (and its height there)
+      const p = launch(Player, { s: land.s, lat: land.lat, vs: 0, latVel: 0 }, 'shell', flight);
+      if (p) {
+        p.from = {};
+        Track.toWorld(p.s, p.lat, p.from); // (the muzzle)
+        p.to = to;
         cooldown = CONFIG.cannonCooldown;
         sfx('cannon');
       }
       return;
     }
-    const target = findTarget();
-    if (target && launch(Player, target, Player.evil ? 'fire' : 'gift')) {
+    // (with nothing in range it is thrown anyway, to land on the road ahead of the car)
+    const target = findTarget() ||
+      { s: Player.s + CONFIG.throwBlind, lat: Player.lat, vs: Player.speed, latVel: 0 };
+    if (launch(Player, target, Player.evil ? 'fire' : 'gift')) {
       cooldown = CONFIG.throwCooldown;
       sfx('throw');
     }
   };
 
-  // traffic never throws at a car, only at the road: near the player if the player
-  // has upset this driver, otherwise at a random spot ahead of itself
+  // an evil car's throw, aimed at the road where its victim will be (the splash does the
+  // damage): near the player if the player has upset this driver, otherwise at its rival or
+  // the nearest other vehicle within range, and with nobody about, a random spot ahead of itself
   const throwAtGround = (car) => {
-    if (car.grudge) {
-      const scatter = CONFIG.enemyThrowScatter;
-      launch(car, { s: Player.s + spread(scatter), lat: Player.lat + spread(scatter),
-        vs: Player.speed, latVel: Player.latVel }, 'bomb');
+    const scatter = CONFIG.enemyThrowScatter;
+    let victim = car.grudge ? Player : null;
+    if (!victim) {
+      let best = CONFIG.enemyThrowCarRange;
+      const rival = car.rival && car.rival.active ? car.rival : null;
+      for (const o of rival ? [rival] : Traffic.cars) {
+        if (o === car || !o.active) continue;
+        const dist = Math.hypot(o.s - car.s, o.lat - car.lat);
+        if (dist < best) { best = dist; victim = o; }
+      }
+    }
+    if (victim) {
+      launch(car, { s: victim.s + spread(scatter), lat: victim.lat + spread(scatter),
+        vs: victim.vs, latVel: victim.latVel }, 'bomb');
     } else {
       const s = car.s + car.dir * (10 + Math.random() * 30);
       const lat = Track.laneLo(s) + Math.random() * (Track.laneHi(s) - Track.laneLo(s));
@@ -110,13 +139,19 @@ export const Packages = (() => {
     }
   };
 
+  // a car that is done for: out of health, spinning out, or wobbling before it does. One the
+  // player's thrown package dooms is marked, so its explosion can be put down to the player (see
+  // Collision); the tank's shells don't count
+  const doomed = (car) => car.health <= 0 || car.spin > 0 || car.wobble > 0;
+
   // the cannon shell going off: destroys what it lands on, badly damages what is near
+  // (it goes off with the lighter 'burst' sound, not a full explosion's)
   const blast = (p) => {
     for (const car of Traffic.cars) {
       if (!car.active) continue;
       const dist = Math.hypot(car.s - p.s, car.lat - p.lat);
       if (dist < CONFIG.cannonDirectRadius + car.hl * 0.5) car.health = 0;
-      else if (dist < CONFIG.cannonSplashRadius) hurt(car, CONFIG.cannonSplashDamage);
+      else if (dist < CONFIG.cannonSplashRadius) hurt(car, CONFIG.cannonSplashDamage, CONFIG.cannonCrit);
     }
     for (const o of Collision.obstacles) {
       if (o.gone || Math.hypot(o.s - p.s, o.lat - p.lat) > CONFIG.cannonSplashRadius) continue;
@@ -124,7 +159,8 @@ export const Packages = (() => {
       FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: 0, big: false });
     }
     Game.shake = Math.max(Game.shake, 0.7);
-    FxQueue.push({ type: 'explode', s: p.s, lat: p.lat, vs: 0, big: true });
+    FxQueue.push({ type: 'explode', s: p.s, lat: p.lat, vs: 0, big: true,
+      scale: CONFIG.cannonBlastScale, smoke: CONFIG.cannonSmoke, sound: 'burst' });
   };
 
   // the player's care package arriving
@@ -137,7 +173,9 @@ export const Packages = (() => {
       car.grudge = true;
       car.showMood = true;
       // attacking a police car, or anyone while a police car is watching, is a bust
-      if (car.kind === 'police' || Traffic.policeNear()) Player.bust('assault');
+      if (car.kind === 'police') Player.bust('assaultCop');
+      else if (Traffic.policeNear()) Player.bust('assault');
+      Message.say('reactions', car.evil ? 'anyOnEvil' : 'evilOnGood'); // (the driver's reaction)
       FxQueue.push({ type: 'burst', s: p.s, lat: p.lat, vs: car.vs });
       return;
     }
@@ -149,6 +187,7 @@ export const Packages = (() => {
     } else {
       car.mood = Math.min(1, car.mood + CONFIG.packageMoodBoost);
     }
+    Message.say('reactions', car.evil ? 'anyOnEvil' : 'goodOnGood'); // (the driver's reaction)
     car.showMood = true;
     FxQueue.push({ type: 'gift', s: p.s, lat: p.lat, vs: car.vs });
   };
@@ -169,6 +208,7 @@ export const Packages = (() => {
           t.used = true;
           Player.startTank();
           sfx('tank');
+          Message.say('powerups', 'tankRage');
           FxQueue.push({ type: 'gift', s: t.s, lat: t.lat, vs: 0, green: true });
           p.active = false;
           break;
@@ -177,7 +217,9 @@ export const Packages = (() => {
           if (!p.active) break;
           if (!car.active || p.h > car.height + 0.6) continue;
           if (Math.abs(car.s - p.s) > car.hl + 1 || !Collision.overlap(p, car)) continue;
+          const was = doomed(car);
           deliver(p, car);
+          if (!was && doomed(car)) car.wreckedByPlayer = true;
           p.active = false;
         }
       }

@@ -2,7 +2,7 @@ import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
 import { clamp, damp } from './util.js';
 import { Track } from './track.js';
-import { updateYaw, keepOnRoad, emotionOf, startRivalry, spinOut } from './physics.js';
+import { updateYaw, keepOnRoad, emotionOf, startRivalry, spinOut, sfxAt } from './physics.js';
 import { Player } from './player.js';
 import { Packages } from './packages.js';
 
@@ -22,7 +22,7 @@ export const Traffic = (() => {
     const north = i < CONFIG.trafficCount;
     cars.push({ active: false, unused: false, dir: north ? 1 : -1, bound: north ? 'north' : 'south', mass: 1,
       s: 0, lat: 0, vs: 0, latVel: 0, yaw: 0, yawVel: 0, stun: 0,
-      lane: 0, baseSpeed: 0, kind: 'car', evil: false, emotion: 'neutral', mood: 0, paint: 0, think: 0,
+      lane: 0, baseSpeed: 0, kind: 'car', evil: false, emotion: 'neutral', mood: 0, paint: 0, think: 0, honkWait: 0,
       health: 1, maxHealth: 1, smoke: 0, hw: 1, hl: 2.1, height: 1.4 });
   }
 
@@ -61,7 +61,7 @@ export const Traffic = (() => {
     return kinds[0][0];
   };
   // is a police car close enough to see what the player is doing?
-  const policeNear = () => cars.some(c => c.active && c.kind === 'police' && c.stun <= 0 &&
+  const policeNear = () => cars.some(c => c.active && c.kind === 'police' && !c.toad && c.stun <= 0 &&
     Math.abs(c.s - Player.s) < CONFIG.policeSightRange && Math.abs(c.lat - Player.lat) < 25);
 
   const MOOD_START = { happy: 0.7, neutral: 0, angry: -0.7 };
@@ -97,6 +97,27 @@ export const Traffic = (() => {
     }
   };
 
+  // TOAD RAGE (a mystery): while it lasts, every vehicle is a toad (new ones too). A toad goes
+  // straight on at one slow speed: no moods, no lane changes, no braking, and 1 health, so it
+  // bursts on touching anything (see Collision). Afterwards each turns back into what it was.
+  let toads = false;
+  const makeToad = (car) => {
+    if (car.toad) return;
+    const T = CONFIG.mystery.toad;
+    car.toad = { health: car.health, maxHealth: car.maxHealth, hw: car.hw, hl: car.hl, height: car.height, mass: car.mass };
+    Object.assign(car, T, { health: 1, maxHealth: 1, spin: 0, wobble: 0, rival: null, stun: 0 });
+  };
+  const toadify = (on) => {
+    toads = on;
+    for (const car of cars) {
+      if (on) makeToad(car);
+      else if (car.toad) {
+        Object.assign(car, car.toad);
+        car.toad = null;
+      }
+    }
+  };
+
   // makes the car a vehicle of that kind, in that lane at car.s, fresh off the line
   const outfit = (car, kind, lane) => {
     car.fixed = false;
@@ -129,6 +150,10 @@ export const Traffic = (() => {
     car.rival = null;   // another traffic car this one is bullying
     car.rivalTime = 0;
     car.grudge = false; // set once the player has upset this driver
+    car.wreckedByPlayer = false; // set once one of the player's packages has doomed it (see Packages)
+    car.ufoBurning = false; // burning up after a UFO air strike (see UfoStrike)
+    car.toad = null;        // in TOAD RAGE: what it was before it became a toad (see toadify)
+    if (toads) makeToad(car);
     car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
     car.think = Math.random() * 2;
     car.active = true;
@@ -163,6 +188,14 @@ export const Traffic = (() => {
     if (!ignorePlayer && playerInWay(car, lane)) return false;
     car.lane = lane;
     return true;
+  };
+
+  // a horn to suit the vehicle (police cars have sirens instead), only near the player
+  const HORNS = { compact: 'hornSmall', sport: 'hornSmall', van: 'hornBig', tractor: 'hornBig', bus: 'hornBus' };
+  const honk = (car) => {
+    if (car.kind === 'police' || car.honkWait > 0 || Math.abs(car.s - Player.s) > CONFIG.hornRange) return;
+    car.honkWait = CONFIG.hornWait;
+    sfxAt(HORNS[car.kind] || 'horn', car.s);
   };
 
   const think = (car) => {
@@ -223,6 +256,19 @@ export const Traffic = (() => {
         continue;
       }
 
+      car.honkWait = Math.max(0, car.honkWait - dt);
+      // an angel or a jerk (mysteries): everyone thinks the world of the player, or hates them
+      if (Player.mystery === 'angel') car.mood = 1;
+      else if (Player.mystery === 'jerk') car.mood = -1;
+      if (car.toad) { // TOAD RAGE: straight on at a toad's pace, whatever is in the way
+        car.vs = car.dir * CONFIG.mystery.toadSpeed;
+        car.latVel = 0;
+        car.yaw = car.yawVel = 0;
+        car.s += car.vs * dt;
+        Track.transfer(car);
+        keepOnRoad(car, 0);
+        continue;
+      }
       if (car.spin > 0) {
         // spun out: no control at all. Its momentum swings round in an arc while the body
         // slowly turns a full circle; it can still hit, and be hit by, anything in its way
@@ -249,7 +295,9 @@ export const Traffic = (() => {
         if (car.wobble <= 0) spinOut(car);
       }
 
-      car.emotion = emotionOf(car.mood);
+      const emotion = emotionOf(car.mood);
+      if (emotion === 'angry' && car.emotion !== 'angry') honk(car); // fed up
+      car.emotion = emotion;
 
       if (car.stun > 0) {
         // knocked out of control: coast, scrub off sideways speed, no lane keeping
@@ -259,7 +307,7 @@ export const Traffic = (() => {
         const [first, last] = Track.laneRange(car.dir, car.s);
         car.lane = clamp(Track.nearestLane(car.lat, car.s), first, last);
       } else {
-        // evil cars lob packages at the road; ones the player has upset aim near the player
+        // evil cars lob packages at other traffic; ones the player has upset aim near the player
         if (car.evil && Player.active &&
             Math.abs(car.s - Player.s) < CONFIG.enemyThrowRange) {
           car.throwTimer -= dt;
@@ -313,6 +361,7 @@ export const Traffic = (() => {
             Math.abs(Player.lat - car.lat) < Player.hw + car.hw && Player.speed < car.baseSpeed) {
           car.mood = Math.max(-1, car.mood - CONFIG.moodHoldUp * dt);
           car.grudge = true;
+          honk(car);
           if (car.emotion !== 'angry') target = Math.min(target, Player.speed * 0.9);
         }
         car.vs += (car.dir * target - car.vs) * damp(1.2, dt);
@@ -325,6 +374,9 @@ export const Traffic = (() => {
         car.latVel += (wantVel - car.latVel) * damp(6, dt);
       }
 
+      // an oncoming car passing close by may lean on its horn as it goes
+      if (car.dir < 0 && Player.active && car.s > Player.s && car.s + car.vs * dt <= Player.s &&
+          Math.abs(car.lat - Player.lat) < CONFIG.passByRange && Math.random() < CONFIG.passByChance) sfxAt('passBy', car.s);
       car.s += car.vs * dt;
       Track.transfer(car); // onto the side road, a flyover or back, where the roads join
       car.lat += car.latVel * dt;
@@ -343,5 +395,5 @@ export const Traffic = (() => {
     placeFixed();
   };
 
-  return { cars, reset, update, lap, policeNear };
+  return { cars, reset, update, lap, policeNear, toadify };
 })();

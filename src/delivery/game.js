@@ -6,6 +6,8 @@ import { Input } from './input.js';
 import { clamp } from './util.js';
 import { Track, buildTrack } from './track.js';
 import { FxQueue, sfx } from './physics.js';
+import { Message } from './messages.js';
+import { UfoStrike } from './ufostrike.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -112,6 +114,8 @@ export const Game = {
     this.over = false;
     this.paused = false;
     this.screensaver = false;
+    Message.clear();
+    UfoStrike.reset();
     this.state = 'playing';
     startScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');
@@ -158,6 +162,7 @@ export const Game = {
     this.respawn -= dt;
     if (this.respawn <= 0) {
       this.respawn = -1;
+      sfx('drop');
       Player.respawn(this.respawnKind === 'police'); // the police hand back the same damaged car
     }
   },
@@ -220,6 +225,7 @@ export const Game = {
       this.policeApproach = -1;
     }
     Traffic.update(dt);
+    UfoStrike.update(dt);
     Packages.update(dt);
     Pickups.update();
     Collision.updateObstacles(dt);

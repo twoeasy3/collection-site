@@ -28,22 +28,43 @@ export const CONFIG = {
   dangerCooldown: 0.75,    // s of allowance regained per second back in the lanes
   dangerBeepSlow: 0.45,    // s between the meter's beeps on first touching the shoulder...
   dangerBeepFast: 0.06,    // ...and just before the bust (the beeps speed up in between)
-  dangerBeepPitch: 330,    // Hz of the first beep; they rise to nearly double that
+  dangerBeepPitch: 330,    // Hz of the beep (only until the Danger Timer WAV has loaded)
   policeApproachTime: 2.5, // s a busted car keeps driving, slowing, before it is grabbed
   policeCrawlSpeed: 8,     // m/s it is slowed to in that time
   policeHoldTime: 4,       // s from being grabbed to being dropped back in a lane
 
   // speed (m/s): hold accelerate / brake to change it, release and it holds
-  minSpeed: 10,
+  minSpeed: 7,
 
   // turbocharger pickups: fixed spots on the track that raise the top speed for a while
-  turboMaxSpeed: 70,
+  turboMaxSpeed: 45,
   turboAccel: 22,          // m/s^2, the turbo pulls up to its top speed on its own
   turboTime: 6,            // s
   ghostTime: 6,            // s the car is see-through and passes through cars and barriers
                            // (the bridge structure and package splashes still get you)
   wrenchRepair: 0.25,      // share of full health restored
   passengerTime: 12,       // s of shoulder driving without running the police meter down
+  powerUpWarning: 3,       // s before a turbo, ghost, passenger or mystery runs out that its warning sound starts
+                           // (only one of those runs at a time: a new one replaces it)
+  // the mystery pickup: one of these effects at random (see Player.startMystery); the wording
+  // is in messages.json, under powerups.mystery
+  mystery: {
+    effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo'],
+    time: 12,              // s the lasting ones last (insuranceUp / insuranceDown and ufo are over at once)
+    rickety: 1.5,          // damage the car takes while rickety, against the usual
+    toadSpeed: 20 / 3.6,   // m/s every toad goes along at in TOAD RAGE
+    toad: { hw: 1.2, hl: 1.4, height: 1.8, mass: 1 }, // a toad's hitbox
+  },
+  // UFO AIR STRIKE (a mystery): the saucer's visit, and the burn that follows it
+  ufoStrike: {
+    arrive: 1.5,           // s to fly in...
+    hover: 4,              // ...over the player's car...
+    leave: 2,              // ...and away again
+    height: 14,            // m above the car it hovers (clear of the chase camera's view of the car)...
+    ahead: 8,              // ...and this far ahead of it, so it sits near the top of the screen
+    burnRate: 7,           // health a second every vehicle loses from the moment the saucer starts to leave...
+    burnGrowth: 0.5,       // ...growing by e^(this x seconds): smoking within a second or so, gone 2.5-5 s later
+  },
 
   // stationary barriers: they explode when the player touches them, traffic drives through
   // frogs: large moving obstacles that hop all over the road within their stretch of it;
@@ -53,6 +74,7 @@ export const CONFIG = {
   frogHopHeight: 2.5,      // m
   frogRestMin: 0.3,        // s it sits between hops, random between min and max
   frogRestMax: 1.2,
+  frogHearing: 120,        // m from a frog within which its croaking is heard
   // what hitting each kind costs: health, and the share of the player's speed left afterwards
   obstacleKinds: {
     barrier: { damage: 30, speedKept: 0.6 },
@@ -88,11 +110,12 @@ export const CONFIG = {
   cowRestMax: 2.5,
   tractorSpeed: 7,         // m/s a tractor trundles along at (it is traffic: see vehicles)
 
-  startSpeed: 30,          // a fresh car pulls away to this on its own
+  startSpeed: 20,          // a fresh car pulls away to this on its own
   brake: 20,               // m/s^2 while brake is held
   autoBrake: 28,           // m/s^2, automatic braking behind a slower car (off the accelerator only)
   autoBrakeGap: 5,         // m, gap it tries to keep
   autoBrakeTime: 0.7,      // s of closing speed added to that gap
+  brakeScreech: 8,         // m/s of closing speed from which that braking squeals the tyres
 
   // steering: free lateral movement, with a soft pull to the nearest lane centre
   steerSpeed: 9,           // m/s sideways at full steer
@@ -111,13 +134,18 @@ export const CONFIG = {
   trafficPool: 80,         // vehicles there are meshes for; a level's counts can't add up to more
   trafficCount: 16,        // same-direction cars alive at once (density; a level can set "trafficCount")
   oncomingCount: 12,       // oncoming cars alive at once (a level can set "oncomingCount")
-  trafficMinSpeed: 14,     // m/s (a level can set its own with "trafficSpeed": { "min", "max" })
-  trafficMaxSpeed: 28,
+  trafficMinSpeed: 9,      // m/s (a level can set its own with "trafficSpeed": { "min", "max" })
+  trafficMaxSpeed: 18,
   spawnMin: 480,           // spawn window ahead of the player, metres (inside the fog)
   spawnMax: 640,
   despawnBehind: 80,
   trafficLaneChangeRate: 2.5, // 1/s
   laneChangeChance: 0.3,   // per decision (every 1-3 s) for a random lane change
+  // horns: a driver honks on turning angry, and while held up behind the player
+  hornRange: 70,           // m from the player within which drivers bother
+  hornWait: 5,             // s before the same driver honks again
+  passByRange: 5,          // m to the side within which an oncoming car passing the player...
+  passByChance: 0.3,       // ...may honk as it goes by
   laneChangeGap: 10,       // m of clear road a car wants before changing lane (smaller = more careless)
   // rivalries: a car that another car has hit, or that is simply angry, picks a nearby car to
   // bully: it chases it, crowds it sideways and won't brake for it
@@ -162,11 +190,12 @@ export const CONFIG = {
     soundRange: 110,       // m within which traffic crashes are heard (in a run only the player's are)
   },
 
-  // evil cars lob packages at the road (never straight at a car); the splash does the damage
+  // evil cars lob packages at the road where another vehicle (or the player) will be; the splash does the damage
   enemyThrowRange: 60,     // m from the player within which they bother
   enemyThrowMin: 2,        // s between throws, random between min and max
   enemyThrowMax: 5,
-  enemyThrowScatter: 3,    // m, how far from the player an upset car's package may land
+  enemyThrowScatter: 3,    // m, how far from its victim (the player, or another vehicle) a package may land
+  enemyThrowCarRange: 45,  // m: the furthest away another vehicle can be for an evil car to throw at it
   splashRadius: 4,         // m
   splashDamage: 6,
   attitudeRange: 50,       // metres behind a car at which it reacts to the player
@@ -186,6 +215,7 @@ export const CONFIG = {
   stunDrag: 0.5,           // 1/s speed loss while stunned
   stunGrip: 2.5,           // 1/s sideways speed loss while stunned
   minImpact: 1.0,          // m/s, gentler contact pushes but does no damage
+  hardCrash: 14,           // m/s of impact from which a crash sounds like a bad one
 
   // damage
   damagePerSpeed: 1.5,     // health lost per m/s of impact (split by mass)
@@ -217,7 +247,10 @@ export const CONFIG = {
 
   // packages
   throwRange: 70,          // m, max distance to a target
-  throwSpeed: 50,          // m/s, sets the flight time
+  throwBlind: 30,          // m ahead of the car a package lands on the road when nothing is in range
+  throwSpeed: 100,         // m/s, sets the flight time...
+  throwFlightMin: 0.175,   // ...within these limits (s)
+  throwFlightMax: 0.75,
   throwArc: 3,             // m, peak height of the arc
   throwCooldown: 0.6,      // s
   packageDamage: 4,        // a care package barely scratches what it hits
@@ -231,13 +264,16 @@ export const CONFIG = {
   // TANK RAGE: started by landing a package on a green target beside the road
   targetOffset: 5,         // m beyond the pavement the targets stand, out of the car's reach
   tankRamSlow: 0.15,       // share of its speed the tank loses per unit of mass it rams (a car is 1)
-  tankMaxSpeed: 52,        // m/s, a little above the car's top speed
+  tankMaxSpeed: 34,        // m/s, a little above the car's top speed
   tankHeadOnDamage: 0.2,   // share of full health a head-on costs the tank; nothing else hurts it
   cannonRange: 26,         // m ahead of the tank the shell lands
-  cannonCooldown: 0.9,     // s
+  cannonCooldown: 0.64,    // s
   cannonDirectRadius: 4.5, // m: anything this close to the blast is destroyed outright
   cannonSplashRadius: 11,  // m
-  cannonSplashDamage: 45,
+  cannonSplashDamage: 63,
+  cannonCrit: 3,           // times likelier than usual that a car the splash catches takes a critical hit
+  cannonBlastScale: 1.4,   // size of the shell's explosion (fire and debris) against a big wreck's
+  cannonSmoke: 0.3,        // and of its smoke: kept light, as the tank drives straight into it
 
   // chase camera
   camBack: 14,
@@ -248,6 +284,31 @@ export const CONFIG = {
   camFovPortrait: 88,
   camFovSpeedBoost: 10,    // extra degrees at max speed
 
+
+  // messages (the wording is in messages.json)
+  messageTime: 2,          // s a message stays up...
+  messageFade: 0.4,        // ...the last of which it spends fading away
+
+  // night levels (theme "night"): the player's headlights, two spotlights riding on the car
+  headlights: {
+    color: 0xfff1d0,
+    intensity: 36,         // each
+    range: 85,             // m, where the light runs out altogether
+    decay: 0.7,            // how fast it fades with distance (0 = not at all, 2 = true to life)
+    angle: 0.55,           // rad, half the width of the beam
+    penumbra: 0.6,         // share of the beam's edge that is soft
+    height: 2.2,           // m above the road they shine from (a little higher than real lamps, so
+                           // the light reaches on down the road instead of only skimming it)
+    aim: 40,               // m ahead of the car the beams are centred on
+    spread: 0.7,           // m either side of the car's centre line
+  },
+  // ...and every traffic vehicle's: not real lights (too many), a glow laid on the road ahead of it
+  trafficBeam: {
+    color: 0xffe6b0,
+    length: 15,            // m ahead of the vehicle's nose
+    width: 6,              // m across at its widest
+    strength: 0.5,         // how bright, 0..1
+  },
 
   // scenery
   poleSpacing: 25,

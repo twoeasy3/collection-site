@@ -3,7 +3,8 @@ import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
 import { Track } from '../track.js';
 import { Game } from '../game.js';
-import { scene, tmp, applySky, clearGroup } from './scene.js';
+import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
+import { setHeadlights } from './headlights.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -57,6 +58,10 @@ const THEMES = {
   // space: no ground and no road surface, only glowing lane lines among the stars
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
   space: { sky: 0x05060d, ground: null, road: null, scenery: 'space', line: 0x7fe8ff, centre: 0xff62d6 },
+  // night: the city after dark. The road and the ground are lit surfaces (lit: true), dark but
+  // for a faint blue moon and the player's headlights; other cars show their own lamps.
+  night: { sky: 0x05070e, ground: 0x34492d, road: 0x45484e, scenery: 'city', lit: true, headlights: true,
+    light: { sky: 0x5d72b0, ground: 0x10141c, ambient: 0.3, sun: 0x9fb4ff, sunlight: 0.25 } },
 };
 
 // Everything built here for the loaded level goes in this group, which is emptied and
@@ -68,8 +73,14 @@ const buildRoad = () => {
   clearGroup(levelGroup);
   const theme = THEMES[LEVEL.theme] || THEMES.city;
   applySky(theme.sky);
-  const flat = (color) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide });
-  const add = (geo, mat) => levelGroup.add(new THREE.Mesh(geo, mat));
+  applyLight(theme.light);
+  setHeadlights(!!theme.headlights);
+  const flat = (color) => new (theme.lit ? THREE.MeshLambertMaterial : THREE.MeshBasicMaterial)({ color, side: THREE.DoubleSide });
+  const add = (geo, mat) => {
+    // (a lit surface needs to know which way it faces; the strips are built without that)
+    if (theme.lit && !geo.attributes.normal) geo.computeVertexNormals();
+    return levelGroup.add(new THREE.Mesh(geo, mat));
+  };
   const asphalt = flat(theme.road || 0), lineMat = flat(theme.line || 0xf2f2f2), centreMat = flat(theme.centre || 0xffc400);
   const pave = (geo) => { if (theme.road !== null) add(geo, asphalt); }; // (no road surface in space)
   const LW = CONFIG.laneWidth, ZONE = CONFIG.ramps.laneZone, RAMP = CONFIG.ramps.ramp;
@@ -310,7 +321,8 @@ const buildRoad = () => {
       // skip any that would land on, or right beside, the other road
       const clash = onMain ? Track.sideDistance(tmp.x, tmp.z) < 24 : Track.mainDistance(tmp.x, tmp.z) < 30;
       dummy.position.set(tmp.x, tmp.y + h / 2, tmp.z);
-      dummy.scale.set(w, clash ? 0 : h, d);
+      if (clash) dummy.scale.setScalar(0); // (gone entirely: flattening it alone left its roof hanging in the air)
+      else dummy.scale.set(w, h, d);
       dummy.updateMatrix();
       blocks.setMatrixAt(i, dummy.matrix);
     });

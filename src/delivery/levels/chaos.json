@@ -10,7 +10,7 @@
   "trafficCount": 0,
   "oncomingCount": 80,
   "drivers": { "evil": 0.75, "happy": 0.05, "angry": 0.8 },
-  "trafficSpeed": { "min": 9, "max": 36 },
+  "trafficSpeed": { "min": 6, "max": 23 },
   "segments": [
     { "length": 500, "curve": 0 },
     { "length": 500, "curve": 0.002 },

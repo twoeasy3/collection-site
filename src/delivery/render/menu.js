@@ -91,6 +91,7 @@ document.getElementById('completeBtn').addEventListener('click', () => {
     typed = '';
     Progress.buy(SECRET_CARS.bus);
     selectCar('bus');
+    Sound.play('mystery');
     window.dispatchEvent(new Event('carchange'));
   });
 }

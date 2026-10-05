@@ -6,6 +6,7 @@ import { FxQueue, startRivalry, hurt, sfx } from './physics.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Game } from './game.js';
+import { Message } from './messages.js';
 
 // ============================================================================
 // COLLISION - oriented boxes in track space: x = distance along track, y = lateral
@@ -38,6 +39,21 @@ export const Collision = (() => {
     (Game.screensaver && Math.abs(a.s - Player.s) < CONFIG.screensaver.soundRange);
 
   const resolve = (a, b) => {
+    // TOAD RAGE: a toad bursts on touching anything, and the player's car takes it like a
+    // frog in the road (never a head-on, nor a bust)
+    if (a.toad || b.toad) {
+      for (const v of [a, b]) if (v.toad) v.health = 0;
+      const player = a.isPlayer ? a : b.isPlayer ? b : null;
+      if (player && player.tank <= 0) {
+        const cost = CONFIG.obstacleKinds.frog;
+        hurt(player, cost.damage);
+        player.speed *= cost.speedKept;
+        player.stun = Math.max(player.stun, CONFIG.stunTime * 0.5);
+        Game.shake = Math.max(Game.shake, 1);
+      }
+      if (heard(a, b)) sfx('crash');
+      return;
+    }
     const ds = b.s - a.s, dl = b.lat - a.lat;
     const penS = Math.max(0.02, a.hl + b.hl - Math.abs(ds));
     const penLat = Math.max(0.02, a.hw + b.hw - Math.abs(dl));
@@ -60,16 +76,17 @@ export const Collision = (() => {
       if (headOn) a.health -= a.maxHealth * CONFIG.tankHeadOnDamage;
       a.speed *= Math.max(0.35, 1 - CONFIG.tankRamSlow * b.mass); // ramming does slow it
       Game.shake = Math.max(Game.shake, 0.6);
+      sfx('heavy');
       return;
     }
     if (headOn) {
       // a northbound and a southbound vehicle touching, however they touch, is a head-on:
-      // both are wrecked outright
-      a.health = 0;
-      b.health = 0;
+      // both are wrecked outright (but an invincible player's car comes off unharmed: a mystery)
+      if (a.mystery !== 'invincible') a.health = 0;
+      if (b.mystery !== 'invincible') b.health = 0;
       if (heard(a, b)) {
         if (a.isPlayer || b.isPlayer) Game.shake = 1;
-        sfx('crash');
+        sfx('headOn');
       }
       return;
     }
@@ -92,7 +109,7 @@ export const Collision = (() => {
     a.s -= n * slide * pushA;
     b.s += n * slide * pushB;
 
-    let impact = 0;
+    let impact = 0, scraped = false;
     const closing = (a.vs - b.vs) * n;
     if (closing > 0) {
       const j = (1 + CONFIG.bounce) * closing;
@@ -116,7 +133,9 @@ export const Collision = (() => {
         const turn = -(dl > 0 ? 1 : -1) * clamp(ds / (a.hl + b.hl), -1, 1) * CONFIG.spinKick * sideways;
         a.yawVel += turn * pushA * 2;
         b.yawVel += turn * pushB * 2;
-        impact = Math.max(impact, sideways + Math.abs(a.vs - b.vs) * CONFIG.scrape);
+        const scrape = sideways + Math.abs(a.vs - b.vs) * CONFIG.scrape;
+        scraped = scrape >= impact; // (mostly a scrape down the side, not a knock along the road)
+        impact = Math.max(impact, scrape);
       }
     }
 
@@ -134,7 +153,7 @@ export const Collision = (() => {
       b.stun = Math.max(b.stun, stun);
       if (heard(a, b)) {
         if (a.isPlayer || b.isPlayer) Game.shake = Math.max(Game.shake, clamp(impact / 15, 0.25, 1));
-        sfx('crash', clamp(impact / 18, 0.3, 1));
+        sfx(impact >= CONFIG.hardCrash ? 'crashHard' : scraped ? 'sideswipe' : 'crash', clamp(impact / 18, 0.3, 1));
       }
     }
   };
@@ -426,7 +445,8 @@ export const Collision = (() => {
     for (const v of bodies) {
       if (!v.active || v.health > 0) continue;
       v.active = false;
-      FxQueue.push({ type: 'explode', s: v.s, lat: v.lat, vs: v.vs, big: v.mass > 1, tyres: true });
+      FxQueue.push({ type: 'explode', s: v.s, lat: v.lat, vs: v.vs, big: v.mass > 1, tyres: !v.toad });
+      if (v.wreckedByPlayer) Message.say('wrecks', 'byPlayer'); // (one of the player's packages did it)
     }
   };
 

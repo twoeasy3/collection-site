@@ -1,0 +1,29 @@
+{
+  "id": "night",
+  "name": "Night Drive",
+  "theme": "night",
+  "time": 140,
+  "traffic": { "car": 0.5, "compact": 0.25, "van": 0.2, "police": 0.05 },
+  "trafficCount": 10,
+  "oncomingCount": 8,
+  "tip": 40,
+  "segments": [
+    { "length": 400, "curve": 0 },
+    { "length": 350, "curve": 0.003 },
+    { "length": 300, "curve": 0 },
+    { "length": 300, "curve": -0.004 },
+    { "length": 400, "curve": 0.002 },
+    { "length": 300, "curve": -0.003 },
+    { "length": 500, "curve": 0 }
+  ],
+  "pickups": [
+    { "type": "mystery", "s": 120, "lane": 2 },
+    { "type": "turbo", "s": 700, "lane": 2 },
+    { "type": "wrench", "s": 1500, "lane": 3 }
+  ],
+  "obstacles": [
+    { "s": 1000, "lane": 3, "kind": "cone" },
+    { "s": 1015, "lane": 3, "kind": "cone" },
+    { "s": 1800, "lane": 2, "kind": "barrier" }
+  ]
+}

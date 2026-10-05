@@ -328,11 +328,21 @@ const createTrack = () => {
   // ---- joining the roads up ---------------------------------------------------------------
   // Moves a vehicle that has reached a junction onto the next road. Own-direction vehicles
   // (the player included) take an exit by being in the exit lane as they pass the fork.
+  // The player can also drive the flyovers the wrong way, against the oncoming traffic they
+  // are built for: up flyover A from the expressway's left shoulder where it lands, over and
+  // down into the side road's oncoming lane; and, still in that lane at the far end, up
+  // flyover B and back over onto the left shoulder where it leaves.
   const transfer = (v) => {
     const kind = kindOf(v.s);
     let lane = null;
+    const wrongWay = v.isPlayer && v.dir > 0 && !ONE_WAY; // (a one-way level's exits have no flyovers)
     if (kind === MAIN) {
       for (const x of exits) {
+        if (wrongWay && v.s >= x.landingAt && v.s < x.landingAt + 6 && v.lat < -edge(v.s)) {
+          v.s = x.flyA0 + (v.s - x.landingAt);
+          v.lat += LSLOT;
+          break;
+        }
         if (v.dir > 0 && v.s >= x.exitAt && v.s < x.exitAt + 6 && v.lat > edge(v.s)) {
           v.s = x.side0 + (v.s - x.exitAt);
           v.lat -= RSLOT - LW / 2;
@@ -348,7 +358,16 @@ const createTrack = () => {
       }
     } else {
       const x = exitOf(v.s);
-      if (kind === SIDE_ROAD && v.dir > 0 && v.s >= x.sideEnd) {
+      if (wrongWay && kind === FLY_A && v.s >= x.flyA0 + FLY) {
+        v.s = x.side0 + X.ramp + (v.s - x.flyA0 - FLY);
+        v.lat -= LW / 2;
+      } else if (wrongWay && kind === SIDE_ROAD && v.s >= x.sideEnd - X.ramp && v.s < x.sideEnd - X.ramp + 6 && v.lat < 0) {
+        v.s = x.flyB0 + (v.s - (x.sideEnd - X.ramp));
+        v.lat += LW / 2;
+      } else if (wrongWay && kind === FLY_B && v.s >= x.flyB0 + FLY) {
+        v.s = x.flyoverAt + (v.s - x.flyB0 - FLY);
+        v.lat -= LSLOT;
+      } else if (kind === SIDE_ROAD && v.dir > 0 && v.s >= x.sideEnd) {
         v.s = x.mergeAt + (v.s - x.sideEnd);
         v.lat += RSLOT - LW / 2;
         lane = LANES; // arrives in the merge lane
@@ -410,6 +429,27 @@ const createTrack = () => {
   };
   const sideDistance = (x, z) => exits.reduce((best, e) => nearest(e.xs, e.zs, x, z, best), Infinity);
   const mainDistance = (x, z) => nearest(mainXs, mainZs, x, z, Infinity);
+
+  // the road position { s, lat } of a world point (x, z), found on the road that `near` is on,
+  // within `reach` metres of it: the s whose cross-section the point lies in, and how far across
+  const fromWorld = (x, z, near, reach = 80) => {
+    const road = (s) => isMain(s) ? -1 : Math.floor((s - FIRST) / BLOCK) * 4 + kindOf(s);
+    const c = {};
+    let s = near, best = Infinity;
+    for (let at = near - reach; at <= near + reach; at += STEP) { // the nearest centre-line point...
+      if (road(at) !== road(near)) continue;
+      toWorld(at, 0, c);
+      const d = Math.hypot(x - c.x, z - c.z);
+      if (d < best) { best = d; s = at; }
+    }
+    let h = 0;
+    for (let i = 0; i < 3; i++) { // ...then slid along until the point is square to it
+      h = toWorld(s, 0, c);
+      s += (x - c.x) * Math.sin(h) + (z - c.z) * Math.cos(h);
+    }
+    h = toWorld(s, 0, c);
+    return { s, lat: -(x - c.x) * Math.cos(h) + (z - c.z) * Math.sin(h) };
+  };
 
   // ---- checking the level data ---------------------------------------------------------------
   const problems = [];
@@ -485,7 +525,7 @@ const createTrack = () => {
   return {
     length, start: -LEAD_IN, end: length + LEAD_OUT, problems,
     laneCount: LANES, lanesEachWay: SIDE, shoulder: SH, flow: FLOW,
-    toWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
+    toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
     lanesPerSide, edge, extraLane, onBridge, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
     flyPillar, sideDistance, mainDistance, exits,

@@ -9,7 +9,8 @@ import { Pickups, Targets } from '../pickups.js';
 import { Game } from '../game.js';
 import { scene, tmp, clearGroup } from './scene.js';
 import { buildStrip } from './road.js';
-import { carMesh, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh } from './cars.js';
+import { carMesh, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh, trafficMeshes } from './cars.js';
+import { Traffic } from '../traffic.js';
 import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
 
@@ -211,7 +212,7 @@ OBSTACLE_MODELS.asteroid = (o) => {
 // ---- pickups and targets ------------------------------------------------------------------------
 const TURBO_COLOR = 0x29e0ff;
 // the colour of each pickup's pad (and its glow in the HUD)
-const PICKUP_COLOR = { turbo: TURBO_COLOR, ghost: 0xf0f0ff, wrench: 0xffa726, passenger: 0xff8fb1 };
+const PICKUP_COLOR = { turbo: TURBO_COLOR, ghost: 0xf0f0ff, wrench: 0xffa726, passenger: 0xff8fb1, mystery: 0xb36bff };
 // a part of a pickup model: a mesh at (x, y, z), optionally turned (rx, ry, rz)
 const part = (group, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0) => {
   const mesh = new THREE.Mesh(geometry, material);
@@ -300,6 +301,49 @@ const hoverGhost = PICKUP_MODELS.ghost();
 hoverGhost.scale.setScalar(1.3);
 hoverGhost.visible = false;
 scene.add(hoverGhost);
+
+// the mystery pickup: a purple block with a question mark on every side
+PICKUP_MODELS.mystery = () => {
+  const group = new THREE.Group();
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const g = canvas.getContext('2d');
+  g.fillStyle = '#b36bff';
+  g.fillRect(0, 0, 64, 64);
+  g.strokeStyle = '#5a2a8a';
+  g.lineWidth = 6;
+  g.strokeRect(3, 3, 58, 58);
+  g.fillStyle = '#ffffff';
+  g.font = 'bold 48px sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText('?', 32, 35);
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  part(group, new THREE.BoxGeometry(1.1, 1.1, 1.1), new THREE.MeshLambertMaterial({ map, emissive: 0x2a1040 }), 0, 0, 0);
+  return group;
+};
+
+// TOAD RAGE (a mystery): a traffic vehicle that is a toad shows a frog in place of itself,
+// hopping as it goes. Call after syncTraffic, which shows each vehicle's own parts.
+export const syncToads = (now) => {
+  for (let i = 0; i < Traffic.cars.length; i++) {
+    const car = Traffic.cars[i], mesh = trafficMeshes[i];
+    let toad = mesh.userData.toad;
+    if (!car.active || !car.toad) {
+      if (toad) toad.visible = false;
+      continue;
+    }
+    if (!toad) {
+      toad = mesh.userData.toad = OBSTACLE_MODELS.frog();
+      mesh.add(toad);
+    }
+    toad.visible = true;
+    toad.position.y = Math.abs(Math.sin(now / 160 + i)) * 0.6;
+    const { body, cabin, lights, trim, bar, models } = mesh.userData;
+    for (const part of [body, cabin, bar, ...lights, ...trim, ...Object.values(models)]) part.visible = false;
+  }
+};
 
 // a spinning model over a glowing pad
 const makePickup = (p) => {

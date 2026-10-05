@@ -3,6 +3,7 @@ import { LEVEL } from './levels.js';
 import { Track } from './track.js';
 import { Player } from './player.js';
 import { sfx } from './physics.js';
+import { Message } from './messages.js';
 
 // ============================================================================
 // PICKUPS - fixed positions on the track, collected by driving through them.
@@ -28,7 +29,8 @@ export const Pickups = (() => {
           Math.abs(p.lat - Player.lat) > Player.hw + 1) continue;
       p.taken = true;
       Player.collect(p.type);
-      sfx(p.type === 'turbo' ? 'turbo' : 'pickup');
+      Message.say('powerups', p.type);
+      sfx(p.type); // (each type has a sound of its own)
     }
   };
 

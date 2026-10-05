@@ -195,7 +195,7 @@ const PAINTS = {
   evil: [0x24242b, 0x3a1f4d, 0x4a1c1c, 0x1f3a3a, 0x3b3b1f, 0x1c2a4a],
 };
 const POLICE_PAINT = 0xf5f5f5;
-const trafficMeshes = Traffic.cars.map(() => {
+export const trafficMeshes = Traffic.cars.map(() => {
   const mesh = makeCarMesh(PAINTS.good[0]);
   // roof light bar, only shown (and flashing) on police cars
   const bar = new THREE.Mesh(unitBox, new THREE.MeshBasicMaterial({ color: 0x2060ff }));

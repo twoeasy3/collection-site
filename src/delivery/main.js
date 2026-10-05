@@ -8,14 +8,18 @@ import { Progress } from './progress.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Game } from './game.js';
+import { Collision } from './collision.js';
 import { renderer, scene, camera, tmp, updateCamera } from './render/scene.js';
 import './render/road.js';
 import { carMesh, syncTraffic } from './render/cars.js';
 import { emitVehicleSmoke, updateEffects } from './render/effects.js';
 import { syncPackages } from './render/packages.js';
 import { syncEmotes } from './render/emotes.js';
-import { syncPickups, syncTargets } from './render/items.js';
+import { syncPickups, syncTargets, syncToads } from './render/items.js';
 import { syncHelicopter } from './render/helicopter.js';
+import { syncHeadlights, syncTrafficBeams } from './render/headlights.js';
+import { syncUfoStrike } from './render/ufostrike.js';
+import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
@@ -36,6 +40,7 @@ if (params.get('garage') !== null) {
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above)
 const autostart = params.get('autostart');
+if (params.get('mystery')) Player.nextMystery = params.get('mystery'); // ?mystery=toad: every mystery pickup is that one
 if (params.get('screensaver') !== null) {
   Game.startScreensaver();
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
@@ -51,6 +56,16 @@ if (params.get('screensaver') !== null) {
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
 }
 
+// every looping sound off: in the garage and on the menu
+const silence = () => {
+  Sound.engine(-1);
+  Sound.siren(false);
+  Sound.helicopter(false);
+  Sound.frog(0);
+  Sound.powerWarning(false);
+  Sound.ufoStrike(false);
+};
+
 let last = performance.now();
 let prevState = Game.state;
 const frame = (now) => {
@@ -59,8 +74,7 @@ const frame = (now) => {
 
   if (Garage.isOpen) {
     Garage.render(now); // the garage has a scene of its own
-    Sound.engine(-1);
-    Sound.siren(false);
+    silence();
   } else if (Game.state !== 'start') { // (on the start screen there is no level: it is only a menu)
     // game logic, in small fixed-size steps so fast head-ons can't tunnel (frozen while paused)
     const steps = Game.paused ? 0 : Math.ceil(dt / CONFIG.maxStep);
@@ -76,7 +90,11 @@ const frame = (now) => {
     // models, the tank, the UFO, the passenger), is hidden. This comes after the helicopter,
     // which otherwise shows it again.
     if (Game.screensaver) carMesh.visible = false;
+    syncHeadlights();
     syncTraffic();
+    syncToads(now);
+    syncTrafficBeams();
+    syncUfoStrike(dt);
     syncStorm(dt);
     emitVehicleSmoke(dt);
     syncPackages(dt);
@@ -90,17 +108,28 @@ const frame = (now) => {
     // the engine note follows the speed; silent once the run is over or the car is gone
     // (and in the screensaver, where there is no car, or while paused)
     const live = Game.state === 'playing' && Player.active && !Game.paused && !Game.screensaver;
-    Sound.engine(live ? Player.speed : -1, CAR.ufo ? 'ufo' : Player.tank > 0 ? 'tank' : 'car');
+    Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.id,
+      Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
     // a siren while a police car is near enough to bust you (nobody busts a tank)
     Sound.siren(live && Player.tank <= 0 && Traffic.policeNear());
     // beeps while on the shoulder with the danger meter running down, faster the nearer the bust
     Sound.danger(live && Player.onShoulder ? 1 - Player.danger / CONFIG.dangerTime : -1);
+    // a powerup about to run out
+    Sound.powerWarning(live && Player.powerLeft > 0 && Player.powerLeft <= CONFIG.powerUpWarning);
+    // the UFO AIR STRIKE's saucer, for as long as it is about
+    Sound.ufoStrike(!!UfoStrike.phase && !Game.paused && Game.state === 'playing');
+    // the helicopter while it comes for the car (wrecked or busted), and keeps it at game over
+    Sound.helicopter(!Game.paused && !Game.screensaver &&
+      ((Game.state === 'playing' && (!Player.active || Player.busted)) || Game.over));
+    // a frog croaks louder the nearer it is
+    let frogFar = Infinity;
+    for (const o of Collision.obstacles) {
+      if (o.kind === 'frog' && !o.gone) frogFar = Math.min(frogFar, Math.abs(Track.along(o.s) - Track.along(Player.s)));
+    }
+    Sound.frog(Game.paused || Game.state !== 'playing' ? 0 : Math.max(0, 1 - frogFar / CONFIG.frogHearing));
     renderer.render(scene, camera);
   }
-  if (Game.state === 'start') { // (back on the menu)
-    Sound.engine(-1);
-    Sound.siren(false);
-  }
+  if (Game.state === 'start') silence(); // (back on the menu)
   prevState = Game.state;
   requestAnimationFrame(frame);
 };

@@ -19,6 +19,9 @@ canvas { display: block; width: 100%; height: 100%; }
 #banner { display: none; position: fixed; left: 0; right: 0; top: 24%; text-align: center;
   pointer-events: none; font-size: 34px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
 #banner small { display: block; font-size: 15px; font-weight: 400; }
+/* a message (a powerup, a bust, a driver's reaction) where the banner goes: one at a time */
+#message { position: fixed; left: 0; right: 0; top: 24%; text-align: center; pointer-events: none;
+  font-size: 28px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); opacity: 0; padding: 0 16px; }
 /* pause / exit during a run or the screensaver, bottom centre (clear of the on-screen controls) */
 #runButtons { display: none; position: fixed; left: 50%; transform: translateX(-50%);
   bottom: max(14px, env(safe-area-inset-bottom)); gap: 8px; }
@@ -89,7 +92,7 @@ summary { cursor: pointer; font-weight: 700; }
 #garageTip { display: none; position: fixed; transform: translate(-50%, -100%); pointer-events: none;
   padding: 6px 12px; border-radius: 8px; background: rgba(15,18,24,.9); border: 2px solid #ffd23f;
   font-size: 14px; font-weight: 700; white-space: nowrap; }
-body.in-garage #hud, body.in-garage #throwBtn, body.in-garage #banner { display: none; }
+body.in-garage #hud, body.in-garage #throwBtn, body.in-garage #banner, body.in-garage #message { display: none; }
 #levelProblems { color: #ffb4a8; font-size: 12px; max-width: 40vw; margin-top: 6px; }
 #resultTime { font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums; }
 #health { width: 150px; max-width: 40vw; height: 10px; margin-top: 6px;
