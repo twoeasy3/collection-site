@@ -266,9 +266,7 @@ const resultScreen = document.getElementById('resultScreen');
 const resultTitle = document.getElementById('resultTitle');
 const resultNote = document.getElementById('resultNote');
 const resultTime = document.getElementById('resultTime');
-// picking a side starts the run; Enter and Restart reuse the side last picked
-const startAs = (evil) => { Game.evil = evil; Input.emit('confirm'); };
-document.getElementById('startGoodBtn').addEventListener('click', () => startAs(false));
-document.getElementById('startEvilBtn').addEventListener('click', () => startAs(true));
+// Start Game (and Enter, and Restart) play on the side picked on the menu (Game.evil: see menu.js)
+document.getElementById('startBtn').addEventListener('click', () => Input.emit('confirm'));
 document.getElementById('restartBtn').addEventListener('click', () => Input.emit('confirm'));
 for (const button of document.querySelectorAll('.throw')) button.addEventListener('pointerdown', () => Input.emit('throw'));

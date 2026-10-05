@@ -9,13 +9,24 @@ canvas { display: block; width: 100%; height: 100%; }
 #timer { font-size: 28px; font-weight: 700; }
 #tip { font-size: 13px; font-weight: 700; }
 #resultScreen.failed #nextBtn { display: none; }
-.side { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
-.side div { max-width: 210px; font-size: 13px; line-height: 1.4; }
-.side button { margin-bottom: 6px; }
-#startEvilBtn { background: #7a1f1f; color: #fff; }
+/* the car, and beside it the side it is played on (one button: Good or Evil, tap to switch) */
+.car-row { display: flex; gap: 12px; justify-content: center; align-items: stretch; }
+.overlay button.side-btn { width: 130px; padding: 10px; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: 6px; font-size: 12px; font-weight: 400; line-height: 1.35; }
+.side-btn strong { font-size: 24px; }
+.side-btn small { font-size: 11px; opacity: .7; }
+.overlay button.side-btn.good { background: #ffd23f; color: #222; }
+.overlay button.side-btn.evil { background: #7a1f1f; color: #fff; }
+@media (max-width: 480px) {
+  .overlay button.side-btn { width: 96px; padding: 8px; }
+  #shop .card { width: calc(100vw - 48px - 108px); }
+}
 #speed { font-size: 28px; font-weight: 700; text-align: right; }
 #speed small { font-size: 13px; font-weight: 400; opacity: .85; }
 #turbo { text-align: right; font-size: 15px; font-weight: 800; color: #29e0ff; }
+/* ?cine (a still for the level select): nothing but the road */
+body.cinematic #hud, body.cinematic #runButtons, body.cinematic .throw, body.cinematic #messages,
+body.cinematic #tankCorner, body.cinematic #banner, body.cinematic #touchControls { display: none !important; }
 /* the TANK RAGE corner (render/tankcorner.js): top right, under the speed */
 #tankCorner { display: none; position: fixed; width: 120px; height: 84px; pointer-events: none;
   right: max(10px, env(safe-area-inset-right)); top: calc(max(12px, env(safe-area-inset-top)) + 62px); }
@@ -87,6 +98,7 @@ body.touch-controls .throw { display: block; }
 .overlay a.level { display: inline-block; font-size: 15px; font-weight: 700; padding: 8px 16px; margin: 0 4px 6px;
   border-radius: 10px; background: #e9e9e9; color: #222; text-decoration: none; }
 .overlay.menu { justify-content: flex-start; overflow-y: auto; gap: 10px; background: #1b2029; touch-action: pan-y; }
+.overlay.menu > * { flex-shrink: 0; } /* (the menu scrolls; nothing in it is squashed to fit, the level row least of all) */
 .overlay h2 { margin: 6px 0 0; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; }
 #bank { font-size: 20px; font-weight: 700; color: #ffd23f; }
 .cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
@@ -96,6 +108,11 @@ body.touch-controls .throw { display: block; }
 .overlay button.card strong { font-size: 16px; }
 .overlay button.card.current { border-color: #ffd23f; background: #fff; }
 .overlay button.card:disabled { opacity: .5; cursor: default; }
+/* a level's card: a picture of the level across the top, the words below it */
+.overlay button.card.shot { padding: 0; overflow: hidden; gap: 0; align-items: stretch; }
+.overlay button.card.shot .thumb { display: block; aspect-ratio: 600 / 267; background-size: cover; background-position: center; }
+.overlay button.card.shot .words { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; padding: 8px 12px 10px; }
+.overlay button.card.shot:disabled .thumb { filter: grayscale(1); }
 /* on a phone or tablet (or a narrow window) the levels are one row, swiped left and right */
 @media (pointer: coarse), (max-width: 700px) {
   #levels { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain;

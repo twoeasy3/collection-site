@@ -66,7 +66,36 @@ export const tmp2 = new THREE.Vector3();
 
 // ---- chase camera ----------------------------------------------------------
 let camLat = 0;
+// a still for the level select (?cine, see main.js): off to the side of the road and above it,
+// a little behind the car, looking up the road past it at the traffic ahead
+// With studio on (?cine=car), it is the car alone on white: a close three-quarter view from
+// ahead and to its left, looking down on it, nose toward the bottom left; an Evil livery from its
+// right instead, the mirror image (main.js hides everything else)
+export const Cinematic = { on: false, studio: false };
+const studioCamera = () => {
+  const h = Track.toWorld(Player.s, Player.lat, tmp2);
+  const side = Player.evil ? -1 : 1;
+  const fx = Math.sin(h), fz = Math.cos(h), lx = Math.cos(h) * side, lz = -Math.sin(h) * side; // ahead, and to its left (or right)
+  const k = (Player.hl + Player.hw) / 2.7; // (further back from a bigger vehicle, so each fills the frame alike)
+  camera.position.set(tmp2.x + (fx * 4.6 + lx * 3.2) * k, tmp2.y + 3.4 * k, tmp2.z + (fz * 4.6 + lz * 3.2) * k);
+  tmp2.y += 0.8;
+  camera.lookAt(tmp2);
+  camera.fov = 34;
+  camera.updateProjectionMatrix();
+};
+const cinematicCamera = () => {
+  if (Cinematic.studio) { studioCamera(); return; }
+  Track.toWorld(Player.s - 22, Track.hi(Player.s - 22) + 9, tmp);
+  camera.position.set(tmp.x, tmp.y + 7.5, tmp.z);
+  Track.toWorld(Player.s + 45, 0, tmp2);
+  tmp2.y += 1.2;
+  camera.lookAt(tmp2);
+  camera.fov = 52;
+  camera.updateProjectionMatrix();
+};
+
 export const updateCamera = (dt, snap) => {
+  if (Cinematic.on) { cinematicCamera(); return; }
   camLat += Player.camShift; // the car changed road: lat is measured from a different line now
   Player.camShift = 0;
   camLat = snap ? Player.lat : camLat + (Player.lat - camLat) * damp(CONFIG.camLateralLag, dt);

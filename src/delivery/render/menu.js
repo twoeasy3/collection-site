@@ -13,23 +13,54 @@ import { Input } from '../input.js';
 const money = (amount) => '$' + amount.toFixed(2);
 
 // a card is a button with a title and a few lines of small print
-const card = (title, lines, { current = false, disabled = false, onPick } = {}) => {
+// each level's still for its card, by level id (taken with ?cine: see main.js)
+const LEVEL_SHOTS = Object.fromEntries(Object.entries(
+  import.meta.glob('../levelshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
+  .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
+
+// (with an image: the picture across the top of the card, clear of the words, which go below it)
+// each car's picture, by car id and side: 'hatch-good', 'hatch-evil' ... (taken with ?cine=car)
+const CAR_SHOTS = Object.fromEntries(Object.entries(
+  import.meta.glob('../carshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
+  .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
+
+const card = (title, lines, { current = false, disabled = false, onPick, image } = {}) => {
   const button = document.createElement('button');
-  button.className = 'card' + (current ? ' current' : '');
+  button.className = 'card' + (current ? ' current' : '') + (image ? ' shot' : '');
   button.disabled = disabled;
+  let words = button;
+  if (image) {
+    const picture = document.createElement('span');
+    picture.className = 'thumb';
+    picture.style.backgroundImage = `url("${image}")`;
+    words = document.createElement('span');
+    words.className = 'words';
+    button.append(picture, words);
+  }
   const heading = document.createElement('strong');
   heading.textContent = title;
-  button.appendChild(heading);
+  words.appendChild(heading);
   for (const text of lines) {
     const line = document.createElement('span');
     line.textContent = text;
-    button.appendChild(line);
+    words.appendChild(line);
   }
   if (onPick) button.addEventListener('click', onPick);
   return button;
 };
 
 const bank = document.getElementById('bank');
+// Good or Evil: picked here (and remembered), played by Start Game
+const sideBtn = document.getElementById('sideBtn');
+const sideName = document.getElementById('sideName'), sideNote = document.getElementById('sideNote');
+Game.evil = !!Progress.data.evil;
+const pickSide = (evil) => {
+  Game.evil = evil;
+  Progress.data.evil = evil;
+  Progress.save();
+  draw();
+};
+sideBtn.addEventListener('click', () => pickSide(!Game.evil));
 const levelBox = document.getElementById('levels');
 const shopBox = document.getElementById('shop');
 
@@ -48,6 +79,7 @@ const draw = () => {
       current: i === LEVEL_INDEX,
       disabled: !open,
       onPick: () => { selectLevel(i); useLevelCar(level.car); draw(); },
+      image: LEVEL_SHOTS[level.id],
     });
   }));
   // (where the levels are a row to swipe along, the one picked is brought to the middle)
@@ -60,7 +92,13 @@ const draw = () => {
     'Top speed ' + Math.round(CAR.maxSpeed * 3.6) + ' km/h',
     'Acceleration ' + CAR.accel + '  |  Health ' + CAR.health,
     LEVEL.car ? 'This level is flown in it. The garage car returns on other levels.' : 'Open the garage to change or buy cars',
-  ], { current: true, onPick: () => Garage.open() }));
+  ], { current: true, onPick: () => Garage.open(), image: CAR_SHOTS[CAR.id + (Game.evil ? '-evil' : '-good')] }));
+  // the side picked, and what it means
+  sideBtn.className = 'side-btn ' + (Game.evil ? 'evil' : 'good');
+  sideName.textContent = Game.evil ? 'Evil' : 'Good';
+  sideNote.textContent = Game.evil
+    ? 'Less time. Flaming packages do real damage, and the police bust you for them.'
+    : 'More time. Care packages cheer good cars up and barely hurt.';
 };
 draw();
 // a car picked in the garage shows on its card (unless the level has a vehicle of its own)

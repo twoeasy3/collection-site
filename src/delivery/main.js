@@ -1,6 +1,7 @@
 // Entry point: loads the game logic, then the rendering, and runs the frame loop.
 // Game logic (src/*.js) never imports rendering (src/render/*.js), so it can run headless.
 import './style.css';
+import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
 import { selectLevel } from './levels.js';
@@ -9,7 +10,7 @@ import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Game } from './game.js';
 import { Collision } from './collision.js';
-import { renderer, scene, camera, tmp, updateCamera } from './render/scene.js';
+import { renderer, scene, camera, tmp, updateCamera, Cinematic } from './render/scene.js';
 import './render/road.js';
 import { carMesh, syncTraffic } from './render/cars.js';
 import { emitVehicleSmoke, updateEffects } from './render/effects.js';
@@ -54,7 +55,29 @@ if (params.get('screensaver') !== null) {
   }
   Game.start();
   if (params.get('at')) Player.s = Number(params.get('at'));
+  // ?cine: a still for the level select. The traffic is dealt out afresh around the car, ?ff lets
+  // it settle, then everything stops: no HUD, and the camera off to one side (render/scene.js)
+  const cine = params.get('cine') !== null;
+  if (cine) Traffic.reset();
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
+  if (cine) {
+    Cinematic.on = true;
+    Cinematic.studio = params.get('cine') === 'car'; // (?cine=car: the car alone, on white)
+    Game.paused = true;
+    document.body.classList.add('cinematic');
+    if (Cinematic.studio) {
+      for (const car of Traffic.cars) car.active = false;
+      scene.background.set(0xffffff);
+      scene.fog.near = 5000;
+      scene.fog.far = 6000;
+      const floor = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+      floor.rotation.x = -Math.PI / 2;
+      Track.toWorld(Player.s, Player.lat, tmp);
+      floor.position.set(tmp.x, tmp.y - 0.01, tmp.z);
+      floor.userData.studio = true;
+      scene.add(floor);
+    }
+  }
 }
 
 // every looping sound off: in the garage and on the menu
@@ -150,6 +173,8 @@ const frame = (now) => {
   }
   if (Game.state === 'start') silence(); // (back on the menu)
   syncTankCorner(dt); // (it hides itself when there is no run)
+  // the studio (?cine=car): nothing but the car, its floor and the lights
+  if (Cinematic.studio) for (const o of scene.children) o.visible = o === carMesh || o.isLight || !!o.userData.studio;
   prevState = Game.state;
   requestAnimationFrame(frame);
 };
