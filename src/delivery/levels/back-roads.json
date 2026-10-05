@@ -34,6 +34,8 @@
     { "s": 460, "side": "right", "road": "side" }
   ],
   "pickups": [
+    { "type": "siren", "s": 60, "lane": 2 },
+    { "type": "radarDetector", "s": 2200, "lane": 2 },
     { "type": "wrench", "s": 2370, "lane": 3 },
     { "type": "wrench", "s": 1250, "lane": 2 },
     { "type": "turbo", "s": 100, "lane": 3 },

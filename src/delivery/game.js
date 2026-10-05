@@ -69,6 +69,7 @@ export const Game = {
   },
   // the Exit button during a run or the screensaver: straight back to the menu
   exit() {
+    if (this.state === 'playing') this.settleTank(false); // (quitting a run loses its pieces)
     this.toMenu();
     for (const hook of this.onFinish) hook();
   },
@@ -114,6 +115,7 @@ export const Game = {
     this.over = false;
     this.paused = false;
     this.screensaver = false;
+    this.tankPieces = Progress.data.tankPieces || 0; // (the run's own, until it is settled)
     Message.clear();
     UfoStrike.reset();
     this.state = 'playing';
@@ -122,8 +124,19 @@ export const Game = {
   },
   // Only 'delivered' (over the line with time on the clock) is a pass. Crossing the line
   // during the tip countdown ('late') still fails the level, with whatever tip was left.
+  // TANK RAGE pieces at the end of a run: getting to the end keeps the ones found on the way
+  // (a delivery, or a late one in the tip countdown), anything else (out of time, busted, a
+  // quit) loses them; and a full set, once used, is gone either way
+  settleTank(kept) {
+    if (this.screensaver) return;
+    if (this.tankPieces >= CONFIG.tankPieces) Progress.data.tankPieces = 0;
+    else if (kept) Progress.data.tankPieces = this.tankPieces;
+    else return;
+    Progress.save();
+  },
   finish(outcome) {
     this.state = 'finished';
+    this.settleTank(outcome === 'delivered' || outcome === 'late');
     this.outcome = outcome;
     sfx(outcome === 'delivered' ? 'win' : 'fail');
     const tip = '$' + this.tip.toFixed(2);
@@ -258,4 +271,4 @@ const startAs = (evil) => { Game.evil = evil; Input.emit('confirm'); };
 document.getElementById('startGoodBtn').addEventListener('click', () => startAs(false));
 document.getElementById('startEvilBtn').addEventListener('click', () => startAs(true));
 document.getElementById('restartBtn').addEventListener('click', () => Input.emit('confirm'));
-document.getElementById('throwBtn').addEventListener('pointerdown', () => Input.emit('throw'));
+for (const button of document.querySelectorAll('.throw')) button.addEventListener('pointerdown', () => Input.emit('throw'));

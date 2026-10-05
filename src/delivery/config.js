@@ -44,7 +44,14 @@ export const CONFIG = {
                            // (the bridge structure and package splashes still get you)
   wrenchRepair: 0.25,      // share of full health restored
   passengerTime: 12,       // s of shoulder driving without running the police meter down
-  powerUpWarning: 3,       // s before a turbo, ghost, passenger or mystery runs out that its warning sound starts
+  // the siren: traffic ahead in the player's lane pulls over to its right: a lane over, or onto
+  // the shoulder (the only time traffic uses one), never into the oncoming lanes
+  sirenPickup: { time: 15, range: 80, pulledOverPace: 0.5, // s; m ahead; share of its speed a car keeps on the shoulder
+    arrestTime: 4 },       // s a police helicopter takes to carry off a car that hurt the player under a siren
+  radarTime: 15,           // s of a radar detector: no bust can start (the shoulder meter still runs,
+                           // and if it is full when the detector stops, that is a bust)
+  powerUpWarning: 4,       // s before a turbo, ghost, passenger or mystery runs out that its warning sound
+                           // starts, and the sign of it on the car starts to blink
                            // (only one of those runs at a time: a new one replaces it)
   // the mystery pickup: one of these effects at random (see Player.startMystery); the wording
   // is in messages.json, under powerups.mystery
@@ -163,12 +170,25 @@ export const CONFIG = {
     bus:     { hw: 1.3,  hl: 5.5, height: 3.1, mass: 4,   health: 180, speed: 0.8, special: true },
     tractor: { hw: 1.2,  hl: 2.0, height: 2.4, mass: 2.5, health: 150, speed: 1, special: true },
     police:  { hw: 0.95, hl: 2.1, height: 1.4, mass: 1.2, health: 80,  speed: 1.1, special: true },
-    // the garage's cars as traffic. model: which of the models in render/models.js it is drawn as
-    junker:  { hw: 1.0,  hl: 2.5, height: 1.5, mass: 1.3, health: 70,  speed: 0.85, model: 'junker' },
-    sport:   { hw: 0.85, hl: 1.9, height: 1.1, mass: 0.8, health: 45,  speed: 1.25, model: 'sport' },
-    wagon:   { hw: 1.05, hl: 2.4, height: 1.9, mass: 1.6, health: 90,  speed: 1,    model: 'wagon' },
-    lovebus: { hw: 1.0,  hl: 2.3, height: 2.1, mass: 1.5, health: 100, speed: 0.8,  model: 'lovebus' },
+    // the garage's cars as traffic (each id is the garage car's, in src/cars.js). They have no
+    // speed: they cruise near that car's own top speed (garagePace, below). model: which of the
+    // models in render/models.js it is drawn as
+    junker:  { hw: 1.0,  hl: 2.5, height: 1.5, mass: 1.3, health: 70,  model: 'junker' },
+    sport:   { hw: 0.85, hl: 1.9, height: 1.1, mass: 0.8, health: 45,  model: 'sport' },
+    wagon:   { hw: 1.05, hl: 2.4, height: 1.9, mass: 1.6, health: 90,  model: 'wagon' },
+    lovebus: { hw: 1.0,  hl: 2.3, height: 2.1, mass: 1.5, health: 100, model: 'lovebus' },
+    lowrider: { hw: 1.0, hl: 2.5, height: 1.1, mass: 1.3, health: 85,  model: 'lowrider' },
+    taxi:    { hw: 1.0,  hl: 2.55, height: 1.6, mass: 1.4, health: 90,  model: 'taxi' },
+    suv:     { hw: 1.0,  hl: 2.25, height: 1.8, mass: 1.6, health: 110, model: 'suv' },
+    hotrod:  { hw: 0.9,  hl: 2.1, height: 1.2, mass: 1,   health: 55,  model: 'hotrod' },
+    minivan: { hw: 1.05, hl: 2.45, height: 2.0, mass: 1.7, health: 110, model: 'minivan' },
+    hearse:  { hw: 1.0,  hl: 2.8, height: 1.65, mass: 1.6, health: 100, model: 'hearse' },
+    pickup:  { hw: 1.05, hl: 2.6, height: 2.1, mass: 1.8, health: 120, model: 'pickup' },
+    miata:   { hw: 0.85, hl: 1.95, height: 1.1, mass: 0.8, health: 50, model: 'miata' },
   },
+  garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
+  sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
+  lowriderHearing: 90,     // m from a lowrider in traffic within which its music is heard (the same way)
   policeSightRange: 45,    // m along the road within which a police car witnesses what you do
   maxBusts: 3,             // the run ends on this many busts
   evilShare: 0.35,         // share of traffic that is evil; the rest are good. A car never switches.
@@ -261,10 +281,14 @@ export const CONFIG = {
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing
   packageMoodBoost: 0.5,   // mood gained by a good car that gets one (evil cars go straight to furious)
 
-  // TANK RAGE: started by landing a package on a green target beside the road
+  // TANK RAGE: pieced together from five targets: a package landed on a green target beside
+  // the road finds the next piece of the tank, and the fifth starts TANK RAGE. The pieces
+  // carry over from level to level (see Game.settleTank)
+  tankPieces: 5,
+  tankParts: ['rearBody', 'turretHull', 'gunTurret', 'gunBarrel'], // the first four, in order (messages.json: tankParts)
   targetOffset: 5,         // m beyond the pavement the targets stand, out of the car's reach
   tankRamSlow: 0.15,       // share of its speed the tank loses per unit of mass it rams (a car is 1)
-  tankMaxSpeed: 34,        // m/s, a little above the car's top speed
+  tankMaxSpeed: 46,        // m/s: a tank is faster than any car in the garage
   tankHeadOnDamage: 0.2,   // share of full health a head-on costs the tank; nothing else hurts it
   cannonRange: 26,         // m ahead of the tank the shell lands
   cannonCooldown: 0.64,    // s
@@ -286,8 +310,9 @@ export const CONFIG = {
 
 
   // messages (the wording is in messages.json)
-  messageTime: 2,          // s a message stays up...
+  messageTime: 2,          // s a message stays up (plus messageExtra for its kind)...
   messageFade: 0.4,        // ...the last of which it spends fading away
+  messageExtra: { reaction: 0, pickup: 2, rage: 2, bust: 5 }, // s longer, by kind (see messages.js)
 
   // night levels (theme "night"): the player's headlights, two spotlights riding on the car
   headlights: {

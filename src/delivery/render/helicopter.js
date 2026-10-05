@@ -6,7 +6,8 @@ import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Game } from '../game.js';
 import { scene, tmp } from './scene.js';
-import { unitBox, carMesh } from './cars.js';
+import { unitBox, carMesh, trafficMeshes } from './cars.js';
+import { Traffic } from '../traffic.js';
 
 // ---- helicopter: flies in with a new car after a wreck, drops it, leaves ---------
 const heli = new THREE.Group();
@@ -58,6 +59,47 @@ const syncPoliceGrab = (now) => {
   carMesh.position.set(tmp.x, tmp.y + (heliY - 2.8) * lift * (1 - fall * fall), tmp.z);
   carMesh.rotation.x = 0;
   carMesh.rotation.y = heading + Math.sin(now / 400) * 0.3 * lift * (1 - fall); // dangles
+};
+
+// ---- police helicopters that carry off a car arrested under the player's siren -----------------
+// Copies of the one above in police blue, a few of them, each with a flashing beacon. Over the
+// arrest: it drops out of the sky onto the car, hooks it, then climbs away with it dangling
+// below, off to the side of the road. (Call after syncTraffic, which puts each car on the road.)
+const ARREST_HELIS = 3;
+const arrestHelis = Array.from({ length: ARREST_HELIS }, () => {
+  const copy = heli.clone(true);
+  const blue = new THREE.MeshLambertMaterial({ color: HELI_COLOR.police });
+  const beacon = new THREE.MeshBasicMaterial({ color: 0xff2020 });
+  copy.traverse((o) => {
+    if (o.material === heliMat) o.material = blue;
+    else if (o.material === heliBeacon.material) o.material = beacon;
+  });
+  copy.visible = false;
+  scene.add(copy);
+  return { copy, rotor: copy.children[copy.children.length - 1], beacon };
+});
+export const syncArrests = (dt, now) => {
+  const T = CONFIG.sirenPickup.arrestTime;
+  let k = 0;
+  for (let i = 0; i < Traffic.cars.length; i++) {
+    const car = Traffic.cars[i];
+    if (!car.active || !(car.arrest >= 0) || k >= ARREST_HELIS) continue;
+    const { copy, rotor, beacon } = arrestHelis[k++], mesh = trafficMeshes[i];
+    const come = clamp(car.arrest / 0.9, 0, 1);            // dropping onto it
+    const carry = clamp((car.arrest - 1.1) / (T - 1.1), 0, 1); // and away with it
+    const away = carry * carry * 25 * (car.dir > 0 ? 1 : -1); // (off to the side of the road)
+    const heading = Track.toWorld(car.s, car.lat + away, tmp);
+    const heliY = HELI_HOVER + (1 - come) * (1 - come) * 25 + carry * carry * 30;
+    copy.visible = showHelicopter();
+    copy.position.set(tmp.x, tmp.y + heliY, tmp.z);
+    copy.rotation.y = heading;
+    rotor.rotation.y += dt * 40;
+    beacon.color.setHex(Math.floor(now / 150) % 2 ? 0xff2020 : 0x2060ff);
+    const hooked = clamp(carry * 4, 0, 1); // (the car is lifted up under it, then carried)
+    mesh.position.set(tmp.x, tmp.y + (heliY - 2.8) * hooked, tmp.z);
+    mesh.rotation.y += Math.sin(now / 400) * 0.3 * hooked; // dangles
+  }
+  for (; k < ARREST_HELIS; k++) arrestHelis[k].copy.visible = false;
 };
 
 export const syncHelicopter = (dt, now) => {

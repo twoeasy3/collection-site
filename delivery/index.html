@@ -24,11 +24,13 @@
   </div>
 </div>
 
+<canvas id="tankCorner"></canvas>
 <div id="fade"></div>
 <div id="banner">PAUSED<small>Resume, or press P</small></div>
-<div id="message"></div>
+<div id="messages"><div class="line"></div><div class="line"></div></div>
 <div id="runButtons"><button id="pauseBtn">Pause</button><button id="exitBtn">Exit level</button></div>
-<button id="throwBtn">THROW</button>
+<button id="throwBtnLeft" class="throw">THROW</button>
+<button id="throwBtn" class="throw">THROW</button>
 <div id="touchControls">
   <div class="pad steer" data-hold="left,right"><button>&#9664;</button><button>&#9654;</button></div>
   <div class="pad pedals" data-hold="brake,gas"><button>&#9660;</button><button>&#9650;</button></div>
@@ -77,7 +79,9 @@
   <div>
     <button id="muteBtn" class="level">Sound: on</button>
     <button id="touchBtn" class="level">On-screen controls: off</button>
+    <button id="autoGasBtn" class="level">Auto accelerate: off</button>
     <button id="screensaverBtn" class="level">Screensaver</button>
+    <a class="level" href="powerups.html">Power-ups</a>
     <a id="screensaverLink" class="level" href="?screensaver" title="Opens the screensaver straight away: bookmark it or share it">Screensaver link</a>
     <button id="completeBtn" class="level">Unlock everything</button>
     <button id="resetBtn" class="level">Reset progress</button>

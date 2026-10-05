@@ -22,6 +22,7 @@
     { "s": 1700, "side": "left" }
   ],
   "pickups": [
+    { "type": "radarDetector", "s": 1300, "lane": 3 },
     { "type": "wrench", "s": 2050, "lane": 4 },
     { "type": "wrench", "s": 450, "lane": 6 },
     { "type": "ghost", "s": 300, "lane": 4 },

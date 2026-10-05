@@ -8,6 +8,7 @@ import { Progress } from '../progress.js';
 import { Game, formatTime } from '../game.js';
 import { Garage } from './garage.js';
 import { Sound } from './audio.js';
+import { Input } from '../input.js';
 
 const money = (amount) => '$' + amount.toFixed(2);
 
@@ -49,6 +50,11 @@ const draw = () => {
       onPick: () => { selectLevel(i); useLevelCar(level.car); draw(); },
     });
   }));
+  // (where the levels are a row to swipe along, the one picked is brought to the middle)
+  if (levelBox.scrollWidth > levelBox.clientWidth) {
+    const picked = levelBox.querySelector('.current');
+    if (picked) levelBox.scrollTo({ left: picked.offsetLeft - (levelBox.clientWidth - picked.offsetWidth) / 2, behavior: 'smooth' });
+  }
 
   shopBox.replaceChildren(card(CAR.name, [
     'Top speed ' + Math.round(CAR.maxSpeed * 3.6) + ' km/h',
@@ -67,6 +73,19 @@ const toggleMute = () => { Sound.toggleMute(); showMute(); };
 muteBtn.addEventListener('click', toggleMute);
 window.addEventListener('keydown', (e) => { if (e.code === 'KeyM' && !e.repeat) toggleMute(); });
 showMute();
+
+// auto accelerate on / off: the accelerator is held down by itself, and braking overrides it
+const autoGasBtn = document.getElementById('autoGasBtn');
+const showAutoGas = () => {
+  Input.autoGas = !!Progress.data.autoGas;
+  autoGasBtn.textContent = 'Auto accelerate: ' + (Input.autoGas ? 'on' : 'off');
+};
+autoGasBtn.addEventListener('click', () => {
+  Progress.data.autoGas = !Progress.data.autoGas;
+  Progress.save();
+  showAutoGas();
+});
+showAutoGas();
 
 // a complete savegame, written to the progress cookie like any other progress
 document.getElementById('completeBtn').addEventListener('click', () => {
@@ -101,6 +120,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   Progress.reset();
   selectLevel(0);
   window.dispatchEvent(new Event('carchange')); // (the car in use may have been one that was bought)
+  showAutoGas(); // (a reset forgets the choice)
   draw();
 });
 

@@ -12,7 +12,7 @@ export default defineConfig(({ command }) => ({
     client: {
       build: {
         rollupOptions: {
-          input: { main: 'index.html', delivery: 'delivery/index.html' },
+          input: { main: 'index.html', delivery: 'delivery/index.html', powerups: 'delivery/powerups.html' },
         },
       },
     },

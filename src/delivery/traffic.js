@@ -5,6 +5,7 @@ import { Track } from './track.js';
 import { updateYaw, keepOnRoad, emotionOf, startRivalry, spinOut, sfxAt } from './physics.js';
 import { Player } from './player.js';
 import { Packages } from './packages.js';
+import { CARS } from './cars.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -118,6 +119,9 @@ export const Traffic = (() => {
     }
   };
 
+  // the top speed of each of the garage's cars, by id (which is also its kind of traffic)
+  const GARAGE_TOP = Object.fromEntries(CARS.map(c => [c.id, c.maxSpeed]));
+
   // makes the car a vehicle of that kind, in that lane at car.s, fresh off the line
   const outfit = (car, kind, lane) => {
     car.fixed = false;
@@ -137,7 +141,9 @@ export const Traffic = (() => {
     car.yawVel = 0;
     car.stun = 0;
     const { min, max } = speeds();
-    car.baseSpeed = type.speed * (min + Math.random() * (max - min));
+    // (one of the garage's cars cruises near its own top speed; anything else at the level's pace)
+    const own = GARAGE_TOP[kind], P = CONFIG.garagePace;
+    car.baseSpeed = own ? own * (P.min + Math.random() * (P.max - P.min)) : type.speed * (min + Math.random() * (max - min));
     car.vs = car.dir * car.baseSpeed;
     const evilShare = drivers().evil !== undefined ? drivers().evil : CONFIG.evilShare;
     car.evil = !type.special && Math.random() < evilShare; // fixed for this car's life
@@ -153,6 +159,8 @@ export const Traffic = (() => {
     car.wreckedByPlayer = false; // set once one of the player's packages has doomed it (see Packages)
     car.ufoBurning = false; // burning up after a UFO air strike (see UfoStrike)
     car.toad = null;        // in TOAD RAGE: what it was before it became a toad (see toadify)
+    car.pulledOver = false; // on the shoulder, out of the way of the player's siren
+    car.arrest = -1;        // s into being carried off by the police (see arrest); -1 = not
     if (toads) makeToad(car);
     car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
     car.think = Math.random() * 2;
@@ -198,8 +206,23 @@ export const Traffic = (() => {
     sfxAt(HORNS[car.kind] || 'horn', car.s);
   };
 
+  // A car that hurts the player while the player's siren sounds is arrested: a police
+  // helicopter comes down and carries it off (render/helicopter.js). Until it is gone it
+  // touches nothing, and nothing touches it.
+  const arrest = (car) => {
+    if (!car || car.isPlayer || !car.active || car.toad || car.arrest >= 0) return;
+    if (!(Player.siren > 0) || Player.damageScale <= 0) return;
+    car.arrest = 0;
+    car.rival = null;
+  };
+
+  // in range of the player's siren: ahead of the player (coming its way, or going it)
+  const underSiren = (car) => Player.siren > 0 && Player.active &&
+    car.s - Player.s > 0 && car.s - Player.s < CONFIG.sirenPickup.range;
+
   const think = (car) => {
     if (car.kind === 'tractor') return; // a tractor just trundles along its lane
+    if (underSiren(car)) return; // (no lane changes of its own with a siren behind it)
     // angry drivers pick on whoever is nearest
     if (car.emotion === 'angry' && !car.rival && Math.random() < CONFIG.rivalryPickChance) {
       let best = null, bestGap = CONFIG.rivalryRange;
@@ -257,6 +280,15 @@ export const Traffic = (() => {
       }
 
       car.honkWait = Math.max(0, car.honkWait - dt);
+      if (car.arrest >= 0) { // being carried off by the police: it brakes to a stop, and is gone at the end
+        car.arrest += dt;
+        car.vs -= car.vs * Math.min(1, dt * 1.5);
+        car.latVel = 0;
+        car.s += car.vs * dt;
+        Track.transfer(car);
+        if (car.arrest >= CONFIG.sirenPickup.arrestTime) car.active = false;
+        continue;
+      }
       // an angel or a jerk (mysteries): everyone thinks the world of the player, or hates them
       if (Player.mystery === 'angel') car.mood = 1;
       else if (Player.mystery === 'jerk') car.mood = -1;
@@ -324,6 +356,32 @@ export const Traffic = (() => {
           if (car.rivalTime <= 0 || !rival.active || rival.dir !== car.dir ||
               Math.abs(rival.s - car.s) > CONFIG.rivalryRange * 1.5) rival = car.rival = null;
         }
+        // a jerk (a mystery): every driver going the player's way and near enough goes after the
+        // player as if the player were its rival, and an evil one throws at the player. (Not the
+        // police, whose swerving into the player would be a bust, nor oncoming traffic: a head-on.)
+        if (Player.mystery === 'jerk' && Player.active && car.kind !== 'police' && car.dir === Player.dir &&
+            Math.abs(Player.s - car.s) < CONFIG.rivalryRange) {
+          rival = Player;
+          car.grudge = true;
+        }
+
+        // a siren (a pickup): a car ahead in the player's lane moves over to its own right: a lane
+        // over if that one is clear, or else (from its outside lane, or with the next lane taken)
+        // onto the shoulder, the only time traffic uses one; never towards the oncoming lanes.
+        // It stays pulled over, slowed, for as long as the siren sounds.
+        if (!(Player.siren > 0)) car.pulledOver = false;
+        // (lanes are compared where they lead here: where the road narrows, a car's lane may have
+        // merged into the player's, and there may be no lane to move over into, only the shoulder)
+        else if (underSiren(car) && !car.pulledOver &&
+                 Track.openLane(car.lane, car.s) === Track.nearestLane(Player.lat, Player.s)) {
+          const [first, last] = Track.laneRange(car.dir, car.s);
+          const here = Track.openLane(car.lane, car.s), next = here + (car.dir > 0 ? 1 : -1);
+          if (next >= first && next <= last && Track.openLane(next, car.s) === next && laneClear(car, next, 10)) car.lane = next;
+          else car.pulledOver = true;
+        }
+        // (with a siren behind it, a car drops any feud it has, so its rival can't drag it back
+        // into the player's way; the feud may start up again once the siren has passed)
+        if (underSiren(car)) rival = null;
 
         // heading for a ramp, or the lane ends ahead: change lane, or ease off until there is room
         const ramp = rampLane(car);
@@ -342,10 +400,11 @@ export const Traffic = (() => {
 
         // hold back behind anything directly ahead (in this car's direction of travel)
         let target = squeezed ? car.baseSpeed * 0.6 : car.baseSpeed;
+        if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
         if (rival) {
           // get into its lane, then catch it up or drop back onto it
           const [first, last] = Track.laneRange(car.dir, car.s);
-          car.lane = clamp(rival.lane, first, last);
+          car.lane = clamp(rival.isPlayer ? Track.nearestLane(rival.lat, rival.s) : rival.lane, first, last);
           target = car.baseSpeed * ((rival.s - car.s) * car.dir > 0 ? 1.35 : 0.7);
         }
         for (const o of cars) {
@@ -369,7 +428,9 @@ export const Traffic = (() => {
         // spring back to the lane centre
         // (alongside its rival it steers straight at it)
         const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
-        const aimLat = beside ? rival.lat : Track.laneOffset(car.lane, car.s);
+        const aimLat = beside ? rival.lat
+          : car.pulledOver ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
+          : Track.laneOffset(car.lane, car.s);
         const wantVel = clamp((aimLat - car.lat) * CONFIG.trafficLaneChangeRate, -6, 6);
         car.latVel += (wantVel - car.latVel) * damp(6, dt);
       }
@@ -395,5 +456,5 @@ export const Traffic = (() => {
     placeFixed();
   };
 
-  return { cars, reset, update, lap, policeNear, toadify };
+  return { cars, reset, update, lap, policeNear, toadify, arrest };
 })();

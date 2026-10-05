@@ -1,5 +1,6 @@
 // ---- on-screen controls ----------------------------------------------------------------------
-// Translucent steer / accelerate / brake buttons (and THROW) over the game. They are on by
+// Two big translucent zones along the bottom of the screen, steering on the left and the
+// pedals on the right (and a THROW button above each), over the game. They are on by
 // default on a phone or tablet (a touch screen as the main pointer, or as soon as the screen
 // is touched), and the button on the menu switches them on or off for good: that choice is
 // saved. ?touch in the address shows them too, for testing.

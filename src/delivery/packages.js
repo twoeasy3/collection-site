@@ -69,7 +69,7 @@ export const Packages = (() => {
     return best;
   };
   const throwOne = () => {
-    if (!Player.active || cooldown > 0) return;
+    if (!Player.active || Player.busted || cooldown > 0) return; // (no throwing while being busted)
     if (Player.tank > 0) {
       // The cannon isn't aimed: the shell flies dead straight the way the tank is pointing, not
       // round a bend with the road, and lands cannonRange ahead of where the tank will be by
@@ -131,7 +131,10 @@ export const Packages = (() => {
       if (!v.active || v === p.owner || v.shield > 0 || v.tank > 0) continue;
       if (Math.hypot(v.s - p.s, v.lat - p.lat) > CONFIG.splashRadius) continue;
       hurt(v, CONFIG.splashDamage);
-      if (v.isPlayer) Game.shake = Math.max(Game.shake, 0.4);
+      if (v.isPlayer) {
+        Game.shake = Math.max(Game.shake, 0.4);
+        Traffic.arrest(p.owner); // (under the player's siren, the thrower is taken away)
+      }
       else {
         v.showMood = true;
         startRivalry(v, p.owner); // traffic caught in another car's blast holds it against them
@@ -206,16 +209,23 @@ export const Packages = (() => {
         for (const t of Targets.items) {
           if (t.used || Math.abs(t.s - p.s) > 2.5 || Math.abs(t.lat - p.lat) > 2.5) continue;
           t.used = true;
-          Player.startTank();
-          sfx('tank');
-          Message.say('powerups', 'tankRage');
+          // the next piece of the tank; the fifth completes it, and TANK RAGE begins
+          Game.tankPieces = Math.min(CONFIG.tankPieces, Game.tankPieces + 1);
+          if (Game.tankPieces >= CONFIG.tankPieces) {
+            Player.startTank();
+            sfx('tank');
+            Message.say('powerups', 'tankRage');
+          } else {
+            sfx('tankPiece');
+            Message.say('tankParts', CONFIG.tankParts[Game.tankPieces - 1]);
+          }
           FxQueue.push({ type: 'gift', s: t.s, lat: t.lat, vs: 0, green: true });
           p.active = false;
           break;
         }
         for (const car of Traffic.cars) {
           if (!p.active) break;
-          if (!car.active || p.h > car.height + 0.6) continue;
+          if (!car.active || car.arrest >= 0 || p.h > car.height + 0.6) continue;
           if (Math.abs(car.s - p.s) > car.hl + 1 || !Collision.overlap(p, car)) continue;
           const was = doomed(car);
           deliver(p, car);
@@ -236,5 +246,5 @@ export const Packages = (() => {
   const lap = (length) => { for (const p of list) if (p.active) p.s -= length; };
 
   return { list, reset, update, lap, throwOne, throwAtGround,
-    get ready() { return cooldown <= 0; } };
+    get ready() { return cooldown <= 0 && !Player.busted; } };
 })();

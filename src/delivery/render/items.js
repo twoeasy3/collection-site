@@ -13,6 +13,7 @@ import { carMesh, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh, trafficMes
 import { Traffic } from '../traffic.js';
 import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
+import { TURBO_COLOR, PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 
 // Everything here that belongs to the loaded level (bridges, obstacles, pickups, targets)
 // lives in this group and is rebuilt by buildItems() each time a level is loaded.
@@ -98,16 +99,28 @@ const OBSTACLE_MODELS = {
     [lambert(0xf2f2f2), o.hw * 2 + 0.05, o.height * 0.3, o.hl * 2 + 0.05, 0, o.height * 0.6, 0],
   ]),
   // a round hay bale lying on its side, with a darker band round it
+  // a round bale, tied with twine. It all hangs off a roller (userData.roller) at its axle, so
+  // a bale on the move can be rolled (see syncPickups)
   bale: (o) => {
-    const group = new THREE.Group();
+    const group = new THREE.Group(), roller = new THREE.Group();
     const radius = o.height / 2;
+    roller.position.y = radius;
+    group.add(roller);
     const straw = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, o.hw * 2, 16), lambert(0xe2c25a));
     const band = new THREE.Mesh(new THREE.CylinderGeometry(radius + 0.03, radius + 0.03, 0.3, 16), lambert(0xa8842f));
     for (const mesh of [straw, band]) {
       mesh.rotation.z = Math.PI / 2; // axis across the road
-      mesh.position.y = radius;
-      group.add(mesh);
+      roller.add(mesh);
     }
+    const twine = lambert(0x8a6a24);
+    for (let i = 0; i < 3; i++) { // three lines of twine along it, which show it turning as it rolls
+      const a = i * Math.PI * 2 / 3;
+      const line = new THREE.Mesh(new THREE.BoxGeometry(o.hw * 2 + 0.02, 0.06, 0.1), twine);
+      line.position.set(0, Math.cos(a) * radius, Math.sin(a) * radius);
+      line.rotation.x = a;
+      roller.add(line);
+    }
+    group.userData = { roller };
     return group;
   },
   frog: () => {
@@ -209,81 +222,6 @@ OBSTACLE_MODELS.asteroid = (o) => {
   return group;
 };
 
-// ---- pickups and targets ------------------------------------------------------------------------
-const TURBO_COLOR = 0x29e0ff;
-// the colour of each pickup's pad (and its glow in the HUD)
-const PICKUP_COLOR = { turbo: TURBO_COLOR, ghost: 0xf0f0ff, wrench: 0xffa726, passenger: 0xff8fb1, mystery: 0xb36bff };
-// a part of a pickup model: a mesh at (x, y, z), optionally turned (rx, ry, rz)
-const part = (group, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0) => {
-  const mesh = new THREE.Mesh(geometry, material);
-  mesh.position.set(x, y, z);
-  mesh.rotation.set(rx, ry, rz);
-  group.add(mesh);
-  return mesh;
-};
-// each pickup is a little model of what it does, about 1.5 m across, centred on the origin
-const PICKUP_MODELS = {
-  // a turbocharger: a snail-shell compressor housing with its wheel showing, an inlet pipe
-  // on the front, the turbine housing behind, and an exhaust flange
-  turbo: () => {
-    const group = new THREE.Group();
-    const steel = lambert(0xb8bcc4), dark = lambert(0x4a4e57), glow = new THREE.MeshBasicMaterial({ color: TURBO_COLOR });
-    part(group, new THREE.TorusGeometry(0.42, 0.26, 10, 24), steel, 0, 0, 0.1);          // compressor snail
-    part(group, new THREE.CylinderGeometry(0.3, 0.3, 0.2, 12), glow, 0, 0, 0.3, Math.PI / 2); // the wheel's glowing eye
-    for (let i = 0; i < 6; i++) { // compressor blades
-      part(group, new THREE.BoxGeometry(0.08, 0.5, 0.06), dark, 0, 0, 0.34, 0, 0, i * Math.PI / 6);
-    }
-    part(group, new THREE.CylinderGeometry(0.22, 0.22, 0.6, 12), steel, 0, 0, 0.6, Math.PI / 2);  // inlet pipe
-    part(group, new THREE.CylinderGeometry(0.34, 0.34, 0.5, 14), dark, 0, 0, -0.35, Math.PI / 2); // turbine housing
-    part(group, new THREE.BoxGeometry(0.9, 0.16, 0.5), dark, 0, -0.5, -0.3);                       // exhaust flange
-    part(group, new THREE.CylinderGeometry(0.18, 0.18, 0.4, 10), steel, 0.5, 0.3, -0.3, 0, 0, Math.PI / 2); // oil line
-    return group;
-  },
-  // a cartoon ghost: a sheet with a round head, a wavy hem, two arms and two eyes
-  ghost: () => {
-    const group = new THREE.Group();
-    const sheet = new THREE.MeshLambertMaterial({ color: 0xf4f4ff, transparent: true, opacity: 0.85 });
-    const ink = new THREE.MeshBasicMaterial({ color: 0x1b1b2a });
-    part(group, new THREE.SphereGeometry(0.62, 16, 12), sheet, 0, 0.35, 0);                 // head
-    part(group, new THREE.CylinderGeometry(0.62, 0.52, 0.9, 16), sheet, 0, -0.1, 0);        // body
-    for (let i = 0; i < 5; i++) { // the hem's waves
-      const a = i * Math.PI * 2 / 5;
-      part(group, new THREE.SphereGeometry(0.2, 10, 8), sheet, Math.cos(a) * 0.42, -0.58, Math.sin(a) * 0.42);
-    }
-    part(group, new THREE.SphereGeometry(0.17, 10, 8), sheet, -0.68, 0.05, 0.1);           // arms, raised: boo
-    part(group, new THREE.SphereGeometry(0.17, 10, 8), sheet, 0.68, 0.05, 0.1);
-    part(group, new THREE.SphereGeometry(0.1, 8, 6), ink, -0.22, 0.42, 0.52);               // eyes
-    part(group, new THREE.SphereGeometry(0.1, 8, 6), ink, 0.22, 0.42, 0.52);
-    part(group, new THREE.SphereGeometry(0.09, 8, 6), ink, 0, 0.18, 0.56);                  // an open mouth
-    return group;
-  },
-  // a combination wrench: an open jaw at one end, a ring at the other
-  wrench: () => {
-    const group = new THREE.Group();
-    const orange = lambert(PICKUP_COLOR.wrench), dark = lambert(0x3a3a40);
-    part(group, new THREE.BoxGeometry(1.3, 0.2, 0.3), orange, 0, 0, 0);                            // handle
-    part(group, new THREE.CylinderGeometry(0.42, 0.42, 0.2, 14), orange, 0.85, 0, 0);               // open-end head
-    part(group, new THREE.BoxGeometry(0.34, 0.26, 0.26), dark, 1.0, 0, 0);                          // its jaw
-    part(group, new THREE.TorusGeometry(0.3, 0.13, 8, 18), orange, -0.85, 0, 0, Math.PI / 2);       // ring end
-    return group;
-  },
-  // an inflatable passenger: a pink balloon figure, arms up, standing in the road
-  passenger: () => {
-    const group = new THREE.Group();
-    const pink = new THREE.MeshLambertMaterial({ color: PICKUP_COLOR.passenger, emissive: 0x3a1020 });
-    const ink = new THREE.MeshBasicMaterial({ color: 0x1b1b2a });
-    part(group, new THREE.SphereGeometry(0.34, 14, 10), pink, 0, 0.62, 0);                      // head
-    part(group, new THREE.CylinderGeometry(0.3, 0.36, 0.75, 12), pink, 0, 0.0, 0);              // body
-    part(group, new THREE.CylinderGeometry(0.11, 0.11, 0.55, 8), pink, -0.42, 0.45, 0, 0, 0, 0.7);  // arms, raised
-    part(group, new THREE.CylinderGeometry(0.11, 0.11, 0.55, 8), pink, 0.42, 0.45, 0, 0, 0, -0.7);
-    part(group, new THREE.CylinderGeometry(0.12, 0.12, 0.5, 8), pink, -0.16, -0.6, 0);          // legs
-    part(group, new THREE.CylinderGeometry(0.12, 0.12, 0.5, 8), pink, 0.16, -0.6, 0);
-    part(group, new THREE.SphereGeometry(0.05, 6, 5), ink, -0.11, 0.68, 0.3);                   // eyes
-    part(group, new THREE.SphereGeometry(0.05, 6, 5), ink, 0.11, 0.68, 0.3);
-    part(group, new THREE.SphereGeometry(0.06, 6, 5), ink, 0, 0.52, 0.32);                      // a surprised mouth
-    return group;
-  },
-};
 // ---- the player as a ghost --------------------------------------------------------------------
 // Every part of the car, whatever model and livery it has, is drawn in this one pale, glowing,
 // see-through material while the ghost lasts: the parts' own materials are put aside and
@@ -301,28 +239,26 @@ const hoverGhost = PICKUP_MODELS.ghost();
 hoverGhost.scale.setScalar(1.3);
 hoverGhost.visible = false;
 scene.add(hoverGhost);
+// a powerup's sign (on the car, or over it) shows while there are `left` seconds of it, and
+// blinks through its last CONFIG.powerUpWarning seconds, in time with the warning sound
+const powerShown = (left) => left > 0 && (left > CONFIG.powerUpWarning || Math.floor(left * 8) % 2 === 0);
 
-// the mystery pickup: a purple block with a question mark on every side
-PICKUP_MODELS.mystery = () => {
-  const group = new THREE.Group();
-  const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = 64;
-  const g = canvas.getContext('2d');
-  g.fillStyle = '#b36bff';
-  g.fillRect(0, 0, 64, 64);
-  g.strokeStyle = '#5a2a8a';
-  g.lineWidth = 6;
-  g.strokeRect(3, 3, 58, 58);
-  g.fillStyle = '#ffffff';
-  g.font = 'bold 48px sans-serif';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.fillText('?', 32, 35);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  part(group, new THREE.BoxGeometry(1.1, 1.1, 1.1), new THREE.MeshLambertMaterial({ map, emissive: 0x2a1040 }), 0, 0, 0);
-  return group;
-};
+// while a mystery is running, its question-mark block turns over the car (as the ghost does)
+const hoverMystery = PICKUP_MODELS.mystery();
+hoverMystery.scale.setScalar(1.1);
+hoverMystery.visible = false;
+scene.add(hoverMystery);
+
+// ...and while one is working, it turns over the car (as the ghost and the mystery do)
+const hoverRadar = PICKUP_MODELS.radarDetector();
+hoverRadar.scale.setScalar(1.3);
+hoverRadar.visible = false;
+scene.add(hoverRadar);
+
+// ...and while one is sounding, it rides on the car's roof, flashing
+const roofSiren = PICKUP_MODELS.siren();
+roofSiren.visible = false;
+scene.add(roofSiren);
 
 // TOAD RAGE (a mystery): a traffic vehicle that is a toad shows a frog in place of itself,
 // hopping as it goes. Call after syncTraffic, which shows each vehicle's own parts.
@@ -362,16 +298,7 @@ const makePickup = (p) => {
 };
 // TANK RAGE target: a spinning, glowing green ring on a post beside the road
 const makeTarget = (t) => {
-  const group = new THREE.Group();
-  const green = new THREE.MeshBasicMaterial({ color: 0x39ff6a });
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.22, 8, 24), green);
-  const bull = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 8), green);
-  const glow = new THREE.Mesh(new THREE.SphereGeometry(2.1, 16, 12), new THREE.MeshBasicMaterial({
-    color: 0x39ff6a, transparent: true, opacity: 0.22, depthWrite: false }));
-  const post = new THREE.Mesh(new THREE.BoxGeometry(0.2, 2.2, 0.2), lambert(0x2b2f38));
-  post.position.y = -1.6;
-  group.add(ring, bull, glow, post);
-  group.userData = { ring, glow };
+  const group = makeTargetModel();
   Track.toWorld(t.s, t.lat, tmp);
   group.position.set(tmp.x, tmp.y + 2.7, tmp.z);
   return group;
@@ -386,7 +313,8 @@ const buildBridge = (from, to) => {
   water.renderOrder = -1;
   levelItems.add(water);
 
-  const BAY = 20, TOP = 11;
+  // (the top chords and cross beams stand well above the camera, which would otherwise drive through them)
+  const BAY = 20, TOP = Math.max(CONFIG.camHeight, CONFIG.screensaver.camHeight) + 4;
   const parts = []; // [s, lat, y, width, height, length]
   for (let s = from; s < to; s += BAY) {
     const len = Math.min(BAY, to - s);
@@ -450,9 +378,15 @@ export const syncPickups = (dt) => {
     } else {
       mesh.position.set(tmp.x, tmp.y + o.h, tmp.z);
     }
+    if (o.drift && mesh.userData.roller) { // a bale on the move rolls the way it is going
+      const last = mesh.userData.last || (mesh.userData.last = { s: o.s, lat: o.lat });
+      mesh.userData.roller.rotation.x += Math.hypot(o.s - last.s, o.lat - last.lat) / (o.height / 2);
+      last.s = o.s;
+      last.lat = o.lat;
+    }
   }
   // ghost: the whole car turns pale and see-through (see ghostify), flickering as it runs out
-  const ghostly = Player.ghost > 0 && (Player.ghost > 1.5 || Math.floor(Player.ghost * 8) % 2 === 0);
+  const ghostly = powerShown(Player.ghost);
   const livery = Player.evil ? CAR.evilColor : CAR.color; // each car has a livery per side
   if (shownCar !== CAR) { // a different car (the garage's, or a level's own): take its shape
     shapeCarMesh(carMesh, CAR);
@@ -478,20 +412,39 @@ export const syncPickups = (dt) => {
   if (custom) {
     custom.userData.animate(performance.now() / 1000);
     paintOf(custom.userData.body).color.setHex(livery);
+    custom.userData.livery?.(Player.evil);
   }
   const standard = !tank && !ufo && !custom;
   carMesh.userData.body.visible = carMesh.userData.cabin.visible = standard;
   for (const part of [...carMesh.userData.lights, ...carMesh.userData.trim]) part.visible = standard;
-  passengerMesh.visible = Player.passenger > 0 && !tank && !ufo;
+  passengerMesh.visible = powerShown(Player.passenger) && !tank && !ufo;
   ghostify(carMesh, ghostly);
-  hoverGhost.visible = Player.ghost > 0 && Player.active && !Game.screensaver;
+  const t = performance.now() / 1000;
+  hoverGhost.visible = powerShown(Player.ghost) && Player.active && !Game.screensaver;
   if (hoverGhost.visible) { // bobbing over the car, swaying a little
-    const t = performance.now() / 1000;
     hoverGhost.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.6 + Math.sin(t * 2.6) * 0.25, carMesh.position.z);
     hoverGhost.rotation.y = carMesh.rotation.y + Math.sin(t * 1.7) * 0.35;
   }
+  hoverMystery.visible = !!Player.mystery && powerShown(Player.mysteryTime) && Player.active && !Game.screensaver;
+  if (hoverMystery.visible) { // bobbing over the car, turning
+    hoverMystery.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.4 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
+    hoverMystery.rotation.y += dt * 2;
+  }
+  hoverRadar.visible = powerShown(Player.radar) && Player.active && !Game.screensaver;
+  if (hoverRadar.visible) { // bobbing over the car, turning
+    hoverRadar.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.3 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
+    hoverRadar.rotation.y += dt * 2;
+  }
+  roofSiren.visible = powerShown(Player.siren) && Player.active && !Game.screensaver;
+  if (roofSiren.visible) { // on the roof, facing the way the car does, red and blue by turns
+    roofSiren.position.set(carMesh.position.x, carMesh.position.y + Player.height + 0.25, carMesh.position.z);
+    roofSiren.rotation.y = carMesh.rotation.y;
+    const flash = Math.floor(t * 6) % 2 === 0;
+    roofSiren.userData.red.visible = flash;
+    roofSiren.userData.blue.visible = !flash;
+  }
   // turbo exhaust
-  if (Player.active && Player.turbo > 0) {
+  if (Player.active && powerShown(Player.turbo)) {
     const h = Track.toWorld(Player.s - Player.hl, Player.lat, tmp);
     for (let n = 0; n < 2; n++) {
       Particles.emit(tmp.x + rnd(0.5), tmp.y + 0.6, tmp.z + rnd(0.5),

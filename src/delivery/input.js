@@ -37,7 +37,8 @@ export const Input = (() => {
   const stick = (d) => Math.abs(d) < DEAD_PX ? 0
     : Math.max(-1, Math.min(1, (d - Math.sign(d) * DEAD_PX) / (FULL_PX - DEAD_PX)));
   let touchId = null, startX = 0, startY = 0;
-  const isUi = (e) => e.target.closest && e.target.closest('button, .pad');
+  // (the menus are left alone, so their lists can be scrolled)
+  const isUi = (e) => e.target.closest && e.target.closest('button, .pad, .overlay');
   window.addEventListener('touchstart', (e) => {
     if (isUi(e) || touchId !== null) return;
     const t = e.changedTouches[0];
@@ -64,7 +65,11 @@ export const Input = (() => {
   const clampAxis = (v) => Math.max(-1, Math.min(1, v));
   return {
     on, emit, hold,
+    autoGas: false, // the accelerator held down by itself; braking still overrides it (a menu option)
     get steer() { return clampAxis(keyAxis(STEER_KEYS) + touchSteer + pressed.right - pressed.left); },
-    get throttle() { return clampAxis(keyAxis(THROTTLE_KEYS) + touchThrottle + pressed.gas - pressed.brake); },
+    get throttle() {
+      const throttle = clampAxis(keyAxis(THROTTLE_KEYS) + touchThrottle + pressed.gas - pressed.brake);
+      return this.autoGas && throttle >= 0 ? 1 : throttle;
+    },
   };
 })();

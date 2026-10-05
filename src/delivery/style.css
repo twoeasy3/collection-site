@@ -16,42 +16,59 @@ canvas { display: block; width: 100%; height: 100%; }
 #speed { font-size: 28px; font-weight: 700; text-align: right; }
 #speed small { font-size: 13px; font-weight: 400; opacity: .85; }
 #turbo { text-align: right; font-size: 15px; font-weight: 800; color: #29e0ff; }
+/* the TANK RAGE corner (render/tankcorner.js): top right, under the speed */
+#tankCorner { display: none; position: fixed; width: 120px; height: 84px; pointer-events: none;
+  right: max(10px, env(safe-area-inset-right)); top: calc(max(12px, env(safe-area-inset-top)) + 62px); }
+body.in-garage #tankCorner { display: none !important; }
 #banner { display: none; position: fixed; left: 0; right: 0; top: 24%; text-align: center;
   pointer-events: none; font-size: 34px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
 #banner small { display: block; font-size: 15px; font-weight: 400; }
 /* a message (a powerup, a bust, a driver's reaction) where the banner goes: one at a time */
-#message { position: fixed; left: 0; right: 0; top: 24%; text-align: center; pointer-events: none;
-  font-size: 28px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); opacity: 0; padding: 0 16px; }
-/* pause / exit during a run or the screensaver, bottom centre (clear of the on-screen controls) */
+/* (two lines: a top one and a bottom one, see messages.js) */
+#messages { position: fixed; left: 0; right: 0; top: 24%; text-align: center; pointer-events: none; padding: 0 16px; }
+#messages .line { min-height: 1.25em; font-size: 28px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); opacity: 0; }
+#messages .reaction { color: #ffffff; }
+#messages .pickup { color: #ffd23f; }
+#messages .rage { color: #ff3b30; }
+#messages .bust { color: #2160d8; }
+/* pause / exit during a run or the screensaver: top centre, under the progress bar (clear of the
+   on-screen controls, which take the bottom of the screen) */
 #runButtons { display: none; position: fixed; left: 50%; transform: translateX(-50%);
-  bottom: max(14px, env(safe-area-inset-bottom)); gap: 8px; }
+  top: calc(max(12px, env(safe-area-inset-top)) + 32px); gap: 8px; }
 #runButtons button { font: inherit; font-size: 13px; font-weight: 700; padding: 7px 14px; border-radius: 8px;
   border: 2px solid rgba(255,255,255,.5); background: rgba(10,14,20,.55); color: #fff; cursor: pointer; touch-action: none; }
 #runButtons button:hover { background: rgba(10,14,20,.8); }
 /* the screensaver: no HUD (the road is the show), and a fade to black between laps */
 #fade { position: fixed; inset: 0; background: #000; pointer-events: none; opacity: 0; }
-body.screensaver #hud, body.screensaver #throwBtn, body.screensaver #touchControls { display: none; }
-#throwBtn { display: none; position: fixed; width: 104px; height: 104px; border-radius: 50%;
-  right: max(20px, env(safe-area-inset-right)); bottom: max(24px, env(safe-area-inset-bottom));
-  border: 3px solid rgba(255,255,255,.7); background: rgba(255,122,26,.75); color: #fff;
-  font: inherit; font-weight: 700; font-size: 16px; touch-action: none; }
-/* on-screen controls (body.touch-controls: see render/touch.js) */
+body.screensaver #hud, body.screensaver .throw, body.screensaver #touchControls { display: none; }
+/* on-screen controls (body.touch-controls: see render/touch.js): two big zones along the bottom,
+   steering on the left and the pedals on the right, each split in two, with a THROW button
+   above each */
+:root { --zone-h: clamp(80px, 28vh, 170px); --zone-w: 40vw; }
 #touchControls { display: none; }
 body.touch-controls #touchControls { display: block; }
-#touchControls .pad { position: fixed; bottom: max(20px, env(safe-area-inset-bottom)); display: flex; gap: 10px;
-  touch-action: none; }
-#touchControls .steer { left: max(16px, env(safe-area-inset-left)); }
-#touchControls .pedals { right: max(16px, env(safe-area-inset-right)); }
-#touchControls button { width: min(78px, 19vw); height: min(78px, 19vw); padding: 0; border-radius: 18px;
-  border: 2px solid rgba(255,255,255,.55); background: rgba(255,255,255,.16); color: rgba(255,255,255,.9);
-  font-size: 30px; pointer-events: none; /* (the pad takes the touch) */ }
-#touchControls button.down { background: rgba(255,255,255,.42); }
-body.touch-controls #throwBtn { display: block; width: 88px; height: 88px; background: rgba(255,122,26,.5);
-  bottom: calc(max(20px, env(safe-area-inset-bottom)) + min(78px, 19vw) + 14px); }
+#touchControls .pad { position: fixed; bottom: 0; width: var(--zone-w); height: var(--zone-h); box-sizing: border-box;
+  display: flex; gap: 6px; padding-bottom: max(10px, env(safe-area-inset-bottom)); touch-action: none; }
+#touchControls .steer { left: 0; padding-left: max(10px, env(safe-area-inset-left)); }
+#touchControls .pedals { right: 0; padding-right: max(10px, env(safe-area-inset-right)); }
+#touchControls button { flex: 1; height: 100%; padding: 0; border-radius: 18px;
+  border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.08); color: rgba(255,255,255,.75);
+  font-size: 34px; pointer-events: none; /* (the pad takes the touch) */ }
+#touchControls button.down { background: rgba(255,255,255,.3); }
+.throw { display: none; position: fixed; width: 88px; height: 88px; border-radius: 50%;
+  bottom: calc(var(--zone-h) + 12px);
+  border: 3px solid rgba(255,255,255,.7); background: rgba(255,122,26,.55); color: #fff;
+  font: inherit; font-weight: 700; font-size: 16px; touch-action: none; }
+#throwBtnLeft { left: max(16px, env(safe-area-inset-left)); }
+#throwBtn { right: max(16px, env(safe-area-inset-right)); }
+body.touch-controls .throw { display: block; }
 #progress { width: 40vw; max-width: 420px; height: 10px; margin-top: 12px;
   background: rgba(0,0,0,.4); border-radius: 5px; overflow: hidden; }
 #progressFill { height: 100%; width: 0; background: #ffd23f; }
 @media (orientation: portrait) {
+  :root { --zone-h: clamp(90px, 20vh, 170px); --zone-w: 50vw; }
+  #runButtons { top: max(12px, env(safe-area-inset-top)); }
+  #runButtons button { font-size: 12px; padding: 6px 10px; }
   #hud { grid-template-columns: 1fr 1fr; }
   #progress { grid-column: 1 / 3; grid-row: 2; width: 100%; max-width: none; margin-top: 0; }
   #timer, #speed { font-size: 24px; }
@@ -69,7 +86,7 @@ body.touch-controls #throwBtn { display: block; width: 88px; height: 88px; backg
 /* a link to the screensaver's own address, styled as one of the small buttons */
 .overlay a.level { display: inline-block; font-size: 15px; font-weight: 700; padding: 8px 16px; margin: 0 4px 6px;
   border-radius: 10px; background: #e9e9e9; color: #222; text-decoration: none; }
-.overlay.menu { justify-content: flex-start; overflow-y: auto; gap: 10px; background: #1b2029; }
+.overlay.menu { justify-content: flex-start; overflow-y: auto; gap: 10px; background: #1b2029; touch-action: pan-y; }
 .overlay h2 { margin: 6px 0 0; font-size: 15px; text-transform: uppercase; letter-spacing: .08em; opacity: .8; }
 #bank { font-size: 20px; font-weight: 700; color: #ffd23f; }
 .cards { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
@@ -79,6 +96,14 @@ body.touch-controls #throwBtn { display: block; width: 88px; height: 88px; backg
 .overlay button.card strong { font-size: 16px; }
 .overlay button.card.current { border-color: #ffd23f; background: #fff; }
 .overlay button.card:disabled { opacity: .5; cursor: default; }
+/* on a phone or tablet (or a narrow window) the levels are one row, swiped left and right */
+@media (pointer: coarse), (max-width: 700px) {
+  #levels { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; overscroll-behavior-x: contain;
+    position: relative; scroll-snap-type: x mandatory; touch-action: pan-x; scrollbar-width: none;
+    align-self: stretch; margin: 0 -24px; padding: 2px 24px 8px; scroll-padding: 0 24px; }
+  #levels::-webkit-scrollbar { display: none; }
+  #levels .card { flex: 0 0 auto; width: min(230px, 70vw); scroll-snap-align: center; }
+}
 details { max-width: 440px; }
 summary { cursor: pointer; font-weight: 700; }
 #garageUi { position: fixed; inset: 0; pointer-events: none; display: flex; flex-direction: column;
@@ -92,7 +117,7 @@ summary { cursor: pointer; font-weight: 700; }
 #garageTip { display: none; position: fixed; transform: translate(-50%, -100%); pointer-events: none;
   padding: 6px 12px; border-radius: 8px; background: rgba(15,18,24,.9); border: 2px solid #ffd23f;
   font-size: 14px; font-weight: 700; white-space: nowrap; }
-body.in-garage #hud, body.in-garage #throwBtn, body.in-garage #banner, body.in-garage #message { display: none; }
+body.in-garage #hud, body.in-garage .throw, body.in-garage #banner, body.in-garage #messages { display: none; }
 #levelProblems { color: #ffb4a8; font-size: 12px; max-width: 40vw; margin-top: 6px; }
 #resultTime { font-size: 48px; font-weight: 700; font-variant-numeric: tabular-nums; }
 #health { width: 150px; max-width: 40vw; height: 10px; margin-top: 6px;

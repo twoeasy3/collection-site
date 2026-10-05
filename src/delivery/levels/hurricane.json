@@ -150,6 +150,8 @@
     { "s": 3900, "side": "right" }
   ],
   "pickups": [
+    { "type": "siren", "s": 1450, "lane": 3 },
+    { "type": "radarDetector", "s": 1880, "lane": 1 },
     { "type": "turbo", "s": 200, "lane": 2 },
     { "type": "wrench", "s": 700, "lane": 3 },
     { "type": "ghost", "s": 1000, "lane": 2 },

@@ -7,6 +7,7 @@ import { updateYaw, keepOnRoad, sfx } from './physics.js';
 import { Traffic } from './traffic.js';
 import { Message } from './messages.js';
 import { UfoStrike } from './ufostrike.js';
+import { Game } from './game.js';
 
 export const Player = {
   isPlayer: true, active: true, dir: 1, bound: 'north', mass: 1,
@@ -17,6 +18,8 @@ export const Player = {
   turbo: 0,            // s of turbocharger left
   ghost: 0,            // s of passing through cars and barriers left
   passenger: 0,        // s of legal shoulder driving left
+  radar: 0,            // s of radar detector left: the police can't bust the car
+  siren: 0,            // s of siren left: traffic ahead pulls over (see Traffic)
   mystery: '',         // the mystery effect running (see startMystery), '' = none...
   mysteryTime: 0,      // ...and s of it left
   nextMystery: '',     // the effect the next mystery will be, if not left to chance (?mystery= in the URL)
@@ -61,6 +64,8 @@ export const Player = {
     this.turbo = 0;
     this.ghost = 0;
     this.passenger = 0;
+    this.radar = 0;
+    this.siren = 0;
     this.endMystery();
     this.latVel = 0;
     this.yaw = 0;
@@ -71,10 +76,12 @@ export const Player = {
     this.shield = CONFIG.respawnShield;
   },
   bust(reason) {
-    if (this.busted || this.tank > 0) return; // nobody busts a tank
+    if (this.busted || this.tank > 0 || this.radar > 0) return; // nobody busts a tank, nor a car with a radar detector
     this.busted = true;
     this.bustReason = reason;
-    Message.say('busts', reason);
+    // the bust's message, led by which bust of the run this is (messages.json: bustCount)
+    const line = Message.say('busts', reason);
+    if (line) line.text = Message.pick('bustCount', String(Math.min(CONFIG.maxBusts, Game.busts + 1))) + line.text;
   },
   // TANK RAGE: fully repaired, wrecks what it touches, fires a cannon (see Collision, Packages)
   startTank() {
@@ -87,24 +94,35 @@ export const Player = {
       return;
     }
     // one powerup at a time: a new one cuts short whichever is running
-    // (a ghost is let go of gently: it stays see-through until it is clear of every car)
+    // (a ghost is let go of gently: it stays see-through until it is clear of every car;
+    // a radar detector cut short with the shoulder meter full leaves the car busted, even for
+    // another radar detector, which only starts once the bust has; unless it is for a
+    // passenger, who makes the shoulder legal anyway)
+    const caught = this.radar > 0 && this.danger <= 0 && type !== 'passenger';
     this.turbo = 0;
     this.passenger = 0;
+    this.radar = 0;
+    this.siren = 0;
     this.ghost = Math.min(this.ghost, 0.01);
     this.endMystery();
+    if (caught) this.bust('shoulder');
     if (type === 'turbo') this.turbo = CONFIG.turboTime;
+    else if (type === 'radarDetector') this.radar = CONFIG.radarTime;
+    else if (type === 'siren') this.siren = CONFIG.sirenPickup.time;
     else if (type === 'ghost') this.ghost = CONFIG.ghostTime;
     else if (type === 'passenger') this.passenger = CONFIG.passengerTime;
     else if (type === 'mystery') this.startMystery();
   },
   // s left of the powerup that is running (0 = none)
-  get powerLeft() { return Math.max(this.turbo, this.ghost, this.passenger, this.mysteryTime); },
+  get powerLeft() { return Math.max(this.turbo, this.ghost, this.passenger, this.radar, this.siren, this.mysteryTime); },
   // the mystery pickup: a random effect. Most last CONFIG.mystery.time; the insurance ones
   // and the UFO air strike are over at once (the strike's show goes on by itself: UfoStrike)
   startMystery() {
     const { effects, time } = CONFIG.mystery;
-    const effect = effects.find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || // (?mystery=UFO works too)
-      effects[Math.floor(Math.random() * effects.length)];
+    // (a tank only ever gets the air strike)
+    const effect = this.tank > 0 ? 'ufo'
+      : effects.find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || // (?mystery=UFO works too)
+        effects[Math.floor(Math.random() * effects.length)];
     Message.say('powerups', 'mystery', effect);
     if (effect === 'ufo') UfoStrike.start();
     if (effect === 'ufo' || effect.startsWith('insurance')) return;
@@ -195,6 +213,8 @@ export const Player = {
     this.shield = Math.max(0, this.shield - dt);
     this.ghost = Math.max(0, this.ghost - dt);
     this.passenger = Math.max(0, this.passenger - dt);
+    this.radar = Math.max(0, this.radar - dt); // (when it runs out with the shoulder meter full: a bust, below)
+    this.siren = Math.max(0, this.siren - dt);
     if (this.mystery && (this.mysteryTime -= dt) <= 0) this.endMystery();
     this.updateSpeed(dt, throttle, stopping);
     this.s += this.speed * dt;

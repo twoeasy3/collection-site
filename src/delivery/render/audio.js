@@ -15,7 +15,7 @@ let ctx = null, master = null, noiseBuffer = null;
 let nextBeep = 0; // when the shoulder's danger meter next beeps
 let engine = null; // { osc, lfo, lfoGain, filter, gain }: the synthesised engine
 let siren = null;  // { gain }: a synthesised police siren, silent until Sound.siren(true)
-let sirenOn = false;
+let radarOn = false; // (a police car near enough to bust the player, last frame)
 const lastPlayed = {};
 
 // every WAV in ../sounds, by file name without the extension: { 'Cash': url, ... }
@@ -40,13 +40,15 @@ const SAMPLES = {
   burst: 'Explosion Small',             // an evil package lands
   explode: ['Crash 1', 'Head On Collision'],  // an obstacle, or a light vehicle wrecked
   explodeBig: ['Crash 1', 'Head On Collision'], // a heavy vehicle wrecked
-  crash: ['Crash 1', 'Short Crash with Glass', 'Collide1'],
+  crash: ['Short Crash with Glass', 'Collide1'],
   crashHard: ['Crash 1', 'Short Crash Side Swipe', 'Collide1'],       // an impact of CONFIG.hardCrash or more
   sideswipe: 'Short Crash Side Swipe',
   headOn: 'Head On Collision',
   heavy: ['Crash 1', 'Head On Collision'],    // TANK RAGE flattening something
   cannon: 'Tank Fire',
   tank: 'Tank Rage',
+  tankPiece: 'Tank Rage Build', // a piece of the tank found (the fifth: tank)
+  radarDetector: 'Radar',       // the radar detector picked up
   turbo: 'Supercharge',         // pickups, by type
   ghost: 'Ghost',
   wrench: 'Wrench',
@@ -75,7 +77,7 @@ const ENGINE_IDLE = 0.6;     // share of that at a standstill
 const ENGINES = {
   hatch: { files: ['Engine Rev 1'], idle: 0.7, top: 1.5 },
   junker: { files: ['Engine Rev 1'], idle: 0.6, top: 1.2 },
-  coupe: { files: ['Engine Rev 1'], idle: 0.8, top: 1.7 },
+  coupe: { files: ['Truck Engine'], idle: 0.7, top: 1.25 }, // (the Darkvan)
   lowrider: { files: ['Lowrider', 'Lowrider 2'], fixed: true },
   wagon: { files: ['Truck Engine'], idle: 0.8, top: 1.4 },
   sport: { files: ['Engine Sports Car 5'], idle: 0.7, top: 1.6 },
@@ -226,7 +228,7 @@ const loop = () => ({
     this.file = null;
   },
 });
-const engineLoop = loop(), sirenLoop = loop(), heliLoop = loop(), frogLoop = loop(), warnLoop = loop(), ufoLoop = loop();
+const engineLoop = loop(), sirenLoop = loop(), heliLoop = loop(), frogLoop = loop(), warnLoop = loop(), ufoLoop = loop(), lowriderLoop = loop();
 let engineCar = null, engineFile = null; // the car the engine loop was picked for, and its WAV
 
 // ---- the synthesised stand-ins: (volume 0..1) => void --------------------------------------------
@@ -295,13 +297,14 @@ export const Sound = {
     engine.lfoGain.gain.setTargetAtTime(ufo ? 14 : 0, now, 0.1);
     engine.gain.gain.setTargetAtTime(on ? (ufo ? 0.12 : 0.07 + Math.min(0.07, speed * 0.0015)) : 0, now, 0.12);
   },
-  // on while a police car is close enough to bust the player; a radar ping as it comes into sight
-  siren(on) {
+  // the police siren, louder the nearer the nearest police car: level 0 (silent) .. 1 (right
+  // beside it). near: one is close enough to bust the player, which pings the radar as it starts
+  siren(level, near = false) {
     if (!siren) return;
-    if (on && !sirenOn) this.play('radar', 0.7);
-    sirenOn = on;
-    if (sirenLoop.set('Police Siren', on ? 0.3 : 0)) siren.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
-    else siren.gain.gain.setTargetAtTime(on ? 0.05 : 0, ctx.currentTime, 0.15);
+    if (near && !radarOn) this.play('radar', 0.7);
+    radarOn = near;
+    if (sirenLoop.set('Police Siren', 0.35 * level)) siren.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.05);
+    else siren.gain.gain.setTargetAtTime(0.05 * level, ctx.currentTime, 0.15);
   },
   // on while a helicopter is coming for the car, carrying it, or setting it down
   helicopter(on) {
@@ -313,6 +316,11 @@ export const Sound = {
     else warnLoop.stop();
   },
   // on while a UFO AIR STRIKE's saucer is about (flying in, hovering, flying off)
+  // the lowriders in traffic play their music too, louder the nearer the nearest one:
+  // level 0 (silent) .. 1 (right beside it)
+  lowriders(level) {
+    lowriderLoop.set('Lowrider', 0.5 * level);
+  },
   ufoStrike(on) {
     ufoLoop.set('UFO', on ? 0.5 : 0, 1.6); // (1.6x its own speed, and pitch)
   },

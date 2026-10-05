@@ -143,6 +143,7 @@ export const Collision = (() => {
       const damage = impact * CONFIG.damagePerSpeed;
       hurt(a, damage * shareA * 2);
       hurt(b, damage * shareB * 2);
+      if (a.isPlayer || b.isPlayer) Traffic.arrest(a.isPlayer ? b : a); // (under the player's siren)
       if (a.isPlayer) b.grudge = true;
       if (b.isPlayer) a.grudge = true;
       // traffic that collides with traffic tends to take it personally
@@ -430,10 +431,10 @@ export const Collision = (() => {
     }
     for (let i = 0; i < bodies.length; i++) {
       const a = bodies[i];
-      if (!a.active || a.shield > 0 || a.ghost > 0) continue; // freshly dropped or ghosted player
+      if (!a.active || a.shield > 0 || a.ghost > 0 || a.arrest >= 0) continue; // freshly dropped or ghosted player, or a car being arrested
       for (let j = i + 1; j < bodies.length; j++) {
         const b = bodies[j];
-        if (!b.active) continue;
+        if (!b.active || b.arrest >= 0) continue;
         // broad phase: nearby along the track and within neighbouring lanes
         if (Math.abs(b.s - a.s) > CONFIG.broadPhaseDistance ||
             Math.abs(b.lat - a.lat) > CONFIG.laneWidth * 1.5) continue;

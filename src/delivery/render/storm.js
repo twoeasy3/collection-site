@@ -20,9 +20,9 @@ let time = 0;
 const PAINTS = [0xffd23f, 0x4fc3f7, 0x7ee081, 0xff8fb1, 0xffffff, 0xff9f43, 0xe23b3b, 0x9b3fd1, 0x2f7de1];
 // the garage's models, plus the standard box car in a few traffic sizes
 const SHAPES = [
-  { model: 'hatch', hw: 0.95, hl: 2.1, height: 1.4 },
+  { model: 'commuter', hw: 0.85, hl: 1.85, height: 1.45 },
   { model: 'junker', hw: 1.0, hl: 2.5, height: 1.5 },
-  { model: 'coupe', hw: 0.9, hl: 2.25, height: 1.2 },
+  { model: 'darkvan', hw: 1.05, hl: 2.45, height: 2.4 },
   { model: 'lowrider', hw: 1.0, hl: 2.5, height: 1.1 },
   { model: 'wagon', hw: 1.05, hl: 2.4, height: 1.9 },
   { model: 'sport', hw: 0.85, hl: 1.9, height: 1.1 },

@@ -132,6 +132,7 @@ const refresh = () => {
   for (const mesh of parked) {
     const car = mesh.userData.car;
     mesh.userData.body.material.color.setHex(Garage.evil ? car.evilColor : car.color);
+    mesh.userData.livery?.(Garage.evil);
     mesh.userData.tag.visible = !Progress.owns(car.id);
     if (car === inUse) ring.position.set(mesh.position.x, 0.12, mesh.position.z);
   }

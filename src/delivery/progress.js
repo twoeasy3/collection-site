@@ -14,6 +14,8 @@ const fresh = () => ({
   car: 'hatch',    // id of the car in use
   muted: false,    // sound switched off
   touch: null,     // on-screen controls: true / false once chosen on the menu; null = on for touch screens
+  autoGas: false,  // auto accelerate: the accelerator held down by itself, unless braking
+  tankPieces: 0,   // TANK RAGE pieces found so far (0-4), carried from one level to the next
 });
 
 const read = () => {

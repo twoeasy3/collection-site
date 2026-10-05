@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CAR } from '../cars.js';
+import { CAR, CARS } from '../cars.js';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Traffic } from '../traffic.js';
@@ -54,8 +54,10 @@ export const shapeCarMesh = (group, v) => {
     const bus = v.kind === 'bus';
     body.scale.set(w, h - 0.3, l);
     body.position.y = 0.3 + (h - 0.3) / 2;
-    cabin.scale.set(w * 1.03, h * 0.24, l * (bus ? 0.92 : 0.5));
-    cabin.position.set(0, 0.3 + h * 0.62, bus ? 0 : l * 0.22);
+    // (a bus's band stands proud of the body all round, so it has front and back windows too;
+    // a van's runs from the middle to just past the front: a windscreen, and a solid back)
+    cabin.scale.set(w * 1.03, h * 0.24, l * (bus ? 1.02 : 0.54));
+    cabin.position.set(0, 0.3 + h * 0.62, bus ? 0 : l * 0.24);
     roof.scale.set(w * 0.94, 0.08, l * 0.96);
     roof.position.set(0, h, 0);
   } else {
@@ -90,28 +92,44 @@ export const makeTankMesh = (color) => {
     group.add(mesh);
     return mesh;
   };
-  for (const side of [-1, 1]) {
-    part(dark, 0.55, 0.62, 4.1, side, 0.4, 0);                         // track run,
-    drum(dark, 0.4, 0.55, 'x', side, 0.4, 2.0);                        // rounded off at each end
-    drum(dark, 0.4, 0.55, 'x', side, 0.4, -2.0);
-    for (let i = 0; i < 5; i++) drum(steel, 0.27, 0.08, 'x', side * 1.28, 0.34, -1.6 + i * 0.8); // road wheels
-    part(paint, 0.66, 0.07, 4.7, side, 0.84, 0);                       // mudguards
-    part(new THREE.MeshBasicMaterial({ color: 0xfff3c4 }), 0.2, 0.14, 0.08, side * 0.72, 1.12, 2.17); // headlights
-    drum(steel, 0.17, 0.75, 'x', side * 0.45, 1.12, -2.3);             // fuel drums on the back
-  }
-  const hull = part(paint, 2.0, 0.8, 4.3, 0, 0.9, 0);
-  const glacis = part(paint, 1.5, 0.07, 0.95, 0, 1.02, 2.1);           // sloping front plate
+  // The parts are sorted into the five pieces of TANK RAGE, in the order they are found
+  // (userData.pieces, see render/tankcorner.js): 0 the rear body, 1 the turret hull, 2 the gun
+  // turret, 3 the gun barrel, and 4 the front body with the running gear
+  const pieces = [[], [], [], [], []];
+  let piece = 0;
+  const into = (mesh) => { pieces[piece].push(mesh); return mesh; };
+  // ---- the rear body
+  const hull = into(part(paint, 2.0, 0.8, 2.15, 0, 0.9, -1.075)); // (the hull, in two halves)
+  into(part(dark, 1.2, 0.05, 0.7, 0, 1.31, -1.7));                     // engine grille
+  for (const side of [-1, 1]) into(drum(steel, 0.17, 0.75, 'x', side * 0.45, 1.12, -2.3)); // fuel drums on the back
+  // ---- the turret hull
+  piece = 1;
+  into(part(paint, 1.4, 0.65, 1.9, 0, 1.6, -0.3));                     // turret,
+  into(part(paint, 1.0, 0.45, 0.5, 0, 1.58, -1.45));                   // its bustle,
+  into(drum(dark, 0.3, 0.1, 'y', 0.3, 1.97, -0.55));                   // hatch
+  into(part(dark, 0.03, 1.3, 0.03, -0.55, 2.55, -1.05));               // and aerial
+  // ---- the gun turret
+  piece = 2;
+  into(part(dark, 0.6, 0.42, 0.3, 0, 1.62, 0.75));                     // gun mantlet
+  into(part(dark, 0.07, 0.07, 0.6, 0.3, 2.1, -0.15));                  // machine gun
+  // ---- the gun barrel
+  piece = 3;
+  into(drum(dark, 0.12, 2.5, 'z', 0, 1.65, 2.05));                     // barrel
+  into(drum(dark, 0.18, 0.36, 'z', 0, 1.65, 3.15));                    // muzzle brake
+  // ---- the front body, and the running gear
+  piece = 4;
+  into(part(paint, 2.0, 0.8, 2.15, 0, 0.9, 1.075));
+  const glacis = into(part(paint, 1.5, 0.07, 0.95, 0, 1.02, 2.1));     // sloping front plate
   glacis.rotation.x = 0.72;
-  part(dark, 1.2, 0.05, 0.7, 0, 1.31, -1.7);                           // engine grille
-  part(paint, 1.4, 0.65, 1.9, 0, 1.6, -0.3);                           // turret,
-  part(paint, 1.0, 0.45, 0.5, 0, 1.58, -1.45);                         // its bustle,
-  part(dark, 0.6, 0.42, 0.3, 0, 1.62, 0.75);                           // and gun mantlet
-  drum(dark, 0.12, 2.5, 'z', 0, 1.65, 2.05);                           // barrel
-  drum(dark, 0.18, 0.36, 'z', 0, 1.65, 3.15);                          // muzzle brake
-  drum(dark, 0.3, 0.1, 'y', 0.3, 1.97, -0.55);                         // hatch
-  part(dark, 0.07, 0.07, 0.6, 0.3, 2.1, -0.15);                        // machine gun
-  part(dark, 0.03, 1.3, 0.03, -0.55, 2.55, -1.05);                     // aerial
-  group.userData = { body: hull };
+  for (const side of [-1, 1]) {
+    into(part(dark, 0.55, 0.62, 4.1, side, 0.4, 0));                   // track run,
+    into(drum(dark, 0.4, 0.55, 'x', side, 0.4, 2.0));                  // rounded off at each end
+    into(drum(dark, 0.4, 0.55, 'x', side, 0.4, -2.0));
+    for (let i = 0; i < 5; i++) into(drum(steel, 0.27, 0.08, 'x', side * 1.28, 0.34, -1.6 + i * 0.8)); // road wheels
+    into(part(paint, 0.66, 0.07, 4.7, side, 0.84, 0));                 // mudguards
+    into(part(new THREE.MeshBasicMaterial({ color: 0xfff3c4 }), 0.2, 0.14, 0.08, side * 0.72, 1.12, 2.17)); // headlights
+  }
+  group.userData = { body: hull, pieces };
   return group;
 };
 
@@ -195,6 +213,9 @@ const PAINTS = {
   evil: [0x24242b, 0x3a1f4d, 0x4a1c1c, 0x1f3a3a, 0x3b3b1f, 0x1c2a4a],
 };
 const POLICE_PAINT = 0xf5f5f5;
+// kinds of traffic that are also garage cars with a fixed livery wear that car's two colours
+// (see CARS: fixedLivery), not a random paint: kind -> { good, evil }
+const LIVERIES = Object.fromEntries(CARS.filter(c => c.fixedLivery).map(c => [c.id, { good: c.color, evil: c.evilColor }]));
 export const trafficMeshes = Traffic.cars.map(() => {
   const mesh = makeCarMesh(PAINTS.good[0]);
   // roof light bar, only shown (and flashing) on police cars
@@ -229,7 +250,8 @@ export const syncTraffic = () => {
     shapeCarMesh(mesh, car);
     const police = car.kind === 'police';
     const paints = PAINTS[car.evil ? 'evil' : 'good'];
-    const paint = police ? POLICE_PAINT : paints[car.paint % paints.length];
+    const livery = LIVERIES[car.kind];
+    const paint = police ? POLICE_PAINT : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
     mesh.userData.bar.visible = police;
     // a vehicle with a model of its own shows that in place of the standard box car
@@ -237,6 +259,7 @@ export const syncTraffic = () => {
     for (const kind in mesh.userData.models) mesh.userData.models[kind].visible = mesh.userData.models[kind] === own;
     if (own && own.userData.body) { // (one of the garage's models: it takes this car's paint, and animates)
       own.userData.body.material.color.setHex(paint);
+      own.userData.livery?.(car.evil);
       own.userData.animate(performance.now() / 1000 + i);
     }
     mesh.userData.body.visible = mesh.userData.cabin.visible = !own;

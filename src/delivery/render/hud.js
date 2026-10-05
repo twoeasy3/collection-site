@@ -16,7 +16,7 @@ const hudTip = document.getElementById('tip');
 const hudSpeed = document.getElementById('speed');
 const hudProgress = document.getElementById('progressFill');
 const hudHealth = document.getElementById('healthFill');
-const throwBtn = document.getElementById('throwBtn');
+const throwBtns = [...document.querySelectorAll('.throw')]; // (one each side)
 const hudBanner = document.getElementById('banner');
 const hudTurbo = document.getElementById('turbo');
 const hudDanger = document.getElementById('danger');
@@ -25,8 +25,8 @@ const hudDangerFill = document.getElementById('dangerFill');
 const hudFade = document.getElementById('fade');
 const runButtons = document.getElementById('runButtons');
 const pauseBtn = document.getElementById('pauseBtn');
-const hudMessage = document.getElementById('message');
-let messageId = 0, messageAt = 0;
+const hudMessages = [...document.querySelectorAll('#messages .line')]; // top, bottom
+const shownIds = [0, 0];
 const kmh = (ms) => Math.round(ms * 3.6);
 // (the HUD is not updated on the menu, so a run's buttons and fade are cleared as it ends)
 Game.onFinish.push(() => {
@@ -47,13 +47,18 @@ export const updateHud = () => {
     if (Player.turbo > 0) effects += 'TURBO ' + Player.turbo.toFixed(1) + '  ';
     if (Player.ghost > 0) effects += 'GHOST ' + Player.ghost.toFixed(1) + '  ';
     if (Player.passenger > 0) effects += 'PASSENGER ' + Player.passenger.toFixed(1) + '  ';
+    if (Player.radar > 0) effects += 'RADAR ' + Player.radar.toFixed(1) + '  ';
+    if (Player.siren > 0) effects += 'SIREN ' + Player.siren.toFixed(1) + '  ';
     if (Player.mystery) effects += 'MYSTERY ' + Player.mysteryTime.toFixed(1) + '  ';
     if (Player.tank > 0) effects += 'TANK RAGE';
   }
   hudTurbo.textContent = effects;
-  throwBtn.style.opacity = Packages.ready ? 1 : 0.4;
+  const throwOpacity = Packages.ready ? 1 : 0.4;
   const throwLabel = Player.tank > 0 ? 'FIRE' : 'THROW';
-  if (throwBtn.textContent !== throwLabel) throwBtn.textContent = throwLabel;
+  for (const button of throwBtns) {
+    button.style.opacity = throwOpacity;
+    if (button.textContent !== throwLabel) button.textContent = throwLabel;
+  }
   // pause and exit: shown during a run and the screensaver
   runButtons.style.display = Game.state === 'playing' ? 'flex' : 'none';
   const pauseLabel = Game.paused ? 'Resume' : 'Pause';
@@ -62,16 +67,19 @@ export const updateHud = () => {
   hudFade.style.opacity = Game.screensaver
     ? 1 - Math.min(1, Math.min(Math.abs(Player.s), Math.abs(Track.length - Player.s)) / CONFIG.screensaver.fadeDistance) : 0;
   hudBanner.style.display = Game.paused ? 'block' : 'none'; // (the only banner: paused)
-  // the latest message (see messages.js): up for CONFIG.messageTime, fading away at the end
+  // the two message lines (see messages.js): each up for its own time, fading away at the end
   const now = performance.now();
-  if (Message.id !== messageId) {
-    messageId = Message.id;
-    messageAt = now;
-    hudMessage.textContent = Message.text;
-  }
-  const age = (now - messageAt) / 1000;
-  hudMessage.style.opacity = Game.paused || Game.state !== 'playing' || !Message.text ? 0
-    : Math.min(1, Math.max(0, (CONFIG.messageTime - age) / CONFIG.messageFade));
+  Message.lines.forEach((line, i) => {
+    const el = hudMessages[i];
+    if (line.id !== shownIds[i]) {
+      shownIds[i] = line.id;
+      el.textContent = line.text;
+      el.className = 'line ' + line.kind;
+    }
+    const age = (now - line.at) / 1000;
+    el.style.opacity = Game.paused || Game.state !== 'playing' || !line.text ? 0
+      : Math.min(1, Math.max(0, (line.time - age) / CONFIG.messageFade));
+  });
   hudBusts.textContent = 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
   const danger = Player.danger / CONFIG.dangerTime;
   hudDanger.style.display = Player.active && danger < 1 ? 'block' : 'none';

@@ -16,9 +16,10 @@ import { emitVehicleSmoke, updateEffects } from './render/effects.js';
 import { syncPackages } from './render/packages.js';
 import { syncEmotes } from './render/emotes.js';
 import { syncPickups, syncTargets, syncToads } from './render/items.js';
-import { syncHelicopter } from './render/helicopter.js';
+import { syncHelicopter, syncArrests } from './render/helicopter.js';
 import { syncHeadlights, syncTrafficBeams } from './render/headlights.js';
 import { syncUfoStrike } from './render/ufostrike.js';
+import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
 import { updateHud } from './render/hud.js';
@@ -59,11 +60,12 @@ if (params.get('screensaver') !== null) {
 // every looping sound off: in the garage and on the menu
 const silence = () => {
   Sound.engine(-1);
-  Sound.siren(false);
+  Sound.siren(0);
   Sound.helicopter(false);
   Sound.frog(0);
   Sound.powerWarning(false);
   Sound.ufoStrike(false);
+  Sound.lowriders(0);
 };
 
 let last = performance.now();
@@ -93,6 +95,7 @@ const frame = (now) => {
     syncHeadlights();
     syncTraffic();
     syncToads(now);
+    syncArrests(dt, now);
     syncTrafficBeams();
     syncUfoStrike(dt);
     syncStorm(dt);
@@ -110,8 +113,24 @@ const frame = (now) => {
     const live = Game.state === 'playing' && Player.active && !Game.paused && !Game.screensaver;
     Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.id,
       Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
-    // a siren while a police car is near enough to bust you (nobody busts a tank)
-    Sound.siren(live && Player.tank <= 0 && Traffic.policeNear());
+    // the siren, louder the nearer the nearest police car (the screensaver's too), and a radar
+    // ping as one comes near enough to bust you (nobody busts a tank)
+    let copFar = Infinity;
+    for (const c of Traffic.cars) {
+      if (!c.active || c.kind !== 'police' || c.toad) continue;
+      copFar = Math.min(copFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat));
+    }
+    const siren = Game.state === 'playing' && !Game.paused ? Math.max(0, 1 - copFar / CONFIG.sirenRange) : 0;
+    // (the player's own siren, a pickup, at full blast)
+    Sound.siren(live && Player.siren > 0 ? 1 : siren * siren, live && Player.tank <= 0 && Traffic.policeNear());
+    // the lowriders' music, the same way: from the nearest one in traffic
+    let lowriderFar = Infinity;
+    for (const c of Traffic.cars) {
+      if (!c.active || c.kind !== 'lowrider' || c.toad) continue;
+      lowriderFar = Math.min(lowriderFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat));
+    }
+    const lowrider = Game.state === 'playing' && !Game.paused ? Math.max(0, 1 - lowriderFar / CONFIG.lowriderHearing) : 0;
+    Sound.lowriders(lowrider * lowrider);
     // beeps while on the shoulder with the danger meter running down, faster the nearer the bust
     Sound.danger(live && Player.onShoulder ? 1 - Player.danger / CONFIG.dangerTime : -1);
     // a powerup about to run out
@@ -120,7 +139,7 @@ const frame = (now) => {
     Sound.ufoStrike(!!UfoStrike.phase && !Game.paused && Game.state === 'playing');
     // the helicopter while it comes for the car (wrecked or busted), and keeps it at game over
     Sound.helicopter(!Game.paused && !Game.screensaver &&
-      ((Game.state === 'playing' && (!Player.active || Player.busted)) || Game.over));
+      ((Game.state === 'playing' && (!Player.active || Player.busted || Traffic.cars.some(c => c.active && c.arrest >= 0))) || Game.over));
     // a frog croaks louder the nearer it is
     let frogFar = Infinity;
     for (const o of Collision.obstacles) {
@@ -130,6 +149,7 @@ const frame = (now) => {
     renderer.render(scene, camera);
   }
   if (Game.state === 'start') silence(); // (back on the menu)
+  syncTankCorner(dt); // (it hides itself when there is no run)
   prevState = Game.state;
   requestAnimationFrame(frame);
 };

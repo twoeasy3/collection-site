@@ -24,6 +24,11 @@
       "ufo": ["UFO AIR STRIKE!!!"]
     }
   },
+  "bustCount": {
+    "1": ["First Offence - "],
+    "2": ["Final Warning - "],
+    "3": ["Arrested - "]
+  },
   "busts": {
     "shoulder": ["BUSTED - driving in an illegal lane!!"],
     "seen": ["BUSTED - the police saw you on the shoulder!!"],
@@ -98,5 +103,11 @@
   },
   "wrecks": {
     "byPlayer": ["You've destroyed a car!"]
+  },
+  "tankParts": {
+    "rearBody": ["You found a tank rear body!"],
+    "turretHull": ["You found a tank turret hull!"],
+    "gunTurret": ["You found a tank gun turret!"],
+    "gunBarrel": ["You found a tank gun barrel!"]
   }
 }
