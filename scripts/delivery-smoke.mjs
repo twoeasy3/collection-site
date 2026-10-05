@@ -333,7 +333,7 @@ try {
     for (let i = 0; i < 30; i++) { Player.latVel = 6; Collision.check(); }
     FxQueue.length = 0;
     const afterSwipe = Player.speed, carAfter = o.vs;
-    o = stage('car', 'north', (c) => { c.s = 196; c.lat = Player.lat; c.vs = 45; });
+    o = stage('car', 'north', (c) => { c.s = Player.s - Player.hl - c.hl + 0.2; c.lat = Player.lat; c.vs = 45; }); // (just touching)
     Player.speed = 15;
     Collision.check();
     FxQueue.length = 0;
@@ -512,7 +512,7 @@ try {
     Player.s = x.landingAt - 30; Player.lat = T.laneOffset(-1, Player.s); // the left shoulder
     Player.speed = 25; Player.launching = false; Player.shield = 0;
     const seen = new Set();
-    for (let i = 0; i < 120 * 60 && !(T.isMain(Player.s) && Player.s > x.flyoverAt + 20); i++) {
+    for (let i = 0; i < 120 * 120 && !(T.isMain(Player.s) && Player.s > x.flyoverAt + 20); i++) {
       for (const c of Traffic.cars) c.active = false;
       for (const o of Collision.obstacles) o.gone = true;
       Player.danger = CONFIG.dangerTime; // (the shoulder timer isn't what is being tested)
@@ -552,6 +552,236 @@ try {
   check(afterGhost.turbo === 0 && afterGhost.ghost === CONFIG.ghostTime && Player.turbo === 0 && Player.ghost === 0 &&
     Math.abs(Player.passenger - (CONFIG.passengerTime - 0.3)) < 1e-9 && Player.powerLeft === Player.passenger,
     `one powerup at a time: a ghost replaces a turbo, a passenger the ghost, and a wrench leaves the passenger running (${Player.powerLeft.toFixed(1)} s left)`);
+
+  // the top speed reached with a powerup picked up at the start, on an empty road, flat out for 8 s
+  const topWith = (carId, type) => {
+    cars.selectCar(carId);
+    Game.evil = false;
+    Game.start();
+    if (type) Player.collect(type);
+    let top = 0;
+    for (let i = 0; i < 120 * 8; i++) {
+      for (const c of Traffic.cars) c.active = false;
+      for (const o of Collision.obstacles) o.gone = true;
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      top = Math.max(top, Player.speed);
+    }
+    return top;
+  };
+  {
+    const slow = cars.CARS.find(car => car.id === 'coupe'), fast = cars.CARS.find(car => car.id === 'miata');
+    const slowTop = topWith(slow.id, 'turbo'), fastTop = topWith(fast.id, 'turbo');
+    check(Math.abs(slowTop - (slow.maxSpeed + CONFIG.turboBoost)) < 0.5 && Math.abs(fastTop - (fast.maxSpeed + CONFIG.turboBoost)) < 0.5 &&
+      CONFIG.turboTime === 10 && CONFIG.ghostTime === 10,
+      `a turbo adds a flat ${CONFIG.turboBoost} m/s for ${CONFIG.turboTime} s: ${slow.name} ${slow.maxSpeed} > ${slowTop.toFixed(1)}, ${fast.name} ${fast.maxSpeed} > ${fastTop.toFixed(1)} (a ghost lasts ${CONFIG.ghostTime} s)`);
+    const hatch = cars.CARS.find(car => car.id === 'hatch');
+    const gasTop = topWith('hatch', 'badGas'), heavyTop = topWith('hatch', 'heavyMass');
+    check(Math.abs(gasTop - hatch.maxSpeed * CONFIG.badGas.topSpeed) < 0.5 && Math.abs(heavyTop - hatch.maxSpeed * CONFIG.heavyMass.topSpeed) < 0.5,
+      `bad gas and the 1000 lb weight hold the ${hatch.name} (${hatch.maxSpeed} m/s) to ${gasTop.toFixed(1)} and ${heavyTop.toFixed(1)} m/s`);
+  }
+
+  // bad gas and the weight are powerups like any other: one at a time
+  levels.selectLevel(0);
+  cars.selectCar('hatch');
+  Game.start();
+  Player.collect('turbo');
+  Player.collect('badGas');
+  const gasOverTurbo = Player.turbo === 0 && Player.badGas === CONFIG.badGas.time;
+  Player.collect('wrench');
+  const gasAfterWrench = Player.badGas === CONFIG.badGas.time;
+  Player.collect('heavyMass');
+  const heavyMass = Player.mass, heavyAgility = Player.agility;
+  Player.collect('ghost');
+  check(gasOverTurbo && gasAfterWrench && Player.badGas === 0 && heavyMass === CONFIG.heavyMass.mass &&
+    heavyAgility < (cars.CAR.agility || 1) && Player.heavy === 0 && Player.mass === 1,
+    `bad gas replaces a turbo and outlasts a wrench; the weight replaces it (mass ${heavyMass}, steering ${heavyAgility}) and a ghost the weight (mass ${Player.mass})`);
+
+  // under the weight, the player wins a collision it would otherwise lose: running into the back of a slower car
+  const rearEnd = (heavy) => {
+    levels.selectLevel(0);
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    for (const c of Traffic.cars) c.active = false;
+    for (const o of Collision.obstacles) o.gone = true;
+    const other = Traffic.cars.find(c => c.bound === 'north'), type = CONFIG.vehicles.car;
+    Object.assign(other, { active: true, kind: 'car', lane: 2, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, fixed: false,
+      hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health, maxHealth: type.health, sideTick: -999 });
+    Player.s = 200; Player.launching = false; Player.lat = track.Track.laneOffset(2, 200); Player.shield = 0; Player.stun = 0; Player.sideTick = -999;
+    if (heavy) Player.collect('heavyMass');
+    Object.assign(other, { s: Player.s + Player.hl + other.hl - 0.2, lat: Player.lat, vs: 15 });
+    Player.speed = 35;
+    Collision.check();
+    FxQueue.length = 0;
+    return { speed: Player.speed, other: other.vs, taken: Player.maxHealth - Player.health, dealt: other.maxHealth - other.health, stun: Player.stun };
+  };
+  {
+    const light = rearEnd(false), heavy = rearEnd(true);
+    check(light.speed < 25 && heavy.speed > 30 && heavy.other > light.other && heavy.taken < light.taken / 2 &&
+      heavy.dealt > light.dealt && heavy.stun < light.stun,
+      `rear-ending a car at 35 vs 15: normally the player drops to ${light.speed.toFixed(1)} m/s, takes ${light.taken.toFixed(0)} and deals ${light.dealt.toFixed(0)}; ` +
+      `under the weight ${heavy.speed.toFixed(1)} m/s, takes ${heavy.taken.toFixed(0)} and deals ${heavy.dealt.toFixed(0)}, stunned ${heavy.stun.toFixed(2)} s, not ${light.stun.toFixed(2)}`);
+  }
+
+  // the stopwatches move the clock at once, and leave the powerup running alone
+  levels.selectLevel(0);
+  Game.start();
+  Player.collect('turbo');
+  {
+    const allowed0 = Game.allowed, turbo0 = Player.turbo;
+    Player.collect('timePlus');
+    const plus = Game.allowed - allowed0;
+    Player.collect('timeMinus');
+    Player.collect('timeMinus');
+    const minus = Game.allowed - allowed0;
+    check(plus === CONFIG.timePickup && minus === -CONFIG.timePickup && Player.turbo === turbo0 && Player.powerLeft === turbo0,
+      `time plus puts ${plus} s on the clock, two time minuses take ${-minus + plus} s off, and the turbo runs on (${Player.turbo} s)`);
+    // half way through the tip countdown: a time plus winds it back, and the tip with it
+    Game.time = Game.allowed + CONFIG.tipCountdown / 2;
+    const tipBefore = Game.tip;
+    Player.collect('timePlus');
+    check(Math.abs(Game.remaining - (CONFIG.timePickup - CONFIG.tipCountdown / 2)) < 1e-9 && Game.tip > tipBefore,
+      `in the tip countdown, time plus winds the clock back to ${Game.remaining.toFixed(1)} s and the tip from $${tipBefore.toFixed(2)} to $${Game.tip.toFixed(2)}`);
+  }
+
+  console.log('messages');
+  {
+    const { Message } = await load('/src/delivery/messages.js');
+    Message.clear();
+    const first = Message.say('wrecks', 'byPlayer'), at0 = first.at, id0 = first.id;
+    await new Promise(resolve => setTimeout(resolve, 20));
+    const again = Message.say('wrecks', 'byPlayer');
+    const shown = () => Message.lines.filter(line => line.text).length;
+    check(again === first && again.id === id0 && again.at > at0 && shown() === 1,
+      `the same message twice ("${first.text}") stays on one line, its time started again (${shown()} line in use)`);
+    Message.say('powerups', 'turbo');
+    check(shown() === 2, 'a different message still takes the other line');
+    Message.clear();
+  }
+
+  console.log('levels list');
+  {
+    const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
+    check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo' && levels.levelLabel(main - 1) === String(main) &&
+      levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 1) === 'S2' && levels.LEVELS[main - 1].id === 'suburbs',
+      `the special levels come last, as S1 and S2: ${labels.slice(main - 1).join(', ')}`);
+  }
+
+  console.log('hesitation, signals and lights');
+  {
+    const H = CONFIG.hesitation;
+    const pick = (id) => levels.selectLevel(levels.LEVELS.findIndex(l => l.id === id));
+    const topOf = (kind) => (cars.CARS.find(car => car.id === kind) || {}).maxSpeed;
+    // drives on for `seconds`, the player kept whole and the clock held, calling look() each step
+    const drive = (seconds, look) => {
+      for (let i = 0; i < 120 * seconds && Game.state === 'playing'; i++) {
+        Player.health = Player.maxHealth;
+        Game.busts = 0;
+        Game.time = 0;
+        Game.update(1 / 120);
+        FxQueue.length = 0;
+        look();
+      }
+    };
+
+    // Suburbia's traffic is all garage cars, too fast to catch: the ones going the player's way hesitate
+    pick('suburbs');
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    const going = Traffic.cars.filter(c => c.active && c.dir > 0), coming = Traffic.cars.filter(c => c.active && c.dir < 0);
+    check(going.length > 0 && going.every(c => c.hesitant && c.baseSpeed >= H.pace.min && c.baseSpeed <= H.pace.max) &&
+      coming.length > 0 && coming.every(c => !c.hesitant),
+      `Suburbia: all ${going.length} cars going the player's way hesitate (${going.map(c => c.baseSpeed.toFixed(0)).join(', ')} m/s), none of the ${coming.length} oncoming`);
+    let fromBehind = 0, slowBehind = 0, tapped = false, police = false;
+    const seen = new Set();
+    drive(60, () => {
+      for (const c of Traffic.cars) {
+        if (!c.active) continue;
+        if (c.kind === 'police') police = true;
+        if (c.hesitant && c.tap > 0 && c.braking) tapped = true;
+        if (c.fromBehind && !seen.has(c)) {
+          seen.add(c);
+          fromBehind++;
+          if (c.baseSpeed < H.behindPace.min * topOf(c.kind) - 1e-9) slowBehind++;
+        } else if (!c.fromBehind) seen.delete(c);
+      }
+    });
+    check(fromBehind > 0 && !slowBehind && tapped && !police,
+      `Suburbia, 60 s: ${fromBehind} cars came up from behind at ${H.behindPace.min * 100}%+ of full speed, hesitant ones touched their brakes, and no police`);
+
+    // the Expressway's traffic is never too fast for the player: nobody hesitates, nobody comes from behind
+    pick('expressway');
+    Game.start();
+    let anyHesitant = false, anyBehind = false;
+    drive(30, () => {
+      for (const c of Traffic.cars) if (c.active) { anyHesitant ||= c.hesitant; anyBehind ||= c.fromBehind; }
+    });
+    check(!anyHesitant && !anyBehind, 'Expressway, 30 s: no hesitation, and no traffic from behind');
+
+    // one car, staged ahead of the player in lane 2 of the Expressway (the player's other lane, 3, free)
+    const stageOne = (props) => {
+      pick('expressway');
+      Game.start();
+      for (const c of Traffic.cars) c.active = false;
+      Player.s = 200; Player.lat = track.Track.laneOffset(2, 200); Player.speed = 15; Player.launching = false; Player.shield = 0;
+      const car = Traffic.cars.find(c => c.dir > 0), type = CONFIG.vehicles.car;
+      Object.assign(car, { active: true, kind: 'car', fixed: false, viaSide: false, s: 230, lane: 2, lat: Player.lat, vs: 15, baseSpeed: 15,
+        latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, rival: null, rivalTime: 0, honkWait: 0, throwTimer: 99, arrest: -1,
+        pulledOver: false, toad: null, hesitant: false, tap: 0, wander: 0, think: 0, braking: false, signal: 0, hazards: false,
+        pendingLane: null, signalTime: 0, hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health,
+        maxHealth: type.health, evil: false, mood: 0.9, emotion: 'happy' }, props);
+      return car;
+    };
+    const run = (car, seconds) => { for (let i = 0; i < Math.round(seconds * 120); i++) Traffic.update(1 / 120); };
+
+    // a happy, good driver in the player's lane decides to move over, and signals for signalTime first
+    let car = stageOne({});
+    run(car, 1 / 120);
+    car.think = 99; // (no second thoughts during the test)
+    const signalled = car.signal === 1 && car.lane === 2;
+    run(car, CONFIG.signalTime - 0.1);
+    const stillWaiting = car.lane === 2 && car.signal === 1;
+    run(car, 0.2);
+    const moved = car.lane === 3;
+    run(car, 3);
+    check(signalled && stillWaiting && moved && car.signal === 0,
+      `a happy good driver signals, waits ${CONFIG.signalTime} s, then moves over (and the indicator goes off once it is there)`);
+    // ...an evil one just goes
+    car = stageOne({ evil: true });
+    run(car, 1 / 120);
+    check(car.lane === 3 && car.signal === 0, 'an evil driver moves over at once, without signalling');
+
+    // the siren: a car in the player's lane moves over signalling at once, evil or not...
+    Player.siren = 0;
+    car = stageOne({ evil: true, mood: 0 });
+    Player.siren = 5;
+    run(car, 1 / 120);
+    check(car.lane === 3 && car.signal === 1, 'with a siren behind it, even an evil driver signals as it gets out of the way');
+    // ...and one with nowhere to go but the shoulder puts its hazards on once it is there
+    car = stageOne({ lane: 3 });
+    Player.lat = car.lat = track.Track.laneOffset(3, 200);
+    Player.siren = 5;
+    run(car, 1 / 120);
+    const signalling = car.pulledOver && car.signal === 1 && !car.hazards;
+    run(car, 3);
+    check(signalling && car.hazards && car.signal === 0 && track.Track.onShoulder(car.lat, car.s),
+      'pulled over onto the shoulder for a siren: it signals on the way, then puts its hazards on');
+    Player.siren = 0;
+
+    // brake lights: the player's while braking, not while holding speed; a car's while it slows
+    Player.speed = 20;
+    Player.updateSpeed(1 / 120, -1, false);
+    const braking = Player.brakeLight;
+    Player.updateSpeed(1 / 120, 0, false);
+    car = stageOne({ vs: 25, think: 99 });
+    run(car, 1 / 120);
+    const carBraking = car.braking;
+    run(car, 8);
+    check(braking && !Player.brakeLight && carBraking && !car.braking,
+      'brake lights: the player\'s while braking (not holding speed), a car\'s while it slows to its pace (not once there)');
+  }
 
   console.log('cars');
   levels.selectLevel(0); // (a level with no vehicle of its own)

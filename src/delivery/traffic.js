@@ -24,7 +24,8 @@ export const Traffic = (() => {
     cars.push({ active: false, unused: false, dir: north ? 1 : -1, bound: north ? 'north' : 'south', mass: 1,
       s: 0, lat: 0, vs: 0, latVel: 0, yaw: 0, yawVel: 0, stun: 0,
       lane: 0, baseSpeed: 0, kind: 'car', evil: false, emotion: 'neutral', mood: 0, paint: 0, think: 0, honkWait: 0,
-      health: 1, maxHealth: 1, smoke: 0, hw: 1, hl: 2.1, height: 1.4 });
+      health: 1, maxHealth: 1, smoke: 0, hw: 1, hl: 2.1, height: 1.4,
+      braking: false, signal: 0, hazards: false, pendingLane: null, hesitant: false, fromBehind: false });
   }
 
   // ramps: the expressway's shoulder is the exit / merge lane there, lane index -1 on the
@@ -84,18 +85,52 @@ export const Traffic = (() => {
     Math.abs(Player.lat - Track.laneOffset(lane, car.s)) < CONFIG.laneWidth * 0.9 &&
     Player.s > car.s - 30 && Player.s < car.s + 12;
 
-  // puts the car on the road somewhere between minAhead and maxAhead metres in front of the player
+  const H = CONFIG.hesitation;
+  const between = (range) => range.min + Math.random() * (range.max - range.min);
+  const hesitation = () => LEVEL.hesitation !== false;
+
+  // puts the car on the road `distance` metres from the player (negative: behind), in a lane of
+  // its own direction with room around it; false if there is no room there
+  const placeAt = (car, distance) => {
+    car.s = Track.spawnAt(Player.s, distance, car.dir);
+    if (Number.isNaN(car.s) || !Track.inBounds(car.s)) return false;
+    const [first, last] = Track.laneRange(car.dir, car.s);
+    const lane = Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), car.s);
+    if (!laneClear(car, lane, 25)) return false;
+    outfit(car, pickKind(), lane);
+    return true;
+  };
+
+  // puts the car on the road somewhere between minAhead and maxAhead metres in front of the
+  // player. One going the player's way too fast for the player ever to catch hesitates (see CONFIG.hesitation).
   const spawn = (car, minAhead, maxAhead) => {
     car.active = false;
     for (let tries = 0; tries < 5; tries++) {
-      car.s = Track.spawnAt(Player.s, minAhead + Math.random() * (maxAhead - minAhead), car.dir);
-      if (Number.isNaN(car.s)) continue;
-      const [first, last] = Track.laneRange(car.dir, car.s);
-      const lane = Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), car.s);
-      if (!laneClear(car, lane, 25)) continue;
-      outfit(car, pickKind(), lane);
+      if (!placeAt(car, minAhead + Math.random() * (maxAhead - minAhead))) continue;
+      if (hesitation() && car.dir === Player.dir && car.baseSpeed > H.above) {
+        car.hesitant = true;
+        car.baseSpeed = between(H.pace);
+        car.vs = car.dir * car.baseSpeed;
+        car.tapWait = between(H.tapEvery);
+      }
       return;
     }
+  };
+  // ...and while a hesitant car is ahead of the player, a car going the player's way may come
+  // up from behind instead, near full speed. False if there was no room.
+  const hesitantAhead = () => cars.some(c => c.active && c.hesitant && c.dir === Player.dir && Track.along(c.s) > Track.along(Player.s));
+  const spawnBehind = (car) => {
+    car.active = false;
+    for (let tries = 0; tries < 5; tries++) {
+      if (!placeAt(car, -between(H.behind))) continue;
+      const own = GARAGE_TOP[car.kind];
+      car.baseSpeed = (own || CONFIG.vehicles[car.kind].speed * speeds().max) * between(H.behindPace);
+      car.vs = car.dir * car.baseSpeed;
+      car.fromBehind = true;
+      return true;
+    }
+    car.active = false;
+    return false;
   };
 
   // TOAD RAGE (a mystery): while it lasts, every vehicle is a toad (new ones too). A toad goes
@@ -161,6 +196,17 @@ export const Traffic = (() => {
     car.toad = null;        // in TOAD RAGE: what it was before it became a toad (see toadify)
     car.pulledOver = false; // on the shoulder, out of the way of the player's siren
     car.arrest = -1;        // s into being carried off by the police (see arrest); -1 = not
+    car.braking = false;    // its brake lights are on
+    car.signal = 0;         // indicating: +1 towards the next lane up (lat increasing), -1 the next down
+    car.hazards = false;    // hazard lights: pulled over onto the shoulder for a siren
+    car.pendingLane = null; // the lane it is signalling for, until it moves over (see signalTo)
+    car.pendingForced = false; // ...because its lane ends or it is taking a ramp
+    car.signalTime = 0;     // s of signalling left before it moves over
+    car.hesitant = false;   // hesitating (see CONFIG.hesitation)...
+    car.tap = 0;            // ...s left of a touch of the brakes...
+    car.tapWait = 0;        // ...s to the next
+    car.wander = Math.random() * 6; // (where it is in its drift about the lane)
+    car.fromBehind = false; // came up from behind the player
     if (toads) makeToad(car);
     car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
     car.think = Math.random() * 2;
@@ -185,8 +231,8 @@ export const Traffic = (() => {
     }
   };
 
-  const tryMove = (car, dir, ignorePlayer) => {
-    const lane = car.lane + dir;
+  // could the car move over into that lane right now?
+  const canMove = (car, lane, ignorePlayer) => {
     const [first, last] = Track.laneRange(car.dir, car.s);
     if (lane < first || lane > last) return false;
     if (Track.openLane(lane, car.s) !== lane || Track.openLane(lane, car.s + car.dir * 70) !== lane) {
@@ -194,7 +240,22 @@ export const Traffic = (() => {
     }
     if (!laneClear(car, lane, CONFIG.laneChangeGap)) return false;
     if (!ignorePlayer && playerInWay(car, lane)) return false;
-    car.lane = lane;
+    return true;
+  };
+  // A calm (happy or neutral), good driver decides early and signals: it moves over
+  // CONFIG.signalTime later, if the lane is still free then (see update). Evil and angry drivers just go.
+  const courteous = (car) => !car.evil && car.emotion !== 'angry';
+  const signalTo = (car, lane, forced) => {
+    car.pendingLane = lane;
+    car.pendingForced = forced; // (its lane ends, or it is taking a ramp: it waits for room, however long)
+    car.signal = Math.sign(lane - car.lane);
+    car.signalTime = CONFIG.signalTime;
+  };
+  const tryMove = (car, dir, ignorePlayer) => {
+    const lane = car.lane + dir;
+    if (!canMove(car, lane, ignorePlayer)) return false;
+    if (courteous(car)) signalTo(car, lane, false);
+    else car.lane = lane;
     return true;
   };
 
@@ -222,6 +283,7 @@ export const Traffic = (() => {
 
   const think = (car) => {
     if (car.kind === 'tractor') return; // a tractor just trundles along its lane
+    if (car.pendingLane !== null) return; // (already signalling for a move)
     if (underSiren(car)) return; // (no lane changes of its own with a siren behind it)
     // angry drivers pick on whoever is nearest
     if (car.emotion === 'angry' && !car.rival && Math.random() < CONFIG.rivalryPickChance) {
@@ -269,7 +331,10 @@ export const Traffic = (() => {
     for (const car of cars) {
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
-        if (!car.fixed && !car.unused && mix().length) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
+        if (!car.fixed && !car.unused && mix().length) {
+          const behind = hesitation() && car.dir === Player.dir && Math.random() < H.behindChance && hesitantAhead();
+          if (!(behind && spawnBehind(car))) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
+        }
         continue;
       }
       const ahead = Track.along(car.s) - Track.along(Player.s); // along the course, whichever road
@@ -282,6 +347,9 @@ export const Traffic = (() => {
       car.honkWait = Math.max(0, car.honkWait - dt);
       if (car.arrest >= 0) { // being carried off by the police: it brakes to a stop, and is gone at the end
         car.arrest += dt;
+        car.braking = true;
+        car.signal = 0;
+        car.hazards = false;
         car.vs -= car.vs * Math.min(1, dt * 1.5);
         car.latVel = 0;
         car.s += car.vs * dt;
@@ -300,6 +368,11 @@ export const Traffic = (() => {
         Track.transfer(car);
         keepOnRoad(car, 0);
         continue;
+      }
+      if (car.spin > 0 || car.stun > 0) { // (out of control: no signalling, no brakes)
+        car.braking = car.hazards = false;
+        car.signal = 0;
+        car.pendingLane = null;
       }
       if (car.spin > 0) {
         // spun out: no control at all. Its momentum swings round in an arc while the body
@@ -378,18 +451,38 @@ export const Traffic = (() => {
           const here = Track.openLane(car.lane, car.s), next = here + (car.dir > 0 ? 1 : -1);
           if (next >= first && next <= last && Track.openLane(next, car.s) === next && laneClear(car, next, 10)) car.lane = next;
           else car.pulledOver = true;
+          // (signalling to its right as it goes, whatever its manners: see the hazards below)
+          car.pendingLane = null;
+          car.signal = car.dir;
         }
         // (with a siren behind it, a car drops any feud it has, so its rival can't drag it back
         // into the player's way; the feud may start up again once the siren has passed)
         if (underSiren(car)) rival = null;
 
-        // heading for a ramp, or the lane ends ahead: change lane, or ease off until there is room
+        // heading for a ramp, or the lane ends ahead: change lane, or ease off until there is room.
+        // (a courteous driver sees it coming that much sooner, and signals first)
         const ramp = rampLane(car);
-        const open = ramp !== car.lane ? ramp : Track.openLane(car.lane, car.s + car.dir * 70);
+        const lead = (reach) => ramp !== car.lane ? ramp : Track.openLane(car.lane, car.s + car.dir * reach);
+        const open = lead(70);
         let squeezed = false;
-        if (open !== car.lane) {
+        if (courteous(car)) {
+          const soon = lead(70 + Math.abs(car.vs) * CONFIG.signalTime);
+          if (soon !== car.lane && car.pendingLane !== soon) signalTo(car, soon, true);
+          squeezed = open !== car.lane; // (until it has moved over)
+        } else if (open !== car.lane) {
           if (laneClear(car, open, 12)) car.lane = open;
           else squeezed = true;
+        }
+        // signalled long enough: move over if there is room (a move it has to make waits for it)
+        if (car.pendingLane !== null && (car.signalTime -= dt) <= 0) {
+          const lane = car.pendingLane;
+          if (car.pendingForced ? laneClear(car, lane, 12) : canMove(car, lane, false)) {
+            car.lane = lane;
+            car.pendingLane = null;
+          } else if (!car.pendingForced) {
+            car.pendingLane = null;
+            car.signal = 0;
+          }
         }
 
         car.think -= dt;
@@ -403,6 +496,8 @@ export const Traffic = (() => {
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
         if (rival) {
           // get into its lane, then catch it up or drop back onto it
+          car.pendingLane = null;
+          car.signal = 0;
           const [first, last] = Track.laneRange(car.dir, car.s);
           car.lane = clamp(rival.isPlayer ? Track.nearestLane(rival.lat, rival.s) : rival.lane, first, last);
           target = car.baseSpeed * ((rival.s - car.s) * car.dir > 0 ? 1.35 : 0.7);
@@ -423,7 +518,17 @@ export const Traffic = (() => {
           honk(car);
           if (car.emotion !== 'angry') target = Math.min(target, Player.speed * 0.9);
         }
-        car.vs += (car.dir * target - car.vs) * damp(1.2, dt);
+        // hesitating: every so often a touch of the brakes, sharply
+        if (car.hesitant && (car.tapWait -= dt) <= 0) {
+          car.tap = H.tapTime;
+          car.tapWait = between(H.tapEvery);
+        }
+        if (car.tap > 0) {
+          car.tap -= dt;
+          target *= H.tapPace;
+        }
+        car.braking = car.tap > 0 || Math.abs(car.vs) > target + 0.8;
+        car.vs += (car.dir * target - car.vs) * damp(car.tap > 0 ? 3 : 1.2, dt);
 
         // spring back to the lane centre
         // (alongside its rival it steers straight at it)
@@ -431,7 +536,13 @@ export const Traffic = (() => {
         const aimLat = beside ? rival.lat
           : car.pulledOver ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
           : Track.laneOffset(car.lane, car.s);
-        const wantVel = clamp((aimLat - car.lat) * CONFIG.trafficLaneChangeRate, -6, 6);
+        // the indicator goes off once the car is in its new lane (or on the shoulder), and a car
+        // pulled over onto the shoulder puts its hazards on
+        const settled = Math.abs(aimLat - car.lat) < 0.3;
+        if (settled && car.pendingLane === null) car.signal = 0;
+        car.hazards = car.pulledOver && (car.hazards || settled);
+        const drift = car.hesitant && !beside && !car.pulledOver ? Math.sin(car.wander += dt * 1.3) * H.wander : 0;
+        const wantVel = clamp((aimLat + drift - car.lat) * CONFIG.trafficLaneChangeRate, -6, 6);
         car.latVel += (wantVel - car.latVel) * damp(6, dt);
       }
 

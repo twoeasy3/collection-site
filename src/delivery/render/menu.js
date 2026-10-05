@@ -2,7 +2,7 @@
 // The start screen is only a menu. Picking a level just marks it; the level is built when
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
-import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel } from '../levels.js';
+import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel } from '../levels.js';
 import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime } from '../game.js';
@@ -70,12 +70,12 @@ const draw = () => {
   levelBox.replaceChildren(...LEVELS.map((level, i) => {
     const open = i < Progress.data.unlocked;
     const best = Progress.data.best[level.id];
-    return card((i + 1) + '. ' + level.name, open ? [
+    return card(levelLabel(i) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
       'Clock ' + formatTime(level.time * CONFIG.timeScale.good) + ' Good / ' +
         formatTime(level.time * CONFIG.timeScale.evil) + ' Evil',
       best === undefined ? 'Not delivered yet' : 'Best tip ' + money(best),
-    ] : ['Locked', 'Deliver level ' + i + ' on time to open it'], {
+    ] : ['Locked', 'Deliver level ' + levelLabel(i - 1) + ' on time to open it'], {
       current: i === LEVEL_INDEX,
       disabled: !open,
       onPick: () => { selectLevel(i); useLevelCar(level.car); draw(); },

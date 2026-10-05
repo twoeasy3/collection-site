@@ -108,7 +108,7 @@ export const updateCamera = (dt, snap) => {
   tmp2.y += 1; // (so the camera looks up a climb and down a descent)
   camera.lookAt(tmp2);
 
-  const speedT = Math.min(1.3, Player.speed / CONFIG.turboMaxSpeed);
+  const speedT = Math.min(1.3, Player.speed / CONFIG.camFovFullSpeed);
   camera.fov = baseFov + CONFIG.camFovSpeedBoost * speedT * speedT;
   camera.updateProjectionMatrix();
 };

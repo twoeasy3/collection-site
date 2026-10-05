@@ -56,6 +56,8 @@ const THEMES = {
   // beach: sand, a stormy sky, the sea along the right, palms and beach huts
   beach: { sky: 0x7e8d9e, ground: 0xdccb95, road: 0x45484e, scenery: 'beach' },
   // space: no ground and no road surface, only glowing lane lines among the stars
+  // suburb: lawns, pavements, picket fences and houses in a row
+  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb' },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
   space: { sky: 0x05060d, ground: null, road: null, scenery: 'space', line: 0x7fe8ff, centre: 0xff62d6 },
   // night: the city after dark. The road and the ground are lit surfaces (lit: true), dark but
@@ -411,6 +413,79 @@ const buildRoad = () => {
     instances(cone, 0xff6a5a, shades, true);
     instances(cube, 0x62b0d8, huts);
     instances(cone, 0xf2e3c4, roofs);
+  } else if (theme.scenery === 'suburb') {
+    // ---- suburb: a pavement each side, then lots: a front lawn behind a picket fence, a house
+    // with a door and windows facing the road, a driveway and a mailbox; here and there a little
+    // park of trees instead. Trees in the gardens, and street lamps along the pavement.
+    for (const side of [-1, 1]) {
+      add(buildStrip(Track.start, Track.end, (q) => beside(side, q, 0.4), (q) => beside(side, q, 2.4), 0.03), flat(0xcfd0cb));
+    }
+    const WALLS = [0xf2e6c9, 0xbfd8e8, 0xf0c9b0, 0xd9e5c3, 0xe8d0e0, 0xfafafa];
+    const walls = WALLS.map(() => []), roofs = [], doors = [], windows = [], drives = [];
+    const pickets = [], rails = [], mailPosts = [], mailboxes = [], trunks = [], crowns = [], lampPosts = [], lampHeads = [];
+    const tree = (at, lat) => {
+      const h = 0.8 + Math.random() * 0.5;
+      trunks.push([at, lat, 1.2 * h, 0.35, 2.4 * h, 0.35]);
+      crowns.push([at, lat, 3.6 * h, 3.4 * h, 3.0 * h, 3.4 * h]);
+    };
+    const FENCE = 2.8, LOT = 26; // m off the pavement edge to the fence; m along the road per lot
+    // (nothing goes where it would stand on a side road)
+    const clear = (s, lat) => !exits.length || (Track.toWorld(s, lat, tmp), Track.sideDistance(tmp.x, tmp.z) > 24);
+    for (const side of [-1, 1]) {
+      for (let s = Track.start + (side > 0 ? 0 : LOT / 2); s < Track.end - LOT; s += LOT) {
+        const mid = s + LOT / 2;
+        if (!clear(mid, beside(side, mid, 12))) continue;
+        if (Math.random() < 0.12) { // a little park
+          for (let k = 0; k < 4; k++) tree(s + Math.random() * LOT, beside(side, mid, 5 + Math.random() * 22));
+          continue;
+        }
+        const along = 9 + Math.random() * 4, across = 8 + Math.random() * 3;
+        const tall = Math.random() < 0.4, h = tall ? 6 : 3.4;
+        const front = 9 + Math.random() * 3; // m of front lawn, from the pavement edge to the house
+        const lat = beside(side, mid, front + across / 2), face = beside(side, mid, front - 0.06);
+        walls[Math.floor(Math.random() * WALLS.length)].push([mid, lat, h / 2, across, h, along]);
+        roofs.push([mid, lat, h + 1.1, across * 1.12, 2.2, along * 1.12]);
+        doors.push([mid - 1.5, face, 1.1, 0.12, 2.2, 1.1]);
+        for (const floor of tall ? [1.6, 4.4] : [1.6]) {
+          windows.push([mid + 2.2, face, floor, 0.1, 1.2, 1.7]);
+          if (floor > 2) windows.push([mid - 1.5, face, floor, 0.1, 1.2, 1.7]);
+        }
+        // the driveway, beside the house, from the pavement to its far side, with the mailbox at its end
+        const drive = mid + along / 2 + 2;
+        drives.push([drive, beside(side, drive, (front + across) / 2 + 1.2), 0.03, front + across - 2.4, 0.06, 3.2]);
+        mailPosts.push([drive - 2.3, beside(side, drive - 2.3, FENCE - 0.3), 0.5, 0.1, 1.0, 0.1]);
+        mailboxes.push([drive - 2.3, beside(side, drive - 2.3, FENCE - 0.3), 1.1, 0.32, 0.3, 0.55]);
+        // the picket fence along the front of the lot, open where the driveway crosses it
+        for (const [from, to] of [[s, drive - 1.8], [drive + 1.8, s + LOT]]) {
+          if (to - from < 1) continue;
+          for (let q = from; q <= to; q += 1.2) pickets.push([q, beside(side, q, FENCE), 0.45, 0.1, 0.9, 0.1]);
+          for (const y of [0.3, 0.65]) rails.push([(from + to) / 2, beside(side, (from + to) / 2, FENCE), y, 0.06, 0.08, to - from]);
+        }
+        if (Math.random() < 0.6) tree(s + 2 + Math.random() * 5, beside(side, s, FENCE + 2 + Math.random() * 3)); // in the front garden
+        tree(mid + Math.random() * 8 - 4, beside(side, mid, front + across + 5 + Math.random() * 10));   // and the back
+      }
+    }
+    for (let s = Track.start, k = 0; s < Track.end; s += 55, k++) { // street lamps, each side in turn
+      const side = k % 2 ? 1 : -1;
+      if (!clear(s, beside(side, s, 0.8))) continue;
+      lampPosts.push([s, beside(side, s, 0.8), 2.75, 0.16, 5.5, 0.16]);
+      lampHeads.push([s, beside(side, s, 0.2), 5.45, 1.2, 0.18, 0.4]);
+    }
+    // (a four-sided cone turned an eighth is a square pyramid over a unit square: a hip roof)
+    const roof = new THREE.ConeGeometry(Math.SQRT1_2, 1, 4).rotateY(Math.PI / 4);
+    WALLS.forEach((color, i) => instances(cube, color, walls[i]));
+    instances(roof, 0x6b4a3f, roofs);
+    instances(cube, 0x7a3b2e, doors);
+    instances(cube, 0x9cc7e0, windows);
+    instances(cube, 0x9a9a95, drives);
+    instances(cube, 0xffffff, pickets);
+    instances(cube, 0xffffff, rails);
+    instances(cube, 0x5a5a5a, mailPosts);
+    instances(cube, 0x2a4a8a, mailboxes);
+    instances(tube, 0x6b4a2b, trunks);
+    instances(new THREE.SphereGeometry(0.5, 10, 8), 0x3f8f3f, crowns);
+    instances(cube, 0x55595f, lampPosts);
+    instances(cube, 0xfff3c4, lampHeads, true);
   } else if (theme.scenery === 'hell') {
     // ---- hell: rivers of lava, black spires of rock, and fires along the roadside ------------------
     const glow = (color) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthWrite: false });

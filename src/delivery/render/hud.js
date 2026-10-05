@@ -49,6 +49,8 @@ export const updateHud = () => {
     if (Player.passenger > 0) effects += 'PASSENGER ' + Player.passenger.toFixed(1) + '  ';
     if (Player.radar > 0) effects += 'RADAR ' + Player.radar.toFixed(1) + '  ';
     if (Player.siren > 0) effects += 'SIREN ' + Player.siren.toFixed(1) + '  ';
+    if (Player.badGas > 0) effects += 'BAD GAS ' + Player.badGas.toFixed(1) + '  ';
+    if (Player.heavy > 0) effects += 'HEAVY ' + Player.heavy.toFixed(1) + '  ';
     if (Player.mystery) effects += 'MYSTERY ' + Player.mysteryTime.toFixed(1) + '  ';
     if (Player.tank > 0) effects += 'TANK RAGE';
   }

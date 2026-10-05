@@ -23,7 +23,8 @@
 //              joins up; the expressway has to swing away in between, and be straight
 //              for 250 m before the exit and after the merge (room for the flyovers).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
-//   theme      'city' (default), 'farm', 'beach', 'hell' or 'space': the look of the ground, sky and roadside.
+//                                       | badGas | heavyMass | timePlus | timeMinus
+//   theme      'city' (default), 'farm', 'beach', 'suburb', 'hell' or 'space': the look of the ground, sky and roadside.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo')
 //   traffic    which vehicles turn up as traffic and how often, relative to each other:
@@ -34,6 +35,8 @@
 //   drivers    { evil, happy, angry }: the share of drivers that are evil, and the chance a
 //              driver starts out happy or angry (defaults: CONFIG.evilShare and startMood)
 //   trafficSpeed  { min, max } m/s the traffic cruises at (default CONFIG.trafficMin/MaxSpeed)
+//   hesitation false = traffic too fast for the player never hesitates, and none comes up from
+//              behind (see CONFIG.hesitation)
 //   asteroidFields  { from, to, count, moving, seed }: `count` asteroids of assorted sizes
 //              scattered over that stretch, the same every run for a given seed. About half
 //              sit at road level; the rest pass just under or over it, unmarked. `moving` is the share that
@@ -56,7 +59,9 @@
 //              Lane 0 is the far left (oncoming). Add road: 'side' to put an item on a side
 //              road (and exit: n for the nth exit's): s from its start, lane 0 oncoming / 1 ours.
 // A level is checked as it loads; problems are shown on screen and in the console.
-// To add a level: add a .json file to ./levels, import it here and add it to LEVELS.
+// To add a level: add a .json file to ./levels, import it here and add it to MAIN_LEVELS (or
+// SPECIAL_LEVELS). Putting one in among those already there changes the positions saved progress
+// counts by: see LEVEL_ORDER in progress.js.
 // ============================================================================
 import expressway from './levels/expressway.json';
 import backRoads from './levels/back-roads.json';
@@ -68,9 +73,16 @@ import ufo from './levels/ufo.json';
 import chaos from './levels/chaos.json';
 import night from './levels/night.json';
 import mysteryMeadows from './levels/mystery-meadows.json';
+import suburbs from './levels/suburbs.json';
 
-// (the order is the order they unlock in, and saved progress counts unlocked levels by position)
-export const LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, allHeck, ufo];
+// the numbered levels, and the special ones (S1, S2...), which always come after them on the
+// menu. All of them unlock in this order, each by delivering the one before, and saved progress
+// counts unlocked levels by position
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs];
+export const SPECIAL_LEVELS = [allHeck, ufo];
+export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
+// a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones
+export const levelLabel = (index) => index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (index - MAIN_LEVELS.length + 1);
 // the screensaver's level: not on the menu, driven round and round with no player car
 export const SCREENSAVER_LEVEL = chaos;
 

@@ -133,8 +133,47 @@ export const makeTankMesh = (color) => {
   return group;
 };
 
+// ---- brake lights, indicators and hazards, laid over any car-shaped vehicle ----------------------
+// (over the car's own tail lights, whichever model it is: they are sized from its hitbox)
+const brakeMat = new THREE.MeshBasicMaterial({ color: 0xff1a1a });
+const brakeHaloMat = new THREE.MeshBasicMaterial({ color: 0xff3020, transparent: true, opacity: 0.35, depthWrite: false });
+const amberMat = new THREE.MeshBasicMaterial({ color: 0xffa21a });
+const addLamps = (group) => {
+  const lamps = new THREE.Group();
+  const brakes = [0, 1].map(() => new THREE.Mesh(unitBox, brakeMat));
+  const halos = [0, 1].map(() => new THREE.Mesh(unitBox, brakeHaloMat));
+  const blinkers = [0, 1, 2, 3].map(() => new THREE.Mesh(unitBox, amberMat)); // front then back; left (-x) then right
+  lamps.add(...brakes, ...halos, ...blinkers);
+  group.add(lamps);
+  group.userData.lamps = { lamps, brakes, halos, blinkers };
+};
+// v: the vehicle (its hitbox sizes the lamps); show: false for a vehicle that isn't car-shaped;
+// turnX: the side of the model (+1 = local +x, -1 = -x) whose indicators blink, 0 = none
+export const syncLamps = (group, v, show, braking, turnX, hazards) => {
+  const { lamps, brakes, halos, blinkers } = group.userData.lamps;
+  lamps.visible = show;
+  if (!show) return;
+  const w = v.hw * 2, l = v.hl * 2, y = Math.min(1.1, Math.max(0.55, v.height * 0.5));
+  const blink = Math.floor(performance.now() / 350) % 2 === 0;
+  brakes.forEach((lamp, i) => {
+    const side = i ? 1 : -1;
+    lamp.visible = halos[i].visible = braking;
+    lamp.scale.set(w * 0.24, 0.18, 0.06);
+    lamp.position.set(side * w * 0.33, y, -(l / 2 + 0.04));
+    halos[i].scale.set(w * 0.4, 0.4, 0.1);
+    halos[i].position.set(side * w * 0.33, y, -(l / 2 + 0.1));
+  });
+  blinkers.forEach((lamp, i) => {
+    const side = i % 2 ? 1 : -1, front = i < 2;
+    lamp.visible = blink && (hazards || turnX === side);
+    lamp.scale.set(0.2, 0.14, 0.08);
+    lamp.position.set(side * (w / 2 - 0.08), y, (front ? 1 : -1) * (l / 2 + 0.05));
+  });
+};
+
 export const carMesh = makeCarMesh(CAR.color);
 shapeCarMesh(carMesh, Player);
+addLamps(carMesh);
 // a different car picked in the garage: the player's model takes its shape
 // (its colour is set every frame, in items.js)
 // a flying saucer, shown in place of the car's body when the car in use is a UFO
@@ -225,8 +264,10 @@ export const trafficMeshes = Traffic.cars.map(() => {
   mesh.add(bar);
   mesh.userData.bar = bar;
   mesh.userData.models = {};
+  addLamps(mesh);
   return mesh;
 });
+const signalAt = new THREE.Vector3();
 // A kind of vehicle with a model of its own (the tractor, and any kind with a "model" in
 // CONFIG.vehicles): built the first time this mesh needs it, and kept for the next time.
 const ownModel = (mesh, car) => {
@@ -267,5 +308,15 @@ export const syncTraffic = () => {
     if (police) {
       mesh.userData.bar.material.color.setHex(Math.floor(performance.now() / 160 + i) % 2 ? 0xff2020 : 0x2060ff);
     }
+    // brake lights and indicators (not on a toad or a tractor). Which side of the model a signal
+    // is on: the side nearer the road a little way across in the direction it is signalling
+    const lit = !car.toad && car.kind !== 'tractor';
+    let turnX = 0;
+    if (lit && car.signal) {
+      mesh.updateMatrixWorld();
+      Track.toWorld(car.s, car.lat + car.signal, signalAt);
+      turnX = Math.sign(mesh.worldToLocal(signalAt).x);
+    }
+    syncLamps(mesh, car, lit, car.braking, turnX, car.hazards);
   }
 };

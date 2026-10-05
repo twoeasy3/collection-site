@@ -53,6 +53,10 @@ const SAMPLES = {
   ghost: 'Ghost',
   wrench: 'Wrench',
   passenger: 'Inflatableguy',
+  badGas: 'Bad Gas',
+  heavyMass: 'Heavy',
+  timePlus: 'Time Plus',
+  timeMinus: 'Time Minus',
   siren: { seq: ['Police Siren', 'Police Siren', 'Police Siren'] }, // busted
   radar: '',               // a police car comes into sight
   tick: '',           // each second of the tip countdown
@@ -249,7 +253,8 @@ const SYNTH = {
 };
 Object.assign(SYNTH, {
   explodeBig: SYNTH.explode, crashHard: SYNTH.crash, sideswipe: SYNTH.crash, headOn: SYNTH.crash, heavy: SYNTH.crash,
-  ghost: SYNTH.pickup, wrench: SYNTH.pickup, passenger: SYNTH.pickup,
+  ghost: SYNTH.pickup, wrench: SYNTH.pickup, passenger: SYNTH.pickup, badGas: SYNTH.pickup, heavyMass: SYNTH.pickup,
+  timePlus: SYNTH.pickup, timeMinus: SYNTH.pickup,
 });
 
 export const Sound = {

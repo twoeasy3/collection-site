@@ -101,7 +101,9 @@ export const Collision = (() => {
     // traffic that has the better of it, and the player who loses the speed.
     const player = a.isPlayer ? a : b.isPlayer ? b : null, other = a.isPlayer ? b : a;
     const rearEnd = player && !sideOn && (other.s - player.s) * player.dir > 0 && (player.vs - other.vs) * player.dir > 0;
-    const playerShare = rearEnd ? CONFIG.playerRearEndShare : CONFIG.playerPushShare;
+    // (under the 1000 lb weight the player wins every shove, rear-ends included)
+    const playerShare = player && player.heavy > 0 ? CONFIG.heavyMass.pushShare
+      : rearEnd ? CONFIG.playerRearEndShare : CONFIG.playerPushShare;
     const pushA = a.isPlayer ? playerShare : b.isPlayer ? 1 - playerShare : shareA;
     const pushB = 1 - pushA;
     const n = ds >= 0 ? 1 : -1; // b is the one in front
@@ -149,9 +151,10 @@ export const Collision = (() => {
       // traffic that collides with traffic tends to take it personally
       if (Math.random() < CONFIG.rivalryChance) startRivalry(a, b);
       if (Math.random() < CONFIG.rivalryChance) startRivalry(b, a);
+      // (the player's car is knocked about less the heavier it is: see Player.mass)
       const stun = CONFIG.stunTime * clamp(impact / 10, 0.3, 1);
-      a.stun = Math.max(a.stun, stun);
-      b.stun = Math.max(b.stun, stun);
+      a.stun = Math.max(a.stun, a.isPlayer ? stun / a.mass : stun);
+      b.stun = Math.max(b.stun, b.isPlayer ? stun / b.mass : stun);
       if (heard(a, b)) {
         if (a.isPlayer || b.isPlayer) Game.shake = Math.max(Game.shake, clamp(impact / 15, 0.25, 1));
         sfx(impact >= CONFIG.hardCrash ? 'crashHard' : scraped ? 'sideswipe' : 'crash', clamp(impact / 18, 0.3, 1));

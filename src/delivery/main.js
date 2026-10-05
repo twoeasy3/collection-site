@@ -163,10 +163,13 @@ const frame = (now) => {
     // the helicopter while it comes for the car (wrecked or busted), and keeps it at game over
     Sound.helicopter(!Game.paused && !Game.screensaver &&
       ((Game.state === 'playing' && (!Player.active || Player.busted || Traffic.cars.some(c => c.active && c.arrest >= 0))) || Game.over));
-    // a frog croaks louder the nearer it is
+    // a frog croaks louder the nearer it is (and so does a toad, in TOAD RAGE)
     let frogFar = Infinity;
     for (const o of Collision.obstacles) {
       if (o.kind === 'frog' && !o.gone) frogFar = Math.min(frogFar, Math.abs(Track.along(o.s) - Track.along(Player.s)));
+    }
+    for (const c of Traffic.cars) {
+      if (c.active && c.toad) frogFar = Math.min(frogFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat));
     }
     Sound.frog(Game.paused || Game.state !== 'playing' ? 0 : Math.max(0, 1 - frogFar / CONFIG.frogHearing));
     renderer.render(scene, camera);

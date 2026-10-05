@@ -5,7 +5,8 @@
 // Two lines show at once (see render/hud.js), each for CONFIG.messageTime. A new message goes
 // on the top line if it is free, then the bottom one; with both taken it always shows anyway,
 // in place of the less important of the two (or, of two as important, the older). Only one
-// driver's reaction is ever up: a new one takes the place of one already showing.
+// driver's reaction is ever up: a new one takes the place of one already showing. A message
+// the same as one still showing (another car destroyed) doesn't take a line: that one stays up longer.
 // ============================================================================
 import MESSAGES from './messages.json';
 import { CONFIG } from './config.js';
@@ -38,9 +39,12 @@ export const Message = {
     const free = (line) => !line.text || now - line.at >= line.time * 1000;
     const outranks = (a, b) => RANK[a.kind] > RANK[b.kind] || (RANK[a.kind] === RANK[b.kind] && a.at > b.at);
     const kind = kindOf(group, keys[0]);
+    const time = CONFIG.messageTime + (CONFIG.messageExtra[kind] || 0);
+    const same = this.lines.find(line => !free(line) && line.text === text);
+    if (same) return Object.assign(same, { at: now, time });
     const reaction = kind === 'reaction' ? this.lines.findIndex(line => !free(line) && line.kind === 'reaction') : -1;
     const slot = reaction >= 0 ? reaction : free(top) ? 0 : free(bottom) ? 1 : outranks(top, bottom) ? 1 : 0;
-    this.lines[slot] = { text, kind, at: now, time: CONFIG.messageTime + (CONFIG.messageExtra[kind] || 0), id: nextId++ };
+    this.lines[slot] = { text, kind, at: now, time, id: nextId++ };
     return this.lines[slot];
   },
   clear() {

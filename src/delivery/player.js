@@ -10,16 +10,19 @@ import { UfoStrike } from './ufostrike.js';
 import { Game } from './game.js';
 
 export const Player = {
-  isPlayer: true, active: true, dir: 1, bound: 'north', mass: 1,
+  isPlayer: true, active: true, dir: 1, bound: 'north',
   evil: false,         // the player is one of the good ones: its packages are gifts
   shield: 0,           // s of invulnerability left after a helicopter drop
   launching: true,     // pulling away to startSpeed on its own
   braking: false,      // braking hard by itself for a car ahead (the tyres squeal as it starts)
+  brakeLight: false,   // braking at all: the brake lights are on
   turbo: 0,            // s of turbocharger left
   ghost: 0,            // s of passing through cars and barriers left
   passenger: 0,        // s of legal shoulder driving left
   radar: 0,            // s of radar detector left: the police can't bust the car
   siren: 0,            // s of siren left: traffic ahead pulls over (see Traffic)
+  badGas: 0,           // s of bad gas left: a much lower top speed and acceleration
+  heavy: 0,            // s of the 1000 lb weight left: heavier, slower, wins collisions (see Collision)
   mystery: '',         // the mystery effect running (see startMystery), '' = none...
   mysteryTime: 0,      // ...and s of it left
   nextMystery: '',     // the effect the next mystery will be, if not left to chance (?mystery= in the URL)
@@ -33,6 +36,9 @@ export const Player = {
   speed: 0,
   health: CAR.health, maxHealth: CAR.health, smoke: 0, // (top speed, acceleration and health are the car's: see cars.js)
   hw: CAR.hw, hl: CAR.hl, height: CAR.height, // hitbox half width / half length, body height
+  get mass() { return this.heavy > 0 ? CONFIG.heavyMass.mass : 1; },
+  // how quickly the car steers: its own agility, less under the weight
+  get agility() { return (CAR.agility || 1) * (this.heavy > 0 ? CONFIG.heavyMass.agility : 1); },
   get vs() { return this.speed; },
   set vs(v) { this.speed = v; },
 
@@ -66,6 +72,8 @@ export const Player = {
     this.passenger = 0;
     this.radar = 0;
     this.siren = 0;
+    this.badGas = 0;
+    this.heavy = 0;
     this.endMystery();
     this.latVel = 0;
     this.yaw = 0;
@@ -93,6 +101,11 @@ export const Player = {
       this.health = Math.min(this.maxHealth, this.health + this.maxHealth * CONFIG.wrenchRepair);
       return;
     }
+    // a stopwatch moves the clock (and so the tip countdown), and leaves the powerup running alone
+    if (type === 'timePlus' || type === 'timeMinus') {
+      Game.allowed += (type === 'timePlus' ? 1 : -1) * CONFIG.timePickup;
+      return;
+    }
     // one powerup at a time: a new one cuts short whichever is running
     // (a ghost is let go of gently: it stays see-through until it is clear of every car;
     // a radar detector cut short with the shoulder meter full leaves the car busted, even for
@@ -103,6 +116,8 @@ export const Player = {
     this.passenger = 0;
     this.radar = 0;
     this.siren = 0;
+    this.badGas = 0;
+    this.heavy = 0;
     this.ghost = Math.min(this.ghost, 0.01);
     this.endMystery();
     if (caught) this.bust('shoulder');
@@ -111,10 +126,12 @@ export const Player = {
     else if (type === 'siren') this.siren = CONFIG.sirenPickup.time;
     else if (type === 'ghost') this.ghost = CONFIG.ghostTime;
     else if (type === 'passenger') this.passenger = CONFIG.passengerTime;
+    else if (type === 'badGas') this.badGas = CONFIG.badGas.time;
+    else if (type === 'heavyMass') this.heavy = CONFIG.heavyMass.time;
     else if (type === 'mystery') this.startMystery();
   },
   // s left of the powerup that is running (0 = none)
-  get powerLeft() { return Math.max(this.turbo, this.ghost, this.passenger, this.radar, this.siren, this.mysteryTime); },
+  get powerLeft() { return Math.max(this.turbo, this.ghost, this.passenger, this.radar, this.siren, this.badGas, this.heavy, this.mysteryTime); },
   // the mystery pickup: a random effect. Most last CONFIG.mystery.time; the insurance ones
   // and the UFO air strike are over at once (the strike's show goes on by itself: UfoStrike)
   startMystery() {
@@ -157,28 +174,31 @@ export const Player = {
   updateSpeed(dt, throttle, stopping) {
     if (stopping) {
       this.speed = Math.max(0, this.speed - CONFIG.brake * dt);
+      this.brakeLight = this.speed > 0;
       return;
     }
     if (this.mystery === 'noBrakes') throttle = Math.max(0, throttle); // (and no braking by itself, below)
     if (this.busted) { // caught: the police slow the car to a crawl, it keeps rolling (no throttle or brake)
       this.speed = Math.max(Math.min(this.speed, CONFIG.policeCrawlSpeed), this.speed - CONFIG.brake * dt);
+      this.brakeLight = true;
       return;
     }
     if (throttle < 0 || this.speed >= CONFIG.startSpeed) this.launching = false;
     // hands off, the speed simply holds; pulling away and recovering from a hit are automatic
     const boosted = this.turbo > 0;
     this.turbo = Math.max(0, this.turbo - dt);
-    // (a turbo always adds something, even to a vehicle already faster than the turbo's own top speed)
-    const top = boosted ? Math.max(CONFIG.turboMaxSpeed, CAR.maxSpeed + 16)
-      : this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed;
+    // (a turbo adds the same to every car's top speed: a slow car stays the slower one)
+    // (bad gas and the weight hold the car back: a share of its top speed and acceleration)
+    const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
+    const top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1);
     let drive = throttle;
     if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed)) drive = 1;
     if (drive === 0 && boosted) drive = 1; // the turbo pulls unless you brake
     if (this.speed > top) {
-      // turbo ran out: ease back down to the normal top speed
+      // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
       this.speed = Math.max(top, this.speed - CONFIG.brake * 0.5 * dt);
     } else if (drive > 0) {
-      this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel) * dt);
+      this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * dt);
     } else if (drive < 0 && this.speed > CONFIG.minSpeed) {
       this.speed = Math.max(CONFIG.minSpeed, this.speed + drive * CONFIG.brake * dt);
     }
@@ -188,6 +208,7 @@ export const Player = {
     if (hard && !this.braking) sfx('brake', 0.7);
     this.braking = hard;
     if (lead) this.speed = Math.max(Math.max(0, lead.vs), this.speed - CONFIG.autoBrake * dt);
+    this.brakeLight = (throttle < 0 && this.speed > CONFIG.minSpeed) || !!lead;
   },
   // The screensaver's camera dolly: no car (nothing of the player is drawn), just this point
   // gliding down the centre line at a steady speed for the chase camera to follow. It is a
@@ -215,6 +236,8 @@ export const Player = {
     this.passenger = Math.max(0, this.passenger - dt);
     this.radar = Math.max(0, this.radar - dt); // (when it runs out with the shoulder meter full: a bust, below)
     this.siren = Math.max(0, this.siren - dt);
+    this.badGas = Math.max(0, this.badGas - dt);
+    this.heavy = Math.max(0, this.heavy - dt);
     if (this.mystery && (this.mysteryTime -= dt) <= 0) this.endMystery();
     this.updateSpeed(dt, throttle, stopping);
     this.s += this.speed * dt;
@@ -229,7 +252,7 @@ export const Player = {
     if (this.busted) {
       wantVel = 0;
     } else if (steer !== 0) {
-      wantVel = steer * CONFIG.steerSpeed * (CAR.agility || 1);
+      wantVel = steer * CONFIG.steerSpeed * this.agility;
     } else {
       // only a faint nudge, and only once the car is close to a lane line: within
       // laneAssistFree of the centre it stays exactly where it was left
@@ -238,7 +261,7 @@ export const Player = {
       wantVel = clamp(pull * CONFIG.laneAssist, -CONFIG.steerSpeed, CONFIG.steerSpeed);
     }
     // a hard knock briefly weakens steering
-    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(CAR.agility || 1);
+    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility);
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
 
     // the car can't be turned into the roadside or the bridge structure: sideways speed

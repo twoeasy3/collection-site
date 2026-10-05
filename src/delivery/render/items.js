@@ -9,7 +9,7 @@ import { Pickups, Targets } from '../pickups.js';
 import { Game } from '../game.js';
 import { scene, tmp, clearGroup } from './scene.js';
 import { buildStrip } from './road.js';
-import { carMesh, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh, trafficMeshes } from './cars.js';
+import { carMesh, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh, trafficMeshes, syncLamps } from './cars.js';
 import { Traffic } from '../traffic.js';
 import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
@@ -255,6 +255,20 @@ hoverRadar.scale.setScalar(1.3);
 hoverRadar.visible = false;
 scene.add(hoverRadar);
 
+// ...and while one is running, the turbocharger turns over the car (as the radar detector does)
+const hoverTurbo = PICKUP_MODELS.turbo();
+hoverTurbo.scale.setScalar(1.1);
+hoverTurbo.visible = false;
+scene.add(hoverTurbo);
+
+// ...and while bad gas or the weight is on, the jerry can or the weight turns over it too
+const hoverGas = PICKUP_MODELS.badGas();
+hoverGas.visible = false;
+scene.add(hoverGas);
+const hoverWeight = PICKUP_MODELS.heavyMass();
+hoverWeight.visible = false;
+scene.add(hoverWeight);
+
 // ...and while one is sounding, it rides on the car's roof, flashing
 const roofSiren = PICKUP_MODELS.siren();
 roofSiren.visible = false;
@@ -418,6 +432,8 @@ export const syncPickups = (dt) => {
   carMesh.userData.body.visible = carMesh.userData.cabin.visible = standard;
   for (const part of [...carMesh.userData.lights, ...carMesh.userData.trim]) part.visible = standard;
   passengerMesh.visible = powerShown(Player.passenger) && !tank && !ufo;
+  // brake lights on any car-shaped car (not a tank or a UFO)
+  syncLamps(carMesh, Player, !tank && !ufo, Player.active && Player.brakeLight, 0, false);
   ghostify(carMesh, ghostly);
   const t = performance.now() / 1000;
   hoverGhost.visible = powerShown(Player.ghost) && Player.active && !Game.screensaver;
@@ -434,6 +450,18 @@ export const syncPickups = (dt) => {
   if (hoverRadar.visible) { // bobbing over the car, turning
     hoverRadar.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.3 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
     hoverRadar.rotation.y += dt * 2;
+  }
+  hoverTurbo.visible = powerShown(Player.turbo) && Player.active && !Game.screensaver;
+  if (hoverTurbo.visible) { // bobbing over the car, turning
+    hoverTurbo.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.3 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
+    hoverTurbo.rotation.y += dt * 2;
+  }
+  for (const [hover, left] of [[hoverGas, Player.badGas], [hoverWeight, Player.heavy]]) {
+    hover.visible = powerShown(left) && Player.active && !Game.screensaver;
+    if (hover.visible) { // bobbing over the car, turning
+      hover.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.3 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
+      hover.rotation.y += dt * 2;
+    }
   }
   roofSiren.visible = powerShown(Player.siren) && Player.active && !Game.screensaver;
   if (roofSiren.visible) { // on the roof, facing the way the car does, red and blue by turns

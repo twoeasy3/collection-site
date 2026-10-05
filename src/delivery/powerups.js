@@ -19,7 +19,7 @@ const hex = (color) => '#' + color.toString(16).padStart(6, '0');
 const M = CONFIG.mystery, S = CONFIG.sirenPickup;
 const CARDS = [
   { type: 'turbo', name: 'Turbo', time: CONFIG.turboTime, says: says('powerups', 'turbo'), rules: [
-    `Your car pulls itself up to <strong>${kmh(CONFIG.turboMaxSpeed)}</strong>, or <strong>${kmh(16)}</strong> over its own top speed if that is faster, even with your foot off.`,
+    `Your car pulls itself up to <strong>${kmh(CONFIG.turboBoost)}</strong> over its own top speed, even with your foot off.`,
     'Braking still works; when it runs out you ease back down to your normal top speed.',
   ] },
   { type: 'ghost', name: 'Ghost', time: CONFIG.ghostTime, says: says('powerups', 'ghost'), rules: [
@@ -29,7 +29,7 @@ const CARDS = [
   ] },
   { type: 'wrench', name: 'Wrench', says: says('powerups', 'wrench'), rules: [
     `Repairs <strong>${Math.round(CONFIG.wrenchRepair * 100)}%</strong> of your car's health, on the spot.`,
-    'The one pickup that <strong>doesn\'t</strong> replace the power-up you have running.',
+    'Like the stopwatches, it <strong>doesn\'t</strong> replace the power-up you have running.',
   ] },
   { type: 'passenger', name: 'Inflatable Passenger', time: CONFIG.passengerTime, says: says('powerups', 'passenger'), rules: [
     'Makes the <strong>shoulder legal</strong>: the police meter refills instead of running down, and nobody busts you for being there.',
@@ -43,6 +43,22 @@ const CARDS = [
     `Cars up to <strong>${S.range} m</strong> ahead in your lane get out of the way: a lane over to their right, or onto the shoulder (the only time traffic uses one). Never into oncoming traffic.`,
     'Cars on the shoulder slow down until the siren stops.',
     '<strong>Any car that damages you</strong> while it sounds is carried off by a police helicopter.',
+  ] },
+  { type: 'badGas', name: 'Bad Gas', time: CONFIG.badGas.time, says: says('powerups', 'badGas'), rules: [
+    `A tank of cheap fuel: your top speed drops to <strong>${Math.round(CONFIG.badGas.topSpeed * 100)}%</strong> and your acceleration to <strong>${Math.round(CONFIG.badGas.accel * 100)}%</strong>.`,
+    'Like any power-up, picking up another one ends it.',
+  ] },
+  { type: 'heavyMass', name: '1000 lb Weight', time: CONFIG.heavyMass.time, says: says('powerups', 'heavyMass'), rules: [
+    `Your car gets heavier than a bus: top speed <strong>${Math.round(CONFIG.heavyMass.topSpeed * 100)}%</strong>, acceleration <strong>${Math.round(CONFIG.heavyMass.accel * 100)}%</strong>, steering <strong>${Math.round(CONFIG.heavyMass.agility * 100)}%</strong>.`,
+    'But you win every collision: traffic takes nearly all of the push and most of the damage, and you are barely knocked about, even running into the back of something.',
+  ] },
+  { type: 'timePlus', name: 'Time Plus', says: says('powerups', 'timePlus'), rules: [
+    `Puts <strong>${CONFIG.timePickup} s</strong> back on the clock. In the tip countdown, it winds that back too, and the tip with it.`,
+    'Instant: it <strong>doesn\'t</strong> replace the power-up you have running.',
+  ] },
+  { type: 'timeMinus', name: 'Time Minus', says: says('powerups', 'timeMinus'), rules: [
+    `Takes <strong>${CONFIG.timePickup} s</strong> off the clock, and can tip you into the tip countdown, or further along it.`,
+    'Instant: it <strong>doesn\'t</strong> replace the power-up you have running.',
   ] },
   { type: 'mystery', name: 'Mystery', time: M.time, says: '', wide: true, rules: [
     `One of these, at random. The lasting ones run for <strong>${M.time} s</strong>; the insurance news and the air strike are over at once.`,
@@ -70,7 +86,7 @@ const CARDS = [
 document.getElementById('rules').innerHTML = `
   <h2>How power-ups work</h2>
   <ul>
-    <li><strong>One at a time.</strong> Picking one up replaces the one running (the wrench excepted).</li>
+    <li><strong>One at a time.</strong> Picking one up replaces the one running (the wrench and the stopwatches excepted).</li>
     <li>The time left shows under your speed, and the power-up's sign rides on or over your car.</li>
     <li>In the last <strong>${CONFIG.powerUpWarning} s</strong> a warning sound loops and the sign blinks.</li>
     <li>Each one announces itself in yellow as you pick it up; TANK RAGE in red.</li>

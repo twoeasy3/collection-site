@@ -7,7 +7,8 @@ const lambert = (color) => new THREE.MeshLambertMaterial({ color });
 
 export const TURBO_COLOR = 0x29e0ff;
 // the colour of each pickup's pad (and its glow in the HUD)
-export const PICKUP_COLOR = { turbo: TURBO_COLOR, ghost: 0xf0f0ff, wrench: 0xffa726, passenger: 0xff8fb1, mystery: 0xb36bff, radarDetector: 0xff3b30, siren: 0x2060ff };
+export const PICKUP_COLOR = { turbo: TURBO_COLOR, ghost: 0xf0f0ff, wrench: 0xffa726, passenger: 0xff8fb1, mystery: 0xb36bff, radarDetector: 0xff3b30, siren: 0x2060ff,
+  badGas: 0x6b7a2a, heavyMass: 0x9aa0a8, timePlus: 0x2ecc40, timeMinus: 0xe0302a };
 // a part of a pickup model: a mesh at (x, y, z), optionally turned (rx, ry, rz)
 const part = (group, geometry, material, x, y, z, rx = 0, ry = 0, rz = 0) => {
   const mesh = new THREE.Mesh(geometry, material);
@@ -129,6 +130,78 @@ PICKUP_MODELS.siren = () => {
   group.userData = { red, blue };
   return group;
 };
+
+// bad gas: a cheap army-green jerry can, a little askew and patched with rust, with three
+// handles across the top, the stamped X on each side and a spout
+PICKUP_MODELS.badGas = () => {
+  const group = new THREE.Group();
+  const olive = lambert(0x4b5320), darker = lambert(0x363d17), rust = lambert(0x7a4a22);
+  const body = part(group, new THREE.BoxGeometry(0.8, 1.05, 0.42), olive, 0, -0.05, 0, 0, 0, 0.04); // the can
+  for (const z of [0.215, -0.215]) for (const turn of [0.85, -0.85]) {                     // the stamped X, each side
+    part(body, new THREE.BoxGeometry(0.95, 0.07, 0.02), darker, 0, 0, z, 0, 0, turn);
+  }
+  part(body, new THREE.BoxGeometry(0.22, 0.16, 0.03), rust, 0.2, -0.3, 0.22);               // rust patches
+  part(body, new THREE.BoxGeometry(0.12, 0.2, 0.03), rust, -0.26, 0.28, -0.22);
+  for (const x of [-0.2, 0, 0.2]) {                                                         // the three handles...
+    part(body, new THREE.BoxGeometry(0.06, 0.16, 0.08), darker, x, 0.6, 0);
+  }
+  part(body, new THREE.BoxGeometry(0.5, 0.06, 0.1), darker, 0, 0.69, 0);                    // ...joined across the top
+  part(body, new THREE.CylinderGeometry(0.07, 0.09, 0.26, 8), darker, 0.3, 0.6, 0, 0, 0, -0.5); // spout
+  part(body, new THREE.CylinderGeometry(0.1, 0.1, 0.06, 8), rust, 0.37, 0.72, 0, 0, 0, -0.5);    // its cap
+  return group;
+};
+
+// a 1000 lb weight: a squat iron block, narrower at the top, with a ring to lift it by and
+// 1000 LB cast into its front
+PICKUP_MODELS.heavyMass = () => {
+  const group = new THREE.Group();
+  const iron = lambert(0x3c3f45);
+  // (a four-sided cylinder turned an eighth is a square block; flat normals keep its faces flat)
+  const block = new THREE.CylinderGeometry(0.5, 0.78, 0.95, 4, 1).toNonIndexed();
+  block.computeVertexNormals();
+  part(group, block, iron, 0, -0.15, 0, 0, Math.PI / 4);
+  part(group, new THREE.TorusGeometry(0.22, 0.07, 8, 16), iron, 0, 0.47, 0);               // the ring
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 64;
+  const g = canvas.getContext('2d');
+  g.fillStyle = '#c9ccd2';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.font = 'bold 44px sans-serif';
+  g.fillText('1000', 64, 22);
+  g.font = 'bold 22px sans-serif';
+  g.fillText('LB', 64, 52);
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  // on the front face, half way up it, leaning back with it
+  const lean = Math.atan((0.78 - 0.5) * Math.SQRT1_2 / 0.95);
+  part(group, new THREE.PlaneGeometry(0.62, 0.5), new THREE.MeshBasicMaterial({ map, transparent: true }),
+    0, -0.15, (0.5 + 0.78) / 2 * Math.SQRT1_2 + 0.01, -lean);
+  return group;
+};
+
+// a stopwatch: a thick chrome case with its crown and button on top, and the same white face
+// on both sides with a huge sign across it: a green + (time plus) or a red - (time minus)
+const stopwatch = (plus) => () => {
+  const group = new THREE.Group();
+  const chrome = lambert(0xc4c8cf);
+  const sign = new THREE.MeshBasicMaterial({ color: plus ? 0x2ecc40 : 0xe0302a });
+  part(group, new THREE.CylinderGeometry(0.62, 0.62, 0.34, 28), chrome, 0, 0, 0, Math.PI / 2); // the case
+  part(group, new THREE.CylinderGeometry(0.1, 0.1, 0.16, 10), chrome, 0, 0.7, 0);                // crown stem
+  part(group, new THREE.CylinderGeometry(0.17, 0.17, 0.1, 12), chrome, 0, 0.8, 0);               // crown
+  part(group, new THREE.BoxGeometry(0.1, 0.14, 0.12), chrome, 0.4, 0.52, 0, 0, 0, -0.65);        // button
+  const face = new THREE.MeshLambertMaterial({ color: 0xf6f6f2 });
+  for (const side of [1, -1]) {
+    const z = side * 0.172;
+    part(group, new THREE.CircleGeometry(0.52, 28), face, 0, 0, z, 0, side > 0 ? 0 : Math.PI);  // the face
+    part(group, new THREE.BoxGeometry(0.72, 0.18, 0.03), sign, 0, 0, z + side * 0.012);          // the sign's bar...
+    if (plus) part(group, new THREE.BoxGeometry(0.18, 0.72, 0.03), sign, 0, 0, z + side * 0.012); // ...crossed
+  }
+  return group;
+};
+PICKUP_MODELS.timePlus = stopwatch(true);
+PICKUP_MODELS.timeMinus = stopwatch(false);
 
 // TANK RAGE target: a glowing green ring and bull's-eye on a post (userData.ring and .glow spin
 // and pulse); the group's origin is the ring's centre

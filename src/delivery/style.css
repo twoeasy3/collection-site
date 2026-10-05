@@ -35,9 +35,9 @@ body.in-garage #tankCorner { display: none !important; }
   pointer-events: none; font-size: 34px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
 #banner small { display: block; font-size: 15px; font-weight: 400; }
 /* a message (a powerup, a bust, a driver's reaction) where the banner goes: one at a time */
-/* (two lines: a top one and a bottom one, see messages.js) */
+/* (two lines: a top one and a bottom one, see messages.js; smaller on a phone, either way up) */
 #messages { position: fixed; left: 0; right: 0; top: 24%; text-align: center; pointer-events: none; padding: 0 16px; }
-#messages .line { min-height: 1.25em; font-size: 28px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); opacity: 0; }
+#messages .line { min-height: 1.25em; font-size: clamp(15px, min(5vw, 5.5vh), 28px); font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); opacity: 0; }
 #messages .reaction { color: #ffffff; }
 #messages .pickup { color: #ffd23f; }
 #messages .rage { color: #ff3b30; }

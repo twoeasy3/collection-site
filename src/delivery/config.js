@@ -37,10 +37,10 @@ export const CONFIG = {
   minSpeed: 7,
 
   // turbocharger pickups: fixed spots on the track that raise the top speed for a while
-  turboMaxSpeed: 45,
+  turboBoost: 16,          // m/s added to the car's own top speed (the same for every car)
   turboAccel: 22,          // m/s^2, the turbo pulls up to its top speed on its own
-  turboTime: 6,            // s
-  ghostTime: 6,            // s the car is see-through and passes through cars and barriers
+  turboTime: 10,           // s
+  ghostTime: 10,           // s the car is see-through and passes through cars and barriers
                            // (the bridge structure and package splashes still get you)
   wrenchRepair: 0.25,      // share of full health restored
   passengerTime: 12,       // s of shoulder driving without running the police meter down
@@ -50,6 +50,15 @@ export const CONFIG = {
     arrestTime: 4 },       // s a police helicopter takes to carry off a car that hurt the player under a siren
   radarTime: 15,           // s of a radar detector: no bust can start (the shoulder meter still runs,
                            // and if it is full when the detector stops, that is a bust)
+  // bad gas: a can of cheap fuel that leaves the car crawling
+  badGas: { time: 10, topSpeed: 0.5, accel: 0.25 }, // s; shares of the car's own top speed and acceleration
+  // a 1000 lb weight in the boot: slower, duller and harder to steer, but it wins every shove.
+  // Its mass is the player's in collisions (a car is 1, a bus 4): the damage of a crash is split
+  // by mass, and the player is knocked about (stunned) that much less
+  heavyMass: { time: 12, mass: 5, topSpeed: 0.75, accel: 0.4, agility: 0.55,
+    pushShare: 0.04 },     // share of any push the player takes, even running into the back of something
+  timePickup: 10,          // s a stopwatch puts on the clock (time plus) or takes off it (time minus);
+                           // in the tip countdown it moves that too. Instant: the powerup running carries on
   powerUpWarning: 4,       // s before a turbo, ghost, passenger or mystery runs out that its warning sound
                            // starts, and the sign of it on the car starts to blink
                            // (only one of those runs at a time: a new one replaces it)
@@ -148,6 +157,25 @@ export const CONFIG = {
   despawnBehind: 80,
   trafficLaneChangeRate: 2.5, // 1/s
   laneChangeChance: 0.3,   // per decision (every 1-3 s) for a random lane change
+  signalTime: 1.5,         // s a calm (happy or neutral), good driver signals before changing lane;
+                           // evil and angry drivers just go
+  // Hesitation: a car going the player's way that turns up ahead cruising faster than `above`
+  // would only run away from the player, so it hesitates instead: it dawdles, drifts about in
+  // its lane and keeps touching its brakes. (A fixed speed: it doesn't depend on the player's car.)
+  // While a hesitant car is ahead, some of the traffic going the player's way comes up from
+  // behind instead, near full speed, to pass the player. A level can turn it off: "hesitation": false
+  hesitation: {
+    above: 22,                        // m/s
+    pace: { min: 11, max: 17 },       // m/s a hesitant car dawdles at
+    tapEvery: { min: 1.2, max: 3.5 }, // s between touches of the brakes...
+    tapTime: 0.5,                     // ...each lasting this long...
+    tapPace: 0.45,                    // ...slowing it to this share of its pace
+    wander: 0.35,                     // m it drifts about in its lane
+    behindChance: 0.5,                // chance a new car going the player's way comes from behind
+    behind: { min: 45, max: 75 },     // m behind the player it turns up (inside despawnBehind)
+    behindPace: { min: 0.9, max: 1 }, // share of full speed it drives at: a garage car's own
+                                      // top speed, anything else the level's top traffic speed
+  },
   // horns: a driver honks on turning angry, and while held up behind the player
   hornRange: 70,           // m from the player within which drivers bother
   hornWait: 5,             // s before the same driver honks again
@@ -307,6 +335,7 @@ export const CONFIG = {
   camFov: 75,
   camFovPortrait: 88,
   camFovSpeedBoost: 10,    // extra degrees at max speed
+  camFovFullSpeed: 45,     // m/s that counts as max speed for that
 
 
   // messages (the wording is in messages.json)
