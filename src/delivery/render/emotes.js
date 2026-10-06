@@ -44,6 +44,7 @@ const MOOD_FACES = {
   angry: makeFace('#e53935', 'evil'),
 };
 const emoteGeo = new THREE.SphereGeometry(0.5, 20, 14);
+const look = new THREE.Matrix4(), camAt = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
 const emotes = Collision.bodies.map(() => {
   const mesh = new THREE.Mesh(emoteGeo, MOOD_FACES.neutral);
   mesh.visible = false;
@@ -57,7 +58,7 @@ export const syncEmotes = (dt, now) => {
   for (let i = 0; i < emotes.length; i++) {
     const v = Collision.bodies[i], e = emotes[i];
     // (toads have no moods, and parked cars nobody in them to have one)
-    if (!v.active || v.isPlayer || v.toad || v.parked) { e.mesh.visible = false; e.show = 0; e.last = null; continue; }
+    if (!v.active || v.isPlayer || v.toad || v.parked || v.junction) { e.mesh.visible = false; e.show = 0; e.last = null; continue; }
     if (e.last !== null && e.last !== v.emotion) e.show = CONFIG.emoteTime; // mood swing: show it now
     e.last = v.emotion;
     if (v.showMood) { e.show = CONFIG.emoteTime; v.showMood = false; } // hit by a package
@@ -76,7 +77,10 @@ export const syncEmotes = (dt, now) => {
     e.mesh.material = MOOD_FACES[v.emotion];
     e.mesh.scale.setScalar(Math.max(0.01, pop));
     e.mesh.position.set(tmp.x, tmp.y + v.height + 1.0 + Math.sin(now / 250 + i) * 0.1, tmp.z);
-    e.mesh.lookAt(camera.position);
+    // (turned to the camera in the scene's own terms, which a left-hand level mirrors)
+    camAt.copy(camera.position);
+    if (scene.scale.x < 0) camAt.x = -camAt.x;
+    e.mesh.quaternion.setFromRotationMatrix(look.lookAt(camAt, e.mesh.position, UP));
     // the face swings round to the front as it pops up, then glances about a little
     const swing = Math.max(0, 1 - (CONFIG.emoteTime - e.show) * 4);
     e.mesh.rotateY((i % 2 ? 1 : -1) * 1.4 * swing * swing + Math.sin(now / 420 + i * 1.7) * 0.3);

@@ -3,6 +3,7 @@
 // sale to buy it (hovering shows the price). The Good / Evil toggle swaps every car to its
 // other livery: buying a car buys both.
 import * as THREE from 'three';
+import { CONFIG } from '../config.js';
 import { CARS, CAR, SECRET_CARS, selectCar } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
@@ -107,7 +108,7 @@ const liveryBtn = document.getElementById('liveryBtn');
 const startScreen = document.getElementById('startScreen');
 const money = (amount) => '$' + amount.toFixed(2);
 const stats = (car) => 'Top speed ' + Math.round(car.maxSpeed * 3.6) + ' km/h  |  Acceleration ' +
-  car.accel + '  |  Health ' + car.health;
+  car.accel + '  |  Health ' + car.health + '  |  Crossing ' + Math.round((car.crossing ?? CONFIG.railCrossing.usual) * 100) + '%';
 
 let hovered = null; // the parked car mesh under the pointer
 const raycaster = new THREE.Raycaster();

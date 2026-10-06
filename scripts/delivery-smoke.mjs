@@ -1021,6 +1021,28 @@ try {
       `all ${rail.length} railway barriers on the track still standing`);
   }
 
+  // the railway track slows a car on it by how well it crosses one (its "crossing")
+  {
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'canberra'));
+    const R = CONFIG.railCrossing, onTrack = {};
+    for (const id of ['pickup', 'lowrider']) {
+      cars.selectCar(id);
+      Game.evil = false;
+      Game.start();
+      for (const c of Traffic.cars) c.active = false;
+      Object.assign(Player, { s: 300, lat: 0, speed: cars.CAR.maxSpeed, launching: false, shield: 0 });
+      for (let i = 0; i < 120; i++) { Player.update(1 / 120, 1, 0, false); Player.lat = 0; } // (1 s on it, foot down)
+      onTrack[id] = { got: Player.speed, want: cars.CAR.maxSpeed * (R.slowest + (1 - R.slowest) * cars.CAR.crossing), top: cars.CAR.maxSpeed };
+    }
+    cars.selectCar('hatch');
+    Game.start();
+    Object.assign(Player, { s: 300, lat: track.Track.laneOffset(2, 300), speed: 24, launching: false });
+    for (let i = 0; i < 120; i++) Player.update(1 / 120, 1, 0, false);
+    const { pickup, lowrider } = onTrack;
+    check(Math.abs(pickup.got - pickup.want) < 0.1 && Math.abs(lowrider.got - lowrider.want) < 0.1 && Math.abs(Player.speed - 24) < 1e-6,
+      `crossing the railway: the Pick-Up holds ${pickup.got.toFixed(1)} of its ${pickup.top} m/s on the track, the Lowrider ${lowrider.got.toFixed(1)} of its ${lowrider.top}; off it, nothing changes`);
+  }
+
   console.log('Monte Carlo: hairpins and parked cars');
   {
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'monte-carlo'));
@@ -1093,6 +1115,55 @@ try {
     check(tight.some(p => p.includes('too tight')) && loop.some(p => p.includes('runs into itself')) && !loop.some(p => p.includes('too tight')),
       `level checks: "${tight.find(p => p.includes('too tight'))}"; "${loop[0]}"`);
     Game.toMenu();
+  }
+
+  console.log('Singapore: junctions, and driving on the left');
+  {
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'singapore'));
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    const T = track.Track, turns = T.junctions.filter(jn => jn.way), straight = T.junctions.filter(jn => !jn.way);
+    check(T.junctions.length === 10 && turns.length === 5 && turns.every(jn => Math.abs(Math.abs(jn.turned) - Math.PI / 2) < 0.02) &&
+      T.junctions.every(jn => jn.arms.length === 2 && jn.arms.every(arm => arm.length > jn.half + 150)),
+      `${T.junctions.length} junctions: ${turns.length} quarter turns (radius ${turns[0].radius.toFixed(1)} m) and ${straight.length} straight on, every arm running ${Math.min(...T.junctions.flatMap(jn => jn.arms.map(a => a.length))).toFixed(0)} m or more`);
+    // a drive through: traffic leaves down the arms (carrying straight on at turns, turning off
+    // straight on), never within a car's width of traffic on the road, and is gone at the end
+    let leftAtTurns = 0, leftStraight = 0, close = 0, stuck = 0;
+    const leaving = new Set(), p = {};
+    for (let i = 0; i < 120 * 200 && Game.state === 'playing'; i++) {
+      Player.health = Player.maxHealth; Game.busts = 0; Game.time = 0;
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      for (const g of Traffic.cars) {
+        if (!g.active || !g.junction) { leaving.delete(g); continue; }
+        if (!leaving.has(g)) { leaving.add(g); if (T.junctions[g.junction.j].way) leftAtTurns++; else leftStraight++; }
+        if (g.junction.u > g.junction.length + 1) stuck++;
+        if (g.junction.u < 3) continue; // (just starting off, a car tailgating it on the road may still be close behind)
+        for (const c of Traffic.cars) {
+          if (!c.active || c.junction || !T.isMain(c.s)) continue;
+          T.toWorld(c.s, c.lat, p);
+          if (Math.hypot(p.x - g.wx, p.z - g.wz) < 2.5) close++;
+        }
+      }
+    }
+    check(Game.outcome === 'delivered' && leftAtTurns > 0 && leftStraight > 0 && close === 0 && !stuck,
+      `a drive through: ${leftAtTurns} cars carried straight on at turns and ${leftStraight} turned off straight on, down arms the player can't take, none ever near traffic on the road`);
+    // driving on the left: the level is shown mirrored, so steering is reversed in the game's own terms
+    const steerFor = (id) => {
+      levels.selectLevel(levels.LEVELS.findIndex(l => l.id === id));
+      Game.start();
+      Object.assign(Player, { s: 100, speed: 15, launching: false });
+      const lat0 = Player.lat;
+      const real = Object.getOwnPropertyDescriptor(Input, 'steer');
+      Object.defineProperty(Input, 'steer', { get: () => 1, configurable: true }); // (holding right)
+      for (let i = 0; i < 30; i++) Game.update(1 / 120);
+      Object.defineProperty(Input, 'steer', real);
+      return Player.lat - lat0;
+    };
+    const onLeft = steerFor('singapore'), onRight = steerFor('expressway');
+    check(levels.LEVELS.find(l => l.id === 'singapore').drive === 'left' && onLeft < 0 && onRight > 0,
+      `driving on the left (Singapore, shown mirrored): holding right moves the car ${onLeft.toFixed(2)} m in the game's own terms (on the right: ${onRight.toFixed(2)})`);
   }
 
   console.log('cars');

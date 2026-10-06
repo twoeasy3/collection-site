@@ -17,6 +17,10 @@ const createTrack = () => {
   // way, and how many on the left, oncoming. A two-way level can also have a "median": that many
   // neutral lanes down the middle, which no traffic uses. The centre line (lat 0) runs down the
   // middle of the median, or between the two sides where there is none.
+  // Which side the traffic keeps to: the game is laid out for driving on the right, and a level
+  // with "drive": "left" is the same game seen in a mirror (see render/road.js): Track works on
+  // as if on the right, and "mirrored" tells the drawing (and the steering) to swap sides
+  const MIRRORED = LEVEL.drive === 'left';
   const SPEC = LEVEL.lanes ?? CONFIG.laneCount;
   const LEFT = typeof SPEC === 'object' ? SPEC.south ?? 0 : Math.floor(SPEC / 2);
   const RIGHT = typeof SPEC === 'object' ? SPEC.north ?? 0 : Math.ceil(SPEC / 2);
@@ -288,6 +292,8 @@ const createTrack = () => {
     }
     return null;
   };
+  // is a car (lat, half width hw) over the railway's track at s? (a level with a "railway")
+  const onRails = (s, lat, hw) => !!LEVEL.railway && isMain(s) && Math.abs(lat) - hw < CONFIG.railCrossing.width / 2;
   // how sharply the road bends at s: radians per metre, + = to the right
   const bend = (s) => {
     if (isMain(s)) return curveAt(s);
@@ -486,6 +492,50 @@ const createTrack = () => {
     return { s, lat: -(x - c.x) * Math.cos(h) + (z - c.z) * Math.sin(h) };
   };
 
+  // ---- junctions (a level's "junctions": see CONFIG.junction) --------------------------------
+  // At each, the road turns a quarter right or left (its bend starting at s), or goes straight on,
+  // through a square box as wide as the road, shoulders and all. The two arms it doesn't take are
+  // roads of their own, as wide, running out from the box until they would come near the road
+  // again (or for ARM metres). All in world space (x, z), on level ground:
+  //   s, end     the stretch of expressway through it: the bend, or the box (straight on)
+  //   way        1 = a right turn, -1 = left, 0 = straight on; radius: the bend's
+  //   centre     the middle of the box; half: half its width
+  //   f0, r0     the road's direction coming in, and its right; out: its direction going on
+  //   arms       [{ dir, length }]: the arms it doesn't take, length from the centre. A turn's are
+  //              straight on, then the side opposite the way it goes; straight on, right then left
+  const ARM = 220;
+  const junctions = (LEVEL.junctions || []).map((j) => {
+    const at = {}, p = {}, h0 = mainWorld(j.s, 0, at);
+    const f0 = { x: Math.sin(h0), z: Math.cos(h0) }, r0 = { x: -Math.cos(h0), z: Math.sin(h0) };
+    const neg = (v) => ({ x: -v.x, z: -v.z });
+    const half = HM + Math.max(LEFT, RIGHT) * LW + SH;
+    const way = j.turn === 'right' ? 1 : j.turn === 'left' ? -1 : 0;
+    let end = j.s + 2 * half, turned = 0;
+    if (way) { // (the bend: as far as the road takes to turn a quarter)
+      for (end = j.s; end < j.s + 80 && Math.abs(turned) < Math.PI / 2 - 0.005;) {
+        end += 0.5;
+        turned = h0 - mainWorld(end, 0, p);
+        while (turned > Math.PI) turned -= 2 * Math.PI;
+        while (turned < -Math.PI) turned += 2 * Math.PI;
+      }
+    }
+    const radius = way ? (end - j.s) / (Math.PI / 2) : 0, reach = way ? radius : half;
+    const centre = { x: at.x + f0.x * reach, y: at.y, z: at.z + f0.z * reach };
+    const out = way > 0 ? r0 : way < 0 ? neg(r0) : f0;
+    const arms = (way ? [f0, neg(out)] : [r0, neg(r0)]).map((dir) => {
+      let length = half;
+      while (length < ARM) {
+        const t = length + 5;
+        if (t > half + 20 && mainDistance(centre.x + dir.x * t, centre.z + dir.z * t) < half + 2) break;
+        length = t;
+      }
+      return { dir, length };
+    });
+    return { s: j.s, end, turn: j.turn, way, turned, radius, half, centre, f0, r0, out, arms,
+      forward: j.forward ?? CONFIG.junction.forward, turnOff: j.turnOff ?? CONFIG.junction.turnOff,
+      busy: false }; // (set every step by Traffic: a car is leaving across the box)
+  });
+
   // ---- checking the level data ---------------------------------------------------------------
   const problems = [];
   {
@@ -498,6 +548,7 @@ const createTrack = () => {
     if (!ONE_WAY && (LEFT < 1 || RIGHT < 1)) problems.push('lanes: a two-way road needs at least one lane each way');
     if (ONE_WAY && MID) problems.push('median: only a two-way road can have one');
     if (LEVEL.railway && !MID) problems.push('railway: it needs a median to run down');
+    if (LEVEL.drive !== undefined && LEVEL.drive !== 'left' && LEVEL.drive !== 'right') problems.push('drive: left or right');
     // a bend tighter than the road is wide folds its inside edge over itself, and a road that comes
     // back past itself (a hairpin's legs, say) must leave room between the two
     const halfWidth = HM + Math.max(LEFT, RIGHT) * LW + SH;
@@ -519,6 +570,14 @@ const createTrack = () => {
         }
       }
       if (clash) problems.push('the road runs into itself: at ' + clash[0] + ' m and ' + clash[1] + ' m it is only ' + clash[2].toFixed(0) + ' m apart');
+    }
+    for (const J of junctions) {
+      const name = 'junction at ' + J.s;
+      if (J.turn !== 'left' && J.turn !== 'right' && J.turn !== 'straight') problems.push(name + ': turn is left, right or straight');
+      else if (J.way && Math.abs(J.turned - J.way * Math.PI / 2) > 0.02) problems.push(name + ': the road must turn a quarter ' + J.turn + ' within 80 m of it');
+      else if (!J.way && [J.s, J.s + J.half, J.end].some(s => curveAt(s))) problems.push(name + ': the road must run straight through it');
+      if (J.arms.some(arm => arm.length < J.half + 100)) problems.push(name + ': an arm runs into the road within 100 m');
+      if (J.s < 60 || J.end > length - 20) problems.push(name + ': too near the start or the finish');
     }
     for (const p of ice) {
       if (!(p.from < p.to) || p.from < 0 || p.to > length) problems.push('ice at ' + p.from + '-' + p.to + ': from before to, on the road');
@@ -596,10 +655,10 @@ const createTrack = () => {
 
   return {
     length, start: -LEAD_IN, end: length + LEAD_OUT, problems,
-    laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW,
+    laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesOn, edge, extraLane, onBridge, icy, bend, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
+    lanesOn, edge, extraLane, onBridge, icy, bend, onRails, junctions, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

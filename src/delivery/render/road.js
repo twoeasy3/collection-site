@@ -56,6 +56,8 @@ const THEMES = {
   // beach: sand, a stormy sky, the sea along the right, palms and beach huts
   beach: { sky: 0x7e8d9e, ground: 0xdccb95, road: 0x45484e, scenery: 'beach' },
   // space: no ground and no road surface, only glowing lane lines among the stars
+  // singapore: the garden city: towers and housing blocks, rain trees, Supertrees and Marina Bay Sands
+  singapore: { sky: 0xc9dde6, ground: 0x6d9a52, road: 0x3a3d42, scenery: 'singapore' },
   // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
   snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
   // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
@@ -147,6 +149,8 @@ const buildTerrain = () => {
 };
 
 const buildRoad = () => {
+  // a left-hand level is the game seen in a mirror: the whole scene drawn with x reversed
+  scene.scale.x = Track.mirrored ? -1 : 1;
   clearGroup(levelGroup);
   const theme = THEMES[LEVEL.theme] || THEMES.city;
   applySky(theme.sky);
@@ -210,7 +214,8 @@ const buildRoad = () => {
     add(buildStrip(Track.start, Track.end, -HM + 0.1, HM - 0.1, 0.01), flat(theme.median || 0x6f8f4a));
     if (LEVEL.railway) {
       const GAUGE = 1.435;
-      add(buildStrip(Track.start, Track.end, -1.6, 1.6, 0.03), flat(0x8b8378));
+      const BED = CONFIG.railCrossing.width / 2;
+      add(buildStrip(Track.start, Track.end, -BED, BED, 0.03), flat(0x8b8378));
       const sleeper = new THREE.InstancedMesh(new THREE.BoxGeometry(2.6, 0.12, 0.26), new THREE.MeshLambertMaterial({ color: 0x5e4b3a }),
         Math.ceil((Track.end - Track.start) / 0.7));
       const spot = new THREE.Object3D();
@@ -292,6 +297,7 @@ const buildRoad = () => {
     const sAt = x.exitAt - ZONE;
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(9, 2.8), new THREE.MeshBasicMaterial({ map }));
     sign.rotation.y = Track.toWorld(sAt, Track.hi(sAt) - 3, tmp) + Math.PI; // faces oncoming drivers
+    sign.scale.x = Track.mirrored ? -1 : 1; // (mirrored back on a left-hand level, so it still reads)
     sign.position.set(tmp.x, tmp.y + 8, tmp.z);
     levelGroup.add(sign);
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.5, 8, 0.5), steel);
@@ -702,6 +708,96 @@ const buildRoad = () => {
       house.position.copy(tmp);
       levelGroup.add(house);
     }
+  } else if (theme.scenery === 'singapore') {
+    // ---- singapore: pavements, rain trees along the road, glass towers, housing blocks with bands
+    // of colour and low shophouses set back from it, a grove of Supertrees, and Marina Bay Sands
+    // by the finish. Nothing stands on a junction or its arms, nor on another stretch of road.
+    const p = {};
+    const clearOf = (x, z, margin) => Track.mainDistance(x, z) > Math.max(Track.hi(0), -Track.lo(0)) + margin &&
+      !Track.junctions.some(jn => jn.arms.some(arm => {
+        const dx = x - jn.centre.x, dz = z - jn.centre.z, u = dx * arm.dir.x + dz * arm.dir.z;
+        const v = Math.abs(-dx * arm.dir.z + dz * arm.dir.x);
+        return u > -jn.half - margin && u < arm.length + margin && v < jn.half + margin;
+      }) || Math.hypot(x - jn.centre.x, z - jn.centre.z) < jn.half * 1.5 + margin);
+    // pavements, broken off at each junction
+    const breaks = Track.junctions.map(jn => [jn.s - 6, jn.end + 6]);
+    for (const side of [-1, 1]) {
+      let from = Track.start;
+      for (const [a, b] of [...breaks, [Track.end, Track.end]]) {
+        if (a > from) add(buildStrip(from, a, (q) => beside(side, q, 0.4), (q) => beside(side, q, 3), 0.03), flat(0xc9c7c0));
+        from = b;
+      }
+    }
+    const trunks = [], canopies = [], towers = [], glass = [], blocks = [], bands = [], shops = [], roofs = [];
+    for (let s = Track.start; s < Track.end; s += 16) {
+      for (const side of [-1, 1]) {
+        const lat = beside(side, s, 4.5);
+        Track.toWorld(s, lat, p);
+        if (!clearOf(p.x, p.z, 4)) continue;
+        trunks.push([s, lat, 1.8, 0.5, 3.6, 0.5]);
+        canopies.push([s, lat, 4.6, 9, 2.6, 9]); // (a rain tree: a wide, flat umbrella of leaves)
+      }
+    }
+    for (let s = Track.start, k = 0; s < Track.end; s += 30, k++) {
+      for (const side of [-1, 1]) {
+        const roll = Math.random(), w = 16 + Math.random() * 14, d = 16 + Math.random() * 14;
+        const lat = beside(side, s, 16 + d / 2 + Math.random() * 30);
+        Track.toWorld(s, lat, p);
+        if (!clearOf(p.x, p.z, Math.max(w, d) / 2 + 6)) continue;
+        if (roll < 0.4) { // a glass tower, with a lighter crown
+          const h = 60 + Math.random() * 100;
+          towers.push([s, lat, h / 2, d, h, w]);
+          glass.push([s, lat, h + 2, d * 0.8, 4, w * 0.8]);
+        } else if (roll < 0.8) { // a housing block, with bands of colour
+          const h = 30 + Math.random() * 25;
+          blocks.push([s, lat, h / 2, d * 0.7, h, w * 1.3]);
+          for (let y = 3; y < h - 1; y += 6) bands.push([s, lat, y, d * 0.7 + 0.1, 0.8, w * 1.3 + 0.1]);
+        } else { // a row of shophouses
+          const h = 9 + Math.random() * 4;
+          shops.push([s, lat, h / 2, d * 0.6, h, w]);
+          roofs.push([s, lat, h + 0.6, d * 0.65, 1.2, w + 0.4]);
+        }
+      }
+    }
+    instances(tube, 0x6b5440, trunks);
+    instances(new THREE.SphereGeometry(0.5, 10, 6), 0x4f8a3c, canopies);
+    instances(cube, 0x6fa3b8, towers);
+    instances(cube, 0xe8f1f4, glass);
+    instances(cube, 0xf1e4c9, blocks);
+    instances(cube, 0x3f8f8a, bands);
+    instances(cube, 0xe7b48a, shops);
+    instances(cube, 0x9c4a3a, roofs);
+    // a grove of Supertrees, half way along on the right: purple trunks widening up to a flat crown
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x7b3fa8 }), crownMat = new THREE.MeshLambertMaterial({ color: 0xd9468f });
+    for (let k = 0, tries = 0; k < 7 && tries < 60; tries++) {
+      const at = Track.length * 0.5 + Math.random() * 120 - 60;
+      Track.toWorld(at, beside(1, at, 45 + Math.random() * 60), p);
+      if (!clearOf(p.x, p.z, 12)) continue;
+      const h = 22 + Math.random() * 26;
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 1.2, h, 10), trunkMat);
+      trunk.position.set(p.x, p.y + h / 2, p.z);
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(7, 4, 2.2, 14), crownMat);
+      crown.position.set(p.x, p.y + h + 1.1, p.z);
+      levelGroup.add(trunk, crown);
+      k++;
+    }
+    // Marina Bay Sands by the finish, on the left: three towers with the boat of a park across their tops
+    for (let tries = 0, at = Track.length - 40; tries < 20; tries++, at -= 15) {
+      const h = Track.toWorld(at, beside(-1, at, 120), p);
+      if (!clearOf(p.x, p.z, 70)) continue;
+      const fx = Math.sin(h), fz = Math.cos(h), white = new THREE.MeshLambertMaterial({ color: 0xe9ecee });
+      for (const k of [-1, 0, 1]) {
+        const tower = new THREE.Mesh(new THREE.BoxGeometry(30, 190, 16), white);
+        tower.position.set(p.x + fx * k * 38, p.y + 95, p.z + fz * k * 38);
+        tower.rotation.y = h + Math.PI / 2;
+        levelGroup.add(tower);
+      }
+      const park = new THREE.Mesh(new THREE.BoxGeometry(36, 7, 150), new THREE.MeshLambertMaterial({ color: 0xc8d4d8 }));
+      park.position.set(p.x + fx * 8, p.y + 194, p.z + fz * 8);
+      park.rotation.y = h;
+      levelGroup.add(park);
+      break;
+    }
   } else if (theme.scenery === 'alpine') {
     // ---- alpine: guardrails and snowbanks along both edges, snowy pines on the mountainside,
     // peaks all round in the haze, and snow falling
@@ -772,7 +868,8 @@ const buildRoad = () => {
       snow.frustumCulled = false;
       snow.onBeforeRender = (renderer, scene, camera) => {
         const fall = (performance.now() / 1000 * 2.5 + layer * BOX) % (BOX * 2);
-        snow.position.set(camera.position.x + Math.sin(performance.now() / 3000) * 2, camera.position.y + BOX - fall, camera.position.z);
+        const x = scene.scale.x < 0 ? -camera.position.x : camera.position.x; // (in the scene's own terms)
+        snow.position.set(x + Math.sin(performance.now() / 3000) * 2, camera.position.y + BOX - fall, camera.position.z);
         snow.updateMatrixWorld();
       };
       levelGroup.add(snow);
@@ -821,6 +918,7 @@ const buildRoad = () => {
     stars.renderOrder = -3;
     stars.onBeforeRender = (renderer, scene, camera) => {
       stars.position.copy(camera.position);
+      if (scene.scale.x < 0) stars.position.x = -stars.position.x; // (in the scene's own terms)
       stars.updateMatrixWorld();
     };
     levelGroup.add(stars);

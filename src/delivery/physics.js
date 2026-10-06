@@ -55,6 +55,7 @@ export const maybeSpinOut = (v, amount, scale = 1, crit = 1) => {
 // the car loses all control: it arcs away, turning a full circle, and then blows up
 export const spinOut = (v) => {
   sfxAt('screech', v.s);
+  v.spinIce = false; // (one that skidded on ice says so itself: see Traffic)
   v.wobble = 0;
   v.spin = CONFIG.spinTime;
   v.spinTurn = Math.random() < 0.5 ? -1 : 1; // which way the body rotates

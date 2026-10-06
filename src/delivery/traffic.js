@@ -64,7 +64,7 @@ export const Traffic = (() => {
     return kinds[0][0];
   };
   // is a police car close enough to see what the player is doing?
-  const policeNear = () => cars.some(c => c.active && c.kind === 'police' && !c.toad && c.stun <= 0 &&
+  const policeNear = () => cars.some(c => c.active && !c.junction && c.kind === 'police' && !c.toad && c.stun <= 0 &&
     Math.abs(c.s - Player.s) < CONFIG.policeSightRange && Math.abs(c.lat - Player.lat) < 25);
 
   const MOOD_START = { happy: 0.7, neutral: 0, angry: -0.7 };
@@ -80,7 +80,7 @@ export const Traffic = (() => {
   const speeds = () => LEVEL.trafficSpeed || { min: CONFIG.trafficMinSpeed, max: CONFIG.trafficMaxSpeed };
 
   const laneClear = (car, lane, gap) => cars.every(o =>
-    o === car || !o.active || o.lane !== lane || Math.abs(o.s - car.s) > gap);
+    o === car || !o.active || o.junction || o.lane !== lane || Math.abs(o.s - car.s) > gap);
 
   const playerInWay = (car, lane) => Player.active &&
     Math.abs(Player.lat - Track.laneOffset(lane, car.s)) < CONFIG.laneWidth * 0.9 &&
@@ -119,7 +119,7 @@ export const Traffic = (() => {
   };
   // ...and while a hesitant car is ahead of the player, a car going the player's way may come
   // up from behind instead, near full speed. False if there was no room.
-  const hesitantAhead = () => cars.some(c => c.active && c.hesitant && c.dir === Player.dir && Track.along(c.s) > Track.along(Player.s));
+  const hesitantAhead = () => cars.some(c => c.active && !c.junction && c.hesitant && c.dir === Player.dir && Track.along(c.s) > Track.along(Player.s));
   const spawnBehind = (car) => {
     car.active = false;
     for (let tries = 0; tries < 5; tries++) {
@@ -139,7 +139,7 @@ export const Traffic = (() => {
   // bursts on touching anything (see Collision). Afterwards each turns back into what it was.
   let toads = false;
   const makeToad = (car) => {
-    if (car.toad || car.emergency || car.parked) return; // (an ambulance stays an ambulance, and a parked car parked)
+    if (car.toad || car.emergency || car.parked || car.junction) return; // (an ambulance stays an ambulance, and a parked car parked)
     const T = CONFIG.mystery.toad;
     car.toad = { health: car.health, maxHealth: car.maxHealth, hw: car.hw, hl: car.hl, height: car.height, mass: car.mass };
     Object.assign(car, T, { health: 1, maxHealth: 1, spin: 0, wobble: 0, rival: null, stun: 0 });
@@ -210,6 +210,8 @@ export const Traffic = (() => {
     car.wander = Math.random() * 6; // (where it is in its drift about the lane)
     car.fromBehind = false; // came up from behind the player
     car.onIce = false;      // on an ice patch (see CONFIG.ice)
+    car.junction = null;    // leaving the road at a junction: on its way off, in the world (see leaveAtJunction)
+    car.junctionSeen = -1;  // the s of the last junction it came to (and chose a way at)
     car.parked = false;     // parked on a shoulder, hazards on (see placeFixed)...
     car.parkSide = 1;       // ...on this side (-1 left, 1 right)
     car.pulledFor = null;   // the siren it is pulled over for: Player, or an emergency vehicle
@@ -343,7 +345,7 @@ export const Traffic = (() => {
     if (car.emotion === 'angry' && !car.rival && Math.random() < CONFIG.rivalryPickChance) {
       let best = null, bestGap = CONFIG.rivalryRange;
       for (const o of cars) {
-        if (o === car || !o.active || o.dir !== car.dir) continue;
+        if (o === car || !o.active || o.junction || o.dir !== car.dir) continue;
         const gap = Math.abs(o.s - car.s);
         if (gap < bestGap) { best = o; bestGap = gap; }
       }
@@ -401,7 +403,7 @@ export const Traffic = (() => {
       blocker = v;
       gap = d;
     };
-    for (const o of cars) if (o !== car && o.active && o.arrest < 0 && !o.toad && !o.emergency) consider(o);
+    for (const o of cars) if (o !== car && o.active && o.arrest < 0 && !o.toad && !o.emergency && !o.junction) consider(o);
     if (Player.active && Player.ghost <= 0) consider(Player);
     // close behind it: it has giveWay s to get out of the way, or it is arrested (the player busted;
     // a player who is busted already, or can't be, it just waits behind)
@@ -442,6 +444,99 @@ export const Traffic = (() => {
     updateYaw(car, dt);
   };
 
+  // ---- junctions (see CONFIG.junction and Track.junctions) ------------------------------------
+  // A car leaving the road at a junction leaves its s and lat behind for a path in the world:
+  // car.junction = { j (which junction), path: [pieces], u (m along it), length, into / outOf (u at
+  // the box's edges) }. A piece is a straight { start, dir, length } or a quarter turn
+  // { start, dir, radius, turn (1 right, -1 left), length }. At the end of its path it is gone. It
+  // touches nothing on the way (see Collision); car.wx / wy / wz / wh are where it is and which
+  // way it faces, for drawing.
+  const J = CONFIG.junction;
+  const rightOf = (d) => ({ x: -d.z, z: d.x });
+  const along = (p, d, u) => ({ x: p.x + d.x * u, z: p.z + d.z * u });
+  // where a piece puts a car `l` m along it, and which way it faces
+  const onPiece = (piece, l) => {
+    if (!piece.radius) return { at: along(piece.start, piece.dir, l), dir: piece.dir };
+    const r = rightOf(piece.dir), t = piece.turn, a = l / piece.radius, R = piece.radius;
+    const side = { x: r.x * t, z: r.z * t }; // (towards the middle of the turn)
+    return {
+      at: { x: piece.start.x + side.x * R * (1 - Math.cos(a)) + piece.dir.x * R * Math.sin(a),
+            z: piece.start.z + side.z * R * (1 - Math.cos(a)) + piece.dir.z * R * Math.sin(a) },
+      dir: { x: piece.dir.x * Math.cos(a) + side.x * Math.sin(a), z: piece.dir.z * Math.cos(a) + side.z * Math.sin(a) },
+    };
+  };
+  const placeOnJunction = (car) => {
+    const g = car.junction;
+    let u = g.u;
+    for (const piece of g.path) {
+      if (u > piece.length && piece !== g.path[g.path.length - 1]) { u -= piece.length; continue; }
+      const { at, dir } = onPiece(piece, Math.min(u, piece.length));
+      car.wx = at.x;
+      car.wz = at.z;
+      car.wh = Math.atan2(dir.x, dir.z);
+      break;
+    }
+    car.wy = Track.junctions[g.j].centre.y;
+  };
+  // a car going the player's way, just at a junction: does it leave the road here? At a turn, carrying
+  // straight on (from any lane); straight on, turning off down the arm on its side (from the outside lane)
+  const leaveAtJunction = (car) => {
+    if (car.dir < 0 || !Track.isMain(car.s) || car.parked || car.emergency || car.toad || car.fixed ||
+        car.spin > 0 || car.stun > 0 || car.wobble > 0 || car.arrest >= 0 || car.pulledOver) return false;
+    const i = Track.junctions.findIndex(jn => car.s >= jn.s && car.s < jn.s + 4);
+    if (i < 0 || car.junctionSeen === Track.junctions[i].s) return false;
+    const jn = Track.junctions[i];
+    car.junctionSeen = jn.s;
+    const start = {};
+    Track.toWorld(jn.s, car.lat, start);
+    let path;
+    if (jn.way) {
+      // (not across an oncoming car that is in the box, or about to be: then it follows the road)
+      const oncoming = cars.some(c => c.active && !c.junction && c.dir < 0 && c.s > jn.s - 2 && c.s < jn.end + 12);
+      if (oncoming || Math.random() >= jn.forward) return false;
+      path = [{ start, dir: jn.f0, length: jn.radius + jn.arms[0].length }];
+    } else {
+      const [, last] = Track.laneRange(1, car.s);
+      if (Track.openLane(car.lane, car.s) !== last || Math.random() >= jn.turnOff) return false;
+      // a quarter turn to its side, into that arm's lane going away (as far out as it is now), then on down it
+      const radius = Math.max(3, jn.half - Math.abs(car.lat)), arm = jn.arms[0];
+      const turn = { start, dir: jn.f0, radius, turn: 1, length: radius * Math.PI / 2 };
+      const end = onPiece(turn, turn.length);
+      path = [turn, { start: end.at, dir: arm.dir, length: arm.length - jn.half }];
+    }
+    car.junction = { j: i, path, u: 0, length: path.reduce((sum, piece) => sum + piece.length, 0),
+      into: 0, outOf: jn.way ? jn.radius + jn.half : path[0].length + 2 };
+    car.vs = Math.abs(car.vs);
+    car.pendingLane = null;
+    car.signal = 0;
+    placeOnJunction(car);
+    return true;
+  };
+  const driveJunction = (car, dt) => {
+    const g = car.junction;
+    car.braking = false;
+    car.signal = 0;
+    car.hazards = false;
+    g.u += car.vs * dt;
+    if (g.u >= g.length) { car.active = false; return; } // (gone, off down the arm)
+    placeOnJunction(car);
+  };
+  // is a car leaving across each junction's box just now? (traffic coming the other way gives way)
+  const junctionState = () => {
+    Track.junctions.forEach((jn, i) => {
+      jn.busy = cars.some(c => c.active && c.junction && c.junction.j === i && c.junction.u < c.junction.outOf + 1);
+    });
+  };
+  // how fast a car on the road may go, giving way at a box that a car is leaving across: it waits
+  // at the box's edge (coming the other way, at its far edge) until the box is clear again
+  const giveWay = (car) => {
+    for (const jn of Track.junctions) {
+      const d = car.dir > 0 ? jn.s - 3 - car.s : car.s - (jn.end + 3);
+      if (d > 0 && d < 30 && jn.busy) return Math.sqrt(2 * J.stopping * Math.max(0, d - 1));
+    }
+    return Infinity;
+  };
+
   const reset = () => {
     // how many are about, each way: the level's counts, or the usual ones
     const count = LEVEL.trafficCount !== undefined ? LEVEL.trafficCount : CONFIG.trafficCount;
@@ -468,7 +563,12 @@ export const Traffic = (() => {
       const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1 : Math.random() < 0.5 ? 1 : -1;
       nextEmergency = startEmergency(dir) ? between(LEVEL.emergencies.every) : 1;
     }
+    if (Track.junctions.length) junctionState();
     for (const car of cars) {
+      if (car.active && car.junction) { // leaving the road at a junction
+        driveJunction(car, dt);
+        continue;
+      }
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
         if (!car.fixed && !car.unused && mix().length) {
@@ -518,7 +618,10 @@ export const Traffic = (() => {
       // (not one that is parked, nor an ambulance)
       const icy = !!Track.icy(car.s, car.lat);
       if (icy && !car.onIce && !car.parked && !car.emergency && !(car.spin > 0) &&
-          Math.random() < CONFIG.ice.spinPerSpeed * Math.abs(car.vs)) spinOut(car);
+          Math.random() < CONFIG.ice.spinPerSpeed * Math.abs(car.vs)) {
+        spinOut(car);
+        car.spinIce = true; // (it skidded: it isn't damaged, so it doesn't smoke for it)
+      }
       car.onIce = icy;
       if (car.spin > 0 || car.stun > 0) { // (out of control: no signalling, no brakes)
         car.braking = car.hazards = false;
@@ -562,6 +665,8 @@ export const Traffic = (() => {
         updateYaw(car, dt);
         continue;
       }
+      // at a junction, some leave the road down an arm the player can't take (see leaveAtJunction)
+      if (leaveAtJunction(car)) continue;
       if (car.emergency) { // an ambulance on its way: see driveEmergency
         driveEmergency(car, dt);
         continue;
@@ -677,7 +782,7 @@ export const Traffic = (() => {
           target = car.baseSpeed * ((rival.s - car.s) * car.dir > 0 ? 1.35 : 0.7);
         }
         for (const o of cars) {
-          if (o === car || !o.active || o === rival) continue;
+          if (o === car || !o.active || o === rival || o.junction) continue;
           const gap = (o.s - car.s) * car.dir;
           if (gap > 0 && gap < o.hl + car.hl + 8 && Math.abs(o.lat - car.lat) < o.hw + car.hw) {
             target = Math.min(target, Math.abs(o.vs) * 0.9);
@@ -692,6 +797,8 @@ export const Traffic = (() => {
           honk(car);
           if (car.emotion !== 'angry') target = Math.min(target, Player.speed * 0.9);
         }
+        // giving way at a junction while a car is leaving across it
+        target = Math.min(target, giveWay(car));
         // hesitating: every so often a touch of the brakes, sharply
         if (car.hesitant && (car.tapWait -= dt) <= 0) {
           car.tap = H.tapTime;

@@ -21,6 +21,7 @@ import { syncHelicopter, syncArrests } from './render/helicopter.js';
 import { syncHeadlights, syncTrafficBeams } from './render/headlights.js';
 import { syncUfoStrike } from './render/ufostrike.js';
 import { syncBulletTrain } from './render/bullettrain.js';
+import { syncJunctions } from './render/junctions.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
@@ -123,6 +124,7 @@ const frame = (now) => {
     syncTrafficBeams();
     syncUfoStrike(dt);
     syncBulletTrain();
+    syncJunctions(now);
     syncStorm(dt);
     emitVehicleSmoke(dt);
     syncPackages(dt);
@@ -142,7 +144,7 @@ const frame = (now) => {
     // ping as one comes near enough to bust you (nobody busts a tank)
     let copFar = Infinity;
     for (const c of Traffic.cars) {
-      if (!c.active || (c.kind !== 'police' && c.kind !== 'ambulance') || c.toad) continue;
+      if (!c.active || (c.kind !== 'police' && c.kind !== 'ambulance') || c.toad || c.junction) continue;
       copFar = Math.min(copFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat));
     }
     const siren = Game.state === 'playing' && !Game.paused ? Math.max(0, 1 - copFar / CONFIG.sirenRange) : 0;
@@ -151,7 +153,7 @@ const frame = (now) => {
     // the lowriders' music, the same way: from the nearest one in traffic
     let lowriderFar = Infinity;
     for (const c of Traffic.cars) {
-      if (!c.active || c.kind !== 'lowrider' || c.toad) continue;
+      if (!c.active || c.kind !== 'lowrider' || c.toad || c.junction) continue;
       lowriderFar = Math.min(lowriderFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat));
     }
     const lowrider = Game.state === 'playing' && !Game.paused ? Math.max(0, 1 - lowriderFar / CONFIG.lowriderHearing) : 0;

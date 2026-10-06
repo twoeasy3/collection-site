@@ -222,7 +222,9 @@ export const Game = {
       this.time += dt;
     }
     // after the finish the car rolls to a stop past the line
-    if (Player.active) Player.update(dt, playing ? Input.throttle : 0, playing ? Input.steer : 0, !playing);
+    // (on a left-hand level, shown mirrored, steering left on screen is steering right in the game's own terms)
+    const steer = playing ? Input.steer * (Track.mirrored ? -1 : 1) : 0;
+    if (Player.active) Player.update(dt, playing ? Input.throttle : 0, steer, !playing);
     else if (playing || this.over) this.updateRespawn(dt);
     // a police car that sees you on the shoulder busts you on the spot
     if (playing && Player.active && !Player.busted && Player.shield <= 0 &&

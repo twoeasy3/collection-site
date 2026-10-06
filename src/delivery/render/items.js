@@ -215,6 +215,7 @@ OBSTACLE_MODELS.sign = (o) => {
   const face = new THREE.Mesh(new THREE.PlaneGeometry(w - 0.12, 1.38), new THREE.MeshBasicMaterial({ map }));
   face.rotation.y = Math.PI;
   face.position.set(0, top - 0.75, -0.08);
+  face.userData.text = true;
   group.add(face);
   return group;
 };
@@ -375,6 +376,11 @@ const buildBridge = (from, to) => {
 // ---- built when a level is loaded ---------------------------------------------------------------
 // (level meshes own their geometry and materials, so emptying the group can free them all)
 const place = (mesh) => { levelItems.add(mesh); return mesh; };
+// anything with writing on it (userData.text) mirrored back on a left-hand level, which is drawn
+// mirrored, so that it still reads
+const readable = (object) => object.traverse((mesh) => {
+  if (mesh.userData.text) mesh.scale.x = Math.abs(mesh.scale.x) * (Track.mirrored ? -1 : 1);
+});
 const buildItems = () => {
   clearGroup(levelItems);
   for (const { from, to } of LEVEL.bridges || []) buildBridge(from, to);
@@ -388,6 +394,7 @@ const buildItems = () => {
   targetMeshes = Targets.items.map((t) => place(makeTarget(t)));
 };
 Game.onLoad.push(buildItems);
+Game.onLoad.push(() => { readable(levelItems); readable(hoverMystery); readable(hoverWeight); });
 
 export const syncPickups = (dt) => {
   for (let i = 0; i < pickupMeshes.length; i++) {

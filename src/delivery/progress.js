@@ -8,8 +8,9 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // Saved progress counts unlocked levels by position (see LEVELS), so it remembers which order of
 // levels it was saved with. Each new order put a level in among the others: a save from before
 // that had opened that position or beyond opens one more. Order 2 put Suburbia in at position 8,
-// ahead of All Heck and Asteroid Run (now S1 and S2); order 3, Canberra at 9; order 4, Monte Carlo at 10.
-const INSERTED_AT = [8, 9, 10]; // (for orders 2, 3, ...)
+// ahead of All Heck and Asteroid Run (now S1 and S2); order 3, Canberra at 9; order 4, Monte Carlo
+// at 10; order 5, Singapore at 11.
+const INSERTED_AT = [8, 9, 10, 11]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 const fresh = () => ({

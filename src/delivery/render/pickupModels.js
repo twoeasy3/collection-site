@@ -103,7 +103,8 @@ PICKUP_MODELS.mystery = () => {
   g.fillText('?', 32, 35);
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
-  part(group, new THREE.BoxGeometry(1.1, 1.1, 1.1), new THREE.MeshLambertMaterial({ map, emissive: 0x2a1040 }), 0, 0, 0);
+  part(group, new THREE.BoxGeometry(1.1, 1.1, 1.1), new THREE.MeshLambertMaterial({ map, emissive: 0x2a1040 }), 0, 0, 0)
+    .userData.text = true; // (it has writing on it: see render/items.js, readable)
   return group;
 };
 
@@ -177,7 +178,7 @@ PICKUP_MODELS.heavyMass = () => {
   // on the front face, half way up it, leaning back with it
   const lean = Math.atan((0.78 - 0.5) * Math.SQRT1_2 / 0.95);
   part(group, new THREE.PlaneGeometry(0.62, 0.5), new THREE.MeshBasicMaterial({ map, transparent: true }),
-    0, -0.15, (0.5 + 0.78) / 2 * Math.SQRT1_2 + 0.01, -lean);
+    0, -0.15, (0.5 + 0.78) / 2 * Math.SQRT1_2 + 0.01, -lean).userData.text = true;
   return group;
 };
 

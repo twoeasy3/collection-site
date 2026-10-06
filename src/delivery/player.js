@@ -174,7 +174,7 @@ export const Player = {
     if (this.ghost > 0 || this.tank > 0) return null; // a ghost drives through, a tank ploughs through
     let lead = null, leadGap = Infinity;
     for (const car of Traffic.cars) {
-      if (!car.active || car.dir < 0) continue; // braking won't save you from oncoming cars
+      if (!car.active || car.dir < 0 || car.junction) continue; // braking won't save you from oncoming cars
       const gap = car.s - this.s - car.hl - this.hl;
       const closing = this.speed - car.vs;
       if (gap < -1 || closing <= 0 || gap > leadGap) continue;
@@ -202,14 +202,22 @@ export const Player = {
     // (a turbo adds the same to every car's top speed: a slow car stays the slower one)
     // (bad gas and the weight hold the car back: a share of its top speed and acceleration)
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
-    const top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1);
+    let top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1);
+    // over a railway track, slowed by how well the car crosses one (a tank, whatever it is, crosses fine)
+    const R = CONFIG.railCrossing, rails = Track.onRails(this.s, this.lat, this.hw);
+    const crossing = this.tank > 0 ? 1 : CAR.crossing ?? R.usual;
+    if (rails) {
+      top *= R.slowest + (1 - R.slowest) * crossing;
+      if (crossing < 1) Game.shake = Math.max(Game.shake, 0.25 * (1 - crossing));
+    }
     let drive = throttle;
     const grip = this.onIce ? CONFIG.ice.brakeGrip : 1; // (braking on ice)
     if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed)) drive = 1;
     if (drive === 0 && boosted) drive = 1; // the turbo pulls unless you brake
     if (this.speed > top) {
       // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
-      this.speed = Math.max(top, this.speed - CONFIG.brake * 0.5 * dt);
+      // (or on a railway track: slowed down to it hard)
+      this.speed = Math.max(top, this.speed - (rails ? R.bite : CONFIG.brake * 0.5) * dt);
     } else if (drive > 0) {
       this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * dt);
     } else if (drive < 0 && this.speed > CONFIG.minSpeed) {

@@ -29,7 +29,7 @@ export const UfoStrike = {
       this.t += dt;
       if (this.t >= U[this.phase]) {
         if (this.phase === 'hover') { // flying off: everything on the road now is doomed
-          for (const car of Traffic.cars) if (car.active) car.ufoBurning = true;
+          for (const car of Traffic.cars) if (car.active && !car.junction) car.ufoBurning = true;
           this.burn = 0;
         }
         this.phase = NEXT[this.phase];

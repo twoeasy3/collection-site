@@ -70,6 +70,15 @@ export const tmp2 = new THREE.Vector3();
 
 // ---- chase camera ----------------------------------------------------------
 let camLat = 0;
+// points the camera, placed in the game's own terms, at the target. On a left-hand level the scene
+// is drawn mirrored (scale x -1, see road.js), so the camera goes to the mirror image of its place
+const aim = (target) => {
+  if (scene.scale.x < 0) {
+    camera.position.x = -camera.position.x;
+    target.x = -target.x;
+  }
+  camera.lookAt(target);
+};
 // a still for the level select (?cine, see main.js): off to the side of the road and above it,
 // a little behind the car, looking up the road past it at the traffic ahead
 // With studio on (?cine=car), it is the car alone on white: a close three-quarter view from
@@ -83,7 +92,7 @@ const studioCamera = () => {
   const k = (Player.hl + Player.hw) / 2.7; // (further back from a bigger vehicle, so each fills the frame alike)
   camera.position.set(tmp2.x + (fx * 4.6 + lx * 3.2) * k, tmp2.y + 3.4 * k, tmp2.z + (fz * 4.6 + lz * 3.2) * k);
   tmp2.y += 0.8;
-  camera.lookAt(tmp2);
+  aim(tmp2);
   camera.fov = 34;
   camera.updateProjectionMatrix();
 };
@@ -93,7 +102,7 @@ const cinematicCamera = () => {
   camera.position.set(tmp.x, tmp.y + 7.5, tmp.z);
   Track.toWorld(Player.s + 45, 0, tmp2);
   tmp2.y += 1.2;
-  camera.lookAt(tmp2);
+  aim(tmp2);
   camera.fov = 52;
   camera.updateProjectionMatrix();
 };
@@ -110,7 +119,7 @@ export const updateCamera = (dt, snap) => {
     tmp.y + cam.camHeight + (Math.random() - 0.5) * shake, tmp.z);
   Track.toWorld(Player.s + cam.camLookAhead, camLat, tmp2);
   tmp2.y += 1; // (so the camera looks up a climb and down a descent)
-  camera.lookAt(tmp2);
+  aim(tmp2);
 
   const speedT = Math.min(1.3, Player.speed / CONFIG.camFovFullSpeed);
   camera.fov = baseFov + CONFIG.camFovSpeedBoost * speedT * speedT;

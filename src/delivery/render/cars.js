@@ -267,7 +267,7 @@ export const trafficMeshes = Traffic.cars.map(() => {
   addLamps(mesh);
   return mesh;
 });
-const signalAt = new THREE.Vector3();
+const signalAt = new THREE.Vector3(), unplace = new THREE.Matrix4();
 // A kind of vehicle with a model of its own (the tractor, and any kind with a "model" in
 // CONFIG.vehicles): built the first time this mesh needs it, and kept for the next time.
 const ownModel = (mesh, car) => {
@@ -285,9 +285,14 @@ export const syncTraffic = () => {
     const car = Traffic.cars[i], mesh = trafficMeshes[i];
     mesh.visible = car.active;
     if (!car.active) continue;
-    mesh.rotation.y = Track.toWorld(car.s, car.lat, tmp) - car.yaw + (car.dir < 0 ? Math.PI : 0); // (a spin-out's turn is in yaw too)
-    mesh.position.copy(tmp);
-    mesh.rotation.x = car.spin > 0 ? 0 : -Math.atan(Track.grade(car.s)) * car.dir; // tilt with the slope
+    if (car.junction) { // (off the road, going through a junction: where it is in the world)
+      mesh.position.set(car.wx, car.wy, car.wz);
+      mesh.rotation.set(0, car.wh, 0);
+    } else {
+      mesh.rotation.y = Track.toWorld(car.s, car.lat, tmp) - car.yaw + (car.dir < 0 ? Math.PI : 0); // (a spin-out's turn is in yaw too)
+      mesh.position.copy(tmp);
+      mesh.rotation.x = car.spin > 0 ? 0 : -Math.atan(Track.grade(car.s)) * car.dir; // tilt with the slope
+    }
     shapeCarMesh(mesh, car);
     const police = car.kind === 'police';
     const paints = PAINTS[car.evil ? 'evil' : 'good'];
@@ -317,10 +322,11 @@ export const syncTraffic = () => {
     // is on: the side nearer the road a little way across in the direction it is signalling
     const lit = !car.toad && car.kind !== 'tractor';
     let turnX = 0;
-    if (lit && car.signal) {
+    if (lit && car.signal && !car.junction) {
       mesh.updateMatrixWorld();
       Track.toWorld(car.s, car.lat + car.signal, signalAt);
-      turnX = Math.sign(mesh.worldToLocal(signalAt).x);
+      // (in the scene's own terms: its matrix, not its world one, which a mirrored level reverses)
+      turnX = Math.sign(signalAt.applyMatrix4(unplace.copy(mesh.matrix).invert()).x);
     }
     syncLamps(mesh, car, lit, car.braking, turnX, car.hazards);
   }

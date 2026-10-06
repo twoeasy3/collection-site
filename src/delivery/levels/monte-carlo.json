@@ -5,7 +5,7 @@
   "time": 145,
   "tip": 120,
   "lanes": 2,
-  "traffic": { "car": 0.34, "compact": 0.24, "wagon": 0.16, "van": 0.14, "bus": 0.06, "police": 0.06 },
+  "traffic": { "car": 0.34, "compact": 0.24, "wagon": 0.16, "van": 0.14, "bus": 0.06, "police": 0.02 },
   "trafficCount": 6,
   "oncomingCount": 7,
   "segments": [
@@ -74,12 +74,5 @@
     { "type": "turbo", "s": 2500, "lane": 1 },
     { "type": "timePlus", "s": 2900, "lane": 0 },
     { "type": "radarDetector", "s": 3050, "lane": 1 }
-  ],
-  "obstacles": [
-    { "s": 630, "lane": 1, "kind": "bale" },
-    { "s": 1000, "lane": 0, "kind": "bale" },
-    { "s": 1380, "lane": 1, "kind": "bale" },
-    { "s": 2345, "lane": 0, "kind": "bale" },
-    { "s": 2720, "lane": 1, "kind": "bale" }
   ]
 }

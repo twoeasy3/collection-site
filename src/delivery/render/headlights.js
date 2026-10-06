@@ -70,7 +70,8 @@ export const syncHeadlights = () => {
   carMesh.updateMatrixWorld();
   for (const { light, side } of lamps) {
     light.intensity = carMesh.visible ? H.intensity : 0; // (no car: the screensaver, or being carried off)
-    light.position.copy(at.set(side * H.spread, H.height, Player.hl).applyMatrix4(carMesh.matrixWorld));
-    light.target.position.copy(at.set(side * H.spread, 0, Player.hl + H.aim).applyMatrix4(carMesh.matrixWorld));
+    // (in the scene's own terms: the car's matrix, not its world one, which a mirrored level reverses)
+    light.position.copy(at.set(side * H.spread, H.height, Player.hl).applyMatrix4(carMesh.matrix));
+    light.target.position.copy(at.set(side * H.spread, 0, Player.hl + H.aim).applyMatrix4(carMesh.matrix));
   }
 };

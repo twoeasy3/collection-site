@@ -104,6 +104,28 @@ export const CONFIG = {
     yawKick: 2.5,          // rad/s it slews round as it hits the ice, at speed
     spinPerSpeed: 0.02,    // chance, per m/s of its speed, that a traffic car hitting the ice spins out
   },
+  // Junctions (a level's "junctions"): crossroads where the road turns right or left, or goes
+  // straight on. There is only ever the one route: the arms it doesn't take are barred to the
+  // player by glowing arrows, but traffic leaves the road down them, through the arrows, and is
+  // gone. At a turn, some of the traffic going the player's way carries straight on (unless an
+  // oncoming car is in the box); at a junction straight on, some of that in the outside lane turns
+  // off down the arm on its side. Nothing comes out of an arm, and while a car is leaving across a
+  // box, traffic on the road waits at its edge.
+  junction: {
+    forward: 0.35,         // share of the traffic going the player's way that carries straight on at a turn
+    turnOff: 0.3,          // share of that in the outside lane that turns off at a junction straight on
+    stopping: 8,           // m/s^2 traffic slows at, giving way
+  },
+  // A railway track (a level's "railway", down its median) slows a car crossing it, by the car's
+  // "crossing" (see cars.js): while any of it is over the track, its top speed there is its own
+  // x (slowest + (1 - slowest) x crossing), and it is slowed to that at `bite`; the worse it
+  // crosses, the more it rattles
+  railCrossing: {
+    width: 3.2,            // m of track bed (the ballast), centred on the centre line
+    slowest: 0.3,          // share of its top speed a car that crosses worst of all (0) keeps
+    bite: 25,              // m/s^2 it is slowed at, down to that
+    usual: 0.6,            // a car's crossing if it doesn't say
+  },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game
   bulletTrain: {
     speed: 150,            // m/s (540 km/h)

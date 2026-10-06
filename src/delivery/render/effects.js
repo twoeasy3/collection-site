@@ -70,7 +70,8 @@ export const rnd = (range) => (Math.random() - 0.5) * 2 * range;
 
 // damaged cars trail smoke from the engine: thicker and darker as health drops, then flames
 const emitSmoke = (v, dt) => {
-  const health = v.spin > 0 ? 0 : v.health / v.maxHealth; // a spinning car pours smoke
+  // a car spinning out from damage pours smoke; one that skidded on ice smokes only as much as its damage
+  const health = v.spin > 0 && !v.spinIce ? 0 : v.health / v.maxHealth;
   if (health >= CONFIG.smokeStart) return;
   const amount = 1 - health / CONFIG.smokeStart;
   v.smoke += amount * CONFIG.smokeRate * dt;
@@ -160,11 +161,11 @@ const explode = (e) => {
       1.2 + Math.random() * 1.3, (0.8 + Math.random() * 0.8) * ks, 1.5, 0,
       grey << 16 | grey << 8 | grey);
   }
-  for (let i = 0; i < 22 * k; i++) { // debris
+  // glowing debris (no dark bits: the only dark things flying out are the tyres, which stand out for it)
+  for (let i = 0; i < 7 * k; i++) {
     Particles.emit(tmp.x + rnd(1), tmp.y + 0.8, tmp.z + rnd(1),
       vx * 1.5 + rnd(10), 5 + Math.random() * 9, vz * 1.5 + rnd(10),
-      1.5 + Math.random(), 0.25 + Math.random() * 0.5, 0, 25,
-      Math.random() < 0.3 ? 0xff8c1a : 0x1c1c1c, tmp.y);
+      1.5 + Math.random(), 0.25 + Math.random() * 0.5, 0, 25, 0xff8c1a, tmp.y);
   }
   // nearby blasts rattle the camera
   const distance = Math.abs(e.s - Player.s);
@@ -198,7 +199,7 @@ const gift = (e) => {
 
 // smoke from every damaged vehicle; call before the syncs that add particles of their own
 export const emitVehicleSmoke = (dt) => {
-  for (const v of Collision.bodies) if (v.active) emitSmoke(v, dt);
+  for (const v of Collision.bodies) if (v.active && !v.junction) emitSmoke(v, dt);
 };
 
 // plays the effects the game logic queued this frame, then advances every particle and tyre
