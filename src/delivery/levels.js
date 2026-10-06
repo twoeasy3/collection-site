@@ -95,7 +95,11 @@
 //              up beside the road (from: 'left' | 'right') or falls out of the sky ('sky'), and its
 //              wreckage lands across those lanes at `at`, wrecking all there, blocking them for good.
 //              kind: 'tanker' | 'containers' | 'hangar' | 'plane' | 'airliner' (an airliner comes in
-//              to land `slide` m beyond `at` and slides back to it). Traffic pulls over for it
+//              to land `slide` m beyond `at` and slides back to it). Traffic pulls over for it.
+//              Or 'blast': a building `distance` m off the road on its side (from) blows out across
+//              its lanes out to the road's edge, wrecking all there just then, and leaves the road clear
+//   runway     { from, width }: from there on the road is a runway, `width` m of concrete beyond each
+//              edge, with a runway's markings in place of lanes (the airport's look)
 //   tower      { at, trigger, distance, stub }: the control tower, beside the old road carrying
 //              straight on (stub m of it) where the route turns off at `at`; set off at trigger m
 //              short of there, it comes crashing down across that road (only a sight)

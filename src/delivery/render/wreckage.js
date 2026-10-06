@@ -7,6 +7,8 @@
 // shower of sparks; its path flashes red from the moment it is set off. The control tower stands
 // beside the road where the route turns off onto the runway, the old road carrying on past it,
 // and comes crashing down across that road. Parked airliners stand about the apron.
+// A building that blows (a blast) stands by the road; its red box flashes on the road beside it,
+// then it goes up, slumps into a burning ruin, and burns on.
 // Also the fires burning out across the airfield, each sending up a column of black smoke.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
@@ -63,6 +65,14 @@ const MODELS = {
     const g = new THREE.Group();
     for (let k = 0; k < 5; k++) add(g, box(w * (0.7 + Math.random() * 0.4), 0.5, 0.4), STEEL, rnd(1), 0.4 + k * 0.6, rnd(d / 2), rnd(0.15), rnd(0.5), rnd(0.25)); // girders
     for (let k = 0; k < 4; k++) add(g, box(w * 0.35, 0.12, d * 0.8), lambert(0x9aa0a4), -w / 2 + w * 0.25 * (k + 0.5), 1.2 + Math.random(), 0, rnd(0.4), 0, rnd(0.6)); // roof panels
+    return g;
+  },
+  // (a blast's building, standing beside the road: an office block, its windows in bands)
+  blast: () => {
+    const g = new THREE.Group();
+    add(g, box(16, 14, 26), lambert(0xb9b2a6), 0, 7, 0);
+    for (let y = 2.5; y < 13; y += 3.5) add(g, box(16.2, 1.4, 26.2), lambert(0x2f3e4a), 0, y, 0);
+    add(g, box(16.4, 0.8, 26.4), STEEL, 0, 14.4, 0);
     return g;
   },
   plane: (w, d) => {
@@ -152,11 +162,12 @@ Game.onLoad.push(() => {
   if (LEVEL.tower) buildStub(LEVEL.tower);
   for (const e of LEVEL.wreckage || []) {
     const W = CONFIG.wreckage, LW = CONFIG.laneWidth, depth = W.kinds[e.kind].depth;
-    const w = (e.lanes[1] - e.lanes[0] + 1) * LW - 0.4;
+    const w = (e.lanes[1] - e.lanes[0] + 1) * LW - 0.4 + (e.kind === 'blast' ? CONFIG.shoulder + 0.2 : 0); // (a blast's box: out to the road's edge)
     const mesh = e.kind === 'airliner' ? makeAirliner(w, depth, true) : MODELS[e.kind](w, depth);
     mesh.visible = false;
     const marker = new THREE.Mesh(new THREE.PlaneGeometry(w, depth + 4 + (e.slide || 0)).rotateX(-Math.PI / 2), // (an airliner's: the whole of its slide)
-      new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.5, depthWrite: false }));
+      new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.5, depthWrite: false,
+        polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 })); // (over the runway's concrete and paint too)
     marker.visible = false;
     group.add(mesh, marker);
     pieces.push({ mesh, marker, spin: { x: rnd(2), y: rnd(3), z: rnd(2) } });
@@ -181,13 +192,27 @@ export const syncWreckage = (now) => {
   Wreckage.list.forEach((e, i) => {
     const { mesh, marker, spin } = pieces[i] || {};
     if (!mesh) return;
-    mesh.visible = e.t >= 0;
+    mesh.visible = e.t >= 0 || e.kind === 'blast'; // (a building that blows stands there from the start)
     const coming = e.slide ? !e.landed || e.sliding : !e.landed;
     marker.visible = e.t >= 0 && coming && Math.floor(now / 120) % 2 === 0; // (flashing where it will come down)
     if (e.t < 0) return;
     const mid = e.at + (e.slide || 0) / 2, mlat = (e.lat0 + e.lat1) / 2;
     marker.rotation.y = Track.toWorld(mid, mlat, tmp);
     marker.position.set(tmp.x, tmp.y + 0.06, tmp.z);
+    if (e.kind === 'blast') { // the building: standing; then gone up, slumped into a burning ruin
+      const from = Wreckage.source(e), bh = Track.toWorld(from.s, from.lat, tmp);
+      mesh.position.copy(tmp);
+      mesh.rotation.set(0, bh, 0);
+      const down = e.landed ? Math.min(1, (e.t - CONFIG.wreckage.blastWarn) / 1.2) : 0;
+      mesh.scale.set(1, 1 - 0.7 * down * down, 1);
+      if (e.landed && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.6) {
+        Fire.emit(tmp.x + rnd(7), tmp.y + 4 + Math.random() * 3, tmp.z + rnd(7), rnd(1), 2 + Math.random() * 3, rnd(1),
+          0.6 + Math.random() * 0.5, 1 + Math.random(), 1, 0, FIRE_COLORS[1 + Math.floor(Math.random() * 3)]);
+        const grey = 25 + Math.floor(Math.random() * 30);
+        Smoke.emit(tmp.x + rnd(5), tmp.y + 7, tmp.z + rnd(5), rnd(1), 3 + Math.random() * 3, rnd(1), 3, 2 + Math.random(), 2, 0, grey << 16 | grey << 8 | grey);
+      }
+      return;
+    }
     if (e.slide) { // an airliner: diving in nose down, then sliding, nose first, at the player
       const at = Wreckage.airliner(e, e.t), heading = Track.toWorld(at.s, mlat, tmp);
       mesh.position.set(tmp.x, tmp.y + at.h, tmp.z);

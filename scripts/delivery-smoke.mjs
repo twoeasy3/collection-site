@@ -1511,7 +1511,7 @@ try {
     // wrecking a car there; traffic heading for those lanes pulls over and stops, the rest carry on
     Game.start();
     for (const c of Traffic.cars) c.active = false;
-    const e = Wreckage.list[0], [a, b] = e.lanes, open = a > 0 ? 0 : b + 1;
+    const e = Wreckage.list.find(w => w.kind !== 'blast' && !w.slide), [a, b] = e.lanes, open = a > 0 ? 0 : b + 1;
     Object.assign(Player, { s: e.at - W.trigger - 30, lat: T().laneOffset(open, e.at), speed: 0, shield: 0, ghost: 0, active: true });
     const victim = Object.assign(carAt(e.at, a, 0), { fixed: true }), blocked = carAt(e.at - 100, b, 20), clear = carAt(e.at - 60, open, 20);
     for (let i = 0; i < 60; i++) step();
@@ -1564,6 +1564,23 @@ try {
     check(highest > 40 && Math.abs(touchedAt - (jet.at + jet.slide)) < 10 && !inPath.active && !jet.sliding && Math.abs((jet.s0 + jet.s1) / 2 - jet.at) < 0.5,
       `an airliner dives in from ${highest.toFixed(0)} m up, touches down ${jet.slide} m up the road and slides back along lanes ` +
       `${jet.lanes.join('-')} to rest, wrecking a car in its path`);
+    // a building blowing out: its red box flashes first, then whatever is in it is wrecked; it
+    // leaves the road clear, and nobody pulls over for it
+    Game.start();
+    for (const c of Traffic.cars) c.active = false;
+    const bl = Wreckage.list.find(w => w.kind === 'blast'), spare = bl.lanes[0] > 0 ? 0 : bl.lanes[1] + 1;
+    Object.assign(Player, { s: bl.at - bl.trigger, lat: T().laneOffset(spare, bl.at), speed: 0, shield: 0, ghost: 0 });
+    const inBox = Object.assign(carAt(bl.at, bl.lanes[0], 0), { fixed: true }), beside = Object.assign(carAt(bl.at, spare, 0), { fixed: true });
+    let warnedFirst = true;
+    for (let i = 0; i < 120 * (W.blastWarn + W.blastTime + 0.5); i++) {
+      for (const c of Traffic.cars) if (c !== inBox && c !== beside) c.active = false;
+      step();
+      if (bl.t < W.blastWarn - 0.05 && !inBox.active) warnedFirst = false;
+    }
+    check(warnedFirst && !inBox.active && beside.active && !Wreckage.blocked(bl.lanes[0], bl.at) &&
+      !Wreckage.ahead({ s: bl.at - 50, lat: T().laneOffset(bl.lanes[0], bl.at), hw: 1, dir: 1 }),
+      `a building blows out across its red box (lanes ${bl.lanes.join('-')} to the road's edge, ${W.blastWarn} s after it starts flashing), ` +
+      `wrecking a car in it and not one beside it, and leaves the road clear`);
     // the control tower: standing until the player comes up to the turn, then down across the old road
     Game.start();
     const tw = Wreckage.tower;

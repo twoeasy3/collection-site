@@ -186,10 +186,13 @@ export const CONFIG = {
     approachHeight: 55,    // ...this high...
     approachTime: 3,       // ...taking this long to touch down...
     slideTime: 4,          // ...then sliding (its "slide" m) for this long, to rest
+    blastWarn: 1.4,        // s a building's red box flashes before it blows...
+    blastTime: 0.25,       // ...and s the blast wrecks what is in the box
+    blastBuilding: 10,     // m from the road's edge to the front of a building that blows (a level's can say otherwise)
     towerFall: 2.6,        // s the control tower takes to come down...
     towerScale: 1.6,       // ...a tower this many times the usual size (some 85 m tall)
     kinds: {               // m each kind covers along the road (it covers its lanes across)
-      tanker: { depth: 3.5 }, containers: { depth: 5 }, hangar: { depth: 5 }, plane: { depth: 7 }, airliner: { depth: 34 },
+      tanker: { depth: 3.5 }, containers: { depth: 5 }, hangar: { depth: 5 }, plane: { depth: 7 }, airliner: { depth: 34 }, blast: { depth: 18 },
     },
   },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game

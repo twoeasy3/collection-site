@@ -694,7 +694,8 @@ const buildRoad = () => {
   }
   // a junction's box has no lines through it, like a real one: the road's markings stop at its
   // edges (its crossings and stop lines are render/junctions.js's)
-  const inJunction = (s) => Track.junctions.some(jn => s > jn.s - 1 && s < jn.end + 1);
+  // (nor anywhere on a runway, which has markings of its own: see the airport's scenery)
+  const inJunction = (s) => Track.junctions.some(jn => s > jn.s - 1 && s < jn.end + 1) || (!!LEVEL.runway && s > LEVEL.runway.from - 1);
   const unmarked = (a, b) => { // the pieces of a..b outside every junction
     const pieces = [];
     let from = a;
@@ -1483,11 +1484,13 @@ const buildRoad = () => {
     buildZones(beside, instances, add, flat, { cube, tube, cone });
   } else if (theme.scenery === 'airport') {
     // ---- airport: the perimeter road past the terminal, through the fence onto the runway --------
-    // (the runway: from where the route turns onto it, wide concrete either side of the road, lit
-    // along its edges; before that a fence along both sides, the terminal on the right with its
-    // jet bridges, hangars and fuel tanks out beyond the apron on the left; nothing on the old
-    // road carrying straight on where the route turns off (see render/wreckage.js))
-    const T = LEVEL.tower, turn = T ? T.at : Infinity, runway = T ? T.at + 236 : Infinity;
+    // Before the turn: a fence along both sides; buildings close by on both sides (offices, cargo
+    // sheds), the terminal further out on the right, the apron on the left with hangars and fuel
+    // tanks out beyond it. The runway (LEVEL.runway): wide concrete with a runway's markings in
+    // place of lanes (see inJunction), edge lights, and hangars and terminal piers beyond its edges.
+    // Nothing on the old road carrying straight on where the route turns off, nor by the buildings
+    // that blow up (both: see render/wreckage.js), nor where the parked airliners stand.
+    const T = LEVEL.tower, R = LEVEL.runway, turn = T ? T.at : Infinity, runway = R ? R.from : Infinity, RW = R ? R.width : 0;
     const stubFrom = {}, h = T ? Track.toWorld(T.at, 0, stubFrom) : 0;
     const offStub = (s, lat) => { // (clear of the old road and the fallen tower)
       if (!T) return true;
@@ -1496,7 +1499,11 @@ const buildRoad = () => {
       const side = -(dx * Math.cos(h) - dz * Math.sin(h)); // (to the right of it)
       return along < -10 || along > T.stub + 10 || side < -100 || side > 50;
     };
-    const kinds = { post: [], rail: [], terminal: [], glass: [], bridge: [], hangar: [], roof: [], tank: [], light: [], apron: [] };
+    const blasts = (LEVEL.wreckage || []).filter(e => e.kind === 'blast');
+    const free = (s, side, d) => !blasts.some(e => (e.from === 'left' ? -1 : 1) === side && Math.abs(e.at - s) < 45) &&
+      !(side < 0 && s < turn && (LEVEL.parkedPlanes || []).some(p => Math.abs(p.s - s) < 50)) && offStub(s, beside(side, s, d));
+    const kinds = { post: [], rail: [], terminal: [], glass: [], bridge: [], hangar: [], roof: [], tank: [], light: [], apron: [],
+      office: [], windows: [], shed: [], door: [], pier: [] };
     for (let s = Track.start; s < Math.min(turn, Track.end); s += 4) {
       for (const side of [-1, 1]) {
         const lat = beside(side, s, 2);
@@ -1507,10 +1514,10 @@ const buildRoad = () => {
     }
     for (let s = 60; s < turn - 60; s += 140) { // the terminal, in sections, with a jet bridge each
       if (!offStub(s, Track.hi(s) + 60)) continue;
-      const lat = beside(1, s, 55);
+      const lat = beside(1, s, 75);
       kinds.terminal.push([s, lat, 7, 30, 14, 120]);
       kinds.glass.push([s, lat, 8, 30.4, 6, 118]);
-      kinds.bridge.push([s, beside(1, s, 32), 4, 16, 3, 3]);
+      kinds.bridge.push([s, beside(1, s, 52), 4, 16, 3, 3]);
     }
     for (let s = 200; s < turn - 100; s += 380) { // hangars and fuel tanks, out beyond the apron
       const lat = beside(-1, s, 140 + Math.random() * 40);
@@ -1519,23 +1526,78 @@ const buildRoad = () => {
       for (let k = 0; k < 3; k++) kinds.tank.push([s + 120 + k * 22, beside(-1, s, 70), 6, 16, 12, 16]);
     }
     kinds.apron.push([Math.min(turn, Track.end) / 2, beside(-1, turn / 2, 45), -0.02, 80, 0.04, Math.min(turn, Track.end)]);
-    if (T) {
-      // the runway: concrete well out either side of the road, its edge lights, and its number
-      const RW = 22;
+    // buildings close by along both sides, all the way: offices with bands of windows, and cargo
+    // sheds with roller doors; along the runway, out beyond its concrete, hangars and terminal piers
+    for (let s = 30; s < Track.end - 30; s += 55 + Math.random() * 35) {
       for (const side of [-1, 1]) {
-        const strip = buildStrip(runway - 120, Track.end, (s) => side < 0 ? Track.lo(s) - RW : Track.hi(s), (s) => side < 0 ? Track.lo(s) : Track.hi(s) + RW, -0.01, 8);
-        add(strip, flat(0x55585d));
-        for (let s = runway; s < Track.end; s += 30) kinds.light.push([s, beside(side, s, RW - 1), 0.3, 0.4, 0.4, 0.4]);
-      }
-      for (let k = -5; k <= 5; k++) { // the threshold's stripes
-        const lat = k * 3.2;
-        add(buildStrip(runway + 10, runway + 40, lat - 0.9, lat + 0.9, 0.02, 10), lineMat);
+        if (s > turn - 80 && s < runway + 40) continue; // (the turn onto the runway: open ground)
+        const onRunway = s >= runway, d0 = onRunway ? RW + 18 : 14 + Math.random() * 8;
+        if (!free(s, side, d0 + 10)) continue;
+        const r = Math.random();
+        if (onRunway && r < 0.4) { // a hangar, its doors to the runway
+          const d = d0 + 25, lat = beside(side, s, d);
+          kinds.hangar.push([s, lat, 9, 50, 18, 45]);
+          kinds.roof.push([s, lat, 19, 52, 2.5, 47]);
+        } else if (onRunway && r < 0.6) { // a terminal pier, glass-fronted
+          const lat = beside(side, s, d0 + 12);
+          kinds.pier.push([s, lat, 5, 20, 10, 45]);
+          kinds.glass.push([s, lat, 6, 20.4, 4, 44]);
+        } else if (r < 0.55) { // an office block
+          const w = 18 + Math.random() * 18, dd = 12 + Math.random() * 8, ht = 10 + Math.random() * 16, lat = beside(side, s, d0 + dd / 2);
+          kinds.office.push([s, lat, ht / 2, dd, ht, w]);
+          for (let y = 3; y < ht - 1.5; y += 3.5) kinds.windows.push([s, lat, y, dd + 0.2, 1.4, w + 0.2]);
+        } else { // a cargo shed
+          const w = 30 + Math.random() * 20, dd = 18, lat = beside(side, s, d0 + dd / 2);
+          kinds.shed.push([s, lat, 4.5, dd, 9, w]);
+          for (let k = -1; k <= 1; k++) kinds.door.push([s + k * w * 0.28, beside(side, s, d0 - 0.1), 3, 0.2, 6, 6]);
+        }
       }
     }
+    if (R) {
+      // the runway: one sweep of concrete over the road and well out either side, with a runway's
+      // markings in place of lanes: edge lines, the threshold's stripes and its number, touchdown
+      // zone bars and the aiming point, and dashes down the centre line; lights along its edges
+      const lo = (q) => Track.lo(q) - RW, hi = (q) => Track.hi(q) + RW, mid = (q) => (Track.lo(q) + Track.hi(q)) / 2;
+      const concrete = flat(0x6c6f73);
+      concrete.polygonOffset = true;
+      concrete.polygonOffsetFactor = -1;
+      concrete.polygonOffsetUnits = -1;
+      add(buildStrip(runway - 20, Track.end, lo, hi, 0.004, 8), concrete);
+      const paint = (from, to, lat, width) => add(buildStrip(from, to, (q) => mid(q) + lat - width / 2, (q) => mid(q) + lat + width / 2, 0.02, 4), lineMat);
+      for (const side of [-1, 1]) {
+        const edge = (q) => side < 0 ? lo(q) + 1.5 : hi(q) - 1.5;
+        add(buildStrip(runway, Track.end, (q) => edge(q) - 0.45, (q) => edge(q) + 0.45, 0.02, 8), lineMat);
+        for (let q = runway; q < Track.end; q += 30) kinds.light.push([q, beside(side, q, RW - 0.5), 0.3, 0.4, 0.4, 0.4]);
+        for (let j = 0; j < 6; j++) paint(runway + 10, runway + 40, side * (2.7 + j * 3.6), 1.8);          // the threshold
+        for (const [at, bars] of [[150, 3], [450, 2], [600, 1]]) {                                      // touchdown zone
+          for (let k = 0; k < bars; k++) paint(runway + at, runway + at + 22, side * (5 + k * 3), 1.8);
+        }
+        paint(runway + 300, runway + 345, side * 9, 7);                                                 // aiming point
+      }
+      for (let q = runway + 110; q < Track.end - 30; q += 50) paint(q, q + 30, 0, 0.9);                 // centre line
+      // the runway's number, "27", read from the threshold
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 512;
+      const g = canvas.getContext('2d');
+      g.fillStyle = '#f2f2f2';
+      g.font = 'bold 400px sans-serif';
+      g.textAlign = 'center';
+      g.textBaseline = 'middle';
+      g.fillText('27', 256, 270);
+      const map = new THREE.CanvasTexture(canvas);
+      map.colorSpace = THREE.SRGBColorSpace;
+      const number = new THREE.Mesh(new THREE.PlaneGeometry(18, 18).rotateX(-Math.PI / 2),
+        new THREE.MeshBasicMaterial({ map, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+      const nh = Track.toWorld(runway + 62, mid(runway + 62), tmp);
+      number.position.set(tmp.x, tmp.y + 0.03, tmp.z);
+      number.rotation.y = nh + Math.PI; // (its top furthest away, as a pilot coming in reads it)
+      levelGroup.add(number);
+    }
     const colours = { post: 0x8a8f96, rail: 0x9aa0a6, terminal: 0xcfd3d6, glass: 0x35576a, bridge: 0xa9aeb3, hangar: 0x9ba3a8,
-      roof: 0x6f777d, tank: 0xe4e2dc, light: 0xffe08a, apron: 0x8d9196 };
+      roof: 0x6f777d, tank: 0xe4e2dc, light: 0xffe08a, apron: 0x8d9196, office: 0xb9b2a6, windows: 0x2f3e4a, shed: 0x8e9aa4,
+      door: 0x5d6770, pier: 0xd8dcdf };
     for (const [name, list] of Object.entries(kinds)) {
-      instances(name === 'tank' ? tube : cube, colours[name], list.filter(([s, lat]) => offStub(s, lat)), name === 'light');
+      instances(name === 'tank' ? tube : cube, colours[name], list.filter(([q, lat]) => offStub(q, lat)), name === 'light');
     }
   } else if (theme.scenery === 'alpine') {
     // ---- alpine: guardrails and snowbanks along both edges, snowy pines on the mountainside,

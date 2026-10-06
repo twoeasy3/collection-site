@@ -6,7 +6,9 @@
 // and from then on it blocks those lanes for good: whatever runs into it is wrecked (the player's
 // car outright, but for a ghost, or one just set down by the helicopter). Traffic whose lane is
 // blocked ahead pulls over onto the shoulder and stops there, hazards on (see Traffic).
-// An airliner (slide: m) comes down out of the sky ahead, touches down that far beyond where it
+// A blast (kind 'blast'): a building beside the road blows out. Its red box (its lanes, out to the
+// road's edge on its side) flashes, then it goes up, wrecking whatever is in the box just then; it
+// leaves nothing in the road. An airliner (slide: m) comes down out of the sky ahead, touches down that far beyond where it
 // ends up, and slides back towards the player along its lanes, wrecking everything in its path,
 // before it comes to rest. And a level's "tower": the control tower beside the road where the
 // route turns off (onto the runway), which collapses across the road straight on as the player
@@ -32,14 +34,19 @@ export const Wreckage = {
     this.tower = LEVEL.tower ? { ...LEVEL.tower, t: -1, down: false } : null;
     this.list = (LEVEL.wreckage || []).map(e => {
       const depth = W.kinds[e.kind].depth, [a, b] = e.lanes;
+      const lat0 = Track.laneOffset(a, e.at) - LW / 2 + 0.2, lat1 = Track.laneOffset(b, e.at) + LW / 2 - 0.2, blast = e.kind === 'blast';
       return { ...e, depth, s0: e.at - depth / 2, s1: e.at + depth / 2, t: -1, landed: false, sliding: false,
-        lat0: Track.laneOffset(a, e.at) - LW / 2 + 0.2, lat1: Track.laneOffset(b, e.at) + LW / 2 - 0.2 };
+        lat0: blast && e.from === 'left' ? Track.lo(e.at) : lat0, lat1: blast && e.from !== 'left' ? Track.hi(e.at) : lat1 };
     });
   },
   // where it goes up: off the road on its side, or high over the road ahead
   source(e) {
     const side = e.from === 'left' ? -1 : e.from === 'sky' ? 0 : 1;
     if (e.slide) return { s: e.at + e.slide + CONFIG.wreckage.approach, lat: (e.lat0 + e.lat1) / 2 }; // (far out, on its way in)
+    if (e.kind === 'blast') { // (the building, its front this far from the road's edge)
+      const d = (e.distance ?? CONFIG.wreckage.blastBuilding) + 8;
+      return { s: e.at, lat: side < 0 ? Track.lo(e.at) - d : Track.hi(e.at) + d };
+    }
     return side ? { s: e.at, lat: side < 0 ? Track.lo(e.at) - 40 : Track.hi(e.at) + 40 } : { s: e.at + 90, lat: (e.lat0 + e.lat1) / 2 };
   },
   // an airliner coming in: where its middle is along the road, and how high, `t` s after it was set
@@ -60,11 +67,11 @@ export const Wreckage = {
   // is the lane blocked (or about to be) at s? (nothing new turns up there, and the helicopter sets no car down there)
   blocked(lane, s) {
     const lat = Track.laneOffset(lane, s);
-    return this.list.some(e => e.t >= 0 && s > e.s0 - 20 && s < e.s1 + 20 && lat > e.lat0 - 0.5 && lat < e.lat1 + 0.5);
+    return this.list.some(e => e.t >= 0 && e.kind !== 'blast' && s > e.s0 - 20 && s < e.s1 + 20 && lat > e.lat0 - 0.5 && lat < e.lat1 + 0.5);
   },
   // is a car's lane blocked somewhere ahead of it (by wreckage that has been set off)?
   ahead(car) {
-    return this.list.some(e => e.t >= 0 && (e.s0 - car.s) * car.dir > 0 && (e.s0 - car.s) * car.dir < CONFIG.wreckage.lookout &&
+    return this.list.some(e => e.t >= 0 && e.kind !== 'blast' && (e.s0 - car.s) * car.dir > 0 && (e.s0 - car.s) * car.dir < CONFIG.wreckage.lookout &&
       car.lat + car.hw > e.lat0 && car.lat - car.hw < e.lat1);
   },
 
@@ -95,11 +102,21 @@ export const Wreckage = {
     for (const e of this.list) {
       if (e.t < 0) {
         if (Player.s < e.at - (e.trigger ?? W.trigger)) continue;
-        e.t = 0; // set off: up it goes, in a fireball
+        e.t = 0; // set off: up it goes, in a fireball (a building's goes later: below)
         const from = this.source(e);
-        this.fireballs(from.s, from.s, from.lat - 3, from.lat + 3, 3);
+        if (e.kind !== 'blast') this.fireballs(from.s, from.s, from.lat - 3, from.lat + 3, 3);
       }
       e.t += dt;
+      if (e.kind === 'blast') { // a building blowing out: whatever is in its box when it goes is wrecked
+        if (!e.landed && e.t >= W.blastWarn) {
+          e.landed = true;
+          const from = this.source(e);
+          this.fireballs(e.s0, e.s1, e.lat0, e.lat1, 5);
+          this.fireballs(from.s - 12, from.s + 12, from.lat - 6, from.lat + 6, 4);
+          if (Math.abs(e.at - Player.s) < 120) Game.shake = 1;
+        }
+        if (!e.landed || e.t > W.blastWarn + W.blastTime) continue;
+      }
       if (e.slide) { // an airliner: diving in, then sliding along its lanes (wrecking all in its path) to rest
         const at = this.airliner(e, e.t);
         e.s0 = at.s - e.depth / 2;
@@ -111,14 +128,14 @@ export const Wreckage = {
         }
         e.landed = e.t >= W.approachTime;
       }
-      if (!e.slide && !e.landed && e.t >= W.flight) { // down it comes, blowing up whatever is there
+      if (!e.slide && e.kind !== 'blast' && !e.landed && e.t >= W.flight) { // down it comes, blowing up whatever is there
         e.landed = true;
         this.fireballs(e.s0, e.s1, e.lat0, e.lat1, 4);
         if (Math.abs(e.at - Player.s) < 120) Game.shake = 1;
       }
       if (!e.landed) continue;
       // landed, it wrecks whatever is in it, or runs into it (a little more than it covers, as it lands)
-      const margin = e.t < W.flight + 0.3 || e.sliding ? W.blast : 0;
+      const margin = e.kind === 'blast' ? 0 : e.t < W.flight + 0.3 || e.sliding ? W.blast : 0;
       for (const car of Traffic.cars) {
         if (car.active && !car.junction && car.health > 0 && this.covers(e, car, margin)) car.health = 0; // (it blows up: Collision.check)
       }
