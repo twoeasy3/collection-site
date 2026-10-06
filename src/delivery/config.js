@@ -163,7 +163,19 @@ export const CONFIG = {
     height: 1.7,           // m, its height (how far under the water it starts)
     lead: { min: -6, max: 22 }, // m off where the player will be when it reaches the player's lane
     beyond: 25,            // m into the grass on the far side it is gone
+    most: 6,               // hippos there can be at once
   },
+  // elephants (a level's "elephants": see elephants.js), plodding across the road and back
+  elephant: {
+    speed: 1.6,            // m/s it walks at
+    hl: 1.4,               // m, half its width (along the road)
+    hw: 2.9,               // m, half its length (it walks across the road)
+    beyond: 12,            // m out into the grass it walks before turning back...
+    rest: { min: 2, max: 6 }, // ...after standing there this many s
+  },
+  // the migration (a level's "migration"): a great herd streaming across the road, at these m/s
+  // each, out to `beyond` m either side and round again; galloping, bobbing up to `hop` m, `hops` times a second
+  migration: { speed: { min: 4, max: 7 }, beyond: 35, hop: 0.2, hops: 2.5 },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game
   bulletTrain: {
     speed: 150,            // m/s (540 km/h)
@@ -204,6 +216,8 @@ export const CONFIG = {
     cow: { damage: 30, speedKept: 0.6 },
     kangaroo: { damage: 25, speedKept: 0.7 },
     dropBear: { damage: 20, speedKept: 0.75 },
+    wildebeest: { damage: 25, speedKept: 0.7 },
+    zebra: { damage: 25, speedKept: 0.7 },
     asteroid: { damage: 14, maxDamage: 70, speedKept: 0.7 }, // damage is per metre of radius, up to maxDamage
     // (light: true = a small thing: it doesn't knock the steering, and barely shakes the camera)
     cone: { damage: 3, speedKept: 0.94, light: true },

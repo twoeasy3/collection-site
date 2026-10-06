@@ -50,7 +50,7 @@ const makeHippo = () => {
 };
 
 const pool = [];
-for (let i = 0; i < 4; i++) {
+for (let i = 0; i < CONFIG.hippo.most; i++) {
   const hippo = makeHippo();
   hippo.visible = false;
   scene.add(hippo);

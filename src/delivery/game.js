@@ -11,6 +11,7 @@ import { UfoStrike } from './ufostrike.js';
 import { BulletTrain } from './bullettrain.js';
 import { Tide } from './tide.js';
 import { Hippos } from './hippos.js';
+import { Elephants } from './elephants.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -125,6 +126,7 @@ export const Game = {
     BulletTrain.reset();
     Tide.reset();
     Hippos.reset();
+    Elephants.reset();
     this.state = 'playing';
     startScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');
@@ -257,6 +259,7 @@ export const Game = {
     BulletTrain.update(dt);
     if (playing) Tide.update(dt);
     if (playing) Hippos.update(dt);
+    if (playing) Elephants.update(dt);
     Packages.update(dt);
     Pickups.update();
     Collision.updateObstacles(dt);

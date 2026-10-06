@@ -1395,7 +1395,7 @@ try {
         hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null });
       Message.clear();
       Hippos.start(at);
-      const h = Hippos.list[0], said = Message.lines.some(line => line.text === Message.pick('events', 'hippo'));
+      const h = Hippos.list[0], said = !Message.lines.some(line => line.text); // (no message of its own: the river's welcome warns of them)
       const inWater = h.lat > T().hi(at) + H.bank && h.y < 0;
       let carWrecked = false, playerWrecked = false, furthest = h.lat, lasted = 0;
       for (let i = 0; i < 120 * 8 && Hippos.list.length; i++) {
@@ -1410,7 +1410,7 @@ try {
     };
     const hit = charge(0), ghosted = charge(99);
     check(oneWay && hit.said && hit.inWater && hit.carWrecked && hit.playerWrecked && hit.across && ghosted.across && !ghosted.playerWrecked,
-      `all the traffic goes the player's way; a hippo ("${Message.pick('events', 'hippo')}") surfaces in the river and charges across the road in ` +
+      `all the traffic goes the player's way; a hippo surfaces in the river ("${Message.pick('zones', 'river')}") and charges across the road in ` +
       `${hit.lasted.toFixed(1)} s, wrecking a car and the player's car in its way and running on unharmed into the grass; a ghost comes through it`);
     // aimed at the player: one sets off when the player is by the river, ahead of where the player is
     Game.start();
@@ -1420,6 +1420,69 @@ try {
     const aimed = Hippos.list[0];
     check(!!aimed && aimed.s > Player.s + 20 && aimed.s < Player.s + 120 && !!Hippos.riverAt(aimed.s),
       `by the river, hippos come for the player: one surfaces ${aimed ? (aimed.s - Player.s).toFixed(0) : '-'} m ahead`);
+    // the migration: a great herd streaming across the road one way and round again, always some of
+    // it on the road; each animal an obstacle, blown up when hit
+    {
+      Game.start();
+      const herd = Collision.obstacles.filter(o => o.migrate), z = levels.LEVEL.migration[0], M = CONFIG.migration;
+      const start = new Map(herd.map(o => [o, o.lat]));
+      let fewest = Infinity, wrapped = 0, oneWay = true;
+      for (let i = 0; i < 120 * 20; i++) {
+        const before = herd.map(o => o.lat);
+        Collision.updateObstacles(1 / 120);
+        herd.forEach((o, k) => {
+          const moved = o.lat - before[k];
+          if (moved < -1) wrapped++; // (off the far side, and round again)
+          else if (Math.sign(moved) !== z.dir) oneWay = false;
+        });
+        if (i % 60 === 0) fewest = Math.min(fewest, herd.filter(o => o.lat > T().lo(o.s) && o.lat < T().hi(o.s)).length);
+      }
+      check(herd.length === z.count && herd.every(o => o.kind === 'wildebeest' || o.kind === 'zebra') && oneWay && wrapped > z.count / 2 && fewest >= 5 &&
+        [...start.keys()].every(o => o.s >= z.from - 1 && o.s <= z.to + 1),
+        `the migration: ${herd.length} wildebeest and zebras streaming across the road at ${M.speed.min}-${M.speed.max} m/s, ` +
+        `${wrapped} times round again in 20 s, never fewer than ${fewest} on the road`);
+    }
+    // elephants: they plod across the road and back; one walking into the player's car wrecks it
+    // outright, and it walks on; traffic waits for one in its way
+    {
+      const { Elephants } = await load('/src/delivery/elephants.js');
+      const E = CONFIG.elephant;
+      Game.start();
+      for (const c of Traffic.cars) c.active = false;
+      const e = Elephants.list[0], lane = T().laneOffset(1, e.s);
+      Object.assign(e, { lat: lane + 6, dir: -1, rest: 0 });
+      Object.assign(Player, { s: e.s, lat: lane, speed: 0, shield: 0, ghost: 0 });
+      let wrecked = false, crossed = false;
+      for (let i = 0; i < 120 * 12; i++) {
+        Elephants.update(1 / 120);
+        Collision.check();
+        FxQueue.length = 0;
+        wrecked ||= !Player.active;
+        crossed ||= e.lat < lane - 4;
+      }
+      // and traffic drives on into one standing in its lane, and is trampled
+      Game.start();
+      const e2 = Elephants.list[0];
+      Object.assign(e2, { lat: T().laneOffset(1, e2.s), rest: 99 }); // (standing in lane 1)
+      for (const c of Traffic.cars) c.active = false;
+      const car = Traffic.cars.find(c => !c.unused), type = CONFIG.vehicles.car;
+      Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, stalled: false, emergency: false, evil: false, s: e2.s - 60, lane: 1,
+        lat: T().laneOffset(1, e2.s - 60), vs: 20, baseSpeed: 20, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, junction: null,
+        hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null, hesitant: false, tap: 0 });
+      Player.s = e2.s - 200;
+      let trampled = false;
+      for (let i = 0; i < 120 * 6 && !trampled; i++) {
+        for (const c of Traffic.cars) if (c !== car) c.active = false;
+        Traffic.update(1 / 120);
+        Elephants.update(1 / 120);
+        Collision.check();
+        FxQueue.length = 0;
+        trampled = !car.active;
+      }
+      check(Elephants.list.length === levels.LEVEL.elephants.reduce((n, z) => n + z.count, 0) && wrecked && crossed && trampled && Elephants.list.includes(e2),
+        `${Elephants.list.length} elephants: one plods across the road at ${E.speed} m/s, wrecking the player's car in its way, and walks on; ` +
+        `traffic drives on into one and is trampled`);
+    }
     Game.toMenu();
   }
 

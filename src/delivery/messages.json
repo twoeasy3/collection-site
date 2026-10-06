@@ -27,8 +27,7 @@
   },
   "events": {
     "emergency": ["Emergency vehicle oncoming!! Give way!"],
-    "wave": ["WAVE INCOMING!! Get out of the water!"],
-    "hippo": ["HIPPO!! Look out!"]
+    "wave": ["WAVE INCOMING!! Get out of the water!"]
   },
   "zones": {
     "sydney": ["Sydney"],
@@ -41,10 +40,10 @@
     "beauvoir": ["Beauvoir-sur-Mer"],
     "gois": ["Passage du Gois - the tide is coming in!"],
     "noirmoutier": ["Ile de Noirmoutier - nearly there!"],
-    "savanna": ["The savanna"],
+    "savanna": ["The savanna - mind the elephants!"],
     "kopjes": ["The kopjes - mind the rocks!"],
-    "river": ["Hippo river - watch the water!"],
-    "plains": ["The plains - nearly at the lodge!"]
+    "river": ["Hippo river - Look out for hippos!!!"],
+    "plains": ["The plains - the great migration is crossing!"]
   },
   "bustCount": {
     "1": ["First Offence - "],

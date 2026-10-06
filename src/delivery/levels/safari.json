@@ -32,8 +32,15 @@
   "narrows": [
     { "from": 1400, "to": 2100, "lanesPerSide": 1 }
   ],
+  "migration": [
+    { "from": 3800, "to": 4150, "count": 90, "kinds": { "wildebeest": 0.75, "zebra": 0.25 }, "dir": 1 }
+  ],
+  "elephants": [
+    { "from": 450, "to": 1200, "count": 4 },
+    { "from": 4180, "to": 4380, "count": 2 }
+  ],
   "hippos": [
-    { "from": 2300, "to": 3600, "every": { "min": 3, "max": 6 } }
+    { "from": 2300, "to": 3600, "every": { "min": 1.5, "max": 3 } }
   ],
   "targets": [
     { "s": 600, "side": "left" },

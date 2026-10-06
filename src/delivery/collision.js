@@ -181,6 +181,7 @@ export const Collision = (() => {
     // a railway barrier: low and narrow enough to sit wholly inside a passing bullet train
     railBarrier: [1.2, 0.6, 0.95],
     bale: [1.1, 1.1, 1.5], frog: [1.4, 1.4, 1.6], cow: [0.7, 1.3, 1.5], kangaroo: [0.5, 0.8, 1.8], dropBear: [0.6, 0.6, 1.0],
+    wildebeest: [0.55, 1.1, 1.5], zebra: [0.5, 1.1, 1.5],
     asteroid: [1, 1, 2], // replaced by each asteroid's own radius
     cone: [0.42, 0.42, 1.12], sign: [1.1, 0.15, 3.0], // (cones are 1.4 times life size: easier to see on a phone)
     // the beach's own junk (Hurricane): a beach umbrella, a surfboard stuck upright, an ice
@@ -226,6 +227,19 @@ export const Collision = (() => {
         const s = Track.place({ s: z.from + Math.random() * (z.to - z.from) });
         const o = { s, hw: 0.6, hl: 0.6, height: 1, kind: 'dropBear' };
         add('dropBear', s, anywhereAcross(o, s), { h: CONFIG.dropBear.height, fall: 0, near: 0 });
+      }
+    }
+    // the migration: a great herd spread over its stretch and out either side, all streaming across
+    // the road one way (dir, -1 or 1: towards +lat), each at its own pace, and round again
+    for (const z of LEVEL.migration || []) {
+      const kinds = Object.entries(z.kinds || { wildebeest: 1 });
+      const total = kinds.reduce((sum, [, share]) => sum + share, 0);
+      for (let i = 0; i < z.count; i++) {
+        let r = Math.random() * total, kind = kinds[0][0];
+        for (const [k, share] of kinds) if ((r -= share) < 0) { kind = k; break; }
+        const s = Track.place({ s: z.from + Math.random() * (z.to - z.from) }), M = CONFIG.migration;
+        const lat0 = Track.lo(s) - M.beyond + Math.random() * (Track.hi(s) - Track.lo(s) + 2 * M.beyond);
+        add(kind, s, lat0, { yaw: Math.PI / 2, migrate: z.dir || 1, lat0, speed: M.speed.min + Math.random() * (M.speed.max - M.speed.min), hop: Math.random() * 9 });
       }
     }
     for (const z of LEVEL.herds || []) {
@@ -382,6 +396,15 @@ export const Collision = (() => {
           o.dir = -o.dir;
           o.rest = CONFIG.cowRestMin + Math.random() * (CONFIG.cowRestMax - CONFIG.cowRestMin);
         }
+      } else if (o.migrate) { // streaming across with the herd, galloping, and round again
+        const M = CONFIG.migration;
+        o.lat += o.migrate * o.speed * dt;
+        o.hop += dt * M.hops;
+        o.h = M.hop * Math.abs(Math.sin(o.hop * Math.PI));
+        o.face = o.migrate * Math.PI / 2;
+        const lo = Track.lo(o.s) - M.beyond, hi = Track.hi(o.s) + M.beyond;
+        if (o.lat > hi) o.lat -= hi - lo;
+        if (o.lat < lo) o.lat += hi - lo;
       } else if (o.drift) {
         o.time += dt;
         driftTo(o);
@@ -431,6 +454,10 @@ export const Collision = (() => {
         o.h = CONFIG.dropBear.height;
         o.fall = 0;
         o.near = CONFIG.dropBear.near.min + Math.random() * (CONFIG.dropBear.near.max - CONFIG.dropBear.near.min);
+        continue;
+      }
+      if (o.migrate) { // back to where it started out in the herd
+        o.lat = o.lat0;
         continue;
       }
       if (o.kind === 'asteroid') { // back to where the field put it

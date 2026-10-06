@@ -587,6 +587,9 @@ const createTrack = () => {
       if (!(p.from < p.to) || p.from < 0 || p.to > length) problems.push('ice at ' + p.from + '-' + p.to + ': from before to, on the road');
       else if (p.lane !== undefined && !(Number.isInteger(p.lane) && p.lane >= 0 && p.lane < LANES)) problems.push('ice at ' + p.from + ': no lane ' + p.lane);
     }
+    for (const z of [...(LEVEL.migration || []), ...(LEVEL.elephants || [])]) {
+      if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.kinds ? 'migration' : 'elephants') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
+    }
     for (const r of LEVEL.hippos || []) {
       if (!(r.from < r.to) || r.from < 0 || r.to > length) problems.push('hippos at ' + r.from + '-' + r.to + ': from before to, on the road');
       else if (!(r.every && r.every.min > 0 && r.every.max >= r.every.min)) problems.push('hippos at ' + r.from + ': every { min, max } s');

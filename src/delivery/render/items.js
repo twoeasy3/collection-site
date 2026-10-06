@@ -200,6 +200,41 @@ const OBSTACLE_MODELS = {
       [fur, 0.16, 0.16, 1.1, 0, 0.45, -0.85],      // tail
     ]);
   },
+  // a wildebeest: dark grey-brown, high in the shoulder, a black mane and beard, curved horns
+  wildebeest: () => {
+    const hide = lambert(0x5d544c), dark = lambert(0x24201d), horn = lambert(0x3a3632);
+    return boxModel([
+      [hide, 0.9, 0.95, 2.0, 0, 1.25, -0.1],      // body
+      [hide, 0.95, 0.5, 0.8, 0, 1.75, 0.45],      // the shoulders' hump
+      [dark, 0.2, 0.55, 1.0, 0, 1.95, 0.35],      // mane
+      [hide, 0.55, 0.6, 0.9, 0, 1.6, 1.25],       // head, low
+      [dark, 0.3, 0.45, 0.25, 0, 1.15, 1.35],     // beard
+      [horn, 1.0, 0.12, 0.12, 0, 2.0, 1.1],       // horns...
+      [horn, 0.12, 0.3, 0.12, -0.48, 2.15, 1.1],  // ...curving up
+      [horn, 0.12, 0.3, 0.12, 0.48, 2.15, 1.1],
+      [dark, 0.22, 0.8, 0.22, -0.3, 0.4, 0.7],    // legs
+      [dark, 0.22, 0.8, 0.22, 0.3, 0.4, 0.7],
+      [dark, 0.22, 0.8, 0.22, -0.3, 0.4, -0.85],
+      [dark, 0.22, 0.8, 0.22, 0.3, 0.4, -0.85],
+      [dark, 0.1, 0.7, 0.1, 0, 1.05, -1.15],      // tail
+    ]);
+  },
+  // a zebra: white with black stripes all over, a black-and-white mane
+  zebra: () => {
+    const white = lambert(0xf2f1ec), black = lambert(0x1c1c1c);
+    const parts = [
+      [white, 0.8, 0.85, 1.9, 0, 1.25, 0],        // body
+      [white, 0.35, 0.9, 0.4, 0, 1.75, 0.95],     // neck
+      [white, 0.4, 0.4, 0.8, 0, 2.05, 1.35],      // head
+      [black, 0.3, 0.2, 0.25, 0, 1.95, 1.75],     // muzzle
+      [black, 0.12, 0.5, 0.6, 0, 2.05, 0.95],     // mane
+    ];
+    for (let k = -3; k <= 3; k++) parts.push([black, 0.82, 0.87, 0.12, 0, 1.25, k * 0.25]); // stripes
+    for (const [x, z] of [[-0.25, 0.7], [0.25, 0.7], [-0.25, -0.7], [0.25, -0.7]]) {
+      parts.push([white, 0.18, 0.85, 0.18, x, 0.42, z], [black, 0.19, 0.1, 0.19, x, 0.55, z], [black, 0.19, 0.1, 0.19, x, 0.25, z]);
+    }
+    return boxModel(parts);
+  },
   cow: () => {
     const white = lambert(0xf4f1ea), black = lambert(0x1f1f1f), pink = lambert(0xe8a0a8);
     return boxModel([

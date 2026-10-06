@@ -85,6 +85,11 @@
 //              count: { min, max } }: pickups each wave leaves in the water. On a two-way road
 //              with no exits. See tide.js and CONFIG.tide
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
+//   migration  { from, to, count, kinds: { kind: share }, dir }: a great herd (kinds: 'wildebeest',
+//              'zebra') streaming across the road over that stretch, one way (dir: 1 = to the
+//              right), and round again: obstacles, blown up when hit (see CONFIG.migration)
+//   elephants  { from, to, count }: elephants plodding across the road and back over that stretch:
+//              whatever one walks into is destroyed, traffic included (see elephants.js)
 //   hippos     { from, to, every: { min, max } }: a river beside the road (on the right) over that
 //              stretch, out of which a hippo charges across the road every min-max s, aimed at the
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
