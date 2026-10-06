@@ -1585,15 +1585,33 @@ try {
     Game.start();
     for (const c of Traffic.cars) c.active = false;
     Object.assign(Player, { s: bl.at - 120, lat: T().laneOffset(bl.lanes[0], bl.at), speed: cars.CAR.maxSpeed, launching: false, shield: 0, ghost: 0 });
-    let caught = false;
+    let caught = false, seenFrom = -1;
+    const pace = Wreckage.list.find(w => w.at === bl.at);
     for (let i = 0; i < 120 * 8 && !caught; i++) {
       for (const c of Traffic.cars) c.active = false;
       Player.lat = T().laneOffset(bl.lanes[0], Player.s);
       Game.update(1 / 120);
       FxQueue.length = 0;
+      if (pace.landed && seenFrom < 0) seenFrom = pace.s0 - (Player.s + Player.hl); // (how far short its nose was as it blew)
       caught = !Player.active;
     }
-    check(caught && Math.abs(Player.s - bl.at) < bl.depth, `a player who keeps on flat out (${cars.CAR.maxSpeed} m/s) in its lane is caught in the blast (${(Player.s - bl.at).toFixed(1)} m from its middle)`);
+    check(caught && Math.abs(Player.s - bl.at) < bl.depth && seenFrom > 0 && seenFrom < 8,
+      `a player who keeps on flat out (${cars.CAR.maxSpeed} m/s) in its lane sees it blow ${seenFrom.toFixed(1)} m ahead, and drives on into the fire`);
+    // one with "ahead" goes off well before the player can get there
+    Game.start();
+    for (const c of Traffic.cars) c.active = false;
+    const early = Wreckage.list.find(w => w.kind === 'blast' && w.ahead);
+    Object.assign(Player, { s: early.at - 250, lat: T().laneOffset(early.lanes[0], early.at), speed: cars.CAR.maxSpeed, launching: false, shield: 0, ghost: 0 });
+    let short = null;
+    for (let i = 0; i < 120 * 12 && short === null; i++) {
+      for (const c of Traffic.cars) c.active = false;
+      Player.lat = T().laneOffset(early.lanes[0], Player.s);
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      if (early.landed) short = early.s0 - (Player.s + Player.hl);
+    }
+    check(short > cars.CAR.maxSpeed * early.ahead * 0.8 && Player.active,
+      `one timed ${early.ahead} s ahead blows with the player still ${short?.toFixed(0)} m short, out of reach at that pace`);
     // the control tower: standing until the player comes up to the turn, then down across the old road
     Game.start();
     const tw = Wreckage.tower;

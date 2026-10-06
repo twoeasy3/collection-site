@@ -98,7 +98,8 @@
 //              to land `slide` m beyond `at` and slides back to it). Traffic pulls over for it.
 //              Or 'blast': a building `distance` m off the road on its side (from) blows out across
 //              its lanes out to the road's edge, wrecking all there just then, and leaves the road clear;
-//              it goes by the player's pace (see CONFIG.wreckage.blastWarn), not a trigger
+//              it goes by the player's pace (see CONFIG.wreckage.blastWarn), not a trigger: with
+//              "ahead" (s), that much sooner, out of the player's reach unless the player speeds up
 //   runway     { from, width }: from there on the road is a runway, `width` m of concrete beyond each
 //              edge, with a runway's markings in place of lanes (the airport's look)
 //   tower      { at, trigger, distance, stub }: the control tower, beside the old road carrying

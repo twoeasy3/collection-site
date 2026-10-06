@@ -9,7 +9,9 @@
 // A blast (kind 'blast'): a building beside the road blows out. Its red box (its lanes, out to the
 // road's edge on its side) flashes, then fire bursts out of the building's front and sweeps across
 // the road through the box, wrecking whatever is in the box just then; it leaves nothing in the
-// road. It is set off by the player's pace: a player who keeps going is in the box as it blows. An airliner (slide: m) comes down out of the sky ahead, touches down that far beyond where it
+// road. It is set off by the player's pace: a player who keeps going is just short of the box as it
+// blows, sees it go up right in front, and drives on into the fire; one with "ahead" (s) goes off
+// that much sooner, out of the player's reach unless the player speeds up. An airliner (slide: m) comes down out of the sky ahead, touches down that far beyond where it
 // ends up, and slides back towards the player along its lanes, wrecking everything in its path,
 // before it comes to rest. And a level's "tower": the control tower beside the road where the
 // route turns off (onto the runway), which collapses across the road straight on as the player
@@ -102,8 +104,10 @@ export const Wreckage = {
     }
     for (const e of this.list) {
       if (e.t < 0) {
-        // (a blast: when the player, keeping on at this pace, would be in its box just as it blows)
-        const reach = e.kind === 'blast' ? Math.max(W.blastNear, Player.speed * W.blastWarn) : e.trigger ?? W.trigger;
+        // (a blast: when the player, keeping on at this pace, would be just short of its box as it blows)
+        const reach = e.kind === 'blast'
+          ? e.at - e.s0 + W.blastAim + Player.hl + Math.max(W.blastNear, Player.speed * (W.blastWarn + (e.ahead || 0)))
+          : e.trigger ?? W.trigger;
         if (Player.s < e.at - reach) continue;
         e.t = 0; // set off: up it goes, in a fireball (a building's goes later: below)
         const from = this.source(e);
