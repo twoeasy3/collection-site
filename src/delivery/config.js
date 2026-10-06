@@ -164,6 +164,8 @@ export const CONFIG = {
     bale: { damage: 20, speedKept: 0.75 },
     frog: { damage: 30, speedKept: 0.6 },
     cow: { damage: 30, speedKept: 0.6 },
+    kangaroo: { damage: 25, speedKept: 0.7 },
+    dropBear: { damage: 20, speedKept: 0.75 },
     asteroid: { damage: 14, maxDamage: 70, speedKept: 0.7 }, // damage is per metre of radius, up to maxDamage
     // (light: true = a small thing: it doesn't knock the steering, and barely shakes the camera)
     cone: { damage: 3, speedKept: 0.94, light: true },
@@ -189,6 +191,12 @@ export const CONFIG = {
     wreckSpin: 2.5,        // radians/s a drifting wreck spins on the spot (each has its own share of this, either way)
   },
   cowSpeed: 2.2,           // m/s a cow ambles across the road
+  kangarooSpeed: 6,        // m/s a kangaroo bounds across it (a herd of kind 'kangaroo'), hopping...
+  kangarooHop: 0.9,        // ...this high...
+  kangarooHops: 2.2,       // ...this many times a second (and it rests at each side like a cow)
+  // drop bears (a level's "dropBears"): up in the trees over the road until the player comes within
+  // `near` m (a different distance for each), then down they drop, and there they stay
+  dropBear: { height: 24, near: { min: 50, max: 110 } },
   cowRestMin: 0.5,         // s it stands at each side before turning back, random between min and max
   cowRestMax: 2.5,
   tractorSpeed: 7,         // m/s a tractor trundles along at (it is traffic: see vehicles)

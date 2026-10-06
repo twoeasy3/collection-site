@@ -2,7 +2,7 @@ import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
 import { clamp } from './util.js';
 import { Track } from './track.js';
-import { FxQueue, startRivalry, hurt, sfx } from './physics.js';
+import { FxQueue, startRivalry, hurt, sfx, sfxAt } from './physics.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Game } from './game.js';
@@ -169,6 +169,9 @@ export const Collision = (() => {
   //   barrier, bale, cone, sign  stay where they are put
   //   frog           hops all over the road within its stretch
   //   cow            ambles across the road, stands a while, ambles back
+  //   kangaroo       the same, but bounding across, quickly, in hops
+  //   dropBear       up in a tree over the road until the player is near, then it drops onto the
+  //                  road (it can only be hit once it is down there) and stays
   //   asteroid       a rock of radius r whose centre is h above the road. Some sit at road
   //                  level; some pass just under or over it and can't be hit, and nothing
   //                  marks which. The moving ones drift across the road or bob through it
@@ -177,7 +180,7 @@ export const Collision = (() => {
     barrier: [1.2, 0.6, 1.2],
     // a railway barrier: low and narrow enough to sit wholly inside a passing bullet train
     railBarrier: [1.2, 0.6, 0.95],
-    bale: [1.1, 1.1, 1.5], frog: [1.4, 1.4, 1.6], cow: [0.7, 1.3, 1.5],
+    bale: [1.1, 1.1, 1.5], frog: [1.4, 1.4, 1.6], cow: [0.7, 1.3, 1.5], kangaroo: [0.5, 0.8, 1.8], dropBear: [0.6, 0.6, 1.0],
     asteroid: [1, 1, 2], // replaced by each asteroid's own radius
     cone: [0.42, 0.42, 1.12], sign: [1.1, 0.15, 3.0], // (cones are 1.4 times life size: easier to see on a phone)
     // the beach's own junk (Hurricane): a beach umbrella, a surfboard stuck upright, an ice
@@ -218,6 +221,13 @@ export const Collision = (() => {
       }
     }
     for (const z of LEVEL.frogs || []) add('frog', 0, 0, { ...stretch(z), fromS: 0, fromLat: 0, toS: 0, toLat: 0, t: 1, rest: 0 });
+    for (const z of LEVEL.dropBears || []) { // (each somewhere in its stretch, anywhere across the road)
+      for (let i = 0; i < (z.count || 3); i++) {
+        const s = Track.place({ s: z.from + Math.random() * (z.to - z.from) });
+        const o = { s, hw: 0.6, hl: 0.6, height: 1, kind: 'dropBear' };
+        add('dropBear', s, anywhereAcross(o, s), { h: CONFIG.dropBear.height, fall: 0, near: 0 });
+      }
+    }
     for (const z of LEVEL.herds || []) {
       // a cow walks across the road, so its hitbox lies across it too
       for (let i = 0; i < (z.count || 3); i++) add(z.kind || 'cow', 0, 0, { ...stretch(z), yaw: Math.PI / 2, dir: 1, rest: 0 });
@@ -349,9 +359,22 @@ export const Collision = (() => {
           o.face = Math.atan2(o.toLat - o.fromLat, o.toS - o.fromS);
           o.t = 0;
         }
-      } else if (o.kind === 'cow') {
-        if (o.rest > 0) { o.rest -= dt; continue; } // standing at the roadside
-        o.lat += o.dir * CONFIG.cowSpeed * dt;
+      } else if (o.kind === 'dropBear') {
+        if (o.h <= 0) continue; // (down, and staying there)
+        if (!o.fall && o.s - Player.s > 0 && o.s - Player.s < o.near) o.fall = 0.01; // the player is near: down it comes
+        if (o.fall) {
+          o.fall += 9.8 * dt;
+          o.h = Math.max(0, o.h - o.fall * dt);
+          if (o.h === 0) sfxAt('crash', o.s, 0.6); // (thud)
+        }
+      } else if (o.kind === 'cow' || o.kind === 'kangaroo') {
+        const roo = o.kind === 'kangaroo';
+        if (o.rest > 0) { o.rest -= dt; o.h = 0; continue; } // standing at the roadside
+        o.lat += o.dir * (roo ? CONFIG.kangarooSpeed : CONFIG.cowSpeed) * dt;
+        if (roo) { // (bounding along: up and down, hop after hop)
+          o.hop = (o.hop || 0) + dt * CONFIG.kangarooHops;
+          o.h = CONFIG.kangarooHop * Math.abs(Math.sin(o.hop * Math.PI));
+        }
         o.face = o.dir * Math.PI / 2;
         const lo = Track.lo(o.s) + o.hl, hi = Track.hi(o.s) - o.hl;
         if (o.lat > hi || o.lat < lo) { // reached the far side: stand, then head back
@@ -385,6 +408,7 @@ export const Collision = (() => {
     for (const o of obstacles) {
       if (o.gone || Math.abs(o.s - Player.s) > CONFIG.broadPhaseDistance) continue;
       if (o.kind === 'asteroid' && !atRoadLevel(o)) continue; // it passes over or under the car
+      if (o.kind === 'dropBear' && o.h > Player.height) continue; // (still up in its tree, or falling)
       if (!overlap(Player, o)) continue;
       // any touch blows the obstacle up: the car is damaged and loses speed, but drives on
       o.gone = true;
@@ -403,6 +427,12 @@ export const Collision = (() => {
   const resetObstacles = () => {
     for (const o of obstacles) {
       o.gone = false;
+      if (o.kind === 'dropBear') { // back up its tree, to drop when the player is near (somewhere new each time)
+        o.h = CONFIG.dropBear.height;
+        o.fall = 0;
+        o.near = CONFIG.dropBear.near.min + Math.random() * (CONFIG.dropBear.near.max - CONFIG.dropBear.near.min);
+        continue;
+      }
       if (o.kind === 'asteroid') { // back to where the field put it
         o.lat = o.lat0;
         o.h = o.h0;

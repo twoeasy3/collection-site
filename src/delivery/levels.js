@@ -60,7 +60,10 @@
 //                                  (default), 'railBarrier' (one the bullet train leaves standing),
 //                                  'bale', 'cone', 'sign', or the beach's 'umbrella',
 //                                  'surfboard', 'cooler' and 'chair' (a lifeguard chair)
-//   herds      { from, to, count } animals (cows) wandering back and forth across that stretch
+//   dropBears  { from, to, count } drop bears up in the trees over that stretch, dropping onto the
+//              road as the player comes near (see CONFIG.dropBear)
+//   herds      { from, to, count, kind } animals wandering back and forth across that stretch: cows,
+//                                  or (kind: 'kangaroo') kangaroos bounding across, with a warning sign before
 //   drifters   { from, to, kind, count, pattern } obstacles of that kind moving about the road
 //              in a pattern: 'circle', 'zigzag' (along the road, weaving), 'sweep' (across
 //              and back) or 'figure8'. They are hit like any obstacle of their kind.

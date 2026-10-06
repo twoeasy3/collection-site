@@ -157,6 +157,22 @@ const buildTerrain = () => {
   return heightAt;
 };
 
+// how far out from the centre line (m) anything may reach on a side (-1 left, 1 right) at s: on the
+// inside of a bend, short of its middle (with the sharpest bend within 200 m either way), so that
+// a wide surface's edge never crosses back over itself; elsewhere, as far as you like
+const reach = (s, side) => {
+  let sharpest = 0;
+  for (let q = s - 200; q <= s + 200; q += 20) {
+    const c = Track.bend(q) * side;
+    if (c > sharpest) sharpest = c;
+  }
+  return sharpest > 0 ? 0.85 / sharpest : Infinity;
+};
+// a lateral position, kept within that reach
+const within = (s, lat) => {
+  const side = lat < 0 ? -1 : 1;
+  return side * Math.min(Math.abs(lat), reach(s, side));
+};
 // the stretches [from, to, ...rest] with the level's bridges cut out of them
 const offBridges = (stretches) => {
   let out = stretches;
@@ -222,8 +238,9 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
       for (let k = 0; k < 4; k++) putAt('pine', [s, lat, h * (0.3 + k * 0.18), h * (0.32 - k * 0.06), h * 0.22, h * (0.32 - k * 0.06)]);
     }
   };
-  // a face of rock beside the road on a side, rising from its edge at d0 to a top `rise` m up at d1,
-  // and a flat top beyond (a cutting, or a cliff); with `rise` < 0, a drop from the road to the
+  // a face of rock beside the road on a side, rising from its edge at d0 to a brow `rise` m up at
+  // d1, and (with `top`) a slope back down to the land `top` m beyond (a cutting, or a cliff); with
+  // `rise` < 0, a drop from the road to the
   // water, its foot at sea level (an absolute height)
   const face = (a, b, side, d0, d1, rise, colour, top = 0) => {
     const pos = [], idx = [];
@@ -236,7 +253,8 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
       Track.toWorld(q, beside(side, q, d1), p);
       pos.push(p.x, y, p.z);
       if (n) { const k = (n - 1) * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
-      if (top) { Track.toWorld(q, beside(side, q, d1 + top), p); pos.push(p.x, y, p.z); }
+      // (the top slopes back down to the land behind it, so that it never ends in the air)
+      if (top) { Track.toWorld(q, beside(side, q, d1 + top), p); pos.push(p.x, p.y - 0.05, p.z); }
     }
     const geo = new THREE.BufferGeometry();
     if (top) { // (three points a row: the edge, the brow, the far edge of the top)
@@ -260,7 +278,7 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     let n = 0;
     for (let s = a; s <= b + 0.001; s += 10, n++) {
       const q = Math.min(s, b);
-      for (const d of [d0, 2500]) { Track.toWorld(q, beside(1, q, d), p); pos.push(p.x, -0.05, p.z); }
+      for (const d of [d0, 2500]) { Track.toWorld(q, within(q, beside(1, q, d)), p); pos.push(p.x, -0.05, p.z); }
       if (n) { const k = (n - 1) * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
     }
     const geo = new THREE.BufferGeometry();
@@ -365,6 +383,46 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     }
   }
   for (const [geometry, colour, list, glowing] of Object.values(kinds)) instances(geometry, colour, list, glowing);
+  // a kangaroo crossing sign on the kerb 60 m before each stretch kangaroos cross, facing the player
+  for (const herd of (LEVEL.herds || []).filter(h => h.kind === 'kangaroo')) {
+    const at = herd.from - 60, h = Track.toWorld(at, beside(1, at, 1.2), p);
+    const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.4, 0.1), new THREE.MeshLambertMaterial({ color: 0x9a9da3 }));
+    post.position.set(p.x, p.y + 1.2, p.z);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.6), new THREE.MeshBasicMaterial({ map: kangarooSign(), transparent: true, side: THREE.DoubleSide }));
+    sign.position.set(p.x, p.y + 2.9, p.z);
+    sign.rotation.y = h + Math.PI;
+    sign.userData.text = true; // (kept the right way round on a left-hand level: see render/items.js)
+    if (Track.mirrored) sign.scale.x = -1;
+    levelGroup.add(post, sign);
+  }
+};
+// the kangaroo crossing sign's face: a yellow diamond with a black border and a kangaroo
+let kangarooSignTexture = null;
+const kangarooSign = () => {
+  if (kangarooSignTexture) return kangarooSignTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 256;
+  const g = canvas.getContext('2d');
+  g.translate(128, 128);
+  g.rotate(Math.PI / 4);
+  g.fillStyle = '#111';
+  g.fillRect(-88, -88, 176, 176);
+  g.fillStyle = '#ffd21f';
+  g.fillRect(-80, -80, 160, 160);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = '#111';
+  g.beginPath(); g.ellipse(128, 132, 30, 40, -0.5, 0, Math.PI * 2); g.fill();          // body
+  g.beginPath(); g.ellipse(160, 88, 14, 11, -0.3, 0, Math.PI * 2); g.fill();          // head
+  g.beginPath(); g.moveTo(152, 80); g.lineTo(150, 62); g.lineTo(160, 78); g.fill();     // ear
+  g.lineWidth = 11; g.lineCap = 'round'; g.strokeStyle = '#111';
+  g.beginPath(); g.moveTo(108, 156); g.quadraticCurveTo(80, 185, 58, 190); g.stroke(); // tail
+  g.lineWidth = 9;
+  g.beginPath(); g.moveTo(132, 164); g.lineTo(150, 186); g.lineTo(176, 188); g.stroke(); // leg and foot
+  g.lineWidth = 5;
+  g.beginPath(); g.moveTo(150, 118); g.lineTo(166, 128); g.stroke();                   // arm
+  kangarooSignTexture = new THREE.CanvasTexture(canvas);
+  kangarooSignTexture.colorSpace = THREE.SRGBColorSpace;
+  return kangarooSignTexture;
 };
 
 // every frame: on a level in zones, the sky (and the fog with it) and the ground blend towards
@@ -595,7 +653,7 @@ const buildRoad = () => {
     const stretches = offBridges(zones ? zones.map((z, i) => [i ? z.from : Track.start, i === zones.length - 1 ? Track.end : zones[i + 1].from, z.ground ?? theme.ground, z.sea])
       : [[Track.start, Track.end, theme.ground, undefined]]);
     for (const [from, to, colour, sea] of stretches) {
-      const land = new THREE.Mesh(buildStrip(from, to, (s) => Track.lo(s) - LAND, (s) => Track.hi(s) + (sea ?? LAND), -0.04, 6), flat(colour));
+      const land = new THREE.Mesh(buildStrip(from, to, (s) => within(s, Track.lo(s) - LAND), (s) => within(s, Track.hi(s) + (sea ?? LAND)), -0.04, 6), flat(colour));
       land.material.polygonOffset = true;
       land.material.polygonOffsetFactor = 2;
       land.material.polygonOffsetUnits = 2;
@@ -608,11 +666,11 @@ const buildRoad = () => {
       const pos = [], idx = [];
       let n = 0;
       for (let s = from; s <= to; s += 6, n++) {
-        const top = (side < 0 ? Track.lo(s) : Track.hi(s)) + side * out;
+        const top = within(s, (side < 0 ? Track.lo(s) : Track.hi(s)) + side * out);
         Track.toWorld(s, top, tmp);
         const drop = tmp.y; // the further it has to fall, the further out the foot of the slope
         pos.push(tmp.x, tmp.y - 0.04, tmp.z);
-        Track.toWorld(s, top + side * (out === LAND ? 2 + drop * 2.5 : 1 + drop * 0.6), tmp);
+        Track.toWorld(s, within(s, top + side * (out === LAND ? 2 + drop * 2.5 : 1 + drop * 0.6)), tmp);
         pos.push(tmp.x, -0.04, tmp.z);
         if (n > 0) {
           const a = (n - 1) * 2;
@@ -623,6 +681,32 @@ const buildRoad = () => {
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
       geo.setIndex(idx);
       levelGroup.add(new THREE.Mesh(geo, bank));
+    }
+    // where the land stops at each end of a bridge, an embankment down to the water, right across
+    // the land and its banks, so that it never ends in the air
+    for (const b of LEVEL.bridges || []) {
+      for (const [at, toward] of [[b.from + 4, 1], [b.to - 4, -1]]) {
+        Track.toWorld(at, 0, tmp);
+        const drop = tmp.y;
+        if (drop < 1) continue;
+        const zone = Track.zoneAt(at), sea = zone ? zone.sea : undefined, right = sea ?? LAND;
+        const bank = flat(new THREE.Color(zone && zone.ground !== undefined ? zone.ground : theme.ground).multiplyScalar(0.8));
+        const lo = Track.lo(at) - LAND - 2 - drop * 2.5, hi = Track.hi(at) + right + (sea === undefined ? 2 + drop * 2.5 : 1 + drop * 0.6);
+        const pos = [], idx = [];
+        let n = 0;
+        for (let lat = lo; lat <= hi + 0.001; lat += 10, n++) {
+          const l = Math.min(lat, hi);
+          Track.toWorld(at, l, tmp);
+          pos.push(tmp.x, tmp.y - 0.04, tmp.z);
+          Track.toWorld(at + toward * (2 + drop * 1.2), l, tmp);
+          pos.push(tmp.x, -0.04, tmp.z);
+          if (n) { const a = (n - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setIndex(idx);
+        levelGroup.add(new THREE.Mesh(geo, bank));
+      }
     }
   }
 

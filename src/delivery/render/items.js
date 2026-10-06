@@ -159,6 +159,47 @@ const OBSTACLE_MODELS = {
     return group;
   },
   // a black and white cow
+  // a drop bear: a koala gone wrong. A round grey body, big furry ears, a black nose, red eyes, claws out
+  dropBear: () => {
+    const grey = lambert(0x8e8e92), pale = lambert(0xd8d8dc), black = lambert(0x161616), claw = lambert(0xf2f2ee);
+    const group = boxModel([
+      [grey, 0.9, 0.8, 0.8, 0, 0.45, 0],            // body
+      [pale, 0.5, 0.45, 0.1, 0, 0.45, 0.4],          // belly
+      [grey, 0.75, 0.6, 0.6, 0, 1.05, 0.1],          // head
+      [black, 0.22, 0.28, 0.14, 0, 0.98, 0.42],      // nose
+      [grey, 0.18, 0.3, 0.5, -0.5, 0.45, 0.25],      // arms, reaching
+      [grey, 0.18, 0.3, 0.5, 0.5, 0.45, 0.25],
+      [claw, 0.18, 0.06, 0.1, -0.5, 0.36, 0.52],     // claws
+      [claw, 0.18, 0.06, 0.1, 0.5, 0.36, 0.52],
+    ]);
+    for (const side of [-1, 1]) {
+      const ear = new THREE.Mesh(new THREE.SphereGeometry(0.24, 10, 8), pale);
+      ear.scale.set(1, 1, 0.5);
+      ear.position.set(side * 0.42, 1.35, 0.05);
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff2020 }));
+      eye.position.set(side * 0.17, 1.15, 0.4);
+      group.add(ear, eye);
+    }
+    return group;
+  },
+  // a kangaroo, upright: big feet and a long tail behind, small arms, ears up
+  kangaroo: () => {
+    const fur = lambert(0x9b6b43), pale = lambert(0xd9b48a), dark = lambert(0x3a2a1e);
+    return boxModel([
+      [fur, 0.55, 1.0, 0.75, 0, 1.0, 0],          // body
+      [pale, 0.4, 0.6, 0.1, 0, 0.95, 0.38],        // chest
+      [fur, 0.32, 0.35, 0.55, 0, 1.65, 0.25],      // head
+      [dark, 0.1, 0.28, 0.08, -0.1, 1.95, 0.15],   // ears
+      [dark, 0.1, 0.28, 0.08, 0.1, 1.95, 0.15],
+      [fur, 0.12, 0.35, 0.12, -0.18, 1.05, 0.42],  // arms
+      [fur, 0.12, 0.35, 0.12, 0.18, 1.05, 0.42],
+      [fur, 0.22, 0.45, 0.35, -0.2, 0.3, 0],       // haunches...
+      [fur, 0.22, 0.45, 0.35, 0.2, 0.3, 0],
+      [dark, 0.16, 0.12, 0.7, -0.2, 0.06, 0.15],   // ...and feet
+      [dark, 0.16, 0.12, 0.7, 0.2, 0.06, 0.15],
+      [fur, 0.16, 0.16, 1.1, 0, 0.45, -0.85],      // tail
+    ]);
+  },
   cow: () => {
     const white = lambert(0xf4f1ea), black = lambert(0x1f1f1f), pink = lambert(0xe8a0a8);
     return boxModel([

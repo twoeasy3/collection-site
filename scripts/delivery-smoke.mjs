@@ -116,6 +116,7 @@ try {
       // (for an asteroid, one that is at road level: the others pass over or under the car)
       const o = Collision.obstacles.find(x => x.kind === kind && (kind !== 'asteroid' || (Collision.atRoadLevel(x) && !x.bob)));
       for (const other of Collision.obstacles) if (other !== o) other.gone = true; // (herds can stand two deep)
+      if (kind === 'dropBear') o.h = 0; // (down from its tree)
       Player.s = o.s - 1; Player.lat = o.lat; // overlapping it Player.speed = 20; Player.launching = false;
       Collision.check();
       FxQueue.length = 0;
