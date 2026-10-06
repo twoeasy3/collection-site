@@ -8,7 +8,7 @@ import { Collision } from '../collision.js';
 import { Pickups, Targets } from '../pickups.js';
 import { Game } from '../game.js';
 import { scene, tmp, clearGroup } from './scene.js';
-import { buildStrip } from './road.js';
+import { buildStrip, THEMES } from './road.js';
 import { carMesh, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh, trafficMeshes, syncLamps } from './cars.js';
 import { Traffic } from '../traffic.js';
 import { Particles, rnd } from './effects.js';
@@ -341,9 +341,10 @@ const makeTarget = (t) => {
 // a bridge: a truss standing on both shoulders, with water below
 const buildBridge = (from, to) => {
   const wallInset = CONFIG.bridgeWallInset;
-  // the river: drawn straight after the ground and, like it, under everything else
+  // the river: drawn straight after the ground and, like it, under everything else (dark, at night)
+  const night = (THEMES[LEVEL.theme] || {}).lit;
   const water = new THREE.Mesh(buildStrip(from + 6, to - 6, -500, 500, -0.02, 20),
-    new THREE.MeshBasicMaterial({ color: 0x2f6f9f, side: THREE.DoubleSide, depthWrite: false }));
+    new THREE.MeshBasicMaterial({ color: night ? 0x1d4466 : 0x2f6f9f, side: THREE.DoubleSide, depthWrite: false }));
   water.renderOrder = -1;
   levelItems.add(water);
 

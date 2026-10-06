@@ -50,7 +50,7 @@ const buildDashes = (sFrom, sTo, lat, show) => {
 };
 
 // The looks a level can have (its "theme" field).
-const THEMES = {
+export const THEMES = {
   city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city' },
   farm: { sky: 0xc4e6f5, ground: 0x8fb556, road: 0x57514a, scenery: 'farm' },
   // beach: sand, a stormy sky, the sea along the right, palms and beach huts
@@ -58,6 +58,11 @@ const THEMES = {
   // space: no ground and no road surface, only glowing lane lines among the stars
   // singapore: the garden city: towers and housing blocks, rain trees, Supertrees and Marina Bay Sands
   singapore: { sky: 0xc9dde6, ground: 0x6d9a52, road: 0x3a3d42, scenery: 'singapore' },
+  // singaporeNight: the same city at night, floodlit as for the Grand Prix (a city that is never
+  // dark: a glowing navy sky, and everything well lit): lit windows, glowing Supertrees, light
+  // pylons over the road, concrete walls and catch fences, kerbs on the corners
+  singaporeNight: { sky: 0x1d2d55, ground: 0x3f6440, road: 0x4b4f57, scenery: 'singapore', night: true, lit: true, headlights: true,
+    light: { sky: 0xd6dcff, ground: 0x6a6878, ambient: 1.25, sun: 0xfff0d6, sunlight: 0.75 } },
   // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
   snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
   // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
@@ -172,8 +177,24 @@ const buildRoad = () => {
     mat.polygonOffsetFactor = -2;
     mat.polygonOffsetUnits = -2;
   }
-  const line = (a, b, lat, mat = lineMat) =>
-    add(buildStrip(a, b, (s) => lat(s) - 0.1, (s) => lat(s) + 0.1, 0.02), mat);
+  // a junction's box has no lines through it, like a real one: the road's markings stop at its
+  // edges (its crossings and stop lines are render/junctions.js's)
+  const inJunction = (s) => Track.junctions.some(jn => s > jn.s - 1 && s < jn.end + 1);
+  const unmarked = (a, b) => { // the pieces of a..b outside every junction
+    const pieces = [];
+    let from = a;
+    for (const jn of [...Track.junctions].sort((p, q) => p.s - q.s)) {
+      if (jn.end + 1 <= from || jn.s - 1 >= b) continue;
+      if (jn.s - 1 > from) pieces.push([from, jn.s - 1]);
+      from = Math.max(from, jn.end + 1);
+    }
+    if (from < b) pieces.push([from, b]);
+    return pieces;
+  };
+  const dashOutside = (s) => !inJunction(s) && !inJunction(s + CONFIG.dashLength);
+  const line = (a, b, lat, mat = lineMat) => {
+    for (const [p, q] of unmarked(a, b)) add(buildStrip(p, q, (s) => lat(s) - 0.1, (s) => lat(s) + 0.1, 0.02), mat);
+  };
 
   // ---- expressway -------------------------------------------------------------------
   pave(buildStrip(Track.start, Track.end, Track.lo, Track.hi, 0));
@@ -198,14 +219,14 @@ const buildRoad = () => {
   // double yellow centre line (a one-way road has an ordinary lane divider there instead, and
   // a road with a median a solid line along each side of it)
   const twoWay = Track.flow === 'both', HM = Track.medianHalf;
-  if (!twoWay && Track.leftLanes && Track.rightLanes) add(buildDashes(Track.start, Track.end, () => 0, () => true), lineMat);
+  if (!twoWay && Track.leftLanes && Track.rightLanes) add(buildDashes(Track.start, Track.end, () => 0, dashOutside), lineMat);
   for (const side of [-1, 1]) {
-    if (twoWay && !HM) add(buildStrip(Track.start, Track.end, side * 0.12, side * 0.28, 0.02), centreMat);
+    if (twoWay && !HM) for (const [p, q] of unmarked(Track.start, Track.end)) add(buildStrip(p, q, side * 0.12, side * 0.28, 0.02), centreMat);
     if (HM) line(Track.start, Track.end, () => side * HM);
     // dashed dividers between the lanes of each side, only where both lanes exist
     for (let k = 1; k < (side < 0 ? Track.leftLanes : Track.rightLanes); k++) {
       add(buildDashes(Track.start, Track.end, () => side * (HM + k * LW),
-        (s) => Track.lanesOn(side, s) >= k + 0.95), lineMat);
+        (s) => Track.lanesOn(side, s) >= k + 0.95 && dashOutside(s)), lineMat);
     }
   }
   // the median: a strip of its own colour between those lines and, on a level with a railway, a
@@ -710,22 +731,75 @@ const buildRoad = () => {
     }
   } else if (theme.scenery === 'singapore') {
     // ---- singapore: pavements, rain trees along the road, glass towers, housing blocks with bands
-    // of colour and low shophouses set back from it, a grove of Supertrees, and Marina Bay Sands
-    // by the finish. Nothing stands on a junction or its arms, nor on another stretch of road.
-    const p = {};
+    // of colour and low shophouses set back from it, a grove of Supertrees, the Singapore Flyer near
+    // the start and Marina Bay Sands by the finish. Nothing stands on a junction or its arms, nor on
+    // another stretch of road. At night (theme.night) it is the Grand Prix: windows lit, the
+    // landmarks glowing, light pylons over the road, walls and catch fences in place of the
+    // pavements, and kerbs on the corners.
+    const p = {}, night = !!theme.night;
+    const glowMat = (color) => new THREE.MeshBasicMaterial({ color });
     const clearOf = (x, z, margin) => Track.mainDistance(x, z) > Math.max(Track.hi(0), -Track.lo(0)) + margin &&
       !Track.junctions.some(jn => jn.arms.some(arm => {
         const dx = x - jn.centre.x, dz = z - jn.centre.z, u = dx * arm.dir.x + dz * arm.dir.z;
         const v = Math.abs(-dx * arm.dir.z + dz * arm.dir.x);
         return u > -jn.half - margin && u < arm.length + margin && v < jn.half + margin;
       }) || Math.hypot(x - jn.centre.x, z - jn.centre.z) < jn.half * 1.5 + margin);
-    // pavements, broken off at each junction
+    // pavements (or at night, walls and catch fences), broken off at each junction
     const breaks = Track.junctions.map(jn => [jn.s - 6, jn.end + 6]);
+    const walls = [], fences = [], posts = [];
     for (const side of [-1, 1]) {
       let from = Track.start;
       for (const [a, b] of [...breaks, [Track.end, Track.end]]) {
-        if (a > from) add(buildStrip(from, a, (q) => beside(side, q, 0.4), (q) => beside(side, q, 3), 0.03), flat(0xc9c7c0));
+        if (a > from && !night) add(buildStrip(from, a, (q) => beside(side, q, 0.4), (q) => beside(side, q, 3), 0.03), flat(0xc9c7c0));
+        if (night) {
+          for (let s = from; s + 4 <= a; s += 4) {
+            if (Track.onBridge(s) || Track.onBridge(s + 4)) continue; // (a bridge has its own sides)
+            walls.push([s + 2, beside(side, s + 2, 0.3), 0.55, 0.5, 1.1, 4.02]);
+            fences.push([s + 2, beside(side, s + 2, 0.32), 2.9, 0.03, 3.6, 4.02]);
+            posts.push([s, beside(side, s, 0.32), 2.9, 0.1, 3.6, 0.1]);
+          }
+        }
         from = b;
+      }
+    }
+    if (night) {
+      instances(cube, 0xdedede, walls);
+      instances(cube, 0x4a4f57, posts);
+      // (the catch fence: a see-through mesh)
+      const fence = new THREE.InstancedMesh(cube, new THREE.MeshBasicMaterial({ color: 0x9aa4ae, transparent: true, opacity: 0.3, depthWrite: false }), fences.length);
+      fences.forEach(([s, lat, y, sx, sy, sz], i) => {
+        dummy.rotation.y = Track.toWorld(s, lat, tmp);
+        dummy.position.set(tmp.x, tmp.y + y, tmp.z);
+        dummy.scale.set(sx, sy, sz);
+        dummy.updateMatrix();
+        fence.setMatrixAt(i, dummy.matrix);
+      });
+      levelGroup.add(fence);
+      // light pylons each side, their lamps overhanging the road
+      const poles = [], arms = [], lamps = [];
+      for (let s = Track.start + 10, k = 0; s < Track.end; s += 26, k++) {
+        if (inJunction(s) || Track.onBridge(s)) continue;
+        for (const side of [-1, 1]) {
+          poles.push([s, beside(side, s, 1.0), 5.5, 0.3, 11, 0.3]);
+          arms.push([s, beside(side, s, 0.1), 10.9, 1.9, 0.15, 0.15]);
+          lamps.push([s, beside(side, s, -0.9), 10.8, 1.6, 0.3, 0.8]);
+        }
+      }
+      instances(cube, 0x3a3f47, poles);
+      instances(cube, 0x3a3f47, arms);
+      instances(cube, 0xffffff, lamps, true);
+      // kerbs, red and white, along both edges of every bend that isn't a junction's
+      const red = flat(0xd62a2a), white = flat(0xf2f2f2);
+      let at = 0;
+      for (const seg of LEVEL.segments) {
+        const from = at, to = at + seg.length;
+        at = to;
+        if (!seg.curve || Track.junctions.some(jn => from < jn.end + 1 && to > jn.s - 1)) continue;
+        for (let s = from, k = 0; s < to; s += 2.5, k++) {
+          const e = Math.min(to, s + 2.5);
+          add(buildStrip(s, e, Track.laneHi, (q) => Track.laneHi(q) + 1, 0.025, 1), k % 2 ? white : red);
+          add(buildStrip(s, e, (q) => Track.laneLo(q) - 1, Track.laneLo, 0.025, 1), k % 2 ? red : white);
+        }
       }
     }
     const trunks = [], canopies = [], towers = [], glass = [], blocks = [], bands = [], shops = [], roofs = [];
@@ -759,16 +833,24 @@ const buildRoad = () => {
         }
       }
     }
+    // (at night the towers are dark glass with rows of lit windows, the blocks' bands are lit
+    // windows, and the shophouses glow at street level)
+    if (night) {
+      for (const [s, lat, , d, h, w] of towers) for (let y = 4; y < h - 2; y += 4.5) bands.push([s, lat, y, d + 0.1, 1.3, w + 0.1]);
+      for (const [s, lat, , d, , w] of shops) roofs.push([s, lat, 3.2, d + 0.1, 1.6, w + 0.1]);
+    }
     instances(tube, 0x6b5440, trunks);
     instances(new THREE.SphereGeometry(0.5, 10, 6), 0x4f8a3c, canopies);
-    instances(cube, 0x6fa3b8, towers);
-    instances(cube, 0xe8f1f4, glass);
-    instances(cube, 0xf1e4c9, blocks);
-    instances(cube, 0x3f8f8a, bands);
-    instances(cube, 0xe7b48a, shops);
-    instances(cube, 0x9c4a3a, roofs);
+    instances(cube, night ? 0x4a6582 : 0x6fa3b8, towers);
+    instances(cube, night ? 0x9fd8ff : 0xe8f1f4, glass, night);
+    instances(cube, night ? 0xcabd9f : 0xf1e4c9, blocks);
+    instances(cube, night ? 0xffe2a0 : 0x3f8f8a, bands, night);
+    instances(cube, night ? 0xd29a70 : 0xe7b48a, shops);
+    instances(cube, night ? 0xffc070 : 0x9c4a3a, roofs, night);
     // a grove of Supertrees, half way along on the right: purple trunks widening up to a flat crown
-    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x7b3fa8 }), crownMat = new THREE.MeshLambertMaterial({ color: 0xd9468f });
+    // (glowing, at night)
+    const trunkMat = new THREE.MeshLambertMaterial({ color: 0x7b3fa8, emissive: night ? 0x3a1060 : 0x000000 });
+    const crownMat = night ? glowMat(0xff4fd8) : new THREE.MeshLambertMaterial({ color: 0xd9468f });
     for (let k = 0, tries = 0; k < 7 && tries < 60; tries++) {
       const at = Track.length * 0.5 + Math.random() * 120 - 60;
       Track.toWorld(at, beside(1, at, 45 + Math.random() * 60), p);
@@ -785,17 +867,54 @@ const buildRoad = () => {
     for (let tries = 0, at = Track.length - 40; tries < 20; tries++, at -= 15) {
       const h = Track.toWorld(at, beside(-1, at, 120), p);
       if (!clearOf(p.x, p.z, 70)) continue;
-      const fx = Math.sin(h), fz = Math.cos(h), white = new THREE.MeshLambertMaterial({ color: 0xe9ecee });
+      const fx = Math.sin(h), fz = Math.cos(h);
+      const white = new THREE.MeshLambertMaterial({ color: 0xe9ecee, emissive: night ? 0x5a5648 : 0x000000 });
       for (const k of [-1, 0, 1]) {
         const tower = new THREE.Mesh(new THREE.BoxGeometry(30, 190, 16), white);
         tower.position.set(p.x + fx * k * 38, p.y + 95, p.z + fz * k * 38);
         tower.rotation.y = h + Math.PI / 2;
         levelGroup.add(tower);
       }
-      const park = new THREE.Mesh(new THREE.BoxGeometry(36, 7, 150), new THREE.MeshLambertMaterial({ color: 0xc8d4d8 }));
+      const park = new THREE.Mesh(new THREE.BoxGeometry(36, 7, 150), night ? glowMat(0xbfe6ff) : new THREE.MeshLambertMaterial({ color: 0xc8d4d8 }));
       park.position.set(p.x + fx * 8, p.y + 194, p.z + fz * 8);
       park.rotation.y = h;
       levelGroup.add(park);
+      break;
+    }
+    // the Singapore Flyer near the start, off to the left: a great wheel standing side-on to the
+    // road, on a pair of legs, with its capsules round the rim (lit, at night)
+    for (let tries = 0, at = Math.min(260, Track.length * 0.1); tries < 20; tries++, at += 20) {
+      const h = Track.toWorld(at, beside(-1, at, 150), p);
+      if (!clearOf(p.x, p.z, 25)) continue;
+      const wheel = new THREE.Group(), R = 70, HUB = 85;
+      const steel = night ? glowMat(0x9fe8ff) : new THREE.MeshLambertMaterial({ color: 0xe8ecef });
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 1.2, 8, 72), steel);
+      rim.position.y = HUB;
+      wheel.add(rim);
+      for (let k = 0; k < 14; k++) { // spokes, and a capsule at the end of each... and between
+        const a = k / 14 * Math.PI * 2;
+        const spoke = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, R, 4), steel);
+        spoke.position.set(Math.cos(a) * R / 2, HUB + Math.sin(a) * R / 2, 0);
+        spoke.rotation.z = a - Math.PI / 2;
+        wheel.add(spoke);
+      }
+      const capsuleMat = night ? glowMat(0xfff3c4) : new THREE.MeshLambertMaterial({ color: 0xbfd9e6 });
+      for (let k = 0; k < 28; k++) {
+        const a = k / 28 * Math.PI * 2;
+        const capsule = new THREE.Mesh(new THREE.BoxGeometry(3, 2.2, 2.2), capsuleMat);
+        capsule.position.set(Math.cos(a) * (R + 2), HUB + Math.sin(a) * (R + 2), 0);
+        wheel.add(capsule);
+      }
+      const legMat = new THREE.MeshLambertMaterial({ color: 0xcfd4d8 });
+      for (const side of [-1, 1]) {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.8, HUB / Math.cos(0.25), 8), legMat);
+        leg.position.set(side * HUB * Math.tan(0.25) / 2, HUB / 2, 0);
+        leg.rotation.z = side * 0.25;
+        wheel.add(leg);
+      }
+      wheel.position.set(p.x, p.y, p.z);
+      wheel.rotation.y = h - Math.PI / 2; // (its face towards the road)
+      levelGroup.add(wheel);
       break;
     }
   } else if (theme.scenery === 'alpine') {

@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "npm run build && wrangler dev",
     "deploy": "npm run build && wrangler deploy",
-    "test:delivery": "node scripts/delivery-smoke.mjs"
+    "test:delivery": "node scripts/delivery-smoke.mjs",
+    "test:delivery:quick": "node scripts/delivery-smoke.mjs --quick"
   },
   "dependencies": {
     "flag-icons": "^7.5.0",

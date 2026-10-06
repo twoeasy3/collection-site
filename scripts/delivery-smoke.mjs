@@ -1,5 +1,7 @@
 // Headless smoke test: runs the game logic (no rendering) through every level and checks
-// that nothing breaks. Run with: npm test
+// that nothing breaks. Run with: npm run test:delivery, or with --quick (npm run
+// test:delivery:quick), which skips driving every level to the finish on both sides (the
+// slowest part by far) but keeps every other check. Each section says how long it took.
 import { createServer } from 'vite';
 
 // the game logic touches the DOM only to show / hide screens
@@ -11,6 +13,16 @@ globalThis.document = { getElementById: element, querySelectorAll: () => [], bod
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
 let failures = 0;
+const QUICK = process.argv.includes('--quick');
+// a section's heading, after how long the one before took
+const started = Date.now();
+let sectionStart = started;
+const section = (name) => {
+  const now = Date.now();
+  if (now - sectionStart > 50) console.log(`  (${((now - sectionStart) / 1000).toFixed(1)} s)`);
+  sectionStart = now;
+  if (name) console.log(name);
+};
 const check = (ok, what) => {
   if (!ok) failures++;
   console.log((ok ? '  ok    ' : '  FAIL  ') + what);
@@ -34,10 +46,11 @@ try {
 
   for (let n = 0; n < levels.LEVELS.length; n++) {
     levels.selectLevel(n);
-    console.log(`level ${n + 1}: ${levels.LEVEL.name}`);
+    section(`level ${n + 1}: ${levels.LEVEL.name}`);
 
     // drive flat out, throwing packages, kept alive so the whole course is covered
-    for (const evil of [false, true]) {
+    // (in quick mode, only the Good side's level checks: no drive)
+    for (const evil of QUICK ? [false] : [false, true]) {
       Game.evil = evil;
       Game.start(); // this is what loads the level
       if (!evil) {
@@ -59,6 +72,7 @@ try {
           wantHills ? `hills: road height runs from 0 to ${high.toFixed(1)} m, steepest slope ${(steepest * 100).toFixed(1)}%, no sharp kinks`
             : 'the road is flat');
       }
+      if (QUICK) continue;
       let sane = true, steps = 0;
       while (Game.state === 'playing' && steps < 120 * 600) {
         if (steps % 40 === 0) Input.emit('throw');
@@ -224,7 +238,7 @@ try {
 
   // the screensaver: its own level, no player car, traffic that crashes on its own, and the
   // road goes round and round until Exit
-  console.log('screensaver');
+  section('screensaver');
   {
     levels.selectLevel(2);
     Game.startScreensaver();
@@ -283,7 +297,7 @@ try {
   }
 
   // going back to the menu and picking another level loads that one on the next start
-  console.log('menu');
+  section('menu');
   Game.toMenu();
   levels.selectLevel(0);
   check(Game.state === 'start' && Game.loaded !== levels.LEVEL, 'back on the menu, picking a level does not load it');
@@ -291,7 +305,7 @@ try {
   check(Game.loaded === levels.LEVEL && track.Track.length === 3300, 'starting a run loads it (Expressway, 3300 m)');
 
   // collisions
-  console.log('collisions');
+  section('collisions');
   {
     const physics = await load('/src/delivery/physics.js');
     levels.selectLevel(0);
@@ -400,7 +414,7 @@ try {
   }
 
   // each level's traffic list sets what turns up and how often
-  console.log('traffic lists');
+  section('traffic lists');
   for (let n = 0; n < levels.LEVELS.length; n++) {
     levels.selectLevel(n);
     const want = levels.LEVEL.traffic, kinds = Object.keys(want);
@@ -423,7 +437,7 @@ try {
   }
 
   // one-way levels, and rows of cones / signs on the shoulders
-  console.log('one-way levels and shoulder rows');
+  section('one-way levels and shoulder rows');
   for (let n = 0; n < levels.LEVELS.length; n++) {
     levels.selectLevel(n);
     const L = levels.LEVEL;
@@ -459,7 +473,7 @@ try {
   }
 
   // lane assist: off-centre in a lane the car stays put; near a lane line it eases back, slowly
-  console.log('steering');
+  section('steering');
   {
     const settle = (offset) => {
       Game.evil = false;
@@ -480,7 +494,7 @@ try {
   }
 
   // police contact: a bust, except when the police car runs into the back of the player
-  console.log('police');
+  section('police');
   {
     const meet = (label, place, want) => {
       Game.evil = false;
@@ -507,7 +521,7 @@ try {
   }
 
   // swapping cars takes effect at once, with no reload
-  console.log('flyovers');
+  section('flyovers');
   {
     const n = levels.LEVELS.findIndex(l => (l.exits || []).length && !l.flow);
     levels.selectLevel(n);
@@ -530,7 +544,7 @@ try {
       `${levels.LEVEL.name}: the player drives up flyover A from the left shoulder, along the side road's oncoming lane, over flyover B and back (${order})`);
   }
 
-  console.log('busted');
+  section('busted');
   levels.selectLevel(0);
   Game.start();
   Player.s = 200; Player.speed = 20; Player.launching = false; Player.shield = 0;
@@ -544,7 +558,7 @@ try {
   check(Math.abs(Player.lat - bustLat) < 1e-6 && bustTop <= 20 && Player.speed < 20,
     `busted: steering and the accelerator do nothing (moved ${(Player.lat - bustLat).toFixed(2)} m sideways, slowed to ${Player.speed.toFixed(1)} m/s)`);
 
-  console.log('powerups');
+  section('powerups');
   levels.selectLevel(0);
   Game.start();
   Player.collect('turbo');
@@ -649,7 +663,7 @@ try {
       `in the tip countdown, time plus winds the clock back to ${Game.remaining.toFixed(1)} s and the tip from $${tipBefore.toFixed(2)} to $${Game.tip.toFixed(2)}`);
   }
 
-  console.log('messages');
+  section('messages');
   {
     const { Message } = await load('/src/delivery/messages.js');
     Message.clear();
@@ -664,7 +678,7 @@ try {
     Message.clear();
   }
 
-  console.log('levels list');
+  section('levels list');
   {
     const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
     check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo' && levels.levelLabel(main - 1) === String(main) &&
@@ -672,7 +686,7 @@ try {
       `the special levels come last, as S1 and S2: ${labels.slice(main - 1).join(', ')}`);
   }
 
-  console.log('hesitation, signals and lights');
+  section('hesitation, signals and lights');
   {
     const H = CONFIG.hesitation;
     const pick = (id) => levels.selectLevel(levels.LEVELS.findIndex(l => l.id === id));
@@ -788,7 +802,7 @@ try {
       'brake lights: the player\'s while braking (not holding speed), a car\'s while it slows to its pace (not once there)');
   }
 
-  console.log('bullet train');
+  section('bullet train');
   {
     const { BulletTrain } = await load('/src/delivery/bullettrain.js');
     const { Message } = await load('/src/delivery/messages.js');
@@ -824,7 +838,8 @@ try {
     check(said && BulletTrain.lane === 2 && !Player.active && Math.abs(t - B.warning) < 0.5 && !car.active &&
       inLane.gone && !otherLane.gone && B.speed > fastest * 1.5,
       `the bullet train ("${Message.pick('powerups', 'mystery', 'bulletTrain')}") appears ${startGap.toFixed(0)} m up lane 2 at ${(B.speed * 3.6).toFixed(0)} km/h ` +
-      `(anything else tops out at ${(fastest * 3.6).toFixed(0)}), wrecks the player ${t.toFixed(2)} s later, and the car and the barrier in its lane on the way, not the one beside it`);
+      `(anything else tops out at ${(fastest * 3.6).toFixed(0)}), wrecks the player ${t.toFixed(2)} s later, and the car and the barrier in its lane on the way, not the one beside it` +
+      (said && !car.active && inLane.gone && !otherLane.gone ? '' : ` [said ${said}, car still there ${car.active}, barrier ${inLane.gone}, one beside ${otherLane.gone}]`));
 
     // out of its lane in time, the player is safe, and it is gone once it is past
     setOff();
@@ -876,7 +891,7 @@ try {
       `an empty danger meter on the shoulder: no bust while the train is about, nor until ${wait.toFixed(2)} s after it has gone`);
   }
 
-  console.log('emergency vehicles');
+  section('emergency vehicles');
   {
     const { Message } = await load('/src/delivery/messages.js');
     const E = CONFIG.emergency, T = () => track.Track;
@@ -984,7 +999,7 @@ try {
       `90 s of Suburbia brings ambulances (${[...suburbs].map(d => d > 0 ? 'going the player\'s way' : 'oncoming').join(', ')}); the Expressway none`);
   }
 
-  console.log('Canberra: a median railway');
+  section('Canberra: a median railway');
   {
     const { BulletTrain } = await load('/src/delivery/bullettrain.js');
     const { Message } = await load('/src/delivery/messages.js');
@@ -1043,7 +1058,7 @@ try {
       `crossing the railway: the Pick-Up holds ${pickup.got.toFixed(1)} of its ${pickup.top} m/s on the track, the Lowrider ${lowrider.got.toFixed(1)} of its ${lowrider.top}; off it, nothing changes`);
   }
 
-  console.log('Monte Carlo: hairpins and parked cars');
+  section('Monte Carlo: hairpins and parked cars');
   {
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'monte-carlo'));
     cars.selectCar('hatch');
@@ -1117,7 +1132,7 @@ try {
     Game.toMenu();
   }
 
-  console.log('Singapore: junctions, and driving on the left');
+  section('Singapore: junctions, and driving on the left');
   {
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'singapore'));
     cars.selectCar('hatch');
@@ -1166,7 +1181,7 @@ try {
       `driving on the left (Singapore, shown mirrored): holding right moves the car ${onLeft.toFixed(2)} m in the game's own terms (on the right: ${onRight.toFixed(2)})`);
   }
 
-  console.log('cars');
+  section('cars');
   levels.selectLevel(0); // (a level with no vehicle of its own)
   for (const car of cars.CARS) {
     cars.selectCar(car.id);
@@ -1207,5 +1222,7 @@ try {
 } finally {
   await server.close();
 }
+section(null);
+console.log(`${QUICK ? 'quick run' : 'full run'}, ${((Date.now() - started) / 1000).toFixed(0)} s`);
 console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
 process.exit(failures ? 1 : 0);
