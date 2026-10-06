@@ -103,7 +103,28 @@ export const CONFIG = {
   // they pull away aiPickup times as hard as ordinary traffic; and a car going into a wall at more than wallFrom m/s
   // sideways takes wallDamage health per m/s of it, as it hits
   // A racer wrecked is set back down where it was wrecked respawnTime s later, untouchable for respawnShield s.
-  race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5 },
+  // The slipstream: a car (a racer, or the player) right behind another, within towReach m and
+  // overlapping it, has its top speed raised by up to `draft` of it, the more the closer it is; so
+  // it can outdrag the car it follows. A racer on a straight with a car up to seekReach m ahead in
+  // the lane beside moves over into its tow (every seekEvery s at most), then pulls out to pass.
+  race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5,
+    towReach: 130, draft: 0.28, seekReach: 160, seekEvery: 1.5,
+    // Racecraft: each driver's nerve in the bends is its own, from nerve.min to nerve.max times the
+    // field's (so some are quicker through them, and catch the one ahead). A racer that pulls out to
+    // pass is on the attack for attackTime s: the tow it pulled out of carries it on (its slingshot,
+    // fading as it goes), and it brakes later, with attackNerve times its nerve
+    nerve: { min: 0.92, max: 1.06 }, attackTime: 3, attackNerve: 1.12,
+    // A racer's mood: in the front half, with clear road behind it, it cheers up as the race goes
+    // on, up to leadMood a second for the leader; but with a car within pressure m behind it, it
+    // frets instead, up to pressureMood a second for the leader (and much less a few places back,
+    // where it falls away as the square of how far up front it is). It gains passMood for every car
+    // it gets past, and loses passedMood for every car that gets past it; up to frontSwing times
+    // that for the leader (a place up front matters more), and so much more at the very front
+    // (so the knocks of the race don't leave the whole field furious, nor the front of it serene).
+    // A racer wrecked within killWindow s of another hitting it is that one's doing; an evil
+    // racer that does it gains killMood
+    leadMood: 0.03, pressure: 15, pressureMood: 0.05, passMood: 0.15, passedMood: 0.1, frontSwing: 3,
+    killWindow: 3, killMood: 0.5 },
   // Ice (a level's "ice": patches on the road). On it the player's car slews round as it arrives
   // (only the look of it: yaw never changes where a car goes), brakes and steers with less grip,
   // and in a bend it understeers: it slides to the outside, the more so the faster, heavier and

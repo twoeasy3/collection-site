@@ -242,6 +242,9 @@ export const Player = {
     // (bad gas and the weight hold the car back: a share of its top speed and acceleration)
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
     let top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1);
+    // in a race, in another car's slipstream: faster (see CONFIG.race)
+    this.tow = Traffic.tow(this, this.s, this.lat, this.hw);
+    top *= 1 + CONFIG.race.draft * this.tow;
     // over a railway track, slowed by how well the car crosses one (a tank, whatever it is, crosses fine)
     const R = CONFIG.railCrossing, rails = Track.onRails(this.s, this.lat, this.hw);
     const crossing = this.crossing;

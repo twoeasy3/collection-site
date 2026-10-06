@@ -163,6 +163,8 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 
 // the screensaver: the chaos level with no player car, round and round until Exit
 document.getElementById('screensaverBtn').addEventListener('click', () => Game.startScreensaver());
+// ...and the race screensaver: a race round a circuit, watched
+document.getElementById('raceWatchBtn').addEventListener('click', () => Game.startRaceWatch());
 // pause and exit, during a run or the screensaver
 document.getElementById('pauseBtn').addEventListener('click', () => Game.togglePause());
 document.getElementById('exitBtn').addEventListener('click', () => Game.exit());

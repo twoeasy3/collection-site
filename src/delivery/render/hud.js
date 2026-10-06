@@ -22,6 +22,7 @@ const hudBanner = document.getElementById('banner');
 const hudTurbo = document.getElementById('turbo');
 const hudDanger = document.getElementById('danger');
 const hudCopWatch = document.getElementById('copWatch');
+const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill');
 const hudBusts = document.getElementById('busts');
 const hudDangerFill = document.getElementById('dangerFill');
 const hudFade = document.getElementById('fade');
@@ -69,7 +70,7 @@ export const updateHud = () => {
   const pauseLabel = Game.paused ? 'Resume' : 'Pause';
   if (pauseBtn.textContent !== pauseLabel) pauseBtn.textContent = pauseLabel;
   // the screensaver fades to black and back where one lap joins the next
-  hudFade.style.opacity = Game.screensaver
+  hudFade.style.opacity = Game.screensaver && !Game.raceWatch // (not in the race: a circuit has no seam to hide)
     ? 1 - Math.min(1, Math.min(Math.abs(Player.s), Math.abs(Track.length - Player.s)) / CONFIG.screensaver.fadeDistance) : 0;
   hudBanner.style.display = Game.paused ? 'block' : 'none'; // (the only banner: paused)
   // the two message lines (see messages.js): each up for its own time, fading away at the end
@@ -96,6 +97,10 @@ export const updateHud = () => {
   // on a level without the shoulder rule, nor for a tank, which nobody busts)
   const watched = Game.state === 'playing' && Player.active && !Game.screensaver && LEVEL.shoulderTimer !== false && Player.tank <= 0 && Traffic.policeNear();
   hudCopWatch.style.display = watched ? 'block' : 'none';
+  // in a car's slipstream, and how deep in it (a race)
+  const towing = Player.active && !Game.screensaver && Player.tow > 0;
+  hudTowing.style.display = towing ? 'block' : 'none';
+  if (towing) hudTowFill.style.width = Player.tow * 100 + '%';
   const danger = Player.danger / CONFIG.dangerTime;
   hudDanger.style.display = Player.active && danger < 1 ? 'block' : 'none';
   hudDangerFill.style.width = danger * 100 + '%';

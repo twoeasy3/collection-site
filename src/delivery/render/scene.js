@@ -72,7 +72,7 @@ export const tmp2 = new THREE.Vector3();
 let camLat = 0;
 // points the camera, placed in the game's own terms, at the target. On a left-hand level the scene
 // is drawn mirrored (scale x -1, see road.js), so the camera goes to the mirror image of its place
-const aim = (target) => {
+export const aim = (target) => {
   if (scene.scale.x < 0) {
     camera.position.x = -camera.position.x;
     target.x = -target.x;

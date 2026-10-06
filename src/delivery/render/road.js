@@ -89,7 +89,7 @@ export const THEMES = {
 
 // Everything built here for the loaded level goes in this group, which is emptied and
 // rebuilt each time a level is loaded.
-const levelGroup = new THREE.Group();
+export const levelGroup = new THREE.Group();
 scene.add(levelGroup);
 
 // ---- terrain (a theme with "terrain"): a mountainside --------------------------------------------
@@ -705,7 +705,9 @@ const buildRoad = () => {
   const add = (geo, mat) => {
     // (a lit surface needs to know which way it faces; the strips are built without that)
     if (theme.lit && !geo.attributes.normal) geo.computeVertexNormals();
-    return levelGroup.add(new THREE.Mesh(geo, mat));
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.userData.flat = true; // (a surface laid on the ground: nothing a camera can't see over, see render/racewatch.js)
+    return levelGroup.add(mesh);
   };
   const asphalt = flat(theme.road || 0), lineMat = flat(theme.line || 0xf2f2f2), centreMat = flat(theme.centre || 0xffc400);
   const pave = (geo) => { if (theme.road !== null) add(geo, asphalt); }; // (no road surface in space)

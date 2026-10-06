@@ -22,6 +22,7 @@
     <div id="speed">0 <small>km/h</small></div>
     <div id="turbo"></div>
     <div id="copWatch"><span class="lights"><i></i><i></i></span>POLICE WATCHING</div>
+    <div id="towing">SLIPSTREAM<div class="bar"><div id="towFill"></div></div></div>
   </div>
 </div>
 
@@ -29,7 +30,10 @@
 <div id="fade"></div>
 <div id="banner">PAUSED<small>Resume, or press P</small></div>
 <div id="messages"><div class="line"></div><div class="line"></div></div>
-<div id="runButtons"><button id="pauseBtn">Pause</button><button id="exitBtn">Exit level</button></div>
+<div id="raceBoard"></div>
+<div id="raceCaption"></div>
+<canvas id="raceMap" width="240" height="240"></canvas>
+<div id="runButtons"><button id="pauseBtn">Pause</button><button id="directorBtn" style="display:none">Race director</button><button id="exitBtn">Exit level</button></div>
 <button id="throwBtnLeft" class="throw">THROW</button>
 <button id="throwBtn" class="throw">THROW</button>
 <div id="touchControls">
@@ -80,8 +84,10 @@
     <button id="touchBtn" class="level">On-screen controls: off</button>
     <button id="autoGasBtn" class="level">Auto accelerate: off</button>
     <button id="screensaverBtn" class="level">Screensaver</button>
+    <button id="raceWatchBtn" class="level">Race screensaver</button>
     <a class="level" href="powerups.html">Power-ups</a>
     <a id="screensaverLink" class="level" href="?screensaver" title="Opens the screensaver straight away: bookmark it or share it">Screensaver link</a>
+    <a class="level" href="?racewatch" title="Opens the race screensaver straight away: bookmark it or share it">Race screensaver link</a>
     <button id="completeBtn" class="level">Unlock everything</button>
     <button id="resetBtn" class="level">Reset progress</button>
   </div>

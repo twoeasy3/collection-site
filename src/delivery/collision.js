@@ -153,6 +153,9 @@ export const Collision = (() => {
     }
 
     if (impact > CONFIG.minImpact) {
+      // (each remembers who hit it, and when: a wreck soon after is that one's doing, see RaceWatch)
+      a.hitBy = b; b.hitBy = a;
+      a.hitAt = b.hitAt = Game.time;
       const damage = impact * CONFIG.damagePerSpeed;
       hurt(a, damage * shareA * 2);
       hurt(b, damage * shareB * 2);

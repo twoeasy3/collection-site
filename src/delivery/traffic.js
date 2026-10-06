@@ -9,6 +9,7 @@ import { CARS, LEVEL_CARS } from './cars.js';
 import { Message } from './messages.js';
 import { Tide } from './tide.js';
 import { Wreckage } from './wreckage.js';
+import { Game } from './game.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -260,24 +261,12 @@ export const Traffic = (() => {
       car.vs = 0; // parked until the player is near
     }
     // ...and a race's grid (a level's "grid"): `count` cars of its kind, two by two, staggered, ahead
-    // of the player, all the player's way; half of them evil. Each is a racer: it never stops racing
-    // (however far ahead or behind), throws nothing, and goes as fast as its pace allows, a share of
-    // the player's car's top speed
+    // of the player, all the player's way; half of them evil (see addRacer)
     if (LEVEL.grid) {
       // (two by two in the middle lanes; on a two-lane road, in both)
       const G = LEVEL.grid, [first, last] = Track.laneRange(1, 0), lanes = last - first >= 2 ? [first + 1, first + 2] : [first, last];
-      const top = CARS_BY_ID[LEVEL.car]?.maxSpeed ?? 40;
       for (let k = 0; k < G.count; k++) {
-        const car = cars.find(c => !c.active && c.unused);
-        if (!car) break;
-        car.dir = 1;
-        car.bound = 'north';
-        car.s = (G.from ?? 14) + (G.count - 1 - k) * G.gap;
-        outfit(car, G.kind, lanes[k % 2]);
-        Object.assign(car, { fixed: true, racer: true, evil: k % 2 === 1, defiant: false, viaSide: false, hesitant: false,
-          vs: 0, baseSpeed: top * between(G.pace), throwTimer: Infinity, paint: Math.floor(Math.random() * 1000), laps: 0 });
-        car.emotion = pickEmotion(car.evil);
-        car.mood = MOOD_START[car.emotion];
+        if (!addRacer((G.from ?? 14) + (G.count - 1 - k) * G.gap, lanes[k % 2], k % 2 === 1)) break;
       }
     }
     // ...and its parked cars, on the shoulders with their hazards on: a car of one of the
@@ -299,6 +288,25 @@ export const Traffic = (() => {
     }
   };
 
+  // a racer on the grid (a level's "grid") at s, in that lane: false if the pool has no car spare.
+  // It never stops racing (however far ahead or behind), throws nothing, and goes as fast as its pace
+  // allows, a share of the player's car's top speed
+  const addRacer = (s, lane, evil) => {
+    const car = cars.find(c => !c.active && c.unused);
+    if (!car) return false;
+    const G = LEVEL.grid, top = CARS_BY_ID[LEVEL.car]?.maxSpeed ?? 40;
+    car.dir = 1;
+    car.bound = 'north';
+    car.s = s;
+    outfit(car, G.kind, lane);
+    Object.assign(car, { fixed: true, racer: true, evil, defiant: false, viaSide: false, hesitant: false,
+      vs: 0, baseSpeed: top * between(G.pace), throwTimer: Infinity, paint: Math.floor(Math.random() * 1000), laps: 0,
+      nerve: between(CONFIG.race.nerve), attack: 0, sling: 0 });
+    car.emotion = pickEmotion(car.evil);
+    car.mood = MOOD_START[car.emotion];
+    car.place = undefined; // (its place in the running order: see raceMood)
+    return true;
+  };
   // could the car move over into that lane right now?
   const canMove = (car, lane, ignorePlayer) => {
     const [first, last] = Track.laneRange(car.dir, car.s);
@@ -333,7 +341,67 @@ export const Traffic = (() => {
     const R = CONFIG.race, type = CONFIG.vehicles[car.kind];
     let sharpest = 0;
     for (let d = 0; d <= R.aiLookout; d += 5) sharpest = Math.max(sharpest, Math.abs(Track.bend(car.s + car.dir * d)));
-    return sharpest > 1e-4 ? Math.sqrt(CONFIG.ice.grip * R.aiTyres * R.aiGrip * (type.agility || 1) / (weightOf(car) * sharpest)) : Infinity;
+    const nerve = (car.nerve || 1) * (car.attack > 0 ? R.attackNerve : 1); // (its own, and more on the attack)
+    return sharpest > 1e-4 ? Math.sqrt(CONFIG.ice.grip * R.aiTyres * R.aiGrip * nerve * (type.agility || 1) / (weightOf(car) * sharpest)) : Infinity;
+  };
+  // the slipstream (a race: see CONFIG.race): how deep in the tow of a car ahead a car at s, lat
+  // (so wide) is, from 0 (none) to 1 (on its gearbox). Any racer ahead gives a tow, and so does the player
+  const tow = (self, s, lat, hw) => {
+    if (!LEVEL.grid) return 0;
+    const R = CONFIG.race;
+    let best = 0;
+    const behind = (os, olat, ohw) => {
+      let gap = os - s;
+      if (Track.loop && gap < -Track.length / 2) gap += Track.length; // (just over the line)
+      if (gap > 0 && gap < R.towReach && Math.abs(olat - lat) < (ohw + hw) * 0.8) best = Math.max(best, 1 - gap / R.towReach);
+    };
+    for (const o of cars) if (o !== self && o.active && o.racer) behind(o.s, o.lat, o.hw);
+    if (self !== Player && Player.active) behind(Player.s, Player.lat, Player.hw);
+    return best;
+  };
+  // a racer on a straight, out of any tow, looks for one: a car not far ahead in the lane beside, and
+  // moves over in behind it (then, closing on it, it is held up and pulls out to pass: see update)
+  const seekTow = (car, dt) => {
+    const R = CONFIG.race;
+    if (car.tow > 0.2 || car.pendingLane !== null || (car.seek = (car.seek || 0) - dt) > 0) return;
+    car.seek = R.seekEvery * (0.6 + Math.random() * 0.8);
+    if (racingLine(car) < car.baseSpeed * 1.05) return; // (a bend coming: no time for it)
+    let best = null, nearest = Infinity;
+    for (const o of cars) {
+      if (o === car || !o.active || !o.racer || o.lane === car.lane || Math.abs(o.lane - car.lane) > 1) continue;
+      const gap = o.s - car.s;
+      if (gap > o.hl + car.hl + 3 && gap < R.seekReach && gap < nearest) { nearest = gap; best = o; } // (anywhere it is not alongside)
+    }
+    if (best && canMove(car, best.lane, false)) {
+      car.signal = best.lane - car.lane;
+      car.lane = best.lane;
+    }
+  };
+  // a race's moods (see CONFIG.race): the running order (the racers and the player, furthest round
+  // first), and each racer's place in it against the last: places gained cheer it up, places lost get
+  // it down, the more so up front; and up front, it cheers up as the race goes on, unless there is
+  // someone right behind it. And an evil racer that wrecks another is delighted
+  const raceMood = (dt) => {
+    const R = CONFIG.race, field = cars.filter(c => c.racer).map(c => ({ c, at: (c.laps || 0) * Track.length + c.s }));
+    if (Player.active) field.push({ c: Player, at: Game.lap * Track.length + Player.s });
+    field.sort((a, b) => b.at - a.at);
+    field.forEach(({ c, at }, place) => {
+      if (c === Player) return;
+      if (c.wasRacing && !c.active) { // (wrecked just now: another racer's doing, if it hit it just now)
+        const by = c.hitBy;
+        if (by && by.racer && by !== c && by.evil && Game.time - c.hitAt < R.killWindow) by.mood = Math.min(1, by.mood + R.killMood);
+      }
+      c.wasRacing = c.active;
+      const front = Math.max(0, 1 - 2 * place / field.length); // (1 for the leader, down to 0 halfway back)
+      if (c.active && c.place !== undefined && place !== c.place) {
+        const swing = 1 + (R.frontSwing - 1) * front;
+        c.mood += (place < c.place ? (c.place - place) * R.passMood : -(place - c.place) * R.passedMood) * swing;
+      }
+      const chased = field[place + 1] && at - field[place + 1].at < R.pressure;
+      if (c.active) c.mood += (chased ? -R.pressureMood * front : R.leadMood) * front * dt;
+      c.mood = clamp(c.mood, -1, 1);
+      c.place = place;
+    });
   };
   // a horn to suit the vehicle (police cars have sirens instead), only near the player
   const HORNS = { compact: 'hornSmall', sport: 'hornSmall', van: 'hornBig', tractor: 'hornBig', bus: 'hornBus' };
@@ -612,6 +680,7 @@ export const Traffic = (() => {
       nextEmergency = startEmergency(dir) ? between(LEVEL.emergencies.every) : 1;
     }
     if (Track.junctions.length) junctionState();
+    if (LEVEL.grid) raceMood(dt);
     for (const car of cars) {
       if (car.active && car.junction) { // leaving the road at a junction
         driveJunction(car, dt);
@@ -883,7 +952,12 @@ export const Traffic = (() => {
         }
 
         // hold back behind anything directly ahead (in this car's direction of travel)
-        let target = squeezed ? car.baseSpeed * 0.6 : car.baseSpeed;
+        // (a racer in another's slipstream can go that much faster: see CONFIG.race)
+        // (and one on the attack, just out of a tow, is carried on by it a while: its slingshot)
+        car.tow = car.racer ? tow(car, car.s, car.lat, car.hw) : 0;
+        if (car.racer) car.attack = Math.max(0, (car.attack || 0) - dt);
+        const sling = car.attack > 0 ? car.sling * car.attack / CONFIG.race.attackTime : 0;
+        let target = (squeezed ? car.baseSpeed * 0.6 : car.baseSpeed) * (1 + CONFIG.race.draft * Math.max(car.tow, sling));
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
         if (rival) {
           // get into its lane, then catch it up or drop back onto it
@@ -905,7 +979,9 @@ export const Traffic = (() => {
             held = true;
           }
         }
-        // a racer held up behind a slower car pulls out to pass it, into whichever lane beside is clear
+        // a racer out on its own goes looking for a tow
+        if (car.racer && !held && !rival) seekTow(car, dt);
+        // a racer held up behind a slower car (or catching it in its tow) pulls out to pass it, into whichever lane beside is clear
         if (car.racer && held && !rival && (car.overtake = (car.overtake || 0) - dt) <= 0) {
           car.overtake = 0.6;
           for (const d of Math.random() < 0.5 ? [1, -1] : [-1, 1]) {
@@ -913,6 +989,8 @@ export const Traffic = (() => {
             car.lane += d;
             car.signal = d;
             car.pendingLane = null;
+            car.attack = CONFIG.race.attackTime; // (on the attack: see CONFIG.race)
+            car.sling = car.tow;
             break;
           }
         }
@@ -995,5 +1073,5 @@ export const Traffic = (() => {
     placeFixed();
   };
 
-  return { cars, reset, update, lap, policeNear, toadify, arrest, startEmergency };
+  return { cars, reset, update, lap, policeNear, toadify, arrest, startEmergency, addRacer, tow };
 })();

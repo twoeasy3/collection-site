@@ -14,6 +14,7 @@ import { Hippos } from './hippos.js';
 import { Elephants } from './elephants.js';
 import { Wreckage } from './wreckage.js';
 import { Machinery } from './machinery.js';
+import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
@@ -30,6 +31,8 @@ export const Game = {
   inMenu: false,  // a menu other than the start screen is open (the garage)
   paused: false,  // a run (or the screensaver) is frozen: nothing moves until it is resumed
   screensaver: false, // the screensaver is running: no player car, the road goes round and round
+  raceWatch: false,   // ...the second screensaver: a race, watched (see racewatch.js)
+  raceCount: 0,       // races watched since it started (all round Marina Bay)
   menuLevel: 0,   // the level the menu had picked when the screensaver started, to put back
   outcome: '',    // delivered | late | timeout | busted
   time: 0,        // s since the start
@@ -69,6 +72,8 @@ export const Game = {
     this.paused = false;
     if (this.screensaver) { // the menu's own level is picked again
       this.screensaver = false;
+      this.raceWatch = false;
+      document.body.classList.remove('racewatch');
       selectLevel(this.menuLevel);
       useLevelCar(LEVEL.car);
     }
@@ -95,6 +100,19 @@ export const Game = {
     this.screensaver = true;
     Player.ghost = 1;
     document.body.classList.add('screensaver');
+  },
+  // the race screensaver: a race on a circuit, no player car, watched (and the next, once it is over)
+  startRaceWatch() {
+    if (!this.screensaver) { this.menuLevel = LEVEL_INDEX; this.raceCount = 0; }
+    selectSpecial(LEVELS.find(l => l.id === 'marina-bay'));
+    this.raceCount++;
+    this.start();
+    this.screensaver = true;
+    this.raceWatch = true;
+    Player.active = false; // (out of play: it only follows the watched car about, see RaceWatch)
+    Player.ghost = 1;
+    document.body.classList.add('screensaver', 'racewatch');
+    RaceWatch.begin();
   },
   // from the results screen: on to the next level, on the same side
   nextLevel() {
@@ -125,6 +143,7 @@ export const Game = {
     this.over = false;
     this.paused = false;
     this.screensaver = false;
+    this.raceWatch = false;
     this.tankPieces = Progress.data.tankPieces || 0; // (the run's own, until it is settled)
     this.zone = null; // the level zone the player is in (see update)
     this.lap = 0;     // laps done, on a lapped level ("laps")
@@ -215,6 +234,15 @@ export const Game = {
   update(dt) {
     this.shake = Math.max(0, this.shake - dt / CONFIG.shakeTime);
     if (this.state === 'start' || this.paused) return;
+    if (this.raceWatch) { // the race screensaver: only the race
+      this.time += dt;
+      Traffic.update(dt);
+      RaceWatch.update(dt);
+      Collision.updateObstacles(dt);
+      Collision.check();
+      FxQueue.length = Math.min(FxQueue.length, 40); // (no more than the frame can play)
+      return;
+    }
     if (this.screensaver) {
       this.time += dt;
       Player.dolly(dt, this.time);

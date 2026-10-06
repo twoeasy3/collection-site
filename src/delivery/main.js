@@ -28,6 +28,7 @@ import { syncElephants } from './render/elephants.js';
 import { syncWreckage } from './render/wreckage.js';
 import { syncMachinery } from './render/machinery.js';
 import { syncSite } from './render/site.js';
+import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
@@ -48,10 +49,17 @@ if (params.get('garage') !== null) {
   Garage.open();
   if (params.get('hover')) Garage.hover(params.get('hover'));
 }
-// ?screensaver starts the screensaver straight away (with ?ff=5 as above)
+// ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
 if (params.get('mystery')) Player.nextMystery = params.get('mystery'); // ?mystery=toad: every mystery pickup is that one
-if (params.get('screensaver') !== null) {
+if (params.get('racewatch') !== null) {
+  Game.startRaceWatch();
+  if (params.get('camcheck') !== null) { // (a check of every trackside camera)
+    const t0 = performance.now(), r = auditCameras();
+    console.log('camcheck ' + JSON.stringify(r) + ' ms ' + Math.round(performance.now() - t0));
+  }
+  for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
+} else if (params.get('screensaver') !== null) {
   Game.startScreensaver();
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
 } else if (autostart !== null) {
@@ -91,6 +99,7 @@ if (params.get('screensaver') !== null) {
 // every looping sound off: in the garage and on the menu
 const silence = () => {
   Sound.engine(-1);
+  Sound.pack(0);
   Sound.siren(0);
   Sound.helicopter(false);
   Sound.frog(0);
@@ -145,14 +154,20 @@ const frame = (now) => {
     syncTargets(dt);
     updateEffects(dt);
 
-    updateCamera(dt, prevState !== 'playing' && Game.state === 'playing');
+    if (Game.raceWatch) raceCamera(dt); // (the race screensaver's cameras)
+    else updateCamera(dt, prevState !== 'playing' && Game.state === 'playing');
+    syncRaceWatch(now);
     syncEmotes(dt, now);
     updateHud();
     // the engine note follows the speed; silent once the run is over or the car is gone
     // (and in the screensaver, where there is no car, or while paused)
     const live = Game.state === 'playing' && Player.active && !Game.paused && !Game.screensaver;
-    Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.id,
+    // (in the race screensaver: the watched car, and the rest of the field, as the camera hears them)
+    const heard = Game.raceWatch && Game.state === 'playing' && !Game.paused ? raceAudio(dt) : null;
+    if (heard) Sound.engine(heard.speed, CAR.id, CAR.maxSpeed, heard.gain, heard.pitch);
+    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.id,
       Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
+    Sound.pack(heard ? heard.pack : 0);
     // the siren, louder the nearer the nearest police car or ambulance (the screensaver's too), and a radar
     // ping as one comes near enough to bust you (nobody busts a tank)
     let copFar = Infinity;

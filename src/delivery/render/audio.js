@@ -96,6 +96,7 @@ const ENGINES = {
   bus: { files: ['Truck Engine'], idle: 0.6, top: 1.1 },
   tank: { files: ['Tank Engine'], idle: 0.7, top: 1.3 },
   ufo: { files: ['UFO'], idle: 0.8, top: 1.4 },
+  f1: { files: ['Engine Sports Car 5'], idle: 0.9, top: 2.1 }, // (wound right up: a screamer)
 };
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 // how loud a loaded WAV is on average (root mean square of its first channel), worked out once
@@ -239,7 +240,7 @@ const loop = () => ({
     this.file = null;
   },
 });
-const engineLoop = loop(), sirenLoop = loop(), heliLoop = loop(), frogLoop = loop(), warnLoop = loop(), ufoLoop = loop(), lowriderLoop = loop();
+const engineLoop = loop(), packLoop = loop(), sirenLoop = loop(), heliLoop = loop(), frogLoop = loop(), warnLoop = loop(), ufoLoop = loop(), lowriderLoop = loop();
 let engineCar = null, engineFile = null; // the car the engine loop was picked for, and its WAV
 
 // ---- the synthesised stand-ins: (volume 0..1) => void --------------------------------------------
@@ -291,8 +292,9 @@ export const Sound = {
     lastPlayed[name] = ctx.currentTime;
   },
   // speed in m/s, or a negative number for silence. car: the car's id in ENGINES ('tank' while
-  // in TANK RAGE); top: its top speed, which sets how high the engine is pitched
-  engine(speed, car = 'hatch', top = 30) {
+  // in TANK RAGE); top: its top speed, which sets how high the engine is pitched. (The race
+  // screensaver's watched car, heard from the camera: gain, how loud from there; pitch, its Doppler shift)
+  engine(speed, car = 'hatch', top = 30, gain = 1, pitch = 1) {
     if (!engine) return;
     const now = ctx.currentTime, on = speed >= 0;
     const e = ENGINES[car] || ENGINES.hatch;
@@ -302,9 +304,9 @@ export const Sound = {
     }
     if (!on) engineCar = null; // (so the next run picks again)
     const pace = Math.min(1.5, Math.max(0, speed) / top);
-    const rate = e.fixed ? 1 : e.idle + (e.top - e.idle) * pace;
+    const rate = (e.fixed ? 1 : e.idle + (e.top - e.idle) * pace) * pitch;
     const even = buffers[engineFile] ? Math.min(4, ENGINE_LOUDNESS / loudness(engineFile)) : 1;
-    const volume = !on ? 0 : even * (e.volume || 1) * (e.fixed ? 1 : ENGINE_IDLE + (1 - ENGINE_IDLE) * Math.min(1, pace));
+    const volume = !on ? 0 : gain * even * (e.volume || 1) * (e.fixed ? 1 : ENGINE_IDLE + (1 - ENGINE_IDLE) * Math.min(1, pace));
     if (engineFile && engineLoop.set(engineFile, volume, rate)) {
       engine.gain.gain.setTargetAtTime(0, now, 0.05);
       return;
@@ -315,7 +317,14 @@ export const Sound = {
     engine.osc.frequency.setTargetAtTime(ufo ? 170 + speed * 2.2 : (tank ? 34 : 48) + speed * (tank ? 1.6 : 2.6), now, 0.08);
     engine.filter.frequency.setTargetAtTime(ufo ? 2000 : 300 + speed * 22, now, 0.1);
     engine.lfoGain.gain.setTargetAtTime(ufo ? 14 : 0, now, 0.1);
-    engine.gain.gain.setTargetAtTime(on ? (ufo ? 0.12 : 0.07 + Math.min(0.07, speed * 0.0015)) : 0, now, 0.12);
+    engine.gain.gain.setTargetAtTime(on ? gain * (ufo ? 0.12 : 0.07 + Math.min(0.07, speed * 0.0015)) : 0, now, 0.12);
+  },
+  // the rest of a race's field, heard from the camera: level 0 (none near) .. 1 (the pack right
+  // there), in the watched car's engine note, a touch lower
+  pack(level, rate = 1.6) {
+    if (!engineFile) return;
+    const even = buffers[engineFile] ? Math.min(4, ENGINE_LOUDNESS / loudness(engineFile)) : 1;
+    packLoop.set(engineFile, 0.6 * even * level, rate);
   },
   // the police siren, louder the nearer the nearest police car: level 0 (silent) .. 1 (right
   // beside it). near: one is close enough to bust the player, which pings the radar as it starts

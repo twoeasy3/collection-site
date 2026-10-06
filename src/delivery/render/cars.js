@@ -253,7 +253,7 @@ const PAINTS = {
 };
 const POLICE_PAINT = 0xf5f5f5;
 // an F1 car's livery, by its paint number: any colour at all (and a second: see models.js)
-const F1_PAINTS = [0xd8262b, 0x1d3f9c, 0x18a35a, 0xff8a1a, 0x101010, 0xf4f4f4, 0x7a1fa8, 0x2fc4d8, 0xf2d21f, 0x8a1a2a, 0x2a6b3a, 0xff5fa8];
+export const F1_PAINTS = [0xd8262b, 0x1d3f9c, 0x18a35a, 0xff8a1a, 0x101010, 0xf4f4f4, 0x7a1fa8, 0x2fc4d8, 0xf2d21f, 0x8a1a2a, 0x2a6b3a, 0xff5fa8];
 // kinds of traffic that are also garage cars with a fixed livery wear that car's two colours
 // (see CARS: fixedLivery), not a random paint: kind -> { good, evil }
 const LIVERIES = Object.fromEntries(CARS.filter(c => c.fixedLivery).map(c => [c.id, { good: c.color, evil: c.evilColor }]));
