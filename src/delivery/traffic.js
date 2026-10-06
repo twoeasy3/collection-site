@@ -6,6 +6,7 @@ import { updateYaw, keepOnRoad, emotionOf, startRivalry, spinOut, sfxAt } from '
 import { Player } from './player.js';
 import { Packages } from './packages.js';
 import { CARS } from './cars.js';
+import { Message } from './messages.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -138,7 +139,7 @@ export const Traffic = (() => {
   // bursts on touching anything (see Collision). Afterwards each turns back into what it was.
   let toads = false;
   const makeToad = (car) => {
-    if (car.toad) return;
+    if (car.toad || car.emergency) return; // (an ambulance stays an ambulance)
     const T = CONFIG.mystery.toad;
     car.toad = { health: car.health, maxHealth: car.maxHealth, hw: car.hw, hl: car.hl, height: car.height, mass: car.mass };
     Object.assign(car, T, { health: 1, maxHealth: 1, spin: 0, wobble: 0, rival: null, stun: 0 });
@@ -182,6 +183,7 @@ export const Traffic = (() => {
     car.vs = car.dir * car.baseSpeed;
     const evilShare = drivers().evil !== undefined ? drivers().evil : CONFIG.evilShare;
     car.evil = !type.special && Math.random() < evilShare; // fixed for this car's life
+    car.defiant = car.evil && Math.random() < CONFIG.emergency.defiance; // won't give way to an ambulance
     car.emotion = pickEmotion(car.evil);
     car.mood = MOOD_START[car.emotion];
     car.paint = Math.floor(Math.random() * 1000);
@@ -207,6 +209,11 @@ export const Traffic = (() => {
     car.tapWait = 0;        // ...s to the next
     car.wander = Math.random() * 6; // (where it is in its drift about the lane)
     car.fromBehind = false; // came up from behind the player
+    car.pulledFor = null;   // the siren it is pulled over for: Player, or an emergency vehicle
+    car.emergency = false;  // an emergency vehicle (see startEmergency)...
+    car.blocker = null;     // ...the vehicle in its way, if any...
+    car.blockTime = 0;      // ...for how long (s) it has been close behind it...
+    car.sparePlayer = false; // ...and done waiting for a player nobody could bust
     if (toads) makeToad(car);
     car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
     car.think = Math.random() * 2;
@@ -271,8 +278,12 @@ export const Traffic = (() => {
   // helicopter comes down and carries it off (render/helicopter.js). Until it is gone it
   // touches nothing, and nothing touches it.
   const arrest = (car) => {
-    if (!car || car.isPlayer || !car.active || car.toad || car.arrest >= 0) return;
     if (!(Player.siren > 0) || Player.damageScale <= 0) return;
+    arrestNow(car);
+  };
+  // (also what happens to a car that won't get out of an ambulance's way)
+  const arrestNow = (car) => {
+    if (!car || car.isPlayer || !car.active || car.toad || car.arrest >= 0) return;
     car.arrest = 0;
     car.rival = null;
   };
@@ -280,11 +291,32 @@ export const Traffic = (() => {
   // in range of the player's siren: ahead of the player (coming its way, or going it)
   const underSiren = (car) => Player.siren > 0 && Player.active &&
     car.s - Player.s > 0 && car.s - Player.s < CONFIG.sirenPickup.range;
+  // the siren a car gives way to, if any: the player's, or an emergency vehicle's coming up behind
+  // it in its lane (unless it is one of the few evil drivers who won't give way to that)
+  const E = CONFIG.emergency;
+  const sirenFor = (car) => {
+    if (underSiren(car)) return Player;
+    if (car.emergency || car.defiant) return null;
+    for (const a of cars) {
+      if (!a.active || !a.emergency || a.dir !== car.dir) continue;
+      const gap = (car.s - a.s) * a.dir;
+      if (gap > 0 && gap < E.range && Track.openLane(car.lane, car.s) === Track.openLane(a.lane, car.s)) return a;
+    }
+    return null;
+  };
+  // the lane that siren wants cleared, where the car is
+  const sirenLane = (siren, car) => siren.isPlayer ? Track.nearestLane(Player.lat, Player.s) : Track.openLane(siren.lane, car.s);
+  // a car stays pulled over while the player's siren sounds, or until the emergency vehicle is by
+  const stillPulledOver = (car) => {
+    const siren = car.pulledFor;
+    if (siren === Player) return Player.siren > 0;
+    return !!siren && siren.active && siren.emergency && (car.s - siren.s) * siren.dir > -(car.hl + siren.hl + 10);
+  };
 
   const think = (car) => {
     if (car.kind === 'tractor') return; // a tractor just trundles along its lane
     if (car.pendingLane !== null) return; // (already signalling for a move)
-    if (underSiren(car)) return; // (no lane changes of its own with a siren behind it)
+    if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
     // angry drivers pick on whoever is nearest
     if (car.emotion === 'angry' && !car.rival && Math.random() < CONFIG.rivalryPickChance) {
       let best = null, bestGap = CONFIG.rivalryRange;
@@ -309,6 +341,84 @@ export const Traffic = (() => {
     }
   };
 
+  // ---- emergency vehicles (see CONFIG.emergency) ------------------------------------------------
+  let nextEmergency = Infinity; // s to the next one, on a level with "emergencies"
+  // sets one off, going the player's way (dir 1: from behind the player, in the player's lane if
+  // the player is in one going that way) or coming the other way (from up the road). It takes a
+  // car from the pool that the level leaves unused. Returns it, or null if there was no room.
+  const startEmergency = (dir) => {
+    const car = cars.find(c => !c.active && c.unused);
+    if (!car || !Player.active || !Track.isMain(Player.s)) return null;
+    const s = Player.s + (dir > 0 ? -E.behind : CONFIG.spawnMin + Math.random() * (CONFIG.spawnMax - CONFIG.spawnMin));
+    if (!Track.inBounds(s)) return null;
+    car.dir = dir;
+    car.bound = dir > 0 ? 'north' : 'south';
+    car.s = s;
+    const [first, last] = Track.laneRange(dir, s), mine = Track.nearestLane(Player.lat, Player.s);
+    const lane = dir > 0 && mine >= first && mine <= last ? mine : first + Math.floor(Math.random() * (last - first + 1));
+    outfit(car, 'ambulance', Track.openLane(lane, s));
+    if (car.toad) { // (set off in TOAD RAGE: an ambulance stays an ambulance)
+      Object.assign(car, car.toad);
+      car.toad = null;
+    }
+    Object.assign(car, { emergency: true, evil: false, defiant: false, viaSide: false, emotion: 'neutral', mood: 0, baseSpeed: E.speed, vs: dir * E.speed });
+    if (dir > 0) Message.say('events', 'emergency'); // (only one coming up behind the player says so)
+    return car;
+  };
+  // where its lane is at s
+  const pathLat = (car, s) => Track.laneOffset(Track.openLane(car.lane, s), s);
+  const driveEmergency = (car, dt) => {
+    // the nearest thing ahead in its lane, not yet fully out of it (cars being carried off, which
+    // touch nothing, and toads, which it bursts, don't count)
+    let blocker = null, gap = Infinity;
+    const consider = (v) => {
+      const d = (v.s - car.s) * car.dir - v.hl - car.hl;
+      if (d < -1 || d > E.range || d >= gap) return;
+      if (Math.abs(v.lat - pathLat(car, v.s)) >= v.hw + car.hw) return;
+      blocker = v;
+      gap = d;
+    };
+    for (const o of cars) if (o !== car && o.active && o.arrest < 0 && !o.toad && !o.emergency) consider(o);
+    if (Player.active && Player.ghost <= 0) consider(Player);
+    // close behind it: it has giveWay s to get out of the way, or it is arrested (the player busted;
+    // a player who is busted already, or can't be, it just waits behind)
+    if (blocker !== car.blocker || gap > E.reach) car.blockTime = 0;
+    car.blocker = blocker;
+    const caught = blocker && blocker.isPlayer && (Player.busted || car.sparePlayer);
+    if (blocker && !caught && gap <= E.reach && (car.blockTime += dt) >= E.giveWay) {
+      if (blocker.isPlayer) {
+        Player.bust('emergency');
+        if (!Player.busted) car.sparePlayer = true; // (a radar detector, or a tank)
+      } else arrestNow(blocker);
+      car.blocker = null;
+      car.blockTime = 0;
+    }
+    // full speed, or as fast as lets it stop in time behind what is in its way
+    let target = car.baseSpeed;
+    if (car.blocker) {
+      const theirs = Math.max(0, car.blocker.vs * car.dir);
+      target = Math.min(target, theirs + Math.sqrt(2 * E.brake * Math.max(0, gap - E.followGap)));
+    }
+    car.braking = Math.abs(car.vs) > target + 0.8;
+    car.vs += (car.dir * target - car.vs) * damp(car.braking ? 8 : 1.5, dt);
+    car.s += car.vs * dt;
+    if (car.blocker) { // (and it never runs into it)
+      const room = (car.blocker.s - car.s) * car.dir - car.blocker.hl - car.hl;
+      if (room < 1) {
+        car.s = car.blocker.s - car.dir * (car.blocker.hl + car.hl + 1);
+        car.vs = car.dir * Math.max(0, car.blocker.vs * car.dir);
+      }
+    }
+    Track.transfer(car);
+    // held to its lane
+    car.latVel = (pathLat(car, car.s) - car.lat) * 4;
+    car.lat += car.latVel * dt;
+    car.signal = 0;
+    car.hazards = false;
+    keepOnRoad(car, 0.3);
+    updateYaw(car, dt);
+  };
+
   const reset = () => {
     // how many are about, each way: the level's counts, or the usual ones
     const count = LEVEL.trafficCount !== undefined ? LEVEL.trafficCount : CONFIG.trafficCount;
@@ -322,12 +432,19 @@ export const Traffic = (() => {
       car.fixed = false;
     });
     placeFixed();
+    nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
     if (!mix().length) return; // otherwise an empty road
     // (when everything is oncoming, the first of it starts further off)
     for (const car of cars) if (!car.active && !car.unused) spawn(car, Track.flow === 'south' ? 200 : 60, CONFIG.spawnMax);
   };
 
   const update = (dt) => {
+    // now and then an emergency vehicle, either way (one at a time; if there is no room for it
+    // just now, it tries again a second later)
+    if (LEVEL.emergencies && !cars.some(c => c.active && c.emergency) && (nextEmergency -= dt) <= 0) {
+      const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1 : Math.random() < 0.5 ? 1 : -1;
+      nextEmergency = startEmergency(dir) ? between(LEVEL.emergencies.every) : 1;
+    }
     for (const car of cars) {
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
@@ -339,7 +456,12 @@ export const Traffic = (() => {
       }
       const ahead = Track.along(car.s) - Track.along(Player.s); // along the course, whichever road
       if (car.fixed && ahead > CONFIG.spawnMax) continue; // still waiting where the level put it
-      if (ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 150 || !Track.inBounds(car.s)) {
+      // (an emergency vehicle going the player's way starts out behind the player, and is gone
+      // once it is well ahead; one coming the other way once it is behind)
+      const gone = !car.emergency ? ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 150
+        : car.dir > 0 ? ahead < -E.behind - 100 || ahead > CONFIG.spawnMax + 150
+        : ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 300;
+      if (gone || !Track.inBounds(car.s)) {
         car.active = false;
         continue;
       }
@@ -400,6 +522,11 @@ export const Traffic = (() => {
         if (car.wobble <= 0) spinOut(car);
       }
 
+      if (car.emergency) { // an ambulance on its way: see driveEmergency
+        driveEmergency(car, dt);
+        continue;
+      }
+
       const emotion = emotionOf(car.mood);
       if (emotion === 'angry' && car.emotion !== 'angry') honk(car); // fed up
       car.emotion = emotion;
@@ -438,26 +565,33 @@ export const Traffic = (() => {
           car.grudge = true;
         }
 
-        // a siren (a pickup): a car ahead in the player's lane moves over to its own right: a lane
-        // over if that one is clear, or else (from its outside lane, or with the next lane taken)
-        // onto the shoulder, the only time traffic uses one; never towards the oncoming lanes.
-        // It stays pulled over, slowed, for as long as the siren sounds.
-        if (!(Player.siren > 0)) car.pulledOver = false;
+        // a siren (the player's, a pickup, or an emergency vehicle's): a car ahead in the lane it
+        // wants cleared moves over to its own right: a lane over if that one is clear, or else
+        // (from its outside lane, or with the next lane taken) onto the shoulder, the only time
+        // traffic uses one; never towards the oncoming lanes. It stays pulled over, slowed, for as
+        // long as the player's siren sounds, or until the emergency vehicle is by.
+        const siren = sirenFor(car);
+        if (car.pulledOver && !stillPulledOver(car)) {
+          car.pulledOver = false;
+          car.pulledFor = null;
+        }
         // (lanes are compared where they lead here: where the road narrows, a car's lane may have
-        // merged into the player's, and there may be no lane to move over into, only the shoulder)
-        else if (underSiren(car) && !car.pulledOver &&
-                 Track.openLane(car.lane, car.s) === Track.nearestLane(Player.lat, Player.s)) {
+        // merged into the siren's, and there may be no lane to move over into, only the shoulder)
+        if (siren && !car.pulledOver && Track.openLane(car.lane, car.s) === sirenLane(siren, car)) {
           const [first, last] = Track.laneRange(car.dir, car.s);
           const here = Track.openLane(car.lane, car.s), next = here + (car.dir > 0 ? 1 : -1);
           if (next >= first && next <= last && Track.openLane(next, car.s) === next && laneClear(car, next, 10)) car.lane = next;
-          else car.pulledOver = true;
+          else {
+            car.pulledOver = true;
+            car.pulledFor = siren;
+          }
           // (signalling to its right as it goes, whatever its manners: see the hazards below)
           car.pendingLane = null;
           car.signal = car.dir;
         }
         // (with a siren behind it, a car drops any feud it has, so its rival can't drag it back
-        // into the player's way; the feud may start up again once the siren has passed)
-        if (underSiren(car)) rival = null;
+        // into the siren's way; the feud may start up again once the siren has passed)
+        if (siren) rival = null;
 
         // heading for a ramp, or the lane ends ahead: change lane, or ease off until there is room.
         // (a courteous driver sees it coming that much sooner, and signals first)
@@ -567,5 +701,5 @@ export const Traffic = (() => {
     placeFixed();
   };
 
-  return { cars, reset, update, lap, policeNear, toadify, arrest };
+  return { cars, reset, update, lap, policeNear, toadify, arrest, startEmergency };
 })();

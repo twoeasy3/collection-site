@@ -25,6 +25,9 @@
       "bulletTrain": ["BULLET TRAIN INCOMING!!!"]
     }
   },
+  "events": {
+    "emergency": ["Emergency vehicle oncoming!! Give way!"]
+  },
   "bustCount": {
     "1": ["First Offence - "],
     "2": ["Final Warning - "],
@@ -35,7 +38,8 @@
     "seen": ["The police saw you on the shoulder!!"],
     "assault": ["The police witnessed vehicular assault!!"],
     "assaultCop": ["Assault on a POLICE CAR!!"],
-    "bump": ["You hit a cop car!!"]
+    "bump": ["You hit a cop car!!"],
+    "emergency": ["Failure to give way to an emergency vehicle!!"]
   },
   "reactions": {
     "goodOnPolice": [

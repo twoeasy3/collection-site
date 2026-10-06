@@ -35,6 +35,8 @@
 //   drivers    { evil, happy, angry }: the share of drivers that are evil, and the chance a
 //              driver starts out happy or angry (defaults: CONFIG.evilShare and startMood)
 //   trafficSpeed  { min, max } m/s the traffic cruises at (default CONFIG.trafficMin/MaxSpeed)
+//   emergencies  { every: { min, max } }: now and then (every min-max s) an ambulance comes
+//              through, siren going, either way (see CONFIG.emergency)
 //   hesitation false = traffic too fast for the player never hesitates, and none comes up from
 //              behind (see CONFIG.hesitation)
 //   asteroidFields  { from, to, count, moving, seed }: `count` asteroids of assorted sizes

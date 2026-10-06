@@ -34,7 +34,7 @@ export const makeCarMesh = (color) => {
 export const shapeCarMesh = (group, v) => {
   const { body, cabin, lights, roof, bumpers, wheels } = group.userData;
   const w = v.hw * 2, l = v.hl * 2, h = v.height;
-  const boxy = v.kind === 'bus' || v.kind === 'van';
+  const boxy = v.kind === 'bus' || v.kind === 'van' || v.kind === 'ambulance';
   const R = v.kind === 'bus' ? 0.45 : 0.34;
   wheels.forEach((wheel, i) => {
     wheel.scale.set(0.28, R, R);
@@ -292,9 +292,11 @@ export const syncTraffic = () => {
     const police = car.kind === 'police';
     const paints = PAINTS[car.evil ? 'evil' : 'good'];
     const livery = LIVERIES[car.kind];
-    const paint = police ? POLICE_PAINT : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
+    const ambulance = car.kind === 'ambulance';
+    const paint = police || ambulance ? POLICE_PAINT : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
-    mesh.userData.bar.visible = police;
+    mesh.userData.bar.visible = police || ambulance;
+    mesh.userData.bar.position.y = ambulance ? car.height + 0.1 : 1.85; // (on the roof)
     // a vehicle with a model of its own shows that in place of the standard box car
     const own = ownModel(mesh, car);
     for (const kind in mesh.userData.models) mesh.userData.models[kind].visible = mesh.userData.models[kind] === own;
@@ -307,6 +309,8 @@ export const syncTraffic = () => {
     for (const part of [...mesh.userData.lights, ...mesh.userData.trim]) part.visible = !own;
     if (police) {
       mesh.userData.bar.material.color.setHex(Math.floor(performance.now() / 160 + i) % 2 ? 0xff2020 : 0x2060ff);
+    } else if (ambulance) {
+      mesh.userData.bar.material.color.setHex(Math.floor(performance.now() / 110 + i) % 2 ? 0xff2020 : 0xffffff);
     }
     // brake lights and indicators (not on a toad or a tractor). Which side of the model a signal
     // is on: the side nearer the road a little way across in the direction it is signalling

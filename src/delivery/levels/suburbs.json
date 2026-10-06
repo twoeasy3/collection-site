@@ -8,6 +8,7 @@
   "traffic": { "suv": 0.4, "taxi": 0.3, "miata": 0.3 },
   "trafficCount": 8,
   "oncomingCount": 6,
+  "emergencies": { "every": { "min": 20, "max": 40 } },
   "segments": [
     { "length": 300, "curve": 0 },
     { "length": 300, "curve": 0.003 },

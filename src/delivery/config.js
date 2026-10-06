@@ -72,6 +72,23 @@ export const CONFIG = {
     toad: { hw: 1.2, hl: 1.4, height: 1.8, mass: 1 }, // a toad's hitbox
   },
   // UFO AIR STRIKE (a mystery): the saucer's visit, and the burn that follows it
+  // Emergency vehicles (a level's "emergencies"): now and then an ambulance comes through with its
+  // siren going, either way. One going the player's way sets off behind the player, with a
+  // message; one coming the other way just appears up the road. Traffic ahead of it in its lane
+  // gives way as it does to the player's siren (a few evil drivers won't). It never runs into
+  // anything: it closes up behind whatever is in its way, which then has `giveWay` s to get fully
+  // out of its lane, or is arrested (the player is busted). It is traffic like any other (it can
+  // be hit, and hit back), except that packages pass over it.
+  emergency: {
+    speed: 95,             // m/s (342 km/h): second only to the bullet train
+    behind: 220,           // m behind the player one going the player's way sets off
+    range: 220,            // m ahead of it that traffic in its lane gives way
+    reach: 35,             // m: something in its lane this close ahead...
+    giveWay: 3,            // ...has this long to get fully out of it
+    followGap: 6,          // m it closes up to behind something in its way
+    brake: 30,             // m/s^2 it slows at for something in its way
+    defiance: 0.05,        // chance an evil driver refuses to give way to it
+  },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game
   bulletTrain: {
     speed: 150,            // m/s (540 km/h)
@@ -209,6 +226,8 @@ export const CONFIG = {
     bus:     { hw: 1.3,  hl: 5.5, height: 3.1, mass: 4,   health: 180, speed: 0.8, special: true },
     tractor: { hw: 1.2,  hl: 2.0, height: 2.4, mass: 2.5, health: 150, speed: 1, special: true },
     police:  { hw: 0.95, hl: 2.1, height: 1.4, mass: 1.2, health: 80,  speed: 1.1, special: true },
+    // (only ever an emergency vehicle: see CONFIG.emergency; never in a level's traffic list)
+    ambulance: { hw: 1.1, hl: 2.9, height: 2.6, mass: 2, health: 150, speed: 1, special: true },
     // the garage's cars as traffic (each id is the garage car's, in src/cars.js). They have no
     // speed: they cruise near that car's own top speed (garagePace, below). model: which of the
     // models in render/models.js it is drawn as

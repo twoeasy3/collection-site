@@ -138,11 +138,11 @@ const frame = (now) => {
     const live = Game.state === 'playing' && Player.active && !Game.paused && !Game.screensaver;
     Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.id,
       Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
-    // the siren, louder the nearer the nearest police car (the screensaver's too), and a radar
+    // the siren, louder the nearer the nearest police car or ambulance (the screensaver's too), and a radar
     // ping as one comes near enough to bust you (nobody busts a tank)
     let copFar = Infinity;
     for (const c of Traffic.cars) {
-      if (!c.active || c.kind !== 'police' || c.toad) continue;
+      if (!c.active || (c.kind !== 'police' && c.kind !== 'ambulance') || c.toad) continue;
       copFar = Math.min(copFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat));
     }
     const siren = Game.state === 'playing' && !Game.paused ? Math.max(0, 1 - copFar / CONFIG.sirenRange) : 0;

@@ -236,7 +236,7 @@ export const Packages = (() => {
         }
         for (const car of Traffic.cars) {
           if (!p.active) break;
-          if (!car.active || car.arrest >= 0 || p.h > car.height + 0.6) continue;
+          if (!car.active || car.arrest >= 0 || car.emergency || p.h > car.height + 0.6) continue;
           if (Math.abs(car.s - p.s) > car.hl + 1 || !Collision.overlap(p, car)) continue;
           const was = doomed(car);
           deliver(p, car);
