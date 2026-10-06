@@ -7,11 +7,14 @@ import { LEVEL } from './levels.js';
 // ============================================================================
 const createTrack = () => {
   const STEP = 2;            // sample spacing, metres
-  const LEAD_IN = 100;       // straight road before the start line
-  const LEAD_OUT = 200;      // and after the finish
+  // A lapped level ("laps") is a closed loop: its road comes back round to where it started, facing
+  // the same way, so it has no straights past either end, and s goes round (see toWorld)
+  const LOOP = !!LEVEL.laps;
+  const LEAD_IN = LOOP ? 0 : 100;   // straight road before the start line
+  const LEAD_OUT = LOOP ? 0 : 200;  // and after the finish
   const length = LEVEL.segments.reduce((sum, seg) => sum + seg.length, 0);
   const narrows = LEVEL.narrows || [], bridges = LEVEL.bridges || [];
-  const X = CONFIG.ramps, LW = CONFIG.laneWidth, SH = CONFIG.shoulder, FLY = X.flyoverLength;
+  const X = CONFIG.ramps, LW = CONFIG.laneWidth, SH = LEVEL.shoulder ?? CONFIG.shoulder, FLY = X.flyoverLength; // (a level can have narrower ones)
   // The expressway's lanes: a level's "lanes" is a number (half each side of the centre line, an
   // odd one over going on the right) or { north, south }: how many on the right, the player's
   // way, and how many on the left, oncoming. A two-way level can also have a "median": that many
@@ -66,14 +69,17 @@ const createTrack = () => {
   const exitOf = (s) => exits[Math.floor((s - FIRST) / BLOCK)];
 
   // ---- expressway path: integrate the segment list once ----------------------------
-  const curveAt = (s) => {
-    if (s < 0) return 0;
+  // (looked up by the metre, every segment being a whole number of metres long: a circuit can have
+  // hundreds of them, and the bend at s is wanted many times a frame)
+  const CURVES = new Float64Array(length), GRADES = new Float64Array(length);
+  {
+    let at = 0;
     for (const seg of LEVEL.segments) {
-      if (s < seg.length) return seg.curve;
-      s -= seg.length;
+      for (let i = 0; i < seg.length; i++) { CURVES[at + i] = seg.curve; GRADES[at + i] = seg.grade || 0; }
+      at += seg.length;
     }
-    return 0;
-  };
+  }
+  const curveAt = (s) => s < 0 || s >= length ? 0 : CURVES[Math.floor(s)];
   const mainXs = [], mainZs = [], mainHs = [];
   {
     let x = 0, z = -LEAD_IN, h = 0;
@@ -88,14 +94,7 @@ const createTrack = () => {
   // ---- heights: a segment may have a grade (rise per metre travelled; 0.03 is a 3% climb).
   // The gradient is eased over CONFIG.gradeEase metres each way so one slope blends into the next, then summed
   // into a height for every sample. The lowest point of the road is at height 0.
-  const gradeAt = (s) => {
-    if (s < 0) return 0;
-    for (const seg of LEVEL.segments) {
-      if (s < seg.length) return seg.grade || 0;
-      s -= seg.length;
-    }
-    return 0;
-  };
+  const gradeAt = (s) => s < 0 || s >= length ? 0 : GRADES[Math.floor(s)];
   const rawGrades = mainXs.map((_, i) => gradeAt(-LEAD_IN + i * STEP));
   const hasGrades = rawGrades.some(g => g !== 0);
   // (hills and side roads can't be combined yet: the ramps and flyovers assume level ground)
@@ -204,7 +203,7 @@ const createTrack = () => {
   // writes world position into `out` (y = height above the ground), returns heading
   const toWorld = (s, lat, out) => {
     const kind = kindOf(s);
-    if (kind === MAIN) return mainWorld(s, lat, out);
+    if (kind === MAIN) return mainWorld(LOOP ? ((s % length) + length) % length : s, lat, out); // (round a loop)
     const x = exitOf(s);
     return kind === SIDE_ROAD ? sideWorld(x, s, lat, out) : flyWorld(x, kind === FLY_B, s, lat, out);
   };
@@ -226,7 +225,19 @@ const createTrack = () => {
     for (const b of bridges) if (s >= b.from && s <= b.to) return true;
     return false;
   };
-  const mainOuter = (s, side = 1) => edge(s, side) + (onBridge(s) ? Math.min(SH, CONFIG.bridgeWallInset) : SH);
+  // a side's shoulder at s: SH, but wider where the level has run-off ("runoff": { from, to, side, width }),
+  // eased in and out over runoffEase m at each end
+  const runoffs = LEVEL.runoff || [];
+  const shoulderOn = (side, s) => {
+    let w = SH;
+    for (const r of runoffs) {
+      if ((r.side === 'left' ? -1 : 1) !== side) continue;
+      const E = CONFIG.runoffEase, k = smooth((s - r.from) / E) * (1 - smooth((s - (r.to - E)) / E));
+      if (k > 0) w = Math.max(w, SH + r.width * k);
+    }
+    return w;
+  };
+  const mainOuter = (s, side = 1) => edge(s, side) + (onBridge(s) ? Math.min(SH, CONFIG.bridgeWallInset) : shoulderOn(side, s));
   // The exit / merge lane: an extra lane outside the expressway's right-hand lane, with the
   // shoulder beyond it. Before an exit it opens over `gore` metres at the start of the lane
   // zone and runs to the exit, where the side road's lane carries straight on from it and the
@@ -447,7 +458,7 @@ const createTrack = () => {
   };
   const progress = (s) => Math.max(0, Math.min(1, along(s) / length));
   const finished = (s) => isMain(s) && s >= length;
-  const inBounds = (s) => !isMain(s) || (s > -LEAD_IN + 10 && s < length + LEAD_OUT - 10);
+  const inBounds = (s) => !isMain(s) || LOOP || (s > -LEAD_IN + 10 && s < length + LEAD_OUT - 10);
 
   // a point `distance` ahead of the player for new traffic (NaN if there is no road there).
   // Between an exit and its merge that is the player's road; before the exit, either.
@@ -572,6 +583,7 @@ const createTrack = () => {
       for (let i = 0; i < at.length && !clash; i++) {
         for (let j = i + 1; j < at.length; j++) {
           if (at[j][0] - at[i][0] < 3 * halfWidth) continue;
+          if (LOOP && length - (at[j][0] - at[i][0]) < 3 * halfWidth) continue; // (round a loop, the end meets the start)
           const d = Math.hypot(at[i][1] - at[j][1], at[i][2] - at[j][2]);
           if (d < 2 * halfWidth + 2) { clash = [at[i][0], at[j][0], d]; break; }
         }
@@ -592,6 +604,15 @@ const createTrack = () => {
     }
     for (const z of [...(LEVEL.migration || []), ...(LEVEL.elephants || [])]) {
       if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.kinds ? 'migration' : 'elephants') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
+    }
+    if (LOOP) {
+      const a = {}, b = {};
+      const ha = mainWorld(0, 0, a), hb = mainWorld(length, 0, b);
+      const turned = Math.abs(((hb - ha) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI);
+      if (Math.hypot(a.x - b.x, a.z - b.z) > 1 || turned > 0.01) problems.push('laps: the road must come back round to where it starts, facing the same way (it ends ' + Math.hypot(a.x - b.x, a.z - b.z).toFixed(1) + ' m off)');
+    }
+    for (const r of runoffs) {
+      if (!(r.from < r.to) || r.from < 0 || r.to > length || !(r.width > 0) || (r.side !== 'left' && r.side !== 'right')) problems.push('runoff at ' + r.from + ': from before to, on the road, a width, side left or right');
     }
     for (const m of mud) {
       if (!(m.from < m.to) || m.from < 0 || m.to > length) problems.push('mud at ' + m.from + '-' + m.to + ': from before to, on the road');
@@ -707,7 +728,7 @@ const createTrack = () => {
   }
 
   return {
-    length, start: -LEAD_IN, end: length + LEAD_OUT, problems,
+    length, start: -LEAD_IN, end: length + LEAD_OUT, loop: LOOP, problems,
     laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,

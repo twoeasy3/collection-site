@@ -1025,15 +1025,30 @@ const buildRoad = () => {
 
   const beside = (side, s, d) => side < 0 ? Track.lo(s) - d : Track.hi(s) + d; // d metres off the pavement
   // one draw call per kind of thing. list entries: [s, lat, y, sx, sy, sz]
+  // (an entry with a 7th, [s1, lat1], is a run of wall or the like from (s, lat) to there: placed
+  // between the two in the world, turned along the line from one to the other and as long as it,
+  // so it follows an edge that swings out from the road, a run-off's, and meets the next one)
+  const placeEntry = ([s, lat, y, sx, sy, sz, to]) => {
+    if (to) {
+      const a = {}, b = {};
+      Track.toWorld(s, lat, a);
+      Track.toWorld(to[0], to[1], b);
+      dummy.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
+      dummy.position.set((a.x + b.x) / 2, (a.y + b.y) / 2 + y, (a.z + b.z) / 2);
+      dummy.scale.set(sx, sy, Math.hypot(b.x - a.x, b.z - a.z) + 0.02);
+    } else {
+      dummy.rotation.y = Track.toWorld(s, lat, tmp);
+      dummy.position.set(tmp.x, tmp.y + y, tmp.z);
+      dummy.scale.set(sx, sy, sz);
+    }
+    dummy.updateMatrix();
+  };
   const instances = (geometry, color, list, glowing) => {
     if (!list.length) return;
     const material = glowing ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshLambertMaterial({ color });
     const mesh = new THREE.InstancedMesh(geometry, material, list.length);
-    list.forEach(([s, lat, y, sx, sy, sz], i) => {
-      dummy.rotation.y = Track.toWorld(s, lat, tmp);
-      dummy.position.set(tmp.x, tmp.y + y, tmp.z);
-      dummy.scale.set(sx, sy, sz);
-      dummy.updateMatrix();
+    list.forEach((entry, i) => {
+      placeEntry(entry);
       mesh.setMatrixAt(i, dummy.matrix);
     });
     levelGroup.add(mesh);
@@ -1357,7 +1372,10 @@ const buildRoad = () => {
     // pavements, and kerbs on the corners.
     const p = {}, night = !!theme.night;
     const glowMat = (color) => new THREE.MeshBasicMaterial({ color });
+    // (a level with its real landmarks, "landmarks", puts them where they are, and keeps the town clear of them)
+    const marks = LEVEL.landmarks || [], mark = (kind) => marks.find(l => l.kind === kind);
     const clearOf = (x, z, margin) => Track.mainDistance(x, z) > Math.max(Track.hi(0), -Track.lo(0)) + margin &&
+      !marks.some(l => Math.hypot(x - l.x, z - l.z) < l.r + margin) &&
       !Track.junctions.some(jn => jn.arms.some(arm => {
         const dx = x - jn.centre.x, dz = z - jn.centre.z, u = dx * arm.dir.x + dz * arm.dir.z;
         const v = Math.abs(-dx * arm.dir.z + dz * arm.dir.x);
@@ -1373,8 +1391,8 @@ const buildRoad = () => {
         if (night) {
           for (let s = from; s + 4 <= a; s += 4) {
             if (Track.onBridge(s) || Track.onBridge(s + 4)) continue; // (a bridge has its own sides)
-            walls.push([s + 2, beside(side, s + 2, 0.3), 0.55, 0.5, 1.1, 4.02]);
-            fences.push([s + 2, beside(side, s + 2, 0.32), 2.9, 0.03, 3.6, 4.02]);
+            walls.push([s, beside(side, s, 0.3), 0.55, 0.5, 1.1, 4.02, [s + 4, beside(side, s + 4, 0.3)]]);
+            fences.push([s, beside(side, s, 0.32), 2.9, 0.03, 3.6, 4.02, [s + 4, beside(side, s + 4, 0.32)]]);
             posts.push([s, beside(side, s, 0.32), 2.9, 0.1, 3.6, 0.1]);
           }
         }
@@ -1386,11 +1404,8 @@ const buildRoad = () => {
       instances(cube, 0x4a4f57, posts);
       // (the catch fence: a see-through mesh)
       const fence = new THREE.InstancedMesh(cube, new THREE.MeshBasicMaterial({ color: 0x9aa4ae, transparent: true, opacity: 0.3, depthWrite: false }), fences.length);
-      fences.forEach(([s, lat, y, sx, sy, sz], i) => {
-        dummy.rotation.y = Track.toWorld(s, lat, tmp);
-        dummy.position.set(tmp.x, tmp.y + y, tmp.z);
-        dummy.scale.set(sx, sy, sz);
-        dummy.updateMatrix();
+      fences.forEach((entry, i) => {
+        placeEntry(entry);
         fence.setMatrixAt(i, dummy.matrix);
       });
       levelGroup.add(fence);
@@ -1408,21 +1423,35 @@ const buildRoad = () => {
       instances(cube, 0x3a3f47, arms);
       instances(cube, 0xffffff, lamps, true);
       // kerbs, red and white, along both edges of every bend that isn't a junction's
-      const red = flat(0xd62a2a), white = flat(0xf2f2f2);
+      // (blocks of each colour as one instanced mesh: a circuit is bends nearly all the way round)
+      const redKerbs = [], whiteKerbs = [];
       let at = 0;
       for (const seg of LEVEL.segments) {
         const from = at, to = at + seg.length;
         at = to;
-        if (!seg.curve || Track.junctions.some(jn => from < jn.end + 1 && to > jn.s - 1)) continue;
+        if (Math.abs(seg.curve) < 0.004 || Track.junctions.some(jn => from < jn.end + 1 && to > jn.s - 1)) continue;
+        // (each block from one point on the kerb's line to the next, as the walls are, so that round a
+        // bend they meet end to end; the white a hair higher, so where they do still overlap, on the
+        // inside of a tight one, neither flickers through the other)
         for (let s = from, k = 0; s < to; s += 2.5, k++) {
-          const e = Math.min(to, s + 2.5);
-          add(buildStrip(s, e, Track.laneHi, (q) => Track.laneHi(q) + 1, 0.025, 1), k % 2 ? white : red);
-          add(buildStrip(s, e, (q) => Track.laneLo(q) - 1, Track.laneLo, 0.025, 1), k % 2 ? red : white);
+          const e = Math.min(to, s + 2.5), y = (white) => white ? 0.034 : 0.03;
+          (k % 2 ? whiteKerbs : redKerbs).push([s, Track.laneHi(s) + 0.5, y(k % 2), 1, 0.06, 2.5, [e, Track.laneHi(e) + 0.5]]);
+          (k % 2 ? redKerbs : whiteKerbs).push([s, Track.laneLo(s) - 0.5, y(!(k % 2)), 1, 0.06, 2.5, [e, Track.laneLo(e) - 0.5]]);
         }
       }
+      instances(cube, 0xd62a2a, redKerbs);
+      instances(cube, 0xf2f2f2, whiteKerbs);
     }
     const trunks = [], canopies = [], towers = [], glass = [], blocks = [], bands = [], shops = [], roofs = [];
+    // (none along a circuit's start / finish straight: the straight either side of the line)
+    const straight = (q) => Math.abs(Track.bend(q)) < 0.002;
+    let straightTo = 0, straightFrom = Track.length;
+    if (Track.loop) {
+      while (straightTo < Track.length && straight(straightTo)) straightTo += 2;
+      while (straightFrom > 0 && straight(straightFrom - 1)) straightFrom -= 2;
+    }
     for (let s = Track.start; s < Track.end; s += 16) {
+      if (Track.loop && (s < straightTo || s > straightFrom)) continue;
       for (const side of [-1, 1]) {
         const lat = beside(side, s, 4.5);
         Track.toWorld(s, lat, p);
@@ -1470,10 +1499,11 @@ const buildRoad = () => {
     // (glowing, at night)
     const trunkMat = new THREE.MeshLambertMaterial({ color: 0x7b3fa8, emissive: night ? 0x3a1060 : 0x000000 });
     const crownMat = night ? glowMat(0xff4fd8) : new THREE.MeshLambertMaterial({ color: 0xd9468f });
-    for (let k = 0, tries = 0; k < 7 && tries < 60; tries++) {
-      const at = Track.length * 0.5 + Math.random() * 120 - 60;
-      Track.toWorld(at, beside(1, at, 45 + Math.random() * 60), p);
-      if (!clearOf(p.x, p.z, 12)) continue;
+    for (let k = 0, tries = 0; k < (mark('gardens') ? 14 : 7) && tries < 120; tries++) {
+      const at = Track.length * 0.5 + Math.random() * 120 - 60, garden = mark('gardens');
+      if (garden) Object.assign(p, { x: garden.x + (Math.random() - 0.5) * garden.r * 2, y: 0, z: garden.z + (Math.random() - 0.5) * garden.r * 2 });
+      else Track.toWorld(at, beside(1, at, 45 + Math.random() * 60), p);
+      if (!garden && !clearOf(p.x, p.z, 12)) continue;
       const h = 22 + Math.random() * 26;
       const trunk = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 1.2, h, 10), trunkMat);
       trunk.position.set(p.x, p.y + h / 2, p.z);
@@ -1484,8 +1514,8 @@ const buildRoad = () => {
     }
     // Marina Bay Sands by the finish, on the left: three towers with the boat of a park across their tops
     for (let tries = 0, at = Track.length - 40; tries < 20; tries++, at -= 15) {
-      const h = Track.toWorld(at, beside(-1, at, 120), p);
-      if (!clearOf(p.x, p.z, 70)) continue;
+      const m = mark('mbs'), h = m ? (Object.assign(p, { x: m.x, y: 0, z: m.z }), m.rot) : Track.toWorld(at, beside(-1, at, 120), p);
+      if (!m && !clearOf(p.x, p.z, 70)) continue;
       const fx = Math.sin(h), fz = Math.cos(h);
       const white = new THREE.MeshLambertMaterial({ color: 0xe9ecee, emissive: night ? 0x5a5648 : 0x000000 });
       for (const k of [-1, 0, 1]) {
@@ -1503,8 +1533,8 @@ const buildRoad = () => {
     // the Singapore Flyer near the start, off to the left: a great wheel standing side-on to the
     // road, on a pair of legs, with its capsules round the rim (lit, at night)
     for (let tries = 0, at = Math.min(260, Track.length * 0.1); tries < 20; tries++, at += 20) {
-      const h = Track.toWorld(at, beside(-1, at, 150), p);
-      if (!clearOf(p.x, p.z, 25)) continue;
+      const m = mark('flyer'), h = m ? (Object.assign(p, { x: m.x, y: 0, z: m.z }), m.rot) : Track.toWorld(at, beside(-1, at, 150), p);
+      if (!m && !clearOf(p.x, p.z, 25)) continue;
       const wheel = new THREE.Group(), R = 70, HUB = 85;
       const steel = night ? glowMat(0x9fe8ff) : new THREE.MeshLambertMaterial({ color: 0xe8ecef });
       const rim = new THREE.Mesh(new THREE.TorusGeometry(R, 1.2, 8, 72), steel);
@@ -1535,6 +1565,63 @@ const buildRoad = () => {
       wheel.rotation.y = h - Math.PI / 2; // (its face towards the road)
       levelGroup.add(wheel);
       break;
+    }
+    // ...and the rest of a level's real landmarks, and its grandstands and pits
+    const lit = (color, glow) => new THREE.MeshLambertMaterial({ color, emissive: night ? glow : 0x000000 });
+    for (const l of marks) {
+      const g = new THREE.Group();
+      g.position.set(l.x, 0, l.z);
+      g.rotation.y = l.rot || 0;
+      const put = (geometry, material, x, y, z) => { const mesh = new THREE.Mesh(geometry, material); mesh.position.set(x, y, z); g.add(mesh); return mesh; };
+      if (l.kind === 'bay') { // the water of Marina Bay, lights shimmering on it at night
+        const water = put(new THREE.CircleGeometry(l.r, 64).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: night ? 0x17304d : 0x2d6f96, depthWrite: false }), 0, -0.03, 0);
+        water.renderOrder = -1.8;
+      } else if (l.kind === 'esplanade') { // Esplanade - Theatres on the Bay: two spiky "durian" domes
+        for (const [dx, r] of [[-28, 30], [30, 26]]) {
+          put(new THREE.SphereGeometry(r, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), lit(0xb98d52, 0x4a3218), dx, 0, 0).scale.set(1, 0.7, 1.25);
+          const spikes = new THREE.InstancedMesh(new THREE.ConeGeometry(1.2, 3.5, 4), lit(0x8f6a3c, 0x2a1a0a), 90);
+          const d = new THREE.Object3D();
+          for (let k = 0; k < 90; k++) {
+            const a = Math.random() * Math.PI * 2, e = Math.random() * 1.3;
+            d.position.set(dx + Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r * 0.7, Math.sin(a) * Math.cos(e) * r * 1.25);
+            d.lookAt(dx, -r, 0);
+            d.rotateX(-Math.PI / 2);
+            d.updateMatrix();
+            spikes.setMatrixAt(k, d.matrix);
+          }
+          g.add(spikes);
+        }
+      } else if (l.kind === 'fullerton') { // the Fullerton Hotel: a great neoclassical block, columns along its front
+        put(new THREE.BoxGeometry(70, 26, 60), lit(0xe6dcc6, 0x5a4f3a), 0, 13, 0);
+        put(new THREE.BoxGeometry(74, 3, 64), lit(0xd8ccb2, 0x4a4030), 0, 27.5, 0);
+        for (let k = -6; k <= 6; k++) put(new THREE.CylinderGeometry(1, 1, 18, 8), lit(0xf2ecdc, 0x6a6048), k * 5, 9, 31);
+        put(new THREE.BoxGeometry(14, 8, 14), lit(0xffe2a0, 0x8a6a30), 0, 33, 0); // (its lit crown)
+      } else if (l.kind === 'merlion') { // the Merlion, spouting into the bay
+        put(new THREE.CylinderGeometry(2.5, 3.2, 3, 10), lit(0xc9c3b6, 0x403c34), 0, 1.5, 0);
+        put(new THREE.CylinderGeometry(1.6, 2.2, 5, 10), lit(0xf2f0ea, 0x6a6860), 0, 5.5, 0);
+        put(new THREE.SphereGeometry(1.8, 12, 10), lit(0xf2f0ea, 0x6a6860), 0, 8.8, 0.4);
+        const spout = put(new THREE.CylinderGeometry(0.3, 0.9, 9, 8, 1, true), new THREE.MeshBasicMaterial({ color: 0xcfefff, transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false }), 0, 7, 5);
+        spout.rotation.x = Math.PI / 2.6;
+      } else if (l.kind === 'padang') { // the Padang: a green field, the pavilion at one end
+        put(new THREE.PlaneGeometry(l.r * 1.6, l.r * 1.1).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x3f7a3a }), 0, 0.02, 0);
+        put(new THREE.BoxGeometry(40, 10, 16), lit(0xf2efe6, 0x5a5850), 0, 5, -l.r * 0.65);
+        put(new THREE.BoxGeometry(44, 2, 20), lit(0x8a3a2a, 0x2a0a06), 0, 11, -l.r * 0.65);
+      }
+      levelGroup.add(g);
+    }
+    for (const st of LEVEL.stands || []) { // grandstands, stepped and roofed (or the pit garages, lit within)
+      const side = st.side === 'left' ? -1 : 1, rows = [], roofs = [];
+      for (let s = st.from; s < st.to; s += 10) {
+        if (st.pits) {
+          rows.push([s + 5, beside(side, s + 5, 8), 4, 10, 8, 9.6]);
+          roofs.push([s + 5, beside(side, s + 5, 4.1), 3.2, 0.2, 5, 8], [s + 5, beside(side, s + 5, 8), 8.4, 11, 0.8, 10]);
+        } else {
+          for (let k = 0; k < 5; k++) rows.push([s + 5, beside(side, s + 5, 4 + k * 2.2), 0.8 + k * 1.4, 2.2, 1.6 + k * 2.8, 9.8]);
+          roofs.push([s + 5, beside(side, s + 5, 9), 13, 12, 0.5, 10]);
+        }
+      }
+      instances(cube, st.pits ? 0xe9ecef : 0x2a5f9c, rows);
+      instances(cube, st.pits ? (night ? 0xffe9b0 : 0x9aa3ab) : 0xe9ecef, roofs, st.pits && night);
     }
   } else if (theme.scenery === 'zones') {
     buildZones(beside, instances, add, flat, { cube, tube, cone });

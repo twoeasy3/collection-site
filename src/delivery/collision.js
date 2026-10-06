@@ -582,7 +582,7 @@ export const Collision = (() => {
       if (!a.active || a.shield > 0 || a.ghost > 0 || a.arrest >= 0 || a.junction) continue;
       for (let j = i + 1; j < bodies.length; j++) {
         const b = bodies[j];
-        if (!b.active || b.arrest >= 0 || b.junction) continue;
+        if (!b.active || b.shield > 0 || b.arrest >= 0 || b.junction) continue; // (a racer just set down: untouchable)
         // broad phase: nearby along the track and within neighbouring lanes
         if (Math.abs(b.s - a.s) > CONFIG.broadPhaseDistance ||
             Math.abs(b.lat - a.lat) > CONFIG.laneWidth * 1.5) continue;

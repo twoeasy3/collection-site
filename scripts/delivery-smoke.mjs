@@ -685,9 +685,9 @@ try {
   section('levels list');
   {
     const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
-    check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo,grand-prix' && levels.levelLabel(main - 1) === String(main) &&
-      levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 2) === 'S3' && levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
-      `the special levels come last, as S1, S2 and S3: ${labels.slice(main - 1).join(', ')}`);
+    check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo,grand-prix,marina-bay' && levels.levelLabel(main - 1) === String(main) &&
+      levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 3) === 'S4' && levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
+      `the special levels come last, as S1 to S4: ${labels.slice(main - 1).join(', ')}`);
   }
 
   section('hesitation, signals and lights');

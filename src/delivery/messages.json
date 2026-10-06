@@ -27,7 +27,9 @@
   },
   "events": {
     "emergency": ["Emergency vehicle oncoming!! Give way!"],
-    "wave": ["WAVE INCOMING!! Get out of the water!"]
+    "wave": ["WAVE INCOMING!! Get out of the water!"],
+    "lap": ["Lap complete!"],
+    "finalLap": ["FINAL LAP!"]
   },
   "zones": {
     "sydney": ["Sydney"],

@@ -6,11 +6,12 @@
   "car": "f1",
   "flow": "north",
   "shoulderTimer": false,
-  "time": 150,
+  "time": 280,
   "tip": 300,
   "traffic": {},
   "trafficCount": 0,
   "oncomingCount": 0,
+  "laps": 3,
   "grid": { "count": 29, "kind": "f1", "gap": 8, "pace": { "min": 0.96, "max": 1.02 } },
   "noPackages": true,
   "understeer": true,
@@ -43,7 +44,10 @@
     { "length": 40, "curve": 0.0174533 },
     { "length": 30, "curve": 0 },
     { "length": 20, "curve": -0.0174533 },
-    { "length": 300, "curve": 0 }
+    { "length": 300, "curve": 0 },
+    { "length": 6, "curve": 0 },
+    { "length": 70, "curve": 0.022439948 },
+    { "length": 182, "curve": 0 }
   ],
   "junctions": [
     { "s": 520, "turn": "right" },
@@ -62,8 +66,10 @@
     { "from": 2800, "to": 3040 }
   ],
   "pickups": [
+    { "type": "wrench", "s": 450, "lane": 1 },
     { "type": "wrench", "s": 950, "lane": 3 },
     { "type": "wrench", "s": 1950, "lane": 2 },
+    { "type": "wrench", "s": 2450, "lane": 2 },
     { "type": "wrench", "s": 2900, "lane": 1 },
     { "type": "wrench", "s": 3500, "lane": 2 }
   ]

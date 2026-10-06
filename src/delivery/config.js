@@ -10,6 +10,7 @@ export const CONFIG = {
 
   // road features: sizes shared by every level (where they are is in LEVELS)
   taper: 90,               // length of each narrowing / widening
+  runoffEase: 25,          // m a stretch of run-off (a level's "runoff") eases in and out over
   gradeEase: 60,           // m each way over which one slope is blended into the next (crests and dips)
   bridgeWallInset: 0.4,    // gap between the outer lane line and a bridge's structure
   ramps: {                 // exits, merges and their flyovers
@@ -101,7 +102,8 @@ export const CONFIG = {
   // sharpest bend within aiLookout m; their tyres hold aiTyres times the grip before they slide, and
   // they pull away aiPickup times as hard as ordinary traffic; and a car going into a wall at more than wallFrom m/s
   // sideways takes wallDamage health per m/s of it, as it hits
-  race: { understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5 },
+  // A racer wrecked is set back down where it was wrecked respawnTime s later, untouchable for respawnShield s.
+  race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5 },
   // Ice (a level's "ice": patches on the road). On it the player's car slews round as it arrives
   // (only the look of it: yaw never changes where a car goes), brakes and steers with less grip,
   // and in a bend it understeers: it slides to the outside, the more so the faster, heavier and

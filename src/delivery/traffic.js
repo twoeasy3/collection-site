@@ -264,7 +264,8 @@ export const Traffic = (() => {
     // (however far ahead or behind), throws nothing, and goes as fast as its pace allows, a share of
     // the player's car's top speed
     if (LEVEL.grid) {
-      const G = LEVEL.grid, [first, last] = Track.laneRange(1, 0), lanes = [first + 1, Math.min(last, first + 2)];
+      // (two by two in the middle lanes; on a two-lane road, in both)
+      const G = LEVEL.grid, [first, last] = Track.laneRange(1, 0), lanes = last - first >= 2 ? [first + 1, first + 2] : [first, last];
       const top = CARS_BY_ID[LEVEL.car]?.maxSpeed ?? 40;
       for (let k = 0; k < G.count; k++) {
         const car = cars.find(c => !c.active && c.unused);
@@ -274,7 +275,7 @@ export const Traffic = (() => {
         car.s = (G.from ?? 14) + (G.count - 1 - k) * G.gap;
         outfit(car, G.kind, lanes[k % 2]);
         Object.assign(car, { fixed: true, racer: true, evil: k % 2 === 1, defiant: false, viaSide: false, hesitant: false,
-          vs: 0, baseSpeed: top * between(G.pace), throwTimer: Infinity, paint: Math.floor(Math.random() * 1000) });
+          vs: 0, baseSpeed: top * between(G.pace), throwTimer: Infinity, paint: Math.floor(Math.random() * 1000), laps: 0 });
         car.emotion = pickEmotion(car.evil);
         car.mood = MOOD_START[car.emotion];
       }
@@ -594,7 +595,7 @@ export const Traffic = (() => {
       car.unused = i >= count + oncoming; // (never spawned on this level)
       car.fixed = false;
       // (and nothing left over from the last run, on a car that may not be dealt out again for a while)
-      Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, racer: false, slideVel: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
+      Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, racer: false, slideVel: 0, respawnIn: 0, shield: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
     });
     placeFixed();
     nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
@@ -616,6 +617,16 @@ export const Traffic = (() => {
         driveJunction(car, dt);
         continue;
       }
+      if (!car.active && car.racer) { // a racer wrecked: back in the race where it was wrecked, a moment later
+        if ((car.respawnIn = (car.respawnIn || CONFIG.race.respawnTime) - dt) <= 0) {
+          const [first, last] = Track.laneRange(1, car.s), lane = clamp(Track.nearestLane(car.lat, car.s), first, last);
+          Object.assign(car, { active: true, respawnIn: 0, health: car.maxHealth, smoke: 0, vs: 0, lane, lat: Track.laneOffset(lane, car.s),
+            latVel: 0, slideVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, rival: null, pendingLane: null, signal: 0,
+            shield: CONFIG.race.respawnShield, wreckedByPlayer: false });
+        }
+        continue;
+      }
+      if (car.racer) car.shield = Math.max(0, (car.shield || 0) - dt); // (untouchable, just set down)
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
         if (!car.fixed && !car.unused && mix().length) {
@@ -623,6 +634,10 @@ export const Traffic = (() => {
           if (!(behind && spawnBehind(car))) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
         }
         continue;
+      }
+      if (car.racer && Track.loop && car.s >= Track.length) { // (a racer over the line: a lap done, round again)
+        car.s -= Track.length;
+        car.laps++;
       }
       const ahead = Track.along(car.s) - Track.along(Player.s); // along the course, whichever road
       if (car.fixed && !car.racer && ahead > CONFIG.spawnMax) continue; // still waiting where the level put it
@@ -878,12 +893,13 @@ export const Traffic = (() => {
           car.lane = clamp(rival.isPlayer ? Track.nearestLane(rival.lat, rival.s) : rival.lane, first, last);
           target = car.baseSpeed * ((rival.s - car.s) * car.dir > 0 ? 1.35 : 0.7);
         }
-        // (a racer, at racing speed, holds back further the faster it is closing)
         let held = false;
         for (const o of cars) {
           if (o === car || !o.active || o === rival || o.junction) continue;
           const gap = (o.s - car.s) * car.dir;
-          const room = o.hl + car.hl + 8 + (car.racer ? Math.max(0, Math.abs(car.vs) - Math.abs(o.vs)) * 1.5 : 0);
+          // (a racer, at racing speed, holds back further the faster it is closing; but sitting on the
+          // grid it keeps close behind, and gets away with the rest)
+          const room = o.hl + car.hl + (car.racer ? 2 + Math.max(0, Math.abs(car.vs) - Math.abs(o.vs)) * 1.5 : 8);
           if (gap > 0 && gap < room && Math.abs(o.lat - car.lat) < o.hw + car.hw) {
             target = Math.min(target, Math.abs(o.vs) * 0.9);
             held = true;

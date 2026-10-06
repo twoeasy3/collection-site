@@ -42,7 +42,7 @@ const SAMPLES = {
   explode: ['Crash 1', 'Head On Collision'],  // an obstacle, or a light vehicle wrecked
   explodeBig: ['Crash 1', 'Head On Collision'], // a heavy vehicle wrecked
   crash: ['Short Crash with Glass', 'Collide1'],
-  crashHard: ['Crash 1', 'Short Crash Side Swipe', 'Collide1'],       // an impact of CONFIG.hardCrash or more
+  crashHard: ['Short Crash Side Swipe', 'Collide1'],       // an impact of CONFIG.hardCrash or more
   sideswipe: 'Short Crash Side Swipe',
   headOn: 'Head On Collision',
   heavy: ['Crash 1', 'Head On Collision'],    // TANK RAGE flattening something

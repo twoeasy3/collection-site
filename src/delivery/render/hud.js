@@ -43,7 +43,7 @@ export const updateHud = () => {
   hudTimer.style.color = hudTip.style.color = late ? '#ff5a4f' : '';
   hudTip.textContent = (late ? 'TIP COUNTDOWN  $' : 'TIP $') + (Game.state === 'start' ? LEVEL.tip : Game.tip).toFixed(2);
   hudSpeed.firstChild.nodeValue = kmh(Player.speed) + ' ';
-  hudProgress.style.width = Track.progress(Player.s) * 100 + '%';
+  hudProgress.style.width = Game.progress * 100 + '%';
   let effects = '';
   if (Player.active) {
     if (Player.turbo > 0) effects += 'TURBO ' + Player.turbo.toFixed(1) + '  ';
@@ -86,8 +86,11 @@ export const updateHud = () => {
       : Math.min(1, Math.max(0, (line.time - age) / CONFIG.messageFade));
   });
   // (in a race, the player's place in it: one more than the racers ahead)
+  // (round a lapped circuit, the laps count first)
+  const raced = (laps, s) => (LEVEL.laps ? laps * Track.length : 0) + Track.along(s);
   hudBusts.textContent = LEVEL.grid
-    ? 'POSITION ' + (1 + Traffic.cars.filter(c => c.active && c.racer && Track.along(c.s) > Track.along(Player.s)).length) + ' / ' + (LEVEL.grid.count + 1)
+    ? 'POSITION ' + (1 + Traffic.cars.filter(c => c.racer && raced(c.laps || 0, c.s) > raced(Game.lap, Player.s)).length) + ' / ' + (LEVEL.grid.count + 1) +
+      (LEVEL.laps ? '   LAP ' + Math.min(LEVEL.laps, Game.lap + 1) + ' / ' + LEVEL.laps : '')
     : 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
   // a police car near enough to see what the player does (on the shoulder, a bust on the spot; not
   // on a level without the shoulder rule, nor for a tank, which nobody busts)

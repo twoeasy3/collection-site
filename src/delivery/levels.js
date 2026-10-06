@@ -48,6 +48,15 @@
 //   understeer true = every car understeers in bends as on ice (and none slows for a bend by itself)
 //   wallDamage true = a car going sideways into the road's edge takes damage (see CONFIG.race)
 //   nudge      true = a car steering into another's side knocks it aside
+//   landmarks  { kind, x, z, r, rot }: landmarks where they really are, in the world (Singapore's look:
+//              'bay', 'flyer', 'mbs', 'esplanade', 'fullerton', 'merlion', 'padang', 'gardens'); r m
+//              round each is kept clear of the town; rot: which way it faces
+//   shoulder   m of shoulder each side of the road, if not CONFIG.shoulder (a street circuit's walls close by)
+//   runoff     { from, to, side, width }: the shoulder on that side `width` m wider over that stretch (run-off
+//              on the outside of a corner, where a circuit has it), easing in and out
+//   stands     { from, to, side, pits }: grandstands along that stretch (pits: the pit garages instead)
+//   laps       the number of laps of a race round a circuit: the road must come back round to where it
+//              starts, facing the same way (a closed loop, checked as the level loads)
 //   traffic    which vehicles turn up as traffic and how often, relative to each other:
 //              { "car": 0.44, "van": 0.18, "police": 0.1 }. The kinds are those in
 //              CONFIG.vehicles. An empty list ({}) means no traffic at all.
@@ -162,12 +171,13 @@ import safari from './levels/safari.json';
 import airport from './levels/airport.json';
 import construction from './levels/construction.json';
 import grandPrix from './levels/grand-prix.json';
+import marinaBay from './levels/marina-bay.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction];
-export const SPECIAL_LEVELS = [allHeck, ufo, grandPrix];
+export const SPECIAL_LEVELS = [allHeck, ufo, grandPrix, marinaBay];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones
 export const levelLabel = (index) => index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (index - MAIN_LEVELS.length + 1);

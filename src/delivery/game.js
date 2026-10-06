@@ -46,6 +46,8 @@ export const Game = {
   onLoad: [],   // called after a level is loaded (rendering builds its scenery here)
   onFinish: [], // called when a run ends (the menu refreshes its cards)
 
+  // how far through the run the player is, 0 .. 1 (on a lapped level, all its laps)
+  get progress() { return LEVEL.laps ? (this.lap + Track.progress(Player.s)) / LEVEL.laps : Track.progress(Player.s); },
   // seconds left on the clock; below zero is the tip countdown
   get remaining() { return this.allowed - this.time; },
   // the level's tip: whole until the clock hits zero, then draining to nothing over the tip countdown
@@ -125,6 +127,7 @@ export const Game = {
     this.screensaver = false;
     this.tankPieces = Progress.data.tankPieces || 0; // (the run's own, until it is settled)
     this.zone = null; // the level zone the player is in (see update)
+    this.lap = 0;     // laps done, on a lapped level ("laps")
     Message.clear();
     UfoStrike.reset();
     BulletTrain.reset();
@@ -165,7 +168,7 @@ export const Game = {
     }[outcome];
     resultTime.textContent = outcome === 'delivered' ? 'Tip ' + tip
       : outcome === 'late' ? 'Tip ' + tip + ' of $' + LEVEL.tip
-      : Math.floor(Track.progress(Player.s) * 100) + '% of the way';
+      : Math.floor(this.progress * 100) + '% of the way';
     resultNote.textContent = (outcome === 'delivered' ? formatTime(this.remaining) + ' to spare  |  ' : '') +
       (this.evil ? 'Evil' : 'Good') + '  |  Wrecked: ' + this.wrecks + '  |  Busted: ' + this.busts +
       '  |  Bank $' + Progress.data.money.toFixed(2);
@@ -275,6 +278,13 @@ export const Game = {
     Collision.check();
 
     if (this.state === 'playing') {
+      // a lapped level: over the line, a lap done, and round again (the pickups back out), until the last
+      if (LEVEL.laps && Player.active && Track.finished(Player.s) && this.lap < LEVEL.laps - 1) {
+        this.lap++;
+        Player.s -= Track.length;
+        Pickups.reset();
+        Message.say('events', this.lap === LEVEL.laps - 1 ? 'finalLap' : 'lap');
+      }
       if (Player.active && Track.finished(Player.s)) this.finish(this.remaining >= 0 ? 'delivered' : 'late');
       else if (this.remaining <= -CONFIG.tipCountdown) this.finish('timeout'); // tip countdown ran out
     }
