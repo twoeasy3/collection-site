@@ -104,6 +104,29 @@ export const CONFIG = {
     yawKick: 2.5,          // rad/s it slews round as it hits the ice, at speed
     spinPerSpeed: 0.02,    // chance, per m/s of its speed, that a traffic car hitting the ice spins out
   },
+  // The tide (a level's "tide": see tide.js): the sea coming in over the player's side of the road.
+  // In the water a car is slowed by how badly it wades: `crossing` times what a railway track costs
+  // it (see railCrossing, and a car's "crossing" in cars.js), and steers with less grip; in deep
+  // water it is damaged as well, the more so the worse it wades. Good drivers move out of the
+  // water's way; evil ones plough on through, and a wave that catches a car in deep water stalls it.
+  tide: {
+    ramp: 3.5,             // m past the water's edge to full depth
+    wet: 0.08,             // depth (0 = dry .. 1 = full) up to which the road is only wet
+    deep: 0.5,             // depth from which it is deep water
+    crossing: 2,           // times the railway track's slowing that the water costs a car
+    slowest: 0.12,         // share of its top speed even a car that wades worst of all keeps
+    damage: 30,            // health a second deep water costs a car, x (1 - its crossing)
+    steerGrip: 0.6,        // share of its steering's grip a car keeps in the water
+    trafficPace: 0.45,     // share of its speed a traffic car keeps in deep water
+    warning: 3,            // s from a wave being warned of to its coming in over the road...
+    rise: 0.8,             // ...s it takes to rush in...
+    hold: 1.6,             // ...it stays...
+    fall: 2,               // ...and it takes to drain away
+    stretch: 240,          // m of road a wave floods, centred where the player will be when it comes in
+    shove: 6,              // m/s^2 a wave rushing in pushes a car in the water towards the centre line
+    overtime: 1.3,         // the tide rises on past the level's `end` into the tip countdown, up to this share of the clock
+    oncomingShield: 4,     // extra s of shield for a car the helicopter can only set down on the oncoming side
+  },
   // Junctions (a level's "junctions"): crossroads where the road turns right or left, or goes
   // straight on. There is only ever the one route: the arms it doesn't take are barred to the
   // player by glowing arrows, but traffic leaves the road down them, through the arrows, and is

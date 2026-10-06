@@ -3,7 +3,8 @@
 // sfx() / sfxAt() in physics.js); effects.js passes those here, quieter the further away `s` is,
 // and plays 'explode' / 'explodeBig' / 'burst' / 'gift' for its own visual effects. Each name
 // plays a WAV from SAMPLES, and a name with no file there ('' or left out) is silent. Until a
-// file has loaded, a name that has a synthesised version in SYNTH plays that instead.
+// file has loaded, a name that has a synthesised version in SYNTH plays that instead (and a name
+// set to null in SAMPLES only ever plays that).
 // Loops fed every frame from main.js: the engine (its WAV picked by the car, pitched by speed),
 // the police siren, the helicopter and the frog.
 // Browsers only allow sound after the player has clicked or pressed a key, so nothing is
@@ -73,6 +74,8 @@ const SAMPLES = {
   mystery: 'Mystery',           // the secret bus
   trainHorn: { seq: ['Big Rig Horn 1', 'Big Rig Horn 1'] }, // the bullet train sets off up the road...
   trainPass: 'Horn Doppler Pass By', // ...and goes by the player
+  wave: null,                   // a wave warned of (the tide: no file, only its stand-in)...
+  waveCrash: null,              // ...and breaking over the road
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -260,6 +263,9 @@ Object.assign(SYNTH, {
   // the bullet train: a long two-note horn, and a rushing roar as it goes by
   trainHorn: (v) => [311, 370].forEach((f) => tone(f, f * 0.97, 1.4, 0.18 * v, 'sawtooth')),
   trainPass: (v) => { noise(300, 2600, 0.9, 0.6 * v, 'bandpass'); tone(370, 250, 0.9, 0.2 * v, 'sawtooth'); },
+  // the tide: a wave's rumble building out at sea, and its roar as it breaks over the road
+  wave: (v) => { noise(120, 900, 2.4, 0.45 * v); noise(400, 2000, 2.2, 0.15 * v, 'bandpass', 0.6); },
+  waveCrash: (v) => { noise(2600, 300, 1.6, 0.6 * v); noise(700, 150, 1.4, 0.4 * v, 'lowpass', 0.1); },
 });
 
 export const Sound = {
@@ -268,9 +274,9 @@ export const Sound = {
     // the same sound many times in an instant (a pile-up) would just be a loud click
     if (ctx.currentTime - (lastPlayed[name] || -1) < 0.05) return;
     const entry = SAMPLES[name], v = Math.min(1, volume);
-    if (!entry) return; // no file for it ('' or left out): silent
-    const files = typeof entry === 'string' ? [entry] : Array.isArray(entry) ? [pick(entry)] : entry.seq;
-    if (files.every(f => buffers[f])) {
+    if (!entry && !(entry === null && SYNTH[name])) return; // no file for it ('' or left out): silent; null: its stand-in
+    const files = !entry ? [] : typeof entry === 'string' ? [entry] : Array.isArray(entry) ? [pick(entry)] : entry.seq;
+    if (files.length && files.every(f => buffers[f])) {
       let at = 0;
       for (const f of files) at += sample(f, v, at);
     } else if (SYNTH[name]) {

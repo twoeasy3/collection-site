@@ -22,6 +22,7 @@ import { syncHeadlights, syncTrafficBeams } from './render/headlights.js';
 import { syncUfoStrike } from './render/ufostrike.js';
 import { syncBulletTrain } from './render/bullettrain.js';
 import { syncJunctions } from './render/junctions.js';
+import { syncTide } from './render/tide.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
@@ -125,6 +126,7 @@ const frame = (now) => {
     syncUfoStrike(dt);
     syncBulletTrain();
     syncJunctions(now);
+    syncTide(now);
     syncZones(dt);
     syncStorm(dt);
     emitVehicleSmoke(dt);

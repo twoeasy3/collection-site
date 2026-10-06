@@ -26,7 +26,8 @@
     }
   },
   "events": {
-    "emergency": ["Emergency vehicle oncoming!! Give way!"]
+    "emergency": ["Emergency vehicle oncoming!! Give way!"],
+    "wave": ["WAVE INCOMING!! Get out of the water!"]
   },
   "zones": {
     "sydney": ["Sydney"],
@@ -35,7 +36,10 @@
     "seacliff": ["Sea Cliff Bridge"],
     "wollongong": ["Wollongong"],
     "shellharbour": ["Shellharbour"],
-    "kiama": ["Kiama - nearly there!"]
+    "kiama": ["Kiama - nearly there!"],
+    "beauvoir": ["Beauvoir-sur-Mer"],
+    "gois": ["Passage du Gois - the tide is coming in!"],
+    "noirmoutier": ["Ile de Noirmoutier - nearly there!"]
   },
   "bustCount": {
     "1": ["First Offence - "],

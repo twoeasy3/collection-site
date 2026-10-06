@@ -198,6 +198,10 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
   thing('trunk', tube, 0xd9cfbf); thing('gum', sphere, 0x7a8f62); thing('tower', cube, 0x6f8fa8); thing('sandTower', cube, 0xd8c39b);
   thing('windows', cube, 0x2f3a46); thing('house', cube, 0xe8dcc4); thing('roof', cone, 0x8c4a3a); thing('rock', cube, 0xb8915c);
   thing('pine', cone, 0x2e5b33); thing('pineTrunk', tube, 0x5a4636); thing('stoneWall', cube, 0x8f8a80); thing('midrise', cube, 0xd6d0c2);
+  thing('cottage', cube, 0xf4f1e8); thing('poplar', sphere, 0x5f7f3e); thing('canal', cube, 0x5b8fa8); thing('crown', sphere, 0x3f6034);
+  thing('saltPan', cube, 0xaebfc6); thing('salt', cone, 0xfbfbf7); thing('weed', cube, 0x4b5b33); thing('pool', cube, 0x6f9fb0);
+  thing('stake', cube, 0x4a3b2c); thing('refuge', cube, 0x5a4a3a); thing('rail', cube, 0xd8d2c4); thing('gaugeRed', cube, 0xd2302a);
+  thing('gaugeWhite', cube, 0xf6f6f2); thing('coat', cube, 0x3b5e8c); thing('face', sphere, 0xe0b48c);
   // gum trees: pale trunks and untidy clumps of grey-green leaves
   const gums = (a, b, every, dMax, sides = [-1, 1]) => {
     for (let s = a; s < b; s += every) for (const side of sides) {
@@ -227,6 +231,25 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
       const w = 9 + Math.random() * 4, dd = 8 + Math.random() * 3;
       putAt('house', [s, lat, 1.7, dd, 3.4, w]);
       putAt('hip', [s, lat, 4.4, dd * 1.12, 2.2, w * 1.12]);
+    }
+  };
+  // Vendee cottages: low, whitewashed, with shallow roofs of orange tiles
+  const cottages = (a, b, every, d0, sides = [-1, 1]) => {
+    thing('tiles', new THREE.ConeGeometry(Math.SQRT1_2, 1, 4).rotateY(Math.PI / 4), 0xc8643a);
+    for (let s = a; s < b; s += every) for (const side of sides) {
+      const at = s + Math.random() * every * 0.6, d = d0 + Math.random() * 25, lat = beside(side, at, d);
+      if (!clear(at, side, d - 6)) continue;
+      const w = 8 + Math.random() * 6, dd = 6 + Math.random() * 2;
+      putAt('cottage', [at, lat, 1.4, dd, 2.8, w]);
+      putAt('tiles', [at, lat, 3.3, dd * 1.15, 1.1, w * 1.1]);
+    }
+  };
+  // tall, narrow poplars in lines along the marsh's ditches
+  const poplars = (a, b, every, side, d) => {
+    for (let s = a; s < b; s += every) {
+      const h = 14 + Math.random() * 6, lat = beside(side, s, d + Math.random() * 2);
+      putAt('pineTrunk', [s, lat, 2, 0.4, 4, 0.4]);
+      putAt('poplar', [s, lat, h * 0.55, 2.6, h * 0.85, 2.6]);
     }
   };
   // Norfolk Island pines: tall, dark, in tiers
@@ -369,6 +392,62 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     } else if (z.scenery === 'shellharbour') {
       houses(a, b, 26, 14, [-1]);
       pines(a, b, 60, 1, z.sea + 4, z.sea + 20);
+    } else if (z.scenery === 'marais') {
+      // the marsh at Beauvoir-sur-Mer: flat green fields cut by ditches, lines of poplars,
+      // whitewashed cottages
+      for (const side of [-1, 1]) {
+        putAt('canal', [(a + b) / 2, beside(side, (a + b) / 2, 14), -0.03, 3, 0.04, b - a]);
+        poplars(a, b, 22, side, 20);
+      }
+      cottages(a, b - 100, 45, 30);
+    } else if (z.scenery === 'gois') {
+      // the causeway at mid-tide: the sea coming in on the right, up to the road; on the left the
+      // sand flats, with pools, weed, rows of mussel stakes and people out gathering shellfish; and
+      // along it the refuge towers to climb if the sea catches you, and depth gauges in the water
+      sea(a, b, 0.6);
+      for (let s = a; s < b; s += 18) {
+        const d = 6 + Math.random() * 140, lat = beside(-1, s, d), k = Math.random();
+        if (k < 0.45) putAt('weed', [s, lat, -0.02, 3 + Math.random() * 6, 0.05, 4 + Math.random() * 8]);
+        else if (k < 0.7) putAt('pool', [s, lat, -0.03, 3 + Math.random() * 6, 0.03, 5 + Math.random() * 9]);
+      }
+      for (let s = a + 150; s < b - 150; s += 380) { // mussel stakes, in rows out across the flats
+        const d0 = 40 + Math.random() * 80;
+        for (let k = 0; k < 14; k++) putAt('stake', [s + (k % 2) * 1.5, beside(-1, s, d0 + k * 2.2), 0.8, 0.2, 1.6, 0.2]);
+      }
+      for (let s = a + 60; s < b; s += 90) { // shellfish gatherers
+        if (Math.random() < 0.4) continue;
+        const at = s + Math.random() * 40, lat = beside(-1, at, 15 + Math.random() * 90);
+        putAt('coat', [at, lat, 0.6, 0.45, 1.2, 0.35]);
+        putAt('face', [at, lat, 1.4, 0.3, 0.3, 0.3]);
+      }
+      for (let s = a + 200; s < b - 100; s += 470) { // the refuge towers: a tall post, a platform, a rail round it
+        const lat = beside(-1, s, 3);
+        putAt('refuge', [s, lat, 4.5, 0.4, 9, 0.4]);
+        putAt('refuge', [s, lat, 7.2, 2.8, 0.25, 2.8]);
+        for (const [x, z, w, l] of [[-1.35, 0, 0.08, 2.8], [1.35, 0, 0.08, 2.8], [0, -1.35, 2.8, 0.08], [0, 1.35, 2.8, 0.08]]) {
+          putAt('rail', [s + z, lat + x, 7.75, w, 0.9, l]);
+        }
+        for (let y = 0.6; y < 7; y += 0.5) putAt('rail', [s - 0.3, lat, y, 0.5, 0.06, 0.06]); // (the rungs of its ladder)
+      }
+      for (let s = a + 40; s < b; s += 60) { // depth gauges: posts banded red and white, in the water
+        for (let k = 0; k < 6; k++) putAt(k % 2 ? 'gaugeWhite' : 'gaugeRed', [s, beside(1, s, 1.2), 0.25 + k * 0.5, 0.16, 0.5, 0.16]);
+      }
+    } else if (z.scenery === 'noirmoutier') {
+      // the island: salt pans with their white heaps of salt, umbrella pines, cottages, and the
+      // sea beyond a beach on the right
+      for (let s = a + 30; s < b - 30; s += 34) {
+        const lat = beside(-1, s, 22 + Math.random() * 10);
+        putAt('saltPan', [s, lat, -0.02, 14, 0.04, 26]);
+        if (Math.random() < 0.7) putAt('salt', [s + 8, lat - 9, 0.7, 2.6, 1.4, 2.6]);
+      }
+      for (let s = a; s < b; s += 16) {
+        const lat = beside(1, s, 8 + Math.random() * 30), h = 7 + Math.random() * 4;
+        putAt('pineTrunk', [s, lat, h * 0.45, 0.35, h * 0.9, 0.35]);
+        putAt('crown', [s, lat, h, 6, 2, 6]);
+      }
+      cottages(a + 60, b, 50, 45, [-1]);
+      sea(a, b, 70);
+      beach(a, b, 40, 72);
     } else if (z.scenery === 'kiama') {
       // green hills with dry-stone walls, the lighthouse on its point at the end, and the blowhole beside it
       for (let s = a; s < b; s += 4) putAt('stoneWall', [s + 2, beside(-1, s + 2, 18), 0.5, 0.6, 1, 4.02]);
@@ -383,6 +462,23 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     }
   }
   for (const [geometry, colour, list, glowing] of Object.values(kinds)) instances(geometry, colour, list, glowing);
+  // the sign before the causeway: the road goes under the sea at high tide
+  if (LEVEL.tide && LEVEL.zones.some(z => z.scenery === 'gois')) {
+    const at = LEVEL.tide.from - 90, steel = new THREE.MeshLambertMaterial({ color: 0x9a9da3 });
+    for (const dl of [-1.6, 1.6]) {
+      Track.toWorld(at, beside(1, at, 2 + dl), p);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.15, 4, 0.15), steel);
+      post.position.set(p.x, p.y + 2, p.z);
+      levelGroup.add(post);
+    }
+    const h = Track.toWorld(at, beside(1, at, 2), p);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 2.2), new THREE.MeshBasicMaterial({ map: goisSign(), side: THREE.DoubleSide }));
+    sign.position.set(p.x, p.y + 3.6, p.z);
+    sign.rotation.y = h + Math.PI;
+    sign.userData.text = true;
+    if (Track.mirrored) sign.scale.x = -1;
+    levelGroup.add(sign);
+  }
   // a kangaroo crossing sign on the kerb 60 m before each stretch kangaroos cross, facing the player
   for (const herd of (LEVEL.herds || []).filter(h => h.kind === 'kangaroo')) {
     const at = herd.from - 60, h = Track.toWorld(at, beside(1, at, 1.2), p);
@@ -395,6 +491,30 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     if (Track.mirrored) sign.scale.x = -1;
     levelGroup.add(post, sign);
   }
+};
+// the Passage du Gois sign's face: blue, the name, and the warning that the road floods
+let goisSignTexture = null;
+const goisSign = () => {
+  if (goisSignTexture) return goisSignTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = 512; canvas.height = 256;
+  const g = canvas.getContext('2d');
+  g.fillStyle = '#1d4f9c';
+  g.fillRect(0, 0, 512, 256);
+  g.strokeStyle = '#fff'; g.lineWidth = 8;
+  g.strokeRect(10, 10, 492, 236);
+  g.fillStyle = '#fff';
+  g.textAlign = 'center';
+  g.font = 'bold 58px sans-serif';
+  g.fillText('PASSAGE DU GOIS', 256, 84);
+  g.font = 'bold 30px sans-serif';
+  g.fillText('ROUTE SUBMERSIBLE', 256, 138);
+  g.fillText('À MARÉE HAUTE', 256, 176);
+  g.font = '26px sans-serif';
+  g.fillText('4,2 km', 256, 222);
+  goisSignTexture = new THREE.CanvasTexture(canvas);
+  goisSignTexture.colorSpace = THREE.SRGBColorSpace;
+  return goisSignTexture;
 };
 // the kangaroo crossing sign's face: a yellow diamond with a black border and a kangaroo
 let kangarooSignTexture = null;
@@ -427,11 +547,14 @@ const kangarooSign = () => {
 
 // every frame: on a level in zones, the sky (and the fog with it) and the ground blend towards
 // the colours of the zone the player is in
+// (all at once when the player has jumped there: a new run, or ?at= in the address)
 const skyNow = new THREE.Color(), skyWant = new THREE.Color();
+let zoneS = 0;
 export const syncZones = (dt) => {
   if (!LEVEL.zones || !Track) return;
   const zone = Track.zoneAt(Player.s) || LEVEL.zones[Player.s < 0 ? 0 : LEVEL.zones.length - 1];
-  const k = Math.min(1, dt * 0.6);
+  const k = Math.abs(Player.s - zoneS) > 100 ? 1 : Math.min(1, dt * 0.6);
+  zoneS = Player.s;
   skyWant.set(zone.sky ?? (THEMES[LEVEL.theme] || THEMES.city).sky);
   skyNow.lerp(skyWant, k);
   applySky(skyNow.getHex());

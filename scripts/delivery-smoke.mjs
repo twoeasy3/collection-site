@@ -833,15 +833,16 @@ try {
     const car = setOff();
     const startGap = BulletTrain.s - Player.s;
     const said = Message.lines.some(line => line.text === 'BULLET TRAIN INCOMING!!!');
-    let t = 0;
-    while (Player.active && t < 8) { step(); t += 1 / 120; }
+    let t = 0, carWrecked = false;
+    // (watched as it goes: once wrecked, its slot in the pool may be dealt out again as a new car)
+    while (Player.active && t < 8) { step(); t += 1 / 120; carWrecked ||= !car.active; }
     const inLane = Collision.obstacles.find(o => o.s === 300), otherLane = Collision.obstacles.find(o => o.s === 500);
     const fastest = Math.max(...cars.CARS.map(c => c.maxSpeed), ...Object.values(cars.LEVEL_CARS).map(c => c.maxSpeed), ...Object.values(cars.SECRET_CARS).map(c => c.maxSpeed), CONFIG.tankMaxSpeed) + CONFIG.turboBoost;
-    check(said && BulletTrain.lane === 2 && !Player.active && Math.abs(t - B.warning) < 0.5 && !car.active &&
+    check(said && BulletTrain.lane === 2 && !Player.active && Math.abs(t - B.warning) < 0.5 && carWrecked &&
       inLane.gone && !otherLane.gone && B.speed > fastest * 1.5,
       `the bullet train ("${Message.pick('powerups', 'mystery', 'bulletTrain')}") appears ${startGap.toFixed(0)} m up lane 2 at ${(B.speed * 3.6).toFixed(0)} km/h ` +
       `(anything else tops out at ${(fastest * 3.6).toFixed(0)}), wrecks the player ${t.toFixed(2)} s later, and the car and the barrier in its lane on the way, not the one beside it` +
-      (said && !car.active && inLane.gone && !otherLane.gone ? '' : ` [said ${said}, car still there ${car.active}, barrier ${inLane.gone}, one beside ${otherLane.gone}]`));
+      (said && carWrecked && inLane.gone && !otherLane.gone ? '' : ` [said ${said}, car wrecked ${carWrecked}, barrier ${inLane.gone}, one beside ${otherLane.gone}]`));
 
     // out of its lane in time, the player is safe, and it is gone once it is past
     setOff();
@@ -1239,6 +1240,121 @@ try {
     }
     check(welcomes.length === L.zones.length && T.length > 10000,
       `${(T.length / 1000).toFixed(1)} km in ${L.zones.length} zones, each welcoming the player: ${welcomes.join(', ')}`);
+  }
+
+  section('Passage du Gois: the tide');
+  {
+    const { Message } = await load('/src/delivery/messages.js');
+    const { Tide } = await load('/src/delivery/tide.js');
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'passage-du-gois'));
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    const T = () => track.Track, W = CONFIG.tide, L = levels.LEVEL, mid = (L.tide.from + L.tide.to) / 2;
+    const north = T().laneRange(1, mid), lanes = [];
+    for (let l = north[0]; l <= north[1]; l++) lanes.push(l);
+    // the tide rises with the clock, from the kerb in, and never comes over the centre line; a
+    // wave floods further still, after its warning
+    const deepLanes = () => lanes.filter(l => Tide.depth(mid, T().laneOffset(l, mid)) >= W.deep).length;
+    Tide.next = Infinity;
+    const atStart = deepLanes(), dryAtStart = Tide.dryLane(mid);
+    Tide.time = Game.allowed;
+    const atEnd = deepLanes(), dryAtEnd = Tide.dryLane(mid);
+    Player.s = mid - 100;
+    Player.speed = 100 / W.warning;
+    Player.active = true;
+    Player.shield = 0;
+    Message.clear();
+    Tide.start(mid);
+    const warned = Message.lines.some(line => line.text === Message.pick('events', 'wave'));
+    const before = Tide.flood(mid), held = before === Tide.base(); // (nothing yet, during the warning)
+    Tide.update(W.warning + W.rise);
+    const peak = Tide.flood(mid);
+    let oncomingDry = true;
+    for (let lat = T().lo(mid); lat <= 0; lat += 0.25) if (Tide.depth(mid, lat) > 0) oncomingDry = false;
+    const offCauseway = Tide.flood(L.tide.from - 100) === 0 && Tide.flood(L.tide.to + 100) === 0;
+    check(atStart === 0 && dryAtStart === north[1] && atEnd === lanes.length - 1 && dryAtEnd === north[0] && warned &&
+      held && peak > before + L.tide.waves.reach.min - 0.01 && oncomingDry && offCauseway,
+      `the tide comes in from the kerb: no lane deep at the start, ${atEnd} of ${lanes.length} by the end of the clock; a wave is warned of, ` +
+      `then floods ${(peak - before).toFixed(1)} lanes further; the oncoming side and the road off the causeway stay dry`);
+    // in the water a car is slowed twice as much as by a railway track, and deep water damages it
+    // by how badly it wades (a tank not at all, a ghost skims over it)
+    const wade = (id, extra = {}) => {
+      cars.selectCar(id);
+      Game.start();
+      Tide.next = Infinity;
+      Tide.time = Game.allowed;
+      for (const c of Traffic.cars) c.active = false;
+      Object.assign(Player, { s: mid, lat: T().laneOffset(north[1], mid), speed: 30, launching: false, shield: 0 }, extra);
+      const hp = Player.health;
+      for (let i = 0; i < 120 * 3; i++) {
+        Player.lat = T().laneOffset(north[1], Player.s);
+        Player.update(1 / 120, 1, 0, false);
+      }
+      return { top: Player.speed, lost: (hp - Player.health) / 3, crossing: Player.crossing, max: cars.CAR.maxSpeed };
+    };
+    const R = CONFIG.railCrossing, hatch = wade('hatch'), sport = wade('sport'), tank = wade('tank'), ghost = wade('hatch', { ghost: 99 });
+    cars.selectCar('hatch');
+    const want = (c) => c.max * Math.max(W.slowest, 1 - W.crossing * (1 - R.slowest) * (1 - c.crossing));
+    check(Math.abs(hatch.top - want(hatch)) < 0.2 && Math.abs(sport.top - want(sport)) < 0.2 &&
+      Math.abs(hatch.lost - W.damage * (1 - hatch.crossing)) < 0.5 && sport.lost > hatch.lost && tank.lost === 0 && ghost.lost === 0 && ghost.top > hatch.top * 1.5,
+      `wading in deep water: the hatchback at ${hatch.top.toFixed(1)} of ${hatch.max} m/s losing ${hatch.lost.toFixed(1)} health a second, the sports car ` +
+      `at ${sport.top.toFixed(1)} of ${sport.max} losing ${sport.lost.toFixed(1)}; a tank takes no harm, and a ghost skims over it`);
+    // traffic: none turns up in the water, a good driver keeps out of it, and a wave that catches a
+    // car in deep water stalls it there, hazards on
+    Game.start();
+    Tide.next = Infinity;
+    Tide.time = Game.allowed * 0.5;
+    Player.s = mid - 300;
+    Traffic.reset();
+    const dealt = Traffic.cars.filter(c => c.active && !c.fixed && c.dir > 0);
+    const dryDeal = dealt.every(c => c.lane <= Tide.dryLane(c.s));
+    let wet = 0, samples = 0;
+    for (let i = 0; i < 120 * 30; i++) {
+      Player.health = Player.maxHealth;
+      Player.ghost = 1;
+      Tide.waves = [];
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      if (i % 60) continue;
+      for (const c of Traffic.cars) {
+        if (!c.active || c.dir < 0 || c.fixed || c.evil || c.stalled || c.rival || c.stun > 0 || c.spin > 0) continue;
+        samples++;
+        if (Tide.depth(c.s, c.lat) >= W.deep) wet++;
+      }
+    }
+    for (const c of Traffic.cars) c.active = false;
+    const car = Traffic.cars.find(c => c.dir > 0 && !c.unused), type = CONFIG.vehicles.car;
+    Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, stalled: false, emergency: false, evil: true, s: Player.s + 60, lane: north[1],
+      lat: T().laneOffset(north[1], Player.s + 60), vs: 15, baseSpeed: 15, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1,
+      hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null, junction: null });
+    Tide.waves = [{ s0: car.s - 120, s1: car.s + 120, reach: 1, t: W.rise / 2 }];
+    for (let i = 0; i < 120 * 2; i++) Traffic.update(1 / 120);
+    check(dealt.length > 0 && dryDeal && wet <= samples * 0.02 && car.stalled && car.hazards && Math.abs(car.vs) < 1,
+      `traffic: ${dealt.length} vehicles dealt out going the player's way, none in the water; good drivers keep out of deep water ` +
+      `(${wet} of ${samples} looks in it); a car a wave catches in deep water stalls, hazards on`);
+    // wrecked, the new car is set down in a lane of the player's that will still be dry; with none,
+    // on the oncoming side, with CONFIG.tide.oncomingShield s more shield
+    const drop = (time, wave) => {
+      Game.start();
+      Tide.next = Infinity;
+      Tide.time = time;
+      if (wave) Tide.waves = [{ s0: mid - 150, s1: mid + 150, reach: 1.6, t: 0 }];
+      Object.assign(Player, { s: mid, lat: T().laneOffset(north[1], mid) });
+      Player.health = 0;
+      for (let i = 0; i < 120 * 8 && (!Player.active || i < 2); i++) {
+        for (const c of Traffic.cars) c.active = false;
+        Game.update(1 / 120);
+        FxQueue.length = 0;
+      }
+      return { lane: T().nearestLane(Player.lat, Player.s), shield: Player.shield, dry: Tide.depth(Player.s, Player.lat) <= W.wet };
+    };
+    const own = drop(Game.allowed * 0.6, false), oncoming = drop(Game.allowed * 1.3, true);
+    check(own.lane >= north[0] && own.lane < north[1] && own.dry && own.shield <= CONFIG.respawnShield &&
+      oncoming.lane < north[0] && oncoming.dry && oncoming.shield > CONFIG.respawnShield + W.oncomingShield - 0.1,
+      `wrecked in the water: set down in dry lane ${own.lane} (shield ${own.shield.toFixed(1)} s); with every lane flooded, ` +
+      `in oncoming lane ${oncoming.lane}, shield ${oncoming.shield.toFixed(1)} s`);
+    Game.toMenu();
   }
 
   section('cars');

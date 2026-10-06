@@ -76,6 +76,12 @@
 //              traffic list of their own for the traffic turning up there. The player is welcomed
 //              into each (messages.json: zones, by id)
 //   ice        { from, to, lane }  an ice patch on that lane (no lane: across the road) (see CONFIG.ice)
+//   tide       { from, to, start, end, waves: { every: { min, max }, reach: { min, max } } }: a causeway
+//              the sea comes in over, on the player's side of the road only, from the kerb in. It
+//              floods `start` lane widths in from the pavement's edge (the shoulder counts as one)
+//              at the start of a run, rising to `end` as the clock runs down; every min-max s a
+//              wave (warned of) floods a stretch `reach` lanes further for a few seconds. On a
+//              two-way road with no exits. See tide.js and CONFIG.tide
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
 //   id         unique name, used as the level's key in saved progress
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
@@ -105,11 +111,12 @@ import monteCarlo from './levels/monte-carlo.json';
 import singapore from './levels/singapore.json';
 import singaporeNight from './levels/singapore-night.json';
 import grandPacific from './levels/grand-pacific.json';
+import passageDuGois from './levels/passage-du-gois.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois];
 export const SPECIAL_LEVELS = [allHeck, ufo];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

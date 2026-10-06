@@ -8,6 +8,7 @@ import { Traffic } from './traffic.js';
 import { Message } from './messages.js';
 import { UfoStrike } from './ufostrike.js';
 import { BulletTrain } from './bullettrain.js';
+import { Tide } from './tide.js';
 import { Game } from './game.js';
 
 export const Player = {
@@ -18,6 +19,8 @@ export const Player = {
   braking: false,      // braking hard by itself for a car ahead (the tyres squeal as it starts)
   brakeLight: false,   // braking at all: the brake lights are on
   onIce: false,        // on an ice patch (see CONFIG.ice)
+  wading: 0,           // how deep the tide's water is where the car is (see Tide): 0 = dry, 1 = full depth
+  dropOncoming: false, // the helicopter is setting the car down on the oncoming side (no dry lane on its own)
   turbo: 0,            // s of turbocharger left
   ghost: 0,            // s of passing through cars and barriers left
   passenger: 0,        // s of legal shoulder driving left
@@ -41,6 +44,9 @@ export const Player = {
   get mass() { return this.heavy > 0 ? CONFIG.heavyMass.mass : 1; },
   // how heavy the car is, for sliding on ice: by its size, against the Commuter's, and its mass
   get weight() { return this.mass * Math.sqrt(this.hw * this.hl * this.height / CONFIG.ice.weightRef); },
+  // how well the car takes a railway track, and wades through water: 1 = no bother, 0 = worst of all
+  // (a tank, whatever it is, takes anything)
+  get crossing() { return this.tank > 0 ? 1 : CAR.crossing ?? CONFIG.railCrossing.usual; },
   // how quickly the car steers: its own agility, less under the weight
   get agility() { return (CAR.agility || 1) * (this.heavy > 0 ? CONFIG.heavyMass.agility : 1); },
   get vs() { return this.speed; },
@@ -60,10 +66,26 @@ export const Player = {
     this.shield = 0;
     this.tank = CAR.tank ? 1 : 0; // the Tank from the garage is in TANK RAGE all the time
   },
-  // wrecked: pick where the new car lands, never in an oncoming lane
+  // wrecked (or busted): pick where the new car lands, in a lane going its way. With the tide in,
+  // the nearest of them that will still be dry when it is set down; if none will be, the nearest
+  // oncoming lane, with a longer shield to get out of it
   prepareDrop() {
     const [first, last] = Track.laneRange(1, this.s);
-    const lane = clamp(Track.nearestLane(this.lat, this.s), first, last);
+    let lane = clamp(Track.nearestLane(this.lat, this.s), first, last);
+    this.dropOncoming = false;
+    if (Tide.on) {
+      const later = CONFIG.respawnTime;
+      const dry = (l) => Tide.depth(this.s, Track.laneOffset(l, this.s), later) <= CONFIG.tide.wet;
+      const own = [];
+      for (let l = first; l <= last; l++) own.push(l);
+      own.sort((a, b) => Math.abs(a - lane) - Math.abs(b - lane));
+      const safe = own.find(dry);
+      if (safe !== undefined) lane = safe;
+      else {
+        lane = Track.laneRange(-1, this.s)[1]; // (the oncoming side's innermost lane)
+        this.dropOncoming = true;
+      }
+    }
     this.lat = Track.laneOffset(lane, this.s);
   },
   // a fresh car at a standstill (the helicopter has just set it down)
@@ -86,9 +108,11 @@ export const Player = {
     this.yawVel = 0;
     this.stun = 0;
     this.onIce = false;
+    this.wading = 0;
     if (!keepHealth) this.health = this.maxHealth;
     this.smoke = 0;
-    this.shield = CONFIG.respawnShield;
+    this.shield = CONFIG.respawnShield + (this.dropOncoming ? CONFIG.tide.oncomingShield : 0);
+    this.dropOncoming = false;
   },
   bust(reason) {
     if (this.busted || this.tank > 0 || this.radar > 0) return; // nobody busts a tank, nor a car with a radar detector
@@ -205,11 +229,14 @@ export const Player = {
     let top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1);
     // over a railway track, slowed by how well the car crosses one (a tank, whatever it is, crosses fine)
     const R = CONFIG.railCrossing, rails = Track.onRails(this.s, this.lat, this.hw);
-    const crossing = this.tank > 0 ? 1 : CAR.crossing ?? R.usual;
+    const crossing = this.crossing;
     if (rails) {
       top *= R.slowest + (1 - R.slowest) * crossing;
       if (crossing < 1) Game.shake = Math.max(Game.shake, 0.25 * (1 - crossing));
     }
+    // in the tide's water, slowed the same way, only more so (see CONFIG.tide)
+    const wet = this.wading > CONFIG.tide.wet;
+    if (wet) top *= Math.max(CONFIG.tide.slowest, 1 - CONFIG.tide.crossing * (1 - R.slowest) * (1 - crossing));
     let drive = throttle;
     const grip = this.onIce ? CONFIG.ice.brakeGrip : 1; // (braking on ice)
     if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed)) drive = 1;
@@ -217,7 +244,7 @@ export const Player = {
     if (this.speed > top) {
       // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
       // (or on a railway track: slowed down to it hard)
-      this.speed = Math.max(top, this.speed - (rails ? R.bite : CONFIG.brake * 0.5) * dt);
+      this.speed = Math.max(top, this.speed - (rails || wet ? R.bite : CONFIG.brake * 0.5) * dt);
     } else if (drive > 0) {
       this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * dt);
     } else if (drive < 0 && this.speed > CONFIG.minSpeed) {
@@ -268,6 +295,12 @@ export const Player = {
     }
     if (icy) this.yawVel += (Math.random() - 0.5) * 8 * Math.min(1, this.speed / 25) * dt; // (and twitches about on it)
     this.onIce = icy;
+    // the tide: in deep water the car is damaged, the more so the worse it wades (a ghost skims
+    // over the water, and a car just set down is spared)
+    this.wading = this.ghost > 0 ? 0 : Tide.depth(this.s, this.lat);
+    if (this.wading >= CONFIG.tide.deep && this.shield <= 0) {
+      this.health -= CONFIG.tide.damage * (1 - this.crossing) * this.damageScale * dt;
+    }
     this.updateSpeed(dt, throttle, stopping);
     this.s += this.speed * dt;
     // on the right shoulder at the exit = taking the side road; at its end, back onto the expressway
@@ -290,8 +323,11 @@ export const Player = {
       wantVel = clamp(pull * CONFIG.laneAssist, -CONFIG.steerSpeed, CONFIG.steerSpeed);
     }
     // a hard knock briefly weakens steering
-    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce ? CONFIG.ice.steerGrip : 1);
+    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce ? CONFIG.ice.steerGrip : 1) *
+      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1);
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
+    // a wave rushing in shoves a car in the water towards the centre line
+    if (this.wading > CONFIG.tide.wet && !this.busted && Tide.rushing(this.s)) this.latVel -= CONFIG.tide.shove * dt;
     // on ice in a bend, the car understeers: what the bend asks of the tyres beyond the little
     // grip they have left pushes it to the outside (heavier cars more, more agile ones less)
     if (this.onIce && !this.busted) {

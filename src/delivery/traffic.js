@@ -7,6 +7,7 @@ import { Player } from './player.js';
 import { Packages } from './packages.js';
 import { CARS } from './cars.js';
 import { Message } from './messages.js';
+import { Tide } from './tide.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -97,7 +98,8 @@ export const Traffic = (() => {
   const placeAt = (car, distance) => {
     car.s = Track.spawnAt(Player.s, distance, car.dir);
     if (Number.isNaN(car.s) || !Track.inBounds(car.s)) return false;
-    const [first, last] = Track.laneRange(car.dir, car.s), kind = pickKind(car.s);
+    const [first, all] = Track.laneRange(car.dir, car.s), kind = pickKind(car.s);
+    const last = car.dir > 0 ? Math.max(first, Math.min(all, Tide.dryLane(car.s))) : all; // (none turns up in the tide's water)
     // (a vehicle that keeps to the kerb starts out there)
     const lane = CONFIG.vehicles[kind].kerb ? Track.openLane(kerbLane(car.dir, car.s), car.s)
       : Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), car.s);
@@ -218,6 +220,7 @@ export const Traffic = (() => {
     car.wander = Math.random() * 6; // (where it is in its drift about the lane)
     car.fromBehind = false; // came up from behind the player
     car.onIce = false;      // on an ice patch (see CONFIG.ice)
+    car.stalled = false;    // stalled in the tide's water, hazards on (see Tide)
     car.junction = null;    // leaving the road at a junction: on its way off, in the world (see leaveAtJunction)
     car.junctionSeen = -1;  // the s of the last junction it came to (and chose a way at)
     car.parked = false;     // parked on a shoulder, hazards on (see placeFixed)...
@@ -279,6 +282,7 @@ export const Traffic = (() => {
     }
     if (!laneClear(car, lane, CONFIG.laneChangeGap)) return false;
     if (!ignorePlayer && playerInWay(car, lane)) return false;
+    if (car.dir > 0 && lane > car.lane && lane > Tide.dryLane(car.s + 70)) return false; // (nobody moves over into the tide's water)
     return true;
   };
   // A calm (happy or neutral), good driver decides early and signals: it moves over
@@ -557,7 +561,7 @@ export const Traffic = (() => {
       car.unused = i >= count + oncoming; // (never spawned on this level)
       car.fixed = false;
       // (and nothing left over from the last run, on a car that may not be dealt out again for a while)
-      Object.assign(car, { junction: null, parked: false, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
+      Object.assign(car, { junction: null, parked: false, stalled: false, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
     });
     placeFixed();
     nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
@@ -633,6 +637,13 @@ export const Traffic = (() => {
         car.spinIce = true; // (it skidded: it isn't damaged, so it doesn't smoke for it)
       }
       car.onIce = icy;
+      // the tide (going the player's way): a car a wave catches in deep water stalls there
+      // (not one that is parked, nor an ambulance)
+      const depth = car.dir > 0 ? Tide.depth(car.s, car.lat) : 0;
+      if (depth >= CONFIG.tide.deep && !car.stalled && !car.parked && !car.emergency && !car.fixed && !(car.spin > 0) && Tide.surging(car.s)) {
+        car.stalled = true;
+        car.pendingLane = null;
+      }
       if (car.spin > 0 || car.stun > 0) { // (out of control: no signalling, no brakes)
         car.braking = car.hazards = false;
         car.signal = 0;
@@ -673,6 +684,19 @@ export const Traffic = (() => {
         car.s += car.vs * dt;
         car.latVel = 0;
         car.lat = parkedLat(car.parkSide, car.s);
+        car.braking = false;
+        car.signal = 0;
+        car.hazards = true;
+        updateYaw(car, dt);
+        continue;
+      }
+      if (car.stalled) { // stalled in the water, hazards on: it goes nowhere, but can still be shoved about
+        car.vs -= car.vs * Math.min(1, dt * 2);
+        car.latVel -= car.latVel * Math.min(1, dt * 3);
+        car.s += car.vs * dt;
+        Track.transfer(car);
+        car.lat += car.latVel * dt;
+        keepOnRoad(car, 0.3);
         car.braking = false;
         car.signal = 0;
         car.hazards = true;
@@ -758,7 +782,10 @@ export const Traffic = (() => {
         const ramp = rampLane(car);
         // (a vehicle that keeps to the kerb heads back to it once it can, after a narrowing)
         const home = CONFIG.vehicles[car.kind].kerb ? kerbLane(car.dir, car.s) : car.lane;
-        const lead = (reach) => ramp !== car.lane ? ramp : Track.openLane(home, car.s + car.dir * reach);
+        // (and going the player's way, a good driver moves out of the way of the tide's water as it
+        // comes in, and of a wave as soon as it is warned of; an evil one ploughs on through)
+        const dry = (s) => car.dir > 0 && !car.evil ? Tide.dryLane(s) : Infinity;
+        const lead = (reach) => ramp !== car.lane ? ramp : Math.min(Track.openLane(home, car.s + car.dir * reach), dry(car.s + car.dir * reach));
         const open = lead(70);
         let squeezed = false;
         if (courteous(car)) {
@@ -816,6 +843,8 @@ export const Traffic = (() => {
         }
         // giving way at a junction while a car is leaving across it
         target = Math.min(target, giveWay(car));
+        // wading through the tide's water: slowed, the more so in deep water
+        if (depth > CONFIG.tide.wet) target *= depth >= CONFIG.tide.deep ? CONFIG.tide.trafficPace : 0.8;
         // hesitating: every so often a touch of the brakes, sharply
         if (car.hesitant && (car.tapWait -= dt) <= 0) {
           car.tap = H.tapTime;
