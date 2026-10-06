@@ -9,8 +9,12 @@ import { Game } from '../game.js';
 // RENDERING
 // ============================================================================
 const SKY = 0x9fc4e8;
+// pixels drawn per screen pixel: up to 2 for a sharp picture, but only 1.5 on a phone or tablet,
+// whose GPU has far less memory to spare (short of it, the browser drops WebGL altogether: the
+// game freezes until it comes back)
+export const PIXEL_RATIO = Math.min(window.devicePixelRatio, window.matchMedia('(pointer: coarse)').matches ? 1.5 : 2);
 export const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game'), antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(PIXEL_RATIO);
 
 export const scene = new THREE.Scene();
 scene.background = new THREE.Color(SKY);

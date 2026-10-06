@@ -8,9 +8,13 @@
 // is gone once it is well past. While it is about, the shoulder's danger meter runs down slower,
 // and until CONFIG.bulletTrain.mercyAfter s after it has gone nobody is busted for being on the
 // shoulder (see Player.update and Player.bust): it may be the only way out of its path.
+// On a level with a "railway" (see levels.js), one also comes down the track in the median every
+// so often, with the same warning: the same train, keeping to the track instead of a lane.
 // This is the movement and the damage; render/bullettrain.js draws it.
 // ============================================================================
 import { CONFIG } from './config.js';
+import { LEVEL } from './levels.js';
+import { Message } from './messages.js';
 import { Track } from './track.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
@@ -22,21 +26,32 @@ const box = { s: 0, lat: 0, yaw: 0, hl: 0, hw: 0 }; // one carriage's hitbox, fo
 export const BulletTrain = {
   active: false,
   s: 0,          // where its nose is; the carriages trail behind it, up the road (higher s)
-  lane: 0,       // the lane it keeps to: the player's when it was set off
+  lane: 0,       // the lane it keeps to: the player's when it was set off...
+  onTrack: false, // ...or the railway's track, down the middle of the median
+  next: Infinity, // s to the next train down the railway, on a level with one
   end: 0,        // the s at which its road runs out
   passed: false, // its nose has gone by the player
   after: 0,      // s left of mercy on the shoulder once it has gone
   // no busts for being on the shoulder: while it is about, and for a while after
   get mercy() { return this.active || this.after > 0; },
   get length() { return CONFIG.bulletTrain.cars * CONFIG.bulletTrain.carLength; },
+  // s until the next train down the railway, counted from when the last one has gone
+  wait() {
+    const { min, max } = LEVEL.railway.every;
+    return min + Math.random() * (max - min);
+  },
   // where carriage i is (0 = the nose's), into `out` ({ s, lat })
   carriage(i, out) {
     out.s = this.s + (i + 0.5) * CONFIG.bulletTrain.carLength;
-    out.lat = Track.laneOffset(Track.openLane(this.lane, out.s), out.s);
+    out.lat = this.onTrack ? 0 : Track.laneOffset(Track.openLane(this.lane, out.s), out.s);
     return out;
   },
-  start() {
+  // onTrack: down the railway (it says it is coming itself; a mystery's train is announced by the
+  // mystery). Only one train at a time: a mystery's while one is already coming adds nothing.
+  start(onTrack = false) {
+    if (this.active) return;
     const T = CONFIG.bulletTrain;
+    this.onTrack = onTrack;
     this.lane = Track.nearestLane(Player.lat, Player.s);
     // as far up the player's road as it covers in the warning time, closing on the player
     // (or as far as that road goes)
@@ -47,14 +62,21 @@ export const BulletTrain = {
     this.active = true;
     this.passed = false;
     sfx('trainHorn');
+    if (onTrack) Message.say('powerups', 'mystery', 'bulletTrain');
   },
   reset() {
     this.active = false;
     this.after = 0;
+    this.next = LEVEL.railway ? this.wait() : Infinity;
   },
   update(dt) {
     if (!this.active) {
       this.after = Math.max(0, this.after - dt);
+      // the next train down the railway (if the player is off the main road just now, as soon as they are back)
+      if ((this.next -= dt) <= 0 && Player.active && Track.isMain(Player.s)) {
+        this.start(true);
+        this.next = this.wait();
+      }
       return;
     }
     const T = CONFIG.bulletTrain;
@@ -67,6 +89,7 @@ export const BulletTrain = {
     if (this.s < this.end || Track.along(this.s + this.length) < Track.along(Player.s) - CONFIG.despawnBehind) {
       this.active = false;
       this.after = T.mercyAfter;
+      if (LEVEL.railway) this.next = this.wait();
       return;
     }
     box.hl = T.carLength / 2;

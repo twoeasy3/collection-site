@@ -1,0 +1,67 @@
+{
+  "id": "canberra",
+  "name": "Canberra",
+  "theme": "canberra",
+  "time": 150,
+  "tip": 95,
+  "lanes": { "north": 1, "south": 1 },
+  "median": 1,
+  "railway": { "every": { "min": 14, "max": 24 } },
+  "traffic": { "car": 0.36, "compact": 0.2, "van": 0.14, "bus": 0.12, "wagon": 0.11, "police": 0.07 },
+  "trafficCount": 7,
+  "oncomingCount": 8,
+  "segments": [
+    { "length": 300, "curve": 0 },
+    { "length": 400, "curve": 0.002 },
+    { "length": 300, "curve": 0 },
+    { "length": 350, "curve": -0.003 },
+    { "length": 300, "curve": 0 },
+    { "length": 400, "curve": 0.002 },
+    { "length": 350, "curve": 0 },
+    { "length": 300, "curve": -0.002 },
+    { "length": 300, "curve": 0 }
+  ],
+  "bridges": [
+    { "from": 1360, "to": 1600 }
+  ],
+  "shoulderRows": [
+    { "kind": "cone", "from": 490, "to": 580, "every": 6, "side": "right" },
+    { "kind": "cone", "from": 920, "to": 1010, "every": 6, "side": "right" },
+    { "kind": "cone", "from": 2020, "to": 2110, "every": 6, "side": "right" },
+    { "kind": "cone", "from": 2520, "to": 2630, "every": 6, "side": "right" }
+  ],
+  "targets": [
+    { "s": 650, "side": "left" },
+    { "s": 1900, "side": "right" },
+    { "s": 2700, "side": "left" }
+  ],
+  "pickups": [
+    { "type": "turbo", "s": 300, "lane": 2 },
+    { "type": "ghost", "s": 430, "lane": 2 },
+    { "type": "passenger", "s": 700, "lane": 2 },
+    { "type": "wrench", "s": 820, "lane": 2 },
+    { "type": "timePlus", "s": 1000, "lane": 1 },
+    { "type": "siren", "s": 1200, "lane": 2 },
+    { "type": "ghost", "s": 1400, "lane": 2 },
+    { "type": "mystery", "s": 1700, "lane": 2 },
+    { "type": "ghost", "s": 1800, "lane": 1 },
+    { "type": "turbo", "s": 1950, "lane": 2 },
+    { "type": "timePlus", "s": 2200, "lane": 1 },
+    { "type": "wrench", "s": 2300, "lane": 0 },
+    { "type": "ghost", "s": 2470, "lane": 2 },
+    { "type": "radarDetector", "s": 2800, "lane": 2 }
+  ],
+  "obstacles": [
+    { "s": 520, "lane": 2 },
+    { "s": 545, "lane": 2 },
+    { "s": 950, "lane": 2 },
+    { "s": 975, "lane": 2 },
+    { "s": 1480, "lane": 2 },
+    { "s": 1505, "lane": 2 },
+    { "s": 2050, "lane": 2 },
+    { "s": 2075, "lane": 2 },
+    { "s": 2550, "lane": 2 },
+    { "s": 2575, "lane": 2 },
+    { "s": 2600, "lane": 2 }
+  ]
+}

@@ -50,7 +50,9 @@ export const Player = {
     this.hl = CAR.hl;
     this.height = CAR.height;
     this.s = 0;
-    this.lat = Track.laneOffset(Track.lanesEachWay, 0); // first lane going our way
+    // the innermost lane on the right: the first going our way (on a one-way road, the lane
+    // just right of the centre line)
+    this.lat = Track.laneOffset(Math.min(Track.laneCount - 1, Track.leftLanes + Track.medianLanes), 0);
     this.respawn();
     this.shield = 0;
     this.tank = CAR.tank ? 1 : 0; // the Tank from the garage is in TANK RAGE all the time

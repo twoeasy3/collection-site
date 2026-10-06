@@ -333,14 +333,14 @@ const buildBridge = (from, to) => {
   const parts = []; // [s, lat, y, width, height, length]
   for (let s = from; s < to; s += BAY) {
     const len = Math.min(BAY, to - s);
-    const wall = Track.edge(s) + wallInset; // (bridges are on the expressway)
+    const wall = (side) => Track.edge(s, side) + wallInset; // (bridges are on the expressway)
     const width = Math.max(0.05, Track.shoulder - wallInset);
     for (const side of [-1, 1]) {
-      parts.push([s + len / 2, side * (wall + width / 2), 0.9, width, 1.8, len]); // deck girder filling the shoulder
-      parts.push([s, side * (wall + 0.5), TOP / 2, 1, TOP, 1]);                    // post
-      parts.push([s + len / 2, side * (wall + 0.5), TOP, 1, 1, len]);               // top chord
+      parts.push([s + len / 2, side * (wall(side) + width / 2), 0.9, width, 1.8, len]); // deck girder filling the shoulder
+      parts.push([s, side * (wall(side) + 0.5), TOP / 2, 1, TOP, 1]);                    // post
+      parts.push([s + len / 2, side * (wall(side) + 0.5), TOP, 1, 1, len]);               // top chord
     }
-    parts.push([s, 0, TOP, (wall + 1) * 2, 1, 1]);                                  // cross beam
+    parts.push([s, (wall(1) - wall(-1)) / 2, TOP, wall(1) + wall(-1) + 2, 1, 1]);        // cross beam
   }
   const truss = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), lambert(0x9c4a3a), parts.length);
   const dummy = new THREE.Object3D();

@@ -3,7 +3,8 @@
 // ============================================================================
 export const CONFIG = {
   // road
-  laneCount: 4,            // lanes on the expressway, half each way (a level can set its own with "lanes")
+  laneCount: 4,            // lanes on the expressway, half each way (a level can set its own with "lanes",
+                           // and have a "median": see levels.js)
   laneWidth: 3.5,          // metres
   shoulder: 3.5,           // driveable shoulder outside the outer lanes, no traffic there
 

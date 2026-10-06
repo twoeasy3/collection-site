@@ -12,9 +12,17 @@ const createTrack = () => {
   const length = LEVEL.segments.reduce((sum, seg) => sum + seg.length, 0);
   const narrows = LEVEL.narrows || [], bridges = LEVEL.bridges || [];
   const X = CONFIG.ramps, LW = CONFIG.laneWidth, SH = CONFIG.shoulder, FLY = X.flyoverLength;
-  // a level can set its own lane count (an even number); half go each way
-  const LANES = LEVEL.lanes || CONFIG.laneCount;
-  const SIDE = LANES / 2; // lanes each way on the expressway
+  // The expressway's lanes: a level's "lanes" is a number (half each side of the centre line, an
+  // odd one over going on the right) or { north, south }: how many on the right, the player's
+  // way, and how many on the left, oncoming. A two-way level can also have a "median": that many
+  // neutral lanes down the middle, which no traffic uses. The centre line (lat 0) runs down the
+  // middle of the median, or between the two sides where there is none.
+  const SPEC = LEVEL.lanes ?? CONFIG.laneCount;
+  const LEFT = typeof SPEC === 'object' ? SPEC.south ?? 0 : Math.floor(SPEC / 2);
+  const RIGHT = typeof SPEC === 'object' ? SPEC.north ?? 0 : Math.ceil(SPEC / 2);
+  const MID = LEVEL.median || 0;
+  const LANES = LEFT + MID + RIGHT;
+  const HM = MID * LW / 2; // half the median's width: each side's lanes start this far out
   // which way the traffic goes: 'both' (the left half of the road is oncoming), or every
   // vehicle 'north' (the player's way) or 'south' (against the player), using all the lanes
   const FLOW = LEVEL.flow === 'north' || LEVEL.flow === 'south' ? LEVEL.flow : 'both';
@@ -112,8 +120,8 @@ const createTrack = () => {
   // the expressway's direction there and arriving at the merge point in the expressway's
   // direction there, so it joins up whatever the expressway does in between (and is a
   // straight line when the two points line up).
-  const RSLOT = SIDE * LW + LW / 2; // lat on the expressway of that extra lane's centre line
-  const LSLOT = SIDE * LW + SH / 2; // lat of the left shoulder's centre line, where the flyovers land
+  const RSLOT = HM + RIGHT * LW + LW / 2; // lat on the expressway of that extra lane's centre line
+  const LSLOT = HM + LEFT * LW + SH / 2;   // lat of the left shoulder's centre line, where the flyovers land
   const nearAngle = (h, ref) => {
     while (h - ref > Math.PI) h -= 2 * Math.PI;
     while (h - ref < -Math.PI) h += 2 * Math.PI;
@@ -200,18 +208,20 @@ const createTrack = () => {
   // 0 outside the zone, 1 inside, easing over `taper` metres at each end
   const zone = (s, z) => smooth((s - z.from) / CONFIG.taper) *
     (1 - smooth((s - (z.to - CONFIG.taper)) / CONFIG.taper));
-  // expressway: lanes each direction has; where it narrows the outer lanes merge inward
-  const lanesPerSide = (s) => {
+  // expressway: the lanes on a side (-1 left, 1 right) at s; where it narrows to `lanesPerSide`,
+  // that side's outer lanes merge inward (a median never narrows)
+  const lanesOn = (side, s) => {
+    const n = side < 0 ? LEFT : RIGHT;
     let cut = 0;
-    for (const z of narrows) cut = Math.max(cut, (SIDE - z.lanesPerSide) * zone(s, z));
-    return SIDE - cut;
+    for (const z of narrows) cut = Math.max(cut, Math.max(0, n - z.lanesPerSide) * zone(s, z));
+    return n - cut;
   };
-  const edge = (s) => lanesPerSide(s) * LW; // expressway: outer lane line
+  const edge = (s, side = 1) => HM + lanesOn(side, s) * LW; // expressway: a side's outer lane line, from the centre
   const onBridge = (s) => {
     for (const b of bridges) if (s >= b.from && s <= b.to) return true;
     return false;
   };
-  const mainOuter = (s) => edge(s) + (onBridge(s) ? Math.min(SH, CONFIG.bridgeWallInset) : SH);
+  const mainOuter = (s, side = 1) => edge(s, side) + (onBridge(s) ? Math.min(SH, CONFIG.bridgeWallInset) : SH);
   // The exit / merge lane: an extra lane outside the expressway's right-hand lane, with the
   // shoulder beyond it. Before an exit it opens over `gore` metres at the start of the lane
   // zone and runs to the exit, where the side road's lane carries straight on from it and the
@@ -238,7 +248,7 @@ const createTrack = () => {
   // the lanes span [laneLo, laneHi]; the pavement, shoulders included, spans [lo, hi]
   const laneLo = (s) => {
     const kind = kindOf(s);
-    return kind === MAIN ? -edge(s) : kind === SIDE_ROAD ? -sideOpen(s) * LW : -LW / 2;
+    return kind === MAIN ? -edge(s, -1) : kind === SIDE_ROAD ? -sideOpen(s) * LW : -LW / 2;
   };
   const laneHi = (s) => {
     const kind = kindOf(s);
@@ -246,7 +256,7 @@ const createTrack = () => {
   };
   const lo = (s) => {
     const kind = kindOf(s);
-    if (kind === MAIN) return -mainOuter(s);
+    if (kind === MAIN) return -mainOuter(s, -1);
     if (kind !== SIDE_ROAD) return -LW / 2;
     const w = sideOpen(s);
     return -w * LW - 0.3 - w * (X.leftShoulder - 0.3);
@@ -270,33 +280,37 @@ const createTrack = () => {
   const onShoulder = (lat, s) => lat > laneHi(s) || lat < laneLo(s);
 
   // ---- lanes ------------------------------------------------------------------------------
-  // expressway: 0 .. laneCount-1 left to right, left half oncoming. -1 is the left shoulder,
-  // used as a lane only by oncoming traffic heading for or coming off a flyover; laneCount is
-  // the exit / merge lane on the right, used only by traffic taking a side road or coming off one.
+  // expressway: 0 .. laneCount-1 left to right: the left side's lanes (oncoming on a two-way
+  // road), the median's, then the right side's. -1 is the left shoulder, used as a lane only by
+  // oncoming traffic heading for or coming off a flyover; laneCount is the exit / merge lane on
+  // the right, used only by traffic taking a side road or coming off one.
   // side road: 0 = oncoming, 1 = ours. flyovers: 0.
-  const laneOf = (side, k) => side < 0 ? SIDE - 1 - k : SIDE + k; // k = 0 is the innermost lane
-  const openCount = (s) => Math.max(1, Math.round(lanesPerSide(s)));
+  const laneOf = (side, k) => side < 0 ? LEFT - 1 - k : LEFT + MID + k; // k = 0 is a side's innermost lane
+  const inMedian = (lane) => lane >= LEFT && lane < LEFT + MID;
+  // a side's lanes still open at s (at least one, on a side that has any)
+  const openCount = (side, s) => Math.min(side < 0 ? LEFT : RIGHT, Math.max(1, Math.round(lanesOn(side, s))));
 
   const laneOffset = (lane, s) => {
     const kind = kindOf(s);
     if (kind === SIDE_ROAD) return lane === 0 ? -LW / 2 : LW / 2;
     if (kind !== MAIN) return 0;
-    if (lane < 0) return -(edge(s) + SH / 2);
+    if (lane < 0) return -(edge(s, -1) + SH / 2);
     // (where the exit / merge lane is only partly open, its centre is that much closer in, so
     // a car heading for it moves out as it opens, and one still in it as it closes is eased
     // back into the lane beside it)
     if (lane >= LANES) return edge(s) + extra(s) - LW / 2;
-    const side = lane < SIDE ? -1 : 1;
-    const k = side < 0 ? SIDE - 1 - lane : lane - SIDE;
-    return side * (Math.min(k, lanesPerSide(s) - 1) + 0.5) * LW;
+    if (inMedian(lane)) return (lane - LEFT + 0.5) * LW - HM;
+    const side = lane < LEFT ? -1 : 1;
+    const k = side < 0 ? LEFT - 1 - lane : lane - LEFT - MID;
+    return side * (HM + (Math.min(k, lanesOn(side, s) - 1) + 0.5) * LW);
   };
 
   // the lane itself, or the lane it has merged into where the expressway is narrower
   const openLane = (lane, s) => {
-    if (!isMain(s) || lane < 0 || lane >= LANES) return lane;
-    const side = lane < SIDE ? -1 : 1;
-    const k = side < 0 ? SIDE - 1 - lane : lane - SIDE;
-    return laneOf(side, Math.min(k, openCount(s) - 1));
+    if (!isMain(s) || lane < 0 || lane >= LANES || inMedian(lane)) return lane;
+    const side = lane < LEFT ? -1 : 1;
+    const k = side < 0 ? LEFT - 1 - lane : lane - LEFT - MID;
+    return laneOf(side, Math.min(k, openCount(side, s) - 1));
   };
 
   const nearestLane = (lat, s) => {
@@ -305,8 +319,10 @@ const createTrack = () => {
     if (kind !== MAIN) return 0;
     // in the exit / merge lane, where there is (most of) one
     if (lat > 0 && extra(s) > LW / 2 && lat > edge(s) + (extra(s) - LW) / 2) return LANES;
-    const k = Math.round(Math.abs(lat) / LW - 0.5);
-    return laneOf(lat < 0 ? -1 : 1, Math.max(0, Math.min(openCount(s) - 1, k)));
+    if (Math.abs(lat) < HM) return LEFT + Math.max(0, Math.min(MID - 1, Math.floor((lat + HM) / LW)));
+    const side = (lat < 0 && LEFT > 0) || RIGHT === 0 ? -1 : 1;
+    const k = Math.round((Math.abs(lat) - HM) / LW - 0.5);
+    return laneOf(side, Math.max(0, Math.min(openCount(side, s) - 1, k)));
   };
 
   // [first, last] lane a vehicle travelling in direction dir normally uses
@@ -315,7 +331,7 @@ const createTrack = () => {
     if (kind === SIDE_ROAD) return dir < 0 ? [0, 0] : [1, 1];
     if (kind !== MAIN) return [0, 0];
     if (ONE_WAY) return [0, LANES - 1];
-    return dir < 0 ? [0, SIDE - 1] : [SIDE, LANES - 1];
+    return dir < 0 ? [0, LEFT - 1] : [LEFT + MID, LANES - 1]; // (never the median)
   };
 
   // where the player's lane assist pulls to: a lane centre, or the middle of a wide shoulder
@@ -338,7 +354,7 @@ const createTrack = () => {
     const wrongWay = v.isPlayer && v.dir > 0 && !ONE_WAY; // (a one-way level's exits have no flyovers)
     if (kind === MAIN) {
       for (const x of exits) {
-        if (wrongWay && v.s >= x.landingAt && v.s < x.landingAt + 6 && v.lat < -edge(v.s)) {
+        if (wrongWay && v.s >= x.landingAt && v.s < x.landingAt + 6 && v.lat < -edge(v.s, -1)) {
           v.s = x.flyA0 + (v.s - x.landingAt);
           v.lat += LSLOT;
           break;
@@ -349,7 +365,7 @@ const createTrack = () => {
           lane = 1;
           break;
         }
-        if (v.dir < 0 && v.s <= x.flyoverAt && v.s > x.flyoverAt - 6 && v.lat < -edge(v.s)) {
+        if (v.dir < 0 && v.s <= x.flyoverAt && v.s > x.flyoverAt - 6 && v.lat < -edge(v.s, -1)) {
           v.s = x.flyB0 + FLY + (v.s - x.flyoverAt);
           v.lat += LSLOT;
           lane = 0;
@@ -457,6 +473,12 @@ const createTrack = () => {
     const reach = FLY - X.ramp;
     const curved = (a, b) => { for (let s = a; s < b; s += STEP) if (curveAt(s) !== 0) return true; return false; };
     const overlaps = (a, b, c, d) => a < d && c < b;
+    if (![LEFT, RIGHT, MID].every(n => Number.isInteger(n) && n >= 0) || LEFT + RIGHT < 1) {
+      problems.push('lanes: whole numbers, and at least one lane');
+    }
+    if (!ONE_WAY && (LEFT < 1 || RIGHT < 1)) problems.push('lanes: a two-way road needs at least one lane each way');
+    if (ONE_WAY && MID) problems.push('median: only a two-way road can have one');
+    if (LEVEL.railway && !MID) problems.push('railway: it needs a median to run down');
     exits.forEach((x, i) => {
       const name = 'exit ' + i;
       if (x.mergeAt <= x.exitAt + 2 * X.ramp + 100) problems.push(name + ': merge is too close to the exit');
@@ -524,10 +546,10 @@ const createTrack = () => {
 
   return {
     length, start: -LEAD_IN, end: length + LEAD_OUT, problems,
-    laneCount: LANES, lanesEachWay: SIDE, shoulder: SH, flow: FLOW,
+    laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesPerSide, edge, extraLane, onBridge, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
+    lanesOn, edge, extraLane, onBridge, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

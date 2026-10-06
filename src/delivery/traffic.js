@@ -226,7 +226,7 @@ export const Traffic = (() => {
     for (const t of LEVEL.tractors || []) {
       const s = Track.place(t);
       const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1
-        : t.lane < Track.lanesEachWay ? -1 : 1; // (the left half of a two-way road is oncoming)
+        : t.lane < Track.leftLanes ? -1 : 1; // (the left side of a two-way road is oncoming)
       const car = cars.find(c => !c.active && !c.unused && c.dir === dir);
       if (!car) continue;
       car.s = s;
@@ -677,7 +677,10 @@ export const Traffic = (() => {
         if (settled && car.pendingLane === null) car.signal = 0;
         car.hazards = car.pulledOver && (car.hazards || settled);
         const drift = car.hesitant && !beside && !car.pulledOver ? Math.sin(car.wander += dt * 1.3) * H.wander : 0;
-        const wantVel = clamp((aimLat + drift - car.lat) * CONFIG.trafficLaneChangeRate, -6, 6);
+        // (and nothing is ever steered into a median: not even after a rival who has gone in there)
+        let aim = aimLat + drift;
+        if (Track.medianHalf) aim = car.dir > 0 ? Math.max(aim, Track.medianHalf + car.hw) : Math.min(aim, -Track.medianHalf - car.hw);
+        const wantVel = clamp((aim - car.lat) * CONFIG.trafficLaneChangeRate, -6, 6);
         car.latVel += (wantVel - car.latVel) * damp(6, dt);
       }
 

@@ -7,10 +7,11 @@ import { CONFIG } from '../config.js';
 import { Player } from '../player.js';
 import { Game } from '../game.js';
 import { makeTankMesh } from './cars.js';
+import { PIXEL_RATIO } from './scene.js';
 
 const canvas = document.getElementById('tankCorner');
 const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(PIXEL_RATIO);
 renderer.setSize(canvas.clientWidth || 120, canvas.clientHeight || 84, false);
 const scene = new THREE.Scene();
 scene.add(new THREE.HemisphereLight(0xffffff, 0x445544, 1.8));

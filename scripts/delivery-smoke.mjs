@@ -668,7 +668,7 @@ try {
   {
     const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
     check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo' && levels.levelLabel(main - 1) === String(main) &&
-      levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 1) === 'S2' && levels.LEVELS[main - 1].id === 'suburbs',
+      levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 1) === 'S2' && levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
       `the special levels come last, as S1 and S2: ${labels.slice(main - 1).join(', ')}`);
   }
 
@@ -930,8 +930,9 @@ try {
     const warned = Message.lines.some(line => line.text === 'Emergency vehicle oncoming!! Give way!');
     const setOff = amb && amb.dir === 1 && Math.abs(Player.s - amb.s - E.behind) < 1e-6 && amb.lane === 2 && amb.kind === 'ambulance';
     Player.lat = T().shoulderOffset(1, Player.s);
-    let closest = run(amb, 8, () => amb.s > car.s + 30);
-    check(setOff && warned && amb.s > car.s + 30 && !Player.busted && car.arrest < 0 && (car.pulledOver || car.lane !== 2) && closest > 0.5,
+    let gaveWay = false; // (the car pulls over, and back again once the ambulance is by)
+    let closest = run(amb, 8, () => { gaveWay ||= car.pulledOver || car.lane !== 2; return amb.s > car.s + 30; });
+    check(setOff && warned && amb.s > car.s + 30 && !Player.busted && car.arrest < 0 && gaveWay && closest > 0.5,
       `an ambulance going the player's way sets off ${E.behind} m behind in the player's lane ("${Message.pick('events', 'emergency')}"); ` +
       `the player and a car ahead give way, and it goes by (closest it came to anything: ${closest.toFixed(1)} m)`);
 
@@ -982,111 +983,39 @@ try {
       `90 s of Suburbia brings ambulances (${[...suburbs].map(d => d > 0 ? 'going the player\'s way' : 'oncoming').join(', ')}); the Expressway none`);
   }
 
-  console.log('emergency vehicles');
+  console.log('Canberra: a median railway');
   {
+    const { BulletTrain } = await load('/src/delivery/bullettrain.js');
     const { Message } = await load('/src/delivery/messages.js');
-    const E = CONFIG.emergency, T = () => track.Track;
-    const pick = (id) => levels.selectLevel(levels.LEVELS.findIndex(l => l.id === id));
-    // Suburbia, the player in lane 2 at 600 m (where the road is one lane each way) doing 20, the
-    // shoulder legal (a passenger), and no traffic but what a test puts there
-    const staged = [];
-    const setUp = () => {
-      pick('suburbs');
-      cars.selectCar('hatch');
-      Game.evil = false;
-      Game.start();
-      for (const c of Traffic.cars) c.active = false;
-      staged.length = 0;
-      Message.clear();
-      Player.s = 600; Player.lat = T().laneOffset(2, 600); Player.speed = 20; Player.launching = false; Player.shield = 0; Player.passenger = 99;
-    };
-    const stage = (props) => {
-      const car = Traffic.cars.find(c => c.dir > 0 && !c.active && !c.unused), type = CONFIG.vehicles.car;
-      Object.assign(car, { active: true, kind: 'car', fixed: false, viaSide: false, s: 700, lane: 2, lat: T().laneOffset(2, 700), vs: 15, baseSpeed: 15,
-        latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, rival: null, rivalTime: 0, honkWait: 0, throwTimer: 99, arrest: -1,
-        pulledOver: false, pulledFor: null, toad: null, hesitant: false, tap: 0, think: 99, pendingLane: null, signal: 0, hazards: false,
-        braking: false, emergency: false, defiant: false, hw: type.hw, hl: type.hl, height: type.height, mass: type.mass,
-        health: type.health, maxHealth: type.health, evil: false, mood: 0 }, props);
-      staged.push(car);
-      return car;
-    };
-    // runs on, keeping the road clear of anything else; returns the closest the ambulance came to running into anything
-    const run = (amb, seconds, until = () => false) => {
-      let closest = Infinity;
-      for (let i = 0; i < 120 * seconds && !until(); i++) {
-        for (const c of Traffic.cars) if (c !== amb && !staged.includes(c)) c.active = false;
-        Game.update(1 / 120);
-        FxQueue.length = 0;
-        for (const v of [Player, ...staged]) {
-          if (!amb.active || !v.active || v.arrest >= 0 || (v.isPlayer && Player.busted)) continue;
-          const room = (v.s - amb.s) * amb.dir - v.hl - amb.hl;
-          if (room > -1 && Math.abs(v.lat - amb.lat) < v.hw + amb.hw) closest = Math.min(closest, room);
-        }
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'canberra'));
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    const T = track.Track, HM = T.medianHalf;
+    const [south] = T.laneRange(-1, 500), [north] = T.laneRange(1, 500);
+    check(T.laneCount === 3 && T.leftLanes === 1 && T.medianLanes === 1 && T.rightLanes === 1 && south === 0 && north === 2 &&
+      T.laneOffset(1, 500) === 0 && Math.abs(Player.lat - T.laneOffset(2, 0)) < 1e-9 && T.nearestLane(0, 500) === 1 &&
+      Math.abs(T.laneLo(500) + HM + CONFIG.laneWidth) < 1e-9 && Math.abs(T.laneHi(500) - HM - CONFIG.laneWidth) < 1e-9,
+      `three lanes: one oncoming (0), the railway's median (1, centred on the centre line), and one going the player's way (2), where the player starts`);
+    // two minutes of driving, the player kept going: no traffic ever drives onto the median, and the trains come down it
+    let onMedian = 0, trains = 0, offTrack = 0, warned = false, wasActive = false;
+    for (let i = 0; i < 120 * 120 && Game.state === 'playing'; i++) {
+      Player.health = Player.maxHealth; Game.busts = 0; Game.time = 0;
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      for (const c of Traffic.cars) {
+        if (c.active && c.arrest < 0 && !(c.spin > 0) && !(c.stun > 0) && !(c.wobble > 0) && Math.abs(c.lat) - c.hw < HM - 0.05) onMedian++;
       }
-      return closest;
-    };
-    const fastest = Math.max(...cars.CARS.map(c => c.maxSpeed), ...Object.values(cars.LEVEL_CARS).map(c => c.maxSpeed)) + CONFIG.turboBoost;
-    check(E.speed > fastest && E.speed < CONFIG.bulletTrain.speed,
-      `an ambulance does ${(E.speed * 3.6).toFixed(0)} km/h: second only to the bullet train (${(CONFIG.bulletTrain.speed * 3.6).toFixed(0)}), ahead of anything else (${(fastest * 3.6).toFixed(0)})`);
-
-    // one going the player's way sets off behind the player, in the player's lane, and says so; the
-    // player and a car ahead get out of its way, and it goes by without touching either
-    setUp();
-    let car = stage({});
-    let amb = Traffic.startEmergency(1);
-    const warned = Message.lines.some(line => line.text === 'Emergency vehicle oncoming!! Give way!');
-    const setOff = amb && amb.dir === 1 && Math.abs(Player.s - amb.s - E.behind) < 1e-6 && amb.lane === 2 && amb.kind === 'ambulance';
-    Player.lat = T().shoulderOffset(1, Player.s);
-    let closest = run(amb, 8, () => amb.s > car.s + 30);
-    check(setOff && warned && amb.s > car.s + 30 && !Player.busted && car.arrest < 0 && (car.pulledOver || car.lane !== 2) && closest > 0.5,
-      `an ambulance going the player's way sets off ${E.behind} m behind in the player's lane ("${Message.pick('events', 'emergency')}"); ` +
-      `the player and a car ahead give way, and it goes by (closest it came to anything: ${closest.toFixed(1)} m)`);
-
-    // a player who stays in its way: it closes up behind and waits, then after giveWay s the player is busted
-    setUp();
-    amb = Traffic.startEmergency(1);
-    let closeAt = -1, t = 0;
-    closest = Infinity;
-    for (let i = 0; i < 120 * 12 && !Player.busted; i++, t += 1 / 120) {
-      closest = Math.min(closest, run(amb, 1 / 120));
-      if (closeAt < 0 && (Player.s - amb.s) - Player.hl - amb.hl <= E.reach) closeAt = t;
+      if (BulletTrain.active && !wasActive) {
+        trains++;
+        warned ||= Message.lines.some(line => line.text === 'BULLET TRAIN INCOMING!!!');
+      }
+      if (BulletTrain.active && (!BulletTrain.onTrack || BulletTrain.carriage(3, {}).lat !== 0)) offTrack++;
+      wasActive = BulletTrain.active;
     }
-    check(Player.busted && Player.bustReason === 'emergency' && Math.abs(t - closeAt - E.giveWay) < 0.1 && closest > 0.5,
-      `a player who won't give way is busted ${(t - closeAt).toFixed(2)} s after it closes up ("${Message.pick('busts', 'emergency')}"), and it never runs into the player (${closest.toFixed(1)} m)`);
-
-    // a defiant evil driver who won't give way is arrested, and it goes on by
-    setUp();
-    car = stage({ evil: true, defiant: true });
-    amb = Traffic.startEmergency(1);
-    Player.lat = T().shoulderOffset(1, Player.s);
-    let arrested = false;
-    closest = run(amb, 12, () => { arrested ||= car.arrest >= 0; return amb.s > car.s + 30; });
-    check(arrested && amb.s > car.s + 30 && closest > 0.5 && !Player.busted,
-      `a driver who won't give way (${E.defiance * 100}% of evil ones) is arrested, and the ambulance goes on by (closest ${closest.toFixed(1)} m)`);
-
-    // one coming the other way turns up ahead, in an oncoming lane, and says nothing
-    setUp();
-    amb = Traffic.startEmergency(-1);
-    const [first, last] = T().laneRange(-1, amb.s);
-    check(amb && amb.dir === -1 && amb.lane >= first && amb.lane <= last && amb.s - Player.s >= CONFIG.spawnMin &&
-      !Message.lines.some(line => line.text), 'an ambulance coming the other way turns up ahead in an oncoming lane, with no message');
-
-    // Suburbia sends them now and then, either way; the Expressway never
-    const seen = (id) => {
-      pick(id);
-      Game.start();
-      let ways = new Set();
-      for (let i = 0; i < 120 * 90 && Game.state === 'playing'; i++) {
-        Player.health = Player.maxHealth; Game.busts = 0; Game.time = 0;
-        Game.update(1 / 120);
-        FxQueue.length = 0;
-        for (const c of Traffic.cars) if (c.active && c.emergency) ways.add(c.dir);
-      }
-      return ways;
-    };
-    const suburbs = seen('suburbs'), expressway = seen('expressway');
-    check(suburbs.size > 0 && expressway.size === 0,
-      `90 s of Suburbia brings ambulances (${[...suburbs].map(d => d > 0 ? 'going the player\'s way' : 'oncoming').join(', ')}); the Expressway none`);
+    const { min, max } = levels.LEVEL.railway.every;
+    check(onMedian === 0 && trains >= Math.floor(120 / (max + 6)) && warned && !offTrack,
+      `2 min of Canberra: ${trains} bullet trains down the median track (every ${min}-${max} s), with the warning; no traffic ever on the median`);
   }
 
   console.log('cars');

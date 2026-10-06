@@ -6,9 +6,11 @@
 const COOKIE = 'delivery_racer_progress';
 const ONE_YEAR = 60 * 60 * 24 * 365;
 // Saved progress counts unlocked levels by position (see LEVELS), so it remembers which order of
-// levels it was saved with. Order 2 put Suburbia in at position 8, ahead of All Heck and Asteroid
-// Run (now S1 and S2): a save from before that had opened position 8 or beyond opens one more.
-const LEVEL_ORDER = 2;
+// levels it was saved with. Each new order put a level in among the others: a save from before
+// that had opened that position or beyond opens one more. Order 2 put Suburbia in at position 8,
+// ahead of All Heck and Asteroid Run (now S1 and S2); order 3, Canberra at 9.
+const INSERTED_AT = [8, 9]; // (for orders 2, 3, ...)
+const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 const fresh = () => ({
   money: 0,        // tips banked
@@ -30,7 +32,9 @@ const read = () => {
     if (!match) return fresh();
     const saved = JSON.parse(decodeURIComponent(match[1]));
     const data = { ...fresh(), ...saved };
-    if (!saved.levelOrder && data.unlocked >= 8) data.unlocked++; // (saved before order 2)
+    for (let order = saved.levelOrder || 1; order < LEVEL_ORDER; order++) {
+      if (data.unlocked >= INSERTED_AT[order - 1]) data.unlocked++;
+    }
     data.levelOrder = LEVEL_ORDER;
     return data;
   } catch {

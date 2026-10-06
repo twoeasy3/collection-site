@@ -56,6 +56,8 @@ const THEMES = {
   // beach: sand, a stormy sky, the sea along the right, palms and beach huts
   beach: { sky: 0x7e8d9e, ground: 0xdccb95, road: 0x45484e, scenery: 'beach' },
   // space: no ground and no road surface, only glowing lane lines among the stars
+  // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
+  canberra: { sky: 0xb9d8ee, ground: 0xa3ad66, road: 0x4a4c50, scenery: 'canberra', median: 0x7f9a4f },
   // suburb: lawns, pavements, picket fences and houses in a row
   suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb' },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
@@ -116,15 +118,41 @@ const buildRoad = () => {
     }
     line(from, Track.end, Track.laneHi);
   }
-  // double yellow centre line (a one-way road has an ordinary lane divider there instead)
-  const twoWay = Track.flow === 'both';
-  if (!twoWay) add(buildDashes(Track.start, Track.end, () => 0, () => true), lineMat);
+  // double yellow centre line (a one-way road has an ordinary lane divider there instead, and
+  // a road with a median a solid line along each side of it)
+  const twoWay = Track.flow === 'both', HM = Track.medianHalf;
+  if (!twoWay && Track.leftLanes && Track.rightLanes) add(buildDashes(Track.start, Track.end, () => 0, () => true), lineMat);
   for (const side of [-1, 1]) {
-    if (twoWay) add(buildStrip(Track.start, Track.end, side * 0.12, side * 0.28, 0.02), centreMat);
-    // dashed dividers between the lanes of each direction, only where both lanes exist
-    for (let k = 1; k < Track.lanesEachWay; k++) {
-      add(buildDashes(Track.start, Track.end, () => side * k * LW,
-        (s) => Track.lanesPerSide(s) >= k + 0.95), lineMat);
+    if (twoWay && !HM) add(buildStrip(Track.start, Track.end, side * 0.12, side * 0.28, 0.02), centreMat);
+    if (HM) line(Track.start, Track.end, () => side * HM);
+    // dashed dividers between the lanes of each side, only where both lanes exist
+    for (let k = 1; k < (side < 0 ? Track.leftLanes : Track.rightLanes); k++) {
+      add(buildDashes(Track.start, Track.end, () => side * (HM + k * LW),
+        (s) => Track.lanesOn(side, s) >= k + 0.95), lineMat);
+    }
+  }
+  // the median: a strip of its own colour between those lines and, on a level with a railway, a
+  // track down the middle of it: sleepers on ballast, and two rails
+  if (HM) {
+    add(buildStrip(Track.start, Track.end, -HM + 0.1, HM - 0.1, 0.01), flat(theme.median || 0x6f8f4a));
+    if (LEVEL.railway) {
+      const GAUGE = 1.435;
+      add(buildStrip(Track.start, Track.end, -1.6, 1.6, 0.03), flat(0x8b8378));
+      const sleeper = new THREE.InstancedMesh(new THREE.BoxGeometry(2.6, 0.12, 0.26), new THREE.MeshLambertMaterial({ color: 0x5e4b3a }),
+        Math.ceil((Track.end - Track.start) / 0.7));
+      const spot = new THREE.Object3D();
+      let n = 0;
+      for (let s = Track.start; s < Track.end; s += 0.7, n++) {
+        spot.rotation.y = Track.toWorld(s, 0, tmp);
+        spot.position.set(tmp.x, tmp.y + 0.08, tmp.z);
+        spot.updateMatrix();
+        sleeper.setMatrixAt(n, spot.matrix);
+      }
+      sleeper.count = n;
+      levelGroup.add(sleeper);
+      for (const side of [-1, 1]) {
+        add(buildStrip(Track.start, Track.end, side * GAUGE / 2 - 0.04, side * GAUGE / 2 + 0.04, 0.2), flat(0xb8bcc4));
+      }
     }
   }
   // start and finish lines
@@ -486,6 +514,103 @@ const buildRoad = () => {
     instances(new THREE.SphereGeometry(0.5, 10, 8), 0x3f8f3f, crowns);
     instances(cube, 0x55595f, lampPosts);
     instances(cube, 0xfff3c4, lampHeads, true);
+  } else if (theme.scenery === 'canberra') {
+    // ---- canberra: gum trees in the dry grass, concrete government blocks set back from the road,
+    // kangaroos, Lake Burley Griffin under each bridge with the Captain Cook jet, Black Mountain and
+    // its tower off to the left, and Parliament House and its flag mast past the finish
+    const trunks = [], leaves = [], blocks = [], bands = [], roos = [], heads = [];
+    const gum = (at, lat) => {
+      const h = 7 + Math.random() * 6;
+      trunks.push([at, lat, h / 2, 0.45, h, 0.45]);
+      for (let k = 0; k < 3; k++) { // (clumps of leaves, untidy, up the top of it)
+        const size = 2.2 + Math.random() * 2;
+        leaves.push([at + Math.random() * 2 - 1, lat + Math.random() * 2 - 1, h * (0.7 + k * 0.15), size, size * 0.7, size]);
+      }
+    };
+    const nearLake = (s) => (LEVEL.bridges || []).some(b => s > b.from - 40 && s < b.to + 40);
+    for (let s = Track.start; s < Track.end; s += 14) {
+      if (nearLake(s)) continue;
+      for (const side of [-1, 1]) {
+        const roll = Math.random(), at = s + Math.random() * 10;
+        if (roll < 0.45) gum(at, beside(side, at, 4 + Math.random() * 50));
+        else if (roll < 0.5) { // a kangaroo or two, sitting up in the grass
+          const lat = beside(side, at, 8 + Math.random() * 30);
+          roos.push([at, lat, 0.75, 0.7, 1.3, 0.8]);
+          heads.push([at + 0.3, lat, 1.55, 0.35, 0.45, 0.5]);
+        }
+      }
+    }
+    for (let s = Track.start + 60, k = 0; s < Track.end; s += 110, k++) { // concrete blocks, each side in turn
+      if (nearLake(s) || nearLake(s + 40)) continue;
+      const side = k % 2 ? 1 : -1, w = 26 + Math.random() * 22, h = 8 + Math.random() * 7, d = 14 + Math.random() * 10;
+      const lat = beside(side, s, 28 + d / 2 + Math.random() * 25);
+      blocks.push([s, lat, h / 2, d, h, w]);
+      for (let y = 2.4; y < h - 1; y += 3) bands.push([s, lat, y, d + 0.1, 0.9, w + 0.1]); // (rows of windows)
+    }
+    instances(tube, 0xe3dccb, trunks);
+    instances(new THREE.SphereGeometry(0.5, 8, 6), 0x7e9468, leaves);
+    instances(cube, 0xbdb6a8, blocks);
+    instances(cube, 0x3e464f, bands);
+    instances(new THREE.SphereGeometry(0.5, 8, 6), 0x8a6a4a, roos);
+    instances(new THREE.SphereGeometry(0.5, 8, 6), 0x7a5c3e, heads);
+    // the lake under each bridge, out to either side, and the jet (a plume of spray) on the left
+    for (const b of LEVEL.bridges || []) {
+      for (const side of [-1, 1]) {
+        const lake = new THREE.Mesh(buildStrip(b.from - 20, b.to + 20, (q) => beside(side, q, 2), (q) => beside(side, q, 500), -0.02, 8),
+          new THREE.MeshBasicMaterial({ color: 0x4f86a8, side: THREE.DoubleSide, depthWrite: false }));
+        lake.renderOrder = -1;
+        levelGroup.add(lake);
+      }
+      const jet = new THREE.Mesh(new THREE.ConeGeometry(4, 70, 12, 1, true), new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide }));
+      Track.toWorld((b.from + b.to) / 2, beside(-1, (b.from + b.to) / 2, 160), tmp);
+      jet.position.set(tmp.x, 35, tmp.z);
+      levelGroup.add(jet);
+    }
+    // Black Mountain, with Telstra Tower on top: a third of the way along, off to the left
+    {
+      const at = Track.length / 3;
+      Track.toWorld(at, beside(-1, at, 380), tmp);
+      const hill = new THREE.Mesh(new THREE.ConeGeometry(160, 70, 16), new THREE.MeshLambertMaterial({ color: 0x5f7448 }));
+      hill.position.set(tmp.x, 35, tmp.z);
+      const concrete = new THREE.MeshLambertMaterial({ color: 0xd8d8d2 });
+      const shaft = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 3.2, 120, 12), concrete);
+      shaft.position.set(tmp.x, 70 + 60, tmp.z);
+      const pod = new THREE.Mesh(new THREE.CylinderGeometry(9, 7, 14, 16), concrete);
+      pod.position.set(tmp.x, 70 + 80, tmp.z);
+      const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 1.2, 50, 8), concrete);
+      mast.position.set(tmp.x, 70 + 145, tmp.z);
+      levelGroup.add(hill, shaft, pod, mast);
+    }
+    // Parliament House, just past the end of the road: a long low front, and the flag mast on its
+    // four legs over the middle, flying the flag
+    {
+      const at = Track.end + 140, h = Track.toWorld(at, 0, tmp);
+      const house = new THREE.Group();
+      const white = new THREE.MeshLambertMaterial({ color: 0xece8de });
+      const front = new THREE.Mesh(new THREE.BoxGeometry(220, 14, 40), white);
+      front.position.y = 7;
+      const hill = new THREE.Mesh(new THREE.SphereGeometry(60, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x6f8f4a }));
+      hill.scale.set(1.8, 0.35, 1.2);
+      hill.position.z = 40;
+      house.add(front, hill);
+      const steel = new THREE.MeshLambertMaterial({ color: 0xc9ccd1 });
+      for (const [x, z] of [[-14, 25], [14, 25], [-14, 55], [14, 55]]) { // the four legs, leaning in to the top
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.9, 82, 6), steel);
+        leg.position.set(x / 2, 40, (z + 40) / 2);
+        leg.lookAt(0, 81, 40);
+        leg.rotateX(Math.PI / 2);
+        house.add(leg);
+      }
+      const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 30, 6), steel);
+      pole.position.set(0, 95, 40);
+      const flag = new THREE.Mesh(new THREE.PlaneGeometry(12, 6), new THREE.MeshBasicMaterial({ color: 0x0b2a6f, side: THREE.DoubleSide }));
+      flag.position.set(6, 106, 40);
+      house.add(pole, flag);
+      house.rotation.y = h;
+      house.position.copy(tmp);
+      levelGroup.add(house);
+    }
   } else if (theme.scenery === 'hell') {
     // ---- hell: rivers of lava, black spires of rock, and fires along the roadside ------------------
     const glow = (color) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthWrite: false });
