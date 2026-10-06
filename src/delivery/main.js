@@ -37,6 +37,7 @@ import './render/menu.js';
 import './render/touch.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
+import { Social } from './social.js';
 import { CAR } from './cars.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
@@ -187,7 +188,7 @@ const frame = (now) => {
     const lowrider = Game.state === 'playing' && !Game.paused ? Math.max(0, 1 - lowriderFar / CONFIG.lowriderHearing) : 0;
     Sound.lowriders(lowrider * lowrider);
     // beeps while on the shoulder with the danger meter running down, faster the nearer the bust
-    Sound.danger(live && Player.onShoulder ? 1 - Player.danger / CONFIG.dangerTime : -1);
+    Sound.danger(live && Player.onShoulder ? 1 - Player.danger / Social.dangerTime : -1);
     // a powerup about to run out
     Sound.powerWarning(live && Player.powerLeft > 0 && Player.powerLeft <= CONFIG.powerUpWarning);
     // the UFO AIR STRIKE's saucer, for as long as it is about

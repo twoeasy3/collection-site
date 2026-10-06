@@ -14,6 +14,7 @@ import { levelGroup } from './road.js';
 import { F1_PAINTS } from './cars.js';
 import { damp } from '../util.js';
 import { emotionOf } from '../physics.js';
+import { faceSvg } from './faces.js';
 
 let cut = -1, spot = null;
 const at = new THREE.Vector3(), want = new THREE.Vector3();
@@ -206,14 +207,12 @@ directorBtn.addEventListener('click', () => { RaceWatch.director(); drawn = 0; }
 const caption = document.getElementById('raceCaption');
 let drawn = 0;
 const SHOTS = { trackside: 'TRACKSIDE', chase: 'ONBOARD', heli: 'HELICAM' };
-// (the mood faces, as the ones that pop up over the cars draw them: see render/emotes.js)
-const face = (fill, mouth, brows = '') => `<svg viewBox="0 0 24 24" width="13" height="13"><circle cx="12" cy="12" r="11" fill="${fill}"/>` +
-  `<g fill="#1c1c1c" stroke="#1c1c1c" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="10" r="1.7" stroke="none"/>` +
-  `<circle cx="16" cy="10" r="1.7" stroke="none"/>${brows}<path d="${mouth}" fill="none"/></g></svg>`;
-const FACES = {
-  happy: face('#4caf50', 'M7 14 Q12 19 17 14'),
-  neutral: face('#ffd23f', 'M8 16 H16'),
-  angry: face('#e53935', 'M8 18 Q12 14 16 18', '<path d="M5 5.5 L10 8 M19 5.5 L14 8"/>'),
+// (the mood faces, as the ones that pop up over the cars: see render/faces.js)
+const FACES = { happy: faceSvg('happy'), neutral: faceSvg('neutral'), angry: faceSvg('angry') };
+// (good or evil: a halo, or horns)
+const SIDES = {
+  good: '<svg viewBox="0 0 24 24" width="12" height="12"><title>good</title><ellipse cx="12" cy="12" rx="9" ry="4.5" fill="none" stroke="#ffd23f" stroke-width="3"/></svg>',
+  evil: '<svg viewBox="0 0 24 24" width="12" height="12"><title>evil</title><path d="M3 21 Q2 9 8 3 Q7 12 11 19 Z M21 21 Q22 9 16 3 Q17 12 13 19 Z" fill="#e53935"/></svg>',
 };
 const MISHAPS = { crit: '<i title="critical hit">❗</i>', spin: '<i title="spun out">🌀</i>' };
 export const syncRaceWatch = (now) => {
@@ -232,7 +231,7 @@ export const syncRaceWatch = (now) => {
       : c.done ? 'FINISHED' : down >= 1 ? '+' + down + (down > 1 ? ' LAPS' : ' LAP')
       : gap === null ? '' : '+' + gap.toFixed(3);
     rows.push(`<div class="row${c === RaceWatch.focus ? ' focus' : ''}${c === RaceWatch.pinned ? ' pinned' : ''}${c.active ? '' : ' out'}" data-i="${RaceWatch.racers.indexOf(c)}">` +
-      `<span class="pos">${pos}</span><span class="dot" style="background:${hex(F1_PAINTS[c.paint % F1_PAINTS.length])}"></span>` +
+      `<span class="pos">${pos}</span><span class="side">${SIDES[c.evil ? 'evil' : 'good']}</span><span class="dot" style="background:${hex(F1_PAINTS[c.paint % F1_PAINTS.length])}"></span>` +
       `<span class="name">${c.driver}</span><span class="gap">${split}</span>` +
       `<span class="gain ${pos < c.grid ? 'up' : pos > c.grid ? 'down' : ''}">${pos < c.grid ? '▲' + (c.grid - pos) : pos > c.grid ? '▼' + (pos - c.grid) : '–'}</span>` +
       `<span class="kills">${c.kills || ''}</span><span class="wrecks">${c.wrecks || ''}</span>` +
@@ -242,7 +241,7 @@ export const syncRaceWatch = (now) => {
   }
   board.classList.toggle('dense', order.length > 24); // (a big field packed in tighter)
   board.innerHTML = `<div class="head">${LEVEL.name.toUpperCase()}<span>${done ? 'CHEQUERED FLAG' : 'LAP ' + lap + ' / ' + LEVEL.laps}</span></div>` +
-    `<div class="row labels"><span class="pos"></span><span class="dot"></span><span class="name"></span><span class="gap">GAP</span><span class="gain" title="places gained since the start">+/-</span><span class="kills" title="wrecks caused">💥</span><span class="wrecks" title="times wrecked">☠</span><span class="mood"></span><span class="mishap"></span><span class="health">HP</span></div>` +
+    `<div class="row labels"><span class="pos"></span><span class="side"></span><span class="dot"></span><span class="name"></span><span class="gap">GAP</span><span class="gain" title="places gained since the start">+/-</span><span class="kills" title="wrecks caused">💥</span><span class="wrecks" title="times wrecked">☠</span><span class="mood"></span><span class="mishap"></span><span class="health">HP</span></div>` +
     rows.join('');
   const c = RaceWatch.focus, news = Game.time - RaceWatch.ticker.at < 4 ? RaceWatch.ticker.text : '';
   // (and the watched car's gaps to the cars either side of it on the road)

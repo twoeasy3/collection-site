@@ -55,7 +55,7 @@ body.screensaver #hud, body.screensaver .throw, body.screensaver #touchControls,
 /* the race screensaver's graphics, TV style: the leaderboard down the left, a caption along the bottom */
 #raceBoard, #raceCaption { display: none; position: fixed; pointer-events: none; z-index: 5; color: #fff;
   font-family: system-ui, sans-serif; text-shadow: 0 1px 2px rgba(0, 0, 0, .6); }
-#raceBoard { left: 12px; top: 12px; width: 390px; background: rgba(10, 14, 28, .78); border-radius: 6px; padding: 6px 0;
+#raceBoard { left: 12px; top: 12px; width: 410px; background: rgba(10, 14, 28, .78); border-radius: 6px; padding: 6px 0;
   font-size: 13px; max-height: calc(100vh - 24px); overflow: hidden; }
 #raceBoard.dense { font-size: 11px; padding: 4px 0; }
 body.racewatch #raceBoard { pointer-events: auto; } /* (a racer on it clicked to follow) */
@@ -71,6 +71,9 @@ body.racewatch #raceBoard { pointer-events: auto; } /* (a racer on it clicked to
 #raceBoard .row.focus { background: rgba(225, 6, 0, .55); }
 #raceBoard .row.out { opacity: .45; }
 #raceBoard .pos { width: 20px; text-align: right; font-weight: 800; }
+#raceBoard .side { width: 12px; display: flex; justify-content: center; }
+#raceBoard .side svg { display: block; }
+#raceBoard.dense .side svg { width: 10px; height: 10px; }
 #raceBoard .dot { width: 4px; height: 13px; border-radius: 1px; }
 #raceBoard .name { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #raceBoard .gap { font-variant-numeric: tabular-nums; opacity: .9; }
@@ -96,7 +99,7 @@ body.racewatch #raceBoard { pointer-events: auto; } /* (a racer on it clicked to
 #raceMap { display: none; position: fixed; right: 12px; bottom: 12px; width: 240px; height: 240px; pointer-events: none; z-index: 5;
   background: rgba(10, 14, 28, .6); border-radius: 8px; }
 body.racewatch #raceBoard, body.racewatch #raceCaption, body.racewatch #raceMap { display: block; }
-@media (max-width: 600px) { #raceMap { width: 150px; height: 150px; } #raceBoard { width: 300px; font-size: 11px; } #raceBoard.dense { font-size: 9px; } #raceCaption { font-size: 14px; bottom: 16px; } }
+@media (max-width: 600px) { #raceMap { width: 150px; height: 150px; } #raceBoard { width: 316px; font-size: 11px; } #raceBoard.dense { font-size: 9px; } #raceCaption { font-size: 14px; bottom: 16px; } }
 /* on-screen controls (body.touch-controls: see render/touch.js): two big zones along the bottom,
    steering on the left and the pedals on the right, each split in two, with a THROW button
    above each */
@@ -200,4 +203,9 @@ body.in-garage #hud, body.in-garage .throw, body.in-garage #banner, body.in-gara
 #danger .bar { width: 150px; max-width: 40vw; height: 10px; margin-top: 3px;
   background: rgba(0,0,0,.4); border-radius: 5px; overflow: hidden; }
 #dangerFill { height: 100%; width: 100%; background: #ff3b30; }
+/* a good player's social standing (see social.js): gold, and glowing once it protects the player */
+#social { display: none; margin-top: 8px; font-size: 12px; font-weight: 700; }
+#social .bar { width: 150px; max-width: 40vw; height: 8px; margin-top: 3px; background: rgba(0,0,0,.4); border-radius: 4px; overflow: hidden; }
+#socialFill { height: 100%; width: 0; background: #ffd23f; }
+#social.protected #socialFill { background: #fff3b0; box-shadow: 0 0 8px #ffd23f; }
 body.in-garage #touchControls { display: none; }

@@ -16,6 +16,7 @@ import { Wreckage } from './wreckage.js';
 import { Machinery } from './machinery.js';
 import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
+import { Social } from './social.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -124,6 +125,7 @@ export const Game = {
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
     useLevelCar(LEVEL.car); // a UFO on the space level, otherwise the garage's car
     Player.evil = this.evil;
+    Social.reset(); // (before the player: its shoulder allowance goes by it)
     Player.reset();
     Wreckage.reset(); // (before the traffic is dealt out: none goes where wreckage lies)
     Traffic.reset();
@@ -300,6 +302,7 @@ export const Game = {
     if (playing) Wreckage.update(dt);
     if (playing) Machinery.update(dt);
     if (playing) Site.update(dt);
+    if (playing) Social.update(dt);
     Packages.update(dt);
     Pickups.update();
     Collision.updateObstacles(dt);

@@ -8,6 +8,7 @@ import { Message } from '../messages.js';
 import { Traffic } from '../traffic.js';
 
 // ---- HUD -------------------------------------------------------------------
+import { Social } from '../social.js';
 const hudTimer = document.getElementById('timer');
 const hudProblems = document.getElementById('levelProblems');
 Game.onLoad.push(() => {
@@ -23,6 +24,7 @@ const hudTurbo = document.getElementById('turbo');
 const hudDanger = document.getElementById('danger');
 const hudCopWatch = document.getElementById('copWatch');
 const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill');
+const hudSocial = document.getElementById('social'), hudSocialFill = document.getElementById('socialFill');
 const hudBusts = document.getElementById('busts');
 const hudDangerFill = document.getElementById('dangerFill');
 const hudFade = document.getElementById('fade');
@@ -101,7 +103,14 @@ export const updateHud = () => {
   const towing = Player.active && !Game.screensaver && Player.tow > 0;
   hudTowing.style.display = towing ? 'block' : 'none';
   if (towing) hudTowFill.style.width = Player.tow * 100 + '%';
-  const danger = Player.danger / CONFIG.dangerTime;
+  // a good player's social standing (none on a level with no packages, nor in the screensaver)
+  const social = Game.state === 'playing' && Player.active && !Game.screensaver && Social.on && !LEVEL.noPackages;
+  hudSocial.style.display = social ? 'block' : 'none';
+  if (social) {
+    hudSocialFill.style.width = Social.level * 100 + '%';
+    hudSocial.classList.toggle('protected', Social.protected);
+  }
+  const danger = Player.danger / Social.dangerTime;
   hudDanger.style.display = Player.active && danger < 1 ? 'block' : 'none';
   hudDangerFill.style.width = danger * 100 + '%';
   const health = Math.max(0, Player.health / Player.maxHealth);

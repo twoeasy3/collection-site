@@ -11,6 +11,7 @@ import { BulletTrain } from './bullettrain.js';
 import { Tide } from './tide.js';
 import { Wreckage } from './wreckage.js';
 import { Game } from './game.js';
+import { Social } from './social.js';
 
 // how hard a car is pushed to the outside of the bend it is in, beyond what its tyres hold (m/s^2,
 // signed: a bend to the right pushes it left); 0 within their grip (see CONFIG.ice)
@@ -41,7 +42,7 @@ export const Player = {
   mysteryTime: 0,      // ...and s of it left
   nextMystery: '',     // the effect the next mystery will be, if not left to chance (?mystery= in the URL)
   tank: 0,             // 1 once TANK RAGE has started; it lasts for the rest of the level
-  danger: CONFIG.dangerTime, // s of shoulder driving left before the police come
+  danger: CONFIG.dangerTime, // s of shoulder driving left before the police come (see Social.dangerTime)
   busted: false,
   bustReason: '',      // why the police are after the car: shoulder | seen | assault | assaultCop | bump
   onShoulder: false,   // illegally on the shoulder right now
@@ -106,7 +107,8 @@ export const Player = {
   // a fresh car at a standstill (the helicopter has just set it down)
   respawn(keepHealth) {
     this.active = true;
-    this.danger = CONFIG.dangerTime;
+    this.grace = 0;      // s left to get off the shoulder after a caution for it (see bust)
+    this.danger = Social.dangerTime;
     this.busted = false;
     this.speed = 0;
     this.launching = true;
@@ -134,6 +136,16 @@ export const Player = {
     // (nor anyone for the shoulder with a bullet train about, or just gone: an empty danger meter
     // busts the car once that is over, if it is still on the shoulder)
     if ((reason === 'shoulder' || reason === 'seen') && BulletTrain.mercy) return;
+    // (nor for the shoulder in the grace after a caution for it: time to get back in a lane)
+    const shoulder = reason === 'shoulder' || reason === 'seen';
+    if (shoulder && this.grace > 0) return;
+    // a bust costs a good player social standing; and one in high standing is let off with a caution
+    if (Social.busted()) {
+      if (shoulder) this.grace = CONFIG.social.grace;
+      const line = Message.say('busts', reason);
+      if (line) line.text = 'CAUTION: ' + line.text + (shoulder ? ' Back in your lane!' : '');
+      return;
+    }
     this.busted = true;
     this.bustReason = reason;
     // the bust's message, led by which bust of the run this is (messages.json: bustCount)
@@ -170,13 +182,15 @@ export const Player = {
     this.ghost = Math.min(this.ghost, 0.01);
     this.endMystery();
     if (caught) this.bust('shoulder');
-    if (type === 'turbo') this.turbo = CONFIG.turboTime;
-    else if (type === 'radarDetector') this.radar = CONFIG.radarTime;
-    else if (type === 'siren') this.siren = CONFIG.sirenPickup.time;
-    else if (type === 'ghost') this.ghost = CONFIG.ghostTime;
-    else if (type === 'passenger') this.passenger = CONFIG.passengerTime;
-    else if (type === 'badGas') this.badGas = CONFIG.badGas.time;
-    else if (type === 'heavyMass') this.heavy = CONFIG.heavyMass.time;
+    // (longer if good, shorter if bad, the higher the player's standing: see Social)
+    const shift = Social.powerUpShift(type);
+    if (type === 'turbo') this.turbo = CONFIG.turboTime + shift;
+    else if (type === 'radarDetector') this.radar = CONFIG.radarTime + shift;
+    else if (type === 'siren') this.siren = CONFIG.sirenPickup.time + shift;
+    else if (type === 'ghost') this.ghost = CONFIG.ghostTime + shift;
+    else if (type === 'passenger') this.passenger = CONFIG.passengerTime + shift;
+    else if (type === 'badGas') this.badGas = CONFIG.badGas.time + shift;
+    else if (type === 'heavyMass') this.heavy = CONFIG.heavyMass.time + shift;
     else if (type === 'mystery') this.startMystery();
   },
   // s left of the powerup that is running (0 = none)
@@ -187,15 +201,18 @@ export const Player = {
   startMystery() {
     const { effects, time } = CONFIG.mystery;
     // (a tank only ever gets the air strike)
+    // (the good ones the likelier, the higher the player's standing: see Social)
+    const weights = effects.map(e => Social.mysteryWeight(e));
+    let roll = Math.random() * weights.reduce((a, w) => a + w, 0), drawn = effects[effects.length - 1];
+    for (let i = 0; i < effects.length; i++) if ((roll -= weights[i]) < 0) { drawn = effects[i]; break; }
     const effect = this.tank > 0 ? 'ufo'
-      : effects.find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || // (?mystery=UFO works too)
-        effects[Math.floor(Math.random() * effects.length)];
+      : effects.find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || drawn; // (?mystery=UFO works too)
     Message.say('powerups', 'mystery', effect);
     if (effect === 'ufo') UfoStrike.start();
     if (effect === 'bulletTrain') BulletTrain.start();
     if (effect === 'ufo' || effect === 'bulletTrain' || effect.startsWith('insurance')) return;
     this.mystery = effect;
-    this.mysteryTime = time;
+    this.mysteryTime = time + Social.powerUpShift(effect);
     if (effect === 'toad') Traffic.toadify(true);
     if (effect === 'angel' || effect === 'jerk') for (const car of Traffic.cars) car.showMood = true; // (moods: see Traffic)
   },
@@ -302,11 +319,12 @@ export const Player = {
     this.yaw = 0;
     this.launching = false;
     this.onShoulder = false;
-    this.danger = CONFIG.dangerTime;
+    this.danger = Social.dangerTime;
   },
   update(dt, throttle, steer, stopping) {
     this.stun = Math.max(0, this.stun - dt);
     this.shield = Math.max(0, this.shield - dt);
+    this.grace = Math.max(0, (this.grace || 0) - dt); // (after a caution: see bust)
     this.ghost = Math.max(0, this.ghost - dt);
     this.passenger = Math.max(0, this.passenger - dt);
     this.radar = Math.max(0, this.radar - dt); // (when it runs out with the shoulder meter full: a bust, below)
@@ -387,7 +405,7 @@ export const Player = {
       this.danger = Math.max(0, this.danger - dt * (BulletTrain.active ? CONFIG.bulletTrain.dangerMercy : 1));
       if (this.danger === 0) this.bust('shoulder');
     } else {
-      this.danger = Math.min(CONFIG.dangerTime, this.danger + CONFIG.dangerCooldown * dt);
+      this.danger = Math.min(Social.dangerTime, this.danger + CONFIG.dangerCooldown * dt);
     }
   },
 };

@@ -10,6 +10,7 @@ import { Message } from './messages.js';
 import { Tide } from './tide.js';
 import { Wreckage } from './wreckage.js';
 import { Game } from './game.js';
+import { Social } from './social.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -70,7 +71,7 @@ export const Traffic = (() => {
   };
   // is a police car close enough to see what the player is doing?
   const policeNear = () => cars.some(c => c.active && !c.junction && c.kind === 'police' && !c.toad && c.stun <= 0 &&
-    Math.abs(c.s - Player.s) < CONFIG.policeSightRange && Math.abs(c.lat - Player.lat) < 25);
+    Math.abs(c.s - Player.s) < Social.policeSight && Math.abs(c.lat - Player.lat) < 25); // (as far as the player's standing lets it)
 
   const MOOD_START = { happy: 0.7, neutral: 0, angry: -0.7 };
   // evil cars are more likely to start out angry (a level's "drivers" can set the chances
@@ -195,10 +196,11 @@ export const Traffic = (() => {
       : own ? own * (P.min + Math.random() * (P.max - P.min)) : type.speed * (min + Math.random() * (max - min));
     car.vs = car.dir * car.baseSpeed;
     const evilShare = drivers().evil !== undefined ? drivers().evil : CONFIG.evilShare;
-    car.evil = !type.special && Math.random() < evilShare; // fixed for this car's life
+    car.evil = !type.special && Math.random() < Social.evilShare(evilShare); // fixed for this car's life (fewer, the higher the player's standing)
     car.defiant = car.evil && Math.random() < CONFIG.emergency.defiance; // won't give way to an ambulance
-    car.emotion = pickEmotion(car.evil);
-    car.mood = MOOD_START[car.emotion];
+    // (and the higher the player's standing, the happier every driver starts out)
+    car.mood = clamp(MOOD_START[pickEmotion(car.evil)] + Social.moodLift, -1, 1);
+    car.emotion = emotionOf(car.mood);
     car.paint = Math.floor(Math.random() * 1000);
     car.showMood = false;
     car.wobble = 0;     // s left of wobbling after a critical hit, before it spins out
@@ -207,6 +209,8 @@ export const Traffic = (() => {
     car.rivalTime = 0;
     car.grudge = false; // set once the player has upset this driver
     car.wreckedByPlayer = false; // set once one of the player's packages has doomed it (see Packages)
+    car.spite = false;           // an evil driver given a gift by the player: it throws at the player now and then...
+    car.offended = 0;            // ...after this many s of throwing only at the player (see CONFIG.giftOffence)
     car.ufoBurning = false; // burning up after a UFO air strike (see UfoStrike)
     car.toad = null;        // in TOAD RAGE: what it was before it became a toad (see toadify)
     car.pulledOver = false; // on the shoulder, out of the way of the player's siren
@@ -268,6 +272,7 @@ export const Traffic = (() => {
       for (let k = 0; k < G.count; k++) {
         if (!addRacer((G.from ?? 14) + (G.count - 1 - k) * G.gap, lanes[k % 2], k % 2 === 1)) break;
       }
+      sortGrid();
     }
     // ...and its parked cars, on the shoulders with their hazards on: a car of one of the
     // level's ordinary kinds, facing the way that side's traffic goes, that never moves off
@@ -307,6 +312,64 @@ export const Traffic = (() => {
     car.place = undefined; // (its place in the running order: see raceMood)
     return true;
   };
+  // the grid put in order: the slowest driver on pole, the fastest at the back (so the race is one
+  // of coming through the field). A driver's pace: its top speed, and its speed through the bends
+  // (which goes with the square root of its nerve)
+  const sortGrid = () => {
+    const field = cars.filter(c => c.active && c.racer);
+    const slots = field.map(c => ({ s: c.s, lane: c.lane })).sort((a, b) => b.s - a.s);
+    const pace = (c) => c.baseSpeed * Math.sqrt(c.nerve || 1);
+    field.sort((a, b) => pace(a) - pace(b)).forEach((c, i) => {
+      c.s = slots[i].s;
+      c.lane = slots[i].lane;
+      c.lat = Track.laneOffset(c.lane, c.s);
+    });
+  };
+  // how a traffic driver treats the player (see CONFIG.attitude): by its side, its mood and the
+  // player's side. null: it pays the player no special attention. (Not racers, who have race rules
+  // of their own; nor the police, ambulances, nor trucks and tractors, which keep to themselves)
+  const minds = (car) => Player.active && !car.racer && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
+    !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir;
+  const attitude = (car) => {
+    if (!minds(car)) return null;
+    const mood = car.emotion;
+    if (!car.evil) {
+      if (mood === 'happy') return Player.evil ? 'wary' : 'friendly';
+      if (mood === 'angry') return Player.evil ? 'vigilante' : 'sulky';
+      return Player.evil ? 'distant' : null;
+    }
+    if (mood === 'happy') return Player.evil ? 'wingman' : 'smug';
+    if (mood === 'angry') return Player.evil ? 'turf' : car.spite ? null : 'rage'; // (angry at a gift: no road rage, see Packages)
+    return null;
+  };
+  // the turf war (CONFIG.attitude.hunt): a driver starts hunting the player
+  const startHunt = (car) => {
+    car.hunt = CONFIG.attitude.hunt.time;
+    car.grudge = true;
+  };
+  // a car wrecked by the player: an evil player wins the respect of the evil drivers about
+  const wreckedByPlayer = (wreck) => {
+    const W = CONFIG.attitude.wreckCheer;
+    if (!Player.evil) return;
+    for (const o of cars) {
+      if (o === wreck || !o.active || !o.evil || o.racer || o.hunt > 0 || Math.abs(o.s - wreck.s) > W.range) continue;
+      o.mood = Math.min(1, o.mood + W.mood);
+      o.showMood = true;
+    }
+  };
+  // the hunters' roles, worked out once a frame: with two or more on the player, the nearest ahead
+  // blocks, the nearest behind tails, and the rest flank (alone: it just goes for the player)
+  const huntRoles = () => {
+    const hunters = cars.filter(c => c.active && c.hunt > 0);
+    for (const c of hunters) c.huntRole = 'solo';
+    if (hunters.length < 2) return;
+    const ahead = hunters.filter(c => c.s > Player.s).sort((a, b) => a.s - b.s);
+    const behind = hunters.filter(c => c.s <= Player.s).sort((a, b) => b.s - a.s);
+    for (const c of ahead) c.huntRole = 'drop';
+    if (ahead[0]) ahead[0].huntRole = 'block';
+    for (const c of behind) c.huntRole = 'flank';
+    if (behind[0]) behind[0].huntRole = 'tail';
+  };
   // could the car move over into that lane right now?
   const canMove = (car, lane, ignorePlayer) => {
     const [first, last] = Track.laneRange(car.dir, car.s);
@@ -336,12 +399,27 @@ export const Traffic = (() => {
     return true;
   };
 
+  // a hard touch of the brakes, every so often, in front of the player (see CONFIG.attitude)
+  const brakeCheck = (car, dt) => {
+    const A = CONFIG.attitude, ds = car.s - Player.s;
+    if ((car.checkWait = (car.checkWait ?? between(A.brakeCheckEvery)) - dt) > 0 || ds <= 0 || ds > A.brakeCheckRange + car.hl + Player.hl) return;
+    car.checkWait = between(A.brakeCheckEvery);
+    car.tap = CONFIG.hesitation.tapTime;
+  };
+  // an evil racer that is angry: in a fury, faster all round (see CONFIG.race.fury)
+  const furious = (car) => car.racer && car.evil && car.emotion === 'angry';
+  // how hard an evil racer left behind is chasing down the car in front of it: 0 .. 1 (see CONFIG.race.chase)
+  const chasing = (car) => {
+    const C = CONFIG.race.chase;
+    return car.racer && car.evil ? clamp(((car.aheadGap || 0) - C.from) / (C.full - C.from), 0, 1) : 0;
+  };
   // how fast a racer may go for the bends ahead of it (see CONFIG.race): as fast as its nerve allows
   const racingLine = (car) => {
     const R = CONFIG.race, type = CONFIG.vehicles[car.kind];
     let sharpest = 0;
     for (let d = 0; d <= R.aiLookout; d += 5) sharpest = Math.max(sharpest, Math.abs(Track.bend(car.s + car.dir * d)));
-    const nerve = (car.nerve || 1) * (car.attack > 0 ? R.attackNerve : 1); // (its own, and more on the attack)
+    const nerve = (car.nerve || 1) * (car.attack > 0 ? R.attackNerve : 1) * (furious(car) ? R.fury.nerve : 1) *
+      (1 + (R.chase.nerve - 1) * chasing(car)); // (its own, and more on the attack, in a fury, or chasing down the car in front)
     return sharpest > 1e-4 ? Math.sqrt(CONFIG.ice.grip * R.aiTyres * R.aiGrip * nerve * (type.agility || 1) / (weightOf(car) * sharpest)) : Infinity;
   };
   // the slipstream (a race: see CONFIG.race): how deep in the tow of a car ahead a car at s, lat
@@ -401,6 +479,7 @@ export const Traffic = (() => {
       if (c.active) c.mood += (chased ? -R.pressureMood * front : R.leadMood) * front * dt;
       c.mood = clamp(c.mood, -1, 1);
       c.place = place;
+      c.aheadGap = place > 0 ? field[place - 1].at - at : 0; // (to the car in front in the running order: see chasing)
     });
   };
   // a horn to suit the vehicle (police cars have sirens instead), only near the player
@@ -414,9 +493,11 @@ export const Traffic = (() => {
   // A car that hurts the player while the player's siren sounds is arrested: a police
   // helicopter comes down and carries it off (render/helicopter.js). Until it is gone it
   // touches nothing, and nothing touches it.
+  // (with the player's standing high enough, an evil car that assaults it with a police car about
+  // is arrested too: see Social)
   const arrest = (car) => {
-    if (!(Player.siren > 0) || Player.damageScale <= 0) return;
-    arrestNow(car);
+    if (Player.damageScale <= 0) return;
+    if (Player.siren > 0 || (Social.protected && car && car.evil && policeNear())) arrestNow(car);
   };
   // (also what happens to a car that won't get out of an ambulance's way)
   const arrestNow = (car) => {
@@ -454,8 +535,8 @@ export const Traffic = (() => {
     if (car.kind === 'tractor' || CONFIG.vehicles[car.kind].kerb) return; // a tractor just trundles along its lane, and a truck keeps to the kerb
     if (car.pendingLane !== null) return; // (already signalling for a move)
     if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
-    // angry drivers pick on whoever is nearest
-    if (car.emotion === 'angry' && !car.rival && Math.random() < CONFIG.rivalryPickChance) {
+    // angry evil drivers pick on whoever is nearest (a good one only fights back, when it is hit)
+    if (car.emotion === 'angry' && car.evil && !car.rival && Math.random() < CONFIG.rivalryPickChance) {
       let best = null, bestGap = CONFIG.rivalryRange;
       for (const o of cars) {
         if (o === car || !o.active || o.junction || o.dir !== car.dir) continue;
@@ -464,16 +545,23 @@ export const Traffic = (() => {
       }
       if (best) startRivalry(car, best);
     }
+    // its attitude to the player (see CONFIG.attitude), with the player coming up behind it (or,
+    // for a wary one, anywhere near)
     const ahead = car.s - Player.s; // how far this car is ahead of the player
     const playerLane = Track.nearestLane(Player.lat, Player.s);
     const inRange = Player.active && car.dir > 0 && ahead > 8 && ahead < CONFIG.attitudeRange;
-    if (car.emotion === 'angry' && inRange) {
-      const dir = Math.sign(playerLane - car.lane);
-      if (dir) tryMove(car, dir, true);
-    } else if (car.emotion === 'happy' && inRange && playerLane === car.lane) {
+    const near = Player.active && car.dir > 0 && Math.abs(ahead) < CONFIG.attitudeRange;
+    const att = attitude(car), aside = () => {
       const dir = Math.random() < 0.5 ? 1 : -1;
       tryMove(car, dir) || tryMove(car, -dir);
-    } else if (Math.random() < CONFIG.laneChangeChance) {
+    };
+    if (att === 'turf' && car.hunt > 0) return; // (hunting: see update)
+    if ((att === 'smug' || att === 'rage' || att === 'vigilante') && inRange) { // into the player's lane, in its way
+      const dir = Math.sign(playerLane - car.lane);
+      if (dir) tryMove(car, dir, true);
+    } else if ((att === 'friendly' || att === 'wingman') && inRange && playerLane === car.lane) aside();
+    else if (att === 'wary' && near && playerLane === car.lane) aside();
+    else if (att === 'sulky' && inRange) { /* it holds its lane */ } else if (Math.random() < CONFIG.laneChangeChance) {
       tryMove(car, Math.random() < 0.5 ? 1 : -1);
     }
   };
@@ -681,6 +769,7 @@ export const Traffic = (() => {
     }
     if (Track.junctions.length) junctionState();
     if (LEVEL.grid) raceMood(dt);
+    huntRoles();
     for (const car of cars) {
       if (car.active && car.junction) { // leaving the road at a junction
         driveJunction(car, dt);
@@ -715,7 +804,7 @@ export const Traffic = (() => {
       const gone = !car.emergency ? ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 150
         : car.dir > 0 ? ahead < -E.behind - 100 || ahead > CONFIG.spawnMax + 150
         : ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 300;
-      if ((gone && !car.racer) || !Track.inBounds(car.s)) { // (a racer races on, wherever it is)
+      if ((gone && !car.racer && !(car.hunt > 0)) || !Track.inBounds(car.s)) { // (a racer races on, wherever it is; so does a hunter)
         car.active = false;
         continue;
       }
@@ -859,13 +948,18 @@ export const Traffic = (() => {
         const [first, last] = Track.laneRange(car.dir, car.s);
         car.lane = clamp(Track.nearestLane(car.lat, car.s), first, last);
       } else {
-        // evil cars lob packages at other traffic; ones the player has upset aim near the player
+        // evil cars lob packages at other traffic; ones the player has upset aim near the player.
+        // In road rage (at a good player) they throw more often; in a turf war (at an evil one) more
+        // often still; a wingman throws only at the cars about the player
+        if (car.offended > 0) car.offended -= dt;
+        const att = attitude(car);
         if (car.evil && Player.active && !LEVEL.noPackages &&
             Math.abs(car.s - Player.s) < CONFIG.enemyThrowRange) {
-          car.throwTimer -= dt;
+          const A = CONFIG.attitude;
+          car.throwTimer -= dt * (att === 'turf' ? A.turfThrowRate : att === 'rage' ? A.rageThrowRate : 1);
           if (car.throwTimer <= 0) {
             car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
-            Packages.throwAtGround(car);
+            Packages.throwAtGround(car, att === 'wingman' ? 'escort' : null);
           }
         }
 
@@ -884,6 +978,17 @@ export const Traffic = (() => {
             Math.abs(Player.s - car.s) < CONFIG.rivalryRange) {
           rival = Player;
           car.grudge = true;
+        }
+        // a turf war (an angry evil driver, an evil player): it starts hunting the player once near,
+        // and goes after it as its rival until it gives up (see CONFIG.attitude.hunt)
+        if (att === 'turf' && !(car.hunt > 0) && Math.abs(Player.s - car.s) < CONFIG.attitudeRange) startHunt(car);
+        if (car.hunt > 0) {
+          car.hunt -= dt;
+          if (att === null || Player.s - car.s > CONFIG.attitude.hunt.lost) car.hunt = 0;
+          if (car.hunt <= 0) { // (it gives up, and cools off)
+            car.hunt = 0;
+            car.mood = Math.max(car.mood, -0.2);
+          } else rival = Player;
         }
 
         // a siren (the player's, a pickup, or an emergency vehicle's): a car ahead in the lane it
@@ -957,26 +1062,127 @@ export const Traffic = (() => {
         car.tow = car.racer ? tow(car, car.s, car.lat, car.hw) : 0;
         if (car.racer) car.attack = Math.max(0, (car.attack || 0) - dt);
         const sling = car.attack > 0 ? car.sling * car.attack / CONFIG.race.attackTime : 0;
-        let target = (squeezed ? car.baseSpeed * 0.6 : car.baseSpeed) * (1 + CONFIG.race.draft * Math.max(car.tow, sling));
+        let target = (squeezed ? car.baseSpeed * 0.6 : car.baseSpeed) * (1 + CONFIG.race.draft * Math.max(car.tow, sling)) *
+          (furious(car) ? CONFIG.race.fury.pace : 1) * (1 + (CONFIG.race.chase.pace - 1) * chasing(car));
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
         if (rival) {
           // get into its lane, then catch it up or drop back onto it
+          // (in a race, a rival behind is only blocked: see CONFIG.race.blockEvery; and one alongside
+          // is kept pace with, not dropped back on)
           car.pendingLane = null;
           car.signal = 0;
           const [first, last] = Track.laneRange(car.dir, car.s);
-          car.lane = clamp(rival.isPlayer ? Track.nearestLane(rival.lat, rival.s) : rival.lane, first, last);
-          target = car.baseSpeed * ((rival.s - car.s) * car.dir > 0 ? 1.35 : 0.7);
+          const lane = clamp(rival.isPlayer ? Track.nearestLane(rival.lat, rival.s) : rival.lane, first, last);
+          let gap = (rival.s - car.s) * car.dir;
+          if (Track.loop) gap = ((gap % Track.length) + Track.length * 1.5) % Track.length - Track.length / 2; // (either side of the line)
+          car.blockWait = Math.max(0, (car.blockWait || 0) - dt);
+          if (!car.racer) {
+            car.lane = lane;
+            target = car.baseSpeed * (gap > 0 ? 1.35 : 0.7);
+          } else if (gap < -(rival.hl + car.hl)) { // (behind it: a block)
+            if (lane !== car.lane && car.blockWait <= 0 && laneClear(car, lane, 6)) {
+              car.lane = lane;
+              car.blockWait = CONFIG.race.blockEvery;
+            }
+          } else {
+            car.lane = lane;
+            target = gap > 0 ? car.baseSpeed * 1.35 : Math.max(target, Math.abs(rival.vs));
+          }
+        }
+        // (the hunters: see CONFIG.attitude.hunt)
+        if (car.hunt > 0 && rival === Player) {
+          const H2 = CONFIG.attitude.hunt, [first, last] = Track.laneRange(car.dir, car.s);
+          const playerLane = clamp(Track.nearestLane(Player.lat, Player.s), first, last);
+          if (car.huntRole === 'block') { // ahead of it in its lane, slowing it, braking hard now and then
+            car.lane = playerLane;
+            target = Player.speed * H2.blockPace;
+            brakeCheck(car, dt);
+          } else if (car.huntRole === 'flank') { // in the lane beside it, coming up alongside to lean on it
+            const side = playerLane + 1 <= last ? playerLane + 1 : playerLane - 1;
+            if (side >= first) car.lane = side;
+            target = Player.s - car.s > car.hl + Player.hl ? Player.speed + H2.catchUp : Player.speed;
+          } else if (car.huntRole === 'drop') { // one too many ahead of it: dropping back, to come at it from behind
+            target = Math.max(0, Player.speed - H2.catchUp);
+          } else if (Player.s > car.s) { // behind it: closing in, never falling away
+            target = Math.max(target, Player.speed + H2.catchUp);
+          }
+        }
+        // (the other attitudes to the player that show in how fast it goes)
+        if (att && att !== 'turf') {
+          const A = CONFIG.attitude, dl = Math.abs(Track.nearestLane(Player.lat, Player.s) - car.lane);
+          const ds = Player.s - car.s; // (how far the player is ahead of it)
+          const besideIt = dl === 1 && Math.abs(ds) < car.hl + Player.hl + 4;
+          if (att === 'friendly' && besideIt) target *= A.letIn; // (easing off: in you come)
+          if ((att === 'sulky' || att === 'vigilante') && besideIt && ds > 0) target = Math.max(target, Math.min(Player.speed, car.baseSpeed * 1.2)); // (keeping level: no you don't)
+          if (att === 'distant' && ds > 0 && ds < A.distance) target *= A.distantPace;
+          if (att === 'smug' && ds < 0 && -ds < A.brakeCheckRange + 10 && dl === 0) { // (in the way, dawdling, braking hard now and then)
+            target *= A.dawdle;
+            brakeCheck(car, dt);
+          }
         }
         let held = false;
+        // (a racer's rival ahead: it closes right up on it, and gives it a shove: see CONFIG.race.nudge)
+        const nudging = car.racer && rival && !rival.isPlayer;
         for (const o of cars) {
-          if (o === car || !o.active || o === rival || o.junction) continue;
+          if (o === car || !o.active || (o === rival && !nudging) || o.junction) continue;
           const gap = (o.s - car.s) * car.dir;
+          if (o === rival) {
+            if (gap > 0 && gap < o.hl + car.hl + 6 && Math.abs(o.lat - car.lat) < o.hw + car.hw) target = Math.min(target, Math.abs(o.vs) + CONFIG.race.nudge);
+            continue;
+          }
           // (a racer, at racing speed, holds back further the faster it is closing; but sitting on the
           // grid it keeps close behind, and gets away with the rest)
           const room = o.hl + car.hl + (car.racer ? 2 + Math.max(0, Math.abs(car.vs) - Math.abs(o.vs)) * 1.5 : 8);
           if (gap > 0 && gap < room && Math.abs(o.lat - car.lat) < o.hw + car.hw) {
             target = Math.min(target, Math.abs(o.vs) * 0.9);
             held = true;
+          }
+        }
+        // good and evil racers close together: the evil one bullies, the good one, racing clean, gives way
+        car.squeeze = 0;
+        if (car.racer) {
+          const B = CONFIG.race.bully;
+          car.yieldWait = Math.max(0, (car.yieldWait || 0) - dt);
+          let lifted = false;
+          for (const o of cars) {
+            if (o === car || !o.active || !o.racer || o.evil === car.evil || o.shield > 0) continue;
+            let ds = o.s - car.s;
+            if (Track.loop) ds = ((ds % Track.length) + Track.length * 1.5) % Track.length - Track.length / 2; // (either side of the line)
+            const alongside = Math.abs(ds) < o.hl + car.hl + 1 && Math.abs(o.lat - car.lat) < o.hw + car.hw + B.room;
+            if (car.evil) { // leaning on it
+              if (alongside) car.squeeze = Math.sign(o.lat - car.lat) || 1;
+              continue;
+            }
+            if (alongside && !lifted) { // lifting, to keep out of trouble
+              target *= B.lift;
+              lifted = true;
+            }
+            // one on its gearbox: it moves over and lets it by
+            if (ds < 0 && ds > -(o.hl + car.hl + B.behind) && Math.abs(o.lat - car.lat) < o.hw + car.hw && car.yieldWait <= 0) {
+              car.yieldWait = B.yieldEvery;
+              for (const d of [1, -1]) {
+                if (!canMove(car, car.lane + d, false)) continue;
+                car.lane += d;
+                car.signal = d;
+                car.pendingLane = null;
+                break;
+              }
+            }
+            if (alongside || ds < 0 && ds > -(o.hl + car.hl + B.behind)) { // (and sours at being pushed about, as the bully cheers up)
+              car.mood = Math.max(-1, car.mood - B.mood * dt);
+              o.mood = Math.min(1, o.mood + B.mood * dt);
+            }
+          }
+        }
+        // (and an evil racer bullies the player as it does a good racer: it leans on the player alongside,
+        // and just ahead of the player, it moves across into the player's lane)
+        if (car.racer && car.evil && Player.active) {
+          const B = CONFIG.race.bully, ds = car.s - Player.s;
+          if (Math.abs(ds) < Player.hl + car.hl + 1 && Math.abs(Player.lat - car.lat) < Player.hw + car.hw + B.room) car.squeeze = Math.sign(Player.lat - car.lat) || 1;
+          const lane = Track.nearestLane(Player.lat, Player.s);
+          if (ds > car.hl + Player.hl && ds < car.hl + Player.hl + 12 && lane !== car.lane && car.blockWait <= 0 && laneClear(car, lane, 6)) {
+            car.lane = lane;
+            car.blockWait = CONFIG.race.blockEvery;
           }
         }
         // a racer out on its own goes looking for a tow
@@ -994,14 +1200,16 @@ export const Traffic = (() => {
             break;
           }
         }
-        // held up behind a slow player: mood sours; angry cars don't brake for you
-        const gap = Player.s - car.s;
-        if (Player.active && Player.shield <= 0 && Player.ghost <= 0 && car.dir > 0 && gap > 0 && gap < Player.hl + car.hl + 8 &&
+        // held up behind a slow player: mood sours; angry evil drivers don't brake for you (they ram
+        // you), angry good ones sit right on your bumper; an evil racer gives you a nudge
+        const gap = Player.s - car.s, tailgater = att === 'sulky' || att === 'vigilante';
+        if (Player.active && Player.shield <= 0 && Player.ghost <= 0 && car.dir > 0 && gap > 0 && gap < Player.hl + car.hl + (tailgater ? CONFIG.attitude.tailgate : 8) &&
             Math.abs(Player.lat - car.lat) < Player.hw + car.hw && Player.speed < car.baseSpeed) {
           car.mood = Math.max(-1, car.mood - CONFIG.moodHoldUp * dt);
           car.grudge = true;
           honk(car);
-          if (car.emotion !== 'angry') target = Math.min(target, Player.speed * 0.9);
+          if (car.racer && car.evil) target = Math.min(target, Player.speed + CONFIG.race.nudge);
+          else if (!(car.evil && car.emotion === 'angry' && !car.spite) || car.racer) target = Math.min(target, Player.speed * (tailgater ? 0.98 : 0.9));
         }
         // giving way at a junction while a car is leaving across it; and no faster than the bends ahead allow
         // (on ice, and on a level where cars understeer, they don't slow for a bend: they slide wide instead;
@@ -1036,7 +1244,7 @@ export const Traffic = (() => {
         car.hazards = car.pulledOver && (car.hazards || settled);
         const drift = car.hesitant && !beside && !car.pulledOver ? Math.sin(car.wander += dt * 1.3) * H.wander : 0;
         // (and nothing is ever steered into a median: not even after a rival who has gone in there)
-        let aim = aimLat + drift;
+        let aim = aimLat + drift + (beside ? 0 : car.squeeze * CONFIG.race.bully.squeeze); // (an evil racer leaning on a good one)
         if (Track.medianHalf) aim = car.dir > 0 ? Math.max(aim, Track.medianHalf + car.hw) : Math.min(aim, -Track.medianHalf - car.hw);
         const wantVel = clamp((aim - car.lat) * CONFIG.trafficLaneChangeRate, -6, 6);
         car.latVel += (wantVel - car.latVel) * damp(6, dt);
@@ -1073,5 +1281,5 @@ export const Traffic = (() => {
     placeFixed();
   };
 
-  return { cars, reset, update, lap, policeNear, toadify, arrest, startEmergency, addRacer, tow };
+  return { cars, reset, update, lap, policeNear, toadify, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer };
 })();

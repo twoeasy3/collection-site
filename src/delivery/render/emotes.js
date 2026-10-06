@@ -4,45 +4,47 @@ import { Track } from '../track.js';
 import { Collision } from '../collision.js';
 import { Player } from '../player.js';
 import { scene, camera, tmp } from './scene.js';
+import { FACE_COLORS, FEATURES, INK } from './faces.js';
 
 // ---- mood faces: emoji spheres that pop up over cars now and then ---------------
-const makeFace = (fill, kind) => {
+const makeFace = (mood) => {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 128;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = fill;
+  ctx.fillStyle = FACE_COLORS[mood];
   ctx.fillRect(0, 0, 256, 128);
-  const cx = 64; // u = 0.25 is the side of the sphere that faces local +z
-  ctx.fillStyle = ctx.strokeStyle = '#1c1c1c';
-  ctx.lineWidth = 5;
+  // the face, drawn on its 24 x 24 grid (see render/faces.js) and scaled onto the side of the
+  // sphere that faces local +z (u = 0.25), the eyes at (64 +- 15, 52)
+  const k = 3.75;
+  ctx.setTransform(k, 0, 0, k, 64 - 12 * k, 52 - 10 * k);
+  ctx.fillStyle = ctx.strokeStyle = INK;
+  ctx.lineWidth = 1.8;
   ctx.lineCap = 'round';
-  for (const side of [-1, 1]) {
+  ctx.lineJoin = 'round';
+  for (const x of [8, 16]) {
     ctx.beginPath();
-    ctx.arc(cx + side * 15, 52, 6, 0, Math.PI * 2);
+    ctx.arc(x, 10, 1.7, 0, Math.PI * 2);
     ctx.fill();
-    if (kind === 'evil') { // brows slanting down toward the nose
-      ctx.beginPath();
-      ctx.moveTo(cx + side * 27, 32);
-      ctx.lineTo(cx + side * 7, 44);
-      ctx.stroke();
-    }
   }
-  ctx.beginPath();
-  if (kind === 'smile') ctx.arc(cx, 66, 20, Math.PI * 0.15, Math.PI * 0.85);
-  else if (kind === 'evil') ctx.arc(cx, 98, 18, Math.PI * 1.2, Math.PI * 1.8);
-  else { ctx.moveTo(cx - 15, 82); ctx.lineTo(cx + 15, 82); }
-  ctx.stroke();
+  const f = FEATURES[mood];
+  if (f.mouth) ctx.stroke(new Path2D(f.mouth));
+  if (f.brows) ctx.stroke(new Path2D(f.brows)); // (slanting down toward the nose)
+  if (f.teeth) { // (the teeth, outlined, and the lip they hang from)
+    const teeth = new Path2D(f.teeth);
+    ctx.fillStyle = '#fff';
+    ctx.fill(teeth);
+    ctx.lineWidth = 0.35;
+    ctx.stroke(teeth);
+    ctx.lineWidth = 1.8;
+    ctx.stroke(new Path2D(f.lip));
+  }
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
   // shaded like a glossy ball, with a little glow of its own so it still shows at night
   return new THREE.MeshPhongMaterial({ map, shininess: 60, specular: 0x555555,
     emissive: 0xffffff, emissiveMap: map, emissiveIntensity: 0.2 });
 };
-const MOOD_FACES = {
-  happy: makeFace('#4caf50', 'smile'),
-  neutral: makeFace('#ffd23f', 'flat'),
-  angry: makeFace('#e53935', 'evil'),
-};
+const MOOD_FACES = { happy: makeFace('happy'), neutral: makeFace('neutral'), angry: makeFace('angry') };
 const emoteGeo = new THREE.SphereGeometry(0.5, 20, 14);
 const look = new THREE.Matrix4(), camAt = new THREE.Vector3(), UP = new THREE.Vector3(0, 1, 0);
 const emotes = Collision.bodies.map(() => {

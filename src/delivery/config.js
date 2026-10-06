@@ -114,6 +114,23 @@ export const CONFIG = {
     // pass is on the attack for attackTime s: the tow it pulled out of carries it on (its slingshot,
     // fading as it goes), and it brakes later, with attackNerve times its nerve
     nerve: { min: 0.92, max: 1.06 }, attackTime: 3, attackNerve: 1.12,
+    // An evil racer's feud (a good one races clean): with a rival ahead of it or alongside, it
+    // chases it down and rams it, as anywhere; but it never drops back for one behind it, it only
+    // blocks it, moving across into its lane (at most every blockEvery s) without lifting off
+    blockEvery: 0.8,
+    // ...and a rival ahead is rammed with a nudge, not at full tilt: it closes right up, nudge m/s
+    // faster than its rival, and shoves. An evil racer that is angry races in a fury: fury.pace
+    // times its top speed, fury.nerve times its nerve in the bends
+    nudge: 1.5, fury: { pace: 1.05, nerve: 1.08 },
+    // An evil racer left behind by the car in front of it (more than chase.from m back) chases it
+    // down hard: up to chase.pace times its top speed and chase.nerve times its nerve in the bends,
+    // all of it by chase.full m back. And it bullies good racers, who race clean: alongside one, it
+    // leans bully.squeeze m into it, and the good one (with an evil one alongside, within
+    // bully.room m) lifts to bully.lift of its speed to keep out of trouble, and with an evil one
+    // within bully.behind m of its gearbox, moves over to let it by (every bully.yieldEvery s at
+    // most). A good racer bullied loses bully.mood a second; the evil one gains it
+    chase: { from: 40, full: 120, pace: 1.06, nerve: 1.1 },
+    bully: { room: 1.2, lift: 0.9, behind: 4, squeeze: 0.7, yieldEvery: 1, mood: 0.025 },
     // A racer's mood: in the front half, with clear road behind it, it cheers up as the race goes
     // on, up to leadMood a second for the leader; but with a car within pressure m behind it, it
     // frets instead, up to pressureMood a second for the leader (and much less a few places back,
@@ -461,6 +478,21 @@ export const CONFIG = {
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
   lowriderHearing: 90,     // m from a lowrider in traffic within which its music is heard (the same way)
   policeSightRange: 45,    // m along the road within which a police car witnesses what you do
+  // A good player's social standing (see social.js), in points out of 100: gift points for each gift
+  // that lands on a good driver (copGift on a police car), decay lost a second. With it, from none to
+  // full: the police see policeSight.empty to policeSight.full times as far; the share of evil
+  // drivers falls towards evilFloor; new drivers start up to moodLift happier (evil ones too); the
+  // shoulder allowance grows by up to `danger` of itself; good powerups (and good mysteries) last up
+  // to powerUpShift s longer, bad ones that much shorter; the good mysteries are up to `luck` more
+  // likely again. From regen.from up, the car mends regen.min to regen.max of its health a second;
+  // from protectFrom up, a car that assaults the player with a police car about is arrested.
+  // A bust costs bust points of it, always; and above cautionFrom, the police let the player off
+  // with a caution instead of the bust (for the shoulder: with grace s to get back in a lane).
+  social: {
+    gift: 4, copGift: 10, decay: 1, bust: 75, cautionFrom: 0.75, grace: 4,
+    policeSight: { empty: 1.15, full: 0.85 }, evilFloor: 0.15, moodLift: 0.5, danger: 1, powerUpShift: 2.5, luck: 1,
+    regen: { from: 0.5, min: 0.002, max: 0.006 }, protectFrom: 0.85,
+  },
   maxBusts: 3,             // the run ends on this many busts
   evilShare: 0.35,         // share of traffic that is evil; the rest are good. A car never switches.
   startMood: {             // chance of each starting emotion (the remainder start neutral)
@@ -490,6 +522,31 @@ export const CONFIG = {
   splashRadius: 4,         // m
   splashDamage: 6,
   attitudeRange: 50,       // metres behind a car at which it reacts to the player
+  // How a traffic driver treats the player: by its side, its mood, and the player's side.
+  //   good driver, good player: happy, friendly (moves aside, and eases off, letIn of its pace, to
+  //     let the player in from the lane beside); angry, sulky (tailgates, within tailgate m, honks,
+  //     holds its lane and won't let the player in)
+  //   good driver, evil player: happy, wary (out of the player's lane, ahead or behind); neutral,
+  //     distant (holds back, to distantPace, within distance m behind); angry, vigilante (blocks
+  //     the player's lane ahead, tailgates, won't let the player in). A good driver never rams.
+  //   evil driver, good player: happy, smug (gets in the player's lane ahead, dawdles at dawdle of
+  //     its pace, brake-checks the player within brakeCheckRange m behind it every brakeCheckEvery
+  //     s); angry, road rage (blocks, rams, feuds, throws rageThrowRate times as often: at the
+  //     player if it holds a grudge, otherwise at whoever is nearest)
+  //   evil driver, evil player: happy, a wingman (moves aside, and throws only at the cars about
+  //     the player); angry, a turf war: it hunts the player (see hunt: a hunter holds a grudge, so
+  //     it throws at the player), turfThrowRate times as often. No evil driver ever throws at the police.
+  // An evil player who wrecks a car cheers the evil drivers within wreckCheer.range m by wreckCheer.mood.
+  attitude: {
+    letIn: 0.85, tailgate: 2.5, distance: 25, distantPace: 0.85, dawdle: 0.8,
+    brakeCheckRange: 15, brakeCheckEvery: { min: 2.5, max: 5 }, rageThrowRate: 1.2, turfThrowRate: 1.8,
+    // the turf war: the driver doesn't drop away: it keeps coming, catchUp m/s faster than the
+    // player, for `time` s (or until it is lost lost m behind). Two or more hunting the player at
+    // once box it in: the nearest ahead blocks its lane at blockPace of its speed and brake-checks
+    // it, the nearest behind tailgates and rams, and the rest come up alongside and lean on it.
+    hunt: { time: 25, catchUp: 6, lost: 250, blockPace: 0.92 },
+    wreckCheer: { range: 60, mood: 0.4 },
+  },
 
   // collision physics
   maxStep: 1 / 120,        // s, simulation sub-step so fast head-ons can't tunnel
@@ -540,6 +597,7 @@ export const CONFIG = {
 
   // packages
   throwRange: 70,          // m, max distance to a target
+  throwBehind: 2,          // a car behind the player counts as this many times as far off as it is (one ahead is preferred)
   throwBlind: 30,          // m ahead of the car a package lands on the road when nothing is in range
   throwSpeed: 100,         // m/s, sets the flight time...
   throwFlightMin: 0.175,   // ...within these limits (s)
@@ -552,7 +610,10 @@ export const CONFIG = {
   // the clock: a level allows its `time` seconds, scaled by the side the player picked
   timeScale: { good: 1.2, evil: 0.85 },
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing
-  packageMoodBoost: 0.5,   // mood gained by a good car that gets one (evil cars go straight to furious)
+  packageMoodBoost: 0.5,   // mood gained by a good car that gets one
+  giftOffence: 15,         // s an evil car that gets one is offended: furious, but it drives no differently
+                           // (no road rage), and all its throws are at the player; and after that...
+  giftSpite: 0.35,         // ...it is only put out: this share of its throws come the player's way
 
   // TANK RAGE: pieced together from five targets: a package landed on a green target beside
   // the road finds the next piece of the tank, and the fifth starts TANK RAGE. The pieces

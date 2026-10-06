@@ -599,6 +599,8 @@ export const Collision = (() => {
       v.active = false;
       FxQueue.push({ type: 'explode', s: v.s, lat: v.lat, vs: v.vs, big: v.mass > 1, tyres: !v.toad });
       if (v.wreckedByPlayer) Message.say('wrecks', 'byPlayer'); // (one of the player's packages did it)
+      // (the player's doing, by a package or by a hit just now: the evil drivers about may cheer)
+      if (!v.isPlayer && (v.wreckedByPlayer || (v.hitBy && v.hitBy.isPlayer && Game.time - v.hitAt < 3))) Traffic.wreckedByPlayer(v);
     }
   };
 

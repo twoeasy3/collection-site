@@ -9,6 +9,7 @@ import { Collision } from './collision.js';
 import { Targets } from './pickups.js';
 import { Game } from './game.js';
 import { Message } from './messages.js';
+import { Social } from './social.js';
 
 // ============================================================================
 // PACKAGES - thrown at the nearest car ahead within range; each flies an arc in
@@ -52,8 +53,8 @@ export const Packages = (() => {
     return p;
   };
 
-  // the player throws at the nearest car ahead within range, or at a TANK RAGE target if one is
-  // (null if there is nothing to throw at)
+  // the player throws at the nearest car within range, or at a TANK RAGE target if one is (null if
+  // there is nothing to throw at). A car behind counts too, but as throwBehind times as far off
   const findTarget = () => {
     let best = null, bestDist = CONFIG.throwRange;
     for (const t of Targets.items) {
@@ -63,8 +64,8 @@ export const Packages = (() => {
     }
     if (best) return best;
     for (const car of Traffic.cars) {
-      if (!car.active || car.s - Player.s <= Player.hl) continue; // ahead only
-      const dist = Math.hypot(car.s - Player.s, car.lat - Player.lat);
+      if (!car.active) continue;
+      const dist = Math.hypot(car.s - Player.s, car.lat - Player.lat) * (car.s < Player.s ? CONFIG.throwBehind : 1);
       if (dist < bestDist) { best = car; bestDist = dist; }
     }
     return best;
@@ -103,16 +104,25 @@ export const Packages = (() => {
   };
 
   // an evil car's throw, aimed at the road where its victim will be (the splash does the
-  // damage): near the player if the player has upset this driver, otherwise at its rival or
-  // the nearest other vehicle within range, and with nobody about, a random spot ahead of itself
-  const throwAtGround = (car) => {
+  // damage): near the player if the player has upset this driver (or, now and then, given it a gift), otherwise at
+  // its rival or the nearest other vehicle within range, and with nobody about, a random spot ahead
+  // of itself. (aim 'escort': a wingman's, never at the player, at whatever is nearest the player.)
+  // Never at a police car: not even the angriest driver picks on the police
+  const throwAtGround = (car, aim = null) => {
     const scatter = CONFIG.enemyThrowScatter;
-    let victim = car.grudge ? Player : null;
-    if (!victim) {
+    let victim = (car.grudge || car.offended > 0 || (car.spite && Math.random() < CONFIG.giftSpite)) && aim !== 'escort' ? Player : null;
+    if (!victim && aim === 'escort') {
       let best = CONFIG.enemyThrowCarRange;
-      const rival = car.rival && car.rival.active ? car.rival : null;
+      for (const o of Traffic.cars) {
+        if (o === car || !o.active || o.kind === 'police') continue;
+        const dist = Math.hypot(o.s - Player.s, o.lat - Player.lat);
+        if (dist < best) { best = dist; victim = o; }
+      }
+    } else if (!victim) {
+      let best = CONFIG.enemyThrowCarRange;
+      const rival = car.rival && car.rival.active && car.rival.kind !== 'police' ? car.rival : null;
       for (const o of rival ? [rival] : Traffic.cars) {
-        if (o === car || !o.active) continue;
+        if (o === car || !o.active || o.kind === 'police') continue;
         const dist = Math.hypot(o.s - car.s, o.lat - car.lat);
         if (dist < best) { best = dist; victim = o; }
       }
@@ -195,11 +205,15 @@ export const Packages = (() => {
     }
     car.health -= CONFIG.packageDamage;
     maybeSpinOut(car, CONFIG.packageDamage, CONFIG.packageSpinScale);
-    if (car.evil) { // evil drivers take a gift as an insult
+    if (car.evil) { // evil drivers take a gift as an insult: furious, though it shows only in a while of
+      // throwing at you, then a throw at you now and then (no road rage: see Traffic's attitude)
       car.mood = -1;
-      car.grudge = true;
+      car.offended = CONFIG.giftOffence;
+      car.spite = true;
+      car.showMood = true;
     } else {
       car.mood = Math.min(1, car.mood + CONFIG.packageMoodBoost);
+      Social.gift(cop(car)); // (a good deed: the player's standing goes up, the more for a police car)
     }
     // (the driver's reaction, unless the package has destroyed the car outright: a spin-out or a
     // critical hit still gets one)

@@ -45,6 +45,7 @@ export const RaceWatch = {
   begin() {
     // (one more on the grid, in the player's slot at the back: there is no player)
     Traffic.addRacer(Player.s, Track.nearestLane(Player.lat, Player.s), LEVEL.grid.count % 2 === 1);
+    Traffic.sortGrid(); // (and the grid in order again, with it)
     this.racers = Traffic.cars.filter(c => c.racer);
     const names = shuffle(NAMES);
     this.racers.forEach((c, i) => Object.assign(c, { driver: names[i % names.length], wrecks: 0, kills: 0, hitBy: null, mishap: null, wasActive: true, splits: [], done: false }));
