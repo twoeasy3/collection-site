@@ -187,6 +187,7 @@ Game.onLoad.push(() => {
 });
 
 const target = new THREE.Vector3(), from = new THREE.Vector3();
+const blown = new Set(); // (the blasts whose fire has burst out of their building, this run)
 export const syncWreckage = (now) => {
   const W = CONFIG.wreckage;
   Wreckage.list.forEach((e, i) => {
@@ -195,17 +196,29 @@ export const syncWreckage = (now) => {
     mesh.visible = e.t >= 0 || e.kind === 'blast'; // (a building that blows stands there from the start)
     const coming = e.slide ? !e.landed || e.sliding : !e.landed;
     marker.visible = e.t >= 0 && coming && Math.floor(now / 120) % 2 === 0; // (flashing where it will come down)
-    if (e.t < 0) return;
-    const mid = e.at + (e.slide || 0) / 2, mlat = (e.lat0 + e.lat1) / 2;
-    marker.rotation.y = Track.toWorld(mid, mlat, tmp);
-    marker.position.set(tmp.x, tmp.y + 0.06, tmp.z);
-    if (e.kind === 'blast') { // the building: standing; then gone up, slumped into a burning ruin
-      const from = Wreckage.source(e), bh = Track.toWorld(from.s, from.lat, tmp);
+    if (e.kind === 'blast') { // the building: standing beside the road; then blown out, slumped into a burning ruin
+      const from = Wreckage.source(e), bh = Track.toWorld(from.s, from.lat, tmp), side = e.from === 'left' ? -1 : 1;
       mesh.position.copy(tmp);
       mesh.rotation.set(0, bh, 0);
-      const down = e.landed ? Math.min(1, (e.t - CONFIG.wreckage.blastWarn) / 1.2) : 0;
+      const W = CONFIG.wreckage, down = e.landed ? Math.min(1, (e.t - W.blastWarn) / 1.2) : 0;
       mesh.scale.set(1, 1 - 0.7 * down * down, 1);
-      if (e.landed && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.6) {
+      if (e.t >= 0) {
+        marker.rotation.y = Track.toWorld(e.at, (e.lat0 + e.lat1) / 2, target);
+        marker.position.set(target.x, target.y + 0.06, target.z);
+      }
+      // the moment it blows: fire bursting out of its whole front, towards the road
+      if (e.landed && !blown.has(e)) {
+        blown.add(e);
+        const toRoad = -side, rx = -Math.cos(bh) * toRoad, rz = Math.sin(bh) * toRoad; // (in the world: from it towards the road)
+        for (let k = 0; k < 160; k++) {
+          Track.toWorld(from.s + rnd(12), from.lat - side * 8, target);
+          const v = 12 + Math.random() * 18;
+          Fire.emit(target.x, target.y + 1 + Math.random() * 12, target.z, rx * v + rnd(3), 1 + Math.random() * 4, rz * v + rnd(3),
+            0.5 + Math.random() * 0.6, 1 + Math.random() * 1.5, 1.2, 2, FIRE_COLORS[Math.floor(Math.random() * FIRE_COLORS.length)]);
+        }
+      }
+      if (e.t < 0 && blown.has(e)) blown.delete(e); // (a new run)
+      if (e.landed && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.6) { // (and burns on)
         Fire.emit(tmp.x + rnd(7), tmp.y + 4 + Math.random() * 3, tmp.z + rnd(7), rnd(1), 2 + Math.random() * 3, rnd(1),
           0.6 + Math.random() * 0.5, 1 + Math.random(), 1, 0, FIRE_COLORS[1 + Math.floor(Math.random() * 3)]);
         const grey = 25 + Math.floor(Math.random() * 30);
@@ -213,6 +226,10 @@ export const syncWreckage = (now) => {
       }
       return;
     }
+    if (e.t < 0) return;
+    const mid = e.at + (e.slide || 0) / 2, mlat = (e.lat0 + e.lat1) / 2;
+    marker.rotation.y = Track.toWorld(mid, mlat, tmp);
+    marker.position.set(tmp.x, tmp.y + 0.06, tmp.z);
     if (e.slide) { // an airliner: diving in nose down, then sliding, nose first, at the player
       const at = Wreckage.airliner(e, e.t), heading = Track.toWorld(at.s, mlat, tmp);
       mesh.position.set(tmp.x, tmp.y + at.h, tmp.z);

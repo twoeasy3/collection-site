@@ -97,7 +97,8 @@
 //              kind: 'tanker' | 'containers' | 'hangar' | 'plane' | 'airliner' (an airliner comes in
 //              to land `slide` m beyond `at` and slides back to it). Traffic pulls over for it.
 //              Or 'blast': a building `distance` m off the road on its side (from) blows out across
-//              its lanes out to the road's edge, wrecking all there just then, and leaves the road clear
+//              its lanes out to the road's edge, wrecking all there just then, and leaves the road clear;
+//              it goes by the player's pace (see CONFIG.wreckage.blastWarn), not a trigger
 //   runway     { from, width }: from there on the road is a runway, `width` m of concrete beyond each
 //              edge, with a runway's markings in place of lanes (the airport's look)
 //   tower      { at, trigger, distance, stub }: the control tower, beside the old road carrying

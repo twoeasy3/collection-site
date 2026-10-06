@@ -1569,7 +1569,7 @@ try {
     Game.start();
     for (const c of Traffic.cars) c.active = false;
     const bl = Wreckage.list.find(w => w.kind === 'blast'), spare = bl.lanes[0] > 0 ? 0 : bl.lanes[1] + 1;
-    Object.assign(Player, { s: bl.at - bl.trigger, lat: T().laneOffset(spare, bl.at), speed: 0, shield: 0, ghost: 0 });
+    Object.assign(Player, { s: bl.at - W.blastNear, lat: T().laneOffset(spare, bl.at), speed: 0, shield: 0, ghost: 0 });
     const inBox = Object.assign(carAt(bl.at, bl.lanes[0], 0), { fixed: true }), beside = Object.assign(carAt(bl.at, spare, 0), { fixed: true });
     let warnedFirst = true;
     for (let i = 0; i < 120 * (W.blastWarn + W.blastTime + 0.5); i++) {
@@ -1581,6 +1581,19 @@ try {
       !Wreckage.ahead({ s: bl.at - 50, lat: T().laneOffset(bl.lanes[0], bl.at), hw: 1, dir: 1 }),
       `a building blows out across its red box (lanes ${bl.lanes.join('-')} to the road's edge, ${W.blastWarn} s after it starts flashing), ` +
       `wrecking a car in it and not one beside it, and leaves the road clear`);
+    // ...and it goes by the player's pace: one driving on flat out in its lane is in the box as it blows
+    Game.start();
+    for (const c of Traffic.cars) c.active = false;
+    Object.assign(Player, { s: bl.at - 120, lat: T().laneOffset(bl.lanes[0], bl.at), speed: cars.CAR.maxSpeed, launching: false, shield: 0, ghost: 0 });
+    let caught = false;
+    for (let i = 0; i < 120 * 8 && !caught; i++) {
+      for (const c of Traffic.cars) c.active = false;
+      Player.lat = T().laneOffset(bl.lanes[0], Player.s);
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      caught = !Player.active;
+    }
+    check(caught && Math.abs(Player.s - bl.at) < bl.depth, `a player who keeps on flat out (${cars.CAR.maxSpeed} m/s) in its lane is caught in the blast (${(Player.s - bl.at).toFixed(1)} m from its middle)`);
     // the control tower: standing until the player comes up to the turn, then down across the old road
     Game.start();
     const tw = Wreckage.tower;

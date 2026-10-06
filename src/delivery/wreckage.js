@@ -7,8 +7,9 @@
 // car outright, but for a ghost, or one just set down by the helicopter). Traffic whose lane is
 // blocked ahead pulls over onto the shoulder and stops there, hazards on (see Traffic).
 // A blast (kind 'blast'): a building beside the road blows out. Its red box (its lanes, out to the
-// road's edge on its side) flashes, then it goes up, wrecking whatever is in the box just then; it
-// leaves nothing in the road. An airliner (slide: m) comes down out of the sky ahead, touches down that far beyond where it
+// road's edge on its side) flashes, then fire bursts out of the building's front and sweeps across
+// the road through the box, wrecking whatever is in the box just then; it leaves nothing in the
+// road. It is set off by the player's pace: a player who keeps going is in the box as it blows. An airliner (slide: m) comes down out of the sky ahead, touches down that far beyond where it
 // ends up, and slides back towards the player along its lanes, wrecking everything in its path,
 // before it comes to rest. And a level's "tower": the control tower beside the road where the
 // route turns off (onto the runway), which collapses across the road straight on as the player
@@ -101,7 +102,9 @@ export const Wreckage = {
     }
     for (const e of this.list) {
       if (e.t < 0) {
-        if (Player.s < e.at - (e.trigger ?? W.trigger)) continue;
+        // (a blast: when the player, keeping on at this pace, would be in its box just as it blows)
+        const reach = e.kind === 'blast' ? Math.max(W.blastNear, Player.speed * W.blastWarn) : e.trigger ?? W.trigger;
+        if (Player.s < e.at - reach) continue;
         e.t = 0; // set off: up it goes, in a fireball (a building's goes later: below)
         const from = this.source(e);
         if (e.kind !== 'blast') this.fireballs(from.s, from.s, from.lat - 3, from.lat + 3, 3);
@@ -110,10 +113,17 @@ export const Wreckage = {
       if (e.kind === 'blast') { // a building blowing out: whatever is in its box when it goes is wrecked
         if (!e.landed && e.t >= W.blastWarn) {
           e.landed = true;
-          const from = this.source(e);
-          this.fireballs(e.s0, e.s1, e.lat0, e.lat1, 5);
-          this.fireballs(from.s - 12, from.s + 12, from.lat - 6, from.lat + 6, 4);
+          e.swept = 0;
           if (Math.abs(e.at - Player.s) < 120) Game.shake = 1;
+        }
+        if (e.landed) { // the fire sweeping out of the building's front and across the road, a fireball at a time
+          const side = e.from === 'left' ? -1 : 1, front = this.source(e).lat - side * 8, far = side > 0 ? e.lat0 : e.lat1;
+          const want = Math.min(W.blastBalls, Math.ceil(W.blastBalls * (e.t - W.blastWarn) / W.blastTime));
+          for (; e.swept < want; e.swept++) {
+            const u = e.swept / (W.blastBalls - 1);
+            FxQueue.push({ type: 'explode', s: e.at + (Math.random() - 0.5) * e.depth * 0.5, lat: front + (far - front) * u, vs: 0, big: true,
+              scale: 1.3 - 0.4 * u, ...(e.swept ? { sound: 'none' } : {}) });
+          }
         }
         if (!e.landed || e.t > W.blastWarn + W.blastTime) continue;
       }
