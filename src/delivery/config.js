@@ -123,6 +123,8 @@ export const CONFIG = {
   // what hitting each kind costs: health, and the share of the player's speed left afterwards
   obstacleKinds: {
     barrier: { damage: 30, speedKept: 0.6 },
+    // (trainProof: the bullet train goes straight through it, and leaves it standing)
+    railBarrier: { damage: 30, speedKept: 0.6, trainProof: true },
     bale: { damage: 20, speedKept: 0.75 },
     frog: { damage: 30, speedKept: 0.6 },
     cow: { damage: 30, speedKept: 0.6 },

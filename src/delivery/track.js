@@ -479,6 +479,33 @@ const createTrack = () => {
     if (!ONE_WAY && (LEFT < 1 || RIGHT < 1)) problems.push('lanes: a two-way road needs at least one lane each way');
     if (ONE_WAY && MID) problems.push('median: only a two-way road can have one');
     if (LEVEL.railway && !MID) problems.push('railway: it needs a median to run down');
+    // a bend tighter than the road is wide folds its inside edge over itself, and a road that comes
+    // back past itself (a hairpin's legs, say) must leave room between the two
+    const halfWidth = HM + Math.max(LEFT, RIGHT) * LW + SH;
+    LEVEL.segments.forEach((seg, i) => {
+      if (seg.curve && 1 / Math.abs(seg.curve) < halfWidth + 3) {
+        problems.push('segment ' + (i + 1) + ': a bend of radius ' + (1 / Math.abs(seg.curve)).toFixed(0) +
+          ' m is too tight for this road; it needs at least ' + Math.ceil(halfWidth + 3) + ' m');
+      }
+    });
+    {
+      const at = [], p = {};
+      for (let s = -LEAD_IN; s <= length + LEAD_OUT; s += 8) { mainWorld(s, 0, p); at.push([s, p.x, p.z]); }
+      let clash = null;
+      for (let i = 0; i < at.length && !clash; i++) {
+        for (let j = i + 1; j < at.length; j++) {
+          if (at[j][0] - at[i][0] < 3 * halfWidth) continue;
+          const d = Math.hypot(at[i][1] - at[j][1], at[i][2] - at[j][2]);
+          if (d < 2 * halfWidth + 2) { clash = [at[i][0], at[j][0], d]; break; }
+        }
+      }
+      if (clash) problems.push('the road runs into itself: at ' + clash[0] + ' m and ' + clash[1] + ' m it is only ' + clash[2].toFixed(0) + ' m apart');
+    }
+    for (const car of LEVEL.parked || []) {
+      if (car.s < 0 || car.s > length) problems.push('parked car at ' + car.s + ': beyond the road');
+      else if (car.side !== 'left' && car.side !== 'right') problems.push('parked car at ' + car.s + ': side is left or right');
+      else if (onBridge(car.s)) problems.push('parked car at ' + car.s + ': no shoulder to park on, on a bridge');
+    }
     exits.forEach((x, i) => {
       const name = 'exit ' + i;
       if (x.mergeAt <= x.exitAt + 2 * X.ramp + 100) problems.push(name + ': merge is too close to the exit');

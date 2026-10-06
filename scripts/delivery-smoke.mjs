@@ -690,7 +690,8 @@ try {
     };
 
     // Suburbia's traffic is all garage cars, too fast to catch: the ones going the player's way hesitate
-    pick('suburbs');
+    // (without its ambulances: this test's player never gives way to one, and would be busted)
+    levels.selectSpecial({ ...levels.LEVELS.find(l => l.id === 'suburbs'), emergencies: null });
     cars.selectCar('hatch');
     Game.evil = false;
     Game.start();
@@ -700,7 +701,7 @@ try {
       `Suburbia: all ${going.length} cars going the player's way hesitate (${going.map(c => c.baseSpeed.toFixed(0)).join(', ')} m/s), none of the ${coming.length} oncoming`);
     let fromBehind = 0, slowBehind = 0, tapped = false, police = false;
     const seen = new Set();
-    drive(60, () => {
+    drive(120, () => {
       for (const c of Traffic.cars) {
         if (!c.active) continue;
         if (c.kind === 'police') police = true;
@@ -713,7 +714,7 @@ try {
       }
     });
     check(fromBehind > 0 && !slowBehind && tapped && !police,
-      `Suburbia, 60 s: ${fromBehind} cars came up from behind at ${H.behindPace.min * 100}%+ of full speed, hesitant ones touched their brakes, and no police`);
+      `Suburbia, 2 min: ${fromBehind} cars came up from behind at ${H.behindPace.min * 100}%+ of full speed, hesitant ones touched their brakes, and no police`);
 
     // the Expressway's traffic is never too fast for the player: nobody hesitates, nobody comes from behind
     pick('expressway');
@@ -1014,8 +1015,46 @@ try {
       wasActive = BulletTrain.active;
     }
     const { min, max } = levels.LEVEL.railway.every;
-    check(onMedian === 0 && trains >= Math.floor(120 / (max + 6)) && warned && !offTrack,
-      `2 min of Canberra: ${trains} bullet trains down the median track (every ${min}-${max} s), with the warning; no traffic ever on the median`);
+    const rail = Collision.obstacles.filter(o => o.kind === 'railBarrier');
+    check(onMedian === 0 && trains >= Math.floor(120 / (max + 6)) && warned && !offTrack && rail.length > 0 && rail.every(o => !o.gone),
+      `2 min of Canberra: ${trains} bullet trains down the median track (every ${min}-${max} s), with the warning; no traffic ever on the median; ` +
+      `all ${rail.length} railway barriers on the track still standing`);
+  }
+
+  console.log('Monte Carlo: hairpins and parked cars');
+  {
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'monte-carlo'));
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    const T = track.Track, a = {}, b = {};
+    // each hairpin turns the road right round, and the legs either side of it run side by side
+    const hairpins = levels.LEVEL.segments.filter(seg => Math.abs(Math.abs(seg.curve * seg.length) - Math.PI) < 0.01).length;
+    const h0 = T.toWorld(500, 0, a), h1 = T.toWorld(800, 0, b);
+    check(hairpins === 5 && Math.abs(Math.abs(h0 - h1) - Math.PI) < 0.01 && Math.abs(Math.hypot(a.x - b.x, 0) - 35.6) < 1,
+      `${hairpins} hairpins: the legs either side of the first run exactly opposite ways, ${Math.abs(a.x - b.x).toFixed(1)} m apart`);
+    const parked = Traffic.cars.filter(c => c.active && c.parked), start = new Map(parked.map(c => [c, c.s]));
+    const placed = parked.length === levels.LEVEL.parked.length && parked.every(c => T.onShoulder(c.lat, c.s) && c.hazards && c.fixed && !c.evil &&
+      c.dir === (c.lat > 0 ? 1 : -1));
+    let moved = 0;
+    for (let i = 0; i < 120 * 60 && Game.state === 'playing'; i++) {
+      Player.health = Player.maxHealth; Game.busts = 0; Game.time = 0;
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+    }
+    // (passing traffic may brush one, and nudge it along a little)
+    for (const [c, s] of start) if (c.active && (Math.abs(c.s - s) > 3 || !c.hazards || !T.onShoulder(c.lat, c.s))) moved++;
+    check(placed && moved === 0, `all ${parked.length} parked cars are on their shoulders, facing that side's way, hazards on, and still there a minute later`);
+    // the level checks catch a bend too tight for the road, and a road that runs into itself
+    levels.selectSpecial({ id: 'tight', name: 'tight', time: 99, tip: 1, traffic: {}, segments: [{ length: 200, curve: 0 }, { length: 20, curve: 0.15 }, { length: 200, curve: 0 }] });
+    Game.start();
+    const tight = T === track.Track ? [] : track.Track.problems;
+    levels.selectSpecial({ id: 'loop', name: 'loop', time: 99, tip: 1, traffic: {}, segments: [{ length: 200, curve: 0 }, { length: 252, curve: 1 / 40 }, { length: 200, curve: 0 }] });
+    Game.start();
+    const loop = track.Track.problems;
+    check(tight.some(p => p.includes('too tight')) && loop.some(p => p.includes('runs into itself')) && !loop.some(p => p.includes('too tight')),
+      `level checks: "${tight.find(p => p.includes('too tight'))}"; "${loop[0]}"`);
+    Game.toMenu();
   }
 
   console.log('cars');

@@ -94,6 +94,24 @@ const OBSTACLE_MODELS = {
     return boxModel(parts);
   },
   // an orange block with a white stripe
+  // a railway barrier: a low yellow block with black chevrons on both faces and a red lamp at
+  // each end (small enough to vanish inside a bullet train going through it)
+  railBarrier: (o) => {
+    const group = boxModel([[lambert(0xffc400), o.hw * 2, o.height, o.hl * 2, 0, o.height / 2, 0]]);
+    const black = lambert(0x1b1b1b), red = new THREE.MeshBasicMaterial({ color: 0xff2020 });
+    for (const face of [-1, 1]) for (const x of [-0.8, -0.27, 0.27, 0.8]) {
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.85, 0.02), black);
+      stripe.position.set(x * o.hw / 1.2, o.height / 2, face * (o.hl + 0.01));
+      stripe.rotation.z = 0.5;
+      group.add(stripe);
+    }
+    for (const side of [-1, 1]) {
+      const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), red);
+      lamp.position.set(side * (o.hw - 0.15), o.height + 0.07, 0);
+      group.add(lamp);
+    }
+    return group;
+  },
   barrier: (o) => boxModel([
     [lambert(0xff6a00), o.hw * 2, o.height, o.hl * 2, 0, o.height / 2, 0],
     [lambert(0xf2f2f2), o.hw * 2 + 0.05, o.height * 0.3, o.hl * 2 + 0.05, 0, o.height * 0.6, 0],

@@ -56,6 +56,8 @@ const THEMES = {
   // beach: sand, a stormy sky, the sea along the right, palms and beach huts
   beach: { sky: 0x7e8d9e, ground: 0xdccb95, road: 0x45484e, scenery: 'beach' },
   // space: no ground and no road surface, only glowing lane lines among the stars
+  // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
+  snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
   // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
   canberra: { sky: 0xb9d8ee, ground: 0xa3ad66, road: 0x4a4c50, scenery: 'canberra', median: 0x7f9a4f },
   // suburb: lawns, pavements, picket fences and houses in a row
@@ -72,6 +74,77 @@ const THEMES = {
 // rebuilt each time a level is loaded.
 const levelGroup = new THREE.Group();
 scene.add(levelGroup);
+
+// ---- terrain (a theme with "terrain"): a mountainside --------------------------------------------
+// The land round the road as a grid of heights, each blended from the heights of the road around
+// it (the nearer a stretch of road, the more it counts), so the land climbs and falls with the road
+// and fills in between its switchbacks: steep rock where two stretches at different heights come
+// close, snow where it is gentler. It is flat, just under the road, for a strip each side of it,
+// rougher the further it is from any road, and it sinks to the valley floor all round at the edge.
+// Returns the height of the land at a world point (x, z).
+const buildTerrain = () => {
+  const pts = [], p = {};
+  for (let s = Track.start; s <= Track.end; s += 8) {
+    Track.toWorld(s, 0, p);
+    pts.push(p.x, p.y, p.z);
+  }
+  const N = pts.length / 3;
+  const flatTo = Math.max(Track.hi(0), -Track.lo(0)) + 12; // (wider than a grid square, so no slope reaches the road)
+  const heightAt = (x, z) => {
+    let best = Infinity, bestY = 0, wsum = 0, hsum = 0;
+    for (let i = 0; i < N; i++) {
+      const dx = x - pts[i * 3], dz = z - pts[i * 3 + 2], d2 = dx * dx + dz * dz;
+      if (d2 < best) { best = d2; bestY = pts[i * 3 + 1]; }
+      const w = 1 / (d2 * d2 + 1);
+      wsum += w;
+      hsum += w * pts[i * 3 + 1];
+    }
+    const d = Math.sqrt(best), road = bestY - 0.3;
+    if (d < flatTo) return road;
+    const away = d - flatTo;
+    const rough = (Math.sin(x * 0.05) * Math.cos(z * 0.043) * 5 + Math.sin(x * 0.013 + z * 0.017) * 16) * Math.min(1, away / 90);
+    const t = Math.min(1, away / 20);
+    const h = road * (1 - t) + (hsum / wsum + rough) * t;
+    return h * Math.min(1, Math.max(0, (340 - d) / 140)); // (down to the valley floor at the edge)
+  };
+  // the grid: every 8 m, over the road and 350 m round it
+  let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+  for (let i = 0; i < N; i++) {
+    x0 = Math.min(x0, pts[i * 3]); x1 = Math.max(x1, pts[i * 3]);
+    z0 = Math.min(z0, pts[i * 3 + 2]); z1 = Math.max(z1, pts[i * 3 + 2]);
+  }
+  const G = 8, M = 350;
+  const cols = Math.ceil((x1 - x0 + 2 * M) / G) + 1, rows = Math.ceil((z1 - z0 + 2 * M) / G) + 1;
+  const pos = new Float32Array(cols * rows * 3), idx = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x = x0 - M + c * G, z = z0 - M + r * G, k = (r * cols + c) * 3;
+      pos[k] = x; pos[k + 1] = heightAt(x, z); pos[k + 2] = z;
+      if (r && c) {
+        const a = (r - 1) * cols + c - 1, b = a + 1, d = r * cols + c - 1, e = d + 1;
+        idx.push(a, d, b, b, d, e);
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
+  // snow where it is gentle, rock where it is steep
+  const n = geo.attributes.normal, colors = new Float32Array(cols * rows * 3);
+  const snow = new THREE.Color(0xf3f6f9), rock = new THREE.Color(0x767c84), mixed = new THREE.Color();
+  for (let i = 0; i < cols * rows; i++) {
+    mixed.copy(rock).lerp(snow, Math.min(1, Math.max(0, (n.getY(i) - 0.55) / 0.3)));
+    colors[i * 3] = mixed.r; colors[i * 3 + 1] = mixed.g; colors[i * 3 + 2] = mixed.b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  const land = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
+  land.material.polygonOffset = true; // (the road always wins where they meet)
+  land.material.polygonOffsetFactor = 2;
+  land.material.polygonOffsetUnits = 2;
+  levelGroup.add(land);
+  return heightAt;
+};
 
 const buildRoad = () => {
   clearGroup(levelGroup);
@@ -235,7 +308,8 @@ const buildRoad = () => {
   ground.position.set(tmp.x, -0.05, tmp.z);
   levelGroup.add(ground);
 
-  if (Track.hilly && theme.ground !== null) {
+  const terrainAt = theme.terrain ? buildTerrain() : null; // (the height of the land at a world point)
+  if (Track.hilly && theme.ground !== null && !theme.terrain) {
     // Hills: the land beside the road rises and falls with it. It is a wide ribbon of grass
     // just under the road, with a skirt sloping down to the flat ground along each edge.
     // It writes depth (pushed back a little, so the road always wins) so that a crest hides
@@ -610,6 +684,81 @@ const buildRoad = () => {
       house.rotation.y = h;
       house.position.copy(tmp);
       levelGroup.add(house);
+    }
+  } else if (theme.scenery === 'alpine') {
+    // ---- alpine: guardrails and snowbanks along both edges, snowy pines on the mountainside,
+    // peaks all round in the haze, and snow falling
+    const posts = [], rails = [], banks = [];
+    for (let s = Track.start; s < Track.end; s += 4) {
+      for (const side of [-1, 1]) {
+        posts.push([s, beside(side, s, 0.5), 0.4, 0.12, 0.8, 0.12]);
+        rails.push([s + 2, beside(side, s + 2, 0.45), 0.65, 0.08, 0.3, 4.05]);
+        if (Math.random() < 0.6) banks.push([s + Math.random() * 4, beside(side, s, -0.1), 0.1, 1.2 + Math.random(), 0.7, 2 + Math.random() * 2]);
+      }
+    }
+    instances(cube, 0x5a5f66, posts);
+    instances(cube, 0xb9bec5, rails);
+    instances(new THREE.SphereGeometry(0.5, 8, 6), 0xffffff, banks);
+    // pines: dark green tiers dusted with snow, standing on the land itself, never on another stretch of road
+    const trunks = [], tiers = [], caps = [], spot = new THREE.Object3D(), p = {};
+    for (let s = Track.start; s < Track.end; s += 9) {
+      for (const side of [-1, 1]) {
+        if (Math.random() < 0.35) continue;
+        const d = 10 + Math.random() * 45;
+        Track.toWorld(s + Math.random() * 6, beside(side, s, d), p);
+        if (Track.mainDistance(p.x, p.z) < Math.max(Track.hi(s), -Track.lo(s)) + 4) continue;
+        const y = terrainAt(p.x, p.z), h = 6 + Math.random() * 6;
+        trunks.push([p.x, y + h * 0.1, p.z, 0.5, h * 0.2, 0.5]);
+        for (let k = 0; k < 3; k++) {
+          const w = h * (0.55 - k * 0.13);
+          tiers.push([p.x, y + h * (0.35 + k * 0.22), p.z, w, h * 0.4, w]);
+          caps.push([p.x, y + h * (0.47 + k * 0.22), p.z, w * 0.6, h * 0.18, w * 0.6]);
+        }
+      }
+    }
+    const placed = (geometry, color, list) => { // (like instances(), but at world points, not road ones)
+      const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ color }), list.length);
+      list.forEach(([x, y, z, sx, sy, sz], i) => {
+        spot.position.set(x, y, z);
+        spot.scale.set(sx, sy, sz);
+        spot.updateMatrix();
+        mesh.setMatrixAt(i, spot.matrix);
+      });
+      levelGroup.add(mesh);
+    };
+    placed(tube, 0x4a3426, trunks);
+    placed(cone, 0x2f5a3c, tiers);
+    placed(cone, 0xf6f8fa, caps);
+    // peaks all round, out in the haze: rock with snow on top
+    const middle = {};
+    Track.toWorld(Track.length / 2, 0, middle);
+    const rock = new THREE.MeshLambertMaterial({ color: 0x7d838c }), white = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    for (let k = 0; k < 16; k++) {
+      const a = k / 16 * Math.PI * 2 + Math.random() * 0.2, far = 700 + Math.random() * 250;
+      const r = 180 + Math.random() * 140, h = 260 + Math.random() * 220;
+      const peak = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), rock);
+      peak.position.set(middle.x + Math.sin(a) * far, h / 2 - 20, middle.z + Math.cos(a) * far);
+      const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.42, h * 0.42, 7), white);
+      cap.position.set(peak.position.x, h - 20 - h * 0.21 + 1, peak.position.z);
+      peak.material.fog = cap.material.fog = true;
+      levelGroup.add(peak, cap);
+    }
+    // snow falling: two layers of flakes in a box round the camera, drifting down, one above
+    // the other, each starting again at the top as it reaches the bottom
+    const BOX = 70, flakes = [];
+    for (let i = 0; i < 1400; i++) flakes.push((Math.random() - 0.5) * BOX * 2, Math.random() * BOX, (Math.random() - 0.5) * BOX * 2);
+    const flakeGeo = new THREE.BufferGeometry();
+    flakeGeo.setAttribute('position', new THREE.Float32BufferAttribute(flakes, 3));
+    const flakeMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.85, depthWrite: false });
+    for (const layer of [0, 1]) {
+      const snow = new THREE.Points(flakeGeo, flakeMat);
+      snow.frustumCulled = false;
+      snow.onBeforeRender = (renderer, scene, camera) => {
+        const fall = (performance.now() / 1000 * 2.5 + layer * BOX) % (BOX * 2);
+        snow.position.set(camera.position.x + Math.sin(performance.now() / 3000) * 2, camera.position.y + BOX - fall, camera.position.z);
+        snow.updateMatrixWorld();
+      };
+      levelGroup.add(snow);
     }
   } else if (theme.scenery === 'hell') {
     // ---- hell: rivers of lava, black spires of rock, and fires along the roadside ------------------

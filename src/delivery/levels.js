@@ -1,7 +1,8 @@
 // ============================================================================
 // LEVELS - plain data, one JSON file per level in ./levels// live in its own .json file. Everything is positioned by distance along the road, in metres
 // from the start line, plus a lane number; nothing is in world coordinates.
-//   segments   the expressway's shape: length (m), curve (radians per metre, + = right) and,
+//   segments   the expressway's shape: length (m), curve (radians per metre, + = right; a hairpin
+//              is a bend turning pi radians, no tighter than the road is wide) and,
 //              optionally, grade (rise per metre: 0.03 is a 3% climb, negative goes downhill).
 //              Hills can't yet be combined with exits, and bridges must be on level road.
 //   lanes      the expressway's lanes: a number, half each side of the centre line, an odd one
@@ -29,7 +30,8 @@
 //              for 250 m before the exit and after the merge (room for the flyovers).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
-//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'hell' or 'space': the look of the ground, sky and roadside.
+//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'hell' or 'space': the look of the ground, sky and roadside.
+//              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo')
 //   traffic    which vehicles turn up as traffic and how often, relative to each other:
@@ -49,7 +51,8 @@
 //              sit at road level; the rest pass just under or over it, unmarked. `moving` is the share that
 //              drift across the road or bob up and down through it.
 //   obstacles  { s, lane, kind }   things on the road that explode when hit. kind: 'barrier'
-//                                  (default), 'bale', 'cone', 'sign', or the beach's 'umbrella',
+//                                  (default), 'railBarrier' (one the bullet train leaves standing),
+//                                  'bale', 'cone', 'sign', or the beach's 'umbrella',
 //                                  'surfboard', 'cooler' and 'chair' (a lifeguard chair)
 //   herds      { from, to, count } animals (cows) wandering back and forth across that stretch
 //   drifters   { from, to, kind, count, pattern } obstacles of that kind moving about the road
@@ -58,6 +61,7 @@
 //   storm      { from, to, count, seed } vehicles blown through the air above that stretch,
 //              tumbling, looping round when they reach its end. Only a sight: nothing can hit them.
 //   tractors   { s, lane }         a tractor: slow traffic that starts from that spot every run
+//   parked     { s, side }         a car parked on that shoulder ('left' | 'right'), hazards on, every run
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
 //   id         unique name, used as the level's key in saved progress
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
@@ -83,11 +87,12 @@ import night from './levels/night.json';
 import mysteryMeadows from './levels/mystery-meadows.json';
 import suburbs from './levels/suburbs.json';
 import canberra from './levels/canberra.json';
+import monteCarlo from './levels/monte-carlo.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo];
 export const SPECIAL_LEVELS = [allHeck, ufo];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

@@ -139,7 +139,7 @@ export const Traffic = (() => {
   // bursts on touching anything (see Collision). Afterwards each turns back into what it was.
   let toads = false;
   const makeToad = (car) => {
-    if (car.toad || car.emergency) return; // (an ambulance stays an ambulance)
+    if (car.toad || car.emergency || car.parked) return; // (an ambulance stays an ambulance, and a parked car parked)
     const T = CONFIG.mystery.toad;
     car.toad = { health: car.health, maxHealth: car.maxHealth, hw: car.hw, hl: car.hl, height: car.height, mass: car.mass };
     Object.assign(car, T, { health: 1, maxHealth: 1, spin: 0, wobble: 0, rival: null, stun: 0 });
@@ -209,6 +209,8 @@ export const Traffic = (() => {
     car.tapWait = 0;        // ...s to the next
     car.wander = Math.random() * 6; // (where it is in its drift about the lane)
     car.fromBehind = false; // came up from behind the player
+    car.parked = false;     // parked on a shoulder, hazards on (see placeFixed)...
+    car.parkSide = 1;       // ...on this side (-1 left, 1 right)
     car.pulledFor = null;   // the siren it is pulled over for: Player, or an emergency vehicle
     car.emergency = false;  // an emergency vehicle (see startEmergency)...
     car.blocker = null;     // ...the vehicle in its way, if any...
@@ -220,6 +222,8 @@ export const Traffic = (() => {
     car.active = true;
   };
 
+  // where a parked car stands: on the outer half of its shoulder, leaving passing traffic room
+  const parkedLat = (side, s) => Track.shoulderOffset(side, s) + side * 0.5;
   // Vehicles the level puts in a fixed place (its tractors): each takes a car from the pool,
   // waits where it was put until the player comes within range, and is never recycled.
   const placeFixed = () => {
@@ -235,6 +239,23 @@ export const Traffic = (() => {
       car.viaSide = false;
       car.baseSpeed = CONFIG.tractorSpeed;
       car.vs = 0; // parked until the player is near
+    }
+    // ...and its parked cars, on the shoulders with their hazards on: a car of one of the
+    // level's ordinary kinds, facing the way that side's traffic goes, that never moves off
+    const ordinary = mix().filter(([kind]) => !CONFIG.vehicles[kind].special);
+    for (const p of LEVEL.parked || []) {
+      const side = p.side === 'left' ? -1 : 1;
+      const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1 : side;
+      const car = cars.find(c => !c.active && c.unused) || cars.find(c => !c.active && !c.unused && c.dir === dir);
+      if (!car) continue;
+      car.dir = dir;
+      car.bound = dir > 0 ? 'north' : 'south';
+      car.s = Track.place(p);
+      let r = Math.random() * ordinary.reduce((sum, [, rate]) => sum + rate, 0), kind = 'car';
+      for (const [k, rate] of ordinary) if ((r -= rate) < 0) { kind = k; break; }
+      outfit(car, kind, side > 0 ? Track.laneCount - 1 : 0);
+      Object.assign(car, { fixed: true, parked: true, parkSide: side, viaSide: false, evil: false, defiant: false,
+        baseSpeed: 0, vs: 0, lat: parkedLat(side, car.s), hazards: true });
     }
   };
 
@@ -523,6 +544,17 @@ export const Traffic = (() => {
         if (car.wobble <= 0) spinOut(car);
       }
 
+      if (car.parked) { // parked, hazards on: it goes nowhere, but a shove moves it along the shoulder
+        car.vs -= car.vs * Math.min(1, dt * 3);
+        car.s += car.vs * dt;
+        car.latVel = 0;
+        car.lat = parkedLat(car.parkSide, car.s);
+        car.braking = false;
+        car.signal = 0;
+        car.hazards = true;
+        updateYaw(car, dt);
+        continue;
+      }
       if (car.emergency) { // an ambulance on its way: see driveEmergency
         driveEmergency(car, dt);
         continue;

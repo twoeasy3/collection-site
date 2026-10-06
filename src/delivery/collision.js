@@ -174,7 +174,10 @@ export const Collision = (() => {
   //                  marks which. The moving ones drift across the road or bob through it
   // The list is filled by loadLevel() when a level is loaded (see Game.load).
   const SIZE = { // hw, hl, height
-    barrier: [1.2, 0.6, 1.2], bale: [1.1, 1.1, 1.5], frog: [1.4, 1.4, 1.6], cow: [0.7, 1.3, 1.5],
+    barrier: [1.2, 0.6, 1.2],
+    // a railway barrier: low and narrow enough to sit wholly inside a passing bullet train
+    railBarrier: [1.2, 0.6, 0.95],
+    bale: [1.1, 1.1, 1.5], frog: [1.4, 1.4, 1.6], cow: [0.7, 1.3, 1.5],
     asteroid: [1, 1, 2], // replaced by each asteroid's own radius
     cone: [0.42, 0.42, 1.12], sign: [1.1, 0.15, 3.0], // (cones are 1.4 times life size: easier to see on a phone)
     // the beach's own junk (Hurricane): a beach umbrella, a surfboard stuck upright, an ice

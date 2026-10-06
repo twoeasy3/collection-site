@@ -4,7 +4,7 @@
 // far faster than anything else, reaching where the player was about CONFIG.bulletTrain.warning
 // seconds later. Whatever any part of it touches is destroyed: traffic, obstacles, and the
 // player's car, outright (like the bridge structure), nose on or steered into its side; only
-// a ghost passes through it. It keeps to its lane, following it where the road narrows, and
+// a ghost passes through it (and a railway barrier, which it leaves standing). It keeps to its lane, following it where the road narrows, and
 // is gone once it is well past. While it is about, the shoulder's danger meter runs down slower,
 // and until CONFIG.bulletTrain.mercyAfter s after it has gone nobody is busted for being on the
 // shoulder (see Player.update and Player.bust): it may be the only way out of its path.
@@ -102,6 +102,7 @@ export const BulletTrain = {
       }
       for (const o of Collision.obstacles) {
         if (o.gone || !near(o) || (o.kind === 'asteroid' && o.h - o.r > T.height)) continue;
+        if (CONFIG.obstacleKinds[o.kind].trainProof) continue; // (a railway barrier: it goes straight through)
         if (!Collision.overlap(box, o)) continue;
         o.gone = true;
         FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: -T.speed * 0.2, big: false });

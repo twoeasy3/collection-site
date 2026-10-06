@@ -56,7 +56,8 @@ export const syncEmotes = (dt, now) => {
   const held = Player.mystery === 'angel' || Player.mystery === 'jerk';
   for (let i = 0; i < emotes.length; i++) {
     const v = Collision.bodies[i], e = emotes[i];
-    if (!v.active || v.isPlayer || v.toad) { e.mesh.visible = false; e.show = 0; e.last = null; continue; } // (toads have no moods)
+    // (toads have no moods, and parked cars nobody in them to have one)
+    if (!v.active || v.isPlayer || v.toad || v.parked) { e.mesh.visible = false; e.show = 0; e.last = null; continue; }
     if (e.last !== null && e.last !== v.emotion) e.show = CONFIG.emoteTime; // mood swing: show it now
     e.last = v.emotion;
     if (v.showMood) { e.show = CONFIG.emoteTime; v.showMood = false; } // hit by a package
