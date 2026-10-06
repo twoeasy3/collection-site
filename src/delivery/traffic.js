@@ -209,6 +209,7 @@ export const Traffic = (() => {
     car.tapWait = 0;        // ...s to the next
     car.wander = Math.random() * 6; // (where it is in its drift about the lane)
     car.fromBehind = false; // came up from behind the player
+    car.onIce = false;      // on an ice patch (see CONFIG.ice)
     car.parked = false;     // parked on a shoulder, hazards on (see placeFixed)...
     car.parkSide = 1;       // ...on this side (-1 left, 1 right)
     car.pulledFor = null;   // the siren it is pulled over for: Player, or an emergency vehicle
@@ -513,6 +514,12 @@ export const Traffic = (() => {
         keepOnRoad(car, 0);
         continue;
       }
+      // ice: a car hitting a patch may spin out (and blow up), the likelier the faster it is going
+      // (not one that is parked, nor an ambulance)
+      const icy = !!Track.icy(car.s, car.lat);
+      if (icy && !car.onIce && !car.parked && !car.emergency && !(car.spin > 0) &&
+          Math.random() < CONFIG.ice.spinPerSpeed * Math.abs(car.vs)) spinOut(car);
+      car.onIce = icy;
       if (car.spin > 0 || car.stun > 0) { // (out of control: no signalling, no brakes)
         car.braking = car.hazards = false;
         car.signal = 0;

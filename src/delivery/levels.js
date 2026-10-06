@@ -62,6 +62,7 @@
 //              tumbling, looping round when they reach its end. Only a sight: nothing can hit them.
 //   tractors   { s, lane }         a tractor: slow traffic that starts from that spot every run
 //   parked     { s, side }         a car parked on that shoulder ('left' | 'right'), hazards on, every run
+//   ice        { from, to, lane }  an ice patch on that lane (no lane: across the road) (see CONFIG.ice)
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
 //   id         unique name, used as the level's key in saved progress
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'

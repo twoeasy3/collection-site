@@ -90,6 +90,20 @@ export const CONFIG = {
     brake: 30,             // m/s^2 it slows at for something in its way
     defiance: 0.05,        // chance an evil driver refuses to give way to it
   },
+  // Ice (a level's "ice": patches on the road). On it the player's car slews round as it arrives
+  // (only the look of it: yaw never changes where a car goes), brakes and steers with less grip,
+  // and in a bend it understeers: it slides to the outside, the more so the faster, heavier and
+  // less agile it is. A traffic car hitting it may spin out (and blow up), the likelier the faster.
+  ice: {
+    brakeGrip: 0.35,       // share of its braking (or braking by itself for a car ahead) that works on ice
+    steerGrip: 0.3,        // share of its steering's grip
+    grip: 6,               // m/s^2 of cornering the tyres still hold on ice; beyond it...
+    understeer: 0.4,       // ...this share of the rest pushes the car to the outside of the bend
+    weightRef: 2.28,       // hw x hl x height of a car that weighs 1 (the Commuter); a car's weight goes
+                           // with the square root of its own, times its mass (the 1000 lb weight)
+    yawKick: 2.5,          // rad/s it slews round as it hits the ice, at speed
+    spinPerSpeed: 0.02,    // chance, per m/s of its speed, that a traffic car hitting the ice spins out
+  },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game
   bulletTrain: {
     speed: 150,            // m/s (540 km/h)

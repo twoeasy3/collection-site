@@ -278,6 +278,25 @@ const createTrack = () => {
     return false;
   };
   const onShoulder = (lat, s) => lat > laneHi(s) || lat < laneLo(s);
+  // the level's ice patch at (s, lat), if any: on the expressway, over one lane or (with no lane) all of them
+  const ice = LEVEL.ice || [];
+  const icy = (s, lat) => {
+    if (!isMain(s)) return null;
+    for (const p of ice) {
+      if (s < p.from || s > p.to) continue;
+      if (p.lane === undefined ? lat >= laneLo(s) && lat <= laneHi(s) : Math.abs(lat - laneOffset(p.lane, s)) <= LW / 2) return p;
+    }
+    return null;
+  };
+  // how sharply the road bends at s: radians per metre, + = to the right
+  const bend = (s) => {
+    if (isMain(s)) return curveAt(s);
+    const p = {};
+    let d = toWorld(s - 1, 0, p) - toWorld(s + 1, 0, p);
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    return d / 2;
+  };
 
   // ---- lanes ------------------------------------------------------------------------------
   // expressway: 0 .. laneCount-1 left to right: the left side's lanes (oncoming on a two-way
@@ -501,6 +520,10 @@ const createTrack = () => {
       }
       if (clash) problems.push('the road runs into itself: at ' + clash[0] + ' m and ' + clash[1] + ' m it is only ' + clash[2].toFixed(0) + ' m apart');
     }
+    for (const p of ice) {
+      if (!(p.from < p.to) || p.from < 0 || p.to > length) problems.push('ice at ' + p.from + '-' + p.to + ': from before to, on the road');
+      else if (p.lane !== undefined && !(Number.isInteger(p.lane) && p.lane >= 0 && p.lane < LANES)) problems.push('ice at ' + p.from + ': no lane ' + p.lane);
+    }
     for (const car of LEVEL.parked || []) {
       if (car.s < 0 || car.s > length) problems.push('parked car at ' + car.s + ': beyond the road');
       else if (car.side !== 'left' && car.side !== 'right') problems.push('parked car at ' + car.s + ': side is left or right');
@@ -576,7 +599,7 @@ const createTrack = () => {
     laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesOn, edge, extraLane, onBridge, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
+    lanesOn, edge, extraLane, onBridge, icy, bend, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

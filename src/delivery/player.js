@@ -17,6 +17,7 @@ export const Player = {
   launching: true,     // pulling away to startSpeed on its own
   braking: false,      // braking hard by itself for a car ahead (the tyres squeal as it starts)
   brakeLight: false,   // braking at all: the brake lights are on
+  onIce: false,        // on an ice patch (see CONFIG.ice)
   turbo: 0,            // s of turbocharger left
   ghost: 0,            // s of passing through cars and barriers left
   passenger: 0,        // s of legal shoulder driving left
@@ -38,6 +39,8 @@ export const Player = {
   health: CAR.health, maxHealth: CAR.health, smoke: 0, // (top speed, acceleration and health are the car's: see cars.js)
   hw: CAR.hw, hl: CAR.hl, height: CAR.height, // hitbox half width / half length, body height
   get mass() { return this.heavy > 0 ? CONFIG.heavyMass.mass : 1; },
+  // how heavy the car is, for sliding on ice: by its size, against the Commuter's, and its mass
+  get weight() { return this.mass * Math.sqrt(this.hw * this.hl * this.height / CONFIG.ice.weightRef); },
   // how quickly the car steers: its own agility, less under the weight
   get agility() { return (CAR.agility || 1) * (this.heavy > 0 ? CONFIG.heavyMass.agility : 1); },
   get vs() { return this.speed; },
@@ -82,6 +85,7 @@ export const Player = {
     this.yaw = 0;
     this.yawVel = 0;
     this.stun = 0;
+    this.onIce = false;
     if (!keepHealth) this.health = this.maxHealth;
     this.smoke = 0;
     this.shield = CONFIG.respawnShield;
@@ -200,6 +204,7 @@ export const Player = {
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
     const top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1);
     let drive = throttle;
+    const grip = this.onIce ? CONFIG.ice.brakeGrip : 1; // (braking on ice)
     if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed)) drive = 1;
     if (drive === 0 && boosted) drive = 1; // the turbo pulls unless you brake
     if (this.speed > top) {
@@ -208,14 +213,14 @@ export const Player = {
     } else if (drive > 0) {
       this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * dt);
     } else if (drive < 0 && this.speed > CONFIG.minSpeed) {
-      this.speed = Math.max(CONFIG.minSpeed, this.speed + drive * CONFIG.brake * dt);
+      this.speed = Math.max(CONFIG.minSpeed, this.speed + drive * CONFIG.brake * grip * dt);
     }
     // off the accelerator, the car brakes by itself for a slower car ahead
     const lead = throttle <= 0 && this.mystery !== 'noBrakes' ? this.carAhead() : null;
     const hard = !!lead && this.speed - lead.vs > CONFIG.brakeScreech;
     if (hard && !this.braking) sfx('brake', 0.7);
     this.braking = hard;
-    if (lead) this.speed = Math.max(Math.max(0, lead.vs), this.speed - CONFIG.autoBrake * dt);
+    if (lead) this.speed = Math.max(Math.max(0, lead.vs), this.speed - CONFIG.autoBrake * grip * dt);
     this.brakeLight = (throttle < 0 && this.speed > CONFIG.minSpeed) || !!lead;
   },
   // The screensaver's camera dolly: no car (nothing of the player is drawn), just this point
@@ -247,6 +252,14 @@ export const Player = {
     this.badGas = Math.max(0, this.badGas - dt);
     this.heavy = Math.max(0, this.heavy - dt);
     if (this.mystery && (this.mysteryTime -= dt) <= 0) this.endMystery();
+    // ice: hitting it, the car slews round (the look of it only), with a squeal of tyres
+    const icy = !!Track.icy(this.s, this.lat);
+    if (icy && !this.onIce) {
+      this.yawVel += (Math.random() < 0.5 ? -1 : 1) * CONFIG.ice.yawKick * Math.min(1, this.speed / 25);
+      if (this.speed > 8) sfx('brake', 0.5);
+    }
+    if (icy) this.yawVel += (Math.random() - 0.5) * 8 * Math.min(1, this.speed / 25) * dt; // (and twitches about on it)
+    this.onIce = icy;
     this.updateSpeed(dt, throttle, stopping);
     this.s += this.speed * dt;
     // on the right shoulder at the exit = taking the side road; at its end, back onto the expressway
@@ -269,8 +282,15 @@ export const Player = {
       wantVel = clamp(pull * CONFIG.laneAssist, -CONFIG.steerSpeed, CONFIG.steerSpeed);
     }
     // a hard knock briefly weakens steering
-    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility);
+    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce ? CONFIG.ice.steerGrip : 1);
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
+    // on ice in a bend, the car understeers: what the bend asks of the tyres beyond the little
+    // grip they have left pushes it to the outside (heavier cars more, more agile ones less)
+    if (this.onIce && !this.busted) {
+      const bend = Track.bend(this.s), asked = this.speed * this.speed * Math.abs(bend);
+      const slide = Math.max(0, asked * this.weight / this.agility - CONFIG.ice.grip) * CONFIG.ice.understeer;
+      this.latVel -= Math.sign(bend) * slide * dt; // (a bend to the right slides it left, and the other way about)
+    }
 
     // the car can't be turned into the roadside or the bridge structure: sideways speed
     // toward a side fades to nothing as the car reaches it, so it straightens up

@@ -1045,6 +1045,44 @@ try {
     // (passing traffic may brush one, and nudge it along a little)
     for (const [c, s] of start) if (c.active && (Math.abs(c.s - s) > 3 || !c.hazards || !T.onShoulder(c.lat, c.s))) moved++;
     check(placed && moved === 0, `all ${parked.length} parked cars are on their shoulders, facing that side's way, hazards on, and still there a minute later`);
+    // ice: braking has less bite on it, and in a bend the car understeers to the outside, the more
+    // the faster and heavier it is; traffic hitting it may spin out, the likelier the faster
+    const T2 = () => track.Track;
+    const brakeLoss = (s) => {
+      Game.start();
+      for (const c of Traffic.cars) c.active = false;
+      Object.assign(Player, { s, lat: T2().laneOffset(1, s), speed: 24, launching: false, shield: 0 });
+      for (let i = 0; i < 60; i++) Player.update(1 / 120, -1, 0, false);
+      return 24 - Player.speed;
+    };
+    const dry = brakeLoss(300), iced = brakeLoss(445);
+    const slide = (speed, heavy) => {
+      Game.start();
+      for (const c of Traffic.cars) c.active = false;
+      Object.assign(Player, { s: 606, lat: T2().laneOffset(1, 606), speed, launching: false, shield: 0, latVel: 0, heavy: heavy ? 99 : 0 });
+      const lat0 = Player.lat;
+      for (let i = 0; i < 120; i++) Player.update(1 / 120, 0, 0, false); // (1 s round the first hairpin, a left, hands off)
+      return Player.lat - lat0;
+    };
+    const slow = slide(8), fast = slide(24), medium = slide(14), weighed = slide(14, true);
+    check(Math.abs(iced / dry - CONFIG.ice.brakeGrip) < 0.02 && Math.abs(slow) < 0.05 && fast > 1 && weighed > medium * 3,
+      `on ice: braking takes ${iced.toFixed(1)} m/s off in 0.5 s, not ${dry.toFixed(1)}; round a hairpin hands off for 1 s the car slides ` +
+      `${slow.toFixed(2)} m to the outside at 8 m/s, ${medium.toFixed(2)} at 14 (${weighed.toFixed(2)} with the 1000 lb weight), ${fast.toFixed(2)} at 24`);
+    Game.start();
+    let spins = 0;
+    for (let k = 0; k < 400; k++) {
+      for (const c of Traffic.cars) c.active = false;
+      const car = Traffic.cars.find(c => c.dir > 0 && !c.unused), type = CONFIG.vehicles.car;
+      Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, emergency: false, s: 444, lane: 1, lat: T2().laneOffset(1, 444),
+        vs: 15, baseSpeed: 15, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, onIce: false, toad: null, arrest: -1,
+        hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null });
+      Traffic.update(1 / 120);
+      FxQueue.length = 0;
+      if (car.spin > 0) spins++;
+    }
+    const want = 400 * CONFIG.ice.spinPerSpeed * 15;
+    check(Math.abs(spins - want) < 4 * Math.sqrt(want), `traffic hitting the ice at 15 m/s: ${spins} of 400 spin out (about ${want.toFixed(0)} expected)`);
+
     // the level checks catch a bend too tight for the road, and a road that runs into itself
     levels.selectSpecial({ id: 'tight', name: 'tight', time: 99, tip: 1, traffic: {}, segments: [{ length: 200, curve: 0 }, { length: 20, curve: 0.15 }, { length: 200, curve: 0 }] });
     Game.start();
