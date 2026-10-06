@@ -121,11 +121,14 @@ export const CONFIG = {
     warning: 3,            // s from a wave being warned of to its coming in over the road...
     rise: 0.8,             // ...s it takes to rush in...
     hold: 1.6,             // ...it stays...
-    fall: 2,               // ...and it takes to drain away
+    fall: 3,               // ...it takes to drain away, and the sea with it, right out off the road...
+    low: 3,                // ...the road stays bare...
+    back: 3,               // ...and the tide takes to come back in
     stretch: 240,          // m of road a wave floods, centred where the player will be when it comes in
     shove: 6,              // m/s^2 a wave rushing in pushes a car in the water towards the centre line
     overtime: 1.3,         // the tide rises on past the level's `end` into the tip countdown, up to this share of the clock
     oncomingShield: 4,     // extra s of shield for a car the helicopter can only set down on the oncoming side
+    washedEach: 3,         // washed-up pickups there can be of each type at once (see Tide.washUp)
   },
   // Junctions (a level's "junctions"): crossroads where the road turns right or left, or goes
   // straight on. There is only ever the one route: the arms it doesn't take are barred to the
@@ -148,6 +151,18 @@ export const CONFIG = {
     slowest: 0.3,          // share of its top speed a car that crosses worst of all (0) keeps
     bite: 25,              // m/s^2 it is slowed at, down to that
     usual: 0.6,            // a car's crossing if it doesn't say
+  },
+  // hippos (a level's "hippos": see hippos.js), charging out of the river across the road
+  hippo: {
+    out: 14,               // m beyond the road's edge it surfaces, in the river...
+    bank: 5,               // ...which starts this far out (a muddy bank between it and the road)
+    surface: 1,            // s it takes to come up and get going
+    speed: 12,             // m/s it charges at
+    hl: 0.95,              // m, half its width (along the road)
+    hw: 2.1,               // m, half its length (it charges across the road)
+    height: 1.7,           // m, its height (how far under the water it starts)
+    lead: { min: -6, max: 22 }, // m off where the player will be when it reaches the player's lane
+    beyond: 25,            // m into the grass on the far side it is gone
   },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game
   bulletTrain: {

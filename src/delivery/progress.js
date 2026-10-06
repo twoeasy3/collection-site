@@ -10,8 +10,8 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // that had opened that position or beyond opens one more. Order 2 put Suburbia in at position 8,
 // ahead of All Heck and Asteroid Run (now S1 and S2); order 3, Canberra at 9; order 4, Monte Carlo
 // at 10; order 5, Singapore at 11; order 6, Singapore II at 12; order 7, Sydney to Kiama at 13;
-// order 8, Passage du Gois at 14.
-const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14]; // (for orders 2, 3, ...)
+// order 8, Passage du Gois at 14; order 9, Safari at 15.
+const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 const fresh = () => ({

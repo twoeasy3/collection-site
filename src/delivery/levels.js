@@ -36,7 +36,7 @@
 //              for 250 m before the exit and after the merge (room for the flyovers).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
-//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'hell' or 'space': the look of the ground, sky and roadside.
+//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo')
@@ -80,9 +80,14 @@
 //              the sea comes in over, on the player's side of the road only, from the kerb in. It
 //              floods `start` lane widths in from the pavement's edge (the shoulder counts as one)
 //              at the start of a run, rising to `end` as the clock runs down; every min-max s a
-//              wave (warned of) floods a stretch `reach` lanes further for a few seconds. On a
-//              two-way road with no exits. See tide.js and CONFIG.tide
+//              wave (warned of) floods a stretch `reach` lanes further for a few seconds, then
+//              drains right out, leaving the road bare a while. washUp: { types: { type: share },
+//              count: { min, max } }: pickups each wave leaves in the water. On a two-way road
+//              with no exits. See tide.js and CONFIG.tide
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
+//   hippos     { from, to, every: { min, max } }: a river beside the road (on the right) over that
+//              stretch, out of which a hippo charges across the road every min-max s, aimed at the
+//              player: whatever it touches is destroyed, and it carries on (see hippos.js)
 //   id         unique name, used as the level's key in saved progress
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
 //   time       seconds on the clock (before the Good / Evil scaling in CONFIG.timeScale)
@@ -112,11 +117,12 @@ import singapore from './levels/singapore.json';
 import singaporeNight from './levels/singapore-night.json';
 import grandPacific from './levels/grand-pacific.json';
 import passageDuGois from './levels/passage-du-gois.json';
+import safari from './levels/safari.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari];
 export const SPECIAL_LEVELS = [allHeck, ufo];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

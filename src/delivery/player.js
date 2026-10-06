@@ -75,7 +75,7 @@ export const Player = {
     this.dropOncoming = false;
     if (Tide.on) {
       const later = CONFIG.respawnTime;
-      const dry = (l) => Tide.depth(this.s, Track.laneOffset(l, this.s), later) <= CONFIG.tide.wet;
+      const dry = (l) => Tide.depth(this.s, Track.laneOffset(l, this.s), later, true) <= CONFIG.tide.wet; // (not trusting a sea gone out)
       const own = [];
       for (let l = first; l <= last; l++) own.push(l);
       own.sort((a, b) => Math.abs(a - lane) - Math.abs(b - lane));

@@ -515,8 +515,14 @@ Game.onLoad.push(() => { readable(levelItems); readable(hoverMystery); readable(
 
 export const syncPickups = (dt) => {
   for (let i = 0; i < pickupMeshes.length; i++) {
-    pickupMeshes[i].visible = !Pickups.items[i].taken;
-    pickupMeshes[i].userData.gem.rotation.y += dt * 3;
+    const p = Pickups.items[i], mesh = pickupMeshes[i];
+    mesh.visible = !p.taken;
+    mesh.userData.gem.rotation.y += dt * 3;
+    if (p.washed && !p.taken) { // (washed up by the tide: wherever it was left, bobbing)
+      mesh.rotation.y = Track.toWorld(p.s, p.lat, tmp);
+      mesh.position.copy(tmp);
+      mesh.userData.gem.position.y = 1.7 + 0.25 * Math.sin(performance.now() * 0.004 + i);
+    }
   }
   const here = Track.along(Player.s);
   for (let i = 0; i < obstacleMeshes.length; i++) {

@@ -7,7 +7,9 @@ import { Message } from './messages.js';
 
 // ============================================================================
 // PICKUPS - fixed positions on the track, collected by driving through them.
-// The lists are filled by load() when a level is loaded (see Game.load).
+// The lists are filled by load() when a level is loaded (see Game.load). A level with a tide that
+// washes things up (see Tide.washUp) also gets a pool of washed-up ones, a few of each type it
+// can wash up, hidden (taken) until a wave puts one somewhere.
 // ============================================================================
 export const Pickups = (() => {
   const items = [];
@@ -18,9 +20,19 @@ export const Pickups = (() => {
       const s = Track.place(p);
       items.push({ type: p.type, s, lat: Track.laneOffset(p.lane, s), taken: false });
     }
+    for (const type of Object.keys(LEVEL.tide?.washUp?.types || {})) {
+      for (let i = 0; i < CONFIG.tide.washedEach; i++) items.push({ type, s: 0, lat: 0, taken: true, washed: true });
+    }
   };
 
-  const reset = () => { for (const p of items) p.taken = false; };
+  const reset = () => {
+    for (const p of items) {
+      p.taken = !!p.washed;
+      p.pending = false;
+    }
+  };
+  // a washed-up pickup of that type that isn't in use (one already behind the player will do), or null
+  const washed = (type) => items.find(p => p.washed && !p.pending && p.type === type && (p.taken || p.s < Player.s - 60)) || null;
 
   const update = () => {
     if (!Player.active) return;
@@ -34,7 +46,7 @@ export const Pickups = (() => {
     }
   };
 
-  return { items, load, reset, update };
+  return { items, load, reset, update, washed };
 })();
 
 // TANK RAGE targets: fixed spots beside the road, out of the car's reach but not a package's

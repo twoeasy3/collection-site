@@ -587,11 +587,16 @@ const createTrack = () => {
       if (!(p.from < p.to) || p.from < 0 || p.to > length) problems.push('ice at ' + p.from + '-' + p.to + ': from before to, on the road');
       else if (p.lane !== undefined && !(Number.isInteger(p.lane) && p.lane >= 0 && p.lane < LANES)) problems.push('ice at ' + p.from + ': no lane ' + p.lane);
     }
+    for (const r of LEVEL.hippos || []) {
+      if (!(r.from < r.to) || r.from < 0 || r.to > length) problems.push('hippos at ' + r.from + '-' + r.to + ': from before to, on the road');
+      else if (!(r.every && r.every.min > 0 && r.every.max >= r.every.min)) problems.push('hippos at ' + r.from + ': every { min, max } s');
+    }
     if (LEVEL.tide) {
       const t = LEVEL.tide, w = t.waves || {};
       if (!(t.from < t.to) || t.from < 0 || t.to > length) problems.push('tide: from before to, on the road');
       if (!(t.start >= 0 && t.end >= t.start)) problems.push('tide: start and end are lanes flooded, end no lower than start');
       if (!(w.every && w.every.min > 0 && w.every.max >= w.every.min && w.reach && w.reach.max >= w.reach.min)) problems.push('tide: waves need every { min, max } and reach { min, max }');
+      if (t.washUp && !(t.washUp.types && t.washUp.count && t.washUp.count.max >= t.washUp.count.min)) problems.push('tide: washUp needs types { type: share } and count { min, max }');
       if (!RIGHT || ONE_WAY || (LEVEL.exits || []).length) problems.push('tide: only on a two-way road with lanes going the player\'s way, and no exits');
     }
     zones.forEach((z, i) => {

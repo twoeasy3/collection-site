@@ -76,6 +76,7 @@ const SAMPLES = {
   trainPass: 'Horn Doppler Pass By', // ...and goes by the player
   wave: null,                   // a wave warned of (the tide: no file, only its stand-in)...
   waveCrash: null,              // ...and breaking over the road
+  hippo: null,                  // a hippo surfacing, with a bellow, to charge
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -265,6 +266,7 @@ Object.assign(SYNTH, {
   trainPass: (v) => { noise(300, 2600, 0.9, 0.6 * v, 'bandpass'); tone(370, 250, 0.9, 0.2 * v, 'sawtooth'); },
   // the tide: a wave's rumble building out at sea, and its roar as it breaks over the road
   wave: (v) => { noise(120, 900, 2.4, 0.45 * v); noise(400, 2000, 2.2, 0.15 * v, 'bandpass', 0.6); },
+  hippo: (v) => { noise(1800, 300, 0.5, 0.5 * v); tone(110, 70, 0.9, 0.35 * v, 'sawtooth', 0.15); tone(82, 55, 0.9, 0.3 * v, 'square', 0.2); },
   waveCrash: (v) => { noise(2600, 300, 1.6, 0.6 * v); noise(700, 150, 1.4, 0.4 * v, 'lowpass', 0.1); },
 });
 

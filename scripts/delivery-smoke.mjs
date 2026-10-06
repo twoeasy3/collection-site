@@ -1246,6 +1246,7 @@ try {
   {
     const { Message } = await load('/src/delivery/messages.js');
     const { Tide } = await load('/src/delivery/tide.js');
+    const { Pickups } = await load('/src/delivery/pickups.js');
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'passage-du-gois'));
     cars.selectCar('hatch');
     Game.evil = false;
@@ -1267,9 +1268,14 @@ try {
     Message.clear();
     Tide.start(mid);
     const warned = Message.lines.some(line => line.text === Message.pick('events', 'wave'));
+    const gifts = Tide.waves[0].gifts, hidden = gifts.every(p => p.taken);
     const before = Tide.flood(mid), held = before === Tide.base(); // (nothing yet, during the warning)
     Tide.update(W.warning + W.rise);
     const peak = Tide.flood(mid);
+    const washed = gifts.length > 0 && hidden && gifts.every(p => !p.taken && p.s > mid && p.s < mid + 120 && Tide.depth(p.s, p.lat) >= W.deep);
+    Object.assign(Player, { s: gifts[0].s, lat: gifts[0].lat });
+    Pickups.update();
+    const collected = gifts[0].taken;
     let oncomingDry = true;
     for (let lat = T().lo(mid); lat <= 0; lat += 0.25) if (Tide.depth(mid, lat) > 0) oncomingDry = false;
     const offCauseway = Tide.flood(L.tide.from - 100) === 0 && Tide.flood(L.tide.to + 100) === 0;
@@ -1277,6 +1283,15 @@ try {
       held && peak > before + L.tide.waves.reach.min - 0.01 && oncomingDry && offCauseway,
       `the tide comes in from the kerb: no lane deep at the start, ${atEnd} of ${lanes.length} by the end of the clock; a wave is warned of, ` +
       `then floods ${(peak - before).toFixed(1)} lanes further; the oncoming side and the road off the causeway stay dry`);
+    // ...then it drains right out, leaving the road bare, before the tide comes back in; and it
+    // washes up pickups, out of sight until it comes in, then left in deep water for the taking
+    Tide.update(W.hold + W.fall + W.low / 2);
+    const bare = Tide.flood(mid), edgeBare = Tide.edge(mid) === T().hi(mid);
+    Tide.update(W.low / 2 + W.back + 0.1);
+    const back = Tide.flood(mid);
+    check(bare === 0 && edgeBare && Math.abs(back - Tide.base()) < 1e-9 && Tide.waves.length === 0 && washed && collected,
+      `after its height the wave drains right out (flood ${bare.toFixed(1)}: the road bare) and the tide comes back in (${back.toFixed(1)} lanes); ` +
+      `it washed up ${gifts.map(p => p.type).join(' and ')}, hidden until it came in, then in deep water ahead, and there to be picked up`);
     // in the water a car is slowed twice as much as by a railway track, and deep water damages it
     // by how badly it wades (a tank not at all, a ghost skims over it)
     const wade = (id, extra = {}) => {
@@ -1354,6 +1369,57 @@ try {
       oncoming.lane < north[0] && oncoming.dry && oncoming.shield > CONFIG.respawnShield + W.oncomingShield - 0.1,
       `wrecked in the water: set down in dry lane ${own.lane} (shield ${own.shield.toFixed(1)} s); with every lane flooded, ` +
       `in oncoming lane ${oncoming.lane}, shield ${oncoming.shield.toFixed(1)} s`);
+    Game.toMenu();
+  }
+
+  section('Safari: one way, and hippos');
+  {
+    const { Message } = await load('/src/delivery/messages.js');
+    const { Hippos } = await load('/src/delivery/hippos.js');
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'safari'));
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    const T = () => track.Track, H = CONFIG.hippo, at = 2600;
+    const oneWay = T().flow === 'north' && Traffic.cars.some(c => c.active) && Traffic.cars.every(c => !c.active || c.dir > 0);
+    // a hippo surfaces in the river and charges straight across the road, destroying what is in its way
+    // (a car, and the player's car, outright), and goes on, unharmed, into the grass on the far side
+    const charge = (ghost) => {
+      Game.start();
+      Hippos.next = Infinity;
+      for (const c of Traffic.cars) c.active = false;
+      Object.assign(Player, { s: at, lat: T().laneOffset(1, at), speed: 0, shield: 0, ghost });
+      const car = Traffic.cars.find(c => !c.unused), type = CONFIG.vehicles.car;
+      Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, stalled: false, emergency: false, s: at, lane: 0, lat: T().laneOffset(0, at),
+        vs: 0, baseSpeed: 0, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, junction: null,
+        hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null });
+      Message.clear();
+      Hippos.start(at);
+      const h = Hippos.list[0], said = Message.lines.some(line => line.text === Message.pick('events', 'hippo'));
+      const inWater = h.lat > T().hi(at) + H.bank && h.y < 0;
+      let carWrecked = false, playerWrecked = false, furthest = h.lat, lasted = 0;
+      for (let i = 0; i < 120 * 8 && Hippos.list.length; i++) {
+        Hippos.update(1 / 120);
+        Collision.check();
+        FxQueue.length = 0;
+        carWrecked ||= !car.active;
+        playerWrecked ||= !Player.active;
+        if (Hippos.list.includes(h)) { furthest = h.lat; lasted = h.t; }
+      }
+      return { said, inWater, carWrecked, playerWrecked, across: furthest < T().lo(at) - H.beyond + 1, lasted };
+    };
+    const hit = charge(0), ghosted = charge(99);
+    check(oneWay && hit.said && hit.inWater && hit.carWrecked && hit.playerWrecked && hit.across && ghosted.across && !ghosted.playerWrecked,
+      `all the traffic goes the player's way; a hippo ("${Message.pick('events', 'hippo')}") surfaces in the river and charges across the road in ` +
+      `${hit.lasted.toFixed(1)} s, wrecking a car and the player's car in its way and running on unharmed into the grass; a ghost comes through it`);
+    // aimed at the player: one sets off when the player is by the river, ahead of where the player is
+    Game.start();
+    Object.assign(Player, { s: 2400, lat: T().laneOffset(1, 2400), speed: 20, launching: false, shield: 0 });
+    Hippos.next = 0;
+    Hippos.update(1 / 120);
+    const aimed = Hippos.list[0];
+    check(!!aimed && aimed.s > Player.s + 20 && aimed.s < Player.s + 120 && !!Hippos.riverAt(aimed.s),
+      `by the river, hippos come for the player: one surfaces ${aimed ? (aimed.s - Player.s).toFixed(0) : '-'} m ahead`);
     Game.toMenu();
   }
 

@@ -67,6 +67,8 @@ export const THEMES = {
   // coast: a level in zones (its "zones"), each with a look of its own: see the 'zones' scenery,
   // and syncZones, which blends the sky and the ground from one zone's colours to the next
   coast: { sky: 0x9fc8ee, ground: 0x6f9a52, road: 0x44474d, scenery: 'zones' },
+  // safari: a level in zones on a dirt road: no markings, only the ruts worn into it
+  safari: { sky: 0xc6dcea, ground: 0xc2a85a, road: 0xa47a4c, scenery: 'zones', unmarked: true },
   // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
   snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
   // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
@@ -202,6 +204,9 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
   thing('saltPan', cube, 0xaebfc6); thing('salt', cone, 0xfbfbf7); thing('weed', cube, 0x4b5b33); thing('pool', cube, 0x6f9fb0);
   thing('stake', cube, 0x4a3b2c); thing('refuge', cube, 0x5a4a3a); thing('rail', cube, 0xd8d2c4); thing('gaugeRed', cube, 0xd2302a);
   thing('gaugeWhite', cube, 0xf6f6f2); thing('coat', cube, 0x3b5e8c); thing('face', sphere, 0xe0b48c);
+  thing('tallGrass', cone, 0xc9a548); thing('acacia', sphere, 0x5f7a32); thing('boulder', sphere, 0x8d8272); thing('kopje', sphere, 0x9a8b74);
+  thing('reed', cube, 0x6f8a3a); thing('hippoBack', sphere, 0x6a5a62); thing('mound', cone, 0xa0603a); thing('spots', cube, 0xd9a441);
+  thing('neck', cube, 0xd9a441); thing('zebra', cube, 0xf2f2ee); thing('stripe', cube, 0x1e1e1e);
   // gum trees: pale trunks and untidy clumps of grey-green leaves
   const gums = (a, b, every, dMax, sides = [-1, 1]) => {
     for (let s = a; s < b; s += every) for (const side of sides) {
@@ -250,6 +255,53 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
       const h = 14 + Math.random() * 6, lat = beside(side, s, d + Math.random() * 2);
       putAt('pineTrunk', [s, lat, 2, 0.4, 4, 0.4]);
       putAt('poplar', [s, lat, h * 0.55, 2.6, h * 0.85, 2.6]);
+    }
+  };
+  // tall grass, in clumps from the road's edge out to d1, thick enough to hide anything in it
+  const tallGrass = (a, b, side, d1, every = 2.5) => {
+    for (let s = a; s < b; s += every) {
+      for (let d = 0.6 + Math.random(); d < d1; d += 2 + Math.random() * 2) {
+        const at = s + Math.random() * every, h = 1.4 + Math.random() * 1.2, w = 1.4 + Math.random() * 1.4;
+        putAt('tallGrass', [at, beside(side, at, d), h / 2, w, h, w]);
+      }
+    }
+  };
+  // acacias: a thin trunk and a wide, flat crown
+  const acacias = (a, b, every, side, d0, d1) => {
+    for (let s = a; s < b; s += every) {
+      const at = s + Math.random() * every, d = d0 + Math.random() * (d1 - d0), lat = beside(side, at, d), h = 5 + Math.random() * 3;
+      if (!clear(at, side, d)) continue;
+      putAt('pineTrunk', [at, lat, h / 2, 0.35, h, 0.35]);
+      putAt('acacia', [at, lat, h, 7 + Math.random() * 4, 1.4, 7 + Math.random() * 4]);
+    }
+  };
+  // a line of boulders along the road's edge, end to end
+  const rockLine = (a, b, side) => {
+    for (let s = a; s < b;) {
+      const r = 1.2 + Math.random() * 1.6;
+      putAt('boulder', [s + r / 2, beside(side, s + r / 2, 0.4 + r / 2), r * 0.35, r, r * 0.8, r * 1.1]);
+      s += r * 0.9;
+    }
+  };
+  // giraffes, browsing, and zebras, out in the grass
+  const giraffes = (a, b, every, side, d0, d1) => {
+    for (let s = a; s < b; s += every) {
+      const at = s + Math.random() * every, lat = beside(side, at, d0 + Math.random() * (d1 - d0));
+      putAt('spots', [at, lat, 2.4, 1.0, 1.4, 2.0]);
+      putAt('neck', [at + 0.9, lat, 3.9, 0.45, 2.4, 0.45]);
+      putAt('spots', [at + 1.25, lat, 5.1, 0.45, 0.4, 0.9]);
+      for (const [dz, dx] of [[0.7, -0.35], [0.7, 0.35], [-0.7, -0.35], [-0.7, 0.35]]) putAt('neck', [at + dz, lat + dx, 0.9, 0.2, 1.8, 0.2]);
+    }
+  };
+  const zebras = (a, b, every, side, d0, d1) => {
+    for (let s = a; s < b; s += every) {
+      for (let k = 0; k < 4; k++) { // (a few together)
+        const at = s + Math.random() * 12, lat = beside(side, at, d0 + Math.random() * (d1 - d0));
+        putAt('zebra', [at, lat, 1.1, 0.7, 0.8, 1.7]);
+        for (let q = -2; q <= 2; q++) putAt('stripe', [at + q * 0.3, lat, 1.1, 0.72, 0.82, 0.1]);
+        putAt('zebra', [at + 1.0, lat, 1.5, 0.35, 0.8, 0.35]);
+        for (const dz of [-0.6, 0.6]) putAt('stripe', [at + dz, lat, 0.4, 0.5, 0.8, 0.12]);
+      }
     }
   };
   // Norfolk Island pines: tall, dark, in tiers
@@ -448,6 +500,58 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
       cottages(a + 60, b, 50, 45, [-1]);
       sea(a, b, 70);
       beach(a, b, 40, 72);
+    } else if (z.scenery === 'savanna') {
+      // tall golden grass right up to the road on both sides, acacias and giraffes beyond it
+      for (const side of [-1, 1]) {
+        tallGrass(a, b, side, 22);
+        acacias(a, b, 70, side, 30, 160);
+        giraffes(a + 100, b, 260, side, 40, 120);
+      }
+    } else if (z.scenery === 'kopjes') {
+      // a line of boulders along each edge of the road, and the great piles of rock (the kopjes) beyond
+      for (const side of [-1, 1]) {
+        rockLine(a, b, side);
+        for (let s = a + 40; s < b; s += 110) {
+          const at = s + Math.random() * 40, d = 25 + Math.random() * 60;
+          for (let k = 0; k < 6; k++) {
+            const r = 4 + Math.random() * 8;
+            putAt('kopje', [at + Math.random() * 14, beside(side, at, d + Math.random() * 14), r * 0.4 + k * 1.2, r, r * 0.8, r]);
+          }
+        }
+        acacias(a, b, 120, side, 20, 140);
+      }
+    } else if (z.scenery === 'river') {
+      // the river on the right, beyond a muddy bank: reeds at its edge, hippos wallowing in it, and
+      // the far bank's trees; tall grass on the left
+      const H = CONFIG.hippo, RIVER = 75;
+      const bankMud = new THREE.Mesh(buildStrip(a, b, (q) => beside(1, q, 0), (q) => beside(1, q, H.bank + 0.5), -0.02, 6),
+        new THREE.MeshBasicMaterial({ color: 0x6b5536, side: THREE.DoubleSide, depthWrite: false }));
+      bankMud.renderOrder = -1.7;
+      const river = new THREE.Mesh(buildStrip(a, b, (q) => beside(1, q, H.bank), (q) => within(q, beside(1, q, RIVER)), -0.03, 6),
+        new THREE.MeshBasicMaterial({ color: 0x4d7f78, side: THREE.DoubleSide, depthWrite: false }));
+      river.renderOrder = -1.6;
+      levelGroup.add(bankMud, river);
+      for (let s = a; s < b; s += 3) {
+        if (Math.random() < 0.5) putAt('reed', [s, beside(1, s, H.bank + Math.random() * 1.5), 0.8, 0.12, 1.6 + Math.random(), 0.12]);
+      }
+      for (let s = a + 30; s < b; s += 45) { // hippos wallowing: backs, ears and eyes just out of the water
+        const at = s + Math.random() * 30, lat = beside(1, at, H.out + 4 + Math.random() * 40);
+        putAt('hippoBack', [at, lat, 0, 2, 0.7, 3.4]);
+        putAt('hippoBack', [at + 1.9, lat, 0.1, 1, 0.5, 1]);
+      }
+      acacias(a, b, 40, 1, RIVER + 5, RIVER + 60);
+      tallGrass(a, b, -1, 20);
+      acacias(a, b, 90, -1, 25, 140);
+    } else if (z.scenery === 'plains') {
+      // short grass to the horizon: zebras, termite mounds, the odd acacia
+      for (const side of [-1, 1]) {
+        zebras(a, b, 180, side, 25, 110);
+        acacias(a, b, 110, side, 20, 200);
+        for (let s = a; s < b; s += 60) {
+          const at = s + Math.random() * 60, h = 1.5 + Math.random() * 2.5;
+          putAt('mound', [at, beside(side, at, 8 + Math.random() * 50), h / 2, 1.4, h, 1.4]);
+        }
+      }
     } else if (z.scenery === 'kiama') {
       // green hills with dry-stone walls, the lighthouse on its point at the end, and the blowhole beside it
       for (let s = a; s < b; s += 4) putAt('stoneWall', [s + 2, beside(-1, s + 2, 18), 0.5, 0.6, 1, 4.02]);
@@ -636,6 +740,18 @@ const buildRoad = () => {
     for (let k = 1; k < (side < 0 ? Track.leftLanes : Track.rightLanes); k++) {
       add(buildDashes(Track.start, Track.end, () => side * (HM + k * LW),
         (s) => Track.lanesOn(side, s) >= k + 0.95 && dashOutside(s)), lineMat);
+    }
+  }
+  // a dirt road has no markings at all: only a pair of ruts worn along each lane (merging where
+  // the lane does)
+  if (theme.unmarked) {
+    lineMat.visible = centreMat.visible = false;
+    const rut = flat(new THREE.Color(theme.road).multiplyScalar(0.8).getHex());
+    for (let lane = 0; lane < Track.laneCount; lane++) {
+      for (const side of [-1, 1]) {
+        const at = (s) => Track.laneOffset(Track.openLane(lane, s), s) + side * 0.85;
+        add(buildStrip(Track.start, Track.end, (s) => at(s) - 0.22, (s) => at(s) + 0.22, 0.01), rut);
+      }
     }
   }
   // the median: a strip of its own colour between those lines and, on a level with a railway, a
