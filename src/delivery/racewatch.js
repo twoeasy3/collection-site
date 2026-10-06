@@ -48,6 +48,18 @@ export const RaceWatch = {
     Traffic.sortGrid(); // (and the grid in order again, with it)
     this.racers = Traffic.cars.filter(c => c.racer);
     const names = shuffle(NAMES);
+    // (and each one's three letters, as on a TV graphic: the surname's first three, or if those are
+    // taken, the first name's initial and the surname's first two)
+    const taken = new Set(), abbr = (name) => {
+      const words = name.toUpperCase().replace(/[^A-Z ]/g, '').split(' '), last = words[words.length - 1];
+      for (const a of [last.slice(0, 3), words[0][0] + last.slice(0, 2), last[0] + last.slice(-2)]) if (!taken.has(a)) return a;
+      return last.slice(0, 2) + taken.size % 10;
+    };
+    this.racers.forEach((c, i) => {
+      c.driver = names[i % names.length];
+      c.abbr = abbr(c.driver);
+      taken.add(c.abbr);
+    });
     this.racers.forEach((c, i) => Object.assign(c, { driver: names[i % names.length], wrecks: 0, kills: 0, hitBy: null, mishap: null, wasActive: true, splits: [], done: false }));
     this.finished = [];
     this.standings().forEach((c, i) => { c.grid = i + 1; }); // (where each started)

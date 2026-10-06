@@ -3,7 +3,7 @@
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel } from '../levels.js';
-import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, stars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { Garage } from './garage.js';
@@ -69,11 +69,13 @@ const draw = () => {
 
   levelBox.replaceChildren(...LEVELS.map((level, i) => {
     const open = i < Progress.data.unlocked;
-    const best = Progress.data.best[level.id];
+    // (the most time to spare delivering it, on each side)
+    const good = Progress.bestTime(level.id, false), evil = Progress.bestTime(level.id, true);
+    const spare = (t) => t === undefined ? '-' : formatTime(t);
     return card(levelLabel(i) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
       'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
-      best === undefined ? 'Not delivered yet' : 'Best tip ' + money(best),
+      good === undefined && evil === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good) + ' Good / ' + spare(evil) + ' Evil',
     ] : ['Locked', 'Deliver level ' + levelLabel(i - 1) + ' on time to open it'], {
       current: i === LEVEL_INDEX,
       disabled: !open,
@@ -87,7 +89,7 @@ const draw = () => {
     if (picked) levelBox.scrollTo({ left: picked.offsetLeft - (levelBox.clientWidth - picked.offsetWidth) / 2, behavior: 'smooth' });
   }
 
-  shopBox.replaceChildren(card(CAR.name, [
+  shopBox.replaceChildren(card(CAR.name + (CAR.tier ? ' ' + stars(CAR) : ''), [
     'Top speed ' + Math.round(CAR.maxSpeed * 3.6) + ' km/h',
     'Acceleration ' + CAR.accel + '  |  Health ' + CAR.health,
     LEVEL.car ? 'This level is flown in it. The garage car returns on other levels.' : 'Open the garage to change or buy cars',
@@ -129,7 +131,6 @@ document.getElementById('completeBtn').addEventListener('click', () => {
   if (!confirm('Open every level, buy every car and fill the bank?')) return;
   Progress.complete({
     levels: LEVELS.length,
-    best: Object.fromEntries(LEVELS.map(level => [level.id, level.tip])),
     cars: CARS.map(car => car.id),
     money: CONFIG.completeBank,
   });

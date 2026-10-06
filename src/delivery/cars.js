@@ -16,44 +16,49 @@
 //              one it is drawn as the standard box car, sized from hw / hl / height
 //   tank       true = it is a tank: in TANK RAGE from the start of every level
 //   corner     true = parked in the far corner bay of the garage
+//   tier       which tier of the garage it is in (1-4): its star rating, shown with its name
 // ============================================================================
 import { Progress } from './progress.js';
+
+// a car's star rating, by its tier (none for a car out of the tiers)
+export const TIERS = 4;
+export const stars = (car) => car.tier ? '★'.repeat(car.tier) + '☆'.repeat(TIERS - car.tier) : '';
 
 export const CARS = [
   // In tiers, cheapest first: each tier a little faster and a little tougher than the one
   // before, and within one the quick, fragile cars and the slow, tough ones trade speed for
   // health. (The ids are the original cars', kept so saved progress still finds them.)
   // ---- tier 1
-  { id: 'hatch', name: 'Commuter', price: 0, color: 0xff7a1a, evilColor: 0x151515, fixedLivery: true, model: 'commuter',
+  { id: 'hatch', tier: 1, name: 'Commuter', price: 0, color: 0xff7a1a, evilColor: 0x151515, fixedLivery: true, model: 'commuter',
     maxSpeed: 24, accel: 10, crossing: 0.6, health: 85, hw: 0.85, hl: 1.85, height: 1.45 },
-  { id: 'junker', name: 'Junker', price: 30, color: 0x6b7343, evilColor: 0x8a4a2a, fixedLivery: true, model: 'junker',
+  { id: 'junker', tier: 1, name: 'Junker', price: 30, color: 0x6b7343, evilColor: 0x8a4a2a, fixedLivery: true, model: 'junker',
     maxSpeed: 22, accel: 8, crossing: 0.7, health: 100, hw: 1.0, hl: 2.5, height: 1.5 },
-  { id: 'coupe', name: 'Darkvan', price: 80, color: 0x9be37a, evilColor: 0x161616, fixedLivery: true, model: 'darkvan',
+  { id: 'coupe', tier: 1, name: 'Darkvan', price: 80, color: 0x9be37a, evilColor: 0x161616, fixedLivery: true, model: 'darkvan',
     maxSpeed: 21, accel: 7, crossing: 0.65, health: 150, hw: 1.05, hl: 2.45, height: 2.4 },
   // ---- tier 2
-  { id: 'lovebus', name: 'Love Bus', price: 130, color: 0x3fae4a, evilColor: 0xd8262b, fixedLivery: true, model: 'lovebus',
+  { id: 'lovebus', tier: 2, name: 'Love Bus', price: 130, color: 0x3fae4a, evilColor: 0xd8262b, fixedLivery: true, model: 'lovebus',
     maxSpeed: 24, accel: 7, crossing: 0.55, health: 165, hw: 1.0, hl: 2.3, height: 2.1 },
-  { id: 'wagon', name: 'Family Wagon', price: 160, color: 0x8cc8f0, evilColor: 0xf28cc0, fixedLivery: true, model: 'wagon',
+  { id: 'wagon', tier: 2, name: 'Family Wagon', price: 160, color: 0x8cc8f0, evilColor: 0xf28cc0, fixedLivery: true, model: 'wagon',
     maxSpeed: 26, accel: 9, crossing: 0.6, health: 140, hw: 1.05, hl: 2.4, height: 1.9 },
-  { id: 'sport', name: 'Sportscompact', price: 190, color: 0x39ff14, evilColor: 0x151515, fixedLivery: true, model: 'sport',
+  { id: 'sport', tier: 2, name: 'Sportscompact', price: 190, color: 0x39ff14, evilColor: 0x151515, fixedLivery: true, model: 'sport',
     maxSpeed: 31, accel: 13, crossing: 0.35, health: 80, hw: 0.85, hl: 1.9, height: 1.1 },
-  { id: 'lowrider', name: 'Lowrider', price: 220, color: 0xb026ff, evilColor: 0x2fd6c6, fixedLivery: true, model: 'lowrider',
+  { id: 'lowrider', tier: 2, name: 'Lowrider', price: 220, color: 0xb026ff, evilColor: 0x2fd6c6, fixedLivery: true, model: 'lowrider',
     maxSpeed: 27, accel: 9, crossing: 0.15, health: 120, hw: 1.0, hl: 2.5, height: 1.1 },
   // ---- tier 3
-  { id: 'hearse', name: 'Hearse', price: 260, color: 0x151515, evilColor: 0xf2f2f2, fixedLivery: true, model: 'hearse',
+  { id: 'hearse', tier: 3, name: 'Hearse', price: 260, color: 0x151515, evilColor: 0xf2f2f2, fixedLivery: true, model: 'hearse',
     maxSpeed: 33, accel: 10, crossing: 0.4, health: 170, hw: 1.0, hl: 2.8, height: 1.65 },
-  { id: 'minivan', name: 'Minivan', price: 290, color: 0xd8c8a0, evilColor: 0x3a4a5e, fixedLivery: true, model: 'minivan',
+  { id: 'minivan', tier: 3, name: 'Minivan', price: 290, color: 0xd8c8a0, evilColor: 0x3a4a5e, fixedLivery: true, model: 'minivan',
     maxSpeed: 32, accel: 9, crossing: 0.6, health: 200, hw: 1.05, hl: 2.45, height: 2.0 },
-  { id: 'pickup', name: 'Pick-Up', price: 320, color: 0xbf5a1c, evilColor: 0x2f5a2a, fixedLivery: true, model: 'pickup',
+  { id: 'pickup', tier: 3, name: 'Pick-Up', price: 320, color: 0xbf5a1c, evilColor: 0x2f5a2a, fixedLivery: true, model: 'pickup',
     maxSpeed: 34, accel: 11, crossing: 0.95, health: 215, hw: 1.05, hl: 2.6, height: 2.1 },
-  { id: 'hotrod', name: 'Hot Rod', price: 360, color: 0x6a2bb3, evilColor: 0x4b5320, fixedLivery: true, model: 'hotrod',
+  { id: 'hotrod', tier: 3, name: 'Hot Rod', price: 360, color: 0x6a2bb3, evilColor: 0x4b5320, fixedLivery: true, model: 'hotrod',
     maxSpeed: 38, accel: 15, crossing: 0.4, health: 110, hw: 0.9, hl: 2.1, height: 1.2 },
   // ---- tier 4
-  { id: 'taxi', name: 'Taxi', price: 400, color: 0xffc81a, evilColor: 0x6b7a2e, fixedLivery: true, model: 'taxi',
+  { id: 'taxi', tier: 4, name: 'Taxi', price: 400, color: 0xffc81a, evilColor: 0x6b7a2e, fixedLivery: true, model: 'taxi',
     maxSpeed: 38, accel: 12, crossing: 0.6, health: 210, hw: 1.0, hl: 2.55, height: 1.6 },
-  { id: 'suv', name: 'SUV', price: 450, color: 0x1f3f8f, evilColor: 0xf2f2f2, fixedLivery: true, model: 'suv',
+  { id: 'suv', tier: 4, name: 'SUV', price: 450, color: 0x1f3f8f, evilColor: 0xf2f2f2, fixedLivery: true, model: 'suv',
     maxSpeed: 37, accel: 11, crossing: 0.9, health: 300, hw: 1.0, hl: 2.25, height: 1.8 },
-  { id: 'miata', name: 'Sportscar', price: 500, color: 0xd8262b, evilColor: 0xffd21f, fixedLivery: true, model: 'miata',
+  { id: 'miata', tier: 4, name: 'Sportscar', price: 500, color: 0xd8262b, evilColor: 0xffd21f, fixedLivery: true, model: 'miata',
     maxSpeed: 42, accel: 15, crossing: 0.25, health: 135, hw: 0.85, hl: 1.95, height: 1.1 },
   // ---- and the tank, in a class of its own
   { id: 'tank', name: 'Tank', price: 5000, color: 0x4b5a2a, evilColor: 0x2a2d33, tank: true, corner: true,

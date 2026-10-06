@@ -495,15 +495,21 @@ export const Traffic = (() => {
   // touches nothing, and nothing touches it.
   // (with the player's standing high enough, an evil car that assaults it with a police car about
   // is arrested too: see Social)
+  // (and the driver has something to say about it: messages.json, reactions)
   const arrest = (car) => {
     if (Player.damageScale <= 0) return;
-    if (Player.siren > 0 || (Social.protected && car && car.evil && policeNear())) arrestNow(car);
+    const siren = Player.siren > 0;
+    if ((siren || (Social.protected && car && car.evil && policeNear())) && arrestNow(car)) {
+      Message.say('reactions', !siren ? 'arrestedStanding' : car.evil ? 'arrestedSirenEvil' : 'arrestedSirenGood');
+    }
   };
   // (also what happens to a car that won't get out of an ambulance's way)
+  // (true: it is arrested now)
   const arrestNow = (car) => {
-    if (!car || car.isPlayer || !car.active || car.toad || car.arrest >= 0) return;
+    if (!car || car.isPlayer || !car.active || car.toad || car.arrest >= 0) return false;
     car.arrest = 0;
     car.rival = null;
+    return true;
   };
 
   // in range of the player's siren: ahead of the player (coming its way, or going it)

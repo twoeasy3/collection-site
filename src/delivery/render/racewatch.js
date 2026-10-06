@@ -196,9 +196,17 @@ const board = document.getElementById('raceBoard');
 const directorBtn = document.getElementById('directorBtn');
 // a racer on the board picked to follow; the button hands the coverage back to the race director
 // (on pointerdown: the board is redrawn four times a second, under a click's press and release)
+// (collapsed to just each driver's letters: to start with on a small screen; a tap on the header switches)
+let collapsed = matchMedia('(max-width: 700px), (max-height: 500px)').matches;
 board.addEventListener('pointerdown', (e) => {
-  const row = e.target.closest('.row[data-i]');
-  if (!row || !Game.raceWatch) return;
+  if (!Game.raceWatch) return;
+  if (e.target.closest('.head')) {
+    collapsed = !collapsed;
+    drawn = 0;
+    return;
+  }
+  const row = e.target.closest('[data-i]');
+  if (!row) return;
   const c = RaceWatch.racers[Number(row.dataset.i)];
   if (c) RaceWatch.follow(c);
   drawn = 0; // (redrawn at once, the pick showing)
@@ -223,8 +231,16 @@ export const syncRaceWatch = (now) => {
   const order = RaceWatch.standings(), leader = order[0];
   if (!leader) return;
   const lap = Math.min(LEVEL.laps, (leader.laps || 0) + 1), done = RaceWatch.finished.length > 0;
+  const head = `<div class="head">${collapsed ? '' : LEVEL.name.toUpperCase()}<span>${done ? 'FLAG' : 'LAP ' + lap + ' / ' + LEVEL.laps} ${collapsed ? '▸' : '▾'}</span></div>`;
+  board.classList.toggle('collapsed', collapsed);
+  if (collapsed) { // (just the order: position, colour and letters, in two columns)
+    const half = Math.ceil(order.length / 2);
+    board.innerHTML = head + '<div class="abbrs">' + order.map((c, i) =>
+      `<div class="cell${c === RaceWatch.focus ? ' focus' : ''}${c === RaceWatch.pinned ? ' pinned' : ''}${c.active ? '' : ' out'}" data-i="${RaceWatch.racers.indexOf(c)}" style="grid-row:${i % half + 1};grid-column:${i < half ? 1 : 2}">` +
+      `<span class="pos">${i + 1}</span><span class="dot" style="background:${hex(F1_PAINTS[c.paint % F1_PAINTS.length])}"></span><span class="abbr">${c.abbr}</span></div>`).join('') + '</div>';
+  }
   const rows = [];
-  for (const c of order) {
+  for (const c of collapsed ? [] : order) {
     const pos = order.indexOf(c) + 1, down = RaceWatch.lapsDown(c, leader), gap = RaceWatch.gap(c, leader);
     const health = c.active ? Math.max(0, c.health / c.maxHealth) : 0;
     const split = c === leader ? (done ? 'WINNER' : 'LEADER')
@@ -240,7 +256,7 @@ export const syncRaceWatch = (now) => {
       `<span class="health"><i style="width:${health * 100}%;background:${health > 0.5 ? '#3ddc68' : health > 0.25 ? '#ffd23f' : '#ff5a4f'}"></i></span></div>`);
   }
   board.classList.toggle('dense', order.length > 24); // (a big field packed in tighter)
-  board.innerHTML = `<div class="head">${LEVEL.name.toUpperCase()}<span>${done ? 'CHEQUERED FLAG' : 'LAP ' + lap + ' / ' + LEVEL.laps}</span></div>` +
+  if (!collapsed) board.innerHTML = head +
     `<div class="row labels"><span class="pos"></span><span class="side"></span><span class="dot"></span><span class="name"></span><span class="gap">GAP</span><span class="gain" title="places gained since the start">+/-</span><span class="kills" title="wrecks caused">💥</span><span class="wrecks" title="times wrecked">☠</span><span class="mood"></span><span class="mishap"></span><span class="health">HP</span></div>` +
     rows.join('');
   const c = RaceWatch.focus, news = Game.time - RaceWatch.ticker.at < 4 ? RaceWatch.ticker.text : '';

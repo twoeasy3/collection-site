@@ -179,8 +179,8 @@ export const Game = {
     this.outcome = outcome;
     sfx(outcome === 'delivered' ? 'win' : 'fail');
     const tip = '$' + this.tip.toFixed(2);
-    // delivered on time: the tip goes in the bank and the next level opens
-    if (outcome === 'delivered') Progress.levelDone(LEVEL_INDEX, LEVEL.id, this.tip);
+    // delivered on time: the tip goes in the bank, the time to spare may be a best, and the next level opens
+    const record = outcome === 'delivered' && Progress.levelDone(LEVEL_INDEX, LEVEL.id, this.tip, this.remaining, this.evil);
     resultTitle.textContent = {
       delivered: 'Delivered!',
       late: 'Too late - level failed',
@@ -190,7 +190,8 @@ export const Game = {
     resultTime.textContent = outcome === 'delivered' ? 'Tip ' + tip
       : outcome === 'late' ? 'Tip ' + tip + ' of $' + LEVEL.tip
       : Math.floor(this.progress * 100) + '% of the way';
-    resultNote.textContent = (outcome === 'delivered' ? formatTime(this.remaining) + ' to spare  |  ' : '') +
+    resultNote.textContent = (outcome === 'delivered' ? formatTime(this.remaining) + ' to spare' +
+      (record ? ' (new best)' : ' (best ' + formatTime(Progress.bestTime(LEVEL.id, this.evil)) + ')') + '  |  ' : '') +
       (this.evil ? 'Evil' : 'Good') + '  |  Wrecked: ' + this.wrecks + '  |  Busted: ' + this.busts +
       '  |  Bank $' + Progress.data.money.toFixed(2);
     resultScreen.classList[outcome === 'delivered' ? 'remove' : 'add']('failed');

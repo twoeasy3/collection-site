@@ -4,7 +4,7 @@
 // other livery: buying a car buys both.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CARS, CAR, SECRET_CARS, selectCar } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, selectCar, stars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { renderer } from './scene.js';
@@ -128,7 +128,7 @@ const refresh = () => {
   const inUse = CARS.find(car => car.id === Progress.data.car) || SECRET_CARS[Progress.data.car] || CARS[0];
   bank.textContent = 'Bank ' + money(Progress.data.money);
   liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
-  info.textContent = inUse.name + '  -  ' + stats(inUse);
+  info.textContent = inUse.name + (inUse.tier ? ' ' + stars(inUse) : '') + '  -  ' + stats(inUse);
   ring.visible = parked.some(mesh => mesh.userData.car === inUse);
   for (const mesh of parked) {
     const car = mesh.userData.car;
@@ -211,7 +211,7 @@ export const Garage = {
 
     if (hovered) {
       const car = hovered.userData.car, owned = Progress.owns(car.id);
-      tip.textContent = car.name + '  -  ' + (
+      tip.textContent = car.name + (car.tier ? ' ' + stars(car) : '') + '  -  ' + (
         car.id === Progress.data.car ? 'in use'
           : owned ? 'owned, click to use'
             : money(car.price) + (Progress.data.money < car.price ? ' (not enough in the bank)' : ', click to buy'));

@@ -62,6 +62,18 @@ body.racewatch #raceBoard { pointer-events: auto; } /* (a racer on it clicked to
 #raceBoard .row[data-i] { cursor: pointer; }
 #raceBoard .row[data-i]:hover { background: rgba(255, 255, 255, .12); }
 #raceBoard .row.pinned { box-shadow: inset 3px 0 #fff; }
+#raceBoard .head { cursor: pointer; user-select: none; } /* (a tap: collapse or expand) */
+/* collapsed: each driver's position, colour and three letters, in two columns */
+#raceBoard.collapsed { width: auto; font-size: 11px; padding: 4px 0; }
+#raceBoard .abbrs { display: grid; grid-auto-flow: column; column-gap: 8px; padding: 0 6px; }
+#raceBoard .cell { display: flex; align-items: center; gap: 4px; padding: 0 4px; line-height: 1.35; cursor: pointer; font-variant-numeric: tabular-nums; }
+#raceBoard .cell.focus { background: rgba(225, 6, 0, .55); }
+#raceBoard .cell.pinned { box-shadow: inset 2px 0 #fff; }
+#raceBoard .cell.out { opacity: .45; }
+#raceBoard .cell .pos { width: 16px; }
+#raceBoard .cell .dot { height: 10px; }
+#raceBoard .abbr { font-weight: 700; letter-spacing: .04em; }
+#raceBoard.collapsed .head { gap: 8px; padding: 2px 8px 4px; }
 #raceBoard.dense .row { padding: 0 10px; line-height: 1.3; }
 #raceBoard .labels { font-size: 10px; opacity: .6; font-weight: 700; }
 #raceBoard .head { display: flex; justify-content: space-between; padding: 2px 10px 6px; font-weight: 800; letter-spacing: .04em;

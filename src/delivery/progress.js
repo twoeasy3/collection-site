@@ -18,7 +18,7 @@ const LEVEL_ORDER = INSERTED_AT.length + 1;
 const fresh = () => ({
   money: 0,        // tips banked
   unlocked: 1,     // how many levels are open, counting from the first
-  best: {},        // best tip per level id
+  bestTime: { good: {}, evil: {} }, // most time to spare delivering each level (s, by level id), for each side
   cars: ['hatch'], // ids of the cars owned
   car: 'hatch',    // id of the car in use
   muted: false,    // sound switched off
@@ -35,6 +35,8 @@ const read = () => {
     if (!match) return fresh();
     const saved = JSON.parse(decodeURIComponent(match[1]));
     const data = { ...fresh(), ...saved };
+    data.bestTime = { good: {}, evil: {}, ...saved.bestTime }; // (a save from before best times has none)
+    delete data.best; // (best tips, no longer kept)
     for (let order = saved.levelOrder || 1; order < LEVEL_ORDER; order++) {
       if (data.unlocked >= INSERTED_AT[order - 1]) data.unlocked++;
     }
@@ -52,13 +54,19 @@ export const Progress = {
     document.cookie = COOKIE + '=' + encodeURIComponent(JSON.stringify(this.data)) +
       '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
   },
-  // a level delivered on time: bank the tip, remember the best, open the next level
-  levelDone(index, id, tip) {
+  // a level delivered on time: bank the tip, remember the best time to spare (for the side it was
+  // played on), open the next level. True: that was a new best
+  levelDone(index, id, tip, spare, evil) {
     this.data.money += tip;
-    this.data.best[id] = Math.max(this.data.best[id] || 0, tip);
+    const side = this.data.bestTime[evil ? 'evil' : 'good'];
+    const record = !(side[id] >= spare);
+    if (record) side[id] = spare;
     this.data.unlocked = Math.max(this.data.unlocked, index + 2);
     this.save();
+    return record;
   },
+  // the best time to spare on a level, for a side (undefined: not delivered on that side yet)
+  bestTime(id, evil) { return this.data.bestTime[evil ? 'evil' : 'good'][id]; },
   owns(carId) {
     return this.data.cars.includes(carId);
   },
@@ -73,9 +81,9 @@ export const Progress = {
   },
   // a finished game, all at once: every level open and delivered for its full tip, every
   // car in the garage bought, and a full bank (the "Unlock everything" button on the menu)
-  complete({ levels, best, cars, money }) {
+  // (best times are only ever earned)
+  complete({ levels, cars, money }) {
     this.data.unlocked = Math.max(this.data.unlocked, levels);
-    for (const id in best) this.data.best[id] = Math.max(this.data.best[id] || 0, best[id]);
     for (const id of cars) if (!this.data.cars.includes(id)) this.data.cars.push(id);
     this.data.money = Math.max(this.data.money, money);
     this.save();
