@@ -51,7 +51,7 @@ body.in-garage #tankCorner { display: none !important; }
 #runButtons button:hover { background: rgba(10,14,20,.8); }
 /* the screensaver: no HUD (the road is the show), and a fade to black between laps */
 #fade { position: fixed; inset: 0; background: #000; pointer-events: none; opacity: 0; }
-body.screensaver #hud, body.screensaver .throw, body.screensaver #touchControls { display: none; }
+body.screensaver #hud, body.screensaver .throw, body.screensaver #touchControls, body.screensaver #messages { display: none; }
 /* on-screen controls (body.touch-controls: see render/touch.js): two big zones along the bottom,
    steering on the left and the pedals on the right, each split in two, with a THROW button
    above each */

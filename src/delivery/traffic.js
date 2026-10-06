@@ -344,8 +344,9 @@ export const Traffic = (() => {
   // ---- emergency vehicles (see CONFIG.emergency) ------------------------------------------------
   let nextEmergency = Infinity; // s to the next one, on a level with "emergencies"
   // sets one off, going the player's way (dir 1: from behind the player, in the player's lane if
-  // the player is in one going that way) or coming the other way (from up the road). It takes a
-  // car from the pool that the level leaves unused. Returns it, or null if there was no room.
+  // the player is in one going that way) or coming the other way (from up the road), never a way
+  // the level's traffic doesn't go (see update). It takes a car from the pool that the level
+  // leaves unused (so a level needs one spare). Returns it, or null if there was no room.
   const startEmergency = (dir) => {
     const car = cars.find(c => !c.active && c.unused);
     if (!car || !Player.active || !Track.isMain(Player.s)) return null;

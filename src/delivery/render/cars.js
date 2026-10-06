@@ -296,7 +296,8 @@ export const syncTraffic = () => {
     const paint = police || ambulance ? POLICE_PAINT : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
     mesh.userData.bar.visible = police || ambulance;
-    mesh.userData.bar.position.y = ambulance ? car.height + 0.1 : 1.85; // (on the roof)
+    // (on the roof: an ambulance's at the front, where it shows in the mirror, so to speak)
+    mesh.userData.bar.position.set(0, ambulance ? car.height + 0.1 : 1.85, ambulance ? car.hl - 0.6 : -0.3);
     // a vehicle with a model of its own shows that in place of the standard box car
     const own = ownModel(mesh, car);
     for (const kind in mesh.userData.models) mesh.userData.models[kind].visible = mesh.userData.models[kind] === own;
