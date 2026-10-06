@@ -36,7 +36,7 @@
 //              for 250 m before the exit and after the merge (room for the flyovers).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
-//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'hell' or 'space': the look of the ground, sky and roadside.
+//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo')
@@ -90,6 +90,16 @@
 //              right), and round again: obstacles, blown up when hit (see CONFIG.migration)
 //   elephants  { from, to, count }: elephants plodding across the road and back over that stretch:
 //              whatever one walks into is destroyed, traffic included (see elephants.js)
+//   wreckage   { at, kind, lanes: [first, last], from, trigger, slide }: scripted destruction, set off
+//              as the player comes within trigger m (default CONFIG.wreckage.trigger): something goes
+//              up beside the road (from: 'left' | 'right') or falls out of the sky ('sky'), and its
+//              wreckage lands across those lanes at `at`, wrecking all there, blocking them for good.
+//              kind: 'tanker' | 'containers' | 'hangar' | 'plane' | 'airliner' (an airliner comes in
+//              to land `slide` m beyond `at` and slides back to it). Traffic pulls over for it
+//   tower      { at, trigger, distance, stub }: the control tower, beside the old road carrying
+//              straight on (stub m of it) where the route turns off at `at`; set off at trigger m
+//              short of there, it comes crashing down across that road (only a sight)
+//   parkedPlanes  { s, d, turn }: airliners parked d m off the road on the left, turned a little
 //   hippos     { from, to, every: { min, max } }: a river beside the road (on the right) over that
 //              stretch, out of which a hippo charges across the road every min-max s, aimed at the
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
@@ -123,11 +133,12 @@ import singaporeNight from './levels/singapore-night.json';
 import grandPacific from './levels/grand-pacific.json';
 import passageDuGois from './levels/passage-du-gois.json';
 import safari from './levels/safari.json';
+import airport from './levels/airport.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport];
 export const SPECIAL_LEVELS = [allHeck, ufo];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

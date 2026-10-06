@@ -61,9 +61,9 @@ const makeParticles = (MAX, material) => {
   return { emit, update };
 };
 export const Particles = makeParticles(500, new THREE.MeshBasicMaterial()); // debris, flames, trails
-const Fire = makeParticles(400, new THREE.MeshBasicMaterial({ // explosion fireballs
+export const Fire = makeParticles(400, new THREE.MeshBasicMaterial({ // explosion fireballs
   transparent: true, opacity: 0.5, depthWrite: false }));
-const Smoke = makeParticles(600, new THREE.MeshBasicMaterial({
+export const Smoke = makeParticles(600, new THREE.MeshBasicMaterial({
   transparent: true, opacity: 0.35, depthWrite: false }));
 
 export const rnd = (range) => (Math.random() - 0.5) * 2 * range;

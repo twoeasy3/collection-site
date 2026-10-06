@@ -590,6 +590,13 @@ const createTrack = () => {
     for (const z of [...(LEVEL.migration || []), ...(LEVEL.elephants || [])]) {
       if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.kinds ? 'migration' : 'elephants') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
     }
+    for (const e of LEVEL.wreckage || []) {
+      const name = 'wreckage at ' + e.at;
+      if (!CONFIG.wreckage.kinds[e.kind]) problems.push(name + ': there is no kind of wreckage called "' + e.kind + '"');
+      else if (e.at < 0 || e.at > length) problems.push(name + ': beyond the road');
+      else if (!(e.lanes && e.lanes[0] <= e.lanes[1] && e.lanes[0] >= 0 && e.lanes[1] < LANES)) problems.push(name + ': lanes [first, last] on the road');
+      else if (e.lanes[1] - e.lanes[0] + 1 >= openCount(1, e.at) + (ONE_WAY ? openCount(-1, e.at) : 0)) problems.push(name + ': it must leave a lane open');
+    }
     for (const r of LEVEL.hippos || []) {
       if (!(r.from < r.to) || r.from < 0 || r.to > length) problems.push('hippos at ' + r.from + '-' + r.to + ': from before to, on the road');
       else if (!(r.every && r.every.min > 0 && r.every.max >= r.every.min)) problems.push('hippos at ' + r.from + ': every { min, max } s');

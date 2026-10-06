@@ -176,6 +176,22 @@ export const CONFIG = {
   // the migration (a level's "migration"): a great herd streaming across the road, at these m/s
   // each, out to `beyond` m either side and round again; galloping, bobbing up to `hop` m, `hops` times a second
   migration: { speed: { min: 4, max: 7 }, beyond: 35, hop: 0.2, hops: 2.5 },
+  // wreckage (a level's "wreckage" and "tower": see wreckage.js), the scripted destruction
+  wreckage: {
+    trigger: 110,          // m short of it the player is when it is set off (a level's can say otherwise)
+    flight: 1.6,           // s it takes to fly in and land
+    blast: 3,              // m beyond it, along the road, that its landing (or an airliner sliding) also wrecks
+    lookout: 140,          // m ahead traffic sees its lane blocked, and pulls over
+    approach: 420,         // m out an airliner comes in from, beyond where it touches down...
+    approachHeight: 55,    // ...this high...
+    approachTime: 3,       // ...taking this long to touch down...
+    slideTime: 4,          // ...then sliding (its "slide" m) for this long, to rest
+    towerFall: 2.6,        // s the control tower takes to come down...
+    towerScale: 1.6,       // ...a tower this many times the usual size (some 85 m tall)
+    kinds: {               // m each kind covers along the road (it covers its lanes across)
+      tanker: { depth: 3.5 }, containers: { depth: 5 }, hangar: { depth: 5 }, plane: { depth: 7 }, airliner: { depth: 34 },
+    },
+  },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game
   bulletTrain: {
     speed: 150,            // m/s (540 km/h)

@@ -69,6 +69,8 @@ export const THEMES = {
   coast: { sky: 0x9fc8ee, ground: 0x6f9a52, road: 0x44474d, scenery: 'zones' },
   // safari: a level in zones on a dirt road: no markings, only the ruts worn into it
   safari: { sky: 0xc6dcea, ground: 0xc2a85a, road: 0xa47a4c, scenery: 'zones', unmarked: true },
+  // airport: an airport going up in flames: a smoky orange sky, dry grass between concrete aprons, the runway
+  airport: { sky: 0xc98e62, ground: 0x8c8f62, road: 0x45484d, scenery: 'airport' },
   // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
   snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
   // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
@@ -1479,6 +1481,62 @@ const buildRoad = () => {
     }
   } else if (theme.scenery === 'zones') {
     buildZones(beside, instances, add, flat, { cube, tube, cone });
+  } else if (theme.scenery === 'airport') {
+    // ---- airport: the perimeter road past the terminal, through the fence onto the runway --------
+    // (the runway: from where the route turns onto it, wide concrete either side of the road, lit
+    // along its edges; before that a fence along both sides, the terminal on the right with its
+    // jet bridges, hangars and fuel tanks out beyond the apron on the left; nothing on the old
+    // road carrying straight on where the route turns off (see render/wreckage.js))
+    const T = LEVEL.tower, turn = T ? T.at : Infinity, runway = T ? T.at + 236 : Infinity;
+    const stubFrom = {}, h = T ? Track.toWorld(T.at, 0, stubFrom) : 0;
+    const offStub = (s, lat) => { // (clear of the old road and the fallen tower)
+      if (!T) return true;
+      Track.toWorld(s, lat, tmp);
+      const dx = tmp.x - stubFrom.x, dz = tmp.z - stubFrom.z, along = dx * Math.sin(h) + dz * Math.cos(h);
+      const side = -(dx * Math.cos(h) - dz * Math.sin(h)); // (to the right of it)
+      return along < -10 || along > T.stub + 10 || side < -100 || side > 50;
+    };
+    const kinds = { post: [], rail: [], terminal: [], glass: [], bridge: [], hangar: [], roof: [], tank: [], light: [], apron: [] };
+    for (let s = Track.start; s < Math.min(turn, Track.end); s += 4) {
+      for (const side of [-1, 1]) {
+        const lat = beside(side, s, 2);
+        kinds.post.push([s, lat, 1.2, 0.12, 2.4, 0.12]);
+        kinds.rail.push([s + 2, lat, 2.3, 0.05, 0.05, 4]);
+        kinds.rail.push([s + 2, lat, 1.2, 0.05, 0.05, 4]);
+      }
+    }
+    for (let s = 60; s < turn - 60; s += 140) { // the terminal, in sections, with a jet bridge each
+      if (!offStub(s, Track.hi(s) + 60)) continue;
+      const lat = beside(1, s, 55);
+      kinds.terminal.push([s, lat, 7, 30, 14, 120]);
+      kinds.glass.push([s, lat, 8, 30.4, 6, 118]);
+      kinds.bridge.push([s, beside(1, s, 32), 4, 16, 3, 3]);
+    }
+    for (let s = 200; s < turn - 100; s += 380) { // hangars and fuel tanks, out beyond the apron
+      const lat = beside(-1, s, 140 + Math.random() * 40);
+      kinds.hangar.push([s, lat, 10, 60, 20, 50]);
+      kinds.roof.push([s, lat, 21, 62, 3, 52]);
+      for (let k = 0; k < 3; k++) kinds.tank.push([s + 120 + k * 22, beside(-1, s, 70), 6, 16, 12, 16]);
+    }
+    kinds.apron.push([Math.min(turn, Track.end) / 2, beside(-1, turn / 2, 45), -0.02, 80, 0.04, Math.min(turn, Track.end)]);
+    if (T) {
+      // the runway: concrete well out either side of the road, its edge lights, and its number
+      const RW = 22;
+      for (const side of [-1, 1]) {
+        const strip = buildStrip(runway - 120, Track.end, (s) => side < 0 ? Track.lo(s) - RW : Track.hi(s), (s) => side < 0 ? Track.lo(s) : Track.hi(s) + RW, -0.01, 8);
+        add(strip, flat(0x55585d));
+        for (let s = runway; s < Track.end; s += 30) kinds.light.push([s, beside(side, s, RW - 1), 0.3, 0.4, 0.4, 0.4]);
+      }
+      for (let k = -5; k <= 5; k++) { // the threshold's stripes
+        const lat = k * 3.2;
+        add(buildStrip(runway + 10, runway + 40, lat - 0.9, lat + 0.9, 0.02, 10), lineMat);
+      }
+    }
+    const colours = { post: 0x8a8f96, rail: 0x9aa0a6, terminal: 0xcfd3d6, glass: 0x35576a, bridge: 0xa9aeb3, hangar: 0x9ba3a8,
+      roof: 0x6f777d, tank: 0xe4e2dc, light: 0xffe08a, apron: 0x8d9196 };
+    for (const [name, list] of Object.entries(kinds)) {
+      instances(name === 'tank' ? tube : cube, colours[name], list.filter(([s, lat]) => offStub(s, lat)), name === 'light');
+    }
   } else if (theme.scenery === 'alpine') {
     // ---- alpine: guardrails and snowbanks along both edges, snowy pines on the mountainside,
     // peaks all round in the haze, and snow falling

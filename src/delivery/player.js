@@ -9,6 +9,7 @@ import { Message } from './messages.js';
 import { UfoStrike } from './ufostrike.js';
 import { BulletTrain } from './bullettrain.js';
 import { Tide } from './tide.js';
+import { Wreckage } from './wreckage.js';
 import { Game } from './game.js';
 
 export const Player = {
@@ -73,6 +74,12 @@ export const Player = {
     const [first, last] = Track.laneRange(1, this.s);
     let lane = clamp(Track.nearestLane(this.lat, this.s), first, last);
     this.dropOncoming = false;
+    if (Wreckage.blocked(lane, this.s)) { // (nor where wreckage blocks the lane: the nearest one it doesn't)
+      const open = [];
+      for (let l = first; l <= last; l++) if (!Wreckage.blocked(l, this.s)) open.push(l);
+      open.sort((a, b) => Math.abs(a - lane) - Math.abs(b - lane));
+      if (open.length) lane = open[0];
+    }
     if (Tide.on) {
       const later = CONFIG.respawnTime;
       const dry = (l) => Tide.depth(this.s, Track.laneOffset(l, this.s), later, true) <= CONFIG.tide.wet; // (not trusting a sea gone out)

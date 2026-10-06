@@ -1486,6 +1486,96 @@ try {
     Game.toMenu();
   }
 
+  section('Airport Apocalypse: wreckage');
+  {
+    const { Wreckage } = await load('/src/delivery/wreckage.js');
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'airport'));
+    cars.selectCar('hatch');
+    Game.evil = false;
+    const T = () => track.Track, W = CONFIG.wreckage;
+    // a car of the pool, in a lane, at s, at speed
+    const carAt = (s, lane, vs) => {
+      const car = Traffic.cars.find(c => !c.unused && !c.active), type = CONFIG.vehicles.car;
+      Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, stalled: false, halted: 0, emergency: false, evil: false, s, lane,
+        lat: T().laneOffset(lane, s), vs, baseSpeed: vs, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, junction: null,
+        hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null, hesitant: false, tap: 0 });
+      return car;
+    };
+    const step = () => {
+      Traffic.update(1 / 120);
+      Wreckage.update(1 / 120);
+      Collision.check();
+      FxQueue.length = 0;
+    };
+    // the first: nothing until the player comes up to it; then it flies in and lands across its lanes,
+    // wrecking a car there; traffic heading for those lanes pulls over and stops, the rest carry on
+    Game.start();
+    for (const c of Traffic.cars) c.active = false;
+    const e = Wreckage.list[0], [a, b] = e.lanes, open = a > 0 ? 0 : b + 1;
+    Object.assign(Player, { s: e.at - W.trigger - 30, lat: T().laneOffset(open, e.at), speed: 0, shield: 0, ghost: 0, active: true });
+    const victim = Object.assign(carAt(e.at, a, 0), { fixed: true }), blocked = carAt(e.at - 100, b, 20), clear = carAt(e.at - 60, open, 20);
+    for (let i = 0; i < 60; i++) step();
+    const waited = e.t < 0;
+    Player.s = e.at - W.trigger;
+    let pulledOver = false;
+    for (let i = 0; i < 120 * 4; i++) {
+      for (const c of Traffic.cars) if (![victim, blocked, clear].includes(c)) c.active = false;
+      step();
+      pulledOver ||= blocked.halted !== 0 && blocked.hazards && T().onShoulder(blocked.lat, blocked.s);
+    }
+    check(waited && e.landed && !victim.active && pulledOver && Math.abs(blocked.vs) < 0.5 && blocked.s < e.s0 && clear.active && !clear.halted && clear.s > e.s1,
+      `${e.kind} (lanes ${a}-${b}): set off as the player comes within ${W.trigger} m, it lands and wrecks a car there; a car heading for ` +
+      `its lanes pulls over onto the shoulder, hazards on, and stops; one in a lane it leaves open drives on by`);
+    // landed, it blocks its lanes for good: driving into it wrecks the player's car (a ghost comes through)
+    const into = (ghost) => {
+      Object.assign(Player, { s: e.s0 - 3, lat: T().laneOffset(a, e.at), speed: 20, shield: 0, ghost, active: true, health: Player.maxHealth });
+      for (let i = 0; i < 60 && Player.active; i++) { Player.update(1 / 120, 0, 0, false); step(); }
+      return Player.active;
+    };
+    check(!into(0) && into(99), 'driving into landed wreckage wrecks the car; a ghost comes through it');
+    // the helicopter sets a car wrecked in front of it down in a lane it leaves open
+    Game.start();
+    for (const w of Wreckage.list) { w.t = W.flight + 1; w.landed = true; }
+    Wreckage.list.filter(w => w.slide).forEach(w => { w.t = W.approachTime + W.slideTime + 1; w.s0 = w.at - w.depth / 2; w.s1 = w.at + w.depth / 2; });
+    Object.assign(Player, { s: e.at, lat: T().laneOffset(a, e.at), health: 0 });
+    for (let i = 0; i < 120 * 8 && (!Player.active || i < 2); i++) {
+      for (const c of Traffic.cars) c.active = false;
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+    }
+    const dropLane = T().nearestLane(Player.lat, Player.s);
+    check(Player.active && !Wreckage.blocked(dropLane, Player.s), `wrecked at the wreckage, the new car is set down in open lane ${dropLane}`);
+    // the airliner: it comes in from far up the road, touches down, and slides back along its lanes to
+    // rest, wrecking a car in its path on the way
+    Game.start();
+    for (const c of Traffic.cars) c.active = false;
+    const jet = Wreckage.list.find(w => w.slide);
+    Object.assign(Player, { s: jet.at - jet.trigger, lat: T().laneOffset(jet.lanes[0] > 0 ? 0 : 3, jet.at), speed: 0, shield: 0, ghost: 0 });
+    const inPath = Object.assign(carAt(jet.at + jet.slide / 2, jet.lanes[0], 0), { fixed: true }); // (fixed: it stays put)
+    let highest = 0, touchedAt = 0;
+    for (let i = 0; i < 120 * (W.approachTime + W.slideTime + 1); i++) {
+      for (const c of Traffic.cars) if (c !== inPath) c.active = false;
+      inPath.vs = 0;
+      step();
+      const at = Wreckage.airliner(jet, jet.t);
+      highest = Math.max(highest, at.h);
+      if (!touchedAt && jet.landed) touchedAt = (jet.s0 + jet.s1) / 2;
+    }
+    check(highest > 40 && Math.abs(touchedAt - (jet.at + jet.slide)) < 10 && !inPath.active && !jet.sliding && Math.abs((jet.s0 + jet.s1) / 2 - jet.at) < 0.5,
+      `an airliner dives in from ${highest.toFixed(0)} m up, touches down ${jet.slide} m up the road and slides back along lanes ` +
+      `${jet.lanes.join('-')} to rest, wrecking a car in its path`);
+    // the control tower: standing until the player comes up to the turn, then down across the old road
+    Game.start();
+    const tw = Wreckage.tower;
+    Player.s = tw.at - tw.trigger - 20;
+    Wreckage.update(1 / 120);
+    const standing = tw.t < 0;
+    Player.s = tw.at - tw.trigger;
+    for (let i = 0; i < 120 * (W.towerFall + 0.5); i++) Wreckage.update(1 / 120);
+    check(standing && tw.down && T().bend(tw.at + 100) < -0.005, `the control tower stands until the player is ${tw.trigger} m from the turn onto the runway, then comes down across the old road`);
+    Game.toMenu();
+  }
+
   section('cars');
   levels.selectLevel(0); // (a level with no vehicle of its own)
   for (const car of cars.CARS) {

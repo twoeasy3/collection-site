@@ -8,6 +8,7 @@ import { Packages } from './packages.js';
 import { CARS } from './cars.js';
 import { Message } from './messages.js';
 import { Tide } from './tide.js';
+import { Wreckage } from './wreckage.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -103,7 +104,7 @@ export const Traffic = (() => {
     // (a vehicle that keeps to the kerb starts out there)
     const lane = CONFIG.vehicles[kind].kerb ? Track.openLane(kerbLane(car.dir, car.s), car.s)
       : Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), car.s);
-    if (!laneClear(car, lane, 25)) return false;
+    if (!laneClear(car, lane, 25) || Wreckage.blocked(lane, car.s)) return false;
     outfit(car, kind, lane);
     return true;
   };
@@ -221,6 +222,7 @@ export const Traffic = (() => {
     car.fromBehind = false; // came up from behind the player
     car.onIce = false;      // on an ice patch (see CONFIG.ice)
     car.stalled = false;    // stalled in the tide's water, hazards on (see Tide)
+    car.halted = 0;         // pulled over for good (to the shoulder on this side: -1 | 1), its lane blocked ahead (see Wreckage)
     car.junction = null;    // leaving the road at a junction: on its way off, in the world (see leaveAtJunction)
     car.junctionSeen = -1;  // the s of the last junction it came to (and chose a way at)
     car.parked = false;     // parked on a shoulder, hazards on (see placeFixed)...
@@ -561,7 +563,7 @@ export const Traffic = (() => {
       car.unused = i >= count + oncoming; // (never spawned on this level)
       car.fixed = false;
       // (and nothing left over from the last run, on a car that may not be dealt out again for a while)
-      Object.assign(car, { junction: null, parked: false, stalled: false, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
+      Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
     });
     placeFixed();
     nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
@@ -644,6 +646,11 @@ export const Traffic = (() => {
         car.stalled = true;
         car.pendingLane = null;
       }
+      // wreckage: a car whose lane is blocked ahead pulls over onto the nearer shoulder, and stops there
+      if (!car.halted && !car.emergency && !car.parked && !car.fixed && !(car.spin > 0) && Wreckage.ahead(car)) {
+        car.halted = car.lat < (Track.laneLo(car.s) + Track.laneHi(car.s)) / 2 ? -1 : 1;
+        car.pendingLane = null;
+      }
       if (car.spin > 0 || car.stun > 0) { // (out of control: no signalling, no brakes)
         car.braking = car.hazards = false;
         car.signal = 0;
@@ -700,6 +707,21 @@ export const Traffic = (() => {
         car.braking = false;
         car.signal = 0;
         car.hazards = true;
+        updateYaw(car, dt);
+        continue;
+      }
+      if (car.halted) { // pulling over, signalling, then stopped on the shoulder with its hazards on
+        const aim = Track.shoulderOffset(car.halted, car.s) + car.halted * 0.4;
+        car.vs -= car.vs * Math.min(1, dt * 1.5);
+        car.latVel = clamp((aim - car.lat) * 2, -4, 4);
+        car.s += car.vs * dt;
+        Track.transfer(car);
+        car.lat += car.latVel * dt;
+        keepOnRoad(car, 0.3);
+        const there = Math.abs(aim - car.lat) < 0.5;
+        car.braking = Math.abs(car.vs) > 0.5;
+        car.signal = there ? 0 : car.halted;
+        car.hazards = there;
         updateYaw(car, dt);
         continue;
       }
