@@ -498,7 +498,11 @@ try {
     };
     meet('a police car runs into the back of the player', (cop) => { cop.s = 197; cop.lat = Player.lat; cop.vs = 30; Player.speed = 15; }, false);
     meet('the player runs into the back of a police car', (cop) => { cop.s = 203; cop.lat = Player.lat; cop.vs = 15; Player.speed = 30; }, true);
-    meet('the player side-swipes a police car', (cop) => { cop.s = 200; cop.lat = Player.lat + 1.6; cop.vs = 30; Player.speed = 30; }, true);
+    meet('the player side-swipes a police car', (cop) => { cop.s = 200; cop.lat = Player.lat + 1.6; cop.vs = 30; Player.speed = 30; Player.latVel = 3; }, true);
+    meet('a police car side-swipes the player', (cop) => { cop.s = 200; cop.lat = Player.lat + 1.6; cop.vs = 30; cop.latVel = -3; Player.speed = 30; }, false);
+    meet('a police car just ahead turns into the player', (cop) => { cop.s = 203; cop.lat = Player.lat + 1.5; cop.vs = 30; cop.latVel = -3; Player.speed = 30; }, false);
+    meet('the player and a police car steer into each other, the player faster', (cop) => {
+      cop.s = 200; cop.lat = Player.lat + 1.6; cop.vs = 30; cop.latVel = -1; Player.speed = 30; Player.latVel = 3; }, true);
     meet('the player brakes while a police car behind is no faster', (cop) => { cop.s = 197; cop.lat = Player.lat; cop.vs = 15; Player.speed = 20; }, true);
   }
 
@@ -836,6 +840,39 @@ try {
     Player.lat = L3(Player.s) - 1.5; // (most of the way back into its lane)
     step();
     check(besideIt && !Player.active, 'steering into the side of the train as it goes by wrecks the player');
+
+    // a ghost (picked up after the mystery) passes straight through it
+    setOff();
+    Player.ghost = CONFIG.ghostTime;
+    let through = false;
+    for (let i = 0; i < 120 * 8 && BulletTrain.active; i++) { step(); through ||= BulletTrain.passed; }
+    check(through && Player.active && Player.health > 0, "a ghost stays in the train's lane and comes out the other side");
+
+    // mercy: while the train is about, the shoulder's danger meter runs down at half speed
+    const drain = (train) => {
+      setOff();
+      if (!train) BulletTrain.reset();
+      Player.lat = track.Track.shoulderOffset(1, Player.s);
+      for (let i = 0; i < 120; i++) step(); // 1 s on the shoulder
+      return CONFIG.dangerTime - Player.danger;
+    };
+    const withTrain = drain(true), without = drain(false);
+    check(Math.abs(withTrain - CONFIG.bulletTrain.dangerMercy) < 0.02 && Math.abs(without - 1) < 0.02,
+      `on the shoulder for 1 s: the danger meter loses ${withTrain.toFixed(2)} s with the train about, ${without.toFixed(2)} s without`);
+
+    // ...and nobody is busted for being on the shoulder while it is about, nor for mercyAfter s after it has gone
+    setOff();
+    Player.lat = track.Track.shoulderOffset(1, Player.s);
+    Player.danger = 0.1; // (the meter runs out almost at once)
+    let gone = -1, bustedAt = -1;
+    for (let i = 0; i < 120 * 12 && bustedAt < 0; i++) {
+      step();
+      if (gone < 0 && !BulletTrain.active) gone = i / 120;
+      if (Player.busted) bustedAt = i / 120;
+    }
+    const wait = bustedAt - gone;
+    check(gone > 0 && bustedAt > 0 && Math.abs(wait - CONFIG.bulletTrain.mercyAfter) < 0.05,
+      `an empty danger meter on the shoulder: no bust while the train is about, nor until ${wait.toFixed(2)} s after it has gone`);
   }
 
   console.log('cars');

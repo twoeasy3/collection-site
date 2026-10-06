@@ -86,6 +86,9 @@ export const Player = {
   },
   bust(reason) {
     if (this.busted || this.tank > 0 || this.radar > 0) return; // nobody busts a tank, nor a car with a radar detector
+    // (nor anyone for the shoulder with a bullet train about, or just gone: an empty danger meter
+    // busts the car once that is over, if it is still on the shoulder)
+    if ((reason === 'shoulder' || reason === 'seen') && BulletTrain.mercy) return;
     this.busted = true;
     this.bustReason = reason;
     // the bust's message, led by which bust of the run this is (messages.json: bustCount)
@@ -283,7 +286,8 @@ export const Player = {
     this.onShoulder = LEVEL.shoulderTimer !== false && Track.onShoulder(this.lat, this.s) &&
       this.passenger <= 0 && this.tank <= 0;
     if (this.onShoulder) {
-      this.danger = Math.max(0, this.danger - dt);
+      // (mercy: with a bullet train about, the shoulder may be the only way out of its path)
+      this.danger = Math.max(0, this.danger - dt * (BulletTrain.active ? CONFIG.bulletTrain.dangerMercy : 1));
       if (this.danger === 0) this.bust('shoulder');
     } else {
       this.danger = Math.min(CONFIG.dangerTime, this.danger + CONFIG.dangerCooldown * dt);

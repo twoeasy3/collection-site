@@ -61,14 +61,17 @@ export const Collision = (() => {
     const headOn = a.bound !== b.bound;     // one northbound, one southbound
 
     // Contact with a police car is a bust, unless it wasn't the player's doing: the police car
-    // ran into the back of the player, it was out of control, or it was oncoming.
+    // ran into the back of the player, sideswiped it or turned into it (it was the one moving
+    // sideways towards the other, and faster), it was out of control, or it was oncoming.
     const police = a.isPlayer && b.kind === 'police' ? b : b.isPlayer && a.kind === 'police' ? a : null;
     if (police) {
       const behind = (police.s - Player.s) * Player.dir < 0;
       const closing = (police.vs - Player.speed) * Player.dir > 0;
       const rearEnded = !sideOn && behind && closing;
+      const toPlayer = Math.sign(Player.lat - police.lat); // (the way the player is from the police car)
+      const turnedIn = police.latVel * toPlayer > Math.max(CONFIG.policeTurnIn, -Player.latVel * toPlayer);
       const outOfControl = police.spin > 0 || police.wobble > 0;
-      if (!rearEnded && !outOfControl && !headOn) Player.bust('bump');
+      if (!rearEnded && !turnedIn && !outOfControl && !headOn) Player.bust('bump');
     }
     if (a.isPlayer && a.tank > 0) {
       // TANK RAGE: whatever it touches is wrecked. Only a head-on costs the tank any health.

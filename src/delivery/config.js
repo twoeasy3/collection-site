@@ -80,6 +80,8 @@ export const CONFIG = {
     carLength: 25,         // ...each this long (m)
     hw: 1.6,               // m, half its width
     height: 3.6,           // m
+    dangerMercy: 0.5,      // while it is about, the shoulder's danger meter runs down at this share of its usual rate,
+    mercyAfter: 3,         // and nobody is busted for being on the shoulder, until this many s after it has gone
   },
   ufoStrike: {
     arrive: 1.5,           // s to fly in...
@@ -260,6 +262,8 @@ export const CONFIG = {
   // collision physics
   maxStep: 1 / 120,        // s, simulation sub-step so fast head-ons can't tunnel
   broadPhaseDistance: 12,  // only test pairs within this distance along the track
+  policeTurnIn: 0.5,       // m/s sideways towards the player a police car must be moving, and faster
+                           // than the player towards it, for a touch to be its doing: no bust
   playerPushShare: 0.1,    // share of any push the player takes when it hits traffic (the traffic takes
                            // the rest): small, so the player barely loses speed. 0.5 would be an even match
   playerRearEndShare: 0.6, // ...except when the player runs into the back of a traffic vehicle: the one

@@ -3,8 +3,11 @@
 // player's lane, where new traffic turns up, and comes straight down that lane the wrong way,
 // far faster than anything else, reaching where the player was about CONFIG.bulletTrain.warning
 // seconds later. Whatever any part of it touches is destroyed: traffic, obstacles, and the
-// player's car, outright (like the bridge structure), nose on or steered into its side. It
-// keeps to its lane, following it where the road narrows, and is gone once it is well past.
+// player's car, outright (like the bridge structure), nose on or steered into its side; only
+// a ghost passes through it. It keeps to its lane, following it where the road narrows, and
+// is gone once it is well past. While it is about, the shoulder's danger meter runs down slower,
+// and until CONFIG.bulletTrain.mercyAfter s after it has gone nobody is busted for being on the
+// shoulder (see Player.update and Player.bust): it may be the only way out of its path.
 // This is the movement and the damage; render/bullettrain.js draws it.
 // ============================================================================
 import { CONFIG } from './config.js';
@@ -22,6 +25,9 @@ export const BulletTrain = {
   lane: 0,       // the lane it keeps to: the player's when it was set off
   end: 0,        // the s at which its road runs out
   passed: false, // its nose has gone by the player
+  after: 0,      // s left of mercy on the shoulder once it has gone
+  // no busts for being on the shoulder: while it is about, and for a while after
+  get mercy() { return this.active || this.after > 0; },
   get length() { return CONFIG.bulletTrain.cars * CONFIG.bulletTrain.carLength; },
   // where carriage i is (0 = the nose's), into `out` ({ s, lat })
   carriage(i, out) {
@@ -44,9 +50,13 @@ export const BulletTrain = {
   },
   reset() {
     this.active = false;
+    this.after = 0;
   },
   update(dt) {
-    if (!this.active) return;
+    if (!this.active) {
+      this.after = Math.max(0, this.after - dt);
+      return;
+    }
     const T = CONFIG.bulletTrain;
     this.s -= T.speed * dt;
     if (!this.passed && this.s < Player.s) {
@@ -56,6 +66,7 @@ export const BulletTrain = {
     // gone once its tail is well behind the player, or its road has run out
     if (this.s < this.end || Track.along(this.s + this.length) < Track.along(Player.s) - CONFIG.despawnBehind) {
       this.active = false;
+      this.after = T.mercyAfter;
       return;
     }
     box.hl = T.carLength / 2;
@@ -72,8 +83,12 @@ export const BulletTrain = {
         o.gone = true;
         FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: -T.speed * 0.2, big: false });
       }
-      // the player's car is wrecked outright, whatever it is: only a freshly dropped one is spared
-      if (Player.active && Player.shield <= 0 && Player.health > 0 && near(Player) && Collision.overlap(box, Player)) Player.health = 0;
+      // the player's car is wrecked outright, whatever it is, but for a ghost and a freshly
+      // dropped one. (A ghost running out inside the train stays a ghost until it is clear, as it
+      // does inside a car: see Collision.check)
+      if (!Player.active || Player.shield > 0 || Player.health <= 0 || !near(Player) || !Collision.overlap(box, Player)) continue;
+      if (Player.ghost > 0) Player.ghost = Math.max(Player.ghost, 0.2);
+      else Player.health = 0;
     }
   },
 };

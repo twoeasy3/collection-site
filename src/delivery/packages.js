@@ -166,6 +166,8 @@ export const Packages = (() => {
       scale: CONFIG.cannonBlastScale, smoke: CONFIG.cannonSmoke, sound: 'burst' });
   };
 
+  // a police car (not one turned into a toad in TOAD RAGE): it has reactions of its own
+  const cop = (car) => car.kind === 'police' && !car.toad;
   // the player's care package arriving
   const deliver = (p, car) => {
     if (p.kind === 'fire') { // an Evil player's package: real damage, and it makes enemies
@@ -176,9 +178,16 @@ export const Packages = (() => {
       car.grudge = true;
       car.showMood = true;
       // attacking a police car, or anyone while a police car is watching, is a bust
-      if (car.kind === 'police') Player.bust('assaultCop');
+      // (a police car turned into a toad in TOAD RAGE is just a toad)
+      if (cop(car)) Player.bust('assaultCop');
       else if (Traffic.policeNear()) Player.bust('assault');
-      Message.say('reactions', car.evil ? 'anyOnEvil' : 'evilOnGood'); // (the driver's reaction)
+      // (the driver's reaction, unless the package has destroyed the car outright: a spin-out or a
+      // critical hit still gets one. A police officer only has one when there is no bust for it,
+      // the player's radar detector running; otherwise the bust says it all)
+      if (car.health > 0) {
+        if (!cop(car)) Message.say('reactions', car.evil ? 'anyOnEvil' : 'evilOnGood');
+        else if (Player.radar > 0) Message.say('reactions', 'evilOnPolice');
+      }
       FxQueue.push({ type: 'burst', s: p.s, lat: p.lat, vs: car.vs });
       return;
     }
@@ -190,7 +199,9 @@ export const Packages = (() => {
     } else {
       car.mood = Math.min(1, car.mood + CONFIG.packageMoodBoost);
     }
-    Message.say('reactions', car.evil ? 'anyOnEvil' : 'goodOnGood'); // (the driver's reaction)
+    // (the driver's reaction, unless the package has destroyed the car outright: a spin-out or a
+    // critical hit still gets one)
+    if (car.health > 0) Message.say('reactions', cop(car) ? 'goodOnPolice' : car.evil ? 'anyOnEvil' : 'goodOnGood');
     car.showMood = true;
     FxQueue.push({ type: 'gift', s: p.s, lat: p.lat, vs: car.vs });
   };

@@ -31,13 +31,33 @@
     "3": ["Arrested - "]
   },
   "busts": {
-    "shoulder": ["BUSTED - driving in an illegal lane!!"],
-    "seen": ["BUSTED - the police saw you on the shoulder!!"],
-    "assault": ["BUSTED - the police witnessed vehicular assault!!"],
-    "assaultCop": ["BUSTED - assault on a POLICE CAR!!"],
-    "bump": ["BUSTED - you hit a cop car!!"]
+    "shoulder": ["Driving in an illegal lane!!"],
+    "seen": ["The police saw you on the shoulder!!"],
+    "assault": ["The police witnessed vehicular assault!!"],
+    "assaultCop": ["Assault on a POLICE CAR!!"],
+    "bump": ["You hit a cop car!!"]
   },
   "reactions": {
+    "goodOnPolice": [
+  "We don't usually take bribes, but thanks!",
+  "Thank you! I'll remember this",
+  "A box of donuts? You know us well!",
+  "Wow, how did this coffee not spill?",
+  "This shift got a lot better! Thanks!!",
+  "I'll get the boys to grease the wheels for you, thanks!",
+  "Thanks! Captain is not going to believe this!",
+  "Yum... Donuts!",
+  "A brand new handgun? I hope this was not a threat!"
+],
+    "evilOnPolice": [
+  "He can't keep getting away with this!",
+  "Wha- are we gonna do anything about that?",
+  "You're lucky we are standing down!",
+  "Code 8 - Maniac on the loose!",
+  "I've just got hit by a flaming package - over!!",
+  "Hold your fire!! Hold your fire!!",
+  "Seize the fiery package flinging immediately!!"
+],
     "goodOnGood": [
   "Hey thanks man!",
   "Woe! You're the coolest!",
