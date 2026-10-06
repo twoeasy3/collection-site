@@ -327,6 +327,13 @@ export const Traffic = (() => {
     return true;
   };
 
+  // how fast a racer may go for the bends ahead of it (see CONFIG.race): as fast as its nerve allows
+  const racingLine = (car) => {
+    const R = CONFIG.race, type = CONFIG.vehicles[car.kind];
+    let sharpest = 0;
+    for (let d = 0; d <= R.aiLookout; d += 5) sharpest = Math.max(sharpest, Math.abs(Track.bend(car.s + car.dir * d)));
+    return sharpest > 1e-4 ? Math.sqrt(CONFIG.ice.grip * R.aiTyres * R.aiGrip * (type.agility || 1) / (weightOf(car) * sharpest)) : Infinity;
+  };
   // a horn to suit the vehicle (police cars have sirens instead), only near the player
   const HORNS = { compact: 'hornSmall', sport: 'hornSmall', van: 'hornBig', tractor: 'hornBig', bus: 'hornBus' };
   const honk = (car) => {
