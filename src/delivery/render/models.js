@@ -43,9 +43,41 @@ const disc = (parent, material, r, depth, x, y, z) => {
   return mesh;
 };
 const GLASS = 0x232a35, CHROME = 0xd8d8d8, TRIM = 0x2a2c31;
+// an F1 car's second colour, by its paint number (see Traffic: paint)
+export const F1_ACCENTS = [0xf4f4f4, 0x151515, 0xf2d21f, 0x1d4f9c, 0x18a35a, 0xe0701e, 0xc81f3a, 0x6fd0ff];
 const LAMP = new THREE.MeshBasicMaterial({ color: 0xfff3c4 }), TAIL = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
 
 export const MODELS = {
+  // A Formula 1 car: a long, low nose and monocoque in the livery, sidepods, the engine cover with
+  // its fin, the halo over the cockpit, big front and rear wings in a second colour, four fat
+  // tyres standing clear of the body. userData.accent(n) picks the second colour.
+  f1: (car) => {
+    const group = new THREE.Group();
+    const l = car.hl * 2, paint = lambert(car.color), accent = lambert(0xf4f4f4), carbon = lambert(0x1b1b1e);
+    const body = box(group, paint, 0.75, 0.42, l * 0.62, 0, 0.42, -l * 0.02);                   // monocoque
+    box(group, paint, 0.4, 0.28, l * 0.3, 0, 0.36, l * 0.36);                                     // the nose
+    for (const side of [-1, 1]) box(group, paint, 0.42, 0.36, l * 0.3, side * 0.55, 0.38, -l * 0.05); // sidepods
+    box(group, paint, 0.5, 0.42, l * 0.28, 0, 0.72, -l * 0.18);                                   // engine cover...
+    box(group, accent, 0.05, 0.36, l * 0.24, 0, 1.0, -l * 0.24);                                  // ...and its fin
+    box(group, carbon, 0.42, 0.16, 0.5, 0, 0.72, l * 0.06);                                       // the cockpit
+    box(group, lambert(0xf2d21f), 0.24, 0.24, 0.24, 0, 0.82, l * 0.02);                           // a helmet
+    box(group, carbon, 0.05, 0.06, 0.6, 0, 1.02, l * 0.08);                                       // the halo
+    box(group, carbon, 0.62, 0.05, 0.08, 0, 1.0, l * 0.0);
+    box(group, accent, 1.9, 0.05, 0.45, 0, 0.12, l * 0.5);                                         // front wing
+    for (const side of [-1, 1]) box(group, accent, 0.05, 0.22, 0.5, side * 0.95, 0.2, l * 0.5);
+    box(group, accent, 1.2, 0.08, 0.42, 0, 1.05, -l * 0.47);                                       // rear wing...
+    for (const side of [-1, 1]) box(group, carbon, 0.05, 0.6, 0.45, side * 0.6, 0.8, -l * 0.47);  // ...on its end plates
+    const wheels = [];
+    for (const [z, r, w] of [[l * 0.33, 0.33, 0.36], [-l * 0.33, 0.37, 0.44]]) {
+      for (const side of [-1, 1]) wheels.push(...wheel(group, r, w, side * 0.78, r, z, lambert(0x8a8f96)));
+    }
+    group.userData = {
+      body,
+      animate: (t) => { for (const w of wheels) w.rotation.x = t * 30; },
+      accent: (n) => accent.color.setHex(F1_ACCENTS[n % F1_ACCENTS.length]),
+    };
+    return group;
+  },
   // An 18-wheeler: a cab-over prime mover in the livery, its sleeper and wind fairing on top,
   // chrome stacks behind, and a long white box trailer on three axles
   semi: (car) => {

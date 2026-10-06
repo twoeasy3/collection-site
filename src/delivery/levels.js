@@ -36,10 +36,18 @@
 //              for 250 m before the exit and after the merge (room for the flyovers).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
-//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'hell' or 'space': the look of the ground, sky and roadside.
+//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
-//   car        a special vehicle the level is driven in whatever is in the garage ('ufo')
+//   car        a special vehicle the level is driven in whatever is in the garage ('ufo', 'f1')
+//   grid       { count, kind, gap, pace: { min, max }, from }: a race. `count` cars of that kind on a
+//              grid, two by two, `gap` m apart, ahead of the player, all the player's way, half of them
+//              evil, each at its own share (pace) of the player's car's top speed; they race on,
+//              never recycled. (The HUD shows the player's position.) A race usually also has:
+//   noPackages true = nobody throws packages
+//   understeer true = every car understeers in bends as on ice (and none slows for a bend by itself)
+//   wallDamage true = a car going sideways into the road's edge takes damage (see CONFIG.race)
+//   nudge      true = a car steering into another's side knocks it aside
 //   traffic    which vehicles turn up as traffic and how often, relative to each other:
 //              { "car": 0.44, "van": 0.18, "police": 0.1 }. The kinds are those in
 //              CONFIG.vehicles. An empty list ({}) means no traffic at all.
@@ -58,7 +66,8 @@
 //              drift across the road or bob up and down through it.
 //   obstacles  { s, lane, kind }   things on the road that explode when hit. kind: 'barrier'
 //                                  (default), 'railBarrier' (one the bullet train leaves standing),
-//                                  'bale', 'cone', 'sign', or the beach's 'umbrella',
+//                                  'bale', 'cone', 'sign', the construction site's 'potty',
+//                                  'sewage', 'pile' and 'beam', or the beach's 'umbrella',
 //                                  'surfboard', 'cooler' and 'chair' (a lifeguard chair)
 //   dropBears  { from, to, count } drop bears up in the trees over that stretch, dropping onto the
 //              road as the player comes near (see CONFIG.dropBear)
@@ -85,6 +94,17 @@
 //              count: { min, max } }: pickups each wave leaves in the water. On a two-way road
 //              with no exits. See tide.js and CONFIG.tide
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
+//   mud        { from, to }        a stretch where the road gives way to mud: a car is slowed in it as
+//                                  on a railway track, by how well it crosses (see CONFIG.mud)
+//   potties    { s, pattern, lanes, period, phase }: a row of portaloos across those lanes, dancing
+//              together: 'hop', 'wave', 'slide', 'shuffle', 'stomp' or 'spin' (see Collision; obstacles,
+//              blown open when hit, and passed underneath while up in the air)
+//   machinery  { s, kind }         a bulldozer, excavator or dumpTruck trundling across the road and back
+//                                  there: solid, a heavy knock to run into (see machinery.js); or a
+//                                  { kind: 'roller', from, to, side } crawling along a shoulder, or a
+//                                  { kind: 'forklift', s, side } backing out onto one and off again
+//   siteWorks  { kind, ... }       the work on a construction site's shoulders: trenches, swinging
+//                                  excavators, workers with barrows, stacks of pipes (see site.js)
 //   migration  { from, to, count, kinds: { kind: share }, dir }: a great herd (kinds: 'wildebeest',
 //              'zebra') streaming across the road over that stretch, one way (dir: 1 = to the
 //              right), and round again: obstacles, blown up when hit (see CONFIG.migration)
@@ -140,12 +160,14 @@ import grandPacific from './levels/grand-pacific.json';
 import passageDuGois from './levels/passage-du-gois.json';
 import safari from './levels/safari.json';
 import airport from './levels/airport.json';
+import construction from './levels/construction.json';
+import grandPrix from './levels/grand-prix.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport];
-export const SPECIAL_LEVELS = [allHeck, ufo];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction];
+export const SPECIAL_LEVELS = [allHeck, ufo, grandPrix];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones
 export const levelLabel = (index) => index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (index - MAIN_LEVELS.length + 1);

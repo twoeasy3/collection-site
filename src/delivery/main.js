@@ -26,6 +26,8 @@ import { syncTide } from './render/tide.js';
 import { syncHippos } from './render/hippos.js';
 import { syncElephants } from './render/elephants.js';
 import { syncWreckage } from './render/wreckage.js';
+import { syncMachinery } from './render/machinery.js';
+import { syncSite } from './render/site.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
@@ -133,6 +135,8 @@ const frame = (now) => {
     syncHippos();
     syncElephants(now);
     syncWreckage(now);
+    syncMachinery(now);
+    syncSite();
     syncZones(dt);
     syncStorm(dt);
     emitVehicleSmoke(dt);

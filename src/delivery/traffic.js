@@ -2,10 +2,10 @@ import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
 import { clamp, damp } from './util.js';
 import { Track } from './track.js';
-import { updateYaw, keepOnRoad, emotionOf, startRivalry, spinOut, sfxAt } from './physics.js';
+import { updateYaw, keepOnRoad, emotionOf, startRivalry, spinOut, sfxAt, cornerSpeed, weightOf } from './physics.js';
 import { Player } from './player.js';
 import { Packages } from './packages.js';
-import { CARS } from './cars.js';
+import { CARS, LEVEL_CARS } from './cars.js';
 import { Message } from './messages.js';
 import { Tide } from './tide.js';
 import { Wreckage } from './wreckage.js';
@@ -167,6 +167,7 @@ export const Traffic = (() => {
 
   // the top speed of each of the garage's cars, by id (which is also its kind of traffic)
   const GARAGE_TOP = Object.fromEntries(CARS.map(c => [c.id, c.maxSpeed]));
+  const CARS_BY_ID = LEVEL_CARS;
 
   // makes the car a vehicle of that kind, in that lane at car.s, fresh off the line
   const outfit = (car, kind, lane) => {
@@ -221,6 +222,8 @@ export const Traffic = (() => {
     car.wander = Math.random() * 6; // (where it is in its drift about the lane)
     car.fromBehind = false; // came up from behind the player
     car.onIce = false;      // on an ice patch (see CONFIG.ice)
+    car.racer = false;      // one of a race's grid (see placeFixed)
+    car.slideVel = 0;       // m/s it is sliding wide in a bend (a level with "understeer")
     car.stalled = false;    // stalled in the tide's water, hazards on (see Tide)
     car.halted = 0;         // pulled over for good (to the shoulder on this side: -1 | 1), its lane blocked ahead (see Wreckage)
     car.junction = null;    // leaving the road at a junction: on its way off, in the world (see leaveAtJunction)
@@ -255,6 +258,26 @@ export const Traffic = (() => {
       car.viaSide = false;
       car.baseSpeed = CONFIG.tractorSpeed;
       car.vs = 0; // parked until the player is near
+    }
+    // ...and a race's grid (a level's "grid"): `count` cars of its kind, two by two, staggered, ahead
+    // of the player, all the player's way; half of them evil. Each is a racer: it never stops racing
+    // (however far ahead or behind), throws nothing, and goes as fast as its pace allows, a share of
+    // the player's car's top speed
+    if (LEVEL.grid) {
+      const G = LEVEL.grid, [first, last] = Track.laneRange(1, 0), lanes = [first + 1, Math.min(last, first + 2)];
+      const top = CARS_BY_ID[LEVEL.car]?.maxSpeed ?? 40;
+      for (let k = 0; k < G.count; k++) {
+        const car = cars.find(c => !c.active && c.unused);
+        if (!car) break;
+        car.dir = 1;
+        car.bound = 'north';
+        car.s = (G.from ?? 14) + (G.count - 1 - k) * G.gap;
+        outfit(car, G.kind, lanes[k % 2]);
+        Object.assign(car, { fixed: true, racer: true, evil: k % 2 === 1, defiant: false, viaSide: false, hesitant: false,
+          vs: 0, baseSpeed: top * between(G.pace), throwTimer: Infinity, paint: Math.floor(Math.random() * 1000) });
+        car.emotion = pickEmotion(car.evil);
+        car.mood = MOOD_START[car.emotion];
+      }
     }
     // ...and its parked cars, on the shoulders with their hazards on: a car of one of the
     // level's ordinary kinds, facing the way that side's traffic goes, that never moves off
@@ -433,6 +456,7 @@ export const Traffic = (() => {
       car.blockTime = 0;
     }
     // full speed, or as fast as lets it stop in time behind what is in its way
+    // (an ambulance on a call takes the bends flat out)
     let target = car.baseSpeed;
     if (car.blocker) {
       const theirs = Math.max(0, car.blocker.vs * car.dir);
@@ -563,7 +587,7 @@ export const Traffic = (() => {
       car.unused = i >= count + oncoming; // (never spawned on this level)
       car.fixed = false;
       // (and nothing left over from the last run, on a car that may not be dealt out again for a while)
-      Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
+      Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, racer: false, slideVel: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
     });
     placeFixed();
     nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
@@ -594,13 +618,13 @@ export const Traffic = (() => {
         continue;
       }
       const ahead = Track.along(car.s) - Track.along(Player.s); // along the course, whichever road
-      if (car.fixed && ahead > CONFIG.spawnMax) continue; // still waiting where the level put it
+      if (car.fixed && !car.racer && ahead > CONFIG.spawnMax) continue; // still waiting where the level put it
       // (an emergency vehicle going the player's way starts out behind the player, and is gone
       // once it is well ahead; one coming the other way once it is behind)
       const gone = !car.emergency ? ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 150
         : car.dir > 0 ? ahead < -E.behind - 100 || ahead > CONFIG.spawnMax + 150
         : ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 300;
-      if (gone || !Track.inBounds(car.s)) {
+      if ((gone && !car.racer) || !Track.inBounds(car.s)) { // (a racer races on, wherever it is)
         car.active = false;
         continue;
       }
@@ -745,7 +769,7 @@ export const Traffic = (() => {
         car.lane = clamp(Track.nearestLane(car.lat, car.s), first, last);
       } else {
         // evil cars lob packages at other traffic; ones the player has upset aim near the player
-        if (car.evil && Player.active &&
+        if (car.evil && Player.active && !LEVEL.noPackages &&
             Math.abs(car.s - Player.s) < CONFIG.enemyThrowRange) {
           car.throwTimer -= dt;
           if (car.throwTimer <= 0) {
@@ -847,11 +871,26 @@ export const Traffic = (() => {
           car.lane = clamp(rival.isPlayer ? Track.nearestLane(rival.lat, rival.s) : rival.lane, first, last);
           target = car.baseSpeed * ((rival.s - car.s) * car.dir > 0 ? 1.35 : 0.7);
         }
+        // (a racer, at racing speed, holds back further the faster it is closing)
+        let held = false;
         for (const o of cars) {
           if (o === car || !o.active || o === rival || o.junction) continue;
           const gap = (o.s - car.s) * car.dir;
-          if (gap > 0 && gap < o.hl + car.hl + 8 && Math.abs(o.lat - car.lat) < o.hw + car.hw) {
+          const room = o.hl + car.hl + 8 + (car.racer ? Math.max(0, Math.abs(car.vs) - Math.abs(o.vs)) * 1.5 : 0);
+          if (gap > 0 && gap < room && Math.abs(o.lat - car.lat) < o.hw + car.hw) {
             target = Math.min(target, Math.abs(o.vs) * 0.9);
+            held = true;
+          }
+        }
+        // a racer held up behind a slower car pulls out to pass it, into whichever lane beside is clear
+        if (car.racer && held && !rival && (car.overtake = (car.overtake || 0) - dt) <= 0) {
+          car.overtake = 0.6;
+          for (const d of Math.random() < 0.5 ? [1, -1] : [-1, 1]) {
+            if (!canMove(car, car.lane + d, false)) continue;
+            car.lane += d;
+            car.signal = d;
+            car.pendingLane = null;
+            break;
           }
         }
         // held up behind a slow player: mood sours; angry cars don't brake for you
@@ -863,8 +902,12 @@ export const Traffic = (() => {
           honk(car);
           if (car.emotion !== 'angry') target = Math.min(target, Player.speed * 0.9);
         }
-        // giving way at a junction while a car is leaving across it
-        target = Math.min(target, giveWay(car));
+        // giving way at a junction while a car is leaving across it; and no faster than the bends ahead allow
+        // (on ice, and on a level where cars understeer, they don't slow for a bend: they slide wide instead;
+        // though a racer, knowing the track, slows for the bends ahead as much as lets it slide a little)
+        target = Math.min(target, giveWay(car), car.onIce || LEVEL.understeer ? Infinity : cornerSpeed(car.s, weightOf(car)));
+        if (car.racer) target = Math.min(target, racingLine(car));
+        if (Track.muddy(car.s)) target *= CONFIG.mud.trafficPace; // (in mud)
         // wading through the tide's water: slowed, the more so in deep water
         if (depth > CONFIG.tide.wet) target *= depth >= CONFIG.tide.deep ? CONFIG.tide.trafficPace : 0.8;
         // hesitating: every so often a touch of the brakes, sharply
@@ -877,7 +920,7 @@ export const Traffic = (() => {
           target *= H.tapPace;
         }
         car.braking = car.tap > 0 || Math.abs(car.vs) > target + 0.8;
-        car.vs += (car.dir * target - car.vs) * damp(car.tap > 0 ? 3 : 1.2, dt);
+        car.vs += (car.dir * target - car.vs) * damp(car.tap > 0 || (car.racer && car.braking) ? 3 : car.racer ? 1.2 * CONFIG.race.aiPickup : 1.2, dt);
 
         // spring back to the lane centre
         // (alongside its rival it steers straight at it)
@@ -901,9 +944,19 @@ export const Traffic = (() => {
       // an oncoming car passing close by may lean on its horn as it goes
       if (car.dir < 0 && Player.active && car.s > Player.s && car.s + car.vs * dt <= Player.s &&
           Math.abs(car.lat - Player.lat) < CONFIG.passByRange && Math.random() < CONFIG.passByChance) sfxAt('passBy', car.s);
+      // understeer (a level with "understeer"): in a bend, what it asks of the tyres beyond the ice's
+      // grip slides it to the outside, the more so the faster and heavier it is (as the player on ice)
+      if (LEVEL.understeer && !(car.spin > 0)) {
+        const bend = Track.bend(car.s), type = CONFIG.vehicles[car.kind];
+        const grip = CONFIG.ice.grip * (car.racer ? CONFIG.race.aiTyres : 1); // (a racer's tyres hold on longer)
+        const slide = Math.max(0, car.vs * car.vs * Math.abs(bend) * weightOf(car) / (type.agility || 1) - grip) * CONFIG.ice.understeer *
+          (car.onIce ? 1 : CONFIG.race.understeer);
+        car.slideVel = (car.slideVel - Math.sign(bend) * car.dir * slide * dt) * (1 - Math.min(1, dt * 2)); // (gripping again as it eases)
+        car.vs -= Math.sign(car.vs) * Math.min(Math.abs(car.vs), slide * CONFIG.race.scrub * dt); // (scrubbing off speed as it slides)
+      } else car.slideVel = 0;
       car.s += car.vs * dt;
       Track.transfer(car); // onto the side road, a flyover or back, where the roads join
-      car.lat += car.latVel * dt;
+      car.lat += (car.latVel + car.slideVel) * dt;
       keepOnRoad(car, 0.3);
       updateYaw(car, dt);
     }

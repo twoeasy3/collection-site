@@ -64,6 +64,9 @@ export const CARS = [
 export const LEVEL_CARS = {
   ufo: { id: 'ufo', name: 'UFO', price: 0, color: 0xc9d2dc, evilColor: 0x4a3a66, ufo: true,
     maxSpeed: 58, accel: 30, crossing: 1, agility: 2.8, health: 100, hw: 1.3, hl: 1.3, height: 1.2 },
+  // a Formula 1 car: very fast, quick off the line, nimble, low, and no good over a kerb
+  f1: { id: 'f1', name: 'F1 Car', price: 0, color: 0xd8262b, evilColor: 0x151515, model: 'f1',
+    maxSpeed: 75, accel: 20, crossing: 0.2, agility: 1.5, health: 120, hw: 0.95, hl: 2.6, height: 1.0 },
 };
 
 // Secret vehicles: never parked in the garage or for sale, but once owned they are driven

@@ -13,6 +13,8 @@ import { Tide } from './tide.js';
 import { Hippos } from './hippos.js';
 import { Elephants } from './elephants.js';
 import { Wreckage } from './wreckage.js';
+import { Machinery } from './machinery.js';
+import { Site } from './site.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -129,6 +131,8 @@ export const Game = {
     Tide.reset();
     Hippos.reset();
     Elephants.reset();
+    Machinery.reset();
+    Site.reset();
     this.state = 'playing';
     startScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');
@@ -263,6 +267,8 @@ export const Game = {
     if (playing) Hippos.update(dt);
     if (playing) Elephants.update(dt);
     if (playing) Wreckage.update(dt);
+    if (playing) Machinery.update(dt);
+    if (playing) Site.update(dt);
     Packages.update(dt);
     Pickups.update();
     Collision.updateObstacles(dt);

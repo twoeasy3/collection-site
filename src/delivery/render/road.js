@@ -69,6 +69,8 @@ export const THEMES = {
   coast: { sky: 0x9fc8ee, ground: 0x6f9a52, road: 0x44474d, scenery: 'zones' },
   // safari: a level in zones on a dirt road: no markings, only the ruts worn into it
   safari: { sky: 0xc6dcea, ground: 0xc2a85a, road: 0xa47a4c, scenery: 'zones', unmarked: true },
+  // construction: a road being built: bare earth all round, a hazy sky, the road giving way to mud
+  construction: { sky: 0xc4d2dc, ground: 0x9a8160, road: 0x4a4c50, scenery: 'construction' },
   // airport: an airport going up in flames: a smoky orange sky, dry grass between concrete aprons, the runway
   airport: { sky: 0xc98e62, ground: 0x8c8f62, road: 0x45484d, scenery: 'airport' },
   // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
@@ -622,6 +624,29 @@ const goisSign = () => {
   goisSignTexture.colorSpace = THREE.SRGBColorSpace;
   return goisSignTexture;
 };
+// the road works sign's face: a yellow diamond, a black border, ROAD WORK
+let roadWorkTexture = null;
+const roadWorkSign = () => {
+  if (roadWorkTexture) return roadWorkTexture;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 256;
+  const g = canvas.getContext('2d');
+  g.translate(128, 128);
+  g.rotate(Math.PI / 4);
+  g.fillStyle = '#111';
+  g.fillRect(-88, -88, 176, 176);
+  g.fillStyle = '#ffb21f';
+  g.fillRect(-80, -80, 160, 160);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = '#111';
+  g.textAlign = 'center';
+  g.font = 'bold 40px sans-serif';
+  g.fillText('ROAD', 128, 118);
+  g.fillText('WORK', 128, 162);
+  roadWorkTexture = new THREE.CanvasTexture(canvas);
+  roadWorkTexture.colorSpace = THREE.SRGBColorSpace;
+  return roadWorkTexture;
+};
 // the kangaroo crossing sign's face: a yellow diamond with a black border and a kangaroo
 let kangarooSignTexture = null;
 const kangarooSign = () => {
@@ -695,16 +720,20 @@ const buildRoad = () => {
   // a junction's box has no lines through it, like a real one: the road's markings stop at its
   // edges (its crossings and stop lines are render/junctions.js's)
   // (nor anywhere on a runway, which has markings of its own: see the airport's scenery)
-  const inJunction = (s) => Track.junctions.some(jn => s > jn.s - 1 && s < jn.end + 1) || (!!LEVEL.runway && s > LEVEL.runway.from - 1);
-  const unmarked = (a, b) => { // the pieces of a..b outside every junction
+  const inJunction = (s) => Track.junctions.some(jn => s > jn.s - 1 && s < jn.end + 1) || (!!LEVEL.runway && s > LEVEL.runway.from - 1) ||
+    Track.muddy(s); // (nor in mud)
+  const unmarked = (a, b) => { // the pieces of a..b to be marked: outside every junction (and runway, and mud)
     const pieces = [];
-    let from = a;
-    for (const jn of [...Track.junctions].sort((p, q) => p.s - q.s)) {
-      if (jn.end + 1 <= from || jn.s - 1 >= b) continue;
-      if (jn.s - 1 > from) pieces.push([from, jn.s - 1]);
-      from = Math.max(from, jn.end + 1);
+    let from = null;
+    for (let s = a; ; s = Math.min(b, s + 1)) {
+      const marked = !inJunction(s);
+      if (marked && from === null) from = s;
+      if ((!marked || s >= b) && from !== null) {
+        if (s - from > 0.5) pieces.push([from, s]);
+        from = null;
+      }
+      if (s >= b) break;
     }
-    if (from < b) pieces.push([from, b]);
     return pieces;
   };
   const dashOutside = (s) => !inJunction(s) && !inJunction(s + CONFIG.dashLength);
@@ -780,6 +809,33 @@ const buildRoad = () => {
       for (const side of [-1, 1]) {
         add(buildStrip(Track.start, Track.end, side * GAUGE / 2 - 0.04, side * GAUGE / 2 + 0.04, 0.2), flat(0xb8bcc4));
       }
+    }
+  }
+  // mud: where the road gives way to it, a sheet of churned brown right across, its ruts and puddles
+  // darker, and a ragged edge where the road begins again
+  for (const m of LEVEL.mud || []) {
+    const mudMat = flat(0x5e4630);
+    mudMat.polygonOffset = true;
+    mudMat.polygonOffsetFactor = -1;
+    mudMat.polygonOffsetUnits = -1;
+    add(buildStrip(m.from, m.to, (s) => Track.lo(s) - 2, (s) => Track.hi(s) + 2, 0.006, 3), mudMat);
+    const rut = flat(0x4a3622);
+    rut.polygonOffset = true;
+    rut.polygonOffsetFactor = -2;
+    rut.polygonOffsetUnits = -2;
+    for (let lane = 0; lane < Track.laneCount; lane++) {
+      for (const side of [-1, 1]) {
+        const at = (s) => Track.laneOffset(lane, s) + side * 0.85 + 0.15 * Math.sin(s * 0.13 + lane);
+        add(buildStrip(m.from, m.to, (s) => at(s) - 0.25, (s) => at(s) + 0.25, 0.012, 3), rut);
+      }
+    }
+    const puddle = flat(0x6b6a55);
+    puddle.polygonOffset = true;
+    puddle.polygonOffsetFactor = -2;
+    puddle.polygonOffsetUnits = -2;
+    for (let s = m.from + 8; s < m.to - 8; s += 14 + Math.random() * 20) {
+      const lat = Track.lo(s) + Math.random() * (Track.hi(s) - Track.lo(s)), w = 1 + Math.random() * 2, l = 2 + Math.random() * 4;
+      add(buildStrip(s, s + l, lat - w, lat + w, 0.014, 1), puddle);
     }
   }
   // ice patches: a pale, glassy sheet over the lane (or the whole road), with brighter streaks on it
@@ -1482,6 +1538,124 @@ const buildRoad = () => {
     }
   } else if (theme.scenery === 'zones') {
     buildZones(beside, instances, add, flat, { cube, tube, cone });
+  } else if (theme.scenery === 'construction') {
+    // ---- construction: orange barrier fencing along both sides, and beyond it the site: tower
+    // cranes, the steel frames of buildings going up, site huts, heaps of gravel, stacks of pipes,
+    // floodlights on masts
+    const kinds = { fence: [], post: [], mast: [], lamp: [], frame: [], floor: [], hut: [], gravel: [], pipe: [], craneMast: [], jib: [], counter: [],
+      jersey: [], waterRed: [], waterWhite: [], skip: [], pallet: [], brick: [], rebar: [], timber: [], spool: [], hivis: [], skin: [], hat: [],
+      beacon: [], bags: [], scaffold: [], plank: [], genset: [], dirt: [], drum: [], mixer: [] };
+    const sphereGeo = new THREE.SphereGeometry(0.5, 10, 8);
+    for (let s = Track.start; s < Track.end; s += 2.5) {
+      for (const side of [-1, 1]) {
+        kinds.fence.push([s + 1.25, beside(side, s, 1.5), 0.6, 0.05, 1.1, 2.5]);
+        kinds.post.push([s, beside(side, s, 1.5), 0.6, 0.12, 1.2, 0.12]);
+      }
+    }
+    for (let s = 60; s < Track.end; s += 120) {
+      for (const side of [-1, 1]) {
+        const lat = beside(side, s + side * 30, 6);
+        kinds.mast.push([s + side * 30, lat, 6, 0.3, 12, 0.3]);
+        kinds.lamp.push([s + side * 30, lat, 12.2, 1.6, 0.6, 0.8]);
+      }
+    }
+    for (let s = 40; s < Track.end; s += 90 + Math.random() * 70) {
+      const side = Math.random() < 0.5 ? -1 : 1, d = 25 + Math.random() * 40, lat = beside(side, s, d), r = Math.random();
+      if (r < 0.35) { // a steel frame going up: columns and floor beams, a few storeys
+        const floors = 3 + Math.floor(Math.random() * 5), w = 18, dd = 14;
+        for (const [x, z] of [[-w / 2, -dd / 2], [w / 2, -dd / 2], [-w / 2, dd / 2], [w / 2, dd / 2], [0, -dd / 2], [0, dd / 2]]) {
+          kinds.frame.push([s + x, lat + z, floors * 1.75, 0.35, floors * 3.5, 0.35]);
+        }
+        for (let f = 1; f <= floors; f++) {
+          kinds.frame.push([s, lat - dd / 2, f * 3.5, 0.3, 0.35, w], [s, lat + dd / 2, f * 3.5, 0.3, 0.35, w]);
+          if (f < floors - 1) kinds.floor.push([s, lat, f * 3.5 - 0.2, dd, 0.25, w]);
+        }
+      } else if (r < 0.55) { // a tower crane, its jib out over the site
+        const h = 30 + Math.random() * 15;
+        kinds.craneMast.push([s, lat, h / 2, 1.4, h, 1.4]);
+        kinds.jib.push([s, lat, h + 0.6, 0.9, 1.2, 40]);
+        kinds.counter.push([s - 12, lat, h - 0.6, 2.4, 2.4, 3]);
+      } else if (r < 0.75) { // site huts, stacked
+        kinds.hut.push([s, lat, 1.3, 2.6, 2.6, 7], [s + 8, lat, 1.3, 2.6, 2.6, 7], [s + 4, lat, 3.9, 2.6, 2.6, 7]);
+      } else if (r < 0.9) { // heaps of gravel
+        for (let k = 0; k < 3; k++) kinds.gravel.push([s + k * 7, lat + Math.random() * 4, 1.6, 6, 3.2, 6]);
+      } else { // concrete manhole rings, stacked
+        for (let k = 0; k < 4; k++) for (let y = 0; y < 1 + (k % 2); y++) kinds.pipe.push([s + k * 2.4, lat, 0.75 + y * 1.5, 2, 1.5, 2]);
+      }
+    }
+    // right by the road, between the fence and the site: the clutter of the job, close enough to
+    // read at speed. (Every so often a line of barriers along the fence; and beacons on its posts.)
+    for (let s = Track.start + 10; s < Track.end; s += 5 + Math.random() * 6) {
+      for (const side of [-1, 1]) {
+        if (Math.random() < 0.15) continue;
+        const d = 3 + Math.random() * 14, at = s + Math.random() * 4, lat = beside(side, at, d), r = Math.random();
+        if (r < 0.1) { // a skip, piled with rubble
+          kinds.skip.push([at, lat, 0.75, 2, 1.5, 4]);
+          kinds.dirt.push([at, lat, 1.6, 1.6, 0.8, 3]);
+        } else if (r < 0.2) { // pallets of bricks
+          for (let k = 0; k < 2; k++) {
+            kinds.pallet.push([at + k * 1.4, lat, 0.08, 1.2, 0.16, 1.2]);
+            kinds.brick.push([at + k * 1.4, lat, 0.6, 1.1, 0.9, 1.1]);
+          }
+        } else if (r < 0.28) { // a bundle of rebar
+          for (let k = 0; k < 6; k++) kinds.rebar.push([at, lat + (k % 3) * 0.12, 0.08 + Math.floor(k / 3) * 0.12, 0.08, 0.08, 6]);
+        } else if (r < 0.36) { // a stack of timber
+          for (let y = 0; y < 4; y++) kinds.timber.push([at, lat, 0.12 + y * 0.22, 1.3, 0.2, 4.8]);
+        } else if (r < 0.43) { // cable drums
+          kinds.spool.push([at, lat, 0.7, 1.6, 1.4, 1.6], [at + 2, lat + 0.4, 0.5, 1.2, 1.0, 1.2]);
+        } else if (r < 0.55) { // workers in hi-vis and hard hats, standing about
+          for (let k = 0; k < 1 + Math.floor(Math.random() * 3); k++) {
+            const wl = lat + k * 0.9, ws = at + Math.random() * 2;
+            kinds.hivis.push([ws, wl, 1.05, 0.5, 1.1, 0.35]);
+            kinds.drum.push([ws, wl, 0.4, 0.22, 0.8, 0.22]);           // (legs, in dark trousers)
+            kinds.skin.push([ws, wl, 1.78, 0.3, 0.32, 0.3]);
+            kinds.hat.push([ws, wl, 2.0, 0.38, 0.14, 0.38]);
+          }
+        } else if (r < 0.63) { // sandbags
+          for (let k = 0; k < 5; k++) kinds.bags.push([at + k * 0.7, lat, 0.15 + (k % 2) * 0.25, 0.6, 0.3, 0.65]);
+        } else if (r < 0.7) { // a generator
+          kinds.genset.push([at, lat, 0.7, 1.4, 1.4, 2.6]);
+        } else if (r < 0.78) { // scaffolding, two storeys, boards across
+          for (const [x, z] of [[-1, -2], [1, -2], [-1, 2], [1, 2]]) kinds.scaffold.push([at + z, lat + x, 3, 0.1, 6, 0.1]);
+          for (const y of [3, 6]) kinds.plank.push([at, lat, y, 2.2, 0.08, 4.4]);
+        } else if (r < 0.85) { // a cement mixer
+          kinds.genset.push([at, lat, 0.5, 1.0, 1.0, 1.2]);
+          kinds.mixer.push([at, lat, 1.4, 1.1, 1.1, 1.1]);
+        } else { // a heap of spoil
+          kinds.dirt.push([at, lat, 0.9, 4, 1.8, 5]);
+        }
+      }
+    }
+    for (let s = Track.start + 30; s < Track.end; s += 160 + Math.random() * 120) { // lines of barriers along the fence
+      const side = Math.random() < 0.5 ? -1 : 1, water = Math.random() < 0.5;
+      for (let k = 0; k < 12; k++) {
+        const at = s + k * 2.1, lat = beside(side, at, 0.6);
+        if (water) (k % 2 ? kinds.waterWhite : kinds.waterRed).push([at, lat, 0.5, 0.5, 1.0, 2]);
+        else kinds.jersey.push([at, lat, 0.4, 0.6, 0.8, 2]);
+      }
+    }
+    for (let s = Track.start; s < Track.end; s += 25) for (const side of [-1, 1]) kinds.beacon.push([s, beside(side, s, 1.5), 1.35, 0.18, 0.18, 0.18]);
+    const colours = { fence: 0xff7a1a, post: 0xd8d8d8, mast: 0x8a8f96, lamp: 0xfff4c8, frame: 0xb04a2a, floor: 0x9a9a96, hut: 0xe8e2d4,
+      jersey: 0xb9b6ae, waterRed: 0xd8342a, waterWhite: 0xf2f2f2, skip: 0xf2b51c, pallet: 0x9a7a4e, brick: 0xa8503a, rebar: 0x7a4a2c,
+      timber: 0xd4b07a, spool: 0x8a6a45, hivis: 0xff8a1a, skin: 0xe0b48c, hat: 0xf6e12a, beacon: 0xffa21a, bags: 0xb8a77a,
+      scaffold: 0x9aa3ab, plank: 0xb8925a, genset: 0x3f7d3a, dirt: 0x7a6248, drum: 0x2c3440, mixer: 0xe86a1e,
+      gravel: 0x9c968a, pipe: 0xb5b0a6, craneMast: 0xf2c21a, jib: 0xf2c21a, counter: 0x8a8f96 };
+    for (const [name, list] of Object.entries(kinds)) {
+      instances(name === 'gravel' || name === 'dirt' ? cone : name === 'pipe' || name === 'spool' ? tube : name === 'mixer' || name === 'skin' ? sphereGeo : cube,
+        colours[name], list, name === 'lamp' || name === 'beacon' || name === 'hivis');
+    }
+    // "ROAD WORK" signs, yellow diamonds on posts beside the road, every so often, facing the player
+    for (let s = 40; s < Track.end; s += 260) {
+      const side = (s / 260) % 2 < 1 ? 1 : -1, h = Track.toWorld(s, beside(side, s, 1.2), tmp);
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.1, 2.4, 0.1), new THREE.MeshLambertMaterial({ color: 0x9a9da3 }));
+      post.position.set(tmp.x, tmp.y + 1.2, tmp.z);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.8), new THREE.MeshBasicMaterial({ map: roadWorkSign(), transparent: true, side: THREE.DoubleSide }));
+      sign.position.set(tmp.x, tmp.y + 3.0, tmp.z);
+      sign.rotation.y = h + Math.PI;
+      sign.userData.text = true;
+      if (Track.mirrored) sign.scale.x = -1;
+      levelGroup.add(post, sign);
+    }
   } else if (theme.scenery === 'airport') {
     // ---- airport: the perimeter road past the terminal, through the fence onto the runway --------
     // Before the turn: a fence along both sides; buildings close by on both sides (offices, cargo

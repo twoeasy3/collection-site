@@ -252,6 +252,8 @@ const PAINTS = {
   evil: [0x24242b, 0x3a1f4d, 0x4a1c1c, 0x1f3a3a, 0x3b3b1f, 0x1c2a4a],
 };
 const POLICE_PAINT = 0xf5f5f5;
+// an F1 car's livery, by its paint number: any colour at all (and a second: see models.js)
+const F1_PAINTS = [0xd8262b, 0x1d3f9c, 0x18a35a, 0xff8a1a, 0x101010, 0xf4f4f4, 0x7a1fa8, 0x2fc4d8, 0xf2d21f, 0x8a1a2a, 0x2a6b3a, 0xff5fa8];
 // kinds of traffic that are also garage cars with a fixed livery wear that car's two colours
 // (see CARS: fixedLivery), not a random paint: kind -> { good, evil }
 const LIVERIES = Object.fromEntries(CARS.filter(c => c.fixedLivery).map(c => [c.id, { good: c.color, evil: c.evilColor }]));
@@ -298,7 +300,8 @@ export const syncTraffic = () => {
     const paints = PAINTS[car.evil ? 'evil' : 'good'];
     const livery = LIVERIES[car.kind];
     const ambulance = car.kind === 'ambulance';
-    const paint = police || ambulance ? POLICE_PAINT : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
+    const paint = police || ambulance ? POLICE_PAINT : car.kind === 'f1' ? F1_PAINTS[car.paint % F1_PAINTS.length]
+      : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
     mesh.userData.bar.visible = police || ambulance;
     // (on the roof: an ambulance's at the front, where it shows in the mirror, so to speak)
@@ -309,6 +312,7 @@ export const syncTraffic = () => {
     if (own && own.userData.body) { // (one of the garage's models: it takes this car's paint, and animates)
       own.userData.body.material.color.setHex(paint);
       own.userData.livery?.(car.evil);
+      own.userData.accent?.(Math.floor(car.paint / F1_PAINTS.length));
       own.userData.animate(performance.now() / 1000 + i);
     }
     mesh.userData.body.visible = mesh.userData.cabin.visible = !own;

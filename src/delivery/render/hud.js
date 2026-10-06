@@ -5,6 +5,7 @@ import { Player } from '../player.js';
 import { Packages } from '../packages.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { Message } from '../messages.js';
+import { Traffic } from '../traffic.js';
 
 // ---- HUD -------------------------------------------------------------------
 const hudTimer = document.getElementById('timer');
@@ -20,6 +21,7 @@ const throwBtns = [...document.querySelectorAll('.throw')]; // (one each side)
 const hudBanner = document.getElementById('banner');
 const hudTurbo = document.getElementById('turbo');
 const hudDanger = document.getElementById('danger');
+const hudCopWatch = document.getElementById('copWatch');
 const hudBusts = document.getElementById('busts');
 const hudDangerFill = document.getElementById('dangerFill');
 const hudFade = document.getElementById('fade');
@@ -58,6 +60,7 @@ export const updateHud = () => {
   const throwOpacity = Packages.ready ? 1 : 0.4;
   const throwLabel = Player.tank > 0 ? 'FIRE' : 'THROW';
   for (const button of throwBtns) {
+    button.style.display = LEVEL.noPackages ? 'none' : '';
     button.style.opacity = throwOpacity;
     if (button.textContent !== throwLabel) button.textContent = throwLabel;
   }
@@ -82,7 +85,14 @@ export const updateHud = () => {
     el.style.opacity = Game.paused || Game.state !== 'playing' || !line.text ? 0
       : Math.min(1, Math.max(0, (line.time - age) / CONFIG.messageFade));
   });
-  hudBusts.textContent = 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
+  // (in a race, the player's place in it: one more than the racers ahead)
+  hudBusts.textContent = LEVEL.grid
+    ? 'POSITION ' + (1 + Traffic.cars.filter(c => c.active && c.racer && Track.along(c.s) > Track.along(Player.s)).length) + ' / ' + (LEVEL.grid.count + 1)
+    : 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
+  // a police car near enough to see what the player does (on the shoulder, a bust on the spot; not
+  // on a level without the shoulder rule, nor for a tank, which nobody busts)
+  const watched = Game.state === 'playing' && Player.active && !Game.screensaver && LEVEL.shoulderTimer !== false && Player.tank <= 0 && Traffic.policeNear();
+  hudCopWatch.style.display = watched ? 'block' : 'none';
   const danger = Player.danger / CONFIG.dangerTime;
   hudDanger.style.display = Player.active && danger < 1 ? 'block' : 'none';
   hudDangerFill.style.width = danger * 100 + '%';

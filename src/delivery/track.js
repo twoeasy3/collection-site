@@ -293,6 +293,9 @@ const createTrack = () => {
     }
     return null;
   };
+  // is s in the mud? (a level's "mud": stretches of the main road where it gives way to mud)
+  const mud = LEVEL.mud || [];
+  const muddy = (s) => isMain(s) && mud.some(m => s >= m.from && s <= m.to);
   // is a car (lat, half width hw) over the railway's track at s? (a level with a "railway")
   const onRails = (s, lat, hw) => !!LEVEL.railway && isMain(s) && Math.abs(lat) - hw < CONFIG.railCrossing.width / 2;
   // the level's zone at s, if any (a level's "zones": see levels.js)
@@ -590,6 +593,23 @@ const createTrack = () => {
     for (const z of [...(LEVEL.migration || []), ...(LEVEL.elephants || [])]) {
       if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.kinds ? 'migration' : 'elephants') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
     }
+    for (const m of mud) {
+      if (!(m.from < m.to) || m.from < 0 || m.to > length) problems.push('mud at ' + m.from + '-' + m.to + ': from before to, on the road');
+    }
+    for (const row of LEVEL.potties || []) {
+      const name = 'portaloos at ' + row.s;
+      if (!['hop', 'wave', 'slide', 'shuffle', 'stomp', 'spin'].includes(row.pattern)) problems.push(name + ': no dance called "' + row.pattern + '"');
+      if (!(row.lanes && row.lanes.length && row.lanes.every(l => l >= 0 && l < LANES))) problems.push(name + ': lanes on the road');
+    }
+    for (const m of LEVEL.machinery || []) {
+      const at = m.s ?? m.from;
+      if (!(at >= 0 && at <= length) || (m.to !== undefined && !(m.to > m.from && m.to <= length))) problems.push('machinery at ' + at + ': beyond the road');
+    }
+    for (const w of LEVEL.siteWorks || []) {
+      const at = w.s ?? w.from;
+      if (!['trench', 'excavator', 'workers', 'pipes'].includes(w.kind)) problems.push('site works at ' + at + ': no kind called "' + w.kind + '"');
+      else if (!(at >= 0 && at <= length) || (w.to !== undefined && !(w.to > w.from && w.to <= length))) problems.push('site works at ' + at + ': beyond the road');
+    }
     for (const e of LEVEL.wreckage || []) {
       const name = 'wreckage at ' + e.at;
       if (!CONFIG.wreckage.kinds[e.kind]) problems.push(name + ': there is no kind of wreckage called "' + e.kind + '"');
@@ -691,7 +711,7 @@ const createTrack = () => {
     laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesOn, edge, extraLane, onBridge, icy, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
+    lanesOn, edge, extraLane, onBridge, icy, muddy, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

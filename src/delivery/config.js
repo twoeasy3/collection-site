@@ -90,6 +90,18 @@ export const CONFIG = {
     brake: 30,             // m/s^2 it slows at for something in its way
     defiance: 0.05,        // chance an evil driver refuses to give way to it
   },
+  // Cornering: in a bend, every car (the player's too) has a lower top speed, the sharper the bend,
+  // the heavier the car and the less agile: sqrt(grip x agility / (weight x curvature)). A gentle
+  // bend is taken flat out, a hairpin at a crawl. (weight: as on ice, see CONFIG.ice.weightRef)
+  cornering: { grip: 22 },   // m/s^2 of cornering a car of weight 1 and agility 1 holds
+  // A race (a level's "grid", "understeer", "wallDamage", "nudge": see levels.js). Its understeer is
+  // `understeer` times as hard as on ice, and sliding wide scrubs off speed: `scrub` m/s^2 for every
+  // m/s^2 of the slide. The cars of the grid take the bends as fast as their nerve
+  // allows (the ice's grip x aiGrip: well past the point of sliding wide), slowing late, for the
+  // sharpest bend within aiLookout m; their tyres hold aiTyres times the grip before they slide, and
+  // they pull away aiPickup times as hard as ordinary traffic; and a car going into a wall at more than wallFrom m/s
+  // sideways takes wallDamage health per m/s of it, as it hits
+  race: { understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5 },
   // Ice (a level's "ice": patches on the road). On it the player's car slews round as it arrives
   // (only the look of it: yaw never changes where a car goes), brakes and steers with less grip,
   // and in a bend it understeers: it slides to the outside, the more so the faster, heavier and
@@ -173,6 +185,49 @@ export const CONFIG = {
     beyond: 12,            // m out into the grass it walks before turning back...
     rest: { min: 2, max: 6 }, // ...after standing there this many s
   },
+  // the dancing portaloos (a level's "potties": see Collision): rows of them moving together, in step
+  potties: {
+    hop: 3.6,              // m up they jump (above a car's roof, it passes underneath)
+    period: 1.8,           // s a step of their dance takes, unless the row says otherwise
+    slide: 3.5,            // m to each side they slide
+  },
+  // mud (a level's "mud": stretches where the road gives way to mud): a car in it is slowed as on a
+  // railway track (see railCrossing: by how well it crosses), and steers with less grip
+  mud: { steerGrip: 0.7, trafficPace: 0.6 },
+  // construction machinery (a level's "machinery": see machinery.js), trundling across the road and back
+  machinery: {
+    speed: 2.6,            // m/s it trundles at
+    hl: 1.8,               // m, half its width (along the road)
+    hw: 3.6,               // m, half its length (it crosses the road)
+    beyond: 9,             // m off the road it goes before turning back...
+    rest: { min: 1, max: 3 }, // ...after waiting there this many s
+    damage: 30,            // health the player's car loses running into one (and blowing it up)...
+    speedKept: 0.6,        // ...and the share of its speed it keeps
+    rollerSpeed: 1.5,      // m/s a road roller crawls along its shoulder
+    pokeOut: 7,            // m off the road a forklift backs off to
+    sizes: { roller: { hl: 2.4, hw: 1.15 }, forklift: { hl: 1.4, hw: 1.0 } }, // (the rest: hl / hw above)
+  },
+  // the work on a construction site's shoulders (a level's "siteWorks": see site.js)
+  site: {
+    trenchIn: 0.6,         // m out onto the shoulder the car's middle must be to drop a wheel in a trench
+    plateEvery: 9,         // m from one steel plate across a trench to the next...
+    plateLength: 4,        // ...each this long
+    trenchDamage: 8,       // health a wheel in a gap costs...
+    trenchKept: 0.7,       // ...and the share of its speed the car keeps
+    digOut: 4,             // m off the road an excavator stands...
+    reach: 9.5,            // ...its bucket this far from it...
+    swingPeriod: 5,        // ...swinging out and back in this many s
+    bucket: 1.2,           // m, half the bucket's size
+    bucketDamage: 30,      // health its bucket costs the player (blowing the excavator up)...
+    bucketKept: 0.6,       // ...and the share of speed kept
+    walkSpeed: 1.2,        // m/s a worker pushes a barrow at...
+    diveNear: 28,          // ...diving clear with the player this near behind...
+    diveWide: 4,           // ...and this near across
+    stackOut: 3,           // m off the road a pipe stack stands...
+    pipeNear: { min: 35, max: 110 }, // ...a pipe rolling off with the player this far short of it...
+    pipeEvery: { min: 5, max: 9 },   // ...no more often than every min-max s...
+    pipeSpeed: 5.5,        // ...rolling at this m/s
+  },
   // the migration (a level's "migration"): a great herd streaming across the road, at these m/s
   // each, out to `beyond` m either side and round again; galloping, bobbing up to `hop` m, `hops` times a second
   migration: { speed: { min: 4, max: 7 }, beyond: 35, hop: 0.2, hops: 2.5 },
@@ -239,6 +294,13 @@ export const CONFIG = {
     kangaroo: { damage: 25, speedKept: 0.7 },
     dropBear: { damage: 20, speedKept: 0.75 },
     wildebeest: { damage: 25, speedKept: 0.7 },
+    // the construction site's
+    potty: { damage: 20, speedKept: 0.7 },
+    sewage: { damage: 10, speedKept: 0.55 },
+    pile: { damage: 15, speedKept: 0.6 },
+    beam: { damage: 35, speedKept: 0.5 },
+    barrow: { damage: 10, speedKept: 0.85, light: true },
+    pipe: { damage: 25, speedKept: 0.55 },
     zebra: { damage: 25, speedKept: 0.7 },
     asteroid: { damage: 14, maxDamage: 70, speedKept: 0.7 }, // damage is per metre of radius, up to maxDamage
     // (light: true = a small thing: it doesn't knock the steering, and barely shakes the camera)
@@ -352,6 +414,8 @@ export const CONFIG = {
     // cruise: m/s it runs at, fast, whatever the level's pace, and it never hesitates
     // noSpin: it never spins out (not from damage, nor on ice): a critical hit makes it wobble, then blow up
     semi:    { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 26, max: 31 }, noSpin: true },
+    // a Formula 1 car (a level's "grid": see Traffic), its speed set by the race
+    f1:      { hw: 0.95, hl: 2.6, height: 1.0, mass: 0.8, health: 220, model: 'f1', agility: 1.5 },
     // (only ever an emergency vehicle: see CONFIG.emergency; never in a level's traffic list)
     ambulance: { hw: 1.1, hl: 2.9, height: 2.6, mass: 2, health: 150, speed: 1, special: true },
     // the garage's cars as traffic (each id is the garage car's, in src/cars.js). They have no

@@ -200,6 +200,79 @@ const OBSTACLE_MODELS = {
       [fur, 0.16, 0.16, 1.1, 0, 0.45, -0.85],      // tail
     ]);
   },
+  // a portaloo: a plastic cabin (blue, green or orange), a pale roof, its door at the front with a
+  // little vent, and a pipe out of the roof
+  potty: () => {
+    const shell = lambert([0x2f7fbf, 0x3a9a4a, 0xd96a1e][Math.floor(Math.random() * 3)]), pale = lambert(0xe8e4dc), dark = lambert(0x24323c);
+    return boxModel([
+      [shell, 1.35, 2.25, 1.35, 0, 1.125, 0],     // the cabin
+      [pale, 1.5, 0.14, 1.5, 0, 2.32, 0],         // roof
+      [pale, 0.9, 1.8, 0.05, 0, 1.05, 0.7],       // door
+      [dark, 0.35, 0.12, 0.06, 0, 1.75, 0.73],    // its vent
+      [dark, 0.1, 0.12, 0.08, 0.32, 1.1, 0.74],   // its latch
+      [pale, 0.12, 0.5, 0.12, -0.45, 2.6, -0.4],  // the pipe out of the roof
+    ]);
+  },
+  // a heap of sewage: a brown mound, darker lumps, a green tinge
+  sewage: () => {
+    const g = new THREE.Group(), brown = lambert(0x5a3d1e), dark = lambert(0x3c2812), green = lambert(0x6f7a2a);
+    const mound = new THREE.Mesh(new THREE.SphereGeometry(1.2, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), brown);
+    mound.scale.set(1, 0.65, 0.95);
+    g.add(mound);
+    for (const [x, z, r, m] of [[0.4, 0.3, 0.45, dark], [-0.5, -0.2, 0.4, dark], [0.1, -0.5, 0.35, green], [-0.2, 0.5, 0.3, green]]) {
+      const lump = new THREE.Mesh(new THREE.SphereGeometry(r, 8, 6), m);
+      lump.position.set(x, 0.45, z);
+      g.add(lump);
+    }
+    return g;
+  },
+  // a heap of dirt
+  pile: () => {
+    const g = new THREE.Group();
+    const heap = new THREE.Mesh(new THREE.ConeGeometry(1.5, 1.7, 9), lambert(0x8a6a45));
+    heap.position.y = 0.85;
+    const top = new THREE.Mesh(new THREE.ConeGeometry(0.7, 0.5, 7), lambert(0x9b7a52));
+    top.position.set(0.3, 1.2, 0.2);
+    g.add(heap, top);
+    return g;
+  },
+  // a wheelbarrow: a green tray on a wheel at the front, two legs and handles at the back
+  barrow: () => {
+    const g = boxModel([
+      [lambert(0x2f7a3a), 0.75, 0.32, 1.0, 0, 0.62, 0.05],     // the tray
+      [lambert(0x6e5232), 0.62, 0.12, 0.8, 0, 0.82, 0.05],     // a load of sand in it
+      [lambert(0x3a3a3a), 0.06, 0.4, 0.06, -0.25, 0.25, -0.35], // legs
+      [lambert(0x3a3a3a), 0.06, 0.4, 0.06, 0.25, 0.25, -0.35],
+      [lambert(0x8a6a45), 0.05, 0.05, 1.0, -0.28, 0.6, -0.6],   // handles
+      [lambert(0x8a6a45), 0.05, 0.05, 1.0, 0.28, 0.6, -0.6],
+    ]);
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 12).rotateZ(Math.PI / 2), lambert(0x161616));
+    wheel.position.set(0, 0.22, 0.6);
+    g.add(wheel);
+    return g;
+  },
+  // a concrete pipe on its side, along the road, rolling across it (userData.roller turns)
+  pipe: () => {
+    const g = new THREE.Group(), roller = new THREE.Group();
+    roller.position.y = 0.9;
+    roller.add(new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 2.6, 16, 1, true).rotateX(Math.PI / 2),
+      new THREE.MeshLambertMaterial({ color: 0xb5b0a6, side: THREE.DoubleSide })));
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.05, 6, 16), lambert(0x8a857c)); // (a mark, to see it turn)
+    band.position.z = 0.6;
+    roller.add(band);
+    g.add(roller);
+    g.userData.roller = roller;
+    return g;
+  },
+  // a steel I-beam lying across a lane, in red primer
+  beam: () => {
+    const red = lambert(0xa8452a);
+    return boxModel([
+      [red, 3.3, 0.5, 0.06, 0, 0.3, 0],           // web
+      [red, 3.3, 0.06, 0.4, 0, 0.55, 0],          // flanges
+      [red, 3.3, 0.06, 0.4, 0, 0.05, 0],
+    ]);
+  },
   // a wildebeest: dark grey-brown, high in the shoulder, a black mane and beard, curved horns
   wildebeest: () => {
     const hide = lambert(0x5d544c), dark = lambert(0x24201d), horn = lambert(0x3a3632);
@@ -576,6 +649,7 @@ export const syncPickups = (dt) => {
     } else {
       mesh.position.set(tmp.x, tmp.y + o.h, tmp.z);
     }
+    if (o.roll && mesh.userData.roller) mesh.userData.roller.rotation.z = -o.roll.dir * (o.spun || 0); // (a pipe rolling across)
     if (o.drift && mesh.userData.roller) { // a bale on the move rolls the way it is going
       const last = mesh.userData.last || (mesh.userData.last = { s: o.s, lat: o.lat });
       mesh.userData.roller.rotation.x += Math.hypot(o.s - last.s, o.lat - last.lat) / (o.height / 2);

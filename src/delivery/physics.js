@@ -1,6 +1,7 @@
 import { CONFIG } from './config.js';
 import { clamp, damp } from './util.js';
 import { Track } from './track.js';
+import { LEVEL } from './levels.js';
 
 // ============================================================================
 // PHYSICS - helpers shared by every vehicle (player and traffic), all in track space (s, lat)
@@ -31,14 +32,32 @@ export const updateYaw = (v, dt) => {
 export const keepOnRoad = (v, bounce) => {
   const lo = Track.lo(v.s) + v.hw, hi = Track.hi(v.s) - v.hw;
   if (v.lat > hi || v.lat < lo) {
+    // where walls hurt ("wallDamage"), going into one sideways hurts, the harder the more (once as it
+    // hits: scraping along it after that, nothing more)
+    const R = CONFIG.race, into = (v.lat > hi ? 1 : -1) * (v.latVel + (v.slideVel || 0));
+    if (LEVEL.wallDamage && !v.onWall && into > R.wallFrom && v.health > 0 && !(v.shield > 0) && !(v.ghost > 0)) {
+      hurt(v, into * R.wallDamage);
+      sfx('sideswipe', Math.min(1, into / 8));
+      if (!v.isPlayer) v.slideVel = 0;
+    }
     // well past the limit on the bridge means the player arrived on the shoulder and
     // drove into the end of the structure (it can't be reached by steering or by a shove)
     const over = v.lat > hi ? v.lat - hi : lo - v.lat;
     if (Track.onBridge(v.s) && v.isPlayer && v.shield <= 0 && over > 0.5) v.health = 0;
     v.lat = v.lat > hi ? Math.max(lo, hi) : lo;
     v.latVel *= -bounce;
-  }
+    v.onWall = true;
+  } else v.onWall = false;
 };
+
+// the top speed in the bend at s (see CONFIG.cornering) of a car that weighs `weight` (1 = the
+// Commuter) and is `agility` agile: Infinity on the straight
+export const cornerSpeed = (s, weight = 1, agility = 1) => {
+  const c = Math.abs(Track.bend(s));
+  return c > 1e-4 ? Math.sqrt(CONFIG.cornering.grip * agility / (weight * c)) : Infinity;
+};
+// a traffic vehicle's weight, the same way as the player's (see Player.weight)
+export const weightOf = (v) => (v.mass || 1) * Math.sqrt(v.hw * v.hl * v.height / CONFIG.ice.weightRef);
 
 // emotion follows mood; taking damage sours it
 export const emotionOf = (mood) => mood > 1 / 3 ? 'happy' : mood < -1 / 3 ? 'angry' : 'neutral';
@@ -66,6 +85,7 @@ export const spinOut = (v) => {
 // one traffic car taking against another (see Traffic.update for what it then does)
 export const startRivalry = (car, other) => {
   if (car.isPlayer || other.isPlayer) return;
+  if (car.racer && !car.evil) return; // (a good racer races clean, whatever is done to it)
   car.rival = other;
   car.rivalTime = CONFIG.rivalryTime;
   car.mood = Math.max(-1, car.mood - 0.3);

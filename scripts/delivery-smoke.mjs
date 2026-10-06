@@ -117,6 +117,7 @@ try {
       const o = Collision.obstacles.find(x => x.kind === kind && (kind !== 'asteroid' || (Collision.atRoadLevel(x) && !x.bob)));
       for (const other of Collision.obstacles) if (other !== o) other.gone = true; // (herds can stand two deep)
       if (kind === 'dropBear') o.h = 0; // (down from its tree)
+      o.gone = false; // (a pipe waits on its stack, out of play, until it rolls)
       Player.s = o.s - 1; Player.lat = o.lat; // overlapping it Player.speed = 20; Player.launching = false;
       Collision.check();
       FxQueue.length = 0;
@@ -444,6 +445,7 @@ try {
     levels.selectLevel(n);
     const L = levels.LEVEL;
     if (!L.flow && !L.shoulderRows) continue;
+    if (!Object.keys(L.traffic || {}).length) continue; // (no traffic at all: the construction site)
     const lanes = new Set();
     let live = 0, wrongWay = 0;
     for (let r = 0; r < 10; r++) {
@@ -683,9 +685,9 @@ try {
   section('levels list');
   {
     const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
-    check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo' && levels.levelLabel(main - 1) === String(main) &&
-      levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 1) === 'S2' && levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
-      `the special levels come last, as S1 and S2: ${labels.slice(main - 1).join(', ')}`);
+    check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo,grand-prix' && levels.levelLabel(main - 1) === String(main) &&
+      levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 2) === 'S3' && levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
+      `the special levels come last, as S1, S2 and S3: ${labels.slice(main - 1).join(', ')}`);
   }
 
   section('hesitation, signals and lights');
@@ -1621,6 +1623,89 @@ try {
     Player.s = tw.at - tw.trigger;
     for (let i = 0; i < 120 * (W.towerFall + 0.5); i++) Wreckage.update(1 / 120);
     check(standing && tw.down && T().bend(tw.at + 100) < -0.005, `the control tower stands until the player is ${tw.trigger} m from the turn onto the runway, then comes down across the old road`);
+    Game.toMenu();
+  }
+
+  section('Construction Site: mud, dancing portaloos, machinery');
+  {
+    const { Machinery } = await load('/src/delivery/machinery.js');
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'construction'));
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    const T = () => track.Track, L = levels.LEVEL, R = CONFIG.railCrossing;
+    // sparse traffic, pickups and minivans (passing through the obstacles, as on any level)
+    const live = Traffic.cars.filter(c => c.active);
+    check(live.length > 0 && live.length <= L.trafficCount && live.every(c => c.kind === 'pickup' || c.kind === 'minivan'),
+      `sparse traffic: ${live.length} vehicles, pickups and minivans`);
+    // mud: a car in it is held to what a railway track holds it to
+    const topIn = (s) => {
+      Game.start();
+      for (const o of Collision.obstacles) o.gone = true;
+      Object.assign(Player, { s, lat: T().laneOffset(1, s), speed: 30, launching: false, shield: 0 });
+      for (let i = 0; i < 120 * 2; i++) Player.update(1 / 120, 1, 0, false);
+      return Player.speed;
+    };
+    const mud = L.mud[0], inMud = topIn(mud.from + 5), onRoad = topIn(mud.from - 120);
+    const want = cars.CAR.maxSpeed * (R.slowest + (1 - R.slowest) * cars.CAR.crossing);
+    check(T().muddy(mud.from + 5) && !T().muddy(mud.from - 120) && Math.abs(inMud - want) < 0.3 && Math.abs(onRoad - cars.CAR.maxSpeed) < 0.3,
+      `${L.mud.length} stretches of mud: the hatchback held to ${inMud.toFixed(1)} m/s in it (as on a railway track), ${onRoad.toFixed(1)} on the road`);
+    // the portaloos dance in step: every one in a row together, each dance moving them its own way
+    Game.start();
+    const rows = {};
+    for (const o of Collision.obstacles) if (o.dance) (rows[o.row] ||= []).push(o);
+    const moves = {};
+    let inStep = true;
+    for (let i = 0; i < 120 * 8; i++) {
+      Collision.updateObstacles(1 / 120);
+      for (const row of Object.values(rows)) {
+        const d = row[0].dance, m = (moves[d] ||= { h: 0, lat: 0, s: 0 });
+        for (const o of row) {
+          m.h = Math.max(m.h, o.h);
+          m.lat = Math.max(m.lat, Math.abs(o.lat - o.lat0));
+          m.s = Math.max(m.s, Math.abs(o.s - o.s0));
+        }
+        if (d === 'hop' && row.some(o => Math.abs(o.h - row[0].h) > 1e-9)) inStep = false;
+      }
+    }
+    const P = CONFIG.potties;
+    check(inStep && moves.hop.h > Player.height + 1 && moves.wave.h > Player.height && moves.slide.lat > P.slide * 0.9 &&
+      moves.shuffle.lat > P.slide * 0.9 && moves.stomp.lat > P.slide * 0.9 && moves.stomp.h > 1 && moves.spin.s > 3,
+      `${Object.keys(rows).length} rows of dancing portaloos: hopping together (up to ${moves.hop.h.toFixed(1)} m), in a wave, sliding, ` +
+      `shuffling, stomping a lane over and spinning round`);
+    // up in the air a portaloo is driven under; down, it is hit and bursts
+    const hopper = Object.values(rows).find(r => r[0].dance === 'hop')[0];
+    const under = (up) => {
+      Game.start();
+      for (const o of Collision.obstacles) if (o !== hopper) o.gone = true;
+      let t = 0;
+      while ((up ? hopper.h < Player.height + 0.5 : hopper.h > 0) && t < 10) { Collision.updateObstacles(1 / 120); t += 1 / 120; }
+      Object.assign(Player, { s: hopper.s, lat: hopper.lat, speed: 20, shield: 0, ghost: 0, health: Player.maxHealth });
+      Collision.check();
+      FxQueue.length = 0;
+      return !hopper.gone;
+    };
+    check(under(true) && !under(false), 'a portaloo hopping above the car is driven under; one down on the road is hit, and bursts');
+    // machinery: it crosses the road and back; and like any obstacle, the car touching one blows it
+    // up, at a cost, and it is gone
+    Game.start();
+    for (const o of Collision.obstacles) o.gone = true;
+    const m = Machinery.list.find(x => x.mode === 'cross'), M = CONFIG.machinery;
+    const lats = [];
+    for (let i = 0; i < 120 * 20; i++) { Machinery.update(1 / 120); lats.push(m.lat); }
+    const crosses = Math.min(...lats) < T().lo(m.s) && Math.max(...lats) > T().hi(m.s);
+    Object.assign(m, { lat: T().laneOffset(1, m.s), rest: 99 });
+    Object.assign(Player, { s: m.s - 20, lat: T().laneOffset(1, m.s), speed: 20, launching: false, shield: 0, ghost: 0 });
+    const hp = Player.health;
+    let fast = 0;
+    for (let i = 0; i < 120 * 2; i++) {
+      Player.update(1 / 120, 1, 0, false);
+      Machinery.update(1 / 120);
+      FxQueue.length = 0;
+      if (m.gone && !fast) fast = Player.speed;
+    }
+    check(crosses && m.gone && Player.active && Math.abs(hp - Player.health - M.damage) < 1e-6 && fast > 8,
+      `${Machinery.list.length} machines at work; one crossing the road blows up as the car hits it, costing ${M.damage} health, and the car drives on`);
     Game.toMenu();
   }
 

@@ -130,9 +130,17 @@ export const Collision = (() => {
       impact = closing;
     }
     if (sideOn) {
-      // steering into the side of another car: it hurts, but neither is shoved sideways.
-      // One long scrape counts as one hit, not one per step.
+      // steering into the side of another car: it hurts, but neither is shoved sideways (but on a
+      // level with "nudge": each is knocked aside, the lighter the further). One long scrape counts
+      // as one hit, not one per step.
       const sideways = (a.latVel - b.latVel) * (dl > 0 ? 1 : -1);
+      if (LEVEL.nudge && sideways > 0) {
+        const j = (1 + CONFIG.bounce) * sideways * (dl > 0 ? 1 : -1);
+        a.latVel -= j * pushA;
+        b.latVel += j * pushB;
+        a.lat -= Math.sign(dl) * slide * pushA; // (and slid apart, a little each step)
+        b.lat += Math.sign(dl) * slide * pushB;
+      }
       if (sideways > CONFIG.minImpact && tick - (a.sideTick || -99) > 60 && tick - (b.sideTick || -99) > 60) {
         a.sideTick = b.sideTick = tick;
         const turn = -(dl > 0 ? 1 : -1) * clamp(ds / (a.hl + b.hl), -1, 1) * CONFIG.spinKick * sideways;
@@ -182,6 +190,10 @@ export const Collision = (() => {
     railBarrier: [1.2, 0.6, 0.95],
     bale: [1.1, 1.1, 1.5], frog: [1.4, 1.4, 1.6], cow: [0.7, 1.3, 1.5], kangaroo: [0.5, 0.8, 1.8], dropBear: [0.6, 0.6, 1.0],
     wildebeest: [0.55, 1.1, 1.5], zebra: [0.5, 1.1, 1.5],
+    // the construction site's: a portaloo, a heap of sewage, a heap of dirt, a steel beam across a lane
+    potty: [0.7, 0.7, 2.4], sewage: [1.2, 1.1, 0.8], pile: [1.4, 1.3, 1.7], beam: [1.65, 0.3, 0.6],
+    // ...and its site works': a wheelbarrow, a concrete pipe rolling across the road (see site.js)
+    barrow: [0.45, 0.8, 0.8], pipe: [0.9, 1.3, 1.8],
     asteroid: [1, 1, 2], // replaced by each asteroid's own radius
     cone: [0.42, 0.42, 1.12], sign: [1.1, 0.15, 3.0], // (cones are 1.4 times life size: easier to see on a phone)
     // the beach's own junk (Hurricane): a beach umbrella, a surfboard stuck upright, an ice
@@ -231,6 +243,32 @@ export const Collision = (() => {
     }
     // the migration: a great herd spread over its stretch and out either side, all streaming across
     // the road one way (dir, -1 or 1: towards +lat), each at its own pace, and round again
+    // the dancing portaloos: rows of them across the road, moving together in one of their dances
+    // (pattern), each a step of `period` s: 'hop' (all up and down together), 'wave' (up and down
+    // in turn, across the row), 'slide' (the row sliding side to side), 'shuffle' (every other one
+    // sliding the other way, through its neighbours), 'stomp' (hopping a lane over at every hop,
+    // and back), 'spin' (the row turning round its middle like a propeller)
+    (LEVEL.potties || []).forEach((row, r) => {
+      const s = Track.place(row);
+      row.lanes.forEach((lane, k) => {
+        add('potty', s, Track.laneOffset(lane, s), { dance: row.pattern, row: r, k, count: row.lanes.length, s0: s,
+          lat0: Track.laneOffset(lane, s), mid: (Track.laneOffset(row.lanes[0], s) + Track.laneOffset(row.lanes[row.lanes.length - 1], s)) / 2,
+          period: row.period || CONFIG.potties.period, phase: row.phase || 0 });
+      });
+    });
+    // the site works' moving obstacles: a barrow for each worker, and pipes waiting on each stack
+    // (out of play, "gone", until one rolls off: see Site)
+    for (const w of LEVEL.siteWorks || []) {
+      const side = w.side === 'left' ? -1 : 1;
+      if (w.kind === 'workers') {
+        for (let i = 0; i < (w.count || 1); i++) {
+          const s = w.from + (w.to - w.from) * (i + 0.5) / (w.count || 1);
+          add('barrow', s, Track.shoulderOffset(side, s), { walk: { from: w.from, to: w.to, side, dir: 1, dive: -1, s0: s } });
+        }
+      } else if (w.kind === 'pipes') {
+        for (let i = 0; i < 2; i++) add('pipe', w.s, 0, { roll: { stack: null, at: w.s, side, dir: -side } });
+      }
+    }
     for (const z of LEVEL.migration || []) {
       const kinds = Object.entries(z.kinds || { wildebeest: 1 });
       const total = kinds.reduce((sum, [, share]) => sum + share, 0);
@@ -396,6 +434,8 @@ export const Collision = (() => {
           o.dir = -o.dir;
           o.rest = CONFIG.cowRestMin + Math.random() * (CONFIG.cowRestMax - CONFIG.cowRestMin);
         }
+      } else if (o.dance) {
+        danceTo(o, (o.time = (o.time || 0) + dt));
       } else if (o.migrate) { // streaming across with the herd, galloping, and round again
         const M = CONFIG.migration;
         o.lat += o.migrate * o.speed * dt;
@@ -432,6 +472,7 @@ export const Collision = (() => {
       if (o.gone || Math.abs(o.s - Player.s) > CONFIG.broadPhaseDistance) continue;
       if (o.kind === 'asteroid' && !atRoadLevel(o)) continue; // it passes over or under the car
       if (o.kind === 'dropBear' && o.h > Player.height) continue; // (still up in its tree, or falling)
+      if (o.dance && o.h > Player.height) continue; // (a portaloo up in the air: the car goes underneath)
       if (!overlap(Player, o)) continue;
       // any touch blows the obstacle up: the car is damaged and loses speed, but drives on
       o.gone = true;
@@ -446,10 +487,50 @@ export const Collision = (() => {
       FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false });
     }
   };
+  // a dancing portaloo, `t` s into its row's dance (every one in a row keeps time with the rest)
+  const smooth01 = (u) => u * u * (3 - 2 * u);
+  const danceTo = (o, t) => {
+    const P = CONFIG.potties, step = (t / o.period + o.phase), u = step - Math.floor(step), n = o.count;
+    const up = (w) => P.hop * Math.max(0, Math.sin(Math.PI * 2 * w)); // (in the air half of each step)
+    o.h = 0; o.s = o.s0; o.lat = o.lat0; o.face = 0;
+    if (o.dance === 'hop') o.h = up(step);
+    else if (o.dance === 'wave') o.h = up(step - o.k / n * 0.5);
+    else if (o.dance === 'slide') o.lat = o.lat0 + P.slide * Math.sin(Math.PI * 2 * step);
+    else if (o.dance === 'shuffle') o.lat = o.lat0 + (o.k % 2 ? -1 : 1) * P.slide * Math.sin(Math.PI * 2 * step);
+    else if (o.dance === 'stomp') { // a hop a step, landing a lane over, then back the other way
+      const lanes = [-1, 0, 1, 0], at = Math.floor(step) % 4, next = (at + 1) % 4;
+      o.h = P.hop * 0.7 * Math.sin(Math.PI * u);
+      o.lat = o.lat0 + P.slide * (lanes[at] + (lanes[next] - lanes[at]) * smooth01(u));
+    } else if (o.dance === 'spin') { // the row turning round its middle
+      const a = Math.PI * 2 * step / 4, r = o.lat0 - o.mid;
+      o.lat = o.mid + r * Math.cos(a);
+      o.s = o.s0 + r * Math.sin(a);
+      o.face = -a;
+    }
+    // (it lands with a thud, near the player)
+    const landed = o.h === 0 && (o.wasUp || 0) > 0.5;
+    o.wasUp = o.h;
+    if (landed && o.k === 0 && Math.abs(o.s - Player.s) < 80) sfxAt('crash', o.s, 0.4);
+  };
   // back to how the level starts: everything standing, the movers somewhere in their stretches
   const resetObstacles = () => {
     for (const o of obstacles) {
       o.gone = false;
+      if (o.dance) { // back to the start of its dance
+        o.time = 0;
+        danceTo(o, 0);
+        continue;
+      }
+      if (o.walk) { // a worker back at work with its barrow
+        Object.assign(o.walk, { dive: -1, dir: 1 });
+        o.s = o.walk.s0;
+        o.lat = Track.shoulderOffset(o.walk.side, o.s);
+        continue;
+      }
+      if (o.roll) { // a pipe back on its stack
+        o.gone = true;
+        continue;
+      }
       if (o.kind === 'dropBear') { // back up its tree, to drop when the player is near (somewhere new each time)
         o.h = CONFIG.dropBear.height;
         o.fall = 0;

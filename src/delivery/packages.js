@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { LEVEL } from './levels.js';
 import { clamp } from './util.js';
 import { Track } from './track.js';
 import { FxQueue, maybeSpinOut, startRivalry, hurt, sfx } from './physics.js';
@@ -69,6 +70,7 @@ export const Packages = (() => {
     return best;
   };
   const throwOne = () => {
+    if (LEVEL.noPackages) return false; // (a level where nobody throws anything)
     if (!Player.active || Player.busted || cooldown > 0) return; // (no throwing while being busted)
     if (Player.tank > 0) {
       // The cannon isn't aimed: the shell flies dead straight the way the tank is pointing, not

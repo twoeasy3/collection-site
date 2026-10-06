@@ -3,7 +3,7 @@ import { LEVEL } from './levels.js';
 import { CAR } from './cars.js';
 import { clamp, damp } from './util.js';
 import { Track } from './track.js';
-import { updateYaw, keepOnRoad, sfx } from './physics.js';
+import { updateYaw, keepOnRoad, sfx, cornerSpeed } from './physics.js';
 import { Traffic } from './traffic.js';
 import { Message } from './messages.js';
 import { UfoStrike } from './ufostrike.js';
@@ -11,6 +11,14 @@ import { BulletTrain } from './bullettrain.js';
 import { Tide } from './tide.js';
 import { Wreckage } from './wreckage.js';
 import { Game } from './game.js';
+
+// how hard a car is pushed to the outside of the bend it is in, beyond what its tyres hold (m/s^2,
+// signed: a bend to the right pushes it left); 0 within their grip (see CONFIG.ice)
+const understeer = (v) => {
+  const bend = Track.bend(v.s), asked = v.speed * v.speed * Math.abs(bend);
+  const hard = LEVEL.understeer && !v.onIce ? CONFIG.race.understeer : 1; // (in a race, far harder: see CONFIG.race)
+  return -Math.sign(bend) * Math.max(0, asked * v.weight / v.agility - CONFIG.ice.grip) * CONFIG.ice.understeer * hard;
+};
 
 export const Player = {
   isPlayer: true, active: true, dir: 1, bound: 'north',
@@ -241,6 +249,15 @@ export const Player = {
       top *= R.slowest + (1 - R.slowest) * crossing;
       if (crossing < 1) Game.shake = Math.max(Game.shake, 0.25 * (1 - crossing));
     }
+    // in a bend, a lower top speed: the sharper, and the heavier and less agile the car, the lower
+    // (but not on ice, nor where cars understeer: there they slide wide instead)
+    if (!this.onIce && !LEVEL.understeer) top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility));
+    // in mud, slowed just as on a railway track (see CONFIG.mud)
+    const mud = Track.muddy(this.s);
+    if (mud) {
+      top *= R.slowest + (1 - R.slowest) * crossing;
+      if (crossing < 1) Game.shake = Math.max(Game.shake, 0.12 * (1 - crossing));
+    }
     // in the tide's water, slowed the same way, only more so (see CONFIG.tide)
     const wet = this.wading > CONFIG.tide.wet;
     if (wet) top *= Math.max(CONFIG.tide.slowest, 1 - CONFIG.tide.crossing * (1 - R.slowest) * (1 - crossing));
@@ -251,7 +268,7 @@ export const Player = {
     if (this.speed > top) {
       // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
       // (or on a railway track: slowed down to it hard)
-      this.speed = Math.max(top, this.speed - (rails || wet ? R.bite : CONFIG.brake * 0.5) * dt);
+      this.speed = Math.max(top, this.speed - (rails || wet || mud ? R.bite : CONFIG.brake * 0.5) * dt);
     } else if (drive > 0) {
       this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * dt);
     } else if (drive < 0 && this.speed > CONFIG.minSpeed) {
@@ -330,24 +347,28 @@ export const Player = {
       wantVel = clamp(pull * CONFIG.laneAssist, -CONFIG.steerSpeed, CONFIG.steerSpeed);
     }
     // a hard knock briefly weakens steering
-    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce ? CONFIG.ice.steerGrip : 1) *
-      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1);
+    // (on a level where cars understeer, a car sliding wide in a bend has lost its grip, as on ice)
+    const sliding = LEVEL.understeer && !this.onIce && understeer(this) !== 0;
+    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce || sliding ? CONFIG.ice.steerGrip : 1) *
+      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) ? CONFIG.mud.steerGrip : 1);
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
     // a wave rushing in shoves a car in the water towards the centre line
     if (this.wading > CONFIG.tide.wet && !this.busted && Tide.rushing(this.s)) this.latVel -= CONFIG.tide.shove * dt;
     // on ice in a bend, the car understeers: what the bend asks of the tyres beyond the little
     // grip they have left pushes it to the outside (heavier cars more, more agile ones less)
-    if (this.onIce && !this.busted) {
-      const bend = Track.bend(this.s), asked = this.speed * this.speed * Math.abs(bend);
-      const slide = Math.max(0, asked * this.weight / this.agility - CONFIG.ice.grip) * CONFIG.ice.understeer;
-      this.latVel -= Math.sign(bend) * slide * dt; // (a bend to the right slides it left, and the other way about)
-    }
+    // (and on a level where cars understeer, "understeer", everywhere)
+    const slide = (this.onIce || LEVEL.understeer) && !this.busted ? understeer(this) : 0;
+    if (LEVEL.understeer) this.speed = Math.max(0, this.speed - Math.abs(slide) * CONFIG.race.scrub * dt); // (the tyres scrubbing, sliding wide)
+    // (where walls hurt, "wallDamage", nothing stops the slide carrying the car into one: see keepOnRoad)
+    if (!LEVEL.wallDamage) this.latVel += slide * dt;
 
     // the car can't be turned into the roadside or the bridge structure: sideways speed
     // toward a side fades to nothing as the car reaches it, so it straightens up
     const roomLeft = Math.max(0, this.lat - this.hw - Track.lo(this.s));
     const roomRight = Math.max(0, Track.hi(this.s) - this.hw - this.lat);
-    this.latVel = clamp(this.latVel, -roomLeft * CONFIG.edgeBrake, roomRight * CONFIG.edgeBrake);
+    // (but where walls hurt, "wallDamage", nothing eases the car off them: it hits them, see keepOnRoad)
+    if (!LEVEL.wallDamage) this.latVel = clamp(this.latVel, -roomLeft * CONFIG.edgeBrake, roomRight * CONFIG.edgeBrake);
+    else this.latVel += slide * dt;
 
     this.lat += this.latVel * dt;
     keepOnRoad(this, 0);
