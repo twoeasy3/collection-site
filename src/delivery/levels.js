@@ -36,7 +36,7 @@
 //              for 250 m before the exit and after the merge (room for the flyovers).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
-//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'hell' or 'space': the look of the ground, sky and roadside.
+//   theme      'city' (default), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo')
@@ -68,6 +68,10 @@
 //              tumbling, looping round when they reach its end. Only a sight: nothing can hit them.
 //   tractors   { s, lane }         a tractor: slow traffic that starts from that spot every run
 //   parked     { s, side }         a car parked on that shoulder ('left' | 'right'), hazards on, every run
+//   zones      { id, from, to, scenery, ground, sky, sea, traffic }: stretches of the level with a look
+//              of their own (on a level whose theme is 'zones': see render/road.js) and, if given, a
+//              traffic list of their own for the traffic turning up there. The player is welcomed
+//              into each (messages.json: zones, by id)
 //   ice        { from, to, lane }  an ice patch on that lane (no lane: across the road) (see CONFIG.ice)
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
 //   id         unique name, used as the level's key in saved progress
@@ -97,11 +101,12 @@ import canberra from './levels/canberra.json';
 import monteCarlo from './levels/monte-carlo.json';
 import singapore from './levels/singapore.json';
 import singaporeNight from './levels/singapore-night.json';
+import grandPacific from './levels/grand-pacific.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific];
 export const SPECIAL_LEVELS = [allHeck, ufo];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

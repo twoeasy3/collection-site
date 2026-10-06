@@ -52,10 +52,11 @@ const createTrack = () => {
   // owns its own stretch of the s number line, so "which road" never has to be stored
   // separately, and cars on different roads are automatically far apart in s and never interact:
   //   expressway   -100 .. length + 200
-  //   exit n       side road from 10000 + n * 30000, flyover A from 20000 + ..., flyover B from 30000 + ...
+  //   exit n       side road from FIRST + 2000 + n * 30000, flyover A from FIRST + 12000 + ..., flyover B
+  //                from FIRST + 22000 + ..., where FIRST is 8000, or for a very long level, past its end
   // Track.transfer() moves a vehicle from one road to the next where they join.
   const MAIN = 0, SIDE_ROAD = 1, FLY_A = 2, FLY_B = 3;
-  const FIRST = 8000, BLOCK = 30000;
+  const FIRST = Math.max(8000, Math.ceil((length + LEAD_OUT + 500) / 1000) * 1000), BLOCK = 30000;
   const isMain = (s) => s < FIRST;
   const kindOf = (s) => {
     if (s < FIRST) return MAIN;
@@ -164,8 +165,8 @@ const createTrack = () => {
     const side = buildSide(pG, hG, pE, hE);
     return {
       exitAt: e.exitAt, mergeAt: e.mergeAt, span: e.mergeAt - e.exitAt,
-      side0: 10000 + i * BLOCK, flyA0: 20000 + i * BLOCK, flyB0: 30000 + i * BLOCK,
-      sideEnd: 10000 + i * BLOCK + side.length, length: side.length, path: side.path, xs: side.xs, zs: side.zs,
+      side0: FIRST + 2000 + i * BLOCK, flyA0: FIRST + 12000 + i * BLOCK, flyB0: FIRST + 22000 + i * BLOCK,
+      sideEnd: FIRST + 2000 + i * BLOCK + side.length, length: side.length, path: side.path, xs: side.xs, zs: side.zs,
       landingAt: e.exitAt - (FLY - X.ramp),  // where flyover A lands on the expressway's left shoulder
       flyoverAt: e.mergeAt + (FLY - X.ramp), // where flyover B leaves it
     };
@@ -294,6 +295,9 @@ const createTrack = () => {
   };
   // is a car (lat, half width hw) over the railway's track at s? (a level with a "railway")
   const onRails = (s, lat, hw) => !!LEVEL.railway && isMain(s) && Math.abs(lat) - hw < CONFIG.railCrossing.width / 2;
+  // the level's zone at s, if any (a level's "zones": see levels.js)
+  const zones = LEVEL.zones || [];
+  const zoneAt = (s) => isMain(s) ? zones.find(z => s >= z.from && s < z.to) || null : null;
   // how sharply the road bends at s: radians per metre, + = to the right
   const bend = (s) => {
     if (isMain(s)) return curveAt(s);
@@ -583,6 +587,13 @@ const createTrack = () => {
       if (!(p.from < p.to) || p.from < 0 || p.to > length) problems.push('ice at ' + p.from + '-' + p.to + ': from before to, on the road');
       else if (p.lane !== undefined && !(Number.isInteger(p.lane) && p.lane >= 0 && p.lane < LANES)) problems.push('ice at ' + p.from + ': no lane ' + p.lane);
     }
+    zones.forEach((z, i) => {
+      const name = 'zone ' + (z.id || i + 1);
+      if (!(z.from < z.to) || (i && z.from < zones[i - 1].to)) problems.push(name + ': from before to, and after the zone before');
+      for (const kind of Object.keys(z.traffic || {})) {
+        if (!CONFIG.vehicles[kind]) problems.push(name + ': there is no vehicle called "' + kind + '"');
+      }
+    });
     for (const car of LEVEL.parked || []) {
       if (car.s < 0 || car.s > length) problems.push('parked car at ' + car.s + ': beyond the road');
       else if (car.side !== 'left' && car.side !== 'right') problems.push('parked car at ' + car.s + ': side is left or right');
@@ -658,7 +669,7 @@ const createTrack = () => {
     laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesOn, edge, extraLane, onBridge, icy, bend, onRails, junctions, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
+    lanesOn, edge, extraLane, onBridge, icy, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

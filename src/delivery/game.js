@@ -117,6 +117,7 @@ export const Game = {
     this.paused = false;
     this.screensaver = false;
     this.tankPieces = Progress.data.tankPieces || 0; // (the run's own, until it is settled)
+    this.zone = null; // the level zone the player is in (see update)
     Message.clear();
     UfoStrike.reset();
     BulletTrain.reset();
@@ -240,6 +241,12 @@ export const Game = {
       }
     } else {
       this.policeApproach = -1;
+    }
+    // coming into a zone of the level: its welcome (messages.json: zones)
+    if (playing && Player.active) {
+      const zone = Track.zoneAt(Player.s);
+      if (zone && zone !== this.zone) Message.say('zones', zone.id);
+      if (zone) this.zone = zone;
     }
     Traffic.update(dt);
     UfoStrike.update(dt);

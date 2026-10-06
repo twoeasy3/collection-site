@@ -226,7 +226,7 @@ try {
 
     // the clock: sitting still runs it out and drains the tip
     Game.start();
-    for (let i = 0; i < 120 * 400 && Game.state === 'playing'; i++) {
+    for (let i = 0; i < 120 * (Game.allowed + CONFIG.tipCountdown + 10) && Game.state === 'playing'; i++) {
       Player.speed = 0;
       Player.launching = false;
       Player.health = Player.maxHealth;
@@ -417,6 +417,7 @@ try {
   section('traffic lists');
   for (let n = 0; n < levels.LEVELS.length; n++) {
     levels.selectLevel(n);
+    if (levels.LEVEL.zones) continue; // (each zone has a list of its own: see the zones' own check)
     const want = levels.LEVEL.traffic, kinds = Object.keys(want);
     const seen = {};
     let count = 0;
@@ -1163,22 +1164,80 @@ try {
       }
     }
     check(Game.outcome === 'delivered' && leftAtTurns > 0 && leftStraight > 0 && close === 0 && !stuck,
-      `a drive through: ${leftAtTurns} cars carried straight on at turns and ${leftStraight} turned off straight on, down arms the player can't take, none ever near traffic on the road`);
+      `a drive through: ${leftAtTurns} cars carried straight on at turns and ${leftStraight} turned off straight on, down arms the player can't take, none ever near traffic on the road` +
+      (Game.outcome === 'delivered' && !close && !stuck ? '' : ` [outcome ${Game.outcome || Game.state}, near ${close}, stuck ${stuck}, player at ${Player.s.toFixed(0)}${Player.active ? '' : ', wrecked'}${Player.busted ? ', busted' : ''}]`));
     // driving on the left: the level is shown mirrored, so steering is reversed in the game's own terms
     const steerFor = (id) => {
       levels.selectLevel(levels.LEVELS.findIndex(l => l.id === id));
       Game.start();
       Object.assign(Player, { s: 100, speed: 15, launching: false });
       const lat0 = Player.lat;
+      steerNote = `active ${Player.active}, busted ${Player.busted}, state ${Game.state}, paused ${Game.paused}`;
       const real = Object.getOwnPropertyDescriptor(Input, 'steer');
       Object.defineProperty(Input, 'steer', { get: () => 1, configurable: true }); // (holding right)
       for (let i = 0; i < 30; i++) Game.update(1 / 120);
       Object.defineProperty(Input, 'steer', real);
       return Player.lat - lat0;
     };
-    const onLeft = steerFor('singapore'), onRight = steerFor('expressway');
+    let steerNote = '';
+    const onLeft = steerFor('singapore'), leftNote = steerNote, onRight = steerFor('expressway');
     check(levels.LEVELS.find(l => l.id === 'singapore').drive === 'left' && onLeft < 0 && onRight > 0,
-      `driving on the left (Singapore, shown mirrored): holding right moves the car ${onLeft.toFixed(2)} m in the game's own terms (on the right: ${onRight.toFixed(2)})`);
+      `driving on the left (Singapore, shown mirrored): holding right moves the car ${onLeft.toFixed(2)} m in the game's own terms (on the right: ${onRight.toFixed(2)})` +
+      (onLeft < 0 ? '' : ` [${leftNote}]`));
+  }
+
+  section('Sydney to Kiama: zones, and 18-wheelers');
+  {
+    const { Message } = await load('/src/delivery/messages.js');
+    const physics = await load('/src/delivery/physics.js');
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'grand-pacific'));
+    cars.selectCar('hatch');
+    Game.evil = false;
+    Game.start();
+    const T = track.Track, L = levels.LEVEL, semi = CONFIG.vehicles.semi;
+    // traffic dealt out around the player in a zone: that zone's own traffic list
+    const dealAt = (s) => {
+      Player.s = s;
+      Traffic.reset();
+      return Traffic.cars.filter(c => c.active && !c.fixed);
+    };
+    const inSydney = dealAt(200).map(c => c.kind), onOusley = dealAt(4000); // (Sydney's kinds noted before the cars are dealt out again)
+    const trucks = onOusley.filter(c => c.kind === 'semi');
+    const atKerb = (c) => c.lane === T.laneRange(c.dir, c.s)[c.dir > 0 ? 1 : 0];
+    check(!inSydney.includes('semi') && trucks.length > 0 && trucks.every(c => atKerb(c) && !c.hesitant &&
+      c.baseSpeed >= semi.cruise.min && c.baseSpeed <= semi.cruise.max),
+      `zones have traffic of their own: none of the ${inSydney.length} vehicles in Sydney is an 18-wheeler; on Mount Ousley ${trucks.length} of ${onOusley.length} are, ` +
+      `each in the lane by the kerb, at ${(semi.cruise.min * 3.6).toFixed(0)}-${(semi.cruise.max * 3.6).toFixed(0)} km/h, and none hesitating` +
+      trucks.filter(c => !atKerb(c) || c.hesitant || c.baseSpeed < semi.cruise.min || c.baseSpeed > semi.cruise.max)
+        .map(c => ` [dir ${c.dir} lane ${c.lane} of ${T.laneRange(c.dir, c.s)} at ${c.s.toFixed(0)}, ${c.baseSpeed.toFixed(1)} m/s${c.hesitant ? ', hesitant' : ''}]`).join(''));
+    // an 18-wheeler never spins out: a critical hit makes it wobble, and then it blows up
+    const truck = trucks[0];
+    let spun = false;
+    for (let i = 0; i < 400 && truck.health > 0; i++) {
+      physics.hurt(truck, 0.5, 30); // (small hits, every one likely critical)
+      spun ||= truck.spin > 0;
+      if (truck.wobble > 0) break;
+    }
+    const wobbled = truck.wobble > 0;
+    for (let i = 0; i < 240 && truck.active; i++) {
+      for (const c of Traffic.cars) if (c !== truck) c.active = false;
+      Traffic.update(1 / 120);
+      Collision.check();
+      FxQueue.length = 0;
+      spun ||= truck.spin > 0;
+    }
+    check(wobbled && !spun && !truck.active, `an 18-wheeler never spins: a critical hit makes it wobble, then it blows up (spun: ${spun}, still there: ${truck.active})`);
+    // coming into each zone, the player is welcomed to it
+    Game.start();
+    const welcomes = [];
+    for (const z of L.zones) {
+      Player.s = z.from + 5;
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      if (Message.lines.some(line => line.text === Message.pick('zones', z.id))) welcomes.push(z.id);
+    }
+    check(welcomes.length === L.zones.length && T.length > 10000,
+      `${(T.length / 1000).toFixed(1)} km in ${L.zones.length} zones, each welcoming the player: ${welcomes.join(', ')}`);
   }
 
   section('cars');

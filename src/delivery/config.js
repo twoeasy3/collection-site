@@ -265,6 +265,11 @@ export const CONFIG = {
     bus:     { hw: 1.3,  hl: 5.5, height: 3.1, mass: 4,   health: 180, speed: 0.8, special: true },
     tractor: { hw: 1.2,  hl: 2.0, height: 2.4, mass: 2.5, health: 150, speed: 1, special: true },
     police:  { hw: 0.95, hl: 2.1, height: 1.4, mass: 1.2, health: 80,  speed: 1.1, special: true },
+    // an 18-wheeler: a prime mover and a long trailer. kerb: it keeps to the lane by the kerb
+    // (rejoining it after a narrowing), never changing lanes of its own or picking a fight;
+    // cruise: m/s it runs at, fast, whatever the level's pace, and it never hesitates
+    // noSpin: it never spins out (not from damage, nor on ice): a critical hit makes it wobble, then blow up
+    semi:    { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 26, max: 31 }, noSpin: true },
     // (only ever an emergency vehicle: see CONFIG.emergency; never in a level's traffic list)
     ambulance: { hw: 1.1, hl: 2.9, height: 2.6, mass: 2, health: 150, speed: 1, special: true },
     // the garage's cars as traffic (each id is the garage car's, in src/cars.js). They have no

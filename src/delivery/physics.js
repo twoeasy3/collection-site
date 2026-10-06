@@ -50,7 +50,7 @@ export const maybeSpinOut = (v, amount, scale = 1, crit = 1) => {
   const chance = scale * CONFIG.spinPerDamage * (amount / v.maxHealth) * (1 + CONFIG.spinRamp * lost * lost);
   // a critical hit: the car wobbles for a moment, then spins out whatever state it was in
   if (!(v.wobble > 0) && Math.random() < CONFIG.critChance * scale * crit) v.wobble = CONFIG.critWobbleTime;
-  if (Math.random() < chance) spinOut(v);
+  if (Math.random() < chance && !CONFIG.vehicles[v.kind]?.noSpin) spinOut(v); // (an 18-wheeler never spins)
 };
 // the car loses all control: it arcs away, turning a full circle, and then blows up
 export const spinOut = (v) => {

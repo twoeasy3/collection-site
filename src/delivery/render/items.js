@@ -338,15 +338,23 @@ const makeTarget = (t) => {
   return group;
 };
 
-// a bridge: a truss standing on both shoulders, with water below
-const buildBridge = (from, to) => {
+// a bridge: a truss standing on both shoulders, with water below. A bridge's style can make it
+// 'harbour' (a great steel arch over the road, on granite pylons) or 'seacliff' (concrete, with
+// white parapets, on piers standing in the sea)
+const buildBridge = (from, to, style) => {
   const wallInset = CONFIG.bridgeWallInset;
-  // the river: drawn straight after the ground and, like it, under everything else (dark, at night)
+  // the river: drawn straight after the ground and, like it, under everything else (dark, at
+  // night), at sea level whatever the height of the road (the sea itself, for one over the sea)
   const night = (THEMES[LEVEL.theme] || {}).lit;
-  const water = new THREE.Mesh(buildStrip(from + 6, to - 6, -500, 500, -0.02, 20),
-    new THREE.MeshBasicMaterial({ color: night ? 0x1d4466 : 0x2f6f9f, side: THREE.DoubleSide, depthWrite: false }));
-  water.renderOrder = -1;
-  levelItems.add(water);
+  if (style !== 'seacliff') {
+    const water = new THREE.Mesh(buildStrip(from + 6, to - 6, -500, 500, 0, 20),
+      new THREE.MeshBasicMaterial({ color: night ? 0x1d4466 : 0x2f6f9f, side: THREE.DoubleSide, depthWrite: false }));
+    const pos = water.geometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) pos.setY(i, -0.02);
+    water.renderOrder = -1;
+    levelItems.add(water);
+  }
+  if (style === 'harbour' || style === 'seacliff') { buildStyledBridge(from, to, style); return; }
 
   // (the top chords and cross beams stand well above the camera, which would otherwise drive through them)
   const BAY = 20, TOP = Math.max(CONFIG.camHeight, CONFIG.screensaver.camHeight) + 4;
@@ -374,6 +382,73 @@ const buildBridge = (from, to) => {
   levelItems.add(truss);
 };
 
+const buildStyledBridge = (from, to, style) => {
+  const wallInset = CONFIG.bridgeWallInset, width = Math.max(0.05, Track.shoulder - wallInset);
+  const wall = (s, side) => Track.edge(s, side) + wallInset;
+  const parts = [], deck = (s) => { Track.toWorld(s, 0, tmp); return tmp.y; };
+  const harbour = style === 'harbour';
+  for (let s = from; s < to; s += 10) {
+    const len = Math.min(10, to - s);
+    for (const side of [-1, 1]) {
+      parts.push([s + len / 2, side * (wall(s, side) + width / 2), 0.55, width, 1.1, len]); // (the deck's edge, filling the shoulder)
+      if (!harbour) parts.push([s + len / 2, side * (wall(s, side) + 0.2), 1.2, 0.3, 1.0, len]); // (a white parapet)
+    }
+  }
+  const material = new THREE.MeshLambertMaterial({ color: harbour ? 0x8a8f96 : 0xf2f2ee });
+  const edges = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), material, parts.length);
+  const dummy = new THREE.Object3D();
+  parts.forEach(([s, lat, y, w, h, l], i) => {
+    dummy.rotation.y = Track.toWorld(s, lat, tmp);
+    dummy.position.set(tmp.x, tmp.y + y, tmp.z);
+    dummy.scale.set(w, h, l);
+    dummy.updateMatrix();
+    edges.setMatrixAt(i, dummy.matrix);
+  });
+  levelItems.add(edges);
+  const column = (s, lat, top, r, colour) => { // a pier, from sea level up to `top`
+    Track.toWorld(s, lat, tmp);
+    const pier = new THREE.Mesh(new THREE.CylinderGeometry(r, r * 1.2, top + 0.1, 10), lambert(colour));
+    pier.position.set(tmp.x, top / 2 - 0.05, tmp.z);
+    levelItems.add(pier);
+  };
+  if (!harbour) { // the Sea Cliff Bridge: on pairs of piers in the sea
+    for (let s = from + 20; s < to - 10; s += 45) for (const side of [-1, 1]) column(s, side * (wall(s, side) - 0.5), deck(s) - 0.4, 1.2, 0xd6d4cc);
+    return;
+  }
+  // the Harbour Bridge: granite pylons at each end, and over the road two great arches, one each
+  // side, from pylon to pylon, the road hung from them
+  const span = to - from, rise = 95, steel = lambert(0x7d8a92), granite = lambert(0xc4ae86);
+  for (const s of [from + 6, to - 6]) for (const side of [-1, 1]) {
+    const y0 = deck(s);
+    Track.toWorld(s, side * (wall(s, side) + 7), tmp);
+    const pylon = new THREE.Mesh(new THREE.BoxGeometry(12, y0 + 40, 14), granite);
+    pylon.position.set(tmp.x, (y0 + 40) / 2 - 0.05, tmp.z);
+    pylon.rotation.y = Track.toWorld(s, 0, new THREE.Vector3());
+    levelItems.add(pylon);
+  }
+  for (const side of [-1, 1]) {
+    for (const [lift, thick] of [[1, 2.2], [0.78, 1.4]]) { // the top chord and the bottom chord
+      const points = [];
+      for (let k = 0; k <= 40; k++) {
+        const t = k / 40, s = from + 14 + (span - 28) * t;
+        Track.toWorld(s, side * (wall(s, side) + 3), tmp);
+        points.push(new THREE.Vector3(tmp.x, deck(s) + 4 * rise * lift * t * (1 - t) - (lift < 1 ? 0 : 0), tmp.z));
+      }
+      levelItems.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 80, thick, 8), steel));
+    }
+    for (let s = from + 40; s < to - 30; s += 22) { // the hangers, from the lower chord down to the deck
+      const t = (s - from - 14) / (span - 28), high = 4 * rise * 0.78 * t * (1 - t);
+      if (high < 6) continue;
+      Track.toWorld(s, side * (wall(s, side) + 3), tmp);
+      const hanger = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, high, 6), steel);
+      hanger.position.set(tmp.x, deck(s) + high / 2, tmp.z);
+      levelItems.add(hanger);
+    }
+  }
+  // (and piers under the deck, down to the water)
+  for (let s = from + 30; s < to - 20; s += 60) for (const side of [-1, 1]) column(s, side * (wall(s, side) - 1), deck(s) - 0.4, 1.6, 0xc4ae86);
+};
+
 // ---- built when a level is loaded ---------------------------------------------------------------
 // (level meshes own their geometry and materials, so emptying the group can free them all)
 const place = (mesh) => { levelItems.add(mesh); return mesh; };
@@ -384,7 +459,7 @@ const readable = (object) => object.traverse((mesh) => {
 });
 const buildItems = () => {
   clearGroup(levelItems);
-  for (const { from, to } of LEVEL.bridges || []) buildBridge(from, to);
+  for (const { from, to, style } of LEVEL.bridges || []) buildBridge(from, to, style);
   obstacleMeshes = Collision.obstacles.map((o) => {
     const mesh = place(OBSTACLE_MODELS[o.kind](o));
     mesh.rotation.y = Track.toWorld(o.s, o.lat, tmp);

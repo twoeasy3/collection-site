@@ -53,9 +53,11 @@ export const Traffic = (() => {
 
   // the level's "traffic" list: which kinds of vehicle turn up, and how often relative to
   // each other. An empty list means no traffic.
-  const mix = () => Object.entries(LEVEL.traffic || {}).filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0);
-  const pickKind = () => {
-    const kinds = mix();
+  // (in a zone with a traffic list of its own, at s, that one)
+  const mix = (s) => Object.entries((s !== undefined && Track.zoneAt(s)?.traffic) || LEVEL.traffic || {})
+    .filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0);
+  const pickKind = (s) => {
+    const kinds = mix(s);
     let r = Math.random() * kinds.reduce((sum, [, rate]) => sum + rate, 0);
     for (const [kind, rate] of kinds) {
       r -= rate;
@@ -95,12 +97,16 @@ export const Traffic = (() => {
   const placeAt = (car, distance) => {
     car.s = Track.spawnAt(Player.s, distance, car.dir);
     if (Number.isNaN(car.s) || !Track.inBounds(car.s)) return false;
-    const [first, last] = Track.laneRange(car.dir, car.s);
-    const lane = Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), car.s);
+    const [first, last] = Track.laneRange(car.dir, car.s), kind = pickKind(car.s);
+    // (a vehicle that keeps to the kerb starts out there)
+    const lane = CONFIG.vehicles[kind].kerb ? Track.openLane(kerbLane(car.dir, car.s), car.s)
+      : Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), car.s);
     if (!laneClear(car, lane, 25)) return false;
-    outfit(car, pickKind(), lane);
+    outfit(car, kind, lane);
     return true;
   };
+  // the lane by the kerb for traffic going way dir: its outside lane
+  const kerbLane = (dir, s) => Track.laneRange(dir, s)[dir > 0 ? 1 : 0];
 
   // puts the car on the road somewhere between minAhead and maxAhead metres in front of the
   // player. One going the player's way too fast for the player ever to catch hesitates (see CONFIG.hesitation).
@@ -108,7 +114,7 @@ export const Traffic = (() => {
     car.active = false;
     for (let tries = 0; tries < 5; tries++) {
       if (!placeAt(car, minAhead + Math.random() * (maxAhead - minAhead))) continue;
-      if (hesitation() && car.dir === Player.dir && car.baseSpeed > H.above) {
+      if (hesitation() && car.dir === Player.dir && car.baseSpeed > H.above && !CONFIG.vehicles[car.kind].cruise) {
         car.hesitant = true;
         car.baseSpeed = between(H.pace);
         car.vs = car.dir * car.baseSpeed;
@@ -125,7 +131,8 @@ export const Traffic = (() => {
     for (let tries = 0; tries < 5; tries++) {
       if (!placeAt(car, -between(H.behind))) continue;
       const own = GARAGE_TOP[car.kind];
-      car.baseSpeed = (own || CONFIG.vehicles[car.kind].speed * speeds().max) * between(H.behindPace);
+      const type = CONFIG.vehicles[car.kind];
+      car.baseSpeed = type.cruise ? between(type.cruise) : (own || type.speed * speeds().max) * between(H.behindPace);
       car.vs = car.dir * car.baseSpeed;
       car.fromBehind = true;
       return true;
@@ -179,7 +186,8 @@ export const Traffic = (() => {
     const { min, max } = speeds();
     // (one of the garage's cars cruises near its own top speed; anything else at the level's pace)
     const own = GARAGE_TOP[kind], P = CONFIG.garagePace;
-    car.baseSpeed = own ? own * (P.min + Math.random() * (P.max - P.min)) : type.speed * (min + Math.random() * (max - min));
+    car.baseSpeed = type.cruise ? type.cruise.min + Math.random() * (type.cruise.max - type.cruise.min)
+      : own ? own * (P.min + Math.random() * (P.max - P.min)) : type.speed * (min + Math.random() * (max - min));
     car.vs = car.dir * car.baseSpeed;
     const evilShare = drivers().evil !== undefined ? drivers().evil : CONFIG.evilShare;
     car.evil = !type.special && Math.random() < evilShare; // fixed for this car's life
@@ -338,7 +346,7 @@ export const Traffic = (() => {
   };
 
   const think = (car) => {
-    if (car.kind === 'tractor') return; // a tractor just trundles along its lane
+    if (car.kind === 'tractor' || CONFIG.vehicles[car.kind].kerb) return; // a tractor just trundles along its lane, and a truck keeps to the kerb
     if (car.pendingLane !== null) return; // (already signalling for a move)
     if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
     // angry drivers pick on whoever is nearest
@@ -548,6 +556,8 @@ export const Traffic = (() => {
       car.active = false;
       car.unused = i >= count + oncoming; // (never spawned on this level)
       car.fixed = false;
+      // (and nothing left over from the last run, on a car that may not be dealt out again for a while)
+      Object.assign(car, { junction: null, parked: false, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
     });
     placeFixed();
     nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
@@ -617,7 +627,7 @@ export const Traffic = (() => {
       // ice: a car hitting a patch may spin out (and blow up), the likelier the faster it is going
       // (not one that is parked, nor an ambulance)
       const icy = !!Track.icy(car.s, car.lat);
-      if (icy && !car.onIce && !car.parked && !car.emergency && !(car.spin > 0) &&
+      if (icy && !car.onIce && !car.parked && !car.emergency && !(car.spin > 0) && !CONFIG.vehicles[car.kind].noSpin &&
           Math.random() < CONFIG.ice.spinPerSpeed * Math.abs(car.vs)) {
         spinOut(car);
         car.spinIce = true; // (it skidded: it isn't damaged, so it doesn't smoke for it)
@@ -651,7 +661,11 @@ export const Traffic = (() => {
         // a critical hit: it shakes from side to side for a moment, then goes
         car.wobble -= dt;
         car.yawVel = Math.sin(car.wobble * 24) * 4;
-        if (car.wobble <= 0) spinOut(car);
+        // (then it spins out; an 18-wheeler, which never spins, blows up there and then)
+        if (car.wobble <= 0) {
+          if (CONFIG.vehicles[car.kind].noSpin) car.health = 0;
+          else spinOut(car);
+        }
       }
 
       if (car.parked) { // parked, hazards on: it goes nowhere, but a shove moves it along the shoulder
@@ -701,10 +715,11 @@ export const Traffic = (() => {
           if (car.rivalTime <= 0 || !rival.active || rival.dir !== car.dir ||
               Math.abs(rival.s - car.s) > CONFIG.rivalryRange * 1.5) rival = car.rival = null;
         }
+        if (CONFIG.vehicles[car.kind].kerb) rival = car.rival = null; // (a truck keeps out of feuds)
         // a jerk (a mystery): every driver going the player's way and near enough goes after the
         // player as if the player were its rival, and an evil one throws at the player. (Not the
         // police, whose swerving into the player would be a bust, nor oncoming traffic: a head-on.)
-        if (Player.mystery === 'jerk' && Player.active && car.kind !== 'police' && car.dir === Player.dir &&
+        if (Player.mystery === 'jerk' && Player.active && car.kind !== 'police' && !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir &&
             Math.abs(Player.s - car.s) < CONFIG.rivalryRange) {
           rival = Player;
           car.grudge = true;
@@ -741,7 +756,9 @@ export const Traffic = (() => {
         // heading for a ramp, or the lane ends ahead: change lane, or ease off until there is room.
         // (a courteous driver sees it coming that much sooner, and signals first)
         const ramp = rampLane(car);
-        const lead = (reach) => ramp !== car.lane ? ramp : Track.openLane(car.lane, car.s + car.dir * reach);
+        // (a vehicle that keeps to the kerb heads back to it once it can, after a narrowing)
+        const home = CONFIG.vehicles[car.kind].kerb ? kerbLane(car.dir, car.s) : car.lane;
+        const lead = (reach) => ramp !== car.lane ? ramp : Track.openLane(home, car.s + car.dir * reach);
         const open = lead(70);
         let squeezed = false;
         if (courteous(car)) {

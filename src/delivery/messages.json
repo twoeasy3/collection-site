@@ -28,6 +28,15 @@
   "events": {
     "emergency": ["Emergency vehicle oncoming!! Give way!"]
   },
+  "zones": {
+    "sydney": ["Sydney"],
+    "bush": ["Southern Highlands bushland"],
+    "ousley": ["Mount Ousley - trucks on the descent!"],
+    "seacliff": ["Sea Cliff Bridge"],
+    "wollongong": ["Wollongong"],
+    "shellharbour": ["Shellharbour"],
+    "kiama": ["Kiama - nearly there!"]
+  },
   "bustCount": {
     "1": ["First Offence - "],
     "2": ["Final Warning - "],

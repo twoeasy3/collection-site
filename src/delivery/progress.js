@@ -9,8 +9,8 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // levels it was saved with. Each new order put a level in among the others: a save from before
 // that had opened that position or beyond opens one more. Order 2 put Suburbia in at position 8,
 // ahead of All Heck and Asteroid Run (now S1 and S2); order 3, Canberra at 9; order 4, Monte Carlo
-// at 10; order 5, Singapore at 11; order 6, Singapore II at 12.
-const INSERTED_AT = [8, 9, 10, 11, 12]; // (for orders 2, 3, ...)
+// at 10; order 5, Singapore at 11; order 6, Singapore II at 12; order 7, Sydney to Kiama at 13.
+const INSERTED_AT = [8, 9, 10, 11, 12, 13]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 const fresh = () => ({

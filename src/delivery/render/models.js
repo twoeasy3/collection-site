@@ -46,6 +46,36 @@ const GLASS = 0x232a35, CHROME = 0xd8d8d8, TRIM = 0x2a2c31;
 const LAMP = new THREE.MeshBasicMaterial({ color: 0xfff3c4 }), TAIL = new THREE.MeshBasicMaterial({ color: 0xff2a2a });
 
 export const MODELS = {
+  // An 18-wheeler: a cab-over prime mover in the livery, its sleeper and wind fairing on top,
+  // chrome stacks behind, and a long white box trailer on three axles
+  semi: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, cabL = 3.4, front = l / 2;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), steel = lambert(0xb8bcc4);
+    const chrome = lambert(CHROME), white = lambert(0xf1f1ee);
+    const body = box(group, paint, w * 0.98, 2.3, cabL, 0, 2.0, front - cabL / 2);
+    box(group, glass, w * 0.86, 0.9, 0.06, 0, 2.6, front + 0.01);                    // windscreen
+    box(group, trim, w * 0.72, 0.8, 0.08, 0, 1.25, front + 0.02);                    // grille
+    box(group, paint, w * 0.94, 1.0, 1.8, 0, 3.6, front - cabL + 0.9);               // sleeper and fairing
+    box(group, trim, w * 0.98, 0.25, 0.3, 0, 0.75, front + 0.05);                    // bumper
+    for (const side of [-1, 1]) {
+      box(group, LAMP, 0.32, 0.22, 0.05, side * w * 0.36, 1.05, front + 0.07);       // headlamps
+      const stack = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 2.4, 8), chrome);
+      stack.position.set(side * (w / 2 - 0.15), 3.3, front - cabL - 0.15);           // exhaust stacks
+      group.add(stack);
+    }
+    box(group, trim, w * 0.55, 0.35, l - 1, 0, 0.75, -0.2);                         // chassis
+    const trailer = l - cabL - 0.6;
+    box(group, white, w, 2.9, trailer, 0, 2.6, -l / 2 + trailer / 2);                // trailer
+    box(group, paint, w + 0.02, 0.35, trailer, 0, 1.3, -l / 2 + trailer / 2);        // a stripe of the livery
+    for (const side of [-1, 1]) box(group, TAIL, 0.3, 0.25, 0.05, side * w * 0.38, 1.1, -l / 2 - 0.02);
+    // wheels: the steer axle, two drive axles, and three under the trailer's tail
+    for (const z of [front - 1.1, front - cabL - 0.4, front - cabL - 1.6, -l / 2 + 1.2, -l / 2 + 2.5, -l / 2 + 3.8]) {
+      for (const side of [-1, 1]) wheel(group, 0.52, 0.42, side * (w / 2 - 0.22), 0.52, z, steel);
+    }
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
   // The Commuter: an old three-door supermini (a first-generation Nissan Micra). Small and
   // boxy, with a tall glasshouse, a short sloping bonnet, square headlamps and chunky black
   // bumpers.

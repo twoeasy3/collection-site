@@ -3,6 +3,7 @@ import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
 import { Track } from '../track.js';
 import { Game } from '../game.js';
+import { Player } from '../player.js';
 import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
 import { setHeadlights } from './headlights.js';
 
@@ -63,6 +64,9 @@ export const THEMES = {
   // pylons over the road, concrete walls and catch fences, kerbs on the corners
   singaporeNight: { sky: 0x1d2d55, ground: 0x3f6440, road: 0x4b4f57, scenery: 'singapore', night: true, lit: true, headlights: true,
     light: { sky: 0xd6dcff, ground: 0x6a6878, ambient: 1.25, sun: 0xfff0d6, sunlight: 0.75 } },
+  // coast: a level in zones (its "zones"), each with a look of its own: see the 'zones' scenery,
+  // and syncZones, which blends the sky and the ground from one zone's colours to the next
+  coast: { sky: 0x9fc8ee, ground: 0x6f9a52, road: 0x44474d, scenery: 'zones' },
   // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
   snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
   // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
@@ -153,12 +157,236 @@ const buildTerrain = () => {
   return heightAt;
 };
 
+// the stretches [from, to, ...rest] with the level's bridges cut out of them
+const offBridges = (stretches) => {
+  let out = stretches;
+  for (const b of LEVEL.bridges || []) {
+    out = out.flatMap(([from, to, ...rest]) => {
+      if (to <= b.from + 4 || from >= b.to - 4) return [[from, to, ...rest]];
+      return [[from, b.from + 4, ...rest], [b.to - 4, to, ...rest]].filter(([f, t]) => t - f > 1);
+    });
+  }
+  return out;
+};
+// ---- zones (a level whose theme's scenery is 'zones'): each stretch of the level (LEVEL.zones)
+// dressed as its zone.scenery says. Kits of things beside the road, each over a stretch [a, b],
+// collected per kind and drawn at the end, one draw call each; and the landmarks, one by one.
+let groundMesh = null;
+const SEA = 0x2b6fa8, SAND = 0xe4d29a, SANDSTONE = 0xc9a26b;
+const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
+  const sphere = new THREE.SphereGeometry(0.5, 9, 6), p = {};
+  const kinds = {}; // name -> [geometry, colour, list, glowing]
+  const thing = (name, geometry, colour, glowing = false) => kinds[name] || (kinds[name] = [geometry, colour, [], glowing]);
+  const putAt = (name, entry) => kinds[name][2].push(entry);
+  const clear = (s, side, d) => { Track.toWorld(s, beside(side, s, d), p); return Track.mainDistance(p.x, p.z) > Math.max(Track.hi(s), -Track.lo(s)) + 3; };
+  thing('trunk', tube, 0xd9cfbf); thing('gum', sphere, 0x7a8f62); thing('tower', cube, 0x6f8fa8); thing('sandTower', cube, 0xd8c39b);
+  thing('windows', cube, 0x2f3a46); thing('house', cube, 0xe8dcc4); thing('roof', cone, 0x8c4a3a); thing('rock', cube, 0xb8915c);
+  thing('pine', cone, 0x2e5b33); thing('pineTrunk', tube, 0x5a4636); thing('stoneWall', cube, 0x8f8a80); thing('midrise', cube, 0xd6d0c2);
+  // gum trees: pale trunks and untidy clumps of grey-green leaves
+  const gums = (a, b, every, dMax, sides = [-1, 1]) => {
+    for (let s = a; s < b; s += every) for (const side of sides) {
+      const at = s + Math.random() * every, d = 4 + Math.random() * dMax;
+      if (!clear(at, side, d)) continue;
+      const h = 7 + Math.random() * 7, lat = beside(side, at, d);
+      putAt('trunk', [at, lat, h / 2, 0.45, h, 0.45]);
+      for (let k = 0; k < 3; k++) { const z = 2 + Math.random() * 2; putAt('gum', [at + Math.random() * 2 - 1, lat + Math.random() * 2 - 1, h * (0.7 + k * 0.15), z, z * 0.7, z]); }
+    }
+  };
+  // towers (banded with windows), standing back from the road
+  const towers = (a, b, every, d0, d1, hMin, hMax, kind = 'tower', sides = [-1, 1]) => {
+    for (let s = a; s < b; s += every) for (const side of sides) {
+      const w = 14 + Math.random() * 16, dd = 14 + Math.random() * 14, d = d0 + dd / 2 + Math.random() * (d1 - d0);
+      if (!clear(s, side, d - dd / 2 - 4)) continue;
+      const h = hMin + Math.random() * (hMax - hMin), lat = beside(side, s, d);
+      putAt(kind, [s, lat, h / 2, dd, h, w]);
+      for (let y = 4; y < h - 2; y += 4) putAt('windows', [s, lat, y, dd + 0.1, 1.1, w + 0.1]);
+    }
+  };
+  // houses with hipped roofs, on their blocks
+  const houses = (a, b, every, d0, sides = [-1, 1]) => {
+    const roof = thing('hip', new THREE.ConeGeometry(Math.SQRT1_2, 1, 4).rotateY(Math.PI / 4), 0x8c4a3a);
+    for (let s = a; s < b; s += every) for (const side of sides) {
+      const d = d0 + Math.random() * 20, lat = beside(side, s, d);
+      if (!clear(s, side, d - 6)) continue;
+      const w = 9 + Math.random() * 4, dd = 8 + Math.random() * 3;
+      putAt('house', [s, lat, 1.7, dd, 3.4, w]);
+      putAt('hip', [s, lat, 4.4, dd * 1.12, 2.2, w * 1.12]);
+    }
+  };
+  // Norfolk Island pines: tall, dark, in tiers
+  const pines = (a, b, every, side, d0, d1) => {
+    for (let s = a; s < b; s += every) {
+      const d = d0 + Math.random() * (d1 - d0), lat = beside(side, s, d), h = 14 + Math.random() * 10;
+      if (!clear(s, side, d)) continue;
+      putAt('pineTrunk', [s, lat, h * 0.15, 0.6, h * 0.3, 0.6]);
+      for (let k = 0; k < 4; k++) putAt('pine', [s, lat, h * (0.3 + k * 0.18), h * (0.32 - k * 0.06), h * 0.22, h * (0.32 - k * 0.06)]);
+    }
+  };
+  // a face of rock beside the road on a side, rising from its edge at d0 to a top `rise` m up at d1,
+  // and a flat top beyond (a cutting, or a cliff); with `rise` < 0, a drop from the road to the
+  // water, its foot at sea level (an absolute height)
+  const face = (a, b, side, d0, d1, rise, colour, top = 0) => {
+    const pos = [], idx = [];
+    let n = 0;
+    for (let s = a; s <= b + 0.001; s += 6, n++) {
+      const q = Math.min(s, b);
+      Track.toWorld(q, beside(side, q, d0), p);
+      pos.push(p.x, p.y, p.z);
+      const y = rise < 0 ? -0.05 : p.y + rise;
+      Track.toWorld(q, beside(side, q, d1), p);
+      pos.push(p.x, y, p.z);
+      if (n) { const k = (n - 1) * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+      if (top) { Track.toWorld(q, beside(side, q, d1 + top), p); pos.push(p.x, y, p.z); }
+    }
+    const geo = new THREE.BufferGeometry();
+    if (top) { // (three points a row: the edge, the brow, the far edge of the top)
+      const tri = [];
+      for (let k = 1; k < n; k++) {
+        const a0 = (k - 1) * 3, b0 = k * 3;
+        tri.push(a0, a0 + 1, b0, a0 + 1, b0 + 1, b0, a0 + 1, a0 + 2, b0 + 1, a0 + 2, b0 + 2, b0 + 1);
+      }
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setIndex(tri);
+    } else {
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setIndex(idx);
+    }
+    geo.computeVertexNormals();
+    levelGroup.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: colour, side: THREE.DoubleSide })));
+  };
+  // the sea, on the right, from d0 out to the horizon, at sea level; and a beach before it
+  const sea = (a, b, d0) => {
+    const pos = [], idx = [];
+    let n = 0;
+    for (let s = a; s <= b + 0.001; s += 10, n++) {
+      const q = Math.min(s, b);
+      for (const d of [d0, 2500]) { Track.toWorld(q, beside(1, q, d), p); pos.push(p.x, -0.05, p.z); }
+      if (n) { const k = (n - 1) * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    const water = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: SEA, side: THREE.DoubleSide, depthWrite: false }));
+    water.renderOrder = -1.8;
+    levelGroup.add(water);
+  };
+  const beach = (a, b, d0, d1) => {
+    const sand = new THREE.Mesh(buildStrip(a, b, (q) => beside(1, q, d0), (q) => beside(1, q, d1), -0.02, 8),
+      new THREE.MeshBasicMaterial({ color: SAND, side: THREE.DoubleSide, depthWrite: false }));
+    sand.renderOrder = -1.6;
+    levelGroup.add(sand);
+  };
+  // a white lighthouse on a green headland out in the water
+  const lighthouse = (s, d, h, band) => {
+    Track.toWorld(s, beside(1, s, d), p);
+    const head = new THREE.Mesh(new THREE.CylinderGeometry(45, 55, 6, 20), new THREE.MeshLambertMaterial({ color: 0x5f8f45 }));
+    head.position.set(p.x, 1, p.z);
+    const tower = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 3, h, 14), new THREE.MeshLambertMaterial({ color: 0xf6f6f2 }));
+    tower.position.set(p.x, 4 + h / 2, p.z);
+    const lantern = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 2.4, 12), new THREE.MeshBasicMaterial({ color: 0xfff3c4 }));
+    lantern.position.set(p.x, 4 + h + 1.2, p.z);
+    const cap = new THREE.Mesh(new THREE.ConeGeometry(2.4, 2, 12), new THREE.MeshLambertMaterial({ color: band }));
+    cap.position.set(p.x, 4 + h + 3.4, p.z);
+    levelGroup.add(head, tower, lantern, cap);
+    return p;
+  };
+
+  for (const z of LEVEL.zones) {
+    const a = z.from, b = z.to;
+    if (z.sea !== undefined) { // (under the cliffs, straight into the sea; elsewhere, a beach first)
+      const cliffs = z.scenery === 'seacliff';
+      sea(a, b, cliffs ? -40 : z.sea + 30); // (under the cliffs, in under the bridge, to the foot of the cliff)
+      if (!cliffs) beach(a, b, z.sea, z.sea + 32);
+      for (const [f, t] of offBridges([[a, b]])) face(f, t, 1, z.sea, z.sea + 2, -1, cliffs ? 0x7c5e40 : 0xb89c6a);
+    }
+    if (z.scenery === 'sydney') {
+      // the city: towers of glass and sandstone near the Harbour Bridge, then lower down; and the
+      // Opera House on the harbour beside the bridge (see render/items.js for the bridge)
+      // (towers either side of the bridge: the city behind the start, and beyond the bridge)
+      for (const [from, to] of [[Track.start, a + 140], [a + 650, a + 1050]]) {
+        towers(from, to, 24, 18, 70, 50, 170);
+        towers(from, to, 40, 20, 60, 20, 60, 'sandTower');
+      }
+      towers(a + 1050, b, 30, 22, 60, 12, 40, 'midrise');
+      gums(a + 1050, b, 40, 30);
+      const bridge = (LEVEL.bridges || []).find(x => x.style === 'harbour');
+      if (bridge) {
+        const at = (bridge.from + bridge.to) / 2 + 40, h = Track.toWorld(at, beside(1, at, 140), p);
+        const white = new THREE.MeshLambertMaterial({ color: 0xf8f6ee }), podium = new THREE.MeshLambertMaterial({ color: 0xc9a77a });
+        const house = new THREE.Group();
+        const base = new THREE.Mesh(new THREE.BoxGeometry(60, 6, 120), podium);
+        base.position.y = 3;
+        house.add(base);
+        [[0, 34, 26], [0, 4, 22], [0, -24, 17], [18, 30, 13], [18, 6, 11]].forEach(([x, z0, r], k) => {
+          const sail = new THREE.Mesh(new THREE.SphereGeometry(r, 16, 10, 0, Math.PI, 0, Math.PI / 2), white);
+          sail.scale.set(0.75, 1.5, 1);
+          sail.rotation.set(0, Math.PI / 2, 0);
+          sail.position.set(x - 8, 6, z0);
+          house.add(sail);
+        });
+        house.position.set(p.x, -0.05, p.z);
+        house.rotation.y = h;
+        levelGroup.add(house);
+      }
+    } else if (z.scenery === 'bush') {
+      gums(a, b, 9, 55);
+      for (let s = a; s < b; s += 70) for (const side of [-1, 1]) {
+        const d = 6 + Math.random() * 30;
+        if (clear(s, side, d)) putAt('rock', [s, beside(side, s, d), 0.8, 3 + Math.random() * 4, 1.6 + Math.random() * 2, 4 + Math.random() * 5]);
+      }
+    } else if (z.scenery === 'ousley') {
+      // the escarpment: sandstone cuttings on the uphill side (the left), the bush falling away on
+      // the right to the coastal plain and the sea far below
+      face(a + 60, b - 300, -1, 2, 16, 26, SANDSTONE, 50);
+      gums(a, b, 14, 50, [1]);
+      sea(a + 400, b, 650);
+    } else if (z.scenery === 'seacliff') {
+      // sheer cliffs on the left, the sea on the right (the bridge itself: render/items.js)
+      face(a, b, -1, 1.5, 22, 70, 0x8c6c4a, 40);
+    } else if (z.scenery === 'wollongong') {
+      towers(a, b, 32, 22, 70, 15, 55, 'midrise', [-1]);
+      pines(a, b, 45, 1, z.sea + 4, z.sea + 20);
+      gums(a, b, 50, 25, [-1]);
+      lighthouse(b - 300, z.sea + 160, 22, 0xd22a2a);
+    } else if (z.scenery === 'shellharbour') {
+      houses(a, b, 26, 14, [-1]);
+      pines(a, b, 60, 1, z.sea + 4, z.sea + 20);
+    } else if (z.scenery === 'kiama') {
+      // green hills with dry-stone walls, the lighthouse on its point at the end, and the blowhole beside it
+      for (let s = a; s < b; s += 4) putAt('stoneWall', [s + 2, beside(-1, s + 2, 18), 0.5, 0.6, 1, 4.02]);
+      gums(a, b, 60, 40, [-1]);
+      houses(a, a + 300, 30, 26, [-1]);
+      const lh = lighthouse(b - 120, z.sea + 110, 16, 0xf6f6f2);
+      const spout = new THREE.Mesh(new THREE.ConeGeometry(5, 26, 12, 1, true), new THREE.MeshBasicMaterial({
+        color: 0xffffff, transparent: true, opacity: 0.6, depthWrite: false, side: THREE.DoubleSide }));
+      spout.position.set(lh.x + 30, 13, lh.z + 10);
+      spout.rotation.x = Math.PI;
+      levelGroup.add(spout);
+    }
+  }
+  for (const [geometry, colour, list, glowing] of Object.values(kinds)) instances(geometry, colour, list, glowing);
+};
+
+// every frame: on a level in zones, the sky (and the fog with it) and the ground blend towards
+// the colours of the zone the player is in
+const skyNow = new THREE.Color(), skyWant = new THREE.Color();
+export const syncZones = (dt) => {
+  if (!LEVEL.zones || !Track) return;
+  const zone = Track.zoneAt(Player.s) || LEVEL.zones[Player.s < 0 ? 0 : LEVEL.zones.length - 1];
+  const k = Math.min(1, dt * 0.6);
+  skyWant.set(zone.sky ?? (THEMES[LEVEL.theme] || THEMES.city).sky);
+  skyNow.lerp(skyWant, k);
+  applySky(skyNow.getHex());
+  if (groundMesh && zone.ground !== undefined) groundMesh.material.color.lerp(skyWant.set(zone.ground), k);
+};
+
 const buildRoad = () => {
   // a left-hand level is the game seen in a mirror: the whole scene drawn with x reversed
   scene.scale.x = Track.mirrored ? -1 : 1;
   clearGroup(levelGroup);
   const theme = THEMES[LEVEL.theme] || THEMES.city;
   applySky(theme.sky);
+  if (LEVEL.zones) skyNow.set((LEVEL.zones[0].sky ?? theme.sky));
   applyLight(theme.light);
   setHeadlights(!!theme.headlights);
   const flat = (color) => new (theme.lit ? THREE.MeshLambertMaterial : THREE.MeshBasicMaterial)({ color, side: THREE.DoubleSide });
@@ -348,6 +576,7 @@ const buildRoad = () => {
   // gap to leave to depth testing: on some devices the grass showed through the road.)
   ground.renderOrder = -2;
   ground.material.depthWrite = false;
+  groundMesh = ground;
   Track.toWorld(Track.length / 2, 0, tmp);
   ground.position.set(tmp.x, -0.05, tmp.z);
   levelGroup.add(ground);
@@ -359,23 +588,31 @@ const buildRoad = () => {
     // It writes depth (pushed back a little, so the road always wins) so that a crest hides
     // what lies beyond it.
     const LAND = 130;
-    const land = new THREE.Mesh(
-      buildStrip(Track.start, Track.end, (s) => Track.lo(s) - LAND, (s) => Track.hi(s) + LAND, -0.04, 6), flat(theme.ground));
-    land.material.polygonOffset = true;
-    land.material.polygonOffsetFactor = 2;
-    land.material.polygonOffsetUnits = 2;
-    land.renderOrder = -1.5;
-    levelGroup.add(land);
-    const bank = flat(new THREE.Color(theme.ground).multiplyScalar(0.8));
-    for (const side of [-1, 1]) {
+    // (a level in zones has its land in each zone's own colour; and where a zone is by the sea
+    // (zone.sea: m from the road to the water), none out over the sea on that side, the right)
+    const zones = LEVEL.zones && LEVEL.zones.length ? LEVEL.zones : null;
+    // (and none under a bridge, where there is the water to see, far below)
+    const stretches = offBridges(zones ? zones.map((z, i) => [i ? z.from : Track.start, i === zones.length - 1 ? Track.end : zones[i + 1].from, z.ground ?? theme.ground, z.sea])
+      : [[Track.start, Track.end, theme.ground, undefined]]);
+    for (const [from, to, colour, sea] of stretches) {
+      const land = new THREE.Mesh(buildStrip(from, to, (s) => Track.lo(s) - LAND, (s) => Track.hi(s) + (sea ?? LAND), -0.04, 6), flat(colour));
+      land.material.polygonOffset = true;
+      land.material.polygonOffsetFactor = 2;
+      land.material.polygonOffsetUnits = 2;
+      land.renderOrder = -1.5;
+      levelGroup.add(land);
+    }
+    for (const [from, to, colour, sea] of stretches) for (const side of [-1, 1]) {
+      const bank = flat(new THREE.Color(colour).multiplyScalar(0.8));
+      const out = side > 0 && sea !== undefined ? sea : LAND; // (by the sea, a short drop to the water's edge)
       const pos = [], idx = [];
       let n = 0;
-      for (let s = Track.start; s <= Track.end; s += 6, n++) {
-        const top = (side < 0 ? Track.lo(s) : Track.hi(s)) + side * LAND;
+      for (let s = from; s <= to; s += 6, n++) {
+        const top = (side < 0 ? Track.lo(s) : Track.hi(s)) + side * out;
         Track.toWorld(s, top, tmp);
         const drop = tmp.y; // the further it has to fall, the further out the foot of the slope
         pos.push(tmp.x, tmp.y - 0.04, tmp.z);
-        Track.toWorld(s, top + side * (2 + drop * 2.5), tmp);
+        Track.toWorld(s, top + side * (out === LAND ? 2 + drop * 2.5 : 1 + drop * 0.6), tmp);
         pos.push(tmp.x, -0.04, tmp.z);
         if (n > 0) {
           const a = (n - 1) * 2;
@@ -917,6 +1154,8 @@ const buildRoad = () => {
       levelGroup.add(wheel);
       break;
     }
+  } else if (theme.scenery === 'zones') {
+    buildZones(beside, instances, add, flat, { cube, tube, cone });
   } else if (theme.scenery === 'alpine') {
     // ---- alpine: guardrails and snowbanks along both edges, snowy pines on the mountainside,
     // peaks all round in the haze, and snow falling

@@ -11,7 +11,7 @@ import { Traffic } from './traffic.js';
 import { Game } from './game.js';
 import { Collision } from './collision.js';
 import { renderer, scene, camera, tmp, updateCamera, Cinematic } from './render/scene.js';
-import './render/road.js';
+import { syncZones } from './render/road.js';
 import { carMesh, syncTraffic } from './render/cars.js';
 import { emitVehicleSmoke, updateEffects } from './render/effects.js';
 import { syncPackages } from './render/packages.js';
@@ -125,6 +125,7 @@ const frame = (now) => {
     syncUfoStrike(dt);
     syncBulletTrain();
     syncJunctions(now);
+    syncZones(dt);
     syncStorm(dt);
     emitVehicleSmoke(dt);
     syncPackages(dt);
