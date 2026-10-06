@@ -20,6 +20,7 @@ import { syncPickups, syncTargets, syncToads } from './render/items.js';
 import { syncHelicopter, syncArrests } from './render/helicopter.js';
 import { syncHeadlights, syncTrafficBeams } from './render/headlights.js';
 import { syncUfoStrike } from './render/ufostrike.js';
+import { syncBulletTrain } from './render/bullettrain.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
@@ -121,6 +122,7 @@ const frame = (now) => {
     syncArrests(dt, now);
     syncTrafficBeams();
     syncUfoStrike(dt);
+    syncBulletTrain();
     syncStorm(dt);
     emitVehicleSmoke(dt);
     syncPackages(dt);

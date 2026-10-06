@@ -5,7 +5,7 @@ import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel } from '../levels.js';
 import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar } from '../cars.js';
 import { Progress } from '../progress.js';
-import { Game, formatTime } from '../game.js';
+import { Game, formatTime, clockFor } from '../game.js';
 import { Garage } from './garage.js';
 import { Sound } from './audio.js';
 import { Input } from '../input.js';
@@ -72,8 +72,7 @@ const draw = () => {
     const best = Progress.data.best[level.id];
     return card(levelLabel(i) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
-      'Clock ' + formatTime(level.time * CONFIG.timeScale.good) + ' Good / ' +
-        formatTime(level.time * CONFIG.timeScale.evil) + ' Evil',
+      'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
       best === undefined ? 'Not delivered yet' : 'Best tip ' + money(best),
     ] : ['Locked', 'Deliver level ' + levelLabel(i - 1) + ' on time to open it'], {
       current: i === LEVEL_INDEX,

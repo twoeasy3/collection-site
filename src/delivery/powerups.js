@@ -73,6 +73,7 @@ const CARDS = [
     ['insuranceUp', 'Just the news.'],
     ['insuranceDown', 'Just the news.'],
     ['ufo', 'A flying saucer hovers over you, then flies off, and every car on the road burns up within a few seconds.'],
+    ['bulletTrain', `A bullet train turns up the road in your lane and comes straight down it at ${kmh(CONFIG.bulletTrain.speed)}: you have about ${CONFIG.bulletTrain.warning} s to get out of its way. It destroys everything it touches, you included, and steering into its side is just as deadly.`],
   ] },
   { type: 'target', name: 'TANK RAGE Target', says: says('powerups', 'tankRage'), saysColor: '#ff3b30', color: 0x39ff6a, wide: true, rules: [
     `Land a package on a green target beside the road to find the next piece of the tank. The <strong>${CONFIG.tankPieces}th</strong> piece starts TANK RAGE.`,

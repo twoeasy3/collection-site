@@ -7,6 +7,7 @@ import { updateYaw, keepOnRoad, sfx } from './physics.js';
 import { Traffic } from './traffic.js';
 import { Message } from './messages.js';
 import { UfoStrike } from './ufostrike.js';
+import { BulletTrain } from './bullettrain.js';
 import { Game } from './game.js';
 
 export const Player = {
@@ -132,8 +133,9 @@ export const Player = {
   },
   // s left of the powerup that is running (0 = none)
   get powerLeft() { return Math.max(this.turbo, this.ghost, this.passenger, this.radar, this.siren, this.badGas, this.heavy, this.mysteryTime); },
-  // the mystery pickup: a random effect. Most last CONFIG.mystery.time; the insurance ones
-  // and the UFO air strike are over at once (the strike's show goes on by itself: UfoStrike)
+  // the mystery pickup: a random effect. Most last CONFIG.mystery.time; the insurance ones, the
+  // UFO air strike and the bullet train are over at once (the strike and the train go on by
+  // themselves: UfoStrike, BulletTrain)
   startMystery() {
     const { effects, time } = CONFIG.mystery;
     // (a tank only ever gets the air strike)
@@ -142,7 +144,8 @@ export const Player = {
         effects[Math.floor(Math.random() * effects.length)];
     Message.say('powerups', 'mystery', effect);
     if (effect === 'ufo') UfoStrike.start();
-    if (effect === 'ufo' || effect.startsWith('insurance')) return;
+    if (effect === 'bulletTrain') BulletTrain.start();
+    if (effect === 'ufo' || effect === 'bulletTrain' || effect.startsWith('insurance')) return;
     this.mystery = effect;
     this.mysteryTime = time;
     if (effect === 'toad') Traffic.toadify(true);

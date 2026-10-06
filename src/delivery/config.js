@@ -65,13 +65,22 @@ export const CONFIG = {
   // the mystery pickup: one of these effects at random (see Player.startMystery); the wording
   // is in messages.json, under powerups.mystery
   mystery: {
-    effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo'],
-    time: 12,              // s the lasting ones last (insuranceUp / insuranceDown and ufo are over at once)
+    effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo', 'bulletTrain'],
+    time: 12,              // s the lasting ones last (insuranceUp / insuranceDown, ufo and bulletTrain are over at once)
     rickety: 1.5,          // damage the car takes while rickety, against the usual
     toadSpeed: 20 / 3.6,   // m/s every toad goes along at in TOAD RAGE
     toad: { hw: 1.2, hl: 1.4, height: 1.8, mass: 1 }, // a toad's hitbox
   },
   // UFO AIR STRIKE (a mystery): the saucer's visit, and the burn that follows it
+  // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game
+  bulletTrain: {
+    speed: 150,            // m/s (540 km/h)
+    warning: 3,            // s from appearing up the road to reaching where the player was
+    cars: 8,               // carriages...
+    carLength: 25,         // ...each this long (m)
+    hw: 1.6,               // m, half its width
+    height: 3.6,           // m
+  },
   ufoStrike: {
     arrive: 1.5,           // s to fly in...
     hover: 4,              // ...over the player's car...

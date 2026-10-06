@@ -173,7 +173,7 @@ export const Collision = (() => {
   const SIZE = { // hw, hl, height
     barrier: [1.2, 0.6, 1.2], bale: [1.1, 1.1, 1.5], frog: [1.4, 1.4, 1.6], cow: [0.7, 1.3, 1.5],
     asteroid: [1, 1, 2], // replaced by each asteroid's own radius
-    cone: [0.3, 0.3, 0.8], sign: [1.1, 0.15, 3.0],
+    cone: [0.42, 0.42, 1.12], sign: [1.1, 0.15, 3.0], // (cones are 1.4 times life size: easier to see on a phone)
     // the beach's own junk (Hurricane): a beach umbrella, a surfboard stuck upright, an ice
     // box, a lifeguard chair, and a wrecked car (which spins on the spot as it drifts)
     umbrella: [1.2, 1.2, 3.0], surfboard: [0.6, 0.25, 2.6], cooler: [0.8, 0.6, 1.2], chair: [1.0, 1.0, 3.4],

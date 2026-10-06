@@ -71,6 +71,8 @@ const SAMPLES = {
   hornBus: ['Compact Car Horn 3','Big Rig Horn 1',,'Fire Truck Horn','Compact Car Horn 1'],
   passBy: ['Compact Car Horn 3','Big Rig Horn 1',,'Fire Truck Horn','Compact Car Horn 1', 'Horn Doppler Pass By'], // an oncoming car honks as it goes by
   mystery: 'Mystery',           // the secret bus
+  trainHorn: { seq: ['Big Rig Horn 1', 'Big Rig Horn 1'] }, // the bullet train sets off up the road...
+  trainPass: 'Horn Doppler Pass By', // ...and goes by the player
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -255,6 +257,9 @@ Object.assign(SYNTH, {
   explodeBig: SYNTH.explode, crashHard: SYNTH.crash, sideswipe: SYNTH.crash, headOn: SYNTH.crash, heavy: SYNTH.crash,
   ghost: SYNTH.pickup, wrench: SYNTH.pickup, passenger: SYNTH.pickup, badGas: SYNTH.pickup, heavyMass: SYNTH.pickup,
   timePlus: SYNTH.pickup, timeMinus: SYNTH.pickup,
+  // the bullet train: a long two-note horn, and a rushing roar as it goes by
+  trainHorn: (v) => [311, 370].forEach((f) => tone(f, f * 0.97, 1.4, 0.18 * v, 'sawtooth')),
+  trainPass: (v) => { noise(300, 2600, 0.9, 0.6 * v, 'bandpass'); tone(370, 250, 0.9, 0.2 * v, 'sawtooth'); },
 });
 
 export const Sound = {

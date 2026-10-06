@@ -783,6 +783,61 @@ try {
       'brake lights: the player\'s while braking (not holding speed), a car\'s while it slows to its pace (not once there)');
   }
 
+  console.log('bullet train');
+  {
+    const { BulletTrain } = await load('/src/delivery/bullettrain.js');
+    const { Message } = await load('/src/delivery/messages.js');
+    const B = CONFIG.bulletTrain, L2 = (s) => track.Track.laneOffset(2, s), L3 = (s) => track.Track.laneOffset(3, s);
+    // the Expressway, the player in lane 2 at 200 m doing 20, a car ahead in the same lane: a mystery that is the train
+    const setOff = () => {
+      levels.selectLevel(0);
+      cars.selectCar('hatch');
+      Game.evil = false;
+      Game.start();
+      for (const c of Traffic.cars) c.active = false;
+      Player.s = 200; Player.lat = L2(200); Player.speed = 20; Player.launching = false; Player.shield = 0;
+      const car = Traffic.cars.find(c => c.dir > 0), type = CONFIG.vehicles.car;
+      Object.assign(car, { active: true, kind: 'car', fixed: false, viaSide: false, s: 420, lane: 2, lat: L2(420), vs: 15, baseSpeed: 15,
+        latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, rival: null, rivalTime: 0, honkWait: 0, throwTimer: 99, arrest: -1,
+        pulledOver: false, toad: null, hesitant: false, tap: 0, think: 99, pendingLane: null, signal: 0, hazards: false, braking: false,
+        hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health, maxHealth: type.health, evil: false, mood: 0 });
+      Player.nextMystery = 'bulletTrain';
+      Player.collect('mystery');
+      Player.nextMystery = '';
+      return car;
+    };
+    const step = () => { Game.update(1 / 120); FxQueue.length = 0; };
+
+    // it comes down the player's lane and wrecks the player about `warning` s later, and everything else in that lane on the way
+    const car = setOff();
+    const startGap = BulletTrain.s - Player.s;
+    const said = Message.lines.some(line => line.text === 'BULLET TRAIN INCOMING!!!');
+    let t = 0;
+    while (Player.active && t < 8) { step(); t += 1 / 120; }
+    const inLane = Collision.obstacles.find(o => o.s === 300), otherLane = Collision.obstacles.find(o => o.s === 500);
+    const fastest = Math.max(...cars.CARS.map(c => c.maxSpeed), ...Object.values(cars.LEVEL_CARS).map(c => c.maxSpeed), ...Object.values(cars.SECRET_CARS).map(c => c.maxSpeed), CONFIG.tankMaxSpeed) + CONFIG.turboBoost;
+    check(said && BulletTrain.lane === 2 && !Player.active && Math.abs(t - B.warning) < 0.5 && !car.active &&
+      inLane.gone && !otherLane.gone && B.speed > fastest * 1.5,
+      `the bullet train ("${Message.pick('powerups', 'mystery', 'bulletTrain')}") appears ${startGap.toFixed(0)} m up lane 2 at ${(B.speed * 3.6).toFixed(0)} km/h ` +
+      `(anything else tops out at ${(fastest * 3.6).toFixed(0)}), wrecks the player ${t.toFixed(2)} s later, and the car and the barrier in its lane on the way, not the one beside it`);
+
+    // out of its lane in time, the player is safe, and it is gone once it is past
+    setOff();
+    Player.lat = L3(Player.s);
+    let passedBy = false;
+    for (let i = 0; i < 120 * 8 && BulletTrain.active; i++) { step(); passedBy ||= BulletTrain.passed; }
+    check(Player.active && passedBy && !BulletTrain.active, 'a player who changes lane in time is passed by, unharmed, and the train is gone once it is by');
+
+    // ...but steering into its side as it goes by is a wreck too
+    setOff();
+    Player.lat = L3(Player.s);
+    for (let i = 0; i < 120 * 8 && BulletTrain.s > Player.s - 60; i++) step();
+    const besideIt = Player.active && BulletTrain.active;
+    Player.lat = L3(Player.s) - 1.5; // (most of the way back into its lane)
+    step();
+    check(besideIt && !Player.active, 'steering into the side of the train as it goes by wrecks the player');
+  }
+
   console.log('cars');
   levels.selectLevel(0); // (a level with no vehicle of its own)
   for (const car of cars.CARS) {

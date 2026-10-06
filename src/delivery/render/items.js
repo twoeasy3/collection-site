@@ -157,7 +157,7 @@ const OBSTACLE_MODELS = {
   },
 };
 
-// a traffic cone: one mesh, orange with a white band
+// a traffic cone: one mesh, orange with a white band, drawn 1.4 times life size (as its hitbox is)
 const CONE_PROFILE = [[0.32, 0], [0.32, 0.06], [0.22, 0.06], [0.155, 0.34], [0.155, 0.341], [0.118, 0.5], [0.118, 0.501], [0.05, 0.78], [0, 0.78]];
 OBSTACLE_MODELS.cone = () => {
   const geo = new THREE.LatheGeometry(CONE_PROFILE.map(([x, y]) => new THREE.Vector2(x, y)), 10);
@@ -167,6 +167,7 @@ OBSTACLE_MODELS.cone = () => {
     colors.push(1, white ? 1 : 0.42, white ? 1 : 0.05);
   }
   geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.scale(1.4, 1.4, 1.4);
   return new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
 };
 // a roadside advertising sign on a post, facing the drivers coming up to it

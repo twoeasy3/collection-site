@@ -55,6 +55,7 @@
 //   id         unique name, used as the level's key in saved progress
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
 //   time       seconds on the clock (before the Good / Evil scaling in CONFIG.timeScale)
+//   clock      { good, evil }: seconds on the clock for each side exactly, in place of the scaled time
 //   tip        the money earned for finishing before the clock reaches zero
 //              Lane 0 is the far left (oncoming). Add road: 'side' to put an item on a side
 //              road (and exit: n for the nth exit's): s from its start, lane 0 oncoming / 1 ours.

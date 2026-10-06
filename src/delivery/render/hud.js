@@ -3,7 +3,7 @@ import { LEVEL } from '../levels.js';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Packages } from '../packages.js';
-import { Game, formatTime } from '../game.js';
+import { Game, formatTime, clockFor } from '../game.js';
 import { Message } from '../messages.js';
 
 // ---- HUD -------------------------------------------------------------------
@@ -35,7 +35,7 @@ Game.onFinish.push(() => {
 });
 export const updateHud = () => {
   // the clock counts down; below zero is the tip countdown, with the tip draining away
-  const left = Game.state === 'start' ? LEVEL.time * CONFIG.timeScale.good : Game.remaining;
+  const left = Game.state === 'start' ? clockFor(LEVEL, false) : Game.remaining;
   const late = left < 0;
   hudTimer.textContent = formatTime(left);
   hudTimer.style.color = hudTip.style.color = late ? '#ff5a4f' : '';

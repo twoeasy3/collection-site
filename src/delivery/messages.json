@@ -2,7 +2,7 @@
   "powerups": {
     "turbo": ["Your car is now supercharged!"],
     "ghost": ["Your car is now a ghost!"],
-    "wrench": ["Can has been repaired by 25 percent."],
+    "wrench": ["Car has been repaired by 25 percent."],
     "passenger": ["Inflatable HOV passenger. Use extra lanes."],
     "tankRage": ["TANK RAGE!"],
     "radarDetector": ["Radar detector, police can't bust you."],
@@ -21,7 +21,8 @@
       "noBrakes": ["Oh no! Your brakes have gone out!"],
       "insuranceUp": ["Your insurance just went up $250"],
       "insuranceDown": ["Your insurance just went down $250"],
-      "ufo": ["UFO AIR STRIKE!!!"]
+      "ufo": ["UFO AIR STRIKE!!!"],
+      "bulletTrain": ["BULLET TRAIN INCOMING!!!"]
     }
   },
   "bustCount": {

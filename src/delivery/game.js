@@ -8,6 +8,7 @@ import { Track, buildTrack } from './track.js';
 import { FxQueue, sfx } from './physics.js';
 import { Message } from './messages.js';
 import { UfoStrike } from './ufostrike.js';
+import { BulletTrain } from './bullettrain.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -105,7 +106,7 @@ export const Game = {
     Collision.resetObstacles();
     FxQueue.length = 0;
     this.time = 0;
-    this.allowed = LEVEL.time * CONFIG.timeScale[this.evil ? 'evil' : 'good']; // Good gets longer
+    this.allowed = clockFor(LEVEL, this.evil); // (Good gets longer)
     this.outcome = '';
     this.shake = 0;
     this.respawn = -1;
@@ -118,6 +119,7 @@ export const Game = {
     this.tankPieces = Progress.data.tankPieces || 0; // (the run's own, until it is settled)
     Message.clear();
     UfoStrike.reset();
+    BulletTrain.reset();
     this.state = 'playing';
     startScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');
@@ -239,6 +241,7 @@ export const Game = {
     }
     Traffic.update(dt);
     UfoStrike.update(dt);
+    BulletTrain.update(dt);
     Packages.update(dt);
     Pickups.update();
     Collision.updateObstacles(dt);
@@ -251,6 +254,11 @@ export const Game = {
   },
 };
 
+// seconds on the clock for a level, for a side: its own "clock" if it has one, or else its time scaled
+export const clockFor = (level, evil) => {
+  const side = evil ? 'evil' : 'good';
+  return level.clock ? level.clock[side] : level.time * CONFIG.timeScale[side];
+};
 export const formatTime = (t) => {
   const a = Math.abs(t), m = Math.floor(a / 60), s = a - m * 60;
   return `${t < 0 ? '-' : ''}${m}:${s < 10 ? '0' : ''}${s.toFixed(1)}`;
