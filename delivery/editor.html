@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Delivery Run Level Editor</title>
+</head>
+<body>
+<aside id="side">
+  <header>
+    <a class="back" href="./">&larr; Back to the game</a>
+    <h1>Level Editor</h1>
+  </header>
+  <section>
+    <label class="row">Open <select id="pick"></select></label>
+    <div class="buttons">
+      <button id="play" class="primary">Play it</button>
+      <button id="playEvil">Play as Evil</button>
+      <button id="download">Download .json</button>
+    </div>
+    <p class="note" id="status"></p>
+  </section>
+  <section>
+    <h2>Level</h2>
+    <div class="grid">
+      <label>Name <input id="f-name"></label>
+      <label>Id <input id="f-id"></label>
+      <label>Clock (s) <input id="f-time" type="number" min="10"></label>
+      <label>Tip ($) <input id="f-tip" type="number" min="0"></label>
+      <label>Lanes <input id="f-lanes" type="number" min="2" max="12"></label>
+      <label>Theme <select id="f-theme"></select></label>
+      <label>Car <select id="f-car"></select></label>
+      <label>Traffic flow <select id="f-flow"><option value="">two-way</option><option value="north">all my way</option><option value="south">all oncoming</option></select></label>
+    </div>
+    <label class="block">Traffic mix <input id="f-traffic" placeholder="darkvan 0.4, commuter 0.2, van 0.2, police 0.05"></label>
+  </section>
+  <section>
+    <h2>Road <span class="small" id="length"></span></h2>
+    <table id="segments"><thead><tr><th>Length m</th><th>Bend °</th><th>Slope %</th><th></th></tr></thead><tbody></tbody></table>
+    <button id="addSegment">+ Add a segment</button>
+  </section>
+  <section>
+    <h2>Special features <span class="small">as JSON</span></h2>
+    <textarea id="extra" spellcheck="false" aria-label="The level's special features, as JSON"></textarea>
+    <div class="buttons"><button id="tidy">Tidy</button></div>
+    <p class="note" id="extraNote"></p>
+  </section>
+  <section>
+    <h2>Place</h2>
+    <div class="tools" id="tools"></div>
+    <div id="item"></div>
+  </section>
+</aside>
+<main id="mapBox"><canvas id="map"></canvas>
+  <iframe id="view3d" title="The level in 3D" hidden></iframe>
+  <div class="hint" id="hint">Scroll to zoom &middot; drag the road to pan &middot; click to place or select &middot; drag an item to move it &middot; Delete removes it</div>
+  <div class="viewButtons"><button id="fit">Fit</button><button id="show3d" class="primary">3D view</button><button id="refresh3d" hidden>Update with my edits</button></div>
+</main>
+<script type="module" src="/src/delivery/editor.js"></script>
+</body>
+</html>

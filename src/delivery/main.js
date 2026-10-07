@@ -29,6 +29,7 @@ import { syncWreckage } from './render/wreckage.js';
 import { syncMachinery } from './render/machinery.js';
 import { syncSite } from './render/site.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
+import { Fly, startFly, flyCamera } from './render/fly.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
@@ -42,6 +43,8 @@ import { CAR } from './cars.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
 // ?test (or ?hidden=testbed) starts the hidden test track straight away (?test&evil: as Evil).
+// ?edited plays the level as the level editor (editor.html) left it, as a hidden level (nothing saved).
+// With any of those, ?fly freezes the level and gives a free camera to fly round it (render/fly.js).
 // With it, ?level=3 picks the level (locked or not), ?at=1650 starts that many metres along
 // the expressway and ?ff=5 runs the game for that many seconds before the first frame is drawn.
 const params = new URLSearchParams(location.search);
@@ -53,7 +56,7 @@ if (params.get('garage') !== null) {
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
-const hidden = params.get('hidden') || (params.get('test') !== null ? 'testbed' : null); // (a hidden level: see levels.js)
+const hidden = params.get('hidden') || (params.get('test') !== null ? 'testbed' : params.get('edited') !== null ? 'edited' : null); // (a hidden level: see levels.js)
 if (params.get('mystery')) Player.nextMystery = params.get('mystery'); // ?mystery=toad: every mystery pickup is that one
 if (params.get('racewatch') !== null) {
   Game.startRaceWatch();
@@ -67,7 +70,11 @@ if (params.get('racewatch') !== null) {
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
 } else if (autostart !== null || hidden) {
   Game.evil = autostart === 'evil' || params.get('evil') !== null;
-  if (hidden) selectSpecial(HIDDEN_LEVELS[hidden] || HIDDEN_LEVELS.testbed);
+  if (hidden === 'edited') {
+    let edited = null;
+    try { edited = JSON.parse(localStorage.getItem('delivery_editor_level')); } catch { /* (no level handed over) */ }
+    selectSpecial(edited || HIDDEN_LEVELS.testbed);
+  } else if (hidden) selectSpecial(HIDDEN_LEVELS[hidden] || HIDDEN_LEVELS.testbed);
   else selectLevel((Number(params.get('level')) || 1) - 1);
   if (params.get('car')) { // ?car=lowrider: drive that car for this visit, owned or not (nothing is saved)
     Progress.data.cars.push(params.get('car'));
@@ -75,6 +82,7 @@ if (params.get('racewatch') !== null) {
   }
   Game.start();
   if (params.get('at')) Player.s = Number(params.get('at'));
+  if (params.get('fly') !== null) startFly();
   // ?cine: a still for the level select. The traffic is dealt out afresh around the car, ?ff lets
   // it settle, then everything stops: no HUD, and the camera off to one side (render/scene.js)
   const cine = params.get('cine') !== null;
@@ -135,7 +143,7 @@ const frame = (now) => {
     // The screensaver has no player car: the mesh, and everything attached to it (the garage
     // models, the tank, the UFO, the passenger), is hidden. This comes after the helicopter,
     // which otherwise shows it again.
-    if (Game.screensaver) carMesh.visible = false;
+    if (Game.screensaver || Fly.on) carMesh.visible = false;
     syncHeadlights();
     syncTraffic();
     syncToads(now);
@@ -158,7 +166,8 @@ const frame = (now) => {
     syncTargets(dt);
     updateEffects(dt);
 
-    if (Game.raceWatch) raceCamera(dt); // (the race screensaver's cameras)
+    if (Fly.on) flyCamera(dt); // (flying round a level: see render/fly.js)
+    else if (Game.raceWatch) raceCamera(dt); // (the race screensaver's cameras)
     else updateCamera(dt, prevState !== 'playing' && Game.state === 'playing');
     syncRaceWatch(now);
     syncEmotes(dt, now);
