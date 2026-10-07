@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
 import { Track } from '../track.js';
+import { houseAt, LOT } from '../gunfire.js';
 import { Game } from '../game.js';
 import { Player } from '../player.js';
 import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
@@ -77,6 +78,9 @@ export const THEMES = {
   snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
   // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
   canberra: { sky: 0xb9d8ee, ground: 0xa3ad66, road: 0x4a4c50, scenery: 'canberra', median: 0x7f9a4f },
+  // hood: the same suburb gone to seed (rundown: see the suburb scenery): dead grass and bare dirt, drab
+  // houses with boarded-up windows, burnt-out shells, broken fences, dead trees, wrecks and rubbish
+  hood: { sky: 0xbcc3c2, ground: 0x9a8d55, road: 0x46474a, scenery: 'suburb', rundown: true },
   // suburb: lawns, pavements, picket fences and houses in a row
   suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb' },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
@@ -1312,35 +1316,61 @@ const buildRoad = () => {
     for (const side of [-1, 1]) {
       add(buildStrip(Track.start, Track.end, (q) => beside(side, q, 0.4), (q) => beside(side, q, 2.4), 0.03), flat(0xcfd0cb));
     }
-    const WALLS = [0xf2e6c9, 0xbfd8e8, 0xf0c9b0, 0xd9e5c3, 0xe8d0e0, 0xfafafa];
+    // (run down, theme.rundown: drab walls, boarded windows, gaps in the fences, dead trees, bare dirt,
+    // burnt-out houses, wrecks on the lawns, rubbish and graffiti)
+    const rundown = !!theme.rundown, odds = (p) => rundown && Math.random() < p;
+    const WALLS = rundown ? [0x9a9282, 0xa8a08a, 0x7f8a8c, 0x9c8c7a, 0x77726a, 0xb0a88f] : [0xf2e6c9, 0xbfd8e8, 0xf0c9b0, 0xd9e5c3, 0xe8d0e0, 0xfafafa];
     const walls = WALLS.map(() => []), roofs = [], doors = [], windows = [], drives = [];
     const pickets = [], rails = [], mailPosts = [], mailboxes = [], trunks = [], crowns = [], lampPosts = [], lampHeads = [];
+    const boards = [], holes = [], burnt = [], burntRoofs = [], dirt = [], branches = [], wrecks = [], wreckTops = [], bags = [], tags = [[], [], []];
     const tree = (at, lat) => {
       const h = 0.8 + Math.random() * 0.5;
+      if (odds(0.5)) { // (a dead one: a bare trunk and a few bare branches)
+        trunks.push([at, lat, 1.6 * h, 0.3, 3.2 * h, 0.3]);
+        for (let k = 0; k < 3; k++) branches.push([at + Math.random() * 1.2 - 0.6, lat + Math.random() * 1.2 - 0.6, (2.2 + k * 0.5) * h, 0.12, 0.12, 1.6 + Math.random()]);
+        return;
+      }
       trunks.push([at, lat, 1.2 * h, 0.35, 2.4 * h, 0.35]);
       crowns.push([at, lat, 3.6 * h, 3.4 * h, 3.0 * h, 3.4 * h]);
     };
-    const FENCE = 2.8, LOT = 26; // m off the pavement edge to the fence; m along the road per lot
+    const FENCE = 2.8; // m off the pavement edge to the fence (and LOT m along the road per lot: see gunfire.js)
     // (nothing goes where it would stand on a side road)
     const clear = (s, lat) => !exits.length || (Track.toWorld(s, lat, tmp), Track.sideDistance(tmp.x, tmp.z) > 24);
     for (const side of [-1, 1]) {
-      for (let s = Track.start + (side > 0 ? 0 : LOT / 2); s < Track.end - LOT; s += LOT) {
+      for (let s = Track.start + (side > 0 ? 0 : LOT / 2), lot = 0; s < Track.end - LOT; s += LOT, lot++) {
         const mid = s + LOT / 2;
         if (!clear(mid, beside(side, mid, 12))) continue;
-        if (Math.random() < 0.12) { // a little park
+        // (each lot the same every time: The Hood's shooters are in these houses, see gunfire.js)
+        const house = houseAt(side, lot);
+        if (!house) { // a little park
           for (let k = 0; k < 4; k++) tree(s + Math.random() * LOT, beside(side, mid, 5 + Math.random() * 22));
           continue;
         }
-        const along = 9 + Math.random() * 4, across = 8 + Math.random() * 3;
-        const tall = Math.random() < 0.4, h = tall ? 6 : 3.4;
-        const front = 9 + Math.random() * 3; // m of front lawn, from the pavement edge to the house
+        const { along, across, tall, front } = house, h = tall ? 6 : 3.4; // (front: m of front lawn, from the pavement edge to the house)
         const lat = beside(side, mid, front + across / 2), face = beside(side, mid, front - 0.06);
-        walls[Math.floor(Math.random() * WALLS.length)].push([mid, lat, h / 2, across, h, along]);
-        roofs.push([mid, lat, h + 1.1, across * 1.12, 2.2, along * 1.12]);
-        doors.push([mid - 1.5, face, 1.1, 0.12, 2.2, 1.1]);
+        const shell = odds(0.1); // (burnt out: blackened, its roof fallen in, its windows empty)
+        if (shell) {
+          burnt.push([mid, lat, h / 2, across, h, along]);
+          burntRoofs.push([mid, lat, h + 0.35, across * 0.9, 0.7, along * 0.9]);
+        } else {
+          walls[Math.floor(Math.random() * WALLS.length)].push([mid, lat, h / 2, across, h, along]);
+          roofs.push([mid, lat, h + 1.1, across * 1.12, 2.2, along * 1.12]);
+        }
+        (shell || odds(0.25) ? holes : doors).push([mid - 1.5, face, 1.1, 0.12, 2.2, 1.1]); // (a door, or the hole where it was)
+        const pane = (at, y) => (shell ? holes : odds(0.5) ? boards : windows).push([at, face, y, 0.1, 1.2, 1.7]); // (or boarded up)
         for (const floor of tall ? [1.6, 4.4] : [1.6]) {
-          windows.push([mid + 2.2, face, floor, 0.1, 1.2, 1.7]);
-          if (floor > 2) windows.push([mid - 1.5, face, floor, 0.1, 1.2, 1.7]);
+          pane(mid + 2.2, floor);
+          if (floor > 2) pane(mid - 1.5, floor);
+        }
+        if (!shell && odds(0.35)) tags[Math.floor(Math.random() * 3)].push([mid + Math.random() * 3 - 1.5, beside(side, mid, front - 0.08), 0.9, 0.06, 1.1, 2.4 + Math.random() * 2]); // (graffiti)
+        if (rundown) { // the lawn: bare dirt in patches, now and then a wreck on it, and bags of rubbish by the mailbox
+          for (let k = 0; k < 2; k++) dirt.push([s + 3 + Math.random() * (LOT - 6), beside(side, mid, FENCE + 1.5 + Math.random() * (front - FENCE - 3)), 0.02, 2 + Math.random() * 3, 0.04, 3 + Math.random() * 4]);
+          if (odds(0.2)) {
+            const w = beside(side, mid, FENCE + 3.2);
+            wrecks.push([mid + 3, w, 0.55, 1.8, 0.8, 4.2]);
+            wreckTops.push([mid + 3.3, w, 1.15, 1.5, 0.5, 2]);
+          }
+          for (let k = Math.floor(Math.random() * 3); k > 0; k--) bags.push([mid + along / 2 + 1 + Math.random() * 1.5, beside(side, mid, FENCE - 0.6 - Math.random() * 0.6), 0.3, 0.6, 0.6, 0.6]);
         }
         // the driveway, beside the house, from the pavement to its far side, with the mailbox at its end
         const drive = mid + along / 2 + 2;
@@ -1349,8 +1379,8 @@ const buildRoad = () => {
         mailboxes.push([drive - 2.3, beside(side, drive - 2.3, FENCE - 0.3), 1.1, 0.32, 0.3, 0.55]);
         // the picket fence along the front of the lot, open where the driveway crosses it
         for (const [from, to] of [[s, drive - 1.8], [drive + 1.8, s + LOT]]) {
-          if (to - from < 1) continue;
-          for (let q = from; q <= to; q += 1.2) pickets.push([q, beside(side, q, FENCE), 0.45, 0.1, 0.9, 0.1]);
+          if (to - from < 1 || odds(0.2)) continue; // (run down: some stretches of fence gone altogether...)
+          for (let q = from; q <= to; q += 1.2) if (!odds(0.3)) pickets.push([q, beside(side, q, FENCE), 0.45, 0.1, 0.9, 0.1]); // (...and pickets missing)
           for (const y of [0.3, 0.65]) rails.push([(from + to) / 2, beside(side, (from + to) / 2, FENCE), y, 0.06, 0.08, to - from]);
         }
         if (Math.random() < 0.6) tree(s + 2 + Math.random() * 5, beside(side, s, FENCE + 2 + Math.random() * 3)); // in the front garden
@@ -1366,16 +1396,28 @@ const buildRoad = () => {
     // (a four-sided cone turned an eighth is a square pyramid over a unit square: a hip roof)
     const roof = new THREE.ConeGeometry(Math.SQRT1_2, 1, 4).rotateY(Math.PI / 4);
     WALLS.forEach((color, i) => instances(cube, color, walls[i]));
-    instances(roof, 0x6b4a3f, roofs);
-    instances(cube, 0x7a3b2e, doors);
-    instances(cube, 0x9cc7e0, windows);
-    instances(cube, 0x9a9a95, drives);
-    instances(cube, 0xffffff, pickets);
-    instances(cube, 0xffffff, rails);
+    instances(roof, rundown ? 0x4a423c : 0x6b4a3f, roofs);
+    instances(cube, rundown ? 0x5a3a2e : 0x7a3b2e, doors);
+    instances(cube, rundown ? 0x6f8794 : 0x9cc7e0, windows);
+    instances(cube, rundown ? 0x8a8780 : 0x9a9a95, drives);
+    instances(cube, rundown ? 0xb3ab98 : 0xffffff, pickets);
+    instances(cube, rundown ? 0xb3ab98 : 0xffffff, rails);
     instances(cube, 0x5a5a5a, mailPosts);
-    instances(cube, 0x2a4a8a, mailboxes);
-    instances(tube, 0x6b4a2b, trunks);
-    instances(new THREE.SphereGeometry(0.5, 10, 8), 0x3f8f3f, crowns);
+    instances(cube, rundown ? 0x4a4f58 : 0x2a4a8a, mailboxes);
+    instances(tube, rundown ? 0x5b4a3a : 0x6b4a2b, trunks);
+    instances(new THREE.SphereGeometry(0.5, 10, 8), rundown ? 0x6f7a3a : 0x3f8f3f, crowns);
+    if (rundown) {
+      instances(cube, 0x8a6a42, boards);            // boarded-up windows
+      instances(cube, 0x161616, holes);             // doorways and windows with nothing in them
+      instances(cube, 0x2a2622, burnt);             // burnt-out shells
+      instances(cube, 0x1a1816, burntRoofs);
+      instances(cube, 0x7a6644, dirt);              // bare dirt on the lawns
+      instances(cube, 0x4a3c30, branches);          // dead trees' branches
+      instances(cube, 0x7a4a2a, wrecks);            // rusting wrecks
+      instances(cube, 0x5a3a24, wreckTops);
+      instances(new THREE.SphereGeometry(0.5, 8, 6), 0x161618, bags); // rubbish bags
+      [0xd9367a, 0x2fb3d9, 0xe0d23a].forEach((color, i) => instances(cube, color, tags[i])); // graffiti
+    }
     instances(cube, 0x55595f, lampPosts);
     instances(cube, 0xfff3c4, lampHeads, true);
   } else if (theme.scenery === 'canberra') {

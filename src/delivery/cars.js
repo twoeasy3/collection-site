@@ -68,7 +68,7 @@ export const CARS = [
 
 // Vehicles that belong to a level, not to the garage (a level's "car" field).
 export const LEVEL_CARS = {
-  ufo: { id: 'ufo', name: 'UFO', price: 0, color: 0xc9d2dc, evilColor: 0x4a3a66, ufo: true,
+  ufo: { id: 'ufo', name: 'UFO', price: 0, color: 0xc9d2dc, evilColor: 0x4a3a66, ufo: true, noWheels: true,
     maxSpeed: 58, accel: 30, crossing: 1, agility: 2.8, health: 100, hw: 1.3, hl: 1.3, height: 1.2 },
   // a Formula 1 car: very fast, quick off the line, nimble, low, and no good over a kerb
   f1: { id: 'f1', name: 'F1 Car', price: 0, color: 0xd8262b, evilColor: 0x151515, model: 'f1',
@@ -78,7 +78,7 @@ export const LEVEL_CARS = {
   gt: { id: 'gt', name: 'GT Car', price: 0, color: 0xc8102e, evilColor: 0x151515, model: 'gt',
     maxSpeed: 62, accel: 14, crossing: 0.5, agility: 1.25, health: 240, hw: 1.0, hl: 2.3, height: 1.25 },
   // a jetboat: a sleek little cruiser with a captain's cabin, quick and nimble on the water, bobbing on the swell
-  jetboat: { id: 'jetboat', name: 'Jetboat', price: 0, color: 0xe8432e, evilColor: 0x1b1d22, model: 'jetboat', wake: true,
+  jetboat: { id: 'jetboat', name: 'Jetboat', price: 0, color: 0xe8432e, evilColor: 0x1b1d22, model: 'jetboat', wake: true, noWheels: true,
     maxSpeed: 34, accel: 13, crossing: 1, agility: 1.4, health: 120, hw: 1.0, hl: 2.7, height: 1.6 },
 };
 

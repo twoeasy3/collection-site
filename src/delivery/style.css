@@ -233,6 +233,9 @@ body.screensaver #behind, body.cinematic #behind { display: none !important; }
 #towFill { height: 100%; background: #7fd8ff; }
 #towing.sling { color: #ffb03a; }
 #towing.sling #towFill { background: #ffb03a; }
+#flat { display: none; margin-top: 8px; font-size: 12px; font-weight: 700; color: #ffb03a; text-shadow: 0 1px 2px #000; }
+#flat .bar { width: 150px; max-width: 40vw; height: 8px; margin-top: 3px; background: rgba(0,0,0,.4); border-radius: 4px; overflow: hidden; }
+#flatFill { height: 100%; width: 0; background: #ffb03a; }
 #danger .bar { width: 150px; max-width: 40vw; height: 10px; margin-top: 3px;
   background: rgba(0,0,0,.4); border-radius: 5px; overflow: hidden; }
 #dangerFill { height: 100%; width: 100%; background: #ff3b30; }

@@ -60,6 +60,7 @@ const SAMPLES = {
   timeMinus: 'Time Minus',
   cash5: 'Cash', cash10: 'Cash', cash20: 'Cash',
   armour: null, bigSplash: null, butterfingers: null, // (the stand-in chime: no sound of their own yet)
+  gunshot: null, puncture: null, // (synthesised: see SYNTH)
   siren: { seq: ['Police Siren', 'Police Siren', 'Police Siren'] }, // busted
   radar: '',               // a police car comes into sight
   tick: '',           // each second of the tip countdown
@@ -252,6 +253,8 @@ const SYNTH = {
   throw: (v) => noise(600, 2400, 0.16, 0.35 * v, 'bandpass'),                       // a whoosh
   gift: (v) => { tone(880, 880, 0.09, 0.2 * v); tone(1320, 1320, 0.16, 0.2 * v, 'sine', 0.08); }, // a two-note chime
   burst: (v) => { noise(1800, 200, 0.25, 0.4 * v); tone(160, 60, 0.2, 0.3 * v); },   // a small fiery pop
+  gunshot: (v) => { noise(3200, 500, 0.06, 0.45 * v); tone(240, 70, 0.05, 0.25 * v, 'square'); }, // a sharp crack
+  puncture: (v) => { tone(300, 120, 0.08, 0.4 * v, 'square'); noise(5000, 2500, 0.7, 0.3 * v, 'bandpass'); }, // a bang, and the hiss
   explode: (v) => { noise(1400, 60, 0.7, 0.7 * v); tone(110, 28, 0.6, 0.6 * v); },   // a boom
   crash: (v) => { noise(900, 300, 0.14, 0.6 * v, 'bandpass'); tone(130, 70, 0.12, 0.4 * v, 'square'); }, // a metal thud
   cannon: (v) => { tone(90, 30, 0.35, 0.8 * v); noise(2500, 300, 0.2, 0.5 * v); },

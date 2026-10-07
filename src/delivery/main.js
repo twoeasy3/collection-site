@@ -27,6 +27,7 @@ import { syncHippos } from './render/hippos.js';
 import { syncElephants } from './render/elephants.js';
 import { syncWreckage } from './render/wreckage.js';
 import { syncMachinery } from './render/machinery.js';
+import { syncGunfire } from './render/gunfire.js';
 import { syncSite } from './render/site.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
@@ -159,6 +160,7 @@ const frame = (now) => {
     syncElephants(now);
     syncWreckage(now);
     syncMachinery(now);
+    syncGunfire();
     syncSite();
     syncZones(dt);
     syncStorm(dt);

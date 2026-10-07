@@ -123,6 +123,9 @@ export const Player = {
     this.sling = this.slingTime = this.slingTotal = 0;
     this.bigSplash = 0;
     this.butterfingers = 0;
+    this.puncture = 0;   // a flat tyre: -1 (left) or 1 (right), 0 none (see punctureTyre)
+    this.fixing = 0;     // s stopped so far, changing it
+    this.tyreGrace = 0;  // s since it was changed, still let off the shoulder meter
     this.endMystery();
     this.latVel = 0;
     this.yaw = 0;
@@ -255,6 +258,15 @@ export const Player = {
     }
     return lead;
   },
+  // a tyre shot out (see Gunfire): a limp on, slower and pulling to that side, until the car stops to
+  // change it. (Nothing without tyres: the tank, the UFO, the boat)
+  punctureTyre(side) {
+    if (this.puncture || this.tank > 0 || CAR.noWheels || !this.active) return;
+    this.puncture = side;
+    this.fixing = 0;
+    Message.say('events', 'puncture');
+    sfx('puncture');
+  },
   updateSpeed(dt, throttle, stopping) {
     if (stopping) {
       this.speed = Math.max(0, this.speed - CONFIG.brake * dt);
@@ -274,7 +286,8 @@ export const Player = {
     // (a turbo adds the same to every car's top speed: a slow car stays the slower one)
     // (bad gas and the weight hold the car back: a share of its top speed and acceleration)
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
-    let top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1);
+    let top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1) *
+      (this.puncture ? CONFIG.puncture.topSpeed : 1); // (and a flat tyre)
     // in a race, in another car's slipstream: faster (see CONFIG.race); and pulling out of it, flung on
     // past it: the slingshot, a kick on top of the tow's speed, both fading away (the longer, the more
     // speed the tow had given it)
@@ -318,7 +331,7 @@ export const Player = {
       // (or on a railway track: slowed down to it hard)
       this.speed = Math.max(top, this.speed - (rails || wet || mud ? R.bite : CONFIG.brake * 0.5) * dt);
     } else if (drive > 0) {
-      this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * dt);
+      this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * (this.puncture ? CONFIG.puncture.accel : 1) * dt);
     } else if (drive < 0 && this.speed > CONFIG.minSpeed) {
       this.speed = Math.max(CONFIG.minSpeed, this.speed + drive * CONFIG.brake * grip * dt);
     }
@@ -398,6 +411,8 @@ export const Player = {
       const pull = Math.sign(off) * Math.max(0, Math.abs(off) - CONFIG.laneAssistFree);
       wantVel = clamp(pull * CONFIG.laneAssist, -CONFIG.steerSpeed, CONFIG.steerSpeed);
     }
+    // (a flat tyre drags the car towards its side, the harder the faster it goes)
+    if (this.puncture && !this.busted) wantVel += this.puncture * CONFIG.puncture.pull * Math.min(1, this.speed / 15);
     // a hard knock briefly weakens steering
     // (on a level where cars understeer, a car sliding wide in a bend has lost its grip, as on ice)
     const sliding = LEVEL.understeer && !this.onIce && understeer(this) !== 0;
@@ -429,8 +444,19 @@ export const Player = {
     // the shoulder is only tolerated briefly; back in the lanes the allowance refills
     // (an inflatable passenger makes the shoulder legal)
     // (a level can switch the timer off altogether: "shoulderTimer": false)
+    // (and nor does a car pulled over with a flat tyre, or just after changing it)
+    if (this.puncture) {
+      this.fixing = this.speed < 0.3 ? this.fixing + dt : 0; // (stopped, the tyre is being changed)
+      if (this.fixing >= CONFIG.puncture.fixTime) {
+        this.puncture = 0;
+        this.tyreGrace = CONFIG.puncture.grace;
+        Message.say('events', 'tyreChanged');
+        sfx('wrench');
+      }
+    }
+    this.tyreGrace = Math.max(0, (this.tyreGrace || 0) - dt);
     this.onShoulder = LEVEL.shoulderTimer !== false && Track.onShoulder(this.lat, this.s) &&
-      this.passenger <= 0 && this.tank <= 0;
+      this.passenger <= 0 && this.tank <= 0 && !this.puncture && !(this.tyreGrace > 0);
     if (this.onShoulder) {
       // (mercy: with a bullet train about, the shoulder may be the only way out of its path)
       this.danger = Math.max(0, this.danger - dt * (BulletTrain.active ? CONFIG.bulletTrain.dangerMercy : 1));

@@ -22,6 +22,7 @@ const throwBtns = [...document.querySelectorAll('.throw')]; // (one each side)
 const hudBanner = document.getElementById('banner');
 const hudTurbo = document.getElementById('turbo');
 const hudDanger = document.getElementById('danger');
+const hudFlat = document.getElementById('flat'), hudFlatFill = document.getElementById('flatFill');
 const hudCopWatch = document.getElementById('copWatch');
 const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill'), hudTowLabel = document.getElementById('towLabel');
 const hudSocial = document.getElementById('social'), hudSocialFill = document.getElementById('socialFill');
@@ -152,6 +153,9 @@ export const updateHud = () => {
   }
   const danger = Player.danger / Social.dangerTime;
   hudDanger.style.display = Player.active && danger < 1 ? 'block' : 'none';
+  // a flat tyre: stop, and the bar fills as the tyre is changed
+  hudFlat.style.display = Player.active && Player.puncture ? 'block' : 'none';
+  hudFlatFill.style.width = Math.min(1, (Player.fixing || 0) / CONFIG.puncture.fixTime) * 100 + '%';
   hudDangerFill.style.width = danger * 100 + '%';
   const health = Math.max(0, Player.health / Player.maxHealth);
   hudHealth.style.width = health * 100 + '%';

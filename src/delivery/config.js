@@ -121,6 +121,20 @@ export const CONFIG = {
   // the marker over a rival courier (see render/emotes.js): its tip `above` m over the car's roof (the mood
   // face pops up from 0.5 to 1.6 m over it), growing in proportion beyond growFrom m from the camera
   rivalMark: { above: 2.1, growFrom: 35 },
+  // a level's gang war (see gunfire.js): in its turf, a burst from a house beside the road every `every` s,
+  // from one between near.min and near.max m ahead of the player: `shots` shots, shotGap s apart, at
+  // speed m/s, off true by up to spread m, out to range m. Each hit does `damage`, and punctures a tyre
+  // with a chance of `puncture`. A muzzle flash shows for flashTime s
+  gunfire: { every: { min: 2.5, max: 5.5 }, near: { min: 10, max: 70 }, shots: { min: 4, max: 8 }, shotGap: 0.09, speed: 110,
+    spread: 1.4, range: 90, damage: 2, puncture: 0.06, flashTime: 0.06 },
+  // a drive-by car (traffic kind 'driveby'): every `every` s, within range m of the player, it picks a target
+  // (the player, or a car near it), pulls up alongside it (within alongside m), fires `shots` shots shotGap s
+  // apart, then makes off at fleePace times its pace for fleeTime s; it gives up the chase after giveUp s
+  driveBy: { every: { min: 3, max: 7 }, range: 120, alongside: 2.5, shots: 9, shotGap: 0.11, fleePace: 1.5, fleeTime: 6, giveUp: 14 },
+  // a punctured tyre (the player's: see Player.punctureTyre): topSpeed and accel are shares of the car's
+  // own; the car pulls to that side at up to pull m/s; stopped for fixTime s, the tyre is changed; and for
+  // grace s afterwards (as while punctured) the shoulder meter doesn't run down
+  puncture: { topSpeed: 0.5, accel: 0.5, pull: 1.6, fixTime: 4, grace: 6 },
   // a rival courier (a level's "rival", or ?rival: see Game.start): its pace, a share of the player's car's
   // top speed; its health; and s before an evil one's first throw at
   // the player (then as any evil car's: enemyThrowMin..Max)
@@ -141,6 +155,9 @@ export const CONFIG = {
     // and in traffic it takes a gap laneGap m clear either side (traffic wants laneChangeGap), counts only
     // what is within passRoom m past the car it is passing in that lane, and shakes off a knock recovery times as quickly
     laneGap: 6, passRoom: 12, recovery: 3,
+    // the slipstream on a rival stage (for the rivals and the player alike): within reach m of the car ahead,
+    // and share as strong as a race's (see CONFIG.race: draft, and the slingshot that comes of it)
+    tow: { reach: 45, share: 0.4 },
     // Against ordinary traffic it has the better of every knock: it takes `share` of any push, damage and
     // stun (an even match is 0.5), its hits do `damage` times as much to the other, and side by side it
     // shoves the other car aside at `shove` m/s a step; a head-on wrecks the other car, costing it headOn
@@ -542,6 +559,8 @@ export const CONFIG = {
     hearse:  { hw: 1.0,  hl: 2.8, height: 1.65, mass: 1.6, health: 100, model: 'hearse' },
     pickup:  { hw: 1.05, hl: 2.6, height: 2.1, mass: 1.8, health: 120, model: 'pickup' },
     miata:   { hw: 0.85, hl: 1.95, height: 1.1, mass: 0.8, health: 50, model: 'miata' },
+    // a drive-by car (The Hood): only ever evil (evilOnly), out for trouble: see CONFIG.driveBy
+    driveby: { hw: 1.0, hl: 2.65, height: 1.45, mass: 1.5, health: 120, model: 'driveby', speed: 1.1, evilOnly: true },
   },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)

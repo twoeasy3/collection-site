@@ -13,6 +13,7 @@ import { Game, sayRival } from './game.js';
 import { Social } from './social.js';
 import { Collision } from './collision.js';
 import { Pickups } from './pickups.js';
+import { Gunfire } from './gunfire.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -60,8 +61,17 @@ export const Traffic = (() => {
   // the level's "traffic" list: which kinds of vehicle turn up, and how often relative to
   // each other. An empty list means no traffic.
   // (in a zone with a traffic list of its own, at s, that one)
-  const mix = (s) => Object.entries((s !== undefined && Track.zoneAt(s)?.traffic) || LEVEL.traffic || {})
-    .filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0);
+  // (on a level with "policeZones", police only inside them, as `share` of all the traffic there)
+  const mix = (s) => {
+    let list = Object.entries((s !== undefined && Track.zoneAt(s)?.traffic) || LEVEL.traffic || {})
+      .filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0);
+    if (LEVEL.policeZones) {
+      list = list.filter(([kind]) => kind !== 'police');
+      const zone = s !== undefined && LEVEL.policeZones.find(z => s >= z.from && s <= z.to);
+      if (zone) list.push(['police', list.reduce((sum, [, rate]) => sum + rate, 0) * zone.share / (1 - zone.share)]);
+    }
+    return list;
+  };
   const pickKind = (s) => {
     const kinds = mix(s);
     let r = Math.random() * kinds.reduce((sum, [, rate]) => sum + rate, 0);
@@ -186,6 +196,7 @@ export const Traffic = (() => {
     car.maxHealth = car.health = type.health;
     car.unspinnable = car.courier = false; // (only a rival courier: see addRacer)
     car.blockedFor = 0; car.blockedBy = null; car.clearThrow = 0;
+    car.punctured = car.stationed = false; car.driveBy = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
     car.rivalName = car.colors = car.markColor = null; car.counted = false;
     car.smoke = 0;
     car.lane = lane;
@@ -202,7 +213,7 @@ export const Traffic = (() => {
       : own ? own * (P.min + Math.random() * (P.max - P.min)) : type.speed * (min + Math.random() * (max - min));
     car.vs = car.dir * car.baseSpeed;
     const evilShare = drivers().evil !== undefined ? drivers().evil : CONFIG.evilShare;
-    car.evil = !type.special && Math.random() < Social.evilShare(evilShare); // fixed for this car's life (fewer, the higher the player's standing)
+    car.evil = !!type.evilOnly || (!type.special && Math.random() < Social.evilShare(evilShare)); // fixed for this car's life (fewer, the higher the player's standing)
     car.defiant = car.evil && Math.random() < CONFIG.emergency.defiance; // won't give way to an ambulance
     // (and the higher the player's standing, the happier every driver starts out)
     car.mood = clamp(MOOD_START[pickEmotion(car.evil)] + Social.moodLift, -1, 1);
@@ -451,18 +462,19 @@ export const Traffic = (() => {
   };
   // the slipstream (a race: see CONFIG.race): how deep in the tow of a car ahead a car at s, lat
   // (so wide) is, from 0 (none) to 1 (on its gearbox). Any racer ahead gives a tow, and so does the player
+  // (on a rival stage, a road car's tow: much shorter, and weaker: see CONFIG.rival.tow)
   const tow = (self, s, lat, hw) => {
     if (!LEVEL.grid) return 0;
-    const R = CONFIG.race;
+    const R = CONFIG.race, road = LEVEL.grid.rival ? CONFIG.rival.tow : null, reach = road ? road.reach : R.towReach;
     let best = 0;
     const behind = (os, olat, ohw) => {
       let gap = os - s;
       if (Track.loop && gap < -Track.length / 2) gap += Track.length; // (just over the line)
-      if (gap > 0 && gap < R.towReach && Math.abs(olat - lat) < (ohw + hw) * 0.8) best = Math.max(best, 1 - gap / R.towReach);
+      if (gap > 0 && gap < reach && Math.abs(olat - lat) < (ohw + hw) * 0.8) best = Math.max(best, 1 - gap / reach);
     };
     for (const o of cars) if (o !== self && o.active && o.racer) behind(o.s, o.lat, o.hw);
     if (self !== Player && Player.active) behind(Player.s, Player.lat, Player.hw);
-    return best;
+    return best * (road ? road.share : 1);
   };
   // would a racer held up behind `ahead` get by it in that lane? Only with the lane clear past it (or
   // with whatever is in it going faster), going faster once out of the tow than it does (the
@@ -485,6 +497,44 @@ export const Traffic = (() => {
   const roomBy = (car, lane, side = sideOf(car, lane)) => {
     const room = side > 0 ? Track.hi(car.s) - (Player.lat + Player.hw) : (Player.lat - Player.hw) - Track.lo(car.s);
     return room >= 2 * car.hw + 0.4;
+  };
+  // ---- a drive-by car (see CONFIG.driveBy): cruising, then picking someone (the player, or a car near
+  // it), pulling up alongside it in the lane beside, firing out of the window, and making off
+  const driveBy = (car, target, dt) => {
+    const D = CONFIG.driveBy, st = car.driveBy || (car.driveBy = { state: 'cruise', wait: between(D.every), victim: null, t: 0, shots: 0, gap: 0 });
+    const v = st.victim, alive = v && (v.isPlayer ? Player.active : v.active && !v.punctured);
+    const speedOf = (o) => o.isPlayer ? Player.speed : Math.abs(o.vs);
+    if (st.state === 'cruise') {
+      if ((st.wait -= dt) <= 0 && Math.abs(car.s - Player.s) < D.range) {
+        const near = cars.filter(o => o !== car && o.active && o.dir === car.dir && o.kind !== 'police' && o.kind !== 'driveby' && !o.courier && !o.parked && !o.punctured &&
+          Math.abs(o.s - car.s) < D.range);
+        const pool = Player.active && Player.dir === car.dir ? [Player, Player, ...near] : near; // (the player more often than not)
+        if (pool.length) Object.assign(st, { state: 'stalk', victim: pool[Math.floor(Math.random() * pool.length)], t: 0 });
+        else st.wait = between(D.every);
+      }
+      return target;
+    }
+    if (st.state === 'flee') {
+      if ((st.t -= dt) <= 0) Object.assign(st, { state: 'cruise', wait: between(D.every), victim: null });
+      return car.baseSpeed * D.fleePace;
+    }
+    if (!alive || (st.t += dt) > D.giveUp) { Object.assign(st, { state: 'flee', t: D.fleeTime }); return target; }
+    // the lane beside the victim's (the nearer, if there are two), then level with it
+    const [first, last] = Track.laneRange(car.dir, car.s), vLane = v.isPlayer ? Track.nearestLane(v.lat, v.s) : v.lane;
+    const beside = [vLane - 1, vLane + 1].filter(l => l >= first && l <= last).sort((a, b) => Math.abs(a - car.lane) - Math.abs(b - car.lane))[0];
+    if (beside !== undefined && car.lane !== beside && laneClear(car, beside, 6)) car.lane = beside;
+    const ds = (v.s - car.s) * car.dir;
+    target = Math.max(0, speedOf(v) + clamp(ds * 0.8, -6, 12));
+    if (st.state === 'stalk' && Math.abs(ds) < D.alongside && car.lane === beside) {
+      Object.assign(st, { state: 'fire', shots: D.shots, gap: 0 });
+      if (v.isPlayer) Message.say('events', 'driveBy');
+    }
+    if (st.state === 'fire' && (st.gap -= dt) <= 0) {
+      st.gap = D.shotGap;
+      Gunfire.shoot({ s: car.s, lat: car.lat + Math.sign(v.lat - car.lat) * car.hw, y: 1.2 }, v, car);
+      if (--st.shots <= 0) Object.assign(st, { state: 'flee', t: D.fleeTime });
+    }
+    return target;
   };
   // ---- a rival courier (a level's "rival": see Game.start and CONFIG.rival) ----
   // what it has picked up, running down, and its pace: faster the further it has fallen behind the player
@@ -800,6 +850,7 @@ export const Traffic = (() => {
   };
 
   const think = (car) => {
+    if (car.punctured || car.stationed) return; // (pulled over with a flat, or a police car on station)
     if (car.kind === 'tractor' || CONFIG.vehicles[car.kind].kerb) return; // a tractor just trundles along its lane, and a truck keeps to the kerb
     if (car.pendingLane !== null) return; // (already signalling for a move)
     if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
@@ -1345,6 +1396,16 @@ export const Traffic = (() => {
           (furious(car) ? CONFIG.race.fury.pace : 1) * (1 + (CONFIG.race.chase.pace - 1) * chasing(car));
         if (car.racer && LEVEL.grid?.rival) target = rivalPace(car, target, dt); // (a rival courier: see rivalPace)
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
+        if (car.kind === 'driveby' && !car.punctured) target = driveBy(car, target, dt); // (out for trouble)
+        // (on a level with "policeZones", a police car that comes to the edge of its stretch stays there,
+        // parked on the shoulder with its lights going: the gangs' turf beyond has no police at all)
+        if (car.kind === 'police' && LEVEL.policeZones && !car.stationed) {
+          const zone = LEVEL.policeZones.find(z => car.s >= z.from - 5 && car.s <= z.to + 5);
+          if (!zone || (car.dir > 0 ? car.s > zone.to - 15 : car.s < zone.from + 15)) car.stationed = true;
+        }
+        if (car.stationed) target = Math.abs(car.lat - Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s)) < 0.8 ? 0 : car.baseSpeed * 0.35;
+        // (a flat tyre: over onto the shoulder on its side, slowing, and stopped once there)
+        if (car.punctured) target = Math.abs(car.lat - Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s)) < 0.8 ? 0 : car.baseSpeed * 0.35;
         if (car.shoulderRun && car.attack < 0.5) car.attack = 0.5; // (on the attack all the way up the shoulder)
         if (rival) {
           // get into its lane, then catch it up or drop back onto it
@@ -1583,7 +1644,7 @@ export const Traffic = (() => {
         // (alongside its rival it steers straight at it)
         const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
         let aimLat = beside ? rival.lat
-          : car.pulledOver || car.shoulderRun ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
+          : car.pulledOver || car.shoulderRun || car.punctured || car.stationed ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
           : Track.laneOffset(car.lane, car.s);
         if (car.passing === Player && car.attack > 0 && !beside && Math.abs(Player.s - car.s) < Player.hl + car.hl + 10) {
           // (going by the player, it keeps as far from it as the road allows: squeezing by, if the player is astride the lanes)
@@ -1594,7 +1655,7 @@ export const Traffic = (() => {
         // pulled over onto the shoulder puts its hazards on
         const settled = Math.abs(aimLat - car.lat) < 0.3;
         if (settled && car.pendingLane === null) car.signal = 0;
-        car.hazards = car.pulledOver && (car.hazards || settled);
+        car.hazards = (car.pulledOver || car.punctured) && (car.hazards || settled);
         const drift = car.hesitant && !beside && !car.pulledOver ? Math.sin(car.wander += dt * 1.3) * H.wander : 0;
         // (and nothing is ever steered into a median: not even after a rival who has gone in there)
         let aim = aimLat + drift + (beside ? 0 : car.squeeze * CONFIG.race.bully.squeeze); // (an evil racer leaning on a good one)

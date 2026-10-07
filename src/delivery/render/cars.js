@@ -304,7 +304,7 @@ export const syncTraffic = () => {
     const paints = PAINTS[car.evil ? 'evil' : 'good'];
     const livery = LIVERIES[car.kind];
     const ambulance = car.kind === 'ambulance';
-    const paint = car.colors ? car.colors[0] : police || ambulance ? POLICE_PAINT : RACE_PAINTS[car.kind] ? racePaint(car)
+    const paint = car.colors ? car.colors[0] : car.kind === 'driveby' ? 0x3a1840 : police || ambulance ? POLICE_PAINT : RACE_PAINTS[car.kind] ? racePaint(car)
       : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
     mesh.userData.bar.visible = police || ambulance;
@@ -318,6 +318,7 @@ export const syncTraffic = () => {
       own.userData.body.material.color.setHex(paint);
       own.userData.livery?.(car.evil);
       if (car.colors) own.userData.stripe?.(car.colors[1]); // (a rival courier's own scheme)
+      own.userData.firing?.(car.driveBy?.state === 'fire'); // (a drive-by, shooting)
       own.userData.accent?.(Math.floor(car.paint / F1_PAINTS.length));
       own.userData.style?.(Math.floor(car.paint / GT_PAINTS.length)); // (a GT car's shape)
       own.userData.animate(performance.now() / 1000 + i);

@@ -14,6 +14,7 @@ import { Hippos } from './hippos.js';
 import { Elephants } from './elephants.js';
 import { Wreckage } from './wreckage.js';
 import { Machinery } from './machinery.js';
+import { Gunfire } from './gunfire.js';
 import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
 import { Social } from './social.js';
@@ -169,6 +170,7 @@ export const Game = {
     Hippos.reset();
     Elephants.reset();
     Machinery.reset();
+    Gunfire.reset();
     Site.reset();
     this.state = 'playing';
     startScreen.classList.add('hidden');
@@ -319,6 +321,7 @@ export const Game = {
     if (playing) Elephants.update(dt);
     if (playing) Wreckage.update(dt);
     if (playing) Machinery.update(dt);
+    if (playing) Gunfire.update(dt);
     if (playing) Site.update(dt);
     if (playing) Social.update(dt);
     Packages.update(dt);

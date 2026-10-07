@@ -53,6 +53,9 @@
 //              'bay', 'flyer', 'mbs', 'esplanade', 'fullerton', 'merlion', 'padang', 'gardens',
 //              'artscience', 'helix' (r: half its length), 'float', 'cbd', 'suntec', 'gallery', 'domes'); r m
 //              round each is kept clear of the town; rot: which way it faces
+//   gunfire    [{ from, to, every? }]: a gang's turf, where the houses beside the road shoot (see gunfire.js);
+//              every: { min, max } s between bursts, if not CONFIG.gunfire.every
+//   policeZones [{ from, to, share }]: police only in these stretches, as that share of the traffic (none elsewhere)
 //   rival      'opposite' | 'evil' | 'good': a rival courier races the player to the drop (see Game.start;
 //              ?rival puts one on any delivery level, to try it out)
 //   rivals     [{ name, car, colors: ['#body', '#stripe'], mark: '#marker' }]: up to three rival couriers
@@ -178,6 +181,7 @@ import passageDuGois from './levels/passage-du-gois.json';
 import safari from './levels/safari.json';
 import airport from './levels/airport.json';
 import construction from './levels/construction.json';
+import theHood from './levels/the-hood.json';
 import grandPrix from './levels/grand-prix.json';
 import marinaBay from './levels/marina-bay.json';
 import testbed from './levels/testbed.json';
@@ -190,7 +194,7 @@ import showdown from './levels/showdown.json';
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

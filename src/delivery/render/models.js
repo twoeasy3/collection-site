@@ -179,6 +179,47 @@ export const MODELS = {
     group.userData.style(0);
     return group;
   },
+  // A drive-by car (The Hood): a long, low 80s sedan in deep plum, blacked-out windows all round, chrome
+  // bumpers and a chrome strip down each side, gold wire wheels with whitewalls; firing, a gun barrel pokes
+  // out of each rear window (userData.firing(on))
+  driveby: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.36;
+    const paint = lambert(car.color), tint = lambert(0x0b0b10), chrome = lambert(CHROME), white = lambert(0xf1f1ee);
+    const body = box(group, paint, w, 0.5, l, 0, 0.6, 0);
+    box(group, paint, w * 0.96, 0.08, l * 0.32, 0, 0.88, l * 0.32);                // the long bonnet
+    box(group, paint, w * 0.96, 0.08, l * 0.22, 0, 0.88, -l * 0.38);               // and boot
+    box(group, tint, w * 0.88, 0.5, l * 0.38, 0, 1.15, -l * 0.04);                 // the glasshouse, blacked out
+    box(group, paint, w * 0.9, 0.08, l * 0.36, 0, 1.43, -l * 0.04);                // a flat roof
+    screen(group, tint, w * 0.86, 0.04, 0.6, 0, 1.12, l * 0.17, 0.75);             // the windscreen
+    screen(group, tint, w * 0.86, 0.04, 0.5, 0, 1.12, -l * 0.25, -0.85);           // the rear window
+    box(group, chrome, w + 0.06, 0.14, 0.14, 0, 0.42, l / 2 + 0.03);               // chrome bumpers,
+    box(group, chrome, w + 0.06, 0.14, 0.14, 0, 0.42, -l / 2 - 0.03);
+    box(group, chrome, w * 0.6, 0.22, 0.04, 0, 0.66, l / 2 + 0.01);                 // a big grille,
+    for (const side of [-1, 1]) {
+      box(group, chrome, 0.03, 0.05, l * 0.9, side * (w / 2 + 0.01), 0.68, 0);       // the side strips
+      box(group, LAMP, w * 0.16, 0.12, 0.04, side * w * 0.36, 0.66, l / 2 + 0.02);   // square headlamps
+      box(group, TAIL, w * 0.2, 0.14, 0.04, side * w * 0.34, 0.66, -l / 2 - 0.02);
+      for (const z of [l * 0.31, -l * 0.31]) {
+        wheel(group, R, 0.26, side * (w / 2 - 0.04), R, z);                          // (gold hubs)
+        const wall = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.78, R * 0.78, 0.27, 16), white); // whitewalls
+        wall.rotation.z = Math.PI / 2;
+        wall.position.set(side * (w / 2 - 0.04), R, z);
+        group.add(wall);
+      }
+    }
+    const guns = [-1, 1].map(side => { // (out of each rear window)
+      const gun = box(group, lambert(0x1a1a1a), 0.5, 0.08, 0.08, side * (w / 2 + 0.18), 1.12, -l * 0.12);
+      gun.visible = false;
+      return gun;
+    });
+    group.userData = {
+      body,
+      animate: () => {},
+      firing: (on) => { for (const gun of guns) gun.visible = on; },
+    };
+    return group;
+  },
   // A sleek sports cruiser, sat in the water (its hull's bottom under the surface): a long white
   // hull, pointed at the bow, with a stripe in the livery down its side; a raised foredeck, and
   // amidships the captain's cabin: a raked windshield, a hardtop roof on slim pillars, glass round
