@@ -107,7 +107,9 @@ export const Game = {
   // the race screensaver: a race on a circuit, no player car, watched (and the next, once it is over)
   startRaceWatch() {
     if (!this.screensaver) { this.menuLevel = LEVEL_INDEX; this.raceCount = 0; }
-    selectSpecial(LEVELS.find(l => l.id === 'marina-bay'));
+    // (on the circuit picked on the menu, or on each of them in turn: see Progress.data.raceTrack)
+    const circuits = LEVELS.filter(l => l.laps);
+    selectSpecial(circuits.find(l => l.id === Progress.data.raceTrack) || circuits[this.raceCount % circuits.length]);
     this.raceCount++;
     this.start();
     this.screensaver = true;

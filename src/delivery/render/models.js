@@ -85,8 +85,16 @@ export const MODELS = {
     box(group, accent, 0.05, 0.36, l * 0.24, 0, 1.0, -l * 0.24);                                  // ...and its fin
     box(group, carbon, 0.42, 0.16, 0.5, 0, 0.72, l * 0.06);                                       // the cockpit
     box(group, lambert(0xf2d21f), 0.24, 0.24, 0.24, 0, 0.82, l * 0.02);                           // a helmet
-    box(group, carbon, 0.05, 0.06, 0.6, 0, 1.02, l * 0.08);                                       // the halo
-    box(group, carbon, 0.62, 0.05, 0.08, 0, 1.0, l * 0.0);
+    // the halo: a hoop round the cockpit, its two arms running from the engine cover behind the driver's
+    // shoulders forward to a point ahead of the helmet, held up there by a pillar down to the monocoque
+    const haloY = 0.99, back = -l * 0.045, tip = l * 0.125, arm = 0.25;
+    for (const side of [-1, 1]) {
+      const rail = box(group, carbon, 0.07, 0.07, Math.hypot(arm, tip - back) + 0.04, side * arm / 2, haloY, (back + tip) / 2);
+      rail.rotation.y = Math.atan2(-side * arm, tip - back);
+      box(group, carbon, 0.09, haloY - 0.9, 0.12, side * arm, (haloY + 0.9) / 2, back);        // (its mounts on the cover)
+    }
+    const foot = tip + 0.2, deck = 0.63; // (where the pillar meets the monocoque's top)
+    slab(group, carbon, 0.07, 0.07, Math.hypot(foot - tip, haloY - deck) + 0.06, 0, (haloY + deck) / 2, (tip + foot) / 2, Math.atan2(haloY - deck, foot - tip));
     box(group, accent, 1.9, 0.05, 0.45, 0, 0.12, l * 0.5);                                         // front wing
     for (const side of [-1, 1]) box(group, accent, 0.05, 0.22, 0.5, side * 0.95, 0.2, l * 0.5);
     box(group, accent, 1.2, 0.08, 0.42, 0, 1.05, -l * 0.47);                                       // rear wing...
@@ -98,6 +106,45 @@ export const MODELS = {
     group.userData = {
       body,
       animate: (t) => { for (const w of wheels) w.rotation.x = t * 30; },
+      accent: (n) => accent.color.setHex(F1_ACCENTS[n % F1_ACCENTS.length]),
+    };
+    return group;
+  },
+  // A Le Mans prototype: low and wide, its wheels shut in under four pontoon wings joined by the sidepods, a
+  // narrow tub between them with a glass bubble of a cockpit, the engine cover running back from it under a
+  // shark fin to a wing right across the tail; lamps in the front wings' noses. In the livery, with a second
+  // colour (userData.accent(n), as an F1 car's) on its fin, wing, nose and mirrors.
+  lmp: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, L = car.hl, R = 0.34;
+    const paint = lambert(car.color), accent = lambert(0xf4f4f4), carbon = lambert(0x1b1b1e), glass = lambert(GLASS);
+    const body = prism(group, paint, w * 0.52, [[-L, 0.2], [L * 0.98, 0.2], [L, 0.32], [L * 0.42, 0.56], [-L * 0.9, 0.66], [-L, 0.5]]); // the tub
+    prism(group, glass, w * 0.4, [[L * 0.42, 0.55], [L * 0.14, 0.98], [-L * 0.1, 1.0], [-L * 0.16, 0.6]]);             // the cockpit's bubble
+    box(group, paint, w * 0.3, 0.04, L * 0.24, 0, 1.01, L * 0.02);                                                     // its roof
+    prism(group, paint, w * 0.34, [[-L * 0.1, 1.0], [-L * 0.84, 0.7], [-L * 0.84, 0.6], [-L * 0.1, 0.6]]);             // the engine cover
+    prism(group, accent, 0.05, [[-L * 0.14, 1.0], [-L * 0.2, 1.2], [-L * 0.86, 1.2], [-L * 0.86, 0.7]]);               // the shark fin
+    box(group, carbon, 0.16, 0.14, 0.3, 0, 1.1, -L * 0.02);                                                            // the roof's air intake
+    slab(group, accent, w * 0.2, 0.02, L * 0.5, 0, 0.455, L * 0.7, Math.atan2(0.24, L * 0.58));                        // a stripe down the nose
+    const wheels = [];
+    for (const side of [-1, 1]) {
+      const x = side * (w / 2 - 0.26);
+      prism(group, paint, 0.5, [[L, 0.2], [L, 0.42], [L * 0.76, 0.78], [L * 0.42, 0.78], [L * 0.3, 0.5], [L * 0.3, 0.2]], x);       // the front wing over its wheel,
+      prism(group, paint, 0.5, [[-L * 0.3, 0.2], [-L * 0.3, 0.5], [-L * 0.42, 0.84], [-L * 0.92, 0.84], [-L, 0.62], [-L, 0.2]], x); // the rear one,
+      box(group, paint, 0.42, 0.3, L * 0.62, x, 0.37, 0);                                                              // and the sidepod between
+      box(group, carbon, 0.3, 0.16, 0.05, x, 0.42, L * 0.3 - 0.02);                                                    // (its radiator's mouth)
+      slab(group, LAMP, 0.34, 0.03, 0.26, x, 0.56, L * 0.9, Math.atan2(0.36, L * 0.24));                               // lamps in the wing's nose
+      box(group, TAIL, 0.06, 0.34, 0.05, side * (w / 2 - 0.08), 0.56, -L - 0.01);                                      // tall thin tail lamps
+      box(group, accent, 0.16, 0.08, 0.12, side * w * 0.27, 0.82, L * 0.3);                                            // mirrors
+      box(group, carbon, 0.05, 0.5, 0.5, side * (w / 2 - 0.04), 1.02, -L + 0.1);                                       // the wing's end plates
+      wheels.push(...wheel(group, R, 0.3, side * (w / 2 - 0.13), R, L * 0.6, lambert(0x8a8f96)));
+      wheels.push(...wheel(group, R + 0.02, 0.32, side * (w / 2 - 0.13), R + 0.02, -L * 0.62, lambert(0x8a8f96)));
+    }
+    box(group, accent, w - 0.08, 0.06, 0.42, 0, 1.22, -L + 0.1);                                                       // the rear wing
+    box(group, carbon, w * 0.98, 0.05, 0.3, 0, 0.2, L - 0.05);                                                         // the splitter
+    box(group, carbon, w * 0.5, 0.18, 0.2, 0, 0.3, -L + 0.02);                                                         // the diffuser
+    group.userData = {
+      body,
+      animate: (t) => { for (const wh of wheels) wh.rotation.x = t * 30; },
       accent: (n) => accent.color.setHex(F1_ACCENTS[n % F1_ACCENTS.length]),
     };
     return group;
@@ -119,17 +166,17 @@ export const MODELS = {
       { // front-engined grand tourer
         body: [[-2.3, 0.3], [2.3, 0.3], [2.33, 0.55], [2.2, 0.72], [0.5, 0.82], [-1.6, 0.86], [-2.3, 0.8], [-2.33, 0.45]],
         glass: [[0.52, 0.8], [-0.2, 1.2], [-0.95, 1.22], [-1.95, 0.84], [-1.95, 0.8]],
-        roof: [-0.2, -0.95, 1.2], lamps: 0.62, tails: 0.7,
+        roof: [-0.2, -0.95, 1.2], lamps: 0.62, tails: 0.7, stripes: true,
       },
       { // rear-engined coupe
         body: [[-2.3, 0.32], [2.3, 0.32], [2.33, 0.52], [2.05, 0.7], [0.9, 0.8], [0.55, 0.84], [-1.7, 0.86], [-2.3, 0.68], [-2.33, 0.42]],
         glass: [[0.6, 0.82], [0.0, 1.24], [-0.7, 1.26], [-2.0, 0.84], [-2.0, 0.8]],
-        roof: [0.0, -0.7, 1.24], lamps: 0.64, tails: 0.62, whale: true,
+        roof: [0.0, -0.7, 1.24], lamps: 0.64, tails: 0.62, whale: true, blackRoof: true,
       },
       { // mid-engined wedge
         body: [[-2.3, 0.3], [2.3, 0.3], [2.34, 0.44], [1.0, 0.68], [-1.1, 0.84], [-2.3, 0.84], [-2.33, 0.4]],
         glass: [[1.05, 0.66], [0.25, 1.06], [-0.45, 1.08], [-1.05, 0.9], [-1.05, 0.78]],
-        roof: [0.25, -0.45, 1.06], lamps: 0.5, tails: 0.66, louvres: true,
+        roof: [0.25, -0.45, 1.06], lamps: 0.5, tails: 0.66, louvres: true, wing: true,
       },
     ];
     let body = null;
@@ -150,9 +197,34 @@ export const MODELS = {
       box(g, dark, w * 0.92, 0.07, 0.3, 0, 0.3, L - 0.1);                          // splitter
       box(g, dark, w * 0.84, 0.16, 0.25, 0, 0.36, -L + 0.08);                       // diffuser
       box(g, dark, w * 1.01, 0.1, L * 1.1, 0, 0.38, 0);                             // sills
-      if (S.whale) { // a whale tail on the engine lid
-        box(g, paint, w * 0.86, 0.05, 0.42, 0, 0.98, -L * 0.83);
-        for (const side of [-1, 1]) box(g, dark, 0.05, 0.12, 0.3, side * w * 0.3, 0.92, -L * 0.83);
+      // (told apart at a glance, from behind and above: the tourer's twin white stripes nose to tail, the
+      // coupe's black roof, wide hips and whale tail, the wedge's black engine deck and tall full-width wing)
+      if (S.stripes) {
+        for (const side of [-1, 1]) {
+          const x = side * w * 0.13, sw = w * 0.13;
+          slab(g, white, sw, 0.02, 1.72 * k, x, 0.785, 1.35 * k, Math.atan2(0.1, 1.7 * k)); // down the bonnet,
+          box(g, white, sw, 0.02, (r0 - r1) * k, x, ry + 0.055, (r0 + r1) / 2 * k);          // over the roof,
+          box(g, white, sw, 0.02, 0.72 * k, x, 0.85, -1.95 * k);                             // and across the boot
+        }
+        box(g, paint, w * 0.9, 0.07, 0.16, 0, 0.88, -L + 0.06);                              // a ducktail
+      }
+      if (S.blackRoof) box(g, dark, w * 0.74, 0.03, (r0 - r1) * k + 0.1, 0, ry + 0.055, (r0 + r1) / 2 * k);
+      if (S.whale) { // a whale tail on the engine lid, and the wide hips over the rear wheels
+        box(g, paint, w * 0.98, 0.07, 0.5, 0, 1.0, -L * 0.83);
+        box(g, dark, w * 0.98, 0.04, 0.1, 0, 1.03, -L * 0.83 - 0.24);
+        for (const side of [-1, 1]) {
+          box(g, dark, 0.05, 0.14, 0.3, side * w * 0.3, 0.92, -L * 0.83);
+          box(g, paint, 0.14, 0.34, L * 0.62, side * (w / 2 + 0.03), 0.62, -L * 0.6);
+        }
+      }
+      if (S.wing) { // a black engine deck, and a tall wing right across the tail between end plates
+        box(g, dark, w * 0.72, 0.03, 1.15 * k, 0, 0.855, -1.7 * k);
+        box(g, dark, w * 1.04, 0.05, 0.4, 0, 1.24, -L + 0.12);
+        for (const side of [-1, 1]) {
+          box(g, paint, 0.05, 0.46, 0.5, side * w * 0.52, 1.08, -L + 0.12);
+          box(g, dark, 0.06, 0.38, 0.1, side * w * 0.26, 1.04, -L + 0.14);
+        }
+        box(g, dark, w * 0.3, 0.1, 0.5 * k, 0, 1.12, -0.1 * k);                              // a roof scoop
       }
       if (S.louvres) { // the engine deck's louvres, and intakes in its flanks
         for (let i = 0; i < 4; i++) box(g, dark, w * 0.56, 0.03, 0.08, 0, 0.86, -L * (0.55 + i * 0.09));
@@ -160,8 +232,21 @@ export const MODELS = {
         box(g, paint, w * 0.9, 0.04, 0.2, 0, 0.9, -L * 0.95);                       // a lip spoiler
       }
       for (const side of [-1, 1]) {
-        box(g, LAMP, w * 0.24, 0.09, 0.08, side * w * 0.32, S.lamps, L + 0.02);
-        box(g, TAIL, w * 0.32, 0.07, 0.08, side * w * 0.3, S.tails, -L - 0.02);
+        // lamps of its own: the tourer's wide oblong headlamps and twin round tail lamps a side; the coupe's
+        // round headlamps and one red bar right across its tail; the wedge's thin slits of headlamps and tall
+        // red blades at the corners of its tail
+        if (S.stripes) {
+          box(g, LAMP, w * 0.26, 0.1, 0.08, side * w * 0.32, S.lamps, L + 0.02);
+          for (const x of [0.2, 0.38]) disc(g, TAIL, 0.085, 0.08, side * w * x, S.tails, -L - 0.02);
+        } else if (S.whale) {
+          disc(g, LAMP, 0.11, 0.08, side * w * 0.34, S.lamps, L - 0.04);
+          disc(g, dark, 0.14, 0.06, side * w * 0.34, S.lamps, L - 0.06);
+          if (side > 0) box(g, TAIL, w * 0.94, 0.06, 0.08, 0, S.tails, -L - 0.02);
+        } else {
+          box(g, LAMP, w * 0.3, 0.035, 0.08, side * w * 0.3, 0.45, L + 0.03);
+          box(g, TAIL, 0.07, 0.22, 0.08, side * w * 0.44, S.tails, -L - 0.02);
+          box(g, TAIL, 0.07, 0.22, 0.08, side * w * 0.34, S.tails, -L - 0.02);
+        }
         const roundel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.02, 16), white); // (its race number's disc)
         roundel.rotation.z = Math.PI / 2;
         roundel.position.set(side * (w / 2 + 0.01), 0.6, -L * 0.05);
@@ -217,6 +302,44 @@ export const MODELS = {
       body,
       animate: () => {},
       firing: (on) => { for (const gun of guns) gun.visible = on; },
+    };
+    return group;
+  },
+  // A fishing trawler, sat in the water: a deep hull in the livery with a raked bow and a white gunwale, a
+  // white wheelhouse aft with its funnel, a mast forward and a boom out over the stern with its net drum.
+  // It rolls slowly on the swell.
+  trawler: (car) => {
+    const group = new THREE.Group(), shell = new THREE.Group();
+    group.add(shell);
+    const w = car.hw * 2, l = car.hl * 2, f = l / 2;
+    const paint = lambert(car.color), white = lambert(0xf2f2f0), dark = lambert(0x1b1d22), glass = lambert(GLASS), wood = lambert(0x8a6a45), rust = lambert(0xb5532a);
+    const body = prism(shell, paint, w, [[-f, -0.4], [f * 0.72, -0.4], [f, 1.15], [-f, 0.9]]);          // the hull
+    for (const side of [-1, 1]) prism(shell, white, 0.12, [[-f, 0.8], [f * 0.97, 1.02], [f, 1.2], [-f, 0.95]], side * w / 2); // its gunwales
+    prism(shell, wood, w * 0.9, [[-f * 0.98, 0.9], [f * 0.9, 1.12], [f * 0.9, 1.16], [-f * 0.98, 0.94]]);  // the deck
+    const hz = -f * 0.45;                                                                                // the wheelhouse
+    box(shell, white, w * 0.7, 1.3, l * 0.24, 0, 1.55, hz);
+    box(shell, glass, w * 0.72, 0.4, l * 0.2, 0, 1.85, hz + 0.08);
+    box(shell, dark, w * 0.78, 0.08, l * 0.28, 0, 2.24, hz);
+    box(shell, rust, 0.4, 0.8, 0.4, 0, 2.6, hz - 0.3);                                                   // the funnel
+    box(shell, dark, 0.42, 0.14, 0.42, 0, 2.95, hz - 0.3);
+    box(shell, dark, 0.12, 2.6, 0.12, 0, 2.2, f * 0.35);                                                 // the mast,
+    box(shell, dark, 1.4, 0.08, 0.08, 0, 2.9, f * 0.35);                                                 // its yard
+    slab(shell, dark, 0.1, 0.1, l * 0.36, 0, 1.75, -f * 0.82, 0.5);                                      // the boom aft
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, w * 0.6, 12), lambert(0x2f6f4a));   // and its net drum
+    drum.rotation.z = Math.PI / 2;
+    drum.position.set(0, 1.3, -f * 0.8);
+    shell.add(drum);
+    for (const side of [-1, 1]) {
+      box(shell, rust, 0.5, 0.35, 0.7, side * w * 0.26, 1.1, f * 0.08);                                  // fish crates on deck
+      box(shell, TAIL, 0.1, 0.1, 0.04, side * w * 0.4, 0.7, -f - 0.01);
+    }
+    group.userData = {
+      body,
+      animate: (t) => { // (heavy: a slow roll and pitch)
+        shell.position.y = Math.sin(t * 2.1) * 0.08;
+        shell.rotation.x = Math.sin(t * 1.7) * 0.03;
+        shell.rotation.z = Math.sin(t * 1.3) * 0.045;
+      },
     };
     return group;
   },

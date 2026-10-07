@@ -304,7 +304,6 @@ export const Player = {
       this.sling = wasTow;
       this.slingTime = this.slingTotal = slingFor;
       this.speed += top * RC.slingKick * wasTow; // (the kick)
-      sfx('turbo', 0.6);
     }
     this.slingTime = Math.max(0, (this.slingTime || 0) - dt);
     const sling = this.slingTime > 0 ? this.sling * this.slingTime / this.slingTotal : 0;

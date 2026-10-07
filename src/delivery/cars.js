@@ -77,6 +77,10 @@ export const LEVEL_CARS = {
   // tougher, heavier in the bends, and happier over a kerb
   gt: { id: 'gt', name: 'GT Car', price: 0, color: 0xc8102e, evilColor: 0x151515, model: 'gt',
     maxSpeed: 62, accel: 14, crossing: 0.5, agility: 1.25, health: 240, hw: 1.0, hl: 2.3, height: 1.25 },
+  // a Le Mans prototype: an F1 car's pace, grip and getaway under a closed body built to last a day and a
+  // night: a good deal tougher (and a little better over a kerb)
+  lmp: { id: 'lmp', name: 'LMP Prototype', price: 0, color: 0x1f4fa8, evilColor: 0x151515, model: 'lmp',
+    maxSpeed: 75, accel: 20, crossing: 0.3, agility: 1.5, health: 280, hw: 1.0, hl: 2.35, height: 1.05 },
   // a jetboat: a sleek little cruiser with a captain's cabin, quick and nimble on the water, bobbing on the swell
   jetboat: { id: 'jetboat', name: 'Jetboat', price: 0, color: 0xe8432e, evilColor: 0x1b1d22, model: 'jetboat', wake: true, noWheels: true,
     maxSpeed: 34, accel: 13, crossing: 1, agility: 1.4, health: 120, hw: 1.0, hl: 2.7, height: 1.6 },

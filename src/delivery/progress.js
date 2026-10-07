@@ -24,17 +24,33 @@ const fresh = () => ({
   muted: false,    // sound switched off
   touch: null,     // on-screen controls: true / false once chosen on the menu; null = on for touch screens
   autoGas: false,  // auto accelerate: the accelerator held down by itself, unless braking
-  raceClass: 'f1', // the cars every race is run in: 'f1', or 'gt' (GT road cars)
+  raceClass: 'f1', // the cars every race is run in: 'f1', 'gt' (GT road cars) or 'lmp' (Le Mans prototypes)
+  raceTrack: 'marina-bay', // the race screensaver's circuit: a lapped level's id, or 'all' (each in turn)
   tankPieces: 0,   // TANK RAGE pieces found so far (0-4), carried from one level to the next
   evil: false,     // the side picked on the menu
   levelOrder: LEVEL_ORDER, // the order of levels `unlocked` counts by
 });
 
-const read = () => {
+// The save is the cookie, and a copy of it in local storage, BACKUP, kept with every save: should the
+// cookie go (the browser clearing it, or the page dying mid-write) or be unreadable, the copy brings it back
+const BACKUP = 'delivery_racer_progress_backup';
+const savedCopies = () => {
+  const copies = [];
   try {
     const match = document.cookie.match(new RegExp('(?:^|; )' + COOKIE + '=([^;]*)'));
-    if (!match) return fresh();
-    const saved = JSON.parse(decodeURIComponent(match[1]));
+    if (match) copies.push(JSON.parse(decodeURIComponent(match[1])));
+  } catch { /* (an unreadable cookie: the backup, if there is one) */ }
+  try {
+    const backup = localStorage.getItem(BACKUP);
+    if (backup) copies.push(JSON.parse(backup));
+  } catch { /* (no storage, or a broken backup) */ }
+  // (the further along of the two, should they differ: the more levels open, then the more banked)
+  return copies.filter(c => c && typeof c === 'object').sort((a, b) => (b.unlocked || 0) - (a.unlocked || 0) || (b.money || 0) - (a.money || 0));
+};
+const read = () => {
+  try {
+    const saved = savedCopies()[0];
+    if (!saved) return fresh();
     const data = { ...fresh(), ...saved };
     data.bestTime = { good: {}, evil: {}, ...saved.bestTime }; // (a save from before best times has none)
     // (the Commuter and the Darkvan were saved as 'hatch' and 'coupe')
@@ -56,8 +72,9 @@ export const Progress = {
   data: read(),
 
   save() {
-    document.cookie = COOKIE + '=' + encodeURIComponent(JSON.stringify(this.data)) +
-      '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
+    const text = JSON.stringify(this.data);
+    document.cookie = COOKIE + '=' + encodeURIComponent(text) + '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
+    try { localStorage.setItem(BACKUP, text); } catch { /* (no storage: the cookie alone) */ }
   },
   // a level delivered on time: bank the tip, remember the best time to spare (for the side it was
   // played on), open the next level. True: that was a new best
@@ -100,6 +117,9 @@ export const Progress = {
   },
   reset() {
     this.data = fresh();
-    this.save();
+    this.save(); // (the backup too: a reset is meant)
   },
 };
+
+// (a save already there gets its backup at once, and a cookie lost but backed up is written back)
+if (Progress.data.unlocked > 1 || Progress.data.money > 0 || Progress.data.cars.length > 1) Progress.save();

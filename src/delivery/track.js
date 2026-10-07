@@ -342,6 +342,7 @@ const createTrack = () => {
     const kind = kindOf(s);
     if (kind === SIDE_ROAD) return lane === 0 ? -LW / 2 : LW / 2;
     if (kind !== MAIN) return 0;
+    if (lane === 'left' || lane === 'right') return shoulderOffset(lane === 'left' ? -1 : 1, s); // (an item on a shoulder)
     if (lane < 0) return -(edge(s, -1) + SH / 2);
     // (where the exit / merge lane is only partly open, its centre is that much closer in, so
     // a car heading for it moves out as it opens, and one still in it as it closes is eased

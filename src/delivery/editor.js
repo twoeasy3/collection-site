@@ -10,7 +10,7 @@
 import './editor.css';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
-import { LEVEL_CARS } from './cars.js';
+import { LEVEL_CARS, CARS } from './cars.js';
 import { PICKUP_COLOR } from './render/pickupModels.js';
 
 const $ = (id) => document.getElementById(id);
@@ -43,6 +43,8 @@ const lanesOf = () => {
 };
 const HM = () => (level.median || 0) * LW / 2;
 const laneLat = (lane) => { // across the road, + to the right (as Track.laneOffset, on the main road)
+  if (lane === 'left') return edges()[0] - shoulder() / 2; // (the shoulders)
+  if (lane === 'right') return edges()[1] + shoulder() / 2;
   const { left } = lanesOf(), M = level.median || 0;
   if (lane < left) return -(HM() + (left - 1 - lane + 0.5) * LW);
   return HM() + (lane - left - M + 0.5) * LW;
@@ -78,7 +80,10 @@ const nearest = (x, y) => { // the road's nearest point to a map point: s along 
   }
   return { s: best.s, lat: (x - best.x) * Math.cos(best.h) - (y - best.y) * Math.sin(best.h), off: Math.sqrt(bestD) };
 };
-const nearestLane = (lat) => {
+const nearestLane = (lat) => { // (or shoulder: 'left' | 'right')
+  const [a, b] = edges();
+  if (lat < a) return 'left';
+  if (lat > b) return 'right';
   let best = 0;
   for (let k = 1; k < laneCount(); k++) if (Math.abs(laneLat(k) - lat) < Math.abs(laneLat(best) - lat)) best = k;
   return best;
@@ -296,7 +301,7 @@ field('f-traffic', (v) => {
   level.traffic = mix;
 });
 $('f-theme').innerHTML = THEMES.map(t => `<option>${t}</option>`).join('');
-$('f-car').innerHTML = '<option value="">the garage\'s</option>' + Object.keys(LEVEL_CARS).map(c => `<option>${c}</option>`).join('');
+$('f-car').innerHTML = '<option value="">the garage\'s</option>' + [...Object.keys(LEVEL_CARS), ...CARS.map(c => c.id)].map(c => `<option>${c}</option>`).join('');
 
 // the road, as a table of its segments: length, how far it bends (degrees, + right) and its slope
 const segmentRows = () => {
@@ -380,7 +385,7 @@ const itemPanel = () => {
   box.innerHTML = `<div class="grid">
     ${selected.list === 'targets' ? `<label>Side <select data-k="side"><option>left</option><option>right</option></select></label>`
       : `<label>Kind <select data-k="${selected.list === 'pickups' ? 'type' : 'kind'}">${kinds.map(k => `<option>${k}</option>`).join('')}</select></label>
-         <label>Lane <input type="number" min="0" max="${laneCount() - 1}" data-k="lane" value="${it.lane ?? 0}"></label>`}
+         <label>Lane <select data-k="lane">${['left', ...Array.from({ length: laneCount() }, (_, k) => k), 'right'].map(l => `<option value="${l}"${String(it.lane ?? 0) === String(l) ? ' selected' : ''}>${typeof l === 'string' ? l + ' shoulder' : l}</option>`).join('')}</select></label>`}
     <label>At (m) <input type="number" min="0" step="5" data-k="s" value="${it.s}"></label>
     <label>&nbsp;<button id="remove">Delete</button></label></div>`;
   const kind = box.querySelector('select');
@@ -390,7 +395,7 @@ $('item').addEventListener('input', (e) => {
   if (!selected) return;
   const it = level[selected.list][selected.i], k = e.target.dataset.k;
   if (!k) return;
-  it[k] = k === 's' || k === 'lane' ? Math.max(0, Number(e.target.value) || 0) : e.target.value;
+  it[k] = k === 'lane' && (e.target.value === 'left' || e.target.value === 'right') ? e.target.value : k === 's' || k === 'lane' ? Math.max(0, Number(e.target.value) || 0) : e.target.value;
   changed();
 });
 const remove = () => {
@@ -541,6 +546,13 @@ const show3d = (on) => {
   if (!on) { view3d.src = 'about:blank'; draw(); }
 };
 $('show3d').addEventListener('click', () => show3d(view3d.hidden));
+// (not on a touch screen: it is a whole second game running in the page, too much for a phone, and it is
+// flown with a keyboard and mouse)
+if (matchMedia('(hover: none) and (pointer: coarse)').matches) {
+  $('show3d').disabled = true;
+  $('show3d').title = 'The 3D view needs a keyboard and mouse (and more than a phone can spare)';
+  $('show3d').textContent = '3D view (desktop only)';
+}
 $('refresh3d').addEventListener('click', () => show3d(true));
 window.addEventListener('resize', () => draw());
 

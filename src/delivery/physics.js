@@ -66,10 +66,12 @@ export const emotionOf = (mood) => mood > 1 / 3 ? 'happy' : mood < -1 / 3 ? 'ang
 export const maybeSpinOut = (v, amount, scale = 1, crit = 1) => {
   if (v.isPlayer || v.unspinnable || v.spin > 0 || v.health <= 0) return; // (a rival courier never spins, nor takes a critical hit)
   const lost = 1 - v.health / v.maxHealth;
-  const chance = scale * CONFIG.spinPerDamage * (amount / v.maxHealth) * (1 + CONFIG.spinRamp * lost * lost);
+  // (its kind's own odds: "crit" and "spin" scale the chances of each, 0 = never; see CONFIG.vehicles)
+  const type = CONFIG.vehicles[v.kind];
+  const chance = scale * CONFIG.spinPerDamage * (amount / v.maxHealth) * (1 + CONFIG.spinRamp * lost * lost) * (type?.spin ?? 1);
   // a critical hit: the car wobbles for a moment, then spins out whatever state it was in
-  if (!(v.wobble > 0) && Math.random() < CONFIG.critChance * scale * crit) v.wobble = CONFIG.critWobbleTime;
-  if (Math.random() < chance && !CONFIG.vehicles[v.kind]?.noSpin) spinOut(v); // (an 18-wheeler never spins)
+  if (!(v.wobble > 0) && Math.random() < CONFIG.critChance * scale * crit * (type?.crit ?? 1)) v.wobble = CONFIG.critWobbleTime;
+  if (Math.random() < chance && !type?.noSpin) spinOut(v); // (an 18-wheeler never spins)
 };
 // the car loses all control: it arcs away, turning a full circle, and then blows up
 export const spinOut = (v) => {

@@ -7,6 +7,7 @@ import { Traffic } from '../traffic.js';
 import { scene, tmp } from './scene.js';
 import { MODELS, AMBULANCE_BOX } from './models.js';
 import { makeCrashDummy } from './pickupModels.js';
+import { makeTractorModel, makeUfo } from './carExtras.js';
 
 // ---- cars (front faces local +z), sized from each vehicle's hitbox -----------
 export const unitBox = new THREE.BoxGeometry(1, 1, 1);
@@ -178,27 +179,9 @@ addLamps(carMesh);
 // a different car picked in the garage: the player's model takes its shape
 // (its colour is set every frame, in items.js)
 // a flying saucer, shown in place of the car's body when the car in use is a UFO
-export const ufoMesh = new THREE.Group();
-{
-  const hull = new THREE.MeshLambertMaterial({ color: 0xc9d2dc });
-  const saucer = new THREE.Mesh(new THREE.SphereGeometry(1.5, 24, 12), hull);
-  saucer.scale.y = 0.28;
-  const rim = new THREE.Mesh(new THREE.TorusGeometry(1.45, 0.12, 8, 28), new THREE.MeshBasicMaterial({ color: 0x66f0ff }));
-  rim.rotation.x = Math.PI / 2;
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(0.75, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2),
-    new THREE.MeshLambertMaterial({ color: 0x7fe8ff, transparent: true, opacity: 0.7 }));
-  dome.position.y = 0.25;
-  const lamps = new THREE.Group(); // a ring of lights underneath, which spins
-  for (let i = 0; i < 6; i++) {
-    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.14, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfff3a0 }));
-    lamp.position.set(Math.cos(i * Math.PI / 3) * 1.0, -0.28, Math.sin(i * Math.PI / 3) * 1.0);
-    lamps.add(lamp);
-  }
-  ufoMesh.add(saucer, rim, dome, lamps);
-  ufoMesh.userData = { body: saucer, lamps };
-  ufoMesh.visible = false;
-  carMesh.add(ufoMesh);
-}
+export const ufoMesh = makeUfo();
+ufoMesh.visible = false;
+carMesh.add(ufoMesh);
 // the player's car can turn see-through (ghost), so it needs materials of its own
 carMesh.userData.cabin.material = cabinMat.clone();
 export const playerMats = [carMesh.userData.body.material, carMesh.userData.cabin.material];
@@ -210,35 +193,6 @@ passengerMesh.position.set(0, 2.2, -0.35);
 passengerMesh.visible = false;
 carMesh.add(passengerMesh);
 
-// a green tractor: small wheels in front, big ones behind, a cab at the back
-const makeTractorModel = () => {
-  const lambert = (color) => new THREE.MeshLambertMaterial({ color });
-  const green = lambert(0x2e8b3d), yellow = lambert(0xf2c230);
-  const group = new THREE.Group();
-  for (const [material, w, hgt, l, x, y, z] of [
-    [green, 1.3, 0.9, 2.2, 0, 1.2, 0.9],                // bonnet
-    [green, 1.7, 0.5, 1.8, 0, 1.0, -0.9],               // rear deck
-    [lambert(0x2b2f38), 1.5, 1.3, 1.4, 0, 1.9, -0.9],   // cab
-    [yellow, 1.7, 0.15, 1.6, 0, 2.6, -0.9],             // cab roof
-    [lambert(0x444444), 0.2, 1.0, 0.2, 0.4, 2.1, 1.5],  // exhaust
-  ]) {
-    const part = new THREE.Mesh(unitBox, material);
-    part.scale.set(w, hgt, l);
-    part.position.set(x, y, z);
-    group.add(part);
-  }
-  const rubber = lambert(0x161616);
-  for (const [radius, width, x, z] of [[1.0, 0.6, 1.2, -1.0], [1.0, 0.6, -1.2, -1.0], [0.55, 0.4, 0.95, 1.4], [0.55, 0.4, -0.95, 1.4]]) {
-    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, width, 14), rubber);
-    wheel.rotation.z = Math.PI / 2;
-    wheel.position.set(x, radius, z);
-    const hub = new THREE.Mesh(new THREE.CylinderGeometry(radius * 0.45, radius * 0.45, width + 0.04, 10), yellow);
-    hub.rotation.z = Math.PI / 2;
-    hub.position.copy(wheel.position);
-    group.add(wheel, hub);
-  }
-  return group;
-};
 
 // good cars wear bright colours, evil cars dark ones
 const PAINTS = {
@@ -251,7 +205,7 @@ export const F1_PAINTS = [0xd8262b, 0x1d3f9c, 0x18a35a, 0xff8a1a, 0x101010, 0xf4
 // a GT car's: road car colours (silver, racing green, rosso, white, black, giallo, blue, orange,
 // gunmetal, burgundy, gulf blue, lime)
 const GT_PAINTS = [0xc0c4c8, 0x0f4d2c, 0xc8102e, 0xf4f4f4, 0x111111, 0xf2c200, 0x1f4fa8, 0xff6a13, 0x5a6b7a, 0x7a0f1f, 0x6fb7d8, 0x9cc63b];
-const RACE_PAINTS = { f1: F1_PAINTS, gt: GT_PAINTS };
+const RACE_PAINTS = { f1: F1_PAINTS, gt: GT_PAINTS, lmp: F1_PAINTS }; // (a prototype's, as an F1 car's: any colour, and a second)
 // a racer's paint (an F1 or GT car's, by its paint number)
 export const racePaint = (car) => { const list = RACE_PAINTS[car.kind] || F1_PAINTS; return list[car.paint % list.length]; };
 // kinds of traffic that are also garage cars with a fixed livery wear that car's two colours
@@ -269,6 +223,12 @@ export const trafficMeshes = Traffic.cars.map(() => {
   bar.position.set(0, 1.85, -0.3);
   mesh.add(bar);
   mesh.userData.bar = bar;
+  // (an ambulance's sits on a dark housing, wider than the bar, so its white flash shows on the white roof)
+  const mount = new THREE.Mesh(unitBox, new THREE.MeshLambertMaterial({ color: 0x15171c }));
+  mount.scale.set(1.12, 0.5, 1.7);
+  mount.position.y = -0.55;
+  bar.add(mount);
+  mesh.userData.barMount = mount;
   mesh.userData.models = {};
   addLamps(mesh);
   return mesh;
@@ -308,6 +268,7 @@ export const syncTraffic = () => {
       : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
     mesh.userData.bar.visible = police || ambulance;
+    mesh.userData.barMount.visible = ambulance;
     // (on the roof: an ambulance's at the front of its box's roof, just behind the cab, where it
     // shows in the mirror, so to speak)
     mesh.userData.bar.position.set(0, car.height + 0.1, ambulance ? car.hl * AMBULANCE_BOX - 0.25 : -0.15);
@@ -332,7 +293,7 @@ export const syncTraffic = () => {
     }
     // brake lights and indicators (not on a toad or a tractor). Which side of the model a signal
     // is on: the side nearer the road a little way across in the direction it is signalling
-    const lit = !car.toad && car.kind !== 'tractor';
+    const lit = !car.toad && car.kind !== 'tractor' && !CONFIG.vehicles[car.kind]?.boat; // (nor on a boat)
     let turnX = 0;
     if (lit && car.signal && !car.junction) {
       mesh.updateMatrixWorld();

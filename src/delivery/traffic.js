@@ -1156,7 +1156,7 @@ export const Traffic = (() => {
       // (not one that is parked, nor an ambulance)
       const icy = !!Track.icy(car.s, car.lat);
       if (icy && !car.onIce && !car.parked && !car.emergency && !(car.spin > 0) && !CONFIG.vehicles[car.kind].noSpin &&
-          Math.random() < CONFIG.ice.spinPerSpeed * Math.abs(car.vs)) {
+          Math.random() < CONFIG.ice.spinPerSpeed * Math.abs(car.vs) * (CONFIG.vehicles[car.kind].spin ?? 1)) {
         spinOut(car);
         car.spinIce = true; // (it skidded: it isn't damaged, so it doesn't smoke for it)
       }

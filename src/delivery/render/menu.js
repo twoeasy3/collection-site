@@ -2,7 +2,7 @@
 // The start screen is only a menu. Picking a level just marks it; the level is built when
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
-import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, setRaceClass } from '../levels.js';
+import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, setRaceClass, RACE_CLASSES } from '../levels.js';
 import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, stars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
@@ -108,14 +108,14 @@ const draw = () => {
   shopBox.replaceChildren(card(CAR.name + (CAR.tier ? ' ' + stars(CAR) : ''), [
     'Top speed ' + Math.round(CAR.maxSpeed * 3.6) + ' km/h',
     'Acceleration ' + CAR.accel + '  |  Health ' + CAR.health,
-    LEVEL.car ? 'This level is flown in it. The garage car returns on other levels.' : 'Open the garage to change or buy cars',
+    LEVEL.car ? 'You must use this vehicle on this level. The garage car returns on other levels.' : 'Open the garage to change or buy cars',
   ], { current: true, onPick: () => Garage.open(), image: CAR_SHOTS[CAR.id + (Game.evil ? '-evil' : '-good')] }));
   // the side picked, and what it means
   sideBtn.className = 'side-btn ' + (Game.evil ? 'evil' : 'good');
   sideName.textContent = Game.evil ? 'Evil' : 'Good';
   sideNote.textContent = Game.evil
     ? 'Less time. Flaming packages do real damage, and the police bust you for them.'
-    : 'More time. Care packages cheer good cars up and barely hurt.';
+    : 'More time. Care packages increase your social standing and gains you benefits.';
 };
 draw();
 // a car picked in the garage shows on its card (unless the level has a vehicle of its own)
@@ -145,13 +145,28 @@ showAutoGas();
 // the race class: every race (and the race screensaver) in F1 cars, or in GT road cars
 const raceClassBtn = document.getElementById('raceClassBtn');
 const showRaceClass = () => {
-  const kind = Progress.data.raceClass === 'gt' ? 'gt' : 'f1';
+  const kind = RACE_CLASSES[Progress.data.raceClass] ? Progress.data.raceClass : 'f1';
   setRaceClass(kind);
   useLevelCar(LEVEL.car); // (a race level picked: its car is the class's)
-  raceClassBtn.textContent = 'Race cars: ' + (kind === 'gt' ? 'GT' : 'F1');
+  raceClassBtn.textContent = 'Race cars: ' + RACE_CLASSES[kind];
 };
+// the race screensaver's circuit: one of the lapped levels, or each of them in turn
+const raceTrackBtn = document.getElementById('raceTrackBtn');
+const raceTracks = () => [...LEVELS.filter(l => l.laps).map(l => l.id), 'all'];
+const showRaceTrack = () => {
+  const level = LEVELS.find(l => l.laps && l.id === Progress.data.raceTrack);
+  raceTrackBtn.textContent = 'Race track: ' + (level ? level.name : 'All in turn');
+};
+raceTrackBtn.addEventListener('click', () => {
+  const tracks = raceTracks(), at = tracks.indexOf(Progress.data.raceTrack);
+  Progress.data.raceTrack = tracks[(at < 0 ? tracks.length - 1 : at + 1) % tracks.length]; // (an unknown one counts as 'all')
+  Progress.save();
+  showRaceTrack();
+});
+showRaceTrack();
 raceClassBtn.addEventListener('click', () => {
-  Progress.data.raceClass = Progress.data.raceClass === 'gt' ? 'f1' : 'gt';
+  const kinds = Object.keys(RACE_CLASSES);
+  Progress.data.raceClass = kinds[(kinds.indexOf(Progress.data.raceClass) + 1) % kinds.length];
   Progress.save();
   showRaceClass();
   draw();

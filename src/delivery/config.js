@@ -193,7 +193,7 @@ export const CONFIG = {
     // flung on: a kick of slingKick of its top speed (by how deep in the tow it was) on top of the
     // tow's own, both fading away: over slingPerGain s for every m/s the tow had it going above its
     // own top speed as it pulled out (at most slingMax s), so a long, deep tow flings it on furthest
-    slingFrom: 0.25, slingKick: 0.06, slingPerGain: 0.25, slingMax: 4,
+    slingFrom: 0.25, slingKick: 0, slingPerGain: 0.25, slingMax: 4,
     // An evil racer's feud (a good one races clean): with a rival ahead of it or alongside, it
     // chases it down and rams it, as anywhere; but it never drops back for one behind it, it only
     // blocks it, moving across into its lane (at most every blockEvery s) without lifting off
@@ -528,6 +528,7 @@ export const CONFIG = {
   // traffic vehicle types (which of them a level has, and how often, is in the level's
   // "traffic" list). hw / hl = hitbox half width / half length (m);
   // speed scales the car's cruising speed. special: true = a special vehicle, never evil.
+  // crit / spin: its own odds of a critical hit / of spinning out, as a multiple of the usual (default 1; 0 = never)
   vehicles: {
     // (a vintage delivery van, in the one livery: livery is its paint, whatever the driver)
     van:     { hw: 1.1,  hl: 2.7, height: 2.3, mass: 1.8, health: 90,  speed: 0.95, model: 'deliveryvan', livery: 0x1e5b3f },
@@ -543,6 +544,8 @@ export const CONFIG = {
     f1:      { hw: 0.95, hl: 2.6, height: 1.0, mass: 0.8, health: 220, model: 'f1', agility: 1.5 },
     // a GT road car, raced (as f1)
     gt:      { hw: 1.0, hl: 2.3, height: 1.25, mass: 1.3, health: 300, model: 'gt', agility: 1.2 },
+    // a Le Mans prototype (as f1, and as nimble): built for endurance, the toughest of the three, and it never spins out or takes a critical hit
+    lmp:     { hw: 1.0, hl: 2.35, height: 1.05, mass: 1.0, health: 380, model: 'lmp', agility: 1.5, crit: 0, spin: 0 },
     // (only ever an emergency vehicle: see CONFIG.emergency; never in a level's traffic list)
     ambulance: { hw: 1.1, hl: 2.9, height: 2.6, mass: 2, health: 150, speed: 1, special: true, model: 'ambulance' },
     // the garage's cars as traffic (each id is the garage car's, in src/cars.js). They have no
@@ -563,6 +566,10 @@ export const CONFIG = {
     hearse:  { hw: 1.0,  hl: 2.8, height: 1.65, mass: 1.6, health: 100, model: 'hearse' },
     pickup:  { hw: 1.05, hl: 2.6, height: 2.1, mass: 1.8, health: 120, model: 'pickup' },
     miata:   { hw: 0.85, hl: 1.95, height: 1.1, mass: 0.8, health: 50, model: 'miata' },
+    // boats, the traffic of a level on the water (boat: it leaves a wake, has no tyres to puncture, shows no
+    // brake lights or indicators, and never spins out or takes a critical hit): a cruiser as the player's jetboat, and a fishing trawler, big and slow
+    boat:    { hw: 1.0, hl: 2.7, height: 1.6, mass: 1.2, health: 90, model: 'jetboat', speed: 1, boat: true, noWheels: true, crit: 0, spin: 0 },
+    trawler: { hw: 1.5, hl: 4.6, height: 3.2, mass: 3.5, health: 200, model: 'trawler', speed: 0.6, boat: true, noWheels: true, crit: 0, spin: 0 },
     // a drive-by car (The Hood): only ever evil (evilOnly), out for trouble: see CONFIG.driveBy
     driveby: { hw: 1.0, hl: 2.65, height: 1.45, mass: 1.5, health: 120, model: 'driveby', speed: 1.1, evilOnly: true },
   },

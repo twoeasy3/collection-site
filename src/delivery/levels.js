@@ -82,6 +82,7 @@
 //              scattered over that stretch, the same every run for a given seed. About half
 //              sit at road level; the rest pass just under or over it, unmarked. `moving` is the share that
 //              drift across the road or bob up and down through it.
+//   (an obstacle's or a pickup's lane can also be 'left' or 'right': on that shoulder)
 //   obstacles  { s, lane, kind }   things on the road that explode when hit. kind: 'barrier'
 //                                  (default), 'railBarrier' (one the bullet train leaves standing),
 //                                  'bale', 'cone', 'sign', the construction site's 'potty',
@@ -211,8 +212,9 @@ export const SCREENSAVER_LEVEL = chaos;
 // to try new things out on without putting them in a real level. The Singapore Grand Prix (once
 // S3, round Singapore II's streets) is kept here too: ?hidden=grand-prix
 export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix };
-// the class every race is run in: 'f1', or 'gt' (GT road cars): the player's car and the grid
-// (the menu's Race cars button; ?gt for a GT race whatever it says)
+// the class every race is run in: 'f1', 'gt' (GT road cars) or 'lmp' (Le Mans prototypes): the player's car
+// and the grid (the menu's Race cars button; ?gt or ?lmp for that class whatever it says)
+export const RACE_CLASSES = { f1: 'F1', gt: 'GT', lmp: 'LMP' };
 export const setRaceClass = (kind) => {
   for (const level of [...LEVELS, ...Object.values(HIDDEN_LEVELS)]) {
     if (!level.grid || level.grid.rival) continue; // (a rival stage's own cars: see Game.start)

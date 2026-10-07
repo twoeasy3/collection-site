@@ -9,8 +9,9 @@
   "flow": "north",
   "shoulder": 0,
   "shoulderTimer": false,
-  "traffic": {},
-  "trafficCount": 0,
+  "traffic": { "boat": 0.7, "trawler": 0.3 },
+  "trafficCount": 9,
+  "trafficSpeed": { "min": 11, "max": 19 },
   "oncomingCount": 0,
   "segments": [
     {
