@@ -481,6 +481,8 @@ export const CONFIG = {
     semi:    { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 26, max: 31 }, noSpin: true },
     // a Formula 1 car (a level's "grid": see Traffic), its speed set by the race
     f1:      { hw: 0.95, hl: 2.6, height: 1.0, mass: 0.8, health: 220, model: 'f1', agility: 1.5 },
+    // a GT road car, raced (as f1)
+    gt:      { hw: 1.0, hl: 2.3, height: 1.25, mass: 1.3, health: 300, model: 'gt', agility: 1.2 },
     // (only ever an emergency vehicle: see CONFIG.emergency; never in a level's traffic list)
     ambulance: { hw: 1.1, hl: 2.9, height: 2.6, mass: 2, health: 150, speed: 1, special: true, model: 'ambulance' },
     // the garage's cars as traffic (each id is the garage car's, in src/cars.js). They have no

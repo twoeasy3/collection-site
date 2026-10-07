@@ -73,6 +73,10 @@ export const LEVEL_CARS = {
   // a Formula 1 car: very fast, quick off the line, nimble, low, and no good over a kerb
   f1: { id: 'f1', name: 'F1 Car', price: 0, color: 0xd8262b, evilColor: 0x151515, model: 'f1',
     maxSpeed: 75, accel: 20, crossing: 0.2, agility: 1.5, health: 160, hw: 0.95, hl: 2.6, height: 1.0 },
+  // a GT road car, raced: slower than an F1 car down the straights and slower off the line, but
+  // tougher, heavier in the bends, and happier over a kerb
+  gt: { id: 'gt', name: 'GT Car', price: 0, color: 0xc8102e, evilColor: 0x151515, model: 'gt',
+    maxSpeed: 62, accel: 14, crossing: 0.5, agility: 1.25, health: 240, hw: 1.0, hl: 2.3, height: 1.25 },
   // a jetboat: a sleek little cruiser with a captain's cabin, quick and nimble on the water, bobbing on the swell
   jetboat: { id: 'jetboat', name: 'Jetboat', price: 0, color: 0xe8432e, evilColor: 0x1b1d22, model: 'jetboat', wake: true,
     maxSpeed: 34, accel: 13, crossing: 1, agility: 1.4, health: 120, hw: 1.0, hl: 2.7, height: 1.6 },

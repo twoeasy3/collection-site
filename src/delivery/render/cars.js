@@ -248,6 +248,12 @@ const PAINTS = {
 const POLICE_PAINT = 0xf5f5f5;
 // an F1 car's livery, by its paint number: any colour at all (and a second: see models.js)
 export const F1_PAINTS = [0xd8262b, 0x1d3f9c, 0x18a35a, 0xff8a1a, 0x101010, 0xf4f4f4, 0x7a1fa8, 0x2fc4d8, 0xf2d21f, 0x8a1a2a, 0x2a6b3a, 0xff5fa8];
+// a GT car's: road car colours (silver, racing green, rosso, white, black, giallo, blue, orange,
+// gunmetal, burgundy, gulf blue, lime)
+const GT_PAINTS = [0xc0c4c8, 0x0f4d2c, 0xc8102e, 0xf4f4f4, 0x111111, 0xf2c200, 0x1f4fa8, 0xff6a13, 0x5a6b7a, 0x7a0f1f, 0x6fb7d8, 0x9cc63b];
+const RACE_PAINTS = { f1: F1_PAINTS, gt: GT_PAINTS };
+// a racer's paint (an F1 or GT car's, by its paint number)
+export const racePaint = (car) => { const list = RACE_PAINTS[car.kind] || F1_PAINTS; return list[car.paint % list.length]; };
 // kinds of traffic that are also garage cars with a fixed livery wear that car's two colours
 // (see CARS: fixedLivery), not a random paint: kind -> { good, evil }
 const LIVERIES = Object.fromEntries([
@@ -298,7 +304,7 @@ export const syncTraffic = () => {
     const paints = PAINTS[car.evil ? 'evil' : 'good'];
     const livery = LIVERIES[car.kind];
     const ambulance = car.kind === 'ambulance';
-    const paint = police || ambulance ? POLICE_PAINT : car.kind === 'f1' ? F1_PAINTS[car.paint % F1_PAINTS.length]
+    const paint = police || ambulance ? POLICE_PAINT : RACE_PAINTS[car.kind] ? racePaint(car)
       : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
     mesh.userData.bar.visible = police || ambulance;
@@ -312,6 +318,7 @@ export const syncTraffic = () => {
       own.userData.body.material.color.setHex(paint);
       own.userData.livery?.(car.evil);
       own.userData.accent?.(Math.floor(car.paint / F1_PAINTS.length));
+      own.userData.style?.(Math.floor(car.paint / GT_PAINTS.length)); // (a GT car's shape)
       own.userData.animate(performance.now() / 1000 + i);
     }
     mesh.userData.body.visible = mesh.userData.cabin.visible = !own;

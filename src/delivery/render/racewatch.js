@@ -11,7 +11,7 @@ import { Game } from '../game.js';
 import { RaceWatch } from '../racewatch.js';
 import { camera, scene, tmp, tmp2, aim } from './scene.js';
 import { levelGroup } from './road.js';
-import { F1_PAINTS } from './cars.js';
+import { racePaint } from './cars.js';
 import { damp } from '../util.js';
 import { emotionOf } from '../physics.js';
 import { faceSvg } from './faces.js';
@@ -157,7 +157,7 @@ const drawMap = () => {
     pen.globalAlpha = c.active ? 1 : 0.35;
     pen.beginPath();
     pen.arc(px, py, c === RaceWatch.focus ? 5 : 3.5, 0, Math.PI * 2);
-    pen.fillStyle = hex(F1_PAINTS[c.paint % F1_PAINTS.length]);
+    pen.fillStyle = hex(racePaint(c));
     pen.fill();
     if (c === leader || c === RaceWatch.focus) {
       pen.lineWidth = c === RaceWatch.focus ? 2.5 : 1.5;
@@ -237,7 +237,7 @@ export const syncRaceWatch = (now) => {
     board.innerHTML = head + '<div class="abbrs">' + order.map((c, i) => {
       const pos = i + 1, gain = c.grid - pos;
       return `<div class="cell${c === RaceWatch.focus ? ' focus' : ''}${c === RaceWatch.pinned ? ' pinned' : ''}${c.active ? '' : ' out'}" data-i="${RaceWatch.racers.indexOf(c)}">` +
-        `<span class="pos">${pos}</span><span class="dot" style="background:${hex(F1_PAINTS[c.paint % F1_PAINTS.length])}"></span><span class="abbr">${c.abbr}</span>` +
+        `<span class="pos">${pos}</span><span class="dot" style="background:${hex(racePaint(c))}"></span><span class="abbr">${c.abbr}</span>` +
         `<span class="gain ${gain > 0 ? 'up' : gain < 0 ? 'down' : ''}">${gain > 0 ? '▲' + gain : gain < 0 ? '▼' + -gain : '–'}</span></div>`;
     }).join('') + '</div>';
   }
@@ -249,7 +249,7 @@ export const syncRaceWatch = (now) => {
       : c.done ? 'FINISHED' : down >= 1 ? '+' + down + (down > 1 ? ' LAPS' : ' LAP')
       : gap === null ? '' : '+' + gap.toFixed(3);
     rows.push(`<div class="row${c === RaceWatch.focus ? ' focus' : ''}${c === RaceWatch.pinned ? ' pinned' : ''}${c.active ? '' : ' out'}" data-i="${RaceWatch.racers.indexOf(c)}">` +
-      `<span class="pos">${pos}</span><span class="side">${SIDES[c.evil ? 'evil' : 'good']}</span><span class="dot" style="background:${hex(F1_PAINTS[c.paint % F1_PAINTS.length])}"></span>` +
+      `<span class="pos">${pos}</span><span class="side">${SIDES[c.evil ? 'evil' : 'good']}</span><span class="dot" style="background:${hex(racePaint(c))}"></span>` +
       `<span class="name">${c.driver}</span><span class="gap">${split}</span>` +
       `<span class="gain ${pos < c.grid ? 'up' : pos > c.grid ? 'down' : ''}">${pos < c.grid ? '▲' + (c.grid - pos) : pos > c.grid ? '▼' + (pos - c.grid) : '–'}</span>` +
       `<span class="kills">${c.kills || ''}</span><span class="wrecks">${c.wrecks || ''}</span>` +

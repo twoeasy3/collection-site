@@ -24,6 +24,7 @@ const fresh = () => ({
   muted: false,    // sound switched off
   touch: null,     // on-screen controls: true / false once chosen on the menu; null = on for touch screens
   autoGas: false,  // auto accelerate: the accelerator held down by itself, unless braking
+  raceClass: 'f1', // the cars every race is run in: 'f1', or 'gt' (GT road cars)
   tankPieces: 0,   // TANK RAGE pieces found so far (0-4), carried from one level to the next
   evil: false,     // the side picked on the menu
   levelOrder: LEVEL_ORDER, // the order of levels `unlocked` counts by

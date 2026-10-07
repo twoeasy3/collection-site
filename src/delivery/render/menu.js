@@ -2,7 +2,7 @@
 // The start screen is only a menu. Picking a level just marks it; the level is built when
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
-import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS } from '../levels.js';
+import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, setRaceClass } from '../levels.js';
 import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, stars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
@@ -142,6 +142,23 @@ autoGasBtn.addEventListener('click', () => {
 });
 showAutoGas();
 
+// the race class: every race (and the race screensaver) in F1 cars, or in GT road cars
+const raceClassBtn = document.getElementById('raceClassBtn');
+const showRaceClass = () => {
+  const kind = Progress.data.raceClass === 'gt' ? 'gt' : 'f1';
+  setRaceClass(kind);
+  useLevelCar(LEVEL.car); // (a race level picked: its car is the class's)
+  raceClassBtn.textContent = 'Race cars: ' + (kind === 'gt' ? 'GT' : 'F1');
+};
+raceClassBtn.addEventListener('click', () => {
+  Progress.data.raceClass = Progress.data.raceClass === 'gt' ? 'f1' : 'gt';
+  Progress.save();
+  showRaceClass();
+  draw();
+});
+showRaceClass();
+draw();
+
 // a complete savegame, written to the progress cookie like any other progress
 document.getElementById('completeBtn').addEventListener('click', () => {
   if (!confirm('Open every level, buy every car and fill the bank?')) return;
@@ -175,6 +192,7 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   selectLevel(0);
   window.dispatchEvent(new Event('carchange')); // (the car in use may have been one that was bought)
   showAutoGas(); // (a reset forgets the choice)
+  showRaceClass();
   draw();
 });
 

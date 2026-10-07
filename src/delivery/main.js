@@ -4,7 +4,7 @@ import './style.css';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
-import { selectLevel, selectSpecial, HIDDEN_LEVELS } from './levels.js';
+import { selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
 import { Progress } from './progress.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
@@ -57,6 +57,7 @@ if (params.get('garage') !== null) {
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
 const hidden = params.get('hidden') || (params.get('test') !== null ? 'testbed' : params.get('edited') !== null ? 'edited' : null); // (a hidden level: see levels.js)
+if (params.get('gt') !== null) setRaceClass('gt'); // ?gt: every race in GT road cars, whatever the menu says
 if (params.get('mystery')) Player.nextMystery = params.get('mystery'); // ?mystery=toad: every mystery pickup is that one
 if (params.get('racewatch') !== null) {
   Game.startRaceWatch();

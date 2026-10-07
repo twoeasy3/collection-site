@@ -195,6 +195,15 @@ export const SCREENSAVER_LEVEL = chaos;
 // to try new things out on without putting them in a real level. The Singapore Grand Prix (once
 // S3, round Singapore II's streets) is kept here too: ?hidden=grand-prix
 export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix };
+// the class every race is run in: 'f1', or 'gt' (GT road cars): the player's car and the grid
+// (the menu's Race cars button; ?gt for a GT race whatever it says)
+export const setRaceClass = (kind) => {
+  for (const level of [...LEVELS, ...Object.values(HIDDEN_LEVELS)]) {
+    if (!level.grid) continue;
+    level.car = kind;
+    level.grid = { ...level.grid, kind };
+  }
+};
 
 // The level picked on the menu. These are live bindings: importers see the new level as soon
 // as selectLevel() changes it. Nothing is built from it until a run starts (see Game.load).

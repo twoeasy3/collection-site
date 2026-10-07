@@ -102,6 +102,83 @@ export const MODELS = {
     };
     return group;
   },
+  // A GT road car, raced: one of three shapes, by its paint number (userData.style(n)): a
+  // front-engined grand tourer (a long bonnet, the cabin set back, a fastback), a rear-engined
+  // coupe (a short sloping nose, the roof running down to the tail, a whale tail) or a mid-engined
+  // wedge (a low nose, the cabin forward, a louvred engine deck behind it, intakes in its flanks).
+  // Each is a side profile in the livery, a glasshouse on it, a white roundel on each door, a
+  // splitter, a diffuser, lamps, and big wheels in dark alloys.
+  gt: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, L = car.hl, R = 0.36; // (L: half its length; the profiles are drawn for 2.3, and scaled)
+    const paint = lambert(car.color), glass = lambert(GLASS), dark = lambert(0x16171a), white = lambert(0xf4f4f4);
+    const alloy = lambert(0x3a3d44);
+    const k = L / 2.3, at = (pts) => pts.map(([z, y]) => [z * k, y]);
+    const styles = [], wheels = [];
+    const SHAPES = [
+      { // front-engined grand tourer
+        body: [[-2.3, 0.3], [2.3, 0.3], [2.33, 0.55], [2.2, 0.72], [0.5, 0.82], [-1.6, 0.86], [-2.3, 0.8], [-2.33, 0.45]],
+        glass: [[0.52, 0.8], [-0.2, 1.2], [-0.95, 1.22], [-1.95, 0.84], [-1.95, 0.8]],
+        roof: [-0.2, -0.95, 1.2], lamps: 0.62, tails: 0.7,
+      },
+      { // rear-engined coupe
+        body: [[-2.3, 0.32], [2.3, 0.32], [2.33, 0.52], [2.05, 0.7], [0.9, 0.8], [0.55, 0.84], [-1.7, 0.86], [-2.3, 0.68], [-2.33, 0.42]],
+        glass: [[0.6, 0.82], [0.0, 1.24], [-0.7, 1.26], [-2.0, 0.84], [-2.0, 0.8]],
+        roof: [0.0, -0.7, 1.24], lamps: 0.64, tails: 0.62, whale: true,
+      },
+      { // mid-engined wedge
+        body: [[-2.3, 0.3], [2.3, 0.3], [2.34, 0.44], [1.0, 0.68], [-1.1, 0.84], [-2.3, 0.84], [-2.33, 0.4]],
+        glass: [[1.05, 0.66], [0.25, 1.06], [-0.45, 1.08], [-1.05, 0.9], [-1.05, 0.78]],
+        roof: [0.25, -0.45, 1.06], lamps: 0.5, tails: 0.66, louvres: true,
+      },
+    ];
+    let body = null;
+    for (const S of SHAPES) {
+      const g = new THREE.Group();
+      group.add(g);
+      styles.push(g);
+      const shell = prism(g, paint, w, at(S.body));
+      body ||= shell;
+      // the glasshouse: the windscreen and side windows up to the back of the roof; behind it the
+      // fastback (or the engine cover's buttresses) in the livery, a rear window set into it
+      const [r0, r1, ry] = S.roof, [tz, ty] = S.glass[S.glass.length - 2], base = S.glass[S.glass.length - 1][1];
+      prism(g, glass, w * 0.78, at([...S.glass.slice(0, 3), [r1, base]]));
+      prism(g, paint, w * 0.8, at([[r1, ry], [tz, ty], [tz, base], [r1, base]]));
+      box(g, paint, w * 0.8, 0.05, (r0 - r1) * k, 0, ry + 0.02, (r0 + r1) / 2 * k); // (the roof)
+      const run = (r1 - tz) * k, rise = ry - ty;
+      slab(g, glass, w * 0.56, 0.03, Math.hypot(run, rise) * 0.78, 0, (ry + ty) / 2 + 0.02, (r1 + tz) / 2 * k, -Math.atan2(rise, run));
+      box(g, dark, w * 0.92, 0.07, 0.3, 0, 0.3, L - 0.1);                          // splitter
+      box(g, dark, w * 0.84, 0.16, 0.25, 0, 0.36, -L + 0.08);                       // diffuser
+      box(g, dark, w * 1.01, 0.1, L * 1.1, 0, 0.38, 0);                             // sills
+      if (S.whale) { // a whale tail on the engine lid
+        box(g, paint, w * 0.86, 0.05, 0.42, 0, 0.98, -L * 0.83);
+        for (const side of [-1, 1]) box(g, dark, 0.05, 0.12, 0.3, side * w * 0.3, 0.92, -L * 0.83);
+      }
+      if (S.louvres) { // the engine deck's louvres, and intakes in its flanks
+        for (let i = 0; i < 4; i++) box(g, dark, w * 0.56, 0.03, 0.08, 0, 0.86, -L * (0.55 + i * 0.09));
+        for (const side of [-1, 1]) box(g, dark, 0.04, 0.2, 0.55, side * (w / 2 + 0.005), 0.62, -L * 0.3);
+        box(g, paint, w * 0.9, 0.04, 0.2, 0, 0.9, -L * 0.95);                       // a lip spoiler
+      }
+      for (const side of [-1, 1]) {
+        box(g, LAMP, w * 0.24, 0.09, 0.08, side * w * 0.32, S.lamps, L + 0.02);
+        box(g, TAIL, w * 0.32, 0.07, 0.08, side * w * 0.3, S.tails, -L - 0.02);
+        const roundel = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.02, 16), white); // (its race number's disc)
+        roundel.rotation.z = Math.PI / 2;
+        roundel.position.set(side * (w / 2 + 0.01), 0.6, -L * 0.05);
+        g.add(roundel);
+      }
+    }
+    for (const z of [L * 0.62, -L * 0.62]) {
+      for (const side of [-1, 1]) wheels.push(...wheel(group, R, 0.3, side * (w / 2 - 0.02), R, z, alloy));
+    }
+    group.userData = {
+      body,
+      animate: (t) => { for (const wh of wheels) wh.rotation.x = t * 30; },
+      style: (n) => styles.forEach((g, i) => { g.visible = i === n % styles.length; }),
+    };
+    group.userData.style(0);
+    return group;
+  },
   // A sleek sports cruiser, sat in the water (its hull's bottom under the surface): a long white
   // hull, pointed at the bow, with a stripe in the livery down its side; a raised foredeck, and
   // amidships the captain's cabin: a raked windshield, a hardtop roof on slim pillars, glass round

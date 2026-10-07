@@ -100,6 +100,7 @@ const ENGINES = {
   ufo: { files: ['UFO'], idle: 0.8, top: 1.4 },
   f1: { files: ['Engine Sports Car 5'], idle: 0.9, top: 2.1 }, // (wound right up: a screamer)
   jetboat: { files: ['Jetski Engine'], idle: 0.8, top: 1.4 },
+  gt: { files: ['Engine Sports Car 5'], idle: 0.7, top: 1.75 }, // (deeper than the F1's)
 };
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 // how loud a loaded WAV is on average (root mean square of its first channel), worked out once
