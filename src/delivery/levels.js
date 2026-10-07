@@ -50,7 +50,8 @@
 //   wallDamage true = a car going sideways into the road's edge takes damage (see CONFIG.race)
 //   nudge      true = a car steering into another's side knocks it aside
 //   landmarks  { kind, x, z, r, rot }: landmarks where they really are, in the world (Singapore's look:
-//              'bay', 'flyer', 'mbs', 'esplanade', 'fullerton', 'merlion', 'padang', 'gardens'); r m
+//              'bay', 'flyer', 'mbs', 'esplanade', 'fullerton', 'merlion', 'padang', 'gardens',
+//              'artscience', 'helix' (r: half its length), 'float', 'cbd', 'suntec', 'gallery', 'domes'); r m
 //              round each is kept clear of the town; rot: which way it faces
 //   shoulder   m of shoulder each side of the road, if not CONFIG.shoulder (a street circuit's walls close by)
 //   runoff     { from, to, side, width }: the shoulder on that side `width` m wider over that stretch (run-off

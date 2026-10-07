@@ -119,13 +119,23 @@ const buildTerrain = (colours) => {
   const N = pts.length / 3;
   const flatTo = Math.max(Track.hi(0), -Track.lo(0)) + 12 + (colours?.flat ?? 0); // (wider than a grid square, so no slope reaches the road)
   const heightAt = (x, z) => {
-    let best = Infinity, bestY = 0, wsum = 0, hsum = 0;
+    let best = Infinity, bi = 0, wsum = 0, hsum = 0;
     for (let i = 0; i < N; i++) {
       const dx = x - pts[i * 3], dz = z - pts[i * 3 + 2], d2 = dx * dx + dz * dz;
-      if (d2 < best) { best = d2; bestY = pts[i * 3 + 1]; }
+      if (d2 < best) { best = d2; bi = i; }
       const w = 1 / (d2 * d2 + 1);
       wsum += w;
       hsum += w * pts[i * 3 + 1];
+    }
+    // (the road's height there: along the line between the samples either side of the nearest,
+    // not the nearest sample's own, which on a steep hill can be most of a metre out)
+    let bestY = pts[bi * 3 + 1];
+    for (const j of [bi - 1, bi]) {
+      if (j < 0 || j + 1 >= N) continue;
+      const ax = pts[j * 3], az = pts[j * 3 + 2], ex = pts[j * 3 + 3] - ax, ez = pts[j * 3 + 5] - az;
+      const u = Math.max(0, Math.min(1, ((x - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez || 1)));
+      const qx = ax + ex * u - x, qz = az + ez * u - z, q2 = qx * qx + qz * qz;
+      if (q2 <= best + 1e-6) { best = q2; bestY = pts[j * 3 + 1] + (pts[j * 3 + 4] - pts[j * 3 + 1]) * u; }
     }
     const d = Math.sqrt(best), road = bestY - 0.3;
     if (d < flatTo) return road;
@@ -1659,6 +1669,101 @@ const buildRoad = () => {
         put(new THREE.PlaneGeometry(l.r * 1.6, l.r * 1.1).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x3f7a3a }), 0, 0.02, 0);
         put(new THREE.BoxGeometry(40, 10, 16), lit(0xf2efe6, 0x5a5850), 0, 5, -l.r * 0.65);
         put(new THREE.BoxGeometry(44, 2, 20), lit(0x8a3a2a, 0x2a0a06), 0, 11, -l.r * 0.65);
+      } else if (l.kind === 'artscience') { // the ArtScience Museum: a white lotus, its petals opening up from a round base
+        const white = lit(0xf1f1ee, 0x6a6a64);
+        put(new THREE.CylinderGeometry(9, 12, 6, 20), white, 0, 3, 0);
+        for (let k = 0; k < 10; k++) { // (broad, rounded fingers, leaning out, some taller than the rest)
+          const a = k / 10 * Math.PI * 2, half = 15 + (k % 3) * 4;
+          const petal = put(new THREE.SphereGeometry(1, 14, 10), white, Math.sin(a) * (8 + half * 0.4), 4 + half * 0.9, Math.cos(a) * (8 + half * 0.4));
+          petal.rotation.order = 'YXZ';
+          petal.rotation.y = a;
+          petal.rotation.x = 0.45;
+          petal.scale.set(6.5, half, 2.4);
+        }
+      } else if (l.kind === 'helix') { // the Helix Bridge: a walkway over the water inside a double helix of steel (in lights, at night)
+        const L = l.r * 2, deckY = 6;
+        put(new THREE.BoxGeometry(6, 0.8, L), lit(0xb9bec4, 0x30343a), 0, deckY, 0);
+        for (const [phase, glow] of [[0, 0x9fe8ff], [Math.PI, 0xff6fd0]]) {
+          const curve = [];
+          for (let k = 0; k <= 240; k++) {
+            const zz = -L / 2 + L * k / 240, a = zz / 9 + phase;
+            curve.push(new THREE.Vector3(Math.cos(a) * 4.5, deckY + 3.6 + Math.sin(a) * 4.5, zz));
+          }
+          put(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(curve), 480, 0.35, 6), night ? glowMat(glow) : lit(0xdfe6ec, 0), 0, 0, 0);
+        }
+        for (const zz of [-L / 2 + 20, -L / 6, L / 6, L / 2 - 20]) put(new THREE.CylinderGeometry(0.9, 0.9, deckY, 8), lit(0x9aa0a6, 0x202428), 0, deckY / 2, zz);
+      } else if (l.kind === 'float') { // The Float @ Marina Bay: a great steel platform on the water, its grandstand stepped up on the shore
+        put(new THREE.BoxGeometry(110, 1.2, 80), lit(0x8d949b, 0x2a2e33), 0, 0.6, 0);
+        put(new THREE.BoxGeometry(96, 0.1, 66), lit(0x3d7f5a, 0x0f2a1a), 0, 1.25, 0); // (its pitch)
+        for (let k = 0; k < 9; k++) {
+          put(new THREE.BoxGeometry(116, 1.3, 3), lit(k % 2 ? 0xd94a3a : 0xe8e8e8, k % 2 ? 0x5a1a10 : 0x5a5a5a), 0, 1.3 + k * 1.3, -44 - k * 2.8);
+        }
+        put(new THREE.BoxGeometry(120, 0.6, 30), lit(0xf2f2f2, 0x6a6a6a), 0, 17, -56); // (the stand's roof)
+      } else if (l.kind === 'cbd' || l.kind === 'suntec') {
+        // Raffles Place and the Financial Centre: the city's tallest towers, packed together (some
+        // octagonal, as UOB Plaza is); or Suntec City: five towers round a ring, the Fountain of
+        // Wealth in the middle, a bronze ring on four legs. Lit windows at night
+        let seed = l.kind === 'cbd' ? 11 : 23;
+        const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+        const tones = [0x5f7d99, 0x8aa1b5, 0x3f566e, 0xa9b8c4, 0x6d7f8c], windows = [];
+        const tower = (x, z, w, d, ht, turn, octagonal, color) => {
+          // (at night, a dark silhouette that shows through the haze, as its windows do)
+          const t = put(octagonal ? new THREE.CylinderGeometry(w / 2, w / 2, ht, 8) : new THREE.BoxGeometry(w, ht, d), night ? new THREE.MeshBasicMaterial({ color: 0x1b2638, fog: false }) : lit(color, 0), x, ht / 2, z);
+          t.rotation.y = turn;
+          for (let y = 6; y < ht - 4; y += 7) windows.push([x, y, z, w + 0.3, d + 0.3, turn]);
+          return t;
+        };
+        if (l.kind === 'cbd') {
+          for (let k = 0; k < 26; k++) {
+            const a = rand() * Math.PI * 2, d = Math.sqrt(rand()) * l.r * 0.85;
+            tower(Math.sin(a) * d, Math.cos(a) * d, 22 + rand() * 18, 22 + rand() * 18, 110 + rand() * 170, rand() * 0.6, rand() < 0.2, tones[k % tones.length]);
+          }
+        } else {
+          for (let k = 0; k < 5; k++) {
+            const a = k / 5 * Math.PI * 2 + 0.3, ht = k === 4 ? 75 : 175;
+            tower(Math.sin(a) * 62, Math.cos(a) * 62, 32, 30, ht, a, false, 0x7f9cb3);
+            const cap = put(new THREE.ConeGeometry(22, 12, 4), lit(0x5f7d99, 0x101820), Math.sin(a) * 62, ht + 6, Math.cos(a) * 62);
+            cap.rotation.y = a + Math.PI / 4;
+          }
+          const bronze = lit(0xb08d57, 0x4a3a1a);
+          const ring = put(new THREE.TorusGeometry(11, 1.3, 8, 40), bronze, 0, 13, 0);
+          ring.rotation.x = Math.PI / 2;
+          for (let k = 0; k < 4; k++) {
+            const a = k / 4 * Math.PI * 2, leg = put(new THREE.CylinderGeometry(0.9, 1.4, 14, 8), bronze, Math.sin(a) * 9, 6.5, Math.cos(a) * 9);
+            leg.rotation.order = 'YXZ';
+            leg.rotation.y = a;
+            leg.rotation.x = -0.2;
+          }
+          put(new THREE.CylinderGeometry(0.6, 1.6, 14, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xcfefff, transparent: true, opacity: 0.5, side: THREE.DoubleSide, depthWrite: false }), 0, 7, 0);
+        }
+        if (night && windows.length) { // (rows of lit windows, one draw for them all)
+          const lights = new THREE.InstancedMesh(cube, glowMat(0xffe2a0), windows.length), d = new THREE.Object3D();
+          lights.material.fog = false; // (city lights carry far through the haze: the skyline shows from the circuit)
+          windows.forEach(([x, y, z, w, dd, turn], i) => {
+            d.position.set(x, y, z);
+            d.rotation.set(0, turn, 0);
+            d.scale.set(w, 1.4, dd);
+            d.updateMatrix();
+            lights.setMatrixAt(i, d.matrix);
+          });
+          g.add(lights);
+        }
+      } else if (l.kind === 'gallery') { // the National Gallery: City Hall's colonnade, and the old Supreme Court with its green dome
+        const stone = lit(0xe9e2d0, 0x5a5444);
+        put(new THREE.BoxGeometry(110, 24, 40), stone, -35, 12, -20);
+        for (let k = -9; k <= 9; k++) put(new THREE.CylinderGeometry(1.3, 1.3, 18, 10), stone, -35 + k * 5.6, 11, 2);
+        put(new THREE.BoxGeometry(112, 3, 6), stone, -35, 21.5, 2);
+        put(new THREE.BoxGeometry(70, 22, 50), stone, 58, 11, -25);
+        for (let k = -4; k <= 4; k++) put(new THREE.CylinderGeometry(1.2, 1.2, 15, 10), stone, 58 + k * 5.5, 8.5, 1);
+        put(new THREE.CylinderGeometry(12, 12, 10, 20), stone, 58, 27, -25);
+        put(new THREE.SphereGeometry(12, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), lit(0x6f9c8a, 0x1a3a30), 58, 32, -25);
+      } else if (l.kind === 'domes') { // Gardens by the Bay's conservatories: the Flower Dome and the taller Cloud Forest, glass on steel ribs
+        for (const [dx, dz, rx, ry, rz] of [[-45, 0, 55, 30, 40], [52, 10, 38, 44, 32]]) {
+          const shell = new THREE.MeshLambertMaterial({ color: 0xbfe3ef, transparent: true, opacity: 0.5, emissive: night ? 0x2a5a6a : 0x000000, depthWrite: false });
+          put(new THREE.SphereGeometry(1, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), lit(0x4f8a3c, 0x0a2a0a), dx, 0, dz).scale.set(rx * 0.7, ry * 0.55, rz * 0.7); // (the gardens inside)
+          put(new THREE.SphereGeometry(1, 28, 12, 0, Math.PI * 2, 0, Math.PI / 2), shell, dx, 0, dz).scale.set(rx, ry, rz);
+          put(new THREE.SphereGeometry(1, 14, 6, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshBasicMaterial({ color: night ? 0x9fe8ff : 0x7d8790, wireframe: true, fog: !night }), dx, 0, dz).scale.set(rx * 1.01, ry * 1.01, rz * 1.01);
+        }
       }
       levelGroup.add(g);
     }
@@ -2014,15 +2119,20 @@ const buildRoad = () => {
     };
     placed(tube, 0xd9cfbf, trunks);
     placed(new THREE.SphereGeometry(0.5, 8, 6), 0x7a8f62, clumps);
-    // blue ranges all round, far off in the haze
-    const middle = {};
-    Track.toWorld(Track.length / 2, 0, middle);
+    // blue ranges all round, far off in the haze: round the middle of the circuit (not a point on
+    // it), each well clear of the land the circuit stands on
+    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
+    for (let s = 0; s < Track.length; s += 20) {
+      Track.toWorld(s, 0, p);
+      x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z);
+    }
+    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, spread = Math.hypot(x1 - x0, z1 - z0) / 2;
     const range = new THREE.MeshLambertMaterial({ color: 0x7f97b0 });
     for (let k = 0; k < 18; k++) {
-      const a = k / 18 * Math.PI * 2 + Math.random() * 0.2, far = 1500 + Math.random() * 400;
-      const r = 300 + Math.random() * 200, h = 120 + Math.random() * 110;
+      const a = k / 18 * Math.PI * 2 + Math.random() * 0.2, r = 300 + Math.random() * 200, h = 120 + Math.random() * 110;
+      const far = spread + 400 + r + Math.random() * 400; // (beyond the land round the circuit: see buildTerrain)
       const hill = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), range);
-      hill.position.set(middle.x + Math.sin(a) * far, h / 2 - 10, middle.z + Math.cos(a) * far);
+      hill.position.set(cx + Math.sin(a) * far, h / 2 - 10, cz + Math.cos(a) * far);
       levelGroup.add(hill);
     }
   } else if (theme.scenery === 'alpine') {

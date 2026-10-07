@@ -6,6 +6,7 @@
 // In the level editor (inside its 3D view), a click on the road places whatever the editor's tool is
 // (a pickup, an obstacle or a TANK RAGE target), and a right-click on one removes it; each change is
 // passed back to the editor, which keeps its copy of the level in step.
+// ?cam=x,y,z,yaw,pitch puts the camera there to begin with (in the scene's terms; yaw and pitch in degrees).
 import * as THREE from 'three';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
@@ -72,6 +73,11 @@ export const startFly = () => {
   const fx = sx * Math.sin(h), fz = Math.cos(h);
   yaw = Math.atan2(-fx, -fz);
   camera.position.set(at.x * sx - fx * 30, at.y + 18, at.z - fz * 30);
+  const cam = new URLSearchParams(location.search).get('cam')?.split(',').map(Number);
+  if (cam && cam.length >= 3 && cam.every(Number.isFinite)) {
+    camera.position.set(cam[0], cam[1], cam[2]);
+    if (cam.length >= 5) { yaw = cam[3] * Math.PI / 180; pitch = cam[4] * Math.PI / 180; }
+  }
   window.addEventListener('keydown', (e) => { keys.add(e.code); if (e.code === 'Space') e.preventDefault(); });
   window.addEventListener('keyup', (e) => keys.delete(e.code));
   window.addEventListener('blur', () => keys.clear());
