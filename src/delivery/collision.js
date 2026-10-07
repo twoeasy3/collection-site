@@ -59,6 +59,10 @@ export const Collision = (() => {
     const penLat = Math.max(0.02, a.hw + b.hw - Math.abs(dl));
     const sideOn = penLat < penS;           // they came together sideways, not nose to tail
     const headOn = a.bound !== b.bound;     // one northbound, one southbound
+    // a rival courier against ordinary traffic (not the player, nor another rival): it has much the
+    // better of it (see CONFIG.rival.ram)
+    const courier = a.courier && !b.courier && !b.isPlayer ? a : b.courier && !a.courier && !a.isPlayer ? b : null;
+    const R = CONFIG.rival.ram, struck = courier === a ? b : a;
 
     // Contact with a police car is a bust, unless it wasn't the player's doing: the police car
     // ran into the back of the player, sideswiped it or turned into it (it was the one moving
@@ -80,6 +84,14 @@ export const Collision = (() => {
       a.speed *= Math.max(0.35, 1 - CONFIG.tankRamSlow * b.mass); // ramming does slow it
       Game.shake = Math.max(Game.shake, 0.6);
       sfx('heavy');
+      return;
+    }
+    if (headOn && courier) { // (the oncoming car is wrecked; the courier takes a hard knock, and slows right down)
+      struck.health = 0;
+      hurt(courier, R.headOn);
+      courier.vs *= R.headOnSpeed;
+      courier.stun = Math.max(courier.stun, CONFIG.stunTime * R.share);
+      if (heard(a, b)) sfx('headOn');
       return;
     }
     if (headOn) {
@@ -107,7 +119,7 @@ export const Collision = (() => {
     // (under the 1000 lb weight the player wins every shove, rear-ends included)
     const playerShare = player && player.heavy > 0 ? CONFIG.heavyMass.pushShare
       : rearEnd ? CONFIG.playerRearEndShare : CONFIG.playerPushShare;
-    const pushA = a.isPlayer ? playerShare : b.isPlayer ? 1 - playerShare : shareA;
+    const pushA = a.isPlayer ? playerShare : b.isPlayer ? 1 - playerShare : courier ? (courier === a ? R.share : 1 - R.share) : shareA;
     const pushB = 1 - pushA;
     const n = ds >= 0 ? 1 : -1; // b is the one in front
     const slide = Math.min(penS, CONFIG.pushStep);
@@ -134,6 +146,8 @@ export const Collision = (() => {
       // level with "nudge": each is knocked aside, the lighter the further). One long scrape counts
       // as one hit, not one per step.
       const sideways = (a.latVel - b.latVel) * (dl > 0 ? 1 : -1);
+      // (a rival courier side by side with a car shoves it out of its way)
+      if (courier) struck.latVel += Math.sign(struck.lat - courier.lat || 1) * R.shove * CONFIG.maxStep * 60;
       if (LEVEL.nudge && sideways > 0) {
         const j = (1 + CONFIG.bounce) * sideways * (dl > 0 ? 1 : -1);
         a.latVel -= j * pushA;
@@ -157,8 +171,10 @@ export const Collision = (() => {
       a.hitBy = b; b.hitBy = a;
       a.hitAt = b.hitAt = Game.time;
       const damage = impact * CONFIG.damagePerSpeed;
-      hurt(a, damage * shareA * 2);
-      hurt(b, damage * shareB * 2);
+      // (a rival courier takes little of it, and dishes out more: see CONFIG.rival.ram)
+      const hit = (v, share) => v === courier ? share * R.share / 0.5 : courier ? share * R.damage : share;
+      hurt(a, damage * hit(a, shareA) * 2);
+      hurt(b, damage * hit(b, shareB) * 2);
       if (a.isPlayer || b.isPlayer) Traffic.arrest(a.isPlayer ? b : a); // (under the player's siren)
       if (a.isPlayer) b.grudge = true;
       if (b.isPlayer) a.grudge = true;
@@ -167,8 +183,8 @@ export const Collision = (() => {
       if (Math.random() < CONFIG.rivalryChance) startRivalry(b, a);
       // (the player's car is knocked about less the heavier it is: see Player.mass)
       const stun = CONFIG.stunTime * clamp(impact / 10, 0.3, 1);
-      a.stun = Math.max(a.stun, a.isPlayer ? stun / a.mass : stun);
-      b.stun = Math.max(b.stun, b.isPlayer ? stun / b.mass : stun);
+      a.stun = Math.max(a.stun, a.isPlayer ? stun / a.mass : a === courier ? stun * R.share : stun);
+      b.stun = Math.max(b.stun, b.isPlayer ? stun / b.mass : b === courier ? stun * R.share : stun);
       if (heard(a, b)) {
         if (a.isPlayer || b.isPlayer) Game.shake = Math.max(Game.shake, clamp(impact / 15, 0.25, 1));
         sfx(impact >= CONFIG.hardCrash ? 'crashHard' : scraped ? 'sideswipe' : 'crash', clamp(impact / 18, 0.3, 1));

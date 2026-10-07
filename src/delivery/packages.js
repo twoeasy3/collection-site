@@ -64,7 +64,7 @@ export const Packages = (() => {
     }
     if (best) return best;
     for (const car of Traffic.cars) {
-      if (!car.active) continue;
+      if (!car.active || car.courier) continue; // (a rival courier is no target: see CONFIG.rival)
       const dist = Math.hypot(car.s - Player.s, car.lat - Player.lat) * (car.s < Player.s ? CONFIG.throwBehind : 1);
       if (dist < bestDist) { best = car; bestDist = dist; }
     }
@@ -111,11 +111,13 @@ export const Packages = (() => {
   // Never at a police car: not even the angriest driver picks on the police
   const throwAtGround = (car, aim = null) => {
     const scatter = CONFIG.enemyThrowScatter;
-    let victim = (car.grudge || car.offended > 0 || (car.spite && Math.random() < CONFIG.giftSpite)) && aim !== 'escort' ? Player : null;
+    // (aim: 'escort', or a particular car to throw at: a rival courier clearing its way)
+    let victim = aim && typeof aim === 'object' ? aim
+      : (car.grudge || car.offended > 0 || (car.spite && Math.random() < CONFIG.giftSpite)) && aim !== 'escort' ? Player : null;
     if (!victim && aim === 'escort') {
       let best = CONFIG.enemyThrowCarRange;
       for (const o of Traffic.cars) {
-        if (o === car || !o.active || o.kind === 'police') continue;
+        if (o === car || !o.active || o.kind === 'police' || o.courier) continue;
         const dist = Math.hypot(o.s - Player.s, o.lat - Player.lat);
         if (dist < best) { best = dist; victim = o; }
       }
@@ -123,7 +125,7 @@ export const Packages = (() => {
       let best = CONFIG.enemyThrowCarRange;
       const rival = car.rival && car.rival.active && car.rival.kind !== 'police' ? car.rival : null;
       for (const o of rival ? [rival] : Traffic.cars) {
-        if (o === car || !o.active || o.kind === 'police') continue;
+        if (o === car || !o.active || o.kind === 'police' || o.courier) continue;
         const dist = Math.hypot(o.s - car.s, o.lat - car.lat);
         if (dist < best) { best = dist; victim = o; }
       }
@@ -141,7 +143,7 @@ export const Packages = (() => {
   // an evil car's package going off on the road
   const splash = (p) => {
     for (const v of Collision.bodies) {
-      if (!v.active || v === p.owner || v.shield > 0 || v.tank > 0) continue;
+      if (!v.active || v === p.owner || v.shield > 0 || v.tank > 0 || v.courier) continue; // (nor a rival courier)
       if (Math.hypot(v.s - p.s, v.lat - p.lat) > CONFIG.splashRadius) continue;
       hurt(v, CONFIG.splashDamage);
       if (v.isPlayer) {
@@ -164,7 +166,7 @@ export const Packages = (() => {
   // (it goes off with the lighter 'burst' sound, not a full explosion's)
   const blast = (p) => {
     for (const car of Traffic.cars) {
-      if (!car.active) continue;
+      if (!car.active || car.courier) continue;
       const dist = Math.hypot(car.s - p.s, car.lat - p.lat);
       if (dist < CONFIG.cannonDirectRadius + car.hl * 0.5) car.health = 0;
       else if (dist < CONFIG.cannonSplashRadius) hurt(car, CONFIG.cannonSplashDamage, CONFIG.cannonCrit);
@@ -235,7 +237,7 @@ export const Packages = (() => {
   const splashAround = (p, hit) => {
     if (!(Player.bigSplash > 0) || (p.kind !== 'gift' && p.kind !== 'fire')) return;
     for (const car of Traffic.cars) {
-      if (car === hit || !car.active || car.arrest >= 0 || car.emergency || car.junction) continue;
+      if (car === hit || !car.active || car.arrest >= 0 || car.emergency || car.junction || car.courier) continue;
       if (Math.hypot(car.s - p.s, car.lat - p.lat) > CONFIG.bigSplash.radius) continue;
       const was = doomed(car);
       deliver(p, car);
@@ -284,7 +286,7 @@ export const Packages = (() => {
         }
         for (const car of Traffic.cars) {
           if (!p.active) break;
-          if (!car.active || car.arrest >= 0 || car.emergency || car.junction || p.h > car.height + 0.6) continue;
+          if (!car.active || car.arrest >= 0 || car.emergency || car.junction || car.courier || p.h > car.height + 0.6) continue; // (a package goes straight past a rival courier)
           if (Math.abs(car.s - p.s) > car.hl + 1 || !Collision.overlap(p, car)) continue;
           const was = doomed(car);
           deliver(p, car);

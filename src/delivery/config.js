@@ -129,14 +129,24 @@ export const CONFIG = {
   // round any within obstacleRoom m of its line (and round a pickup that would do it harm); one that would do
   // it good, it moves over for, within pickupReach m (and lookTime s at its speed). A pickup it gets that is
   // heard of within heard m is said
-  // (up to `most` of them: see a level's "rivals"; each one ahead at the drop takes its share of the tip)
+  // (up to `most` of them: see a level's "rivals"; each one ahead at the drop takes its share of the tip.
+  // No package is ever aimed at one, nor lands on one: it is beaten by driving, not bombing)
   rival: { most: 3, pace: { min: 0.96, max: 1.0 }, health: 4000, firstThrow: 6, catchUp: { from: 15, full: 150, pace: 1.15 },
     lookAhead: 20, lookTime: 2.2, obstacleRoom: 0.5, pickupReach: 40, heard: 150,
     // It is no stickler for the rules: boxed in, it overtakes up the shoulder (as long as it is wide
     // enough for it, by shoulderRoom m) or out in the oncoming lane, with only oncomingEdge m/s more
     // pace than what holds it up (an ordinary racer wants race.oncoming.edge)
     // (but with a police car within policeRange m, it keeps to its own lanes: it can't be busted, but it plays it safe)
-    shoulderRoom: 0.3, oncomingEdge: 1.5, policeRange: 150 },
+    shoulderRoom: 0.3, oncomingEdge: 1.5, policeRange: 55,
+    // and in traffic it takes a gap laneGap m clear either side (traffic wants laneChangeGap), counts only
+    // what is within passRoom m past the car it is passing in that lane, and shakes off a knock recovery times as quickly
+    laneGap: 6, passRoom: 12, recovery: 3,
+    // Against ordinary traffic it has the better of every knock: it takes `share` of any push, damage and
+    // stun (an even match is 0.5), its hits do `damage` times as much to the other, and side by side it
+    // shoves the other car aside at `shove` m/s a step; a head-on wrecks the other car, costing it headOn
+    // health and all but headOnSpeed of its speed. Stuck behind a car with no way by for `after` s, it
+    // rams it, closing at `closing` m/s, and an evil one throws at it every throwEvery s
+    ram: { share: 0.15, damage: 4, shove: 0.25, headOn: 600, headOnSpeed: 0.35, after: 0.8, closing: 6, throwEvery: 1.5 } },
   race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5,
     towReach: 130, draft: 0.2, seekReach: 160, seekEvery: 1.5,
     // Racecraft: each driver's nerve in the bends is its own, from nerve.min to nerve.max times the

@@ -87,6 +87,7 @@ export const spinOut = (v) => {
 export const startRivalry = (car, other) => {
   if (car.isPlayer || other.isPlayer) return;
   if (car.racer && !car.evil) return; // (a good racer races clean, whatever is done to it)
+  if (car.courier || other.courier) return; // (a rival courier has no time for feuds, and is in too much of a hurry to be picked on)
   car.rival = other;
   car.rivalTime = CONFIG.rivalryTime;
   car.mood = Math.max(-1, car.mood - 0.3);
