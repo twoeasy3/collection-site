@@ -218,8 +218,8 @@ export const Collision = (() => {
   const loadLevel = () => {
     obstacles.length = 0;
     for (const o of LEVEL.obstacles || []) {
-      const s = Track.place(o);
-      add(o.kind || 'barrier', s, Track.laneOffset(o.lane, s));
+      const s = Track.place(o), lat = Track.laneOffset(o.lane, s), D = CONFIG.drifters;
+      add(o.kind || 'barrier', s, lat, o.drift === 'dart' ? { drift: 'dart', time: 0, homeS: s, homeLat: lat, along: D.dartAlong, across: D.dartAcross } : undefined);
     }
     // rows of things standing on the shoulders (not beside an exit or merge lane, where a
     // side road's pavement runs over the shoulder as it forks off, nor on a bridge)
@@ -304,6 +304,11 @@ export const Collision = (() => {
       const reach = Math.max(CONFIG.drifters.circleRadius, CONFIG.drifters.eightLength) + 5;
       for (let i = 0; i < count; i++) {
         const centre = from + reach + (count > 1 ? i / (count - 1) : 0.5) * (to - from - 2 * reach);
+        if (z.pattern === 'dart') { // (anywhere across, roaming its share of the stretch)
+          const D = CONFIG.drifters, s = clamp(centre, from + D.dartReach, to - D.dartReach);
+          add(kind, s, 0, { drift: 'dart', time: 0, homeS: s, homeLat: 0, along: D.dartReach, across: Infinity, from, to });
+          continue;
+        }
         add(kind, centre, 0, { from, to, drift: z.pattern || 'circle', centre, time: 0,
           phase: driftRand() * Math.PI * 2, phase2: driftRand() * Math.PI * 2,
           pace: 0.7 + driftRand() * 0.6, pace2: 1.37 + driftRand() * 0.9, // (the second never a multiple of the first)
@@ -370,6 +375,46 @@ export const Collision = (() => {
   // puts a drifter where its pattern has it at o.time, facing the way it is moving. The
   // pattern runs at the drifter's own pace, with its own slower wobble laid over it, both
   // along and across the road, so the path never quite repeats.
+  // a darting drifter (see CONFIG.drifters): sitting, shivering, or darting, `dt` s on
+  const between = (r) => r.min + Math.random() * (r.max - r.min);
+  const dartOn = (o, dt) => {
+    const D = CONFIG.drifters, ease = (u) => u * u * (3 - 2 * u);
+    const lo = (s) => Track.lo(s) + o.hw, hi = (s) => Track.hi(s) - o.hw;
+    if (o.time === 0 || o.wait === undefined) { // (at the start: at home, sitting, each for its own while)
+      o.restS = o.s = o.homeS;
+      o.restLat = o.lat = clamp(o.homeLat, lo(o.s), hi(o.s));
+      o.wait = between(D.dartRest) * (0.3 + Math.random());
+      o.dart = null;
+      return;
+    }
+    if (o.dart) { // darting: quick off the mark, slowing into where it stops
+      const d = o.dart;
+      d.u = Math.min(1, d.u + dt / d.time);
+      o.s = d.s0 + (d.s1 - d.s0) * ease(d.u);
+      o.lat = clamp(d.lat0 + (d.lat1 - d.lat0) * ease(d.u), lo(o.s), hi(o.s));
+      if (d.u >= 1) {
+        o.dart = null;
+        o.restS = o.s;
+        o.restLat = o.lat;
+        o.wait = between(D.dartRest);
+      }
+      return;
+    }
+    o.wait -= dt;
+    // the shiver, just before it goes
+    o.lat = clamp(o.restLat + (o.wait < D.dartShiver ? 0.15 * Math.sin(o.time * 60) : 0), lo(o.s), hi(o.s));
+    if (o.wait > 0) return;
+    // off: anywhere within its reach of home, a long way or a short one (but never just a twitch)
+    let s1, lat1, far = 0;
+    for (let k = 0; k < 8 && far < D.dartMin; k++) {
+      s1 = o.homeS + (Math.random() * 2 - 1) * o.along;
+      if (o.from !== undefined) s1 = clamp(s1, o.from + o.hl, o.to - o.hl);
+      lat1 = clamp(o.across === Infinity ? lo(s1) + Math.random() * (hi(s1) - lo(s1)) : o.homeLat + (Math.random() * 2 - 1) * o.across, lo(s1), hi(s1));
+      far = Math.hypot(s1 - o.restS, lat1 - o.restLat);
+    }
+    o.dart = { s0: o.restS, lat0: o.restLat, s1, lat1, u: 0, time: Math.max(0.2, 1.5 * far / between(D.dartSpeed)) };
+    if (far > 0.5) o.face = Math.atan2(lat1 - o.restLat, s1 - o.restS);
+  };
   const driftTo = (o) => {
     const D = CONFIG.drifters, t = o.time * o.pace, p = o.phase;
     const wobble = D.wobble * Math.sin(o.time * o.pace2 + o.phase2);     // -wobble .. wobble
@@ -449,6 +494,9 @@ export const Collision = (() => {
         const lo = Track.lo(o.s) - M.beyond, hi = Track.hi(o.s) + M.beyond;
         if (o.lat > hi) o.lat -= hi - lo;
         if (o.lat < lo) o.lat += hi - lo;
+      } else if (o.drift === 'dart') {
+        o.time += dt;
+        dartOn(o, dt);
       } else if (o.drift) {
         o.time += dt;
         driftTo(o);
@@ -555,7 +603,8 @@ export const Collision = (() => {
       if (o.drift) { // back to the start of its pattern
         o.time = 0;
         o.face = 0;
-        driftTo(o);
+        if (o.drift === 'dart') dartOn(o, 0);
+        else driftTo(o);
         continue;
       }
       if (o.from === undefined) continue; // barriers and bales stay where they were put

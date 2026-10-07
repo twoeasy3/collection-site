@@ -115,16 +115,25 @@ export const CONFIG = {
   // it can outdrag the car it follows. A racer on a straight with a car up to seekReach m ahead in
   // the lane beside moves over into its tow (every seekEvery s at most), then pulls out to pass.
   race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5,
-    towReach: 130, draft: 0.28, seekReach: 160, seekEvery: 1.5,
+    towReach: 130, draft: 0.2, seekReach: 160, seekEvery: 1.5,
     // Racecraft: each driver's nerve in the bends is its own, from nerve.min to nerve.max times the
     // field's (so some are quicker through them, and catch the one ahead). A racer that pulls out to
-    // pass is on the attack for attackTime s: the tow it pulled out of carries it on (its slingshot,
+    // pass is on the attack for attackTime s (or, still alongside it, up to passMax s): the tow it pulled out of carries it on (its slingshot,
     // fading as it goes), and it brakes later, with attackNerve times its nerve
     nerve: { min: 0.92, max: 1.06 }, attackTime: 3, attackNerve: 1.12,
+    // Passing into a corner: a racer on the attack brakes later (looking diveLookout as far ahead
+    // for the bend), and a racer with one alongside on the attack as a bend comes gives it the
+    // corner, easing to cede of its pace (an evil one, evilCede: it gives up as little as it can)
+    diveLookout: 0.55, cede: 0.9, evilCede: 0.97, passMax: 8,
+    // Going by the player, a racer picks a side and keeps to it; shut out, it switches to the other,
+    // if that is open (a dummy), at most every feintEvery s; and on the attack it moves across
+    // passSharp times as sharply
+    feintEvery: 0.8, passSharp: 1.6,
     // The slingshot: a car (a racer, or the player) pulling out of a tow at least slingFrom deep is
     // flung on: a kick of slingKick of its top speed (by how deep in the tow it was) on top of the
-    // tow's own, both fading away over attackTime s
-    slingFrom: 0.25, slingKick: 0.06,
+    // tow's own, both fading away: over slingPerGain s for every m/s the tow had it going above its
+    // own top speed as it pulled out (at most slingMax s), so a long, deep tow flings it on furthest
+    slingFrom: 0.25, slingKick: 0.06, slingPerGain: 0.25, slingMax: 4,
     // An evil racer's feud (a good one races clean): with a rival ahead of it or alongside, it
     // chases it down and rams it, as anywhere; but it never drops back for one behind it, it only
     // blocks it, moving across into its lane (at most every blockEvery s) without lifting off
@@ -377,6 +386,11 @@ export const CONFIG = {
     eightRate: 0.7,        // radians/s round the eight
     wobble: 0.3,           // how much of each pattern is an unrelated, slower wobble (0 = clean, predictable sine waves)
     wreckSpin: 2.5,        // radians/s a drifting wreck spins on the spot (each has its own share of this, either way)
+    // 'dart': no pattern at all. It sits a while (dartRest s, at random), shivers for dartShiver s
+    // (the only warning), then darts off to anywhere within its reach of its home, at dartSpeed
+    // m/s (at random; dartMin m at least), and sits again. Differently every run. An obstacle with "drift": "dart"
+    // reaches dartAlong m up or down the road and dartAcross m across it; a drifter, its whole stretch across
+    dartRest: { min: 0.3, max: 1.6 }, dartShiver: 0.35, dartSpeed: { min: 4, max: 14 }, dartAlong: 8, dartAcross: 4, dartReach: 22, dartMin: 2,
   },
   cowSpeed: 2.2,           // m/s a cow ambles across the road
   kangarooSpeed: 6,        // m/s a kangaroo bounds across it (a herd of kind 'kangaroo'), hopping...

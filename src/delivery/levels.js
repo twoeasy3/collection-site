@@ -78,14 +78,16 @@
 //                                  (default), 'railBarrier' (one the bullet train leaves standing),
 //                                  'bale', 'cone', 'sign', the construction site's 'potty',
 //                                  'sewage', 'pile' and 'beam', or the beach's 'umbrella',
-//                                  'surfboard', 'cooler' and 'chair' (a lifeguard chair), or 'mine' (a sea mine, afloat)
+//                                  'surfboard', 'cooler' and 'chair' (a lifeguard chair), or 'mine' (a sea mine, afloat).
+//                                  With drift: 'dart', it darts about its spot at random (see CONFIG.drifters)
 //   dropBears  { from, to, count } drop bears up in the trees over that stretch, dropping onto the
 //              road as the player comes near (see CONFIG.dropBear)
 //   herds      { from, to, count, kind } animals wandering back and forth across that stretch: cows,
 //                                  or (kind: 'kangaroo') kangaroos bounding across, with a warning sign before
 //   drifters   { from, to, kind, count, pattern } obstacles of that kind moving about the road
 //              in a pattern: 'circle', 'zigzag' (along the road, weaving), 'sweep' (across
-//              and back) or 'figure8'. They are hit like any obstacle of their kind.
+//              and back), 'figure8' or 'dart' (no pattern: sitting, then darting off anywhere
+//              across, at random: see CONFIG.drifters). They are hit like any obstacle of their kind.
 //   storm      { from, to, count, seed } vehicles blown through the air above that stretch,
 //              tumbling, looping round when they reach its end. Only a sight: nothing can hit them.
 //   tractors   { s, lane }         a tractor: slow traffic that starts from that spot every run

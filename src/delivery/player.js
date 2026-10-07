@@ -120,7 +120,7 @@ export const Player = {
     this.badGas = 0;
     this.heavy = 0;
     this.armour = 0;
-    this.sling = this.slingTime = 0;
+    this.sling = this.slingTime = this.slingTotal = 0;
     this.bigSplash = 0;
     this.butterfingers = 0;
     this.endMystery();
@@ -276,17 +276,19 @@ export const Player = {
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
     let top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1);
     // in a race, in another car's slipstream: faster (see CONFIG.race); and pulling out of it, flung on
-    // past it: the slingshot, a kick on top of the tow's speed, both fading away
+    // past it: the slingshot, a kick on top of the tow's speed, both fading away (the longer, the more
+    // speed the tow had given it)
     const RC = CONFIG.race, wasTow = this.tow || 0;
     this.tow = Traffic.tow(this, this.s, this.lat, this.hw);
-    if (wasTow >= RC.slingFrom && this.tow === 0) {
+    const slingFor = Math.min(RC.slingMax, Math.max(0, this.speed - top) * RC.slingPerGain);
+    if (wasTow >= RC.slingFrom && this.tow === 0 && slingFor > 0.2) {
       this.sling = wasTow;
-      this.slingTime = RC.attackTime;
+      this.slingTime = this.slingTotal = slingFor;
       this.speed += top * RC.slingKick * wasTow; // (the kick)
       sfx('turbo', 0.6);
     }
     this.slingTime = Math.max(0, (this.slingTime || 0) - dt);
-    const sling = this.slingTime > 0 ? this.sling * this.slingTime / RC.attackTime : 0;
+    const sling = this.slingTime > 0 ? this.sling * this.slingTime / this.slingTotal : 0;
     top *= 1 + RC.draft * Math.max(this.tow, sling) + RC.slingKick * sling;
     // over a railway track, slowed by how well the car crosses one (a tank, whatever it is, crosses fine)
     const R = CONFIG.railCrossing, rails = Track.onRails(this.s, this.lat, this.hw);

@@ -307,7 +307,7 @@ export const Traffic = (() => {
     outfit(car, G.kind, lane);
     Object.assign(car, { fixed: true, racer: true, evil, defiant: false, viaSide: false, hesitant: false,
       vs: 0, baseSpeed: top * between(G.pace), throwTimer: Infinity, paint: Math.floor(Math.random() * 1000), laps: 0,
-      nerve: between(CONFIG.race.nerve), attack: 0, sling: 0 });
+      nerve: between(CONFIG.race.nerve), attack: 0, sling: 0, slingLeft: 0, slingTotal: 0 });
     car.emotion = pickEmotion(car.evil);
     car.mood = MOOD_START[car.emotion];
     car.place = undefined; // (its place in the running order: see raceMood)
@@ -415,11 +415,13 @@ export const Traffic = (() => {
     return car.racer && car.evil ? clamp(((car.aheadGap || 0) - C.from) / (C.full - C.from), 0, 1) : 0;
   };
   // how fast a racer may go for the bends ahead of it (see CONFIG.race): as fast as its nerve allows
-  const racingLine = (car) => {
+  // (on the attack, it brakes later: see CONFIG.race.diveLookout)
+  const racingLine = (car, attacking = car.attack > 0) => {
+    const lookout = CONFIG.race.aiLookout * (attacking ? CONFIG.race.diveLookout : 1);
     const R = CONFIG.race, type = CONFIG.vehicles[car.kind];
     let sharpest = 0;
-    for (let d = 0; d <= R.aiLookout; d += 5) sharpest = Math.max(sharpest, Math.abs(Track.bend(car.s + car.dir * d)));
-    const nerve = (car.nerve || 1) * (car.attack > 0 ? R.attackNerve : 1) * (furious(car) ? R.fury.nerve : 1) *
+    for (let d = 0; d <= lookout; d += 5) sharpest = Math.max(sharpest, Math.abs(Track.bend(car.s + car.dir * d)));
+    const nerve = (car.nerve || 1) * (attacking ? R.attackNerve : 1) * (furious(car) ? R.fury.nerve : 1) *
       (1 + (R.chase.nerve - 1) * chasing(car)); // (its own, and more on the attack, in a fury, or chasing down the car in front)
     return sharpest > 1e-4 ? Math.sqrt(CONFIG.ice.grip * R.aiTyres * R.aiGrip * nerve * (type.agility || 1) / (weightOf(car) * sharpest)) : Infinity;
   };
@@ -437,6 +439,28 @@ export const Traffic = (() => {
     for (const o of cars) if (o !== self && o.active && o.racer) behind(o.s, o.lat, o.hw);
     if (self !== Player && Player.active) behind(Player.s, Player.lat, Player.hw);
     return best;
+  };
+  // would a racer held up behind `ahead` get by it in that lane? Only with the lane clear past it (or
+  // with whatever is in it going faster), going faster once out of the tow than it does (the
+  // slingshot carrying it on, and, into a bend, its nerve on the attack: see CONFIG.race)
+  const worthPassing = (car, ahead, lane) => {
+    const R = CONFIG.race, gap = (ahead.s - car.s) * car.dir;
+    for (const o of cars) {
+      if (o === car || !o.active || o.lane !== lane) continue;
+      const ds = (o.s - car.s) * car.dir;
+      if (ds > -(o.hl + car.hl) && ds < gap + ahead.hl + 30 && Math.abs(o.vs) < Math.abs(ahead.vs) + 1) return false;
+    }
+    // (a good racer races the player clean: it passes on the straights, never diving up the inside into a bend)
+    if (ahead.isPlayer && !car.evil && racingLine(car) < Math.abs(car.vs)) return false;
+    const out = car.baseSpeed * (1 + (R.draft + R.slingKick) * (car.tow >= R.slingFrom ? car.tow : 0) * 0.5);
+    return Math.min(out, racingLine(car, true)) > Math.abs(ahead.vs) * 1.01;
+  };
+  // is there room for a racer to squeeze by the player on that lane's side of it (the player
+  // astride the lanes, or not): the road beyond the player as wide as the racer, and a little more?
+  const sideOf = (car, lane) => Math.sign(Track.laneOffset(lane, car.s) - Player.lat) || 1;
+  const roomBy = (car, lane, side = sideOf(car, lane)) => {
+    const room = side > 0 ? Track.hi(car.s) - (Player.lat + Player.hw) : (Player.lat - Player.hw) - Track.lo(car.s);
+    return room >= 2 * car.hw + 0.4;
   };
   // a racer on a straight, out of any tow, looks for one: a car not far ahead in the lane beside, and
   // moves over in behind it (then, closing on it, it is held up and pulls out to pass: see update)
@@ -568,7 +592,7 @@ export const Traffic = (() => {
       if (dir) tryMove(car, dir, true);
     } else if ((att === 'friendly' || att === 'wingman') && inRange && playerLane === car.lane) aside();
     else if (att === 'wary' && near && playerLane === car.lane) aside();
-    else if (att === 'sulky' && inRange) { /* it holds its lane */ } else if (Math.random() < CONFIG.laneChangeChance) {
+    else if (att === 'sulky' && inRange) { /* it holds its lane */ } else if (!car.racer && Math.random() < CONFIG.laneChangeChance) { // (a racer picks its lane to race: see seekTow, and the overtakes in update)
       tryMove(car, Math.random() < 0.5 ? 1 : -1);
     }
   };
@@ -1067,8 +1091,19 @@ export const Traffic = (() => {
         // (a racer in another's slipstream can go that much faster: see CONFIG.race)
         // (and one on the attack, just out of a tow, is carried on by it a while: its slingshot)
         car.tow = car.racer ? tow(car, car.s, car.lat, car.hw) : 0;
-        if (car.racer) car.attack = Math.max(0, (car.attack || 0) - dt);
-        const sling = car.attack > 0 ? car.sling * car.attack / CONFIG.race.attackTime : 0;
+        if (car.racer) {
+          // (on the attack until it is by the car it is passing, or has dropped back, up to passMax s)
+          const v = car.passing;
+          if (v && car.attack > 0) {
+            const ds = (v.s - car.s) * car.dir;
+            car.passFor = (car.passFor || 0) + dt;
+            if (ds > -(v.hl + car.hl) && ds < 40 && car.passFor < CONFIG.race.passMax && (v === Player || v.active)) car.attack = Math.max(car.attack, 0.3);
+            else car.passing = null;
+          }
+          car.attack = Math.max(0, (car.attack || 0) - dt);
+          car.slingLeft = Math.max(0, (car.slingLeft || 0) - dt);
+        }
+        const sling = car.slingLeft > 0 ? car.sling * car.slingLeft / car.slingTotal : 0;
         let target = (squeezed ? car.baseSpeed * 0.6 : car.baseSpeed) * (1 + CONFIG.race.draft * Math.max(car.tow, sling) + CONFIG.race.slingKick * sling) *
           (furious(car) ? CONFIG.race.fury.pace : 1) * (1 + (CONFIG.race.chase.pace - 1) * chasing(car));
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
@@ -1127,7 +1162,7 @@ export const Traffic = (() => {
             brakeCheck(car, dt);
           }
         }
-        let held = false;
+        let held = null;
         // (a racer's rival ahead: it closes right up on it, and gives it a shove: see CONFIG.race.nudge)
         const nudging = car.racer && rival && !rival.isPlayer;
         for (const o of cars) {
@@ -1139,10 +1174,26 @@ export const Traffic = (() => {
           }
           // (a racer, at racing speed, holds back further the faster it is closing; but sitting on the
           // grid it keeps close behind, and gets away with the rest)
-          const room = o.hl + car.hl + (car.racer ? 2 + Math.max(0, Math.abs(car.vs) - Math.abs(o.vs)) * 1.5 : 8);
+          // (and a racer pulling out past it, still overlapping it on the way across, only keeps off
+          // its gearbox: it doesn't run into it, half a second off)
+          const passing = car.racer && o.lane !== car.lane, closing = Math.max(0, Math.abs(car.vs) - Math.abs(o.vs));
+          const room = o.hl + car.hl + (passing ? 1 + closing * 0.5 : car.racer ? 2 + closing * 1.5 : 8);
           if (gap > 0 && gap < room && Math.abs(o.lat - car.lat) < o.hw + car.hw) {
-            target = Math.min(target, Math.abs(o.vs) * 0.9);
-            held = true;
+            // (a racer sits in its tow, on its pace, ready to pull out; only too close does it back off)
+            target = Math.min(target, Math.abs(o.vs) * (car.racer && gap > o.hl + car.hl + 3 ? 0.99 : 0.9));
+            held = o;
+          }
+        }
+        // one alongside on the attack, with a bend coming: it is given the corner (see CONFIG.race.cede)
+        let ceding = 1;
+        if (car.racer && racingLine(car) < Math.abs(car.vs)) {
+          for (const o of cars) {
+            if (o === car || !o.active || !o.racer || !(o.attack > 0) || o.lane === car.lane) continue;
+            const ds = (o.s - car.s) * car.dir;
+            if (ds > -(car.hl + 1) && ds < o.hl + car.hl && Math.abs(o.lat - car.lat) < o.hw + car.hw + CONFIG.laneWidth) {
+              ceding = car.evil ? CONFIG.race.evilCede : CONFIG.race.cede;
+              break;
+            }
           }
         }
         // good and evil racers close together: the evil one bullies, the good one, racing clean, gives way
@@ -1156,11 +1207,11 @@ export const Traffic = (() => {
             let ds = o.s - car.s;
             if (Track.loop) ds = ((ds % Track.length) + Track.length * 1.5) % Track.length - Track.length / 2; // (either side of the line)
             const alongside = Math.abs(ds) < o.hl + car.hl + 1 && Math.abs(o.lat - car.lat) < o.hw + car.hw + B.room;
-            if (car.evil) { // leaning on it
-              if (alongside) car.squeeze = Math.sign(o.lat - car.lat) || 1;
+            if (car.evil) { // leaning on it (once right alongside it, not clipping it from behind)
+              if (alongside && Math.abs(ds) < o.hl + car.hl - 1) car.squeeze = Math.sign(o.lat - car.lat) || 1;
               continue;
             }
-            if (alongside && !lifted) { // lifting, to keep out of trouble
+            if (alongside && !lifted && !(car.attack > 0)) { // lifting, to keep out of trouble (unless it is the one passing: it commits)
               target *= B.lift;
               lifted = true;
             }
@@ -1185,33 +1236,59 @@ export const Traffic = (() => {
         // and just ahead of the player, it moves across into the player's lane)
         if (car.racer && car.evil && Player.active) {
           const B = CONFIG.race.bully, ds = car.s - Player.s;
-          if (Math.abs(ds) < Player.hl + car.hl + 1 && Math.abs(Player.lat - car.lat) < Player.hw + car.hw + B.room) car.squeeze = Math.sign(Player.lat - car.lat) || 1;
+          // (going by, it waits till it is half past to lean across on you: a chop)
+          const leanFrom = car.passing === Player && car.attack > 0 ? 0 : -(Player.hl + car.hl - 1);
+          if (ds > leanFrom && ds < Player.hl + car.hl - 1 && Math.abs(Player.lat - car.lat) < Player.hw + car.hw + B.room) car.squeeze = Math.sign(Player.lat - car.lat) || 1;
           const lane = Track.nearestLane(Player.lat, Player.s);
           if (ds > car.hl + Player.hl && ds < car.hl + Player.hl + 12 && lane !== car.lane && car.blockWait <= 0 && laneClear(car, lane, 6)) {
             car.lane = lane;
             car.blockWait = CONFIG.race.blockEvery;
           }
         }
-        // a racer out on its own goes looking for a tow
-        if (car.racer && !held && !rival) seekTow(car, dt);
-        // a racer held up behind a slower car (or catching it in its tow) pulls out to pass it, into whichever lane beside is clear
-        if (car.racer && held && !rival && (car.overtake = (car.overtake || 0) - dt) <= 0) {
+        // a racer out on its own goes looking for a tow (not one that has just pulled out to pass)
+        if (car.racer && !held && !rival && !(car.attack > 0)) seekTow(car, dt);
+        // a racer held up behind a slower car (or catching it in its tow) pulls out to pass it, into
+        // whichever lane beside is clear; and the player, in a race, is passed like any other car
+        const pg = Player.s - car.s;
+        const behindPlayer = car.racer && !held && Player.active && Player.ghost <= 0 && car.dir > 0 && pg > 0 &&
+          pg < Player.hl + car.hl + 8 + Math.max(0, Math.abs(car.vs) - Player.speed) * 1.5 && Math.abs(Player.lat - car.lat) < Player.hw + car.hw;
+        const blocker = held || (behindPlayer ? { s: Player.s, hl: Player.hl, vs: Player.speed, isPlayer: true } : null);
+        // (passing the player, and the player moves over to shut the door: it dummies, and goes for the other side, if that is open)
+        car.feint = Math.max(0, (car.feint || 0) - dt);
+        if (car.racer && car.passing === Player && car.attack > 0 && car.feint <= 0 && pg > car.hl && !roomBy(car, car.lane, car.passSide) && roomBy(car, car.lane, -car.passSide)) {
+          const [first, last] = Track.laneRange(car.dir, car.s);
+          car.passSide = -car.passSide;
+          car.lane = clamp(Track.nearestLane(Player.lat + car.passSide * (Player.hw + car.hw + 0.3), car.s), first, last);
+          car.signal = car.passSide;
+          car.feint = CONFIG.race.feintEvery;
+        }
+        // (once out to pass, it is committed: it doesn't think again until it is by, or has given up)
+        if (car.racer && blocker && !rival && !(car.passing && car.attack > 0) && (car.overtake = (car.overtake || 0) - dt) <= 0) {
           car.overtake = 0.6;
           for (const d of Math.random() < 0.5 ? [1, -1] : [-1, 1]) {
-            if (!canMove(car, car.lane + d, false)) continue;
+            const lane = car.lane + d, free = blocker.isPlayer ? canMove(car, lane, true) && roomBy(car, lane) : canMove(car, lane, false);
+            if (!free || !worthPassing(car, blocker, lane)) continue;
             car.lane += d;
             car.signal = d;
             car.pendingLane = null;
             car.attack = CONFIG.race.attackTime; // (on the attack: see CONFIG.race)
-            car.sling = car.tow >= CONFIG.race.slingFrom ? car.tow : 0; // (out of a tow: the slingshot)
-            car.vs += car.dir * car.baseSpeed * CONFIG.race.slingKick * car.sling; // (its kick)
+            car.passing = blocker.isPlayer ? Player : blocker;
+            car.passFor = 0;
+            car.passSide = blocker.isPlayer ? sideOf(car, lane) : 0; // (the side of the player it is going by on)
+            car.feint = CONFIG.race.feintEvery;
+            // (out of a tow: the slingshot, the longer the more the tow had it going: see CONFIG.race)
+            const R = CONFIG.race, gain = Math.max(0, Math.abs(car.vs) - car.baseSpeed);
+            car.sling = car.tow >= R.slingFrom && gain * R.slingPerGain > 0.2 ? car.tow : 0;
+            car.slingLeft = car.slingTotal = car.sling ? Math.min(R.slingMax, gain * R.slingPerGain) : 0;
+            car.vs += car.dir * car.baseSpeed * R.slingKick * car.sling; // (its kick)
             break;
           }
         }
         // held up behind a slow player: mood sours; angry evil drivers don't brake for you (they ram
         // you), angry good ones sit right on your bumper; an evil racer gives you a nudge
         const gap = Player.s - car.s, tailgater = att === 'sulky' || att === 'vigilante';
-        if (Player.active && Player.shield <= 0 && Player.ghost <= 0 && car.dir > 0 && gap > 0 && gap < Player.hl + car.hl + (tailgater ? CONFIG.attitude.tailgate : 8) &&
+        const passingPlayer = car.passing === Player && car.attack > 0 && gap > Player.hl + car.hl + 1 + Math.max(0, Math.abs(car.vs) - Player.speed) * 0.5;
+        if (Player.active && Player.shield <= 0 && Player.ghost <= 0 && car.dir > 0 && gap > 0 && gap < Player.hl + car.hl + (tailgater ? CONFIG.attitude.tailgate : 8) && !passingPlayer &&
             Math.abs(Player.lat - car.lat) < Player.hw + car.hw && Player.speed < car.baseSpeed) {
           car.mood = Math.max(-1, car.mood - CONFIG.moodHoldUp * dt);
           car.grudge = true;
@@ -1223,7 +1300,7 @@ export const Traffic = (() => {
         // (on ice, and on a level where cars understeer, they don't slow for a bend: they slide wide instead;
         // though a racer, knowing the track, slows for the bends ahead as much as lets it slide a little)
         target = Math.min(target, giveWay(car), car.onIce || LEVEL.understeer ? Infinity : cornerSpeed(car.s, weightOf(car)));
-        if (car.racer) target = Math.min(target, racingLine(car));
+        if (car.racer) target = Math.min(target, racingLine(car) * ceding);
         if (Track.muddy(car.s)) target *= CONFIG.mud.trafficPace; // (in mud)
         // wading through the tide's water: slowed, the more so in deep water
         if (depth > CONFIG.tide.wet) target *= depth >= CONFIG.tide.deep ? CONFIG.tide.trafficPace : 0.8;
@@ -1242,9 +1319,14 @@ export const Traffic = (() => {
         // spring back to the lane centre
         // (alongside its rival it steers straight at it)
         const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
-        const aimLat = beside ? rival.lat
+        let aimLat = beside ? rival.lat
           : car.pulledOver ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
           : Track.laneOffset(car.lane, car.s);
+        if (car.passing === Player && car.attack > 0 && !beside && Math.abs(Player.s - car.s) < Player.hl + car.hl + 10) {
+          // (going by the player, it keeps as far from it as the road allows: squeezing by, if the player is astride the lanes)
+          const side = car.passSide || Math.sign(aimLat - Player.lat) || 1, clear = Player.lat + side * (Player.hw + car.hw + 0.3);
+          aimLat = clamp(side > 0 ? Math.max(aimLat, clear) : Math.min(aimLat, clear), Track.lo(car.s) + car.hw, Track.hi(car.s) - car.hw);
+        }
         // the indicator goes off once the car is in its new lane (or on the shoulder), and a car
         // pulled over onto the shoulder puts its hazards on
         const settled = Math.abs(aimLat - car.lat) < 0.3;
@@ -1254,8 +1336,9 @@ export const Traffic = (() => {
         // (and nothing is ever steered into a median: not even after a rival who has gone in there)
         let aim = aimLat + drift + (beside ? 0 : car.squeeze * CONFIG.race.bully.squeeze); // (an evil racer leaning on a good one)
         if (Track.medianHalf) aim = car.dir > 0 ? Math.max(aim, Track.medianHalf + car.hw) : Math.min(aim, -Track.medianHalf - car.hw);
-        const wantVel = clamp((aim - car.lat) * CONFIG.trafficLaneChangeRate, -6, 6);
-        car.latVel += (wantVel - car.latVel) * damp(6, dt);
+        const sharp = car.racer && car.attack > 0 && !car.squeeze ? CONFIG.race.passSharp : 1; // (a racer going for a gap moves across sharply)
+        const wantVel = clamp((aim - car.lat) * CONFIG.trafficLaneChangeRate * sharp, -6 * sharp, 6 * sharp);
+        car.latVel += (wantVel - car.latVel) * damp(6 * sharp, dt);
       }
 
       // an oncoming car passing close by may lean on its horn as it goes

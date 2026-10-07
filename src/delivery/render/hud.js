@@ -107,7 +107,7 @@ export const updateHud = () => {
   hudTowing.classList.toggle('sling', flung);
   if (towing) {
     hudTowLabel.textContent = flung ? 'SLINGSHOT!' : 'SLIPSTREAM';
-    hudTowFill.style.width = (flung ? Player.slingTime / CONFIG.race.attackTime : Player.tow) * 100 + '%';
+    hudTowFill.style.width = (flung ? Player.slingTime / Player.slingTotal : Player.tow) * 100 + '%';
   }
   // a good player's social standing (none on a level with no packages, nor in the screensaver)
   const social = Game.state === 'playing' && Player.active && !Game.screensaver && Social.on && !LEVEL.noPackages;

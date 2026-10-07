@@ -156,10 +156,10 @@ export const MODELS = {
     disc(shell, dark, 0.18, 0.3, 0, 0.0, -front - 0.15);                                 // the jet's nozzle
     group.userData = {
       body,
-      animate: (t) => { // bobbing on the swell
-        shell.position.y = Math.sin(t * 2.3) * 0.07;
-        shell.rotation.x = Math.sin(t * 1.7) * 0.035;
-        shell.rotation.z = Math.sin(t * 1.3) * 0.03;
+      animate: (t) => { // bobbing on the chop: quick, and never quite the same twice
+        shell.position.y = Math.sin(t * 6.1) * 0.07 + Math.sin(t * 9.7 + 1) * 0.025;
+        shell.rotation.x = Math.sin(t * 4.4) * 0.035 + Math.sin(t * 7.3) * 0.01;
+        shell.rotation.z = Math.sin(t * 3.4) * 0.03;
       },
     };
     return group;

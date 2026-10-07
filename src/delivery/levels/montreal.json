@@ -9,9 +9,14 @@
   "runoff": [
     { "from": 380, "to": 480, "side": "right", "width": 14 },
     { "from": 500, "to": 620, "side": "left", "width": 12 },
+    { "from": 880, "to": 960, "side": "left", "width": 12 },
+    { "from": 950, "to": 1020, "side": "right", "width": 10 },
     { "from": 1400, "to": 1500, "side": "right", "width": 10 },
+    { "from": 1480, "to": 1590, "side": "left", "width": 12 },
     { "from": 2180, "to": 2290, "side": "left", "width": 10 },
-    { "from": 2820, "to": 2950, "side": "left", "width": 18 }
+    { "from": 2215, "to": 2290, "side": "right", "width": 10 },
+    { "from": 2820, "to": 2950, "side": "left", "width": 18 },
+    { "from": 4040, "to": 4100, "side": "left", "width": 16 }
   ],
   "shoulderTimer": false,
   "time": 290,
