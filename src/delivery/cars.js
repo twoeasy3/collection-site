@@ -100,7 +100,7 @@ export let CAR = find();
 // A level with a vehicle of its own puts the player in that; any other level gives back
 // the car picked in the garage. Called when a level is picked and when a run starts.
 export const useLevelCar = (id) => {
-  CAR = (id && LEVEL_CARS[id]) || find();
+  CAR = (id && (LEVEL_CARS[id] || CARS.find(c => c.id === id))) || find(); // (a special vehicle, or one of the garage's)
 };
 
 // switch to a car the player owns (saved to their progress)

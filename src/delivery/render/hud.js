@@ -26,11 +26,37 @@ const hudCopWatch = document.getElementById('copWatch');
 const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill'), hudTowLabel = document.getElementById('towLabel');
 const hudSocial = document.getElementById('social'), hudSocialFill = document.getElementById('socialFill');
 const hudBusts = document.getElementById('busts');
-// a rival courier's health (wrecked: waiting to be set back down), and the player's busts, as on any delivery level
-const rivalLine = () => {
-  const rival = Traffic.cars.find(c => c.racer);
-  const health = !rival ? '' : rival.active ? Math.ceil(100 * Math.max(0, rival.health) / rival.maxHealth) + '%' : 'WRECKED';
-  return '   RIVAL ' + health + '   BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
+// (racing a rival courier, the player's busts, as on any delivery level)
+const rivalLine = () => '   BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
+// who is coming up behind, at the foot of the screen (see CONFIG.behind): an arrow pointing back
+// towards them (tipped and moved over to the side of the road they are on), and how far back they are
+const hudBehind = document.getElementById('behind'), hudBehindArrow = hudBehind.querySelector('.arrow');
+const hudBehindLabel = document.getElementById('behindLabel');
+const syncBehind = (raced) => {
+  const B = CONFIG.behind;
+  let shown = null;
+  if (LEVEL.grid && Game.state === 'playing' && Player.active && !Game.screensaver && !Game.paused) {
+    const me = raced(Game.lap, Player.s);
+    let gap = LEVEL.grid.rival ? B.rivalRange : B.raceRange;
+    for (const c of Traffic.cars) {
+      if (!c.racer || !c.active) continue;
+      const g = me - raced(c.laps || 0, c.s); // (how far behind the player it is)
+      if (g > 0 && g < gap) { gap = g; shown = c; }
+    }
+    if (shown) {
+      const place = 2 + Traffic.cars.filter(c => c.racer && raced(c.laps || 0, c.s) > me).length; // (its place: the one after the player's)
+      const across = (shown.lat - Player.lat) * (Track.mirrored ? -1 : 1); // (m to the right of the player, as seen)
+      const turn = Math.atan2(across, Math.max(gap, 4));
+      hudBehind.style.transform = `translateX(calc(-50% + ${Math.max(-B.slide, Math.min(B.slide, across * B.slidePerM))}px))`;
+      hudBehindArrow.style.transform = `rotate(${-turn}rad)`;
+      hudBehindLabel.textContent = (LEVEL.grid.rival ? (shown.rivalName || 'rival').toUpperCase() + '  ' : 'P' + place + '  ') + Math.round(gap) + ' m';
+      hudBehind.classList.toggle('close', gap < B.close);
+      // (a rival in its own colour)
+      const tint = shown.markColor ?? (LEVEL.grid.rival ? 0xff2bd6 : null);
+      hudBehind.style.setProperty('--tint', tint === null ? '' : '#' + tint.toString(16).padStart(6, '0'));
+    }
+  }
+  hudBehind.style.display = shown ? 'block' : 'none';
 };
 const hudDangerFill = document.getElementById('dangerFill');
 const hudFade = document.getElementById('fade');
@@ -102,6 +128,7 @@ export const updateHud = () => {
       (LEVEL.laps ? '   LAP ' + Math.min(LEVEL.laps, Game.lap + 1) + ' / ' + LEVEL.laps : '') +
       (LEVEL.grid.rival ? rivalLine() : '')
     : 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
+  syncBehind(raced);
   // a police car near enough to see what the player does (on the shoulder, a bust on the spot; not
   // on a level without the shoulder rule, nor for a tank, which nobody busts)
   const watched = Game.state === 'playing' && Player.active && !Game.screensaver && LEVEL.shoulderTimer !== false && Player.tank <= 0 && Traffic.policeNear();

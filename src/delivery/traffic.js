@@ -9,7 +9,7 @@ import { CARS, LEVEL_CARS, CAR } from './cars.js';
 import { Message } from './messages.js';
 import { Tide } from './tide.js';
 import { Wreckage } from './wreckage.js';
-import { Game } from './game.js';
+import { Game, sayRival } from './game.js';
 import { Social } from './social.js';
 import { Collision } from './collision.js';
 import { Pickups } from './pickups.js';
@@ -185,6 +185,7 @@ export const Traffic = (() => {
     car.mass = type.mass;
     car.maxHealth = car.health = type.health;
     car.unspinnable = false; // (only a rival courier: see addRacer)
+    car.rivalName = car.colors = car.markColor = null; car.counted = false;
     car.smoke = 0;
     car.lane = lane;
     car.lat = Track.laneOffset(lane, car.s);
@@ -274,7 +275,7 @@ export const Traffic = (() => {
       // (two by two in the middle lanes; on a two-lane road, in both)
       const G = LEVEL.grid, [first, last] = Track.laneRange(1, 0), lanes = last - first >= 2 ? [first + 1, first + 2] : [first, last];
       for (let k = 0; k < G.count; k++) {
-        if (!addRacer((G.from ?? 14) + (G.count - 1 - k) * G.gap, G.rival ? lanes[1] : lanes[k % 2], G.rival ? G.evil : k % 2 === 1)) break;
+        if (!addRacer((G.from ?? 14) + (G.count - 1 - k) * G.gap, G.rival ? lanes[(k + 1) % 2] : lanes[k % 2], G.rival ? G.evil : k % 2 === 1, G.rivals?.[k])) break;
       }
       sortGrid();
     }
@@ -301,14 +302,19 @@ export const Traffic = (() => {
   // It never stops racing (however far ahead or behind), throws nothing, and goes as fast as its pace
   // allows, a share of the player's car's top speed. (A rival courier, on a delivery level: the
   // player's own kind of car, and an evil one has it in for the player, and throws at it)
-  const addRacer = (s, lane, evil) => {
+  const addRacer = (s, lane, evil, who) => {
     const car = cars.find(c => !c.active && c.unused);
     if (!car) return false;
     const G = LEVEL.grid, top = CARS_BY_ID[LEVEL.car]?.maxSpeed ?? CAR.maxSpeed;
     car.dir = 1;
     car.bound = 'north';
     car.s = s;
-    outfit(car, G.kind || (CONFIG.vehicles[CAR.id] ? CAR.id : 'sport'), lane);
+    outfit(car, G.kind || who?.car || (CONFIG.vehicles[CAR.id] ? CAR.id : 'sport'), lane);
+    // (a rival courier: its name, and colours of its own: its body, its stripes, its marker)
+    const hex = (c) => typeof c === 'string' ? parseInt(c.replace('#', ''), 16) : c;
+    car.rivalName = who?.name || null;
+    car.colors = who?.colors ? who.colors.map(hex) : null;
+    car.markColor = who?.mark ? hex(who.mark) : car.colors ? car.colors[1] : null;
     Object.assign(car, { fixed: true, racer: true, evil, defiant: false, viaSide: false, hesitant: false,
       vs: 0, baseSpeed: top * between(G.pace), throwTimer: Infinity, paint: Math.floor(Math.random() * 1000), laps: 0,
       nerve: between(CONFIG.race.nerve), attack: 0, sling: 0, slingLeft: 0, slingTotal: 0 });
@@ -317,6 +323,7 @@ export const Traffic = (() => {
     car.place = undefined; // (its place in the running order: see raceMood)
     car.done = false; // (over the finish, on a delivery level: see update)
     car.oncoming = null; // (out in the oncoming lane, passing: see passOncoming)
+    car.shoulderRun = null; // (up the shoulder, passing: see passShoulder)
     car.boosts = null; // (a rival's turbo, armour and the like: see rivalPace)
     car.lastObstacle = null;
     car.damageScale = 1;
@@ -324,7 +331,7 @@ export const Traffic = (() => {
     if (G.rival) car.maxHealth = car.health = CONFIG.rival.health; // and it has a great deal of health)
     if (G.rival && evil) {
       car.grudge = true;
-      car.throwTimer = CONFIG.rival.firstThrow;
+      car.throwTimer = CONFIG.rival.firstThrow * (1 + Math.random());
     }
     return true;
   };
@@ -504,7 +511,7 @@ export const Traffic = (() => {
       else if (type === 'bigSplash' && car.evil && Player.active) Packages.throwAtGround(car);
       else if (type === 'badGas' || type === 'heavyMass') { b.slow = CONFIG[type].time; b.slowBy = CONFIG[type].topSpeed; }
       else continue;
-      if (Math.abs(car.s - Player.s) < CONFIG.rival.heard) Message.say('events', 'rivalPickup', type);
+      if (Math.abs(car.s - Player.s) < CONFIG.rival.heard) sayRival('rivalPickup', car, type);
     }
   };
   // would it do it good to have that pickup? (a wrench only if it is hurt; a Big Splash only if it is evil, to throw)
@@ -548,12 +555,22 @@ export const Traffic = (() => {
       const reach = R.lookAhead + Math.abs(car.vs) * R.lookTime;
       if (blockedAhead(car, car.lane, reach)) {
         const [first, last] = Track.laneRange(car.dir, car.s), opposite = oppositeLane(car);
+        let what = null, nearest = Infinity; // (the obstacle in the way: it stays out until it is by it)
+        for (const o of Collision.obstacles) {
+          const ahead = (o.s - car.s) * car.dir;
+          if (!o.gone && ahead > 0 && ahead < nearest && Math.abs(o.lat - car.lat) < o.hw + car.hw + CONFIG.rival.obstacleRoom) { nearest = ahead; what = o; }
+        }
         const options = [car.lane + 1, car.lane - 1].filter(l => l >= first && l <= last && canMove(car, l, false));
-        if (opposite !== null && !options.length && !car.oncoming && Track.openLane(opposite, car.s) === opposite &&
+        if (opposite !== null && !options.length && !car.oncoming && !policeWatching(car) && Track.openLane(opposite, car.s) === opposite &&
             cars.every(o => o === car || !o.active || o.lane !== opposite || Math.abs(o.s - car.s) > reach + Math.abs(o.vs) * 2 + 20)) options.push(opposite);
         const lane = options.find(l => !blockedAhead(car, l, reach));
-        if (lane !== undefined) {
-          if (lane === opposite) { car.oncoming = { home: car.lane, for: 0 }; car.attack = CONFIG.race.attackTime; }
+        if (lane === undefined && !car.oncoming && !car.shoulderRun && !policeWatching(car) && shoulderClear(car, reach)) { // (no lane: the shoulder)
+          const [f2, l2] = Track.laneRange(car.dir, car.s);
+          car.lane = car.dir > 0 ? l2 : f2;
+          car.shoulderRun = { for: 0, past: what };
+          car.signal = kerbSide(car);
+        } else if (lane !== undefined) {
+          if (lane === opposite) { car.oncoming = { home: car.lane, for: 0, past: what }; car.attack = CONFIG.race.attackTime; }
           car.signal = lane - car.lane;
           car.lane = lane;
           car.pendingLane = null;
@@ -586,6 +603,7 @@ export const Traffic = (() => {
   };
   const passOncoming = (car, blocker) => {
     const O = CONFIG.race.oncoming, lane = oppositeLane(car);
+    if (policeWatching(car)) return; // (a rival courier with the police about)
     if (lane === null || Track.openLane(lane, car.s) !== lane || Track.openLane(lane, car.s + car.dir * 150) !== lane) return;
     if (racingLine(car) < car.baseSpeed * 0.9) return; // (not into a bend)
     // the queue: the slow car and everything close behind it, up to its front
@@ -599,7 +617,7 @@ export const Traffic = (() => {
       }
     }
     const slow = Math.abs(blocker.vs), edge = car.baseSpeed - slow;
-    if (edge < O.edge) return;
+    if (edge < (LEVEL.grid?.rival ? CONFIG.rival.oncomingEdge : O.edge)) return;
     const length = front + O.margin, time = length / edge; // (m to get by them all, and s it takes)
     for (const o of cars) {
       if (o === car || !o.active || o.lane !== lane) continue;
@@ -608,7 +626,7 @@ export const Traffic = (() => {
     }
     if (Player.active && Player.dir !== car.dir && Math.abs(Player.lat - Track.laneOffset(lane, car.s)) < CONFIG.laneWidth &&
         (Player.s - car.s) * car.dir > -10 && (Player.s - car.s) * car.dir < length + time * (Player.speed + slow) + O.spare) return;
-    car.oncoming = { home: car.lane, for: 0 };
+    car.oncoming = { home: car.lane, for: 0, past: blocker.isPlayer ? Player : blocker };
     car.lane = lane;
     car.signal = lane - car.oncoming.home;
     car.pendingLane = null;
@@ -627,10 +645,56 @@ export const Traffic = (() => {
     // (or something coming at it, close: back in, now)
     const danger = cars.some(o => o !== car && o.active && o.lane === car.lane && o.dir !== car.dir &&
       (o.s - car.s) * car.dir > 0 && (o.s - car.s) * car.dir < (Math.abs(car.vs) + Math.abs(o.vs)) * O.panic);
-    if (gap || danger || car.oncoming.for > O.longest || Track.openLane(car.lane, car.s + car.dir * 40) !== car.lane) {
+    // (back in at the first gap once it is by the car it pulled out for, or with the police about)
+    if (gap && (pastIt(car, car.oncoming.past) || policeWatching(car)) || danger || car.oncoming.for > O.longest || Track.openLane(car.lane, car.s + car.dir * 40) !== car.lane) {
       car.lane = own;
       car.signal = own - car.lane;
       car.oncoming = null;
+    }
+  };
+  // a police car near a rival courier: it can't be busted, but it keeps to the rules while one can see it
+  const policeWatching = (car) => LEVEL.grid?.rival && cars.some(o => o.active && o.kind === 'police' && Math.abs(o.s - car.s) < CONFIG.rival.policeRange);
+  // past what it pulled out to pass (or it was nothing in particular)? Then it may pull back in
+  // (a car, or an obstacle it went round)
+  const pastIt = (car, past) => !past || past.gone || past.active === false || (past.s - car.s) * car.dir < -(past.hl + car.hl + CONFIG.race.oncoming.cutIn);
+  // A rival courier, boxed in, goes up the shoulder on its kerb side (see CONFIG.rival): if it is wide
+  // enough, nothing stands on it for the length of the queue and a little more, and it is quicker than
+  // what holds it up. Back into the outer lane at the first gap, or at once if the shoulder is blocked
+  const kerbSide = (car) => car.dir > 0 ? 1 : -1;
+  const shoulderClear = (car, reach) => {
+    const side = kerbSide(car), lat = Track.shoulderOffset(side, car.s);
+    if (Track.shoulder < 2 * car.hw + CONFIG.rival.shoulderRoom || Track.onBridge(car.s) || Track.onBridge(car.s + car.dir * reach)) return false;
+    const near = (s, l, w) => { const ahead = (s - car.s) * car.dir; return ahead > -(car.hl + 4) && ahead < reach && Math.abs(l - Track.shoulderOffset(side, s)) < w + car.hw + 0.3; };
+    return !cars.some(o => o !== car && o.active && near(o.s, o.lat, o.hw)) &&
+      !Collision.obstacles.some(o => !o.gone && !(o.h > car.height) && near(o.s, o.lat, o.hw)) &&
+      !Pickups.items.some(p => !p.rivalHad && rivalShuns(p.type) && near(p.s, p.lat, 1)) &&
+      !(Player.active && near(Player.s, Player.lat, Player.hw)) && Number.isFinite(lat);
+  };
+  const passShoulder = (car, blocker) => {
+    if (!LEVEL.grid?.rival || car.shoulderRun || car.oncoming || policeWatching(car)) return;
+    if (racingLine(car) < car.baseSpeed * 0.9 || car.baseSpeed - Math.abs(blocker.vs) < CONFIG.rival.oncomingEdge) return;
+    const [first, last] = Track.laneRange(car.dir, car.s), outer = car.dir > 0 ? last : first;
+    if (car.lane !== outer && !canMove(car, outer, false)) return; // (from the outer lane: the shoulder is beside it)
+    if (!shoulderClear(car, (blocker.s - car.s) * car.dir + blocker.hl + 40)) return;
+    car.lane = outer;
+    car.shoulderRun = { for: 0, past: blocker.isPlayer ? Player : blocker };
+    car.signal = kerbSide(car);
+    car.pendingLane = null;
+    car.attack = CONFIG.race.attackTime;
+    car.passing = null;
+  };
+  const backFromShoulder = (car, dt) => {
+    const [first, last] = Track.laneRange(car.dir, car.s), outer = car.dir > 0 ? last : first;
+    car.lane = outer;
+    car.shoulderRun.for += dt;
+    const gap = cars.every(o => o === car || !o.active || o.lane !== outer ||
+      (o.s - car.s) * car.dir < -(o.hl + car.hl + CONFIG.race.oncoming.cutIn) || (o.s - car.s) * car.dir > o.hl + car.hl + 6) &&
+      !blockedAhead(car, outer, CONFIG.rival.lookAhead);
+    // (back in at the first gap once it is by, or with the police about; and at once with the shoulder blocked)
+    if (gap && (pastIt(car, car.shoulderRun.past) || policeWatching(car)) || car.shoulderRun.for > CONFIG.race.oncoming.longest ||
+        !shoulderClear(car, CONFIG.rival.lookAhead + Math.abs(car.vs) * 1.2)) {
+      car.shoulderRun = null;
+      car.signal = -kerbSide(car);
     }
   };
   // a racer on a straight, out of any tow, looks for one: a car not far ahead in the lane beside, and
@@ -1279,6 +1343,7 @@ export const Traffic = (() => {
           (furious(car) ? CONFIG.race.fury.pace : 1) * (1 + (CONFIG.race.chase.pace - 1) * chasing(car));
         if (car.racer && LEVEL.grid?.rival) target = rivalPace(car, target, dt); // (a rival courier: see rivalPace)
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
+        if (car.shoulderRun && car.attack < 0.5) car.attack = 0.5; // (on the attack all the way up the shoulder)
         if (rival) {
           // get into its lane, then catch it up or drop back onto it
           // (in a race, a rival behind is only blocked: see CONFIG.race.blockEvery; and one alongside
@@ -1456,8 +1521,10 @@ export const Traffic = (() => {
             break;
           }
           if (!(car.attack > 0) && !car.oncoming) passOncoming(car, blocker);
+          if (!(car.attack > 0) && !car.oncoming) passShoulder(car, blocker); // (a rival courier: up the shoulder)
         }
         if (car.oncoming) backFromOncoming(car);
+        if (car.shoulderRun) backFromShoulder(car, dt);
         if (car.racer && LEVEL.grid?.rival) { rivalObstacles(car, dt); rivalPickups(car); }
         // held up behind a slow player: mood sours; angry evil drivers don't brake for you (they ram
         // you), angry good ones sit right on your bumper; an evil racer gives you a nudge
@@ -1496,7 +1563,7 @@ export const Traffic = (() => {
         // (alongside its rival it steers straight at it)
         const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
         let aimLat = beside ? rival.lat
-          : car.pulledOver ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
+          : car.pulledOver || car.shoulderRun ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
           : Track.laneOffset(car.lane, car.s);
         if (car.passing === Player && car.attack > 0 && !beside && Math.abs(Player.s - car.s) < Player.hl + car.hl + 10) {
           // (going by the player, it keeps as far from it as the road allows: squeezing by, if the player is astride the lanes)

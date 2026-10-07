@@ -3,6 +3,7 @@ import { CONFIG } from '../config.js';
 import { Track } from '../track.js';
 import { Collision } from '../collision.js';
 import { Player } from '../player.js';
+import { LEVEL } from '../levels.js';
 import { scene, camera, tmp } from './scene.js';
 import { FACE_COLORS, FEATURES, INK } from './faces.js';
 
@@ -53,7 +54,43 @@ const emotes = Collision.bodies.map(() => {
   scene.add(mesh);
   return { mesh, wait: Math.random() * CONFIG.emoteEvery, show: 0, last: null };
 });
+// ---- the rival courier's marker (a level's "rival"): a glowing magenta arrow hanging over it, pointing
+// down at it, bobbing and turning; above where its mood face pops up (so never over it), and bigger the
+// further off it is, so it can be picked out down the road (see CONFIG.rivalMark)
+// (one for each rival, up to CONFIG.rival.most, in its own colour)
+const RIVAL_MARK = 0xff2bd6;
+const rivalMarks = Array.from({ length: CONFIG.rival.most }, () => {
+  const g = new THREE.Group(), glow = new THREE.MeshBasicMaterial({ color: RIVAL_MARK });
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.75, 4), glow);
+  head.rotation.x = Math.PI; // (pointing down)
+  head.position.y = 0.375;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.6, 0.28), glow);
+  shaft.position.y = 1.05;
+  g.add(head, shaft);
+  g.visible = false;
+  g.userData.glow = glow;
+  scene.add(g);
+  return g;
+});
+const syncRivalMark = (now) => {
+  const M = CONFIG.rivalMark, rivals = LEVEL.grid?.rival ? Collision.bodies.filter(v => v.racer) : [];
+  rivalMarks.forEach((mark, k) => {
+    const rival = rivals[k];
+    mark.visible = !!rival && rival.active && !rival.done;
+    if (!mark.visible) return;
+    mark.userData.glow.color.setHex(rival.markColor ?? RIVAL_MARK);
+    Track.toWorld(rival.s, rival.lat, tmp);
+    const sx = scene.scale.x < 0 ? -tmp.x : tmp.x; // (the camera's in world terms; the scene may be mirrored)
+    const far = Math.hypot(sx - camera.position.x, tmp.y - camera.position.y, tmp.z - camera.position.z);
+    const size = Math.max(1, far / M.growFrom);
+    mark.scale.setScalar(size);
+    // (its tip clear above the top of the mood face, however big it has grown)
+    mark.position.set(tmp.x, tmp.y + rival.height + M.above + Math.sin(now / 300 + k * 2) * 0.15 * size, tmp.z);
+    mark.rotation.y = now / 700 + k;
+  });
+};
 export const syncEmotes = (dt, now) => {
+  syncRivalMark(now);
   // an angel or a jerk (mysteries): every face stays up for as long as it lasts, held once it
   // has popped up and swung round to the front (see below)
   const held = Player.mystery === 'angel' || Player.mystery === 'jerk';

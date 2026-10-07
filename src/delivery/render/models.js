@@ -580,6 +580,7 @@ export const MODELS = {
       body,
       animate: () => {},
       livery: (evil) => { stripe.color.setHex(evil ? black : white); },
+      stripe: (hex) => stripe.color.setHex(hex), // (a scheme of its own: see Traffic, a rival courier)
     };
     return group;
   },

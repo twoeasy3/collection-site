@@ -114,6 +114,13 @@ export const CONFIG = {
   // overlapping it, has its top speed raised by up to `draft` of it, the more the closer it is; so
   // it can outdrag the car it follows. A racer on a straight with a car up to seekReach m ahead in
   // the lane beside moves over into its tow (every seekEvery s at most), then pulls out to pass.
+  // the arrow at the foot of the screen for whoever is behind the player in a race (within raceRange m),
+  // or a rival courier (within rivalRange m): slid slidePerM px to the side for every m across, up to
+  // slide px; orange when it is within close m
+  behind: { raceRange: 150, rivalRange: 400, slidePerM: 14, slide: 140, close: 15 },
+  // the marker over a rival courier (see render/emotes.js): its tip `above` m over the car's roof (the mood
+  // face pops up from 0.5 to 1.6 m over it), growing in proportion beyond growFrom m from the camera
+  rivalMark: { above: 2.1, growFrom: 35 },
   // a rival courier (a level's "rival", or ?rival: see Game.start): its pace, a share of the player's car's
   // top speed; its health; and s before an evil one's first throw at
   // the player (then as any evil car's: enemyThrowMin..Max)
@@ -122,8 +129,14 @@ export const CONFIG = {
   // round any within obstacleRoom m of its line (and round a pickup that would do it harm); one that would do
   // it good, it moves over for, within pickupReach m (and lookTime s at its speed). A pickup it gets that is
   // heard of within heard m is said
-  rival: { pace: { min: 0.96, max: 1.0 }, health: 4000, firstThrow: 6, catchUp: { from: 15, full: 150, pace: 1.15 },
-    lookAhead: 20, lookTime: 2.2, obstacleRoom: 0.5, pickupReach: 40, heard: 150 },
+  // (up to `most` of them: see a level's "rivals"; each one ahead at the drop takes its share of the tip)
+  rival: { most: 3, pace: { min: 0.96, max: 1.0 }, health: 4000, firstThrow: 6, catchUp: { from: 15, full: 150, pace: 1.15 },
+    lookAhead: 20, lookTime: 2.2, obstacleRoom: 0.5, pickupReach: 40, heard: 150,
+    // It is no stickler for the rules: boxed in, it overtakes up the shoulder (as long as it is wide
+    // enough for it, by shoulderRoom m) or out in the oncoming lane, with only oncomingEdge m/s more
+    // pace than what holds it up (an ordinary racer wants race.oncoming.edge)
+    // (but with a police car within policeRange m, it keeps to its own lanes: it can't be busted, but it plays it safe)
+    shoulderRoom: 0.3, oncomingEdge: 1.5, policeRange: 150 },
   race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5,
     towReach: 130, draft: 0.2, seekReach: 160, seekEvery: 1.5,
     // Racecraft: each driver's nerve in the bends is its own, from nerve.min to nerve.max times the
@@ -537,7 +550,7 @@ export const CONFIG = {
   social: {
     gift: 4, copGift: 10, decay: 1, bust: 75, cautionFrom: 0.75, grace: 4,
     policeSight: { empty: 1.15, full: 0.85 }, evilFloor: 0.15, moodLift: 0.5, danger: 1, powerUpShift: 2.5, luck: 1,
-    regen: { from: 0.5, min: 0.002, max: 0.006 }, protectFrom: 0.85,
+    regen: { from: 0.5, min: 0.01, max: 0.03 }, protectFrom: 0.85,
   },
   maxBusts: 3,             // the run ends on this many busts
   evilShare: 0.35,         // share of traffic that is evil; the rest are good. A car never switches.

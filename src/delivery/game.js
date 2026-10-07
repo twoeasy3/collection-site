@@ -55,7 +55,8 @@ export const Game = {
   // seconds left on the clock; below zero is the tip countdown
   get remaining() { return this.allowed - this.time; },
   // the level's tip: whole until the clock hits zero, then draining to nothing over the tip countdown
-  get tip() { return this.rivalIn ? 0 : LEVEL.tip * clamp(1 + this.remaining / CONFIG.tipCountdown, 0, 1); }, // (none if a rival delivered first)
+  // (and every rival that delivers first takes its share: with one, all of it)
+  get tip() { return LEVEL.tip * (LEVEL.grid?.rival ? 1 - (this.rivalsIn || 0) / LEVEL.grid.count : 1) * clamp(1 + this.remaining / CONFIG.tipCountdown, 0, 1); },
 
   // Builds everything that depends on the level: roads, obstacles, pickups, targets, and
   // (through the onLoad hooks, which the rendering modules register) the scenery.
@@ -128,10 +129,11 @@ export const Game = {
     const rivalSide = LEVEL.rival || this.rival;
     if (rivalSide && !LEVEL.laps && (!LEVEL.grid || LEVEL.grid.rival)) {
       const evil = rivalSide === 'evil' || (rivalSide === 'opposite' && !this.evil);
-      LEVEL.grid = { count: 1, rival: true, evil, from: 6, gap: 0, pace: CONFIG.rival.pace };
+      const rivals = (LEVEL.rivals || [{}]).slice(0, CONFIG.rival.most);
+      LEVEL.grid = { count: rivals.length, rival: true, rivals, evil, from: 6, gap: 9, pace: CONFIG.rival.pace };
     } else if (!rivalSide && LEVEL.grid?.rival) delete LEVEL.grid;
-    this.rivalIn = false;   // the rival over the line first
-    this.rivalAhead = null; // whether it was ahead of the player, when last looked
+    this.rivalsIn = 0;          // rivals over the line before the player
+    this.rivalAhead = new Map(); // for each, whether it was ahead of the player when last looked
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
     useLevelCar(LEVEL.car); // a UFO on the space level, otherwise the garage's car
     Player.evil = this.evil;
@@ -194,7 +196,10 @@ export const Game = {
     // (a hidden level, off the menu, banks nothing and records nothing: see HIDDEN_LEVELS)
     const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, this.tip + this.cash, this.remaining, this.evil);
     resultTitle.textContent = {
-      delivered: this.rivalIn ? 'Delivered - but your rival got there first' : LEVEL.grid?.rival ? 'Delivered - you beat your rival!' : 'Delivered!',
+      delivered: !LEVEL.grid?.rival ? 'Delivered!'
+        : !this.rivalsIn ? (LEVEL.grid.count > 1 ? 'Delivered first - you beat them all!' : 'Delivered - you beat your rival!')
+        : LEVEL.grid.count > 1 ? 'Delivered - ' + ['1st', '2nd', '3rd', '4th'][this.rivalsIn] + ' of ' + (LEVEL.grid.count + 1)
+        : 'Delivered - but your rival got there first',
       late: 'Too late - level failed',
       timeout: 'Out of time - level failed',
       busted: 'Busted! Game over',
@@ -329,16 +334,18 @@ export const Game = {
         Pickups.reset();
         Message.say('events', this.lap === LEVEL.laps - 1 ? 'finalLap' : 'lap');
       }
-      // a rival courier: who is ahead, said as it changes, and whether it got there first
+      // rival couriers: who is ahead, said as it changes, and who got there first
       if (LEVEL.grid?.rival) {
-        const rival = Traffic.cars.find(c => c.racer);
-        if (rival && rival.done && !this.rivalIn && !Track.finished(Player.s)) {
-          this.rivalIn = true;
-          Message.say('events', 'rivalIn');
-        } else if (rival && rival.active && !this.rivalIn) {
-          const ahead = rival.s > Player.s;
-          if (this.rivalAhead !== null && ahead !== this.rivalAhead) Message.say('events', ahead ? 'rivalPassed' : 'rivalBeaten');
-          this.rivalAhead = ahead;
+        for (const rival of Traffic.cars.filter(c => c.racer)) {
+          if (rival.done && !rival.counted) {
+            rival.counted = true;
+            this.rivalsIn++;
+            sayRival(LEVEL.grid.count === 1 ? 'rivalIn' : this.rivalsIn === LEVEL.grid.count ? 'rivalInAll' : 'rivalInMany', rival);
+          } else if (rival.active && !rival.done) {
+            const ahead = rival.s > Player.s, was = this.rivalAhead.get(rival);
+            if (was !== undefined && ahead !== was) sayRival(ahead ? 'rivalPassed' : 'rivalBeaten', rival);
+            this.rivalAhead.set(rival, ahead);
+          }
         }
       }
       if (Player.active && Track.finished(Player.s)) this.finish(this.remaining >= 0 ? 'delivered' : 'late');
@@ -347,6 +354,12 @@ export const Game = {
   },
 };
 
+// a message about a rival courier, by its name ("your rival" if it has none)
+export const sayRival = (key, rival, ...more) => {
+  const line = Message.say('events', key, ...more);
+  if (line) line.text = line.text.replace(/\$\{name\}/g, rival.rivalName || 'your rival').replace(/^./, (c) => c.toUpperCase());
+  return line;
+};
 // seconds on the clock for a level, for a side: its own "clock" if it has one, or else its time scaled
 export const clockFor = (level, evil) => {
   const side = evil ? 'evil' : 'good';

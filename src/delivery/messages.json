@@ -33,16 +33,18 @@
     "wave": ["WAVE INCOMING!! Get out of the water!"],
     "lap": ["Lap complete!"],
     "finalLap": ["FINAL LAP!"],
-    "rivalPassed": ["Your rival is past you!", "Rival ahead!"],
-    "rivalBeaten": ["You're past your rival!", "Rival behind you!"],
-    "rivalIn": ["Your rival delivered first! No tip for you"],
+    "rivalPassed": ["${name} is past you!", "${name} gets ahead!"],
+    "rivalBeaten": ["You're past ${name}!", "${name} is behind you!"],
+    "rivalIn": ["${name} delivered first! No tip for you"],
+    "rivalInMany": ["${name} delivered before you! Your tip is cut"],
+    "rivalInAll": ["${name} delivered too! No tip left for you"],
     "rivalPickup": {
-      "turbo": ["Your rival grabbed a turbo!"],
-      "wrench": ["Your rival patched up!"],
-      "armour": ["Your rival armoured up!"],
-      "bigSplash": ["Incoming! Your rival found a Big Splash!"],
-      "badGas": ["Your rival filled up with bad gas!"],
-      "heavyMass": ["Your rival is weighed down!"]
+      "turbo": ["${name} grabbed a turbo!"],
+      "wrench": ["${name} patched up!"],
+      "armour": ["${name} armoured up!"],
+      "bigSplash": ["Incoming! ${name} found a Big Splash!"],
+      "badGas": ["${name} filled up with bad gas!"],
+      "heavyMass": ["${name} is weighed down!"]
     }
   },
   "zones": {

@@ -55,6 +55,8 @@
 //              round each is kept clear of the town; rot: which way it faces
 //   rival      'opposite' | 'evil' | 'good': a rival courier races the player to the drop (see Game.start;
 //              ?rival puts one on any delivery level, to try it out)
+//   rivals     [{ name, car, colors: ['#body', '#stripe'], mark: '#marker' }]: up to three rival couriers
+//              (each on the level's "rival" side), with names, cars and colour schemes of their own
 //   shoulder   m of shoulder each side of the road, if not CONFIG.shoulder (a street circuit's walls close by)
 //   runoff     { from, to, side, width }: the shoulder on that side `width` m wider over that stretch (run-off
 //              on the outside of a corner, where a circuit has it), easing in and out
@@ -183,12 +185,13 @@ import ohMine from './levels/oh-mine.json';
 import montreal from './levels/montreal.json';
 import bathurst from './levels/bathurst.json';
 import rivalRun from './levels/rival-run.json';
+import showdown from './levels/showdown.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction];
-export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun];
+export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones
 export const levelLabel = (index) => index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (index - MAIN_LEVELS.length + 1);
@@ -204,7 +207,7 @@ export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix };
 // (the menu's Race cars button; ?gt for a GT race whatever it says)
 export const setRaceClass = (kind) => {
   for (const level of [...LEVELS, ...Object.values(HIDDEN_LEVELS)]) {
-    if (!level.grid) continue;
+    if (!level.grid || level.grid.rival) continue; // (a rival stage's own cars: see Game.start)
     level.car = kind;
     level.grid = { ...level.grid, kind };
   }
