@@ -14,6 +14,7 @@ import { LEVEL_CARS } from './cars.js';
 import { PICKUP_COLOR } from './render/pickupModels.js';
 
 const $ = (id) => document.getElementById(id);
+const view3d = $('view3d'); // (the 3D view: see show3d)
 const LW = CONFIG.laneWidth, STEP = 2; // m between the points the road is drawn through
 const THEMES = ['city', 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast', 'safari',
   'airport', 'construction', 'hell', 'space', 'night', 'sea'];
@@ -335,7 +336,25 @@ $('tools').innerHTML = toolButton('Select / move', { kind: 'select' }) +
   '<h3>Stretches (150 m, from where you click)</h3>' + Object.keys(FEATURE_TEMPLATES.stretches).map(k => toolButton(k, { kind: 'stretch', key: k }, featureColor(k))).join('') +
   '<h3>Points</h3>' + Object.keys(FEATURE_TEMPLATES.points).map(k => toolButton(k, { kind: 'point', key: k }, featureColor(k))).join('');
 const showTool = () => { for (const b of $('tools').children) if (b.dataset.tool) b.classList.toggle('on', b.dataset.tool === JSON.stringify(tool)); };
-$('tools').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { tool = JSON.parse(b.dataset.tool); showTool(); } });
+const toolTo3d = () => { if (!view3d.hidden && view3d.contentWindow) view3d.contentWindow.postMessage({ type: 'tool', tool }, '*'); };
+$('tools').addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { tool = JSON.parse(b.dataset.tool); showTool(); toolTo3d(); } });
+// the 3D view placing and removing items: the editor's copy of the level kept in step (see render/fly.js)
+window.addEventListener('message', (e) => {
+  const m = e.data;
+  if (!m || e.source !== view3d.contentWindow) return;
+  if (m.type === 'flyReady') toolTo3d();
+  if (m.type === 'placed') {
+    level[m.list].push(m.item);
+    selected = { list: m.list, i: level[m.list].length - 1 };
+    picked = null;
+  }
+  if (m.type === 'removed') {
+    const i = level[m.list].findIndex(it => JSON.stringify(it) === JSON.stringify(m.item));
+    if (i >= 0) level[m.list].splice(i, 1);
+    selected = null;
+  }
+  if (m.type === 'placed' || m.type === 'removed') { itemPanel(); changed(); }
+});
 
 // the selected item's own settings
 const featurePanel = () => {
@@ -507,7 +526,6 @@ canvas.addEventListener('wheel', (e) => { // zoom about the pointer
 }, { passive: false });
 $('fit').addEventListener('click', () => { fit(); draw(); });
 // the 3D view: the game itself, in the editor, on the level as it stands, with a free camera (?edited&fly)
-const view3d = $('view3d');
 const hand = () => { try { localStorage.setItem(STORE, JSON.stringify(level)); return true; } catch { return false; } };
 const show3d = (on) => {
   view3d.hidden = !on;
@@ -515,7 +533,8 @@ const show3d = (on) => {
   $('fit').hidden = on;
   $('refresh3d').hidden = !on;
   $('show3d').textContent = on ? 'Map' : '3D view';
-  $('hint').innerHTML = on ? 'Click the view, then: W A S D to fly &middot; drag to look &middot; E / Space up, Q / C down &middot; Shift faster &middot; scroll for speed'
+  $('hint').innerHTML = on ? 'W A S D to fly &middot; drag to look &middot; E / Space up, Q / C down &middot; Shift faster &middot; scroll for speed &middot; ' +
+      'click the road to place the tool picked in Place &middot; right-click an item to remove it'
     : 'Scroll to zoom &middot; drag the road to pan &middot; click to place or select &middot; drag an item to move it &middot; Delete removes it';
   if (on && hand()) view3d.src = './?edited&fly&v=' + Date.now(); // (afresh, with the edits so far)
   if (on) view3d.focus();

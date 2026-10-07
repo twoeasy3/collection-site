@@ -647,6 +647,14 @@ const buildItems = () => {
   targetMeshes = Targets.items.map((t) => place(makeTarget(t)));
 };
 Game.onLoad.push(buildItems);
+// the level's items built afresh from its data, after a change to it (the level editor's 3D view: see render/fly.js)
+export const rebuildItems = () => {
+  Collision.loadLevel();
+  Pickups.load();
+  Targets.load();
+  buildItems();
+  readable(levelItems);
+};
 Game.onLoad.push(() => { readable(levelItems); readable(hoverMystery); readable(hoverWeight); });
 
 export const syncPickups = (dt) => {

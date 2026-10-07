@@ -3,15 +3,66 @@
 // to fly, drag to look round, E / Space up and Q / C down, Shift to go faster, the wheel to set the
 // speed. The road nearest the camera counts as where the player is, so whatever is only drawn near
 // the player (obstacles, the scenery of a zone) is drawn round the camera instead.
+// In the level editor (inside its 3D view), a click on the road places whatever the editor's tool is
+// (a pickup, an obstacle or a TANK RAGE target), and a right-click on one removes it; each change is
+// passed back to the editor, which keeps its copy of the level in step.
 import * as THREE from 'three';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Game } from '../game.js';
-import { camera, scene } from './scene.js';
+import { LEVEL } from '../levels.js';
+import { camera, scene, tmp } from './scene.js';
+import { rebuildItems } from './items.js';
 
 export const Fly = { on: false };
 const keys = new Set(), at = new THREE.Vector3(), step = new THREE.Vector3();
-let yaw = 0, pitch = -0.3, speed = 40, look = null;
+let yaw = 0, pitch = -0.3, speed = 40, look = null, down = null, tool = null;
+
+// where on the road a point on the screen is: { s, lat }, or null off the road (the ray meets the
+// road's own height there, found in a few goes)
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), hitAt = new THREE.Vector3();
+const roadAt = (cx, cy) => {
+  ndc.set(cx / innerWidth * 2 - 1, -(cy / innerHeight) * 2 + 1);
+  ray.setFromCamera(ndc, camera);
+  let y = 0, found = null;
+  for (let k = 0; k < 3; k++) {
+    plane.constant = -y;
+    if (!ray.ray.intersectPlane(plane, hitAt)) return null;
+    found = Track.fromWorld(hitAt.x * scene.scale.x, hitAt.z, Player.s, 400);
+    if (!found || !Number.isFinite(found.s)) return null;
+    Track.toWorld(found.s, found.lat, tmp);
+    y = tmp.y;
+  }
+  return found.s >= Track.start && found.s <= Track.end && found.lat >= Track.lo(found.s) - 1 && found.lat <= Track.hi(found.s) + 1 ? found : null;
+};
+const tell = (message) => { if (parent !== window) parent.postMessage(message, '*'); };
+const placeAt = (cx, cy) => {
+  const r = roadAt(cx, cy);
+  if (!r || !tool || !['pickups', 'obstacles', 'targets'].includes(tool.kind)) return;
+  const s = Math.round(r.s), lane = Track.nearestLane(r.lat, r.s);
+  const item = tool.kind === 'pickups' ? { type: tool.type, s, lane } : tool.kind === 'obstacles' ? { s, lane, kind: tool.type }
+    : { s, side: r.lat < 0 ? 'left' : 'right' };
+  (LEVEL[tool.kind] ||= []).push(item);
+  rebuildItems();
+  tell({ type: 'placed', list: tool.kind, item });
+};
+const removeAt = (cx, cy) => { // the nearest item within a few metres of the spot, taken away
+  const r = roadAt(cx, cy);
+  if (!r) return;
+  let best = null, bestD = 4;
+  for (const list of ['pickups', 'obstacles', 'targets']) {
+    (LEVEL[list] || []).forEach((it, i) => {
+      if (it.road) return;
+      const lat = list === 'targets' ? (it.side === 'left' ? Track.lo(it.s) : Track.hi(it.s)) : Track.laneOffset(it.lane ?? 0, it.s);
+      const d = Math.hypot(it.s - r.s, lat - r.lat);
+      if (d < bestD) { bestD = d; best = { list, i, item: it }; }
+    });
+  }
+  if (!best) return;
+  LEVEL[best.list].splice(best.i, 1);
+  rebuildItems();
+  tell({ type: 'removed', list: best.list, item: best.item });
+};
 
 export const startFly = () => {
   Fly.on = true;
@@ -24,8 +75,14 @@ export const startFly = () => {
   window.addEventListener('keydown', (e) => { keys.add(e.code); if (e.code === 'Space') e.preventDefault(); });
   window.addEventListener('keyup', (e) => keys.delete(e.code));
   window.addEventListener('blur', () => keys.clear());
-  window.addEventListener('pointerdown', (e) => { look = [e.clientX, e.clientY]; });
-  window.addEventListener('pointerup', () => { look = null; });
+  window.addEventListener('pointerdown', (e) => { if (e.button === 0) { look = [e.clientX, e.clientY]; down = [e.clientX, e.clientY]; } });
+  window.addEventListener('pointerup', (e) => { // (a click, not a drag to look round: placing)
+    if (e.button === 0 && down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 5) placeAt(e.clientX, e.clientY);
+    look = down = null;
+  });
+  window.addEventListener('contextmenu', (e) => { e.preventDefault(); removeAt(e.clientX, e.clientY); });
+  window.addEventListener('message', (e) => { if (e.data && e.data.type === 'tool') tool = e.data.tool; }); // (the editor's tool)
+  tell({ type: 'flyReady' });
   window.addEventListener('pointermove', (e) => {
     if (!look) return;
     yaw -= (e.clientX - look[0]) * 0.004;

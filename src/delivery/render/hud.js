@@ -23,7 +23,7 @@ const hudBanner = document.getElementById('banner');
 const hudTurbo = document.getElementById('turbo');
 const hudDanger = document.getElementById('danger');
 const hudCopWatch = document.getElementById('copWatch');
-const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill');
+const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill'), hudTowLabel = document.getElementById('towLabel');
 const hudSocial = document.getElementById('social'), hudSocialFill = document.getElementById('socialFill');
 const hudBusts = document.getElementById('busts');
 const hudDangerFill = document.getElementById('dangerFill');
@@ -100,9 +100,15 @@ export const updateHud = () => {
   const watched = Game.state === 'playing' && Player.active && !Game.screensaver && LEVEL.shoulderTimer !== false && Player.tank <= 0 && Traffic.policeNear();
   hudCopWatch.style.display = watched ? 'block' : 'none';
   // in a car's slipstream, and how deep in it (a race)
-  const towing = Player.active && !Game.screensaver && Player.tow > 0;
+  // (or, just out of it, the slingshot, and how much of it is left)
+  const flung = Player.slingTime > 0 && !(Player.tow > 0);
+  const towing = Player.active && !Game.screensaver && (Player.tow > 0 || flung);
   hudTowing.style.display = towing ? 'block' : 'none';
-  if (towing) hudTowFill.style.width = Player.tow * 100 + '%';
+  hudTowing.classList.toggle('sling', flung);
+  if (towing) {
+    hudTowLabel.textContent = flung ? 'SLINGSHOT!' : 'SLIPSTREAM';
+    hudTowFill.style.width = (flung ? Player.slingTime / CONFIG.race.attackTime : Player.tow) * 100 + '%';
+  }
   // a good player's social standing (none on a level with no packages, nor in the screensaver)
   const social = Game.state === 'playing' && Player.active && !Game.screensaver && Social.on && !LEVEL.noPackages;
   hudSocial.style.display = social ? 'block' : 'none';

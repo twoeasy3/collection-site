@@ -275,7 +275,7 @@ export const syncRaceWatch = (now) => {
   directorBtn.style.display = RaceWatch.pinned ? '' : 'none';
   caption.innerHTML = (c ? `<b>P${at + 1}</b> ${c.driver} <i>${SHOTS[RaceWatch.shot]}</i>` +
     (c === RaceWatch.pinned ? ' <i>FOLLOWING</i>' : '') +
-    (c.tow > 0.2 ? ' <i class="tow">SLIPSTREAM</i>' : '') +
+    (c.attack > 0 && c.sling > 0 && !(c.tow > 0.2) ? ' <i class="tow sling">SLINGSHOT</i>' : c.tow > 0.2 ? ' <i class="tow">SLIPSTREAM</i>' : '') +
     (ahead || behind ? `<div class="gaps">${ahead ? `<span>P${at} ${ahead}</span>` : ''}${behind ? `<span>P${at + 2} ${behind}</span>` : ''}</div>` : '') : '') +
     (news ? `<div class="news">${news}</div>` : '');
 };

@@ -1069,7 +1069,7 @@ export const Traffic = (() => {
         car.tow = car.racer ? tow(car, car.s, car.lat, car.hw) : 0;
         if (car.racer) car.attack = Math.max(0, (car.attack || 0) - dt);
         const sling = car.attack > 0 ? car.sling * car.attack / CONFIG.race.attackTime : 0;
-        let target = (squeezed ? car.baseSpeed * 0.6 : car.baseSpeed) * (1 + CONFIG.race.draft * Math.max(car.tow, sling)) *
+        let target = (squeezed ? car.baseSpeed * 0.6 : car.baseSpeed) * (1 + CONFIG.race.draft * Math.max(car.tow, sling) + CONFIG.race.slingKick * sling) *
           (furious(car) ? CONFIG.race.fury.pace : 1) * (1 + (CONFIG.race.chase.pace - 1) * chasing(car));
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
         if (rival) {
@@ -1203,7 +1203,8 @@ export const Traffic = (() => {
             car.signal = d;
             car.pendingLane = null;
             car.attack = CONFIG.race.attackTime; // (on the attack: see CONFIG.race)
-            car.sling = car.tow;
+            car.sling = car.tow >= CONFIG.race.slingFrom ? car.tow : 0; // (out of a tow: the slingshot)
+            car.vs += car.dir * car.baseSpeed * CONFIG.race.slingKick * car.sling; // (its kick)
             break;
           }
         }

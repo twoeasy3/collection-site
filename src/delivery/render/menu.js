@@ -2,7 +2,7 @@
 // The start screen is only a menu. Picking a level just marks it; the level is built when
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
-import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel } from '../levels.js';
+import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS } from '../levels.js';
 import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, stars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
@@ -61,14 +61,30 @@ const pickSide = (evil) => {
   draw();
 };
 sideBtn.addEventListener('click', () => pickSide(!Game.evil));
-const levelBox = document.getElementById('levels');
+const levelBox = document.getElementById('levels'), groupBox = document.getElementById('levelGroups');
+// the levels in groups: the main ones five at a time, and the special ones together. A button for each
+// group; below them, the levels of the group shown (to begin with, the one with the level picked)
+const GROUPS = [];
+for (let i = 0; i < MAIN_LEVELS.length; i += 5) GROUPS.push([i, Math.min(MAIN_LEVELS.length, i + 5)]);
+GROUPS.push([MAIN_LEVELS.length, LEVELS.length]);
+const groupOf = (i) => Math.max(0, GROUPS.findIndex(([a, b]) => i >= a && i < b));
+let shownGroup = null; // (null: the group with the level picked)
 const shopBox = document.getElementById('shop');
 
 const draw = () => {
   bank.textContent = 'Bank ' + money(Progress.data.money);
 
-  levelBox.replaceChildren(...LEVELS.map((level, i) => {
-    const open = i < Progress.data.unlocked;
+  const shown = shownGroup ?? groupOf(LEVEL_INDEX), [first, last] = GROUPS[shown];
+  groupBox.replaceChildren(...GROUPS.map(([a, b], g) => {
+    const button = document.createElement('button');
+    button.className = 'level' + (g === shown ? ' current' : '') + (a >= Progress.data.unlocked ? ' locked' : '');
+    button.textContent = levelLabel(a) + (b - a > 1 ? '–' + levelLabel(b - 1) : '');
+    button.title = a >= Progress.data.unlocked ? 'Not open yet' : '';
+    button.addEventListener('click', () => { shownGroup = g; draw(); });
+    return button;
+  }));
+  levelBox.replaceChildren(...LEVELS.slice(first, last).map((level, k) => {
+    const i = first + k, open = i < Progress.data.unlocked;
     // (the most time to spare delivering it, on each side)
     const good = Progress.bestTime(level.id, false), evil = Progress.bestTime(level.id, true);
     const spare = (t) => t === undefined ? '-' : formatTime(t);
@@ -79,7 +95,7 @@ const draw = () => {
     ] : ['Locked', 'Deliver level ' + levelLabel(i - 1) + ' on time to open it'], {
       current: i === LEVEL_INDEX,
       disabled: !open,
-      onPick: () => { selectLevel(i); useLevelCar(level.car); draw(); },
+      onPick: () => { selectLevel(i); useLevelCar(level.car); shownGroup = null; draw(); }, // (the groups follow the level picked)
       image: LEVEL_SHOTS[level.id],
     });
   }));

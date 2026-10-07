@@ -121,6 +121,10 @@ export const CONFIG = {
     // pass is on the attack for attackTime s: the tow it pulled out of carries it on (its slingshot,
     // fading as it goes), and it brakes later, with attackNerve times its nerve
     nerve: { min: 0.92, max: 1.06 }, attackTime: 3, attackNerve: 1.12,
+    // The slingshot: a car (a racer, or the player) pulling out of a tow at least slingFrom deep is
+    // flung on: a kick of slingKick of its top speed (by how deep in the tow it was) on top of the
+    // tow's own, both fading away over attackTime s
+    slingFrom: 0.25, slingKick: 0.06,
     // An evil racer's feud (a good one races clean): with a rival ahead of it or alongside, it
     // chases it down and rams it, as anywhere; but it never drops back for one behind it, it only
     // blocks it, moving across into its lane (at most every blockEvery s) without lifting off
