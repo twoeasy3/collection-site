@@ -103,11 +103,16 @@ const createTrack = () => {
     if (!hilly) return 0;
     let sum = 0;
     const EASE = Math.round(CONFIG.gradeEase / STEP); // samples each way
-    for (let k = i - EASE; k <= i + EASE; k++) sum += rawGrades[Math.max(0, Math.min(rawGrades.length - 1, k))];
+    const N = rawGrades.length; // (round a loop, the blend carries on over the line, so the road meets itself there)
+    for (let k = i - EASE; k <= i + EASE; k++) sum += rawGrades[LOOP ? ((k % N) + N) % N : Math.max(0, Math.min(N - 1, k))];
     return sum / (2 * EASE + 1);
   });
   const mainYs = [0];
   for (let i = 1; i < mainXs.length; i++) mainYs.push(mainYs[i - 1] + mainGrades[i - 1] * STEP);
+  if (LOOP) { // (round a loop, whatever is left over is spread along the lap, so the road ends at the height it began)
+    const over = mainYs[mainYs.length - 1] - mainYs[0], last = mainYs.length - 1;
+    for (let i = 0; i <= last; i++) mainYs[i] -= over * i / last;
+  }
   const lowest = Math.min(...mainYs);
   for (let i = 0; i < mainYs.length; i++) mainYs[i] -= lowest;
   // the road's slope at s: rise per metre in the direction of increasing s

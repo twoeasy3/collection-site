@@ -80,6 +80,10 @@ export const THEMES = {
   // suburb: lawns, pavements, picket fences and houses in a row
   suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb' },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
+  // bathurst: Mount Panorama, a racetrack on a mountain in the New South Wales bush: the land climbs
+  // and falls with the circuit (terrain: grass where it is gentle, red clay where it is steep), gum
+  // trees all over the hill, the town's plain below, blue ranges in the haze
+  bathurst: { sky: 0xa9d2ef, ground: 0x9aa55e, road: 0x45474c, scenery: 'bathurst', terrain: { gentle: 0x93a25a, steep: 0x9b6b4a, rough: 0.35, flat: 10, rise: 60 } },
   // montreal: Circuit Gilles-Villeneuve, on Île Notre-Dame in the St Lawrence: parkland, a summer sky
   montreal: { sky: 0xa6d2f2, ground: 0x5d9a4a, road: 0x3e4147, scenery: 'montreal' },
   // sea: open water everywhere, the way through it the same water, unmarked (water: no ruts either),
@@ -103,15 +107,17 @@ scene.add(levelGroup);
 // and fills in between its switchbacks: steep rock where two stretches at different heights come
 // close, snow where it is gentler. It is flat, just under the road, for a strip each side of it,
 // rougher the further it is from any road, and it sinks to the valley floor all round at the edge.
+// (theme.terrain may give its colours: { gentle, steep }, snow and rock otherwise; how rough the
+// land is away from the road, `rough` (1: as the alpine pass); and `flat`, m more of it level with the road)
 // Returns the height of the land at a world point (x, z).
-const buildTerrain = () => {
+const buildTerrain = (colours) => {
   const pts = [], p = {};
   for (let s = Track.start; s <= Track.end; s += 8) {
     Track.toWorld(s, 0, p);
     pts.push(p.x, p.y, p.z);
   }
   const N = pts.length / 3;
-  const flatTo = Math.max(Track.hi(0), -Track.lo(0)) + 12; // (wider than a grid square, so no slope reaches the road)
+  const flatTo = Math.max(Track.hi(0), -Track.lo(0)) + 12 + (colours?.flat ?? 0); // (wider than a grid square, so no slope reaches the road)
   const heightAt = (x, z) => {
     let best = Infinity, bestY = 0, wsum = 0, hsum = 0;
     for (let i = 0; i < N; i++) {
@@ -124,8 +130,8 @@ const buildTerrain = () => {
     const d = Math.sqrt(best), road = bestY - 0.3;
     if (d < flatTo) return road;
     const away = d - flatTo;
-    const rough = (Math.sin(x * 0.05) * Math.cos(z * 0.043) * 5 + Math.sin(x * 0.013 + z * 0.017) * 16) * Math.min(1, away / 90);
-    const t = Math.min(1, away / 20);
+    const rough = (Math.sin(x * 0.05) * Math.cos(z * 0.043) * 5 + Math.sin(x * 0.013 + z * 0.017) * 16) * Math.min(1, away / 90) * (colours?.rough ?? 1);
+    const t = Math.min(1, away / (colours?.rise ?? 20)); // (over this many m, from the road's height to the land's)
     const h = road * (1 - t) + (hsum / wsum + rough) * t;
     return h * Math.min(1, Math.max(0, (340 - d) / 140)); // (down to the valley floor at the edge)
   };
@@ -152,9 +158,9 @@ const buildTerrain = () => {
   geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
   geo.setIndex(idx);
   geo.computeVertexNormals();
-  // snow where it is gentle, rock where it is steep
+  // snow where it is gentle, rock where it is steep (or the theme's own colours)
   const n = geo.attributes.normal, colors = new Float32Array(cols * rows * 3);
-  const snow = new THREE.Color(0xf3f6f9), rock = new THREE.Color(0x767c84), mixed = new THREE.Color();
+  const snow = new THREE.Color(colours?.gentle ?? 0xf3f6f9), rock = new THREE.Color(colours?.steep ?? 0x767c84), mixed = new THREE.Color();
   for (let i = 0; i < cols * rows; i++) {
     mixed.copy(rock).lerp(snow, Math.min(1, Math.max(0, (n.getY(i) - 0.55) / 0.3)));
     colors[i * 3] = mixed.r; colors[i * 3 + 1] = mixed.g; colors[i * 3 + 2] = mixed.b;
@@ -946,7 +952,7 @@ const buildRoad = () => {
   ground.position.set(tmp.x, -0.05, tmp.z);
   levelGroup.add(ground);
 
-  const terrainAt = theme.terrain ? buildTerrain() : null; // (the height of the land at a world point)
+  const terrainAt = theme.terrain ? buildTerrain(theme.terrain === true ? null : theme.terrain) : null; // (the height of the land at a world point)
   if (Track.hilly && theme.ground !== null && !theme.terrain) {
     // Hills: the land beside the road rises and falls with it. It is a wide ribbon of grass
     // just under the road, with a skirt sloping down to the flat ground along each edge.
@@ -1042,9 +1048,17 @@ const buildRoad = () => {
       const a = {}, b = {};
       Track.toWorld(s, lat, a);
       Track.toWorld(to[0], to[1], b);
+      // (from one point to the other: turned to it, and tipped up or down to it, so that on a hill
+      // the pieces run on from one to the next, not in steps)
+      const run = Math.hypot(b.x - a.x, b.z - a.z);
+      dummy.rotation.order = 'YXZ';
       dummy.rotation.y = Math.atan2(b.x - a.x, b.z - a.z);
+      dummy.rotation.x = -Math.atan2(b.y - a.y, run);
       dummy.position.set((a.x + b.x) / 2, (a.y + b.y) / 2 + y, (a.z + b.z) / 2);
-      dummy.scale.set(sx, sy, Math.hypot(b.x - a.x, b.z - a.z) + 0.02);
+      dummy.scale.set(sx, sy, Math.hypot(run, b.y - a.y) + 0.02);
+      dummy.updateMatrix();
+      dummy.rotation.x = 0; // (nothing else placed with it is tipped)
+      return;
     } else {
       dummy.rotation.y = Track.toWorld(s, lat, tmp);
       dummy.position.set(tmp.x, tmp.y + y, tmp.z);
@@ -1965,6 +1979,51 @@ const buildRoad = () => {
       door: 0x5d6770, pier: 0xd8dcdf };
     for (const [name, list] of Object.entries(kinds)) {
       instances(name === 'tank' ? tube : cube, colours[name], list.filter(([q, lat]) => offStub(q, lat)), name === 'light');
+    }
+  } else if (theme.scenery === 'bathurst') {
+    // ---- bathurst: Mount Panorama: the circuit's trackside (walls, catch fences, kerbs), the pits and
+    // grandstands, gum trees standing on the hill all round (never on the road), the town's plain
+    // below, and blue ranges in the haze
+    circuitTrackside(false);
+    grandstands(false);
+    const trunks = [], clumps = [], p = {}, spot = new THREE.Object3D();
+    const roadHalf = Math.max(Track.hi(0), -Track.lo(0));
+    for (let s = Track.start; s < Track.end; s += 7) {
+      for (const side of [-1, 1]) {
+        if (Math.random() < 0.3) continue;
+        const d = 9 + Math.random() * 70;
+        Track.toWorld(s + Math.random() * 6, beside(side, s, d), p);
+        if (Track.mainDistance(p.x, p.z) < roadHalf + 7) continue;
+        const y = terrainAt(p.x, p.z), h = 9 + Math.random() * 9;
+        trunks.push([p.x, y + h * 0.3, p.z, 0.5, h * 0.6, 0.5]); // (pale, and bare a long way up)
+        for (let k = 0; k < 3; k++) {
+          const w = 3 + Math.random() * 3;
+          clumps.push([p.x + Math.random() * 3 - 1.5, y + h * (0.62 + k * 0.14), p.z + Math.random() * 3 - 1.5, w, w * 0.6, w]);
+        }
+      }
+    }
+    const placed = (geometry, color, list) => { // (like instances(), but at world points, not road ones)
+      const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshLambertMaterial({ color }), list.length);
+      list.forEach(([x, y, z, sx, sy, sz], i) => {
+        spot.position.set(x, y, z);
+        spot.scale.set(sx, sy, sz);
+        spot.updateMatrix();
+        mesh.setMatrixAt(i, spot.matrix);
+      });
+      levelGroup.add(mesh);
+    };
+    placed(tube, 0xd9cfbf, trunks);
+    placed(new THREE.SphereGeometry(0.5, 8, 6), 0x7a8f62, clumps);
+    // blue ranges all round, far off in the haze
+    const middle = {};
+    Track.toWorld(Track.length / 2, 0, middle);
+    const range = new THREE.MeshLambertMaterial({ color: 0x7f97b0 });
+    for (let k = 0; k < 18; k++) {
+      const a = k / 18 * Math.PI * 2 + Math.random() * 0.2, far = 1500 + Math.random() * 400;
+      const r = 300 + Math.random() * 200, h = 120 + Math.random() * 110;
+      const hill = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), range);
+      hill.position.set(middle.x + Math.sin(a) * far, h / 2 - 10, middle.z + Math.cos(a) * far);
+      levelGroup.add(hill);
     }
   } else if (theme.scenery === 'alpine') {
     // ---- alpine: guardrails and snowbanks along both edges, snowy pines on the mountainside,
