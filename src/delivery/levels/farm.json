@@ -3,7 +3,7 @@
   "name": "Farm Lanes",
   "theme": "farm",
   "time": 195,
-  "traffic": { "car": 0.42, "compact": 0.19, "van": 0.33, "bus": 0.03, "police": 0.03 },
+  "traffic": { "darkvan": 0.42, "commuter": 0.19, "van": 0.33, "bus": 0.03, "police": 0.03 },
   "trafficCount": 11,
   "oncomingCount": 8,
   "tip": 70,

@@ -19,8 +19,8 @@ const fresh = () => ({
   money: 0,        // tips banked
   unlocked: 1,     // how many levels are open, counting from the first
   bestTime: { good: {}, evil: {} }, // most time to spare delivering each level (s, by level id), for each side
-  cars: ['hatch'], // ids of the cars owned
-  car: 'hatch',    // id of the car in use
+  cars: ['commuter'], // ids of the cars owned
+  car: 'commuter', // id of the car in use
   muted: false,    // sound switched off
   touch: null,     // on-screen controls: true / false once chosen on the menu; null = on for touch screens
   autoGas: false,  // auto accelerate: the accelerator held down by itself, unless braking
@@ -36,6 +36,10 @@ const read = () => {
     const saved = JSON.parse(decodeURIComponent(match[1]));
     const data = { ...fresh(), ...saved };
     data.bestTime = { good: {}, evil: {}, ...saved.bestTime }; // (a save from before best times has none)
+    // (the Commuter and the Darkvan were saved as 'hatch' and 'coupe')
+    const RENAMED = { hatch: 'commuter', coupe: 'darkvan' };
+    data.cars = [...new Set(data.cars.map(id => RENAMED[id] || id))];
+    data.car = RENAMED[data.car] || data.car;
     delete data.best; // (best tips, no longer kept)
     for (let order = saved.levelOrder || 1; order < LEVEL_ORDER; order++) {
       if (data.unlocked >= INSERTED_AT[order - 1]) data.unlocked++;

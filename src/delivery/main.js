@@ -4,7 +4,7 @@ import './style.css';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
-import { selectLevel } from './levels.js';
+import { selectLevel, selectSpecial, HIDDEN_LEVELS } from './levels.js';
 import { Progress } from './progress.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
@@ -41,10 +41,11 @@ import { Social } from './social.js';
 import { CAR } from './cars.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
+// ?test (or ?hidden=testbed) starts the hidden test track straight away (?test&evil: as Evil).
 // With it, ?level=3 picks the level (locked or not), ?at=1650 starts that many metres along
 // the expressway and ?ff=5 runs the game for that many seconds before the first frame is drawn.
 const params = new URLSearchParams(location.search);
-// ?garage (or ?garage=evil) opens the garage; with it, ?hover=coupe shows that car's tooltip.
+// ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.evil = params.get('garage') === 'evil';
   Garage.open();
@@ -52,6 +53,7 @@ if (params.get('garage') !== null) {
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
+const hidden = params.get('hidden') || (params.get('test') !== null ? 'testbed' : null); // (a hidden level: see levels.js)
 if (params.get('mystery')) Player.nextMystery = params.get('mystery'); // ?mystery=toad: every mystery pickup is that one
 if (params.get('racewatch') !== null) {
   Game.startRaceWatch();
@@ -63,9 +65,10 @@ if (params.get('racewatch') !== null) {
 } else if (params.get('screensaver') !== null) {
   Game.startScreensaver();
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
-} else if (autostart !== null) {
-  Game.evil = autostart === 'evil';
-  selectLevel((Number(params.get('level')) || 1) - 1);
+} else if (autostart !== null || hidden) {
+  Game.evil = autostart === 'evil' || params.get('evil') !== null;
+  if (hidden) selectSpecial(HIDDEN_LEVELS[hidden] || HIDDEN_LEVELS.testbed);
+  else selectLevel((Number(params.get('level')) || 1) - 1);
   if (params.get('car')) { // ?car=lowrider: drive that car for this visit, owned or not (nothing is saved)
     Progress.data.cars.push(params.get('car'));
     Progress.data.car = params.get('car');

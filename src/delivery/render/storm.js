@@ -9,7 +9,6 @@ import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Game } from '../game.js';
 import { scene, tmp, clearGroup } from './scene.js';
-import { makeCarMesh, shapeCarMesh } from './cars.js';
 import { MODELS } from './models.js';
 
 const group = new THREE.Group();
@@ -18,18 +17,16 @@ let flyers = [];
 let time = 0;
 
 const PAINTS = [0xffd23f, 0x4fc3f7, 0x7ee081, 0xff8fb1, 0xffffff, 0xff9f43, 0xe23b3b, 0x9b3fd1, 0x2f7de1];
-// the garage's models, plus the standard box car in a few traffic sizes
+// the garage's models, and the delivery van
 const SHAPES = [
   { model: 'commuter', hw: 0.85, hl: 1.85, height: 1.45 },
-  { model: 'junker', hw: 1.0, hl: 2.5, height: 1.5 },
+  { model: 'junker', hw: 1.0, hl: 2.5, height: 1.95 },
   { model: 'darkvan', hw: 1.05, hl: 2.45, height: 2.4 },
   { model: 'lowrider', hw: 1.0, hl: 2.5, height: 1.1 },
   { model: 'wagon', hw: 1.05, hl: 2.4, height: 1.9 },
   { model: 'sport', hw: 0.85, hl: 1.9, height: 1.1 },
   { model: 'lovebus', hw: 1.0, hl: 2.3, height: 2.1 },
-  { kind: 'car', hw: 0.95, hl: 2.1, height: 1.4 },
-  { kind: 'van', hw: 1.1, hl: 2.7, height: 2.3 },
-  { kind: 'compact', hw: 0.85, hl: 1.7, height: 1.3 },
+  { model: 'deliveryvan', hw: 1.1, hl: 2.7, height: 2.3, color: 0x1e5b3f },
 ];
 
 const build = () => {
@@ -50,14 +47,8 @@ const build = () => {
   for (let i = 0; i < (storm.count || 20); i++) {
     const shape = SHAPES[Math.floor(rand() * SHAPES.length)];
     const color = PAINTS[Math.floor(rand() * PAINTS.length)];
-    let mesh;
-    if (shape.model) {
-      mesh = MODELS[shape.model]({ ...shape, color });
-    } else {
-      mesh = makeCarMesh(color);
-      shapeCarMesh(mesh, shape);
-    }
-    group.add(mesh); // (out of the game's scene, where makeCarMesh put it)
+    const mesh = MODELS[shape.model]({ color, ...shape }); // (in any paint, but the van in its own)
+    group.add(mesh);
     flyers.push({
       mesh,
       s0: storm.from + rand() * span,       // where along the stretch it starts

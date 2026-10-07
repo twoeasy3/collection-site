@@ -64,8 +64,8 @@ export const Social = {
   get dangerTime() { return CONFIG.dangerTime * (1 + (this.on ? C.danger * this.level : 0)); },
   // s more (good) or less (bad) a powerup or mystery effect lasts
   powerUpShift(type) {
-    const good = ['turbo', 'radarDetector', 'siren', 'ghost', 'passenger', ...GOOD_MYSTERIES].includes(type);
-    const bad = ['badGas', 'heavyMass', ...BAD_MYSTERIES].includes(type);
+    const good = ['turbo', 'radarDetector', 'siren', 'ghost', 'passenger', 'armour', 'bigSplash', ...GOOD_MYSTERIES].includes(type);
+    const bad = ['badGas', 'heavyMass', 'butterfingers', ...BAD_MYSTERIES].includes(type);
     const shift = this.on ? C.powerUpShift * this.level : 0;
     return good ? shift : bad ? -shift : 0;
   },

@@ -117,7 +117,7 @@ export const Game = {
   },
   // from the results screen: on to the next level, on the same side
   nextLevel() {
-    if (LEVEL_INDEX + 1 >= LEVELS.length) { this.toMenu(); return; }
+    if (LEVEL_INDEX < 0 || LEVEL_INDEX + 1 >= LEVELS.length) { this.toMenu(); return; } // (a hidden level has no next)
     selectLevel(LEVEL_INDEX + 1);
     this.start();
   },
@@ -142,6 +142,7 @@ export const Game = {
     this.policeApproach = -1;
     this.wrecks = 0;
     this.busts = 0;
+    this.cash = 0;    // $ of cash pickups collected this run (banked with the tip on delivery)
     this.over = false;
     this.paused = false;
     this.screensaver = false;
@@ -167,7 +168,7 @@ export const Game = {
   // (a delivery, or a late one in the tip countdown), anything else (out of time, busted, a
   // quit) loses them; and a full set, once used, is gone either way
   settleTank(kept) {
-    if (this.screensaver) return;
+    if (this.screensaver || LEVEL_INDEX < 0) return; // (nor on a hidden level: see HIDDEN_LEVELS)
     if (this.tankPieces >= CONFIG.tankPieces) Progress.data.tankPieces = 0;
     else if (kept) Progress.data.tankPieces = this.tankPieces;
     else return;
@@ -180,18 +181,19 @@ export const Game = {
     sfx(outcome === 'delivered' ? 'win' : 'fail');
     const tip = '$' + this.tip.toFixed(2);
     // delivered on time: the tip goes in the bank, the time to spare may be a best, and the next level opens
-    const record = outcome === 'delivered' && Progress.levelDone(LEVEL_INDEX, LEVEL.id, this.tip, this.remaining, this.evil);
+    // (a hidden level, off the menu, banks nothing and records nothing: see HIDDEN_LEVELS)
+    const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, this.tip + this.cash, this.remaining, this.evil);
     resultTitle.textContent = {
       delivered: 'Delivered!',
       late: 'Too late - level failed',
       timeout: 'Out of time - level failed',
       busted: 'Busted! Game over',
     }[outcome];
-    resultTime.textContent = outcome === 'delivered' ? 'Tip ' + tip
+    resultTime.textContent = outcome === 'delivered' ? 'Tip ' + tip + (this.cash ? ' + $' + this.cash + ' cash' : '')
       : outcome === 'late' ? 'Tip ' + tip + ' of $' + LEVEL.tip
       : Math.floor(this.progress * 100) + '% of the way';
     resultNote.textContent = (outcome === 'delivered' ? formatTime(this.remaining) + ' to spare' +
-      (record ? ' (new best)' : ' (best ' + formatTime(Progress.bestTime(LEVEL.id, this.evil)) + ')') + '  |  ' : '') +
+      (LEVEL_INDEX < 0 ? ' (test run: nothing saved)' : record ? ' (new best)' : ' (best ' + formatTime(Progress.bestTime(LEVEL.id, this.evil)) + ')') + '  |  ' : '') +
       (this.evil ? 'Evil' : 'Good') + '  |  Wrecked: ' + this.wrecks + '  |  Busted: ' + this.busts +
       '  |  Bank $' + Progress.data.money.toFixed(2);
     resultScreen.classList[outcome === 'delivered' ? 'remove' : 'add']('failed');

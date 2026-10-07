@@ -199,6 +199,7 @@ export const Collision = (() => {
     barrow: [0.45, 0.8, 0.8], pipe: [0.9, 1.3, 1.8],
     asteroid: [1, 1, 2], // replaced by each asteroid's own radius
     cone: [0.42, 0.42, 1.12], sign: [1.1, 0.15, 3.0], // (cones are 1.4 times life size: easier to see on a phone)
+    mine: [0.58, 0.58, 1.05], // a sea mine, afloat: a little bigger than a cone
     // the beach's own junk (Hurricane): a beach umbrella, a surfboard stuck upright, an ice
     // box, a lifeguard chair, and a wrecked car (which spins on the spot as it drifts)
     umbrella: [1.2, 1.2, 3.0], surfboard: [0.6, 0.25, 2.6], cooler: [0.8, 0.6, 1.2], chair: [1.0, 1.0, 3.4],

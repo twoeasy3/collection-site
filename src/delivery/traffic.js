@@ -28,7 +28,7 @@ export const Traffic = (() => {
     const north = i < CONFIG.trafficCount;
     cars.push({ active: false, unused: false, dir: north ? 1 : -1, bound: north ? 'north' : 'south', mass: 1,
       s: 0, lat: 0, vs: 0, latVel: 0, yaw: 0, yawVel: 0, stun: 0,
-      lane: 0, baseSpeed: 0, kind: 'car', evil: false, emotion: 'neutral', mood: 0, paint: 0, think: 0, honkWait: 0,
+      lane: 0, baseSpeed: 0, kind: 'commuter', evil: false, emotion: 'neutral', mood: 0, paint: 0, think: 0, honkWait: 0,
       health: 1, maxHealth: 1, smoke: 0, hw: 1, hl: 2.1, height: 1.4,
       braking: false, signal: 0, hazards: false, pendingLane: null, hesitant: false, fromBehind: false });
   }
@@ -190,8 +190,9 @@ export const Traffic = (() => {
     car.yawVel = 0;
     car.stun = 0;
     const { min, max } = speeds();
-    // (one of the garage's cars cruises near its own top speed; anything else at the level's pace)
-    const own = GARAGE_TOP[kind], P = CONFIG.garagePace;
+    // (one of the garage's cars cruises near its own top speed, unless it has a speed of its own;
+    // anything else at the level's pace)
+    const own = type.speed ? 0 : GARAGE_TOP[kind], P = CONFIG.garagePace;
     car.baseSpeed = type.cruise ? type.cruise.min + Math.random() * (type.cruise.max - type.cruise.min)
       : own ? own * (P.min + Math.random() * (P.max - P.min)) : type.speed * (min + Math.random() * (max - min));
     car.vs = car.dir * car.baseSpeed;
@@ -285,7 +286,7 @@ export const Traffic = (() => {
       car.dir = dir;
       car.bound = dir > 0 ? 'north' : 'south';
       car.s = Track.place(p);
-      let r = Math.random() * ordinary.reduce((sum, [, rate]) => sum + rate, 0), kind = 'car';
+      let r = Math.random() * ordinary.reduce((sum, [, rate]) => sum + rate, 0), kind = 'commuter';
       for (const [k, rate] of ordinary) if ((r -= rate) < 0) { kind = k; break; }
       outfit(car, kind, side > 0 ? Track.laneCount - 1 : 0);
       Object.assign(car, { fixed: true, parked: true, parkSide: side, viaSide: false, evil: false, defiant: false,
@@ -483,7 +484,7 @@ export const Traffic = (() => {
     });
   };
   // a horn to suit the vehicle (police cars have sirens instead), only near the player
-  const HORNS = { compact: 'hornSmall', sport: 'hornSmall', van: 'hornBig', tractor: 'hornBig', bus: 'hornBus' };
+  const HORNS = { commuter: 'hornSmall', sport: 'hornSmall', darkvan: 'hornBig', van: 'hornBig', tractor: 'hornBig', bus: 'hornBus' };
   const honk = (car) => {
     if (car.kind === 'police' || car.honkWait > 0 || Math.abs(car.s - Player.s) > CONFIG.hornRange) return;
     car.honkWait = CONFIG.hornWait;

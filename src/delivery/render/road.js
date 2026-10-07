@@ -80,6 +80,9 @@ export const THEMES = {
   // suburb: lawns, pavements, picket fences and houses in a row
   suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb' },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
+  // sea: open water everywhere, the way through it the same water, unmarked (water: no ruts either),
+  // its edges blocked by breakwaters of rock and lines of marker buoys, islands off in the distance
+  sea: { sky: 0x9fd2f0, ground: 0x1d7a96, road: 0x1d7a96, scenery: 'sea', unmarked: true, water: true },
   space: { sky: 0x05060d, ground: null, road: null, scenery: 'space', line: 0x7fe8ff, centre: 0xff62d6 },
   // night: the city after dark. The road and the ground are lit surfaces (lit: true), dark but
   // for a faint blue moon and the player's headlights; other cars show their own lamps.
@@ -780,6 +783,8 @@ const buildRoad = () => {
   // the lane does)
   if (theme.unmarked) {
     lineMat.visible = centreMat.visible = false;
+  }
+  if (theme.unmarked && !theme.water) {
     const rut = flat(new THREE.Color(theme.road).multiplyScalar(0.8).getHex());
     for (let lane = 0; lane < Track.laneCount; lane++) {
       for (const side of [-1, 1]) {
@@ -1967,6 +1972,33 @@ const buildRoad = () => {
     instances(cone, 0x2a1512, spires);
     instances(cone, 0xff5a14, flames, true);
     instances(cone, 0xffd23f, cores, true);
+  } else if (theme.scenery === 'sea') {
+    // ---- the sea: a breakwater of rocks along each edge, half under the water, red and white marker
+    // buoys along it, and rocky islands off in the distance --------------------------------------------
+    const rock = new THREE.DodecahedronGeometry(0.5, 0), buoy = new THREE.CylinderGeometry(0.5, 0.5, 1, 10);
+    const rocks = [], red = [], white = [], isles = [], tops = [];
+    for (let s = Track.start; s < Track.end; s += 1.8) {
+      for (const side of [-1, 1]) {
+        const size = 1.2 + Math.random() * 1.8;
+        rocks.push([s + Math.random(), beside(side, s, 0.4 + size * 0.4 + Math.random() * 0.8), size * 0.15, size, size * (0.5 + Math.random() * 0.5), size]);
+      }
+    }
+    for (let s = Track.start, k = 0; s < Track.end; s += 14, k++) {
+      for (const side of [-1, 1]) (k % 2 ? red : white).push([s, beside(side, s, 0.2), 0.45, 0.6, 1.1, 0.6]);
+    }
+    for (let s = Track.start; s < Track.end; s += 90) {
+      for (const side of [-1, 1]) {
+        if (Math.random() < 0.45) continue;
+        const r = 12 + Math.random() * 30, at = s + Math.random() * 60, lat = beside(side, at, 60 + Math.random() * 220);
+        isles.push([at, lat, r * 0.25, r * 2, r * 0.8, r * 1.6]);
+        if (Math.random() < 0.6) tops.push([at, lat, r * 0.55, r * 0.9, r * 0.6, r * 0.8]);
+      }
+    }
+    instances(rock, 0x6f6a64, rocks);
+    instances(buoy, 0xd8262b, red);
+    instances(buoy, 0xf2f2f2, white);
+    instances(rock, 0x7a776f, isles);
+    instances(rock, 0x5f8a4a, tops);
   } else if (theme.scenery === 'space') {
     // ---- space: stars all round, which travel with the camera so they never get nearer -----
     const points = [];

@@ -7,7 +7,7 @@
   "shoulderTimer": false,
   "time": 175,
   "tip": 260,
-  "traffic": { "car": 0.3, "taxi": 0.2, "van": 0.15, "bus": 0.15, "compact": 0.2 },
+  "traffic": { "darkvan": 0.3, "taxi": 0.2, "van": 0.15, "bus": 0.15, "commuter": 0.2 },
   "trafficCount": 14,
   "oncomingCount": 0,
   "segments": [

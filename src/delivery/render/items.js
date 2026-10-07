@@ -337,6 +337,29 @@ OBSTACLE_MODELS.cone = () => {
   geo.scale(1.4, 1.4, 1.4);
   return new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }));
 };
+// a sea mine (Oh Mine!), afloat: a white ball half out of the water, studded with horns, a ring of
+// foam round it; it bobs on the swell (see syncPickups: bob)
+OBSTACLE_MODELS.mine = () => {
+  const group = new THREE.Group();
+  const white = new THREE.MeshPhongMaterial({ color: 0xf4f4f2, shininess: 50, specular: 0x555555 });
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(0.38, 16, 12), white);
+  ball.position.y = 0.1;
+  group.add(ball);
+  for (const [a, e] of [[0, 1.2], [1.26, 0.75], [2.51, 0.75], [3.77, 0.75], [5.03, 0.75], [0.63, 0.25], [1.88, 0.25], [3.14, 0.25], [4.4, 0.25], [5.65, 0.25]]) {
+    const dir = new THREE.Vector3(Math.cos(a) * Math.cos(e), Math.sin(e), Math.sin(a) * Math.cos(e));
+    const horn = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.05, 0.16, 6), white);
+    horn.position.copy(dir).multiplyScalar(0.42).add(ball.position);
+    horn.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+    group.add(horn);
+  }
+  const foam = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.04, 6, 20), new THREE.MeshBasicMaterial({ color: 0xdff0f6 }));
+  foam.rotation.x = Math.PI / 2;
+  foam.position.y = 0.03;
+  group.add(foam);
+  group.userData.bob = true;
+  group.scale.setScalar(1.3);
+  return group;
+};
 // a roadside advertising sign on a post, facing the drivers coming up to it
 const SIGNS = [['BUY', '#c62828'], ['SELL', '#1565c0'], ['$$$', '#2e7d32'], ['SALE', '#ef6c00'], ['PROFIT', '#6a1b9a'],
   ['SYNERGY', '#00838f'], ['HIRING', '#283593'], ['MERGE', '#ad1457'], ['INVEST', '#4e342e'], ['BONUS', '#558b2f']];
@@ -437,6 +460,11 @@ scene.add(hoverGas);
 const hoverWeight = PICKUP_MODELS.heavyMass();
 hoverWeight.visible = false;
 scene.add(hoverWeight);
+const hoverArmour = PICKUP_MODELS.armour(), hoverSplash = PICKUP_MODELS.bigSplash(), hoverButter = PICKUP_MODELS.butterfingers();
+for (const hover of [hoverArmour, hoverSplash, hoverButter]) {
+  hover.visible = false;
+  scene.add(hover);
+}
 
 // ...and while one is sounding, it rides on the car's roof, flashing
 const roofSiren = PICKUP_MODELS.siren();
@@ -626,6 +654,8 @@ export const syncPickups = (dt) => {
     const p = Pickups.items[i], mesh = pickupMeshes[i];
     mesh.visible = !p.taken;
     mesh.userData.gem.rotation.y += dt * 3;
+    mesh.userData.gem.userData.livery?.(Player.evil); // (one that looks different by the player's side)
+    if (mesh.visible) mesh.userData.gem.userData.animate?.(performance.now() / 1000 + i); // (and one that moves)
     if (p.washed && !p.taken) { // (washed up by the tide: wherever it was left, bobbing)
       mesh.rotation.y = Track.toWorld(p.s, p.lat, tmp);
       mesh.position.copy(tmp);
@@ -646,8 +676,8 @@ export const syncPickups = (dt) => {
       mesh.userData.rock.position.y = o.h;
       mesh.userData.rock.rotation.x += dt * o.spin;
       mesh.userData.rock.rotation.z += dt * o.spin * 0.6;
-    } else {
-      mesh.position.set(tmp.x, tmp.y + o.h, tmp.z);
+    } else { // (a mine bobbing on the swell, each in its own time)
+      mesh.position.set(tmp.x, tmp.y + o.h + (mesh.userData.bob ? Math.sin(performance.now() / 1000 * 2.2 + i) * 0.06 : 0), tmp.z);
     }
     if (o.roll && mesh.userData.roller) mesh.userData.roller.rotation.z = -o.roll.dir * (o.spun || 0); // (a pipe rolling across)
     if (o.drift && mesh.userData.roller) { // a bale on the move rolls the way it is going
@@ -690,35 +720,41 @@ export const syncPickups = (dt) => {
   carMesh.userData.body.visible = carMesh.userData.cabin.visible = standard;
   for (const part of [...carMesh.userData.lights, ...carMesh.userData.trim]) part.visible = standard;
   passengerMesh.visible = powerShown(Player.passenger) && !tank && !ufo;
+  passengerMesh.position.y = Player.height; // (sat on the roof, its shins down through the sunroof)
   // brake lights on any car-shaped car (not a tank or a UFO)
   syncLamps(carMesh, Player, !tank && !ufo, Player.active && Player.brakeLight, 0, false);
   ghostify(carMesh, ghostly);
   const t = performance.now() / 1000;
+  // (the signs over the car don't spin: they face back down the road, at the camera following the car)
+  const facing = carMesh.rotation.y + Math.PI;
   hoverGhost.visible = powerShown(Player.ghost) && Player.active && !Game.screensaver;
   if (hoverGhost.visible) { // bobbing over the car, swaying a little
     hoverGhost.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.6 + Math.sin(t * 2.6) * 0.25, carMesh.position.z);
-    hoverGhost.rotation.y = carMesh.rotation.y + Math.sin(t * 1.7) * 0.35;
+    hoverGhost.rotation.y = facing + Math.sin(t * 1.7) * 0.35;
   }
   hoverMystery.visible = !!Player.mystery && powerShown(Player.mysteryTime) && Player.active && !Game.screensaver;
-  if (hoverMystery.visible) { // bobbing over the car, turning
+  if (hoverMystery.visible) { // bobbing over the car, facing the camera
     hoverMystery.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.4 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
-    hoverMystery.rotation.y += dt * 2;
+    hoverMystery.rotation.y = facing;
   }
   hoverRadar.visible = powerShown(Player.radar) && Player.active && !Game.screensaver;
-  if (hoverRadar.visible) { // bobbing over the car, turning
+  if (hoverRadar.visible) { // bobbing over the car, facing the camera
     hoverRadar.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.3 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
-    hoverRadar.rotation.y += dt * 2;
+    hoverRadar.rotation.y = facing;
   }
   hoverTurbo.visible = powerShown(Player.turbo) && Player.active && !Game.screensaver;
-  if (hoverTurbo.visible) { // bobbing over the car, turning
+  if (hoverTurbo.visible) { // bobbing over the car, facing the camera
     hoverTurbo.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.3 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
-    hoverTurbo.rotation.y += dt * 2;
+    hoverTurbo.rotation.y = facing;
   }
-  for (const [hover, left] of [[hoverGas, Player.badGas], [hoverWeight, Player.heavy]]) {
+  hoverSplash.userData.livery(Player.evil);
+  hoverSplash.userData.animate?.(t);
+  for (const [hover, left] of [[hoverGas, Player.badGas], [hoverWeight, Player.heavy], [hoverArmour, Player.armour],
+    [hoverSplash, Player.bigSplash], [hoverButter, Player.butterfingers]]) {
     hover.visible = powerShown(left) && Player.active && !Game.screensaver;
-    if (hover.visible) { // bobbing over the car, turning
+    if (hover.visible) { // bobbing over the car, facing the camera
       hover.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.3 + Math.sin(t * 2.6) * 0.2, carMesh.position.z);
-      hover.rotation.y += dt * 2;
+      hover.rotation.y = facing;
     }
   }
   roofSiren.visible = powerShown(Player.siren) && Player.active && !Game.screensaver;
@@ -728,6 +764,15 @@ export const syncPickups = (dt) => {
     const flash = Math.floor(t * 6) % 2 === 0;
     roofSiren.userData.red.visible = flash;
     roofSiren.userData.blue.visible = !flash;
+  }
+  // a boat's wake: white water churned up behind it, the more the faster it goes
+  if (Player.active && CAR.wake && Player.speed > 3) {
+    const h = Track.toWorld(Player.s - Player.hl, Player.lat, tmp);
+    for (let n = 0; n < 2; n++) {
+      Particles.emit(tmp.x + rnd(0.6), tmp.y + 0.05, tmp.z + rnd(0.6), // (life, size, grow, gravity: a fine spray that falls back)
+        Math.sin(h) * Player.speed * 0.15 + rnd(1.2), 1 + Math.random() * 1.5, Math.cos(h) * Player.speed * 0.15 + rnd(1.2),
+        0.45 + Math.random() * 0.3, 0.16, 0.8, 6, Math.random() < 0.6 ? 0xffffff : 0xcfe9f2, tmp.y);
+    }
   }
   // turbo exhaust
   if (Player.active && powerShown(Player.turbo)) {

@@ -2,7 +2,7 @@
   "id": "back-roads",
   "name": "Back Roads",
   "time": 140,
-  "traffic": { "car": 0.43, "compact": 0.27, "van": 0.21, "bus": 0.04, "police": 0.05 },
+  "traffic": { "darkvan": 0.43, "commuter": 0.27, "van": 0.21, "bus": 0.04, "police": 0.05 },
   "trafficCount": 11,
   "oncomingCount": 8,
   "tip": 40,

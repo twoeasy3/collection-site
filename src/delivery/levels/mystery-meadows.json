@@ -3,7 +3,7 @@
   "name": "Mystery Meadows",
   "theme": "farm",
   "time": 195,
-  "traffic": { "lowrider": 0.35, "car": 0.25, "compact": 0.12, "van": 0.22, "bus": 0.03, "police": 0.03 },
+  "traffic": { "lowrider": 0.35, "darkvan": 0.25, "commuter": 0.12, "van": 0.22, "bus": 0.03, "police": 0.03 },
   "trafficCount": 16,
   "oncomingCount": 13,
   "tip": 80,

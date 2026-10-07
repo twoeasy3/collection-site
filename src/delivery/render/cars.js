@@ -5,7 +5,8 @@ import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Traffic } from '../traffic.js';
 import { scene, tmp } from './scene.js';
-import { MODELS } from './models.js';
+import { MODELS, AMBULANCE_BOX } from './models.js';
+import { makeCrashDummy } from './pickupModels.js';
 
 // ---- cars (front faces local +z), sized from each vehicle's hitbox -----------
 export const unitBox = new THREE.BoxGeometry(1, 1, 1);
@@ -202,19 +203,12 @@ export const ufoMesh = new THREE.Group();
 carMesh.userData.cabin.material = cabinMat.clone();
 export const playerMats = [carMesh.userData.body.material, carMesh.userData.cabin.material];
 for (const mat of playerMats) mat.transparent = true;
-// the inflatable passenger: a pink balloon figure riding along while it is active
-export const passengerMesh = new THREE.Group();
-{
-  const pink = new THREE.MeshLambertMaterial({ color: 0xff8fb1 });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.33, 12, 8), pink);
-  head.position.y = 0.55;
-  const torso = new THREE.Mesh(unitBox, pink);
-  torso.scale.set(0.5, 0.6, 0.35);
-  passengerMesh.add(head, torso);
-  passengerMesh.position.set(-0.4, 2.2, -0.3); // sticking out of the roof, passenger side
-  passengerMesh.visible = false;
-  carMesh.add(passengerMesh);
-}
+// the inflatable passenger: a crash-test dummy riding along on the roof while it is active
+// (sat at the car's roof height: see items.js)
+export const passengerMesh = makeCrashDummy();
+passengerMesh.position.set(0, 2.2, -0.35);
+passengerMesh.visible = false;
+carMesh.add(passengerMesh);
 
 // a green tractor: small wheels in front, big ones behind, a cab at the back
 const makeTractorModel = () => {
@@ -256,7 +250,11 @@ const POLICE_PAINT = 0xf5f5f5;
 export const F1_PAINTS = [0xd8262b, 0x1d3f9c, 0x18a35a, 0xff8a1a, 0x101010, 0xf4f4f4, 0x7a1fa8, 0x2fc4d8, 0xf2d21f, 0x8a1a2a, 0x2a6b3a, 0xff5fa8];
 // kinds of traffic that are also garage cars with a fixed livery wear that car's two colours
 // (see CARS: fixedLivery), not a random paint: kind -> { good, evil }
-const LIVERIES = Object.fromEntries(CARS.filter(c => c.fixedLivery).map(c => [c.id, { good: c.color, evil: c.evilColor }]));
+const LIVERIES = Object.fromEntries([
+  ...CARS.filter(c => c.fixedLivery).map(c => [c.id, { good: c.color, evil: c.evilColor }]),
+  // (and a traffic kind in one livery of its own, good or evil: CONFIG.vehicles' "livery")
+  ...Object.entries(CONFIG.vehicles).filter(([, type]) => type.livery).map(([kind, type]) => [kind, { good: type.livery, evil: type.livery }]),
+]);
 export const trafficMeshes = Traffic.cars.map(() => {
   const mesh = makeCarMesh(PAINTS.good[0]);
   // roof light bar, only shown (and flashing) on police cars
@@ -304,8 +302,9 @@ export const syncTraffic = () => {
       : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
     mesh.userData.bar.visible = police || ambulance;
-    // (on the roof: an ambulance's at the front, where it shows in the mirror, so to speak)
-    mesh.userData.bar.position.set(0, ambulance ? car.height + 0.1 : 1.85, ambulance ? car.hl - 0.6 : -0.3);
+    // (on the roof: an ambulance's at the front of its box's roof, just behind the cab, where it
+    // shows in the mirror, so to speak)
+    mesh.userData.bar.position.set(0, car.height + 0.1, ambulance ? car.hl * AMBULANCE_BOX - 0.25 : -0.15);
     // a vehicle with a model of its own shows that in place of the standard box car
     const own = ownModel(mesh, car);
     for (const kind in mesh.userData.models) mesh.userData.models[kind].visible = mesh.userData.models[kind] === own;

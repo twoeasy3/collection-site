@@ -27,13 +27,14 @@ export const stars = (car) => car.tier ? '★'.repeat(car.tier) + '☆'.repeat(T
 export const CARS = [
   // In tiers, cheapest first: each tier a little faster and a little tougher than the one
   // before, and within one the quick, fragile cars and the slow, tough ones trade speed for
-  // health. (The ids are the original cars', kept so saved progress still finds them.)
+  // health. (The ids of the oldest cars are the original cars', kept so saved progress still finds
+  // them; the Commuter and Darkvan were 'hatch' and 'coupe': see Progress)
   // ---- tier 1
-  { id: 'hatch', tier: 1, name: 'Commuter', price: 0, color: 0xff7a1a, evilColor: 0x151515, fixedLivery: true, model: 'commuter',
+  { id: 'commuter', tier: 1, name: 'Commuter', price: 0, color: 0xff7a1a, evilColor: 0x151515, fixedLivery: true, model: 'commuter',
     maxSpeed: 24, accel: 10, crossing: 0.6, health: 85, hw: 0.85, hl: 1.85, height: 1.45 },
   { id: 'junker', tier: 1, name: 'Junker', price: 30, color: 0x6b7343, evilColor: 0x8a4a2a, fixedLivery: true, model: 'junker',
-    maxSpeed: 22, accel: 8, crossing: 0.7, health: 100, hw: 1.0, hl: 2.5, height: 1.5 },
-  { id: 'coupe', tier: 1, name: 'Darkvan', price: 80, color: 0x9be37a, evilColor: 0x161616, fixedLivery: true, model: 'darkvan',
+    maxSpeed: 22, accel: 8, crossing: 0.7, health: 100, hw: 1.0, hl: 2.5, height: 1.95 },
+  { id: 'darkvan', tier: 1, name: 'Darkvan', price: 80, color: 0x9be37a, evilColor: 0x161616, fixedLivery: true, model: 'darkvan',
     maxSpeed: 21, accel: 7, crossing: 0.65, health: 150, hw: 1.05, hl: 2.45, height: 2.4 },
   // ---- tier 2
   { id: 'lovebus', tier: 2, name: 'Love Bus', price: 130, color: 0x3fae4a, evilColor: 0xd8262b, fixedLivery: true, model: 'lovebus',
@@ -72,6 +73,9 @@ export const LEVEL_CARS = {
   // a Formula 1 car: very fast, quick off the line, nimble, low, and no good over a kerb
   f1: { id: 'f1', name: 'F1 Car', price: 0, color: 0xd8262b, evilColor: 0x151515, model: 'f1',
     maxSpeed: 75, accel: 20, crossing: 0.2, agility: 1.5, health: 160, hw: 0.95, hl: 2.6, height: 1.0 },
+  // a jetboat: a sleek little cruiser with a captain's cabin, quick and nimble on the water, bobbing on the swell
+  jetboat: { id: 'jetboat', name: 'Jetboat', price: 0, color: 0xe8432e, evilColor: 0x1b1d22, model: 'jetboat', wake: true,
+    maxSpeed: 34, accel: 13, crossing: 1, agility: 1.4, health: 120, hw: 1.0, hl: 2.7, height: 1.6 },
 };
 
 // Secret vehicles: never parked in the garage or for sale, but once owned they are driven
@@ -79,7 +83,7 @@ export const LEVEL_CARS = {
 //   bus   type B U S on the start screen (see render/menu.js), or ?autostart&car=bus
 //         (kind: 'bus' makes it the traffic bus's tall, boxy shape)
 export const SECRET_CARS = {
-  bus: { id: 'bus', name: 'City Bus', price: 0, color: 0xf2a33a, evilColor: 0x2e2a33, kind: 'bus',
+  bus: { id: 'bus', name: 'City Bus', price: 0, color: 0xf2a33a, evilColor: 0x2e2a33, kind: 'bus', model: 'citybus',
     maxSpeed: 25, accel: 5, crossing: 0.7, health: 220, hw: 1.3, hl: 5.5, height: 3.1 },
 };
 

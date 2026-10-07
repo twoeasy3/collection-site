@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
 globalThis.window = { addEventListener() {} };
 // every level unlocked and every car owned, so each can be loaded and tested
-const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['hatch', 'junker', 'coupe', 'lowrider', 'wagon', 'sport', 'lovebus', 'taxi', 'suv', 'hotrod', 'minivan', 'hearse', 'miata', 'pickup', 'tank'] }));
+const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['commuter', 'junker', 'darkvan', 'lowrider', 'wagon', 'sport', 'lovebus', 'taxi', 'suv', 'hotrod', 'minivan', 'hearse', 'miata', 'pickup', 'tank'] }));
 globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: 'delivery_racer_progress=' + allOpen };
 
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
@@ -181,7 +181,7 @@ try {
       for (let i = 0; i < 120 * 20; i++) { Game.update(1 / 120); FxQueue.length = 0; if (Traffic.cars.some(c => c.active)) anyTraffic = true; }
       check(!anyTraffic, 'no traffic at all');
     } else {
-      check(track.Track.shoulder === CONFIG.shoulder, 'the shoulders are there');
+      check(track.Track.shoulder === (levels.LEVEL.shoulder ?? CONFIG.shoulder), 'the shoulders are there (as wide as the level has them)');
       check(!cars.CAR.ufo, 'the garage car is back on this level');
     }
 
@@ -329,12 +329,12 @@ try {
       'every vehicle is tagged northbound (with the player) or southbound');
 
     // opposite directions: a head-on however they touch, here side by side
-    let o = stage('car', 'south', (c) => { c.s = 200; c.lat = Player.lat - 1.7; c.vs = -30; });
+    let o = stage('darkvan', 'south', (c) => { c.s = 200; c.lat = Player.lat - 1.7; c.vs = -30; });
     Collision.check();
     check(!Player.active && !o.active, 'a southbound car brushing the side of the northbound player is a head-on: both wrecked');
 
     // same direction, side contact: nobody moves sideways; they are slid apart along the road
-    o = stage('car', 'north', (c) => { c.s = 200.5; c.lat = Player.lat + 1.6; c.vs = 30; });
+    o = stage('darkvan', 'north', (c) => { c.s = 200.5; c.lat = Player.lat + 1.6; c.vs = 30; });
     const lat0 = o.lat, playerLat0 = Player.lat, gap0 = o.s - Player.s;
     Player.latVel = 6; // steering into it
     for (let i = 0; i < 30; i++) { Player.latVel = 6; Collision.check(); }
@@ -344,12 +344,12 @@ try {
 
     // the player wins shoving matches: sideswiping a much slower car, or being rammed from
     // behind by a faster one, costs little speed, and the other vehicle is the one sent on its way
-    o = stage('car', 'north', (c) => { c.s = 200.5; c.lat = Player.lat + 1.6; c.vs = 15; });
+    o = stage('darkvan', 'north', (c) => { c.s = 200.5; c.lat = Player.lat + 1.6; c.vs = 15; });
     Player.speed = 45;
     for (let i = 0; i < 30; i++) { Player.latVel = 6; Collision.check(); }
     FxQueue.length = 0;
     const afterSwipe = Player.speed, carAfter = o.vs;
-    o = stage('car', 'north', (c) => { c.s = Player.s - Player.hl - c.hl + 0.2; c.lat = Player.lat; c.vs = 45; }); // (just touching)
+    o = stage('darkvan', 'north', (c) => { c.s = Player.s - Player.hl - c.hl + 0.2; c.lat = Player.lat; c.vs = 45; }); // (just touching)
     Player.speed = 15;
     Collision.check();
     FxQueue.length = 0;
@@ -364,14 +364,14 @@ try {
     check(Player.speed < 30 && o.vs < 35 && Player.speed < o.vs,
       `ramming a bus doing 15 from behind at 45 leaves the player at ${Player.speed.toFixed(1)} m/s, behind the bus at ${o.vs.toFixed(1)}`);
     // a rear-end, even an off-centre one, turns neither vehicle
-    o = stage('car', 'north', (c) => { c.s = 204; c.lat = Player.lat + 1.2; c.vs = 15; });
+    o = stage('darkvan', 'north', (c) => { c.s = 204; c.lat = Player.lat + 1.2; c.vs = 15; });
     Player.speed = 45;
     Collision.check();
     FxQueue.length = 0;
     check(Player.yawVel === 0 && o.yawVel === 0, 'an off-centre rear-end gives neither vehicle any yaw');
 
     // a spinning car is not kept on the road
-    o = stage('car', 'north', (c) => { c.s = 260; c.lat = track.Track.laneOffset(3, 260); c.vs = 25; });
+    o = stage('darkvan', 'north', (c) => { c.s = 260; c.lat = track.Track.laneOffset(3, 260); c.vs = 25; });
     physics.spinOut(o);
     o.spinRate = 0.8;
     let furthest = 0;
@@ -401,7 +401,7 @@ try {
       physics.hurt(c, 1); // a light tap, far too small to spin it by damage alone
       if (c.wobble > 0) crits++;
     }
-    o = stage('car', 'north', (c) => { c.s = 300; c.lat = Player.lat; c.vs = 25; c.baseSpeed = 25; });
+    o = stage('darkvan', 'north', (c) => { c.s = 300; c.lat = Player.lat; c.vs = 25; c.baseSpeed = 25; });
     o.wobble = CONFIG.critWobbleTime;
     let wobbled = 0, spun = false;
     for (let i = 0; i < 120 * 2; i++) {
@@ -592,20 +592,20 @@ try {
     return top;
   };
   {
-    const slow = cars.CARS.find(car => car.id === 'coupe'), fast = cars.CARS.find(car => car.id === 'miata');
+    const slow = cars.CARS.find(car => car.id === 'darkvan'), fast = cars.CARS.find(car => car.id === 'miata');
     const slowTop = topWith(slow.id, 'turbo'), fastTop = topWith(fast.id, 'turbo');
     check(Math.abs(slowTop - (slow.maxSpeed + CONFIG.turboBoost)) < 0.5 && Math.abs(fastTop - (fast.maxSpeed + CONFIG.turboBoost)) < 0.5 &&
       CONFIG.turboTime === 10 && CONFIG.ghostTime === 10,
       `a turbo adds a flat ${CONFIG.turboBoost} m/s for ${CONFIG.turboTime} s: ${slow.name} ${slow.maxSpeed} > ${slowTop.toFixed(1)}, ${fast.name} ${fast.maxSpeed} > ${fastTop.toFixed(1)} (a ghost lasts ${CONFIG.ghostTime} s)`);
-    const hatch = cars.CARS.find(car => car.id === 'hatch');
-    const gasTop = topWith('hatch', 'badGas'), heavyTop = topWith('hatch', 'heavyMass');
+    const hatch = cars.CARS.find(car => car.id === 'commuter');
+    const gasTop = topWith('commuter', 'badGas'), heavyTop = topWith('commuter', 'heavyMass');
     check(Math.abs(gasTop - hatch.maxSpeed * CONFIG.badGas.topSpeed) < 0.5 && Math.abs(heavyTop - hatch.maxSpeed * CONFIG.heavyMass.topSpeed) < 0.5,
       `bad gas and the 1000 lb weight hold the ${hatch.name} (${hatch.maxSpeed} m/s) to ${gasTop.toFixed(1)} and ${heavyTop.toFixed(1)} m/s`);
   }
 
   // bad gas and the weight are powerups like any other: one at a time
   levels.selectLevel(0);
-  cars.selectCar('hatch');
+  cars.selectCar('commuter');
   Game.start();
   Player.collect('turbo');
   Player.collect('badGas');
@@ -622,13 +622,13 @@ try {
   // under the weight, the player wins a collision it would otherwise lose: running into the back of a slower car
   const rearEnd = (heavy) => {
     levels.selectLevel(0);
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     for (const c of Traffic.cars) c.active = false;
     for (const o of Collision.obstacles) o.gone = true;
-    const other = Traffic.cars.find(c => c.bound === 'north'), type = CONFIG.vehicles.car;
-    Object.assign(other, { active: true, kind: 'car', lane: 2, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, fixed: false,
+    const other = Traffic.cars.find(c => c.bound === 'north'), type = CONFIG.vehicles.darkvan;
+    Object.assign(other, { active: true, kind: 'darkvan', lane: 2, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, fixed: false,
       hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health, maxHealth: type.health, sideTick: -999 });
     Player.s = 200; Player.launching = false; Player.lat = track.Track.laneOffset(2, 200); Player.shield = 0; Player.stun = 0; Player.sideTick = -999;
     if (heavy) Player.collect('heavyMass');
@@ -685,7 +685,7 @@ try {
   section('levels list');
   {
     const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
-    check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo,grand-prix,marina-bay' && levels.levelLabel(main - 1) === String(main) &&
+    check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo,marina-bay,oh-mine' && levels.levelLabel(main - 1) === String(main) &&
       levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 3) === 'S4' && levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
       `the special levels come last, as S1 to S4: ${labels.slice(main - 1).join(', ')}`);
   }
@@ -710,7 +710,7 @@ try {
     // Suburbia's traffic is all garage cars, too fast to catch: the ones going the player's way hesitate
     // (without its ambulances: this test's player never gives way to one, and would be busted)
     levels.selectSpecial({ ...levels.LEVELS.find(l => l.id === 'suburbs'), emergencies: null });
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     const going = Traffic.cars.filter(c => c.active && c.dir > 0), coming = Traffic.cars.filter(c => c.active && c.dir < 0);
@@ -749,8 +749,8 @@ try {
       Game.start();
       for (const c of Traffic.cars) c.active = false;
       Player.s = 200; Player.lat = track.Track.laneOffset(2, 200); Player.speed = 15; Player.launching = false; Player.shield = 0;
-      const car = Traffic.cars.find(c => c.dir > 0), type = CONFIG.vehicles.car;
-      Object.assign(car, { active: true, kind: 'car', fixed: false, viaSide: false, s: 230, lane: 2, lat: Player.lat, vs: 15, baseSpeed: 15,
+      const car = Traffic.cars.find(c => c.dir > 0), type = CONFIG.vehicles.darkvan;
+      Object.assign(car, { active: true, kind: 'darkvan', fixed: false, viaSide: false, s: 230, lane: 2, lat: Player.lat, vs: 15, baseSpeed: 15,
         latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, rival: null, rivalTime: 0, honkWait: 0, throwTimer: 99, arrest: -1,
         pulledOver: false, toad: null, hesitant: false, tap: 0, wander: 0, think: 0, braking: false, signal: 0, hazards: false,
         pendingLane: null, signalTime: 0, hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health,
@@ -772,8 +772,11 @@ try {
     check(signalled && stillWaiting && moved && car.signal === 0,
       `a happy good driver signals, waits ${CONFIG.signalTime} s, then moves over (and the indicator goes off once it is there)`);
     // ...an evil one just goes
+    // (for an evil player: a happy evil driver is a wingman, and moves out of the way; for a good one, it gets in it)
     car = stageOne({ evil: true });
+    Player.evil = true; // (after the staging: starting a run sets the player's side)
     run(car, 1 / 120);
+    Player.evil = false;
     check(car.lane === 3 && car.signal === 0, 'an evil driver moves over at once, without signalling');
 
     // the siren: a car in the player's lane moves over signalling at once, evil or not...
@@ -814,13 +817,13 @@ try {
     // the Expressway, the player in lane 2 at 200 m doing 20, a car ahead in the same lane: a mystery that is the train
     const setOff = () => {
       levels.selectLevel(0);
-      cars.selectCar('hatch');
+      cars.selectCar('commuter');
       Game.evil = false;
       Game.start();
       for (const c of Traffic.cars) c.active = false;
       Player.s = 200; Player.lat = L2(200); Player.speed = 20; Player.launching = false; Player.shield = 0;
-      const car = Traffic.cars.find(c => c.dir > 0), type = CONFIG.vehicles.car;
-      Object.assign(car, { active: true, kind: 'car', fixed: false, viaSide: false, s: 420, lane: 2, lat: L2(420), vs: 15, baseSpeed: 15,
+      const car = Traffic.cars.find(c => c.dir > 0), type = CONFIG.vehicles.darkvan;
+      Object.assign(car, { active: true, kind: 'darkvan', fixed: false, viaSide: false, s: 420, lane: 2, lat: L2(420), vs: 15, baseSpeed: 15,
         latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, rival: null, rivalTime: 0, honkWait: 0, throwTimer: 99, arrest: -1,
         pulledOver: false, toad: null, hesitant: false, tap: 0, think: 99, pendingLane: null, signal: 0, hazards: false, braking: false,
         hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health, maxHealth: type.health, evil: false, mood: 0 });
@@ -906,7 +909,7 @@ try {
     const staged = [];
     const setUp = () => {
       pick('suburbs');
-      cars.selectCar('hatch');
+      cars.selectCar('commuter');
       Game.evil = false;
       Game.start();
       for (const c of Traffic.cars) c.active = false;
@@ -915,8 +918,8 @@ try {
       Player.s = 600; Player.lat = T().laneOffset(2, 600); Player.speed = 20; Player.launching = false; Player.shield = 0; Player.passenger = 99;
     };
     const stage = (props) => {
-      const car = Traffic.cars.find(c => c.dir > 0 && !c.active && !c.unused), type = CONFIG.vehicles.car;
-      Object.assign(car, { active: true, kind: 'car', fixed: false, viaSide: false, s: 700, lane: 2, lat: T().laneOffset(2, 700), vs: 15, baseSpeed: 15,
+      const car = Traffic.cars.find(c => c.dir > 0 && !c.active && !c.unused), type = CONFIG.vehicles.darkvan;
+      Object.assign(car, { active: true, kind: 'darkvan', fixed: false, viaSide: false, s: 700, lane: 2, lat: T().laneOffset(2, 700), vs: 15, baseSpeed: 15,
         latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, rival: null, rivalTime: 0, honkWait: 0, throwTimer: 99, arrest: -1,
         pulledOver: false, pulledFor: null, toad: null, hesitant: false, tap: 0, think: 99, pendingLane: null, signal: 0, hazards: false,
         braking: false, emergency: false, defiant: false, hw: type.hw, hl: type.hl, height: type.height, mass: type.mass,
@@ -1009,7 +1012,7 @@ try {
     const { BulletTrain } = await load('/src/delivery/bullettrain.js');
     const { Message } = await load('/src/delivery/messages.js');
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'canberra'));
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     const T = track.Track, HM = T.medianHalf;
@@ -1054,7 +1057,7 @@ try {
       for (let i = 0; i < 120; i++) { Player.update(1 / 120, 1, 0, false); Player.lat = 0; } // (1 s on it, foot down)
       onTrack[id] = { got: Player.speed, want: cars.CAR.maxSpeed * (R.slowest + (1 - R.slowest) * cars.CAR.crossing), top: cars.CAR.maxSpeed };
     }
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.start();
     Object.assign(Player, { s: 300, lat: track.Track.laneOffset(2, 300), speed: 24, launching: false });
     for (let i = 0; i < 120; i++) Player.update(1 / 120, 1, 0, false);
@@ -1066,7 +1069,7 @@ try {
   section('Monte Carlo: hairpins and parked cars');
   {
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'monte-carlo'));
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     const T = track.Track, a = {}, b = {};
@@ -1114,8 +1117,8 @@ try {
     let spins = 0;
     for (let k = 0; k < 400; k++) {
       for (const c of Traffic.cars) c.active = false;
-      const car = Traffic.cars.find(c => c.dir > 0 && !c.unused), type = CONFIG.vehicles.car;
-      Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, emergency: false, s: 444, lane: 1, lat: T2().laneOffset(1, 444),
+      const car = Traffic.cars.find(c => c.dir > 0 && !c.unused), type = CONFIG.vehicles.darkvan;
+      Object.assign(car, { active: true, kind: 'darkvan', fixed: false, parked: false, emergency: false, s: 444, lane: 1, lat: T2().laneOffset(1, 444),
         vs: 15, baseSpeed: 15, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, onIce: false, toad: null, arrest: -1,
         hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null });
       Traffic.update(1 / 120);
@@ -1140,7 +1143,7 @@ try {
   section('Singapore: junctions, and driving on the left');
   {
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'singapore'));
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     const T = track.Track, turns = T.junctions.filter(jn => jn.way), straight = T.junctions.filter(jn => !jn.way);
@@ -1195,7 +1198,7 @@ try {
     const { Message } = await load('/src/delivery/messages.js');
     const physics = await load('/src/delivery/physics.js');
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'grand-pacific'));
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     const T = track.Track, L = levels.LEVEL, semi = CONFIG.vehicles.semi;
@@ -1250,7 +1253,7 @@ try {
     const { Tide } = await load('/src/delivery/tide.js');
     const { Pickups } = await load('/src/delivery/pickups.js');
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'passage-du-gois'));
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     const T = () => track.Track, W = CONFIG.tide, L = levels.LEVEL, mid = (L.tide.from + L.tide.to) / 2;
@@ -1310,8 +1313,8 @@ try {
       }
       return { top: Player.speed, lost: (hp - Player.health) / 3, crossing: Player.crossing, max: cars.CAR.maxSpeed };
     };
-    const R = CONFIG.railCrossing, hatch = wade('hatch'), sport = wade('sport'), tank = wade('tank'), ghost = wade('hatch', { ghost: 99 });
-    cars.selectCar('hatch');
+    const R = CONFIG.railCrossing, hatch = wade('commuter'), sport = wade('sport'), tank = wade('tank'), ghost = wade('commuter', { ghost: 99 });
+    cars.selectCar('commuter');
     const want = (c) => c.max * Math.max(W.slowest, 1 - W.crossing * (1 - R.slowest) * (1 - c.crossing));
     check(Math.abs(hatch.top - want(hatch)) < 0.2 && Math.abs(sport.top - want(sport)) < 0.2 &&
       Math.abs(hatch.lost - W.damage * (1 - hatch.crossing)) < 0.5 && sport.lost > hatch.lost && tank.lost === 0 && ghost.lost === 0 && ghost.top > hatch.top * 1.5,
@@ -1341,8 +1344,8 @@ try {
       }
     }
     for (const c of Traffic.cars) c.active = false;
-    const car = Traffic.cars.find(c => c.dir > 0 && !c.unused), type = CONFIG.vehicles.car;
-    Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, stalled: false, emergency: false, evil: true, s: Player.s + 60, lane: north[1],
+    const car = Traffic.cars.find(c => c.dir > 0 && !c.unused), type = CONFIG.vehicles.darkvan;
+    Object.assign(car, { active: true, kind: 'darkvan', fixed: false, parked: false, stalled: false, emergency: false, evil: true, s: Player.s + 60, lane: north[1],
       lat: T().laneOffset(north[1], Player.s + 60), vs: 15, baseSpeed: 15, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1,
       hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null, junction: null });
     Tide.waves = [{ s0: car.s - 120, s1: car.s + 120, reach: 1, t: W.rise / 2 }];
@@ -1379,7 +1382,7 @@ try {
     const { Message } = await load('/src/delivery/messages.js');
     const { Hippos } = await load('/src/delivery/hippos.js');
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'safari'));
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     const T = () => track.Track, H = CONFIG.hippo, at = 2600;
@@ -1391,8 +1394,8 @@ try {
       Hippos.next = Infinity;
       for (const c of Traffic.cars) c.active = false;
       Object.assign(Player, { s: at, lat: T().laneOffset(1, at), speed: 0, shield: 0, ghost });
-      const car = Traffic.cars.find(c => !c.unused), type = CONFIG.vehicles.car;
-      Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, stalled: false, emergency: false, s: at, lane: 0, lat: T().laneOffset(0, at),
+      const car = Traffic.cars.find(c => !c.unused), type = CONFIG.vehicles.darkvan;
+      Object.assign(car, { active: true, kind: 'darkvan', fixed: false, parked: false, stalled: false, emergency: false, s: at, lane: 0, lat: T().laneOffset(0, at),
         vs: 0, baseSpeed: 0, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, junction: null,
         hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null });
       Message.clear();
@@ -1467,8 +1470,8 @@ try {
       const e2 = Elephants.list[0];
       Object.assign(e2, { lat: T().laneOffset(1, e2.s), rest: 99 }); // (standing in lane 1)
       for (const c of Traffic.cars) c.active = false;
-      const car = Traffic.cars.find(c => !c.unused), type = CONFIG.vehicles.car;
-      Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, stalled: false, emergency: false, evil: false, s: e2.s - 60, lane: 1,
+      const car = Traffic.cars.find(c => !c.unused), type = CONFIG.vehicles.darkvan;
+      Object.assign(car, { active: true, kind: 'darkvan', fixed: false, parked: false, stalled: false, emergency: false, evil: false, s: e2.s - 60, lane: 1,
         lat: T().laneOffset(1, e2.s - 60), vs: 20, baseSpeed: 20, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, junction: null,
         hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null, hesitant: false, tap: 0 });
       Player.s = e2.s - 200;
@@ -1492,13 +1495,13 @@ try {
   {
     const { Wreckage } = await load('/src/delivery/wreckage.js');
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'airport'));
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     const T = () => track.Track, W = CONFIG.wreckage;
     // a car of the pool, in a lane, at s, at speed
     const carAt = (s, lane, vs) => {
-      const car = Traffic.cars.find(c => !c.unused && !c.active), type = CONFIG.vehicles.car;
-      Object.assign(car, { active: true, kind: 'car', fixed: false, parked: false, stalled: false, halted: 0, emergency: false, evil: false, s, lane,
+      const car = Traffic.cars.find(c => !c.unused && !c.active), type = CONFIG.vehicles.darkvan;
+      Object.assign(car, { active: true, kind: 'darkvan', fixed: false, parked: false, stalled: false, halted: 0, emergency: false, evil: false, s, lane,
         lat: T().laneOffset(lane, s), vs, baseSpeed: vs, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, junction: null,
         hw: type.hw, hl: type.hl, height: type.height, mass: 1, health: 60, maxHealth: 60, think: 99, rival: null, pendingLane: null, hesitant: false, tap: 0 });
       return car;
@@ -1630,7 +1633,7 @@ try {
   {
     const { Machinery } = await load('/src/delivery/machinery.js');
     levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'construction'));
-    cars.selectCar('hatch');
+    cars.selectCar('commuter');
     Game.evil = false;
     Game.start();
     const T = () => track.Track, L = levels.LEVEL, R = CONFIG.railCrossing;
@@ -1728,7 +1731,7 @@ try {
       Math.abs(top - wantTop) < 0.5 && (Player.tank > 0) === !!car.tank,
       `${car.name}: in use straight away (health ${Player.maxHealth}, top speed ${top.toFixed(1)} m/s, tank: ${Player.tank > 0})`);
   }
-  cars.selectCar('hatch');
+  cars.selectCar('commuter');
   // the secret bus: not in the garage, but once owned it is driven like any other car
   const { Progress } = await load('/src/delivery/progress.js');
   Progress.buy(cars.SECRET_CARS.bus);
@@ -1736,13 +1739,12 @@ try {
   Game.start();
   check(!cars.CARS.some(car => car.id === 'bus') && cars.CAR === cars.SECRET_CARS.bus && Player.hl === 5.5 && Player.maxHealth === 220,
     `the secret City Bus: not in the garage, but in use once owned (hitbox ${Player.hl * 2} m long, health ${Player.maxHealth})`);
-  cars.selectCar('hatch');
+  cars.selectCar('commuter');
   // a complete savegame: every level open and delivered, every car bought, a full bank
   Progress.reset();
-  Progress.complete({ levels: levels.LEVELS.length, best: Object.fromEntries(levels.LEVELS.map(l => [l.id, l.tip])),
-    cars: cars.CARS.map(car => car.id), money: CONFIG.completeBank });
+  Progress.complete({ levels: levels.LEVELS.length, cars: cars.CARS.map(car => car.id), money: CONFIG.completeBank });
   check(Progress.data.unlocked === levels.LEVELS.length && cars.CARS.every(car => Progress.owns(car.id)) &&
-    !Progress.owns('bus') && Progress.data.money === CONFIG.completeBank && Progress.data.best.expressway === levels.LEVELS[0].tip,
+    !Progress.owns('bus') && Progress.data.money === CONFIG.completeBank && Progress.bestTime('expressway', false) === undefined,
     `a complete savegame: ${Progress.data.unlocked} levels open, ${Progress.data.cars.length} cars owned, $${Progress.data.money} banked, the bus still secret`);
 } catch (error) {
   failures++;

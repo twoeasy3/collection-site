@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import './powerups.css';
 import { CONFIG } from './config.js';
+import { Progress } from './progress.js';
 import MESSAGES from './messages.json';
 import { PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './render/pickupModels.js';
 
@@ -60,6 +61,29 @@ const CARDS = [
     `Takes <strong>${CONFIG.timePickup} s</strong> off the clock, and can tip you into the tip countdown, or further along it.`,
     'Instant: it <strong>doesn\'t</strong> replace the power-up you have running.',
   ] },
+  { type: 'armour', name: 'Armour', time: CONFIG.armour.time, says: says('powerups', 'armour'), rules: [
+    `Your car takes <strong>${Math.round(CONFIG.armour.damage * 100)}%</strong> of any damage, from crashes, packages and the rest.`,
+  ] },
+  { type: 'bigSplash', name: 'Big Splash', time: CONFIG.bigSplash.time, says: says('powerups', 'bigSplash'), rules: [
+    `Your packages catch <strong>every car within ${CONFIG.bigSplash.radius} m</strong> of where they hit or land: gifts cheer them all up, flaming packages burn them all.`,
+    `And they hit harder: a flaming package does <strong>${CONFIG.bigSplash.fireDamage}</strong> damage (not ${CONFIG.evilPackageDamage}); a gift <strong>${CONFIG.bigSplash.giftDamage}</strong> (not ${CONFIG.packageDamage}), and to an evil driver it lands as ${CONFIG.bigSplash.giftDamage} quick knocks, each a chance of a critical hit.`,
+    'Careful as Evil: hit a police car in the splash, or splash anyone in front of one, and it\'s still a bust.',
+  ] },
+  { type: 'butterfingers', name: 'Butterfingers', time: CONFIG.butterfingers.time, says: says('powerups', 'butterfingers'), rules: [
+    '<strong>You can\'t throw</strong> until it wears off.',
+  ] },
+  { type: 'cash5', name: '$5 Cash', says: says('powerups', 'cashBonus').replace('${dollar}', '$' + CONFIG.cashPickup.cash5), rules: [
+    `Worth <strong>${'$' + CONFIG.cashPickup.cash5}</strong>, banked along with the tip when you deliver on time (lost if you don't).`,
+    'Instant: it <strong>doesn\'t</strong> replace the power-up you have running.',
+  ] },
+  { type: 'cash10', name: '$10 Cash', says: says('powerups', 'cashBonus').replace('${dollar}', '$' + CONFIG.cashPickup.cash10), rules: [
+    `Worth <strong>${'$' + CONFIG.cashPickup.cash10}</strong>, banked along with the tip when you deliver on time (lost if you don't).`,
+    'Instant: it <strong>doesn\'t</strong> replace the power-up you have running.',
+  ] },
+  { type: 'cash20', name: '$20 Cash', says: says('powerups', 'cashBonus').replace('${dollar}', '$' + CONFIG.cashPickup.cash20), rules: [
+    `Worth <strong>${'$' + CONFIG.cashPickup.cash20}</strong>, banked along with the tip when you deliver on time (lost if you don't).`,
+    'Instant: it <strong>doesn\'t</strong> replace the power-up you have running.',
+  ] },
   { type: 'mystery', name: 'Mystery', time: M.time, says: '', wide: true, rules: [
     `One of these, at random. The lasting ones run for <strong>${M.time} s</strong>; the insurance news and the air strike are over at once.`,
     'Driving a tank? It is always the air strike.',
@@ -87,7 +111,7 @@ const CARDS = [
 document.getElementById('rules').innerHTML = `
   <h2>How power-ups work</h2>
   <ul>
-    <li><strong>One at a time.</strong> Picking one up replaces the one running (the wrench and the stopwatches excepted).</li>
+    <li><strong>One at a time.</strong> Picking one up replaces the one running (the wrench, the stopwatches and cash excepted).</li>
     <li>The time left shows under your speed, and the power-up's sign rides on or over your car.</li>
     <li>In the last <strong>${CONFIG.powerUpWarning} s</strong> a warning sound loops and the sign blinks.</li>
     <li>Each one announces itself in yellow as you pick it up; TANK RAGE in red.</li>
@@ -123,6 +147,7 @@ function makeView(el, card, color) {
   scene.add(sun);
   const target = card.type === 'target';
   const model = target ? makeTargetModel() : PICKUP_MODELS[card.type]();
+  model.userData.livery?.(!!Progress.data.evil); // (the look for the side picked on the menu)
   model.scale.setScalar(target ? 0.42 : 1.15);
   scene.add(model);
   const pad = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.02, 2.4), new THREE.MeshBasicMaterial({
@@ -167,6 +192,7 @@ const frame = (now) => {
       v.model.rotation.y += dt * 1.6;
       v.model.position.y = Math.sin(t * 2 + v.phase) * 0.12;
     }
+    v.model.userData.animate?.(t + v.phase); // (a model that moves: the big splash's flames)
     const { red, blue } = v.model.userData; // (the siren's light bar flashes)
     if (red && blue) { const on = Math.floor(t * 6) % 2 === 0; red.visible = on; blue.visible = !on; }
     renderer.render(v.scene, v.camera);

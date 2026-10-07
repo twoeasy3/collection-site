@@ -19,7 +19,7 @@ const LEVEL_SHOTS = Object.fromEntries(Object.entries(
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
 
 // (with an image: the picture across the top of the card, clear of the words, which go below it)
-// each car's picture, by car id and side: 'hatch-good', 'hatch-evil' ... (taken with ?cine=car)
+// each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car)
 const CAR_SHOTS = Object.fromEntries(Object.entries(
   import.meta.glob('../carshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));

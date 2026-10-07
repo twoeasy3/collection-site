@@ -119,6 +119,9 @@ export const Player = {
     this.siren = 0;
     this.badGas = 0;
     this.heavy = 0;
+    this.armour = 0;
+    this.bigSplash = 0;
+    this.butterfingers = 0;
     this.endMystery();
     this.latVel = 0;
     this.yaw = 0;
@@ -162,6 +165,11 @@ export const Player = {
       this.health = Math.min(this.maxHealth, this.health + this.maxHealth * CONFIG.wrenchRepair);
       return;
     }
+    // cash: kept, and banked with the tip on delivery; it leaves the powerup running alone
+    if (CONFIG.cashPickup[type]) {
+      Game.cash += CONFIG.cashPickup[type];
+      return;
+    }
     // a stopwatch moves the clock (and so the tip countdown), and leaves the powerup running alone
     if (type === 'timePlus' || type === 'timeMinus') {
       Game.allowed += (type === 'timePlus' ? 1 : -1) * CONFIG.timePickup;
@@ -179,6 +187,9 @@ export const Player = {
     this.siren = 0;
     this.badGas = 0;
     this.heavy = 0;
+    this.armour = 0;
+    this.bigSplash = 0;
+    this.butterfingers = 0;
     this.ghost = Math.min(this.ghost, 0.01);
     this.endMystery();
     if (caught) this.bust('shoulder');
@@ -191,10 +202,13 @@ export const Player = {
     else if (type === 'passenger') this.passenger = CONFIG.passengerTime + shift;
     else if (type === 'badGas') this.badGas = CONFIG.badGas.time + shift;
     else if (type === 'heavyMass') this.heavy = CONFIG.heavyMass.time + shift;
+    else if (type === 'armour') this.armour = CONFIG.armour.time + shift;
+    else if (type === 'bigSplash') this.bigSplash = CONFIG.bigSplash.time + shift;
+    else if (type === 'butterfingers') this.butterfingers = CONFIG.butterfingers.time + shift;
     else if (type === 'mystery') this.startMystery();
   },
   // s left of the powerup that is running (0 = none)
-  get powerLeft() { return Math.max(this.turbo, this.ghost, this.passenger, this.radar, this.siren, this.badGas, this.heavy, this.mysteryTime); },
+  get powerLeft() { return Math.max(this.turbo, this.ghost, this.passenger, this.radar, this.siren, this.badGas, this.heavy, this.armour, this.bigSplash, this.butterfingers, this.mysteryTime); },
   // the mystery pickup: a random effect. Most last CONFIG.mystery.time; the insurance ones, the
   // UFO air strike and the bullet train are over at once (the strike and the train go on by
   // themselves: UfoStrike, BulletTrain)
@@ -221,9 +235,10 @@ export const Player = {
     this.mystery = '';
     this.mysteryTime = 0;
   },
-  // how much of any damage the car takes (see hurt): none while invincible, more while rickety
+  // how much of any damage the car takes (see hurt): none while invincible, more while rickety, less in armour
   get damageScale() {
-    return this.mystery === 'invincible' ? 0 : this.mystery === 'rickety' ? CONFIG.mystery.rickety : 1;
+    return (this.mystery === 'invincible' ? 0 : this.mystery === 'rickety' ? CONFIG.mystery.rickety : 1) *
+      (this.armour > 0 ? CONFIG.armour.damage : 1);
   },
   // nearest slower car in our path that we are closing on too fast, if any
   carAhead() {
@@ -331,6 +346,9 @@ export const Player = {
     this.siren = Math.max(0, this.siren - dt);
     this.badGas = Math.max(0, this.badGas - dt);
     this.heavy = Math.max(0, this.heavy - dt);
+    this.armour = Math.max(0, this.armour - dt);
+    this.bigSplash = Math.max(0, this.bigSplash - dt);
+    this.butterfingers = Math.max(0, this.butterfingers - dt);
     if (this.mystery && (this.mysteryTime -= dt) <= 0) this.endMystery();
     // ice: hitting it, the car slews round (the look of it only), with a squeal of tyres
     const icy = !!Track.icy(this.s, this.lat);

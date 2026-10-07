@@ -59,6 +59,13 @@ export const CONFIG = {
   // by mass, and the player is knocked about (stunned) that much less
   heavyMass: { time: 12, mass: 5, topSpeed: 0.75, accel: 0.4, agility: 0.55,
     pushShare: 0.04 },     // share of any push the player takes, even running into the back of something
+  armour: { time: 12, damage: 0.5 },       // s; the share of any damage the car takes while armoured
+  // Big Splash: for `time` s the player's packages catch every car within `radius` m of where they hit
+  // or land, and hit harder: a flaming one does fireDamage; a gift giftDamage, or, to an evil driver,
+  // 1 damage giftDamage times over, one every peltEvery s (each a chance of a critical hit)
+  bigSplash: { time: 12, radius: 8, fireDamage: 45, giftDamage: 7, peltEvery: 0.05 },
+  butterfingers: { time: 10 },             // s the player can't throw
+  cashPickup: { cash5: 5, cash10: 10, cash20: 20 }, // $ a cash pickup is worth: banked with the tip on delivery
   timePickup: 10,          // s a stopwatch puts on the clock (time plus) or takes off it (time minus);
                            // in the tip countdown it moves that too. Instant: the powerup running carries on
   powerUpWarning: 4,       // s before a turbo, ghost, passenger or mystery runs out that its warning sound
@@ -345,6 +352,7 @@ export const CONFIG = {
     asteroid: { damage: 14, maxDamage: 70, speedKept: 0.7 }, // damage is per metre of radius, up to maxDamage
     // (light: true = a small thing: it doesn't knock the steering, and barely shakes the camera)
     cone: { damage: 3, speedKept: 0.94, light: true },
+    mine: { damage: 30, speedKept: 0.55 }, // a sea mine (Oh Mine!)
     sign: { damage: 12, speedKept: 0.8 },
     // the beach's junk (Hurricane)
     umbrella: { damage: 15, speedKept: 0.85 },
@@ -443,12 +451,11 @@ export const CONFIG = {
   // "traffic" list). hw / hl = hitbox half width / half length (m);
   // speed scales the car's cruising speed. special: true = a special vehicle, never evil.
   vehicles: {
-    car:     { hw: 0.95, hl: 2.1, height: 1.4, mass: 1,   health: 60,  speed: 1 },
-    compact: { hw: 0.85, hl: 1.7, height: 1.3, mass: 0.8, health: 45,  speed: 1.05 },
-    van:     { hw: 1.1,  hl: 2.7, height: 2.3, mass: 1.8, health: 90,  speed: 0.95 },
-    bus:     { hw: 1.3,  hl: 5.5, height: 3.1, mass: 4,   health: 180, speed: 0.8, special: true },
+    // (a vintage delivery van, in the one livery: livery is its paint, whatever the driver)
+    van:     { hw: 1.1,  hl: 2.7, height: 2.3, mass: 1.8, health: 90,  speed: 0.95, model: 'deliveryvan', livery: 0x1e5b3f },
+    bus:     { hw: 1.3,  hl: 5.5, height: 3.1, mass: 4,   health: 180, speed: 0.8, special: true, model: 'citybus' },
     tractor: { hw: 1.2,  hl: 2.0, height: 2.4, mass: 2.5, health: 150, speed: 1, special: true },
-    police:  { hw: 0.95, hl: 2.1, height: 1.4, mass: 1.2, health: 80,  speed: 1.1, special: true },
+    police:  { hw: 0.95, hl: 2.1, height: 1.4, mass: 1.2, health: 80,  speed: 1.1, special: true, model: 'police' },
     // an 18-wheeler: a prime mover and a long trailer. kerb: it keeps to the lane by the kerb
     // (rejoining it after a narrowing), never changing lanes of its own or picking a fight;
     // cruise: m/s it runs at, fast, whatever the level's pace, and it never hesitates
@@ -457,11 +464,14 @@ export const CONFIG = {
     // a Formula 1 car (a level's "grid": see Traffic), its speed set by the race
     f1:      { hw: 0.95, hl: 2.6, height: 1.0, mass: 0.8, health: 220, model: 'f1', agility: 1.5 },
     // (only ever an emergency vehicle: see CONFIG.emergency; never in a level's traffic list)
-    ambulance: { hw: 1.1, hl: 2.9, height: 2.6, mass: 2, health: 150, speed: 1, special: true },
+    ambulance: { hw: 1.1, hl: 2.9, height: 2.6, mass: 2, health: 150, speed: 1, special: true, model: 'ambulance' },
     // the garage's cars as traffic (each id is the garage car's, in src/cars.js). They have no
     // speed: they cruise near that car's own top speed (garagePace, below). model: which of the
     // models in render/models.js it is drawn as
-    junker:  { hw: 1.0,  hl: 2.5, height: 1.5, mass: 1.3, health: 70,  model: 'junker' },
+    // (the everyday traffic: these two run at the level's own pace, as the cars they replaced did)
+    commuter: { hw: 0.85, hl: 1.85, height: 1.45, mass: 0.8, health: 45, model: 'commuter', speed: 1.05 },
+    darkvan: { hw: 1.05, hl: 2.45, height: 2.4, mass: 1.5, health: 60,  model: 'darkvan', speed: 1 },
+    junker:  { hw: 1.0,  hl: 2.5, height: 1.95, mass: 1.3, health: 70,  model: 'junker' },
     sport:   { hw: 0.85, hl: 1.9, height: 1.1, mass: 0.8, health: 45,  model: 'sport' },
     wagon:   { hw: 1.05, hl: 2.4, height: 1.9, mass: 1.6, health: 90,  model: 'wagon' },
     lovebus: { hw: 1.0,  hl: 2.3, height: 2.1, mass: 1.5, health: 100, model: 'lovebus' },
@@ -605,7 +615,7 @@ export const CONFIG = {
   throwArc: 3,             // m, peak height of the arc
   throwCooldown: 0.6,      // s
   packageDamage: 4,        // a care package barely scratches what it hits
-  evilPackageDamage: 35,   // an Evil player's flaming package: real damage, and it makes enemies
+  evilPackageDamage: 25,   // an Evil player's flaming package: real damage, and it makes enemies
   completeBank: 10000,     // $ in the bank after "Unlock everything" on the menu
   // the clock: a level allows its `time` seconds, scaled by the side the player picked
   timeScale: { good: 1.2, evil: 0.85 },

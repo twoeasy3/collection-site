@@ -58,6 +58,8 @@ const SAMPLES = {
   heavyMass: 'Heavy',
   timePlus: 'Time Plus',
   timeMinus: 'Time Minus',
+  cash5: 'Cash', cash10: 'Cash', cash20: 'Cash',
+  armour: null, bigSplash: null, butterfingers: null, // (the stand-in chime: no sound of their own yet)
   siren: { seq: ['Police Siren', 'Police Siren', 'Police Siren'] }, // busted
   radar: '',               // a police car comes into sight
   tick: '',           // each second of the tip countdown
@@ -86,9 +88,9 @@ const SAMPLES = {
 const ENGINE_LOUDNESS = 0.2; // average level (root mean square) at full speed; a crash is about 0.14
 const ENGINE_IDLE = 0.6;     // share of that at a standstill
 const ENGINES = {
-  hatch: { files: ['Engine Rev 1'], idle: 0.7, top: 1.5 },
+  commuter: { files: ['Engine Rev 1'], idle: 0.7, top: 1.5 },
   junker: { files: ['Engine Rev 1'], idle: 0.6, top: 1.2 },
-  coupe: { files: ['Truck Engine'], idle: 0.7, top: 1.25 }, // (the Darkvan)
+  darkvan: { files: ['Truck Engine'], idle: 0.7, top: 1.25 },
   lowrider: { files: ['Lowrider', 'Lowrider 2'], fixed: true },
   wagon: { files: ['Truck Engine'], idle: 0.8, top: 1.4 },
   sport: { files: ['Engine Sports Car 5'], idle: 0.7, top: 1.6 },
@@ -97,6 +99,7 @@ const ENGINES = {
   tank: { files: ['Tank Engine'], idle: 0.7, top: 1.3 },
   ufo: { files: ['UFO'], idle: 0.8, top: 1.4 },
   f1: { files: ['Engine Sports Car 5'], idle: 0.9, top: 2.1 }, // (wound right up: a screamer)
+  jetboat: { files: ['Jetski Engine'], idle: 0.8, top: 1.4 },
 };
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 // how loud a loaded WAV is on average (root mean square of its first channel), worked out once
@@ -262,6 +265,7 @@ const SYNTH = {
 Object.assign(SYNTH, {
   explodeBig: SYNTH.explode, crashHard: SYNTH.crash, sideswipe: SYNTH.crash, headOn: SYNTH.crash, heavy: SYNTH.crash,
   ghost: SYNTH.pickup, wrench: SYNTH.pickup, passenger: SYNTH.pickup, badGas: SYNTH.pickup, heavyMass: SYNTH.pickup,
+  armour: SYNTH.pickup, bigSplash: SYNTH.pickup, butterfingers: SYNTH.pickup,
   timePlus: SYNTH.pickup, timeMinus: SYNTH.pickup,
   // the bullet train: a long two-note horn, and a rushing roar as it goes by
   trainHorn: (v) => [311, 370].forEach((f) => tone(f, f * 0.97, 1.4, 0.18 * v, 'sawtooth')),
@@ -294,10 +298,10 @@ export const Sound = {
   // speed in m/s, or a negative number for silence. car: the car's id in ENGINES ('tank' while
   // in TANK RAGE); top: its top speed, which sets how high the engine is pitched. (The race
   // screensaver's watched car, heard from the camera: gain, how loud from there; pitch, its Doppler shift)
-  engine(speed, car = 'hatch', top = 30, gain = 1, pitch = 1) {
+  engine(speed, car = 'commuter', top = 30, gain = 1, pitch = 1) {
     if (!engine) return;
     const now = ctx.currentTime, on = speed >= 0;
-    const e = ENGINES[car] || ENGINES.hatch;
+    const e = ENGINES[car] || ENGINES.commuter;
     if (on && car !== engineCar) { // a new car, or one that has just gone into TANK RAGE
       engineCar = car;
       engineFile = pick(e.files);

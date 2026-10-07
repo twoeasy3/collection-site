@@ -5,7 +5,7 @@
   "time": 145,
   "tip": 120,
   "lanes": 2,
-  "traffic": { "car": 0.34, "compact": 0.24, "wagon": 0.16, "van": 0.14, "bus": 0.06, "police": 0.02 },
+  "traffic": { "darkvan": 0.34, "commuter": 0.24, "wagon": 0.16, "van": 0.14, "bus": 0.06, "police": 0.02 },
   "trafficCount": 6,
   "oncomingCount": 7,
   "segments": [

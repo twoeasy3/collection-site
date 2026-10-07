@@ -233,11 +233,13 @@ export const syncRaceWatch = (now) => {
   const lap = Math.min(LEVEL.laps, (leader.laps || 0) + 1), done = RaceWatch.finished.length > 0;
   const head = `<div class="head">${collapsed ? '' : LEVEL.name.toUpperCase()}<span>${done ? 'FLAG' : 'LAP ' + lap + ' / ' + LEVEL.laps} ${collapsed ? '▸' : '▾'}</span></div>`;
   board.classList.toggle('collapsed', collapsed);
-  if (collapsed) { // (just the order: position, colour and letters, in two columns)
-    const half = Math.ceil(order.length / 2);
-    board.innerHTML = head + '<div class="abbrs">' + order.map((c, i) =>
-      `<div class="cell${c === RaceWatch.focus ? ' focus' : ''}${c === RaceWatch.pinned ? ' pinned' : ''}${c.active ? '' : ' out'}" data-i="${RaceWatch.racers.indexOf(c)}" style="grid-row:${i % half + 1};grid-column:${i < half ? 1 : 2}">` +
-      `<span class="pos">${i + 1}</span><span class="dot" style="background:${hex(F1_PAINTS[c.paint % F1_PAINTS.length])}"></span><span class="abbr">${c.abbr}</span></div>`).join('') + '</div>';
+  if (collapsed) { // (just the order, in one column: position, colour, letters, and places gained or lost)
+    board.innerHTML = head + '<div class="abbrs">' + order.map((c, i) => {
+      const pos = i + 1, gain = c.grid - pos;
+      return `<div class="cell${c === RaceWatch.focus ? ' focus' : ''}${c === RaceWatch.pinned ? ' pinned' : ''}${c.active ? '' : ' out'}" data-i="${RaceWatch.racers.indexOf(c)}">` +
+        `<span class="pos">${pos}</span><span class="dot" style="background:${hex(F1_PAINTS[c.paint % F1_PAINTS.length])}"></span><span class="abbr">${c.abbr}</span>` +
+        `<span class="gain ${gain > 0 ? 'up' : gain < 0 ? 'down' : ''}">${gain > 0 ? '▲' + gain : gain < 0 ? '▼' + -gain : '–'}</span></div>`;
+    }).join('') + '</div>';
   }
   const rows = [];
   for (const c of collapsed ? [] : order) {

@@ -5,7 +5,7 @@
   "drive": "left",
   "time": 175,
   "tip": 180,
-  "traffic": { "taxi": 0.28, "car": 0.22, "compact": 0.12, "bus": 0.1, "van": 0.08, "sport": 0.08, "miata": 0.06, "police": 0.06 },
+  "traffic": { "taxi": 0.28, "darkvan": 0.22, "commuter": 0.12, "bus": 0.1, "van": 0.08, "sport": 0.08, "miata": 0.06, "police": 0.06 },
   "trafficCount": 12,
   "oncomingCount": 11,
   "segments": [

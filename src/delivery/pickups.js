@@ -41,7 +41,10 @@ export const Pickups = (() => {
           Math.abs(p.lat - Player.lat) > Player.hw + 1) continue;
       p.taken = true;
       Player.collect(p.type);
-      Message.say('powerups', p.type);
+      // (cash says how much: powerups.cashBonus, its ${dollar} filled in)
+      const cash = CONFIG.cashPickup[p.type];
+      const line = Message.say('powerups', cash ? 'cashBonus' : p.type);
+      if (cash && line) line.text = line.text.replace('${dollar}', '$' + cash);
       sfx(p.type); // (each type has a sound of its own)
     }
   };

@@ -73,6 +73,7 @@ export const Packages = (() => {
   const throwOne = () => {
     if (LEVEL.noPackages) return false; // (a level where nobody throws anything)
     if (!Player.active || Player.busted || cooldown > 0) return; // (no throwing while being busted)
+    if (Player.butterfingers > 0) return; // (butterfingers: it slips through them)
     if (Player.tank > 0) {
       // The cannon isn't aimed: the shell flies dead straight the way the tank is pointing, not
       // round a bend with the road, and lands cannonRange ahead of where the tank will be by
@@ -182,8 +183,9 @@ export const Packages = (() => {
   const cop = (car) => car.kind === 'police' && !car.toad;
   // the player's care package arriving
   const deliver = (p, car) => {
+    const boosted = Player.bigSplash > 0, B = CONFIG.bigSplash; // (Big Splash: harder hits)
     if (p.kind === 'fire') { // an Evil player's package: real damage, and it makes enemies
-      const damage = CONFIG.evilPackageDamage;
+      const damage = boosted ? B.fireDamage : CONFIG.evilPackageDamage;
       car.health -= damage;
       car.mood = Math.max(-1, car.mood - damage * CONFIG.moodPerDamage);
       maybeSpinOut(car, damage, CONFIG.packageSpinScale);
@@ -203,8 +205,14 @@ export const Packages = (() => {
       FxQueue.push({ type: 'burst', s: p.s, lat: p.lat, vs: car.vs });
       return;
     }
-    car.health -= CONFIG.packageDamage;
-    maybeSpinOut(car, CONFIG.packageDamage, CONFIG.packageSpinScale);
+    // (a boosted gift to an evil driver: a pelting, a point of damage at a time in quick succession,
+    // each a chance of a critical hit: see update; to anyone else, a harder knock)
+    if (boosted && car.evil) car.pelts = (car.pelts || 0) + B.giftDamage;
+    else {
+      const damage = boosted ? B.giftDamage : CONFIG.packageDamage;
+      car.health -= damage;
+      maybeSpinOut(car, damage, CONFIG.packageSpinScale);
+    }
     if (car.evil) { // evil drivers take a gift as an insult: furious, though it shows only in a while of
       // throwing at you, then a throw at you now and then (no road rage: see Traffic's attitude)
       car.mood = -1;
@@ -222,8 +230,32 @@ export const Packages = (() => {
     FxQueue.push({ type: 'gift', s: p.s, lat: p.lat, vs: car.vs });
   };
 
+  // Big Splash (a pickup): the player's package catches every car within CONFIG.bigSplash.radius m
+  // of where it hits a car (or lands), as if it had hit each of them
+  const splashAround = (p, hit) => {
+    if (!(Player.bigSplash > 0) || (p.kind !== 'gift' && p.kind !== 'fire')) return;
+    for (const car of Traffic.cars) {
+      if (car === hit || !car.active || car.arrest >= 0 || car.emergency || car.junction) continue;
+      if (Math.hypot(car.s - p.s, car.lat - p.lat) > CONFIG.bigSplash.radius) continue;
+      const was = doomed(car);
+      deliver(p, car);
+      if (!was && doomed(car)) car.wreckedByPlayer = true;
+    }
+  };
   const update = (dt) => {
     cooldown = Math.max(0, cooldown - dt);
+    // a boosted gift's pelting of an evil driver, a point of damage at a time (see deliver)
+    for (const car of Traffic.cars) {
+      if (!(car.pelts > 0)) continue;
+      if (!car.active) { car.pelts = 0; continue; }
+      if ((car.peltWait = (car.peltWait || 0) - dt) > 0) continue;
+      car.peltWait = CONFIG.bigSplash.peltEvery;
+      car.pelts--;
+      const was = doomed(car);
+      car.health -= 1;
+      maybeSpinOut(car, 1, CONFIG.packageSpinScale);
+      if (!was && doomed(car)) car.wreckedByPlayer = true;
+    }
     for (const p of list) {
       if (!p.active) continue;
       p.t += dt;
@@ -257,12 +289,14 @@ export const Packages = (() => {
           const was = doomed(car);
           deliver(p, car);
           if (!was && doomed(car)) car.wreckedByPlayer = true;
+          splashAround(p, car);
           p.active = false;
         }
       }
       if (p.active && u >= 1) { // landed
         if (p.kind === 'shell') blast(p);
         else if (p.kind === 'bomb') splash(p);
+        else splashAround(p, null);
         if (p.kind !== 'shell') FxQueue.push({ type: p.kind === 'gift' ? 'gift' : 'burst', s: p.s, lat: p.lat, vs: 0 });
         p.active = false;
       }
