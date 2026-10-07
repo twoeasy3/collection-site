@@ -36,13 +36,13 @@
     { "length": 200, "curve": 0 }
   ],
   "zones": [
-    { "id": "sydney", "from": 0, "to": 1600, "scenery": "sydney", "ground": 7179349, "sky": 10471662, "traffic": { "darkvan": 0.3, "commuter": 0.15, "taxi": 0.15, "bus": 0.12, "van": 0.1, "pickup": 0.06, "sport": 0.06, "police": 0.06 } },
-    { "id": "bush", "from": 1600, "to": 3800, "scenery": "bush", "ground": 8227410, "sky": 11784418, "traffic": { "darkvan": 0.35, "wagon": 0.15, "van": 0.15, "pickup": 0.15, "commuter": 0.15, "police": 0.05 } },
-    { "id": "ousley", "from": 3800, "to": 5700, "scenery": "ousley", "ground": 7306570, "sky": 12899034, "traffic": { "semi": 0.78, "darkvan": 0.08, "van": 0.05, "pickup": 0.04, "wagon": 0.03, "police": 0.01, "commuter": 0.01 } },
-    { "id": "seacliff", "from": 5700, "to": 7000, "scenery": "seacliff", "ground": 7047758, "sky": 9225966, "sea": 3, "traffic": { "darkvan": 0.35, "lovebus": 0.2, "wagon": 0.2, "commuter": 0.2, "police": 0.05 } },
-    { "id": "wollongong", "from": 7000, "to": 8600, "scenery": "wollongong", "ground": 7314002, "sky": 10275818, "sea": 8, "traffic": { "darkvan": 0.3, "commuter": 0.15, "semi": 0.12, "van": 0.12, "bus": 0.1, "pickup": 0.1, "taxi": 0.06, "police": 0.05 } },
-    { "id": "shellharbour", "from": 8600, "to": 9700, "scenery": "shellharbour", "ground": 7775318, "sky": 10670064, "sea": 8, "traffic": { "darkvan": 0.35, "wagon": 0.15, "pickup": 0.15, "semi": 0.1, "commuter": 0.15, "van": 0.1 } },
-    { "id": "kiama", "from": 9700, "to": 10500, "scenery": "kiama", "ground": 8368986, "sky": 11130098, "sea": 8, "traffic": { "darkvan": 0.35, "wagon": 0.2, "lovebus": 0.15, "pickup": 0.15, "commuter": 0.1, "semi": 0.05 } }
+    { "id": "sydney", "from": 0, "to": 1600, "scenery": "sydney", "ground": 7179349, "sky": 10471662 },
+    { "id": "bush", "from": 1600, "to": 3800, "scenery": "bush", "ground": 8227410, "sky": 11784418 },
+    { "id": "ousley", "from": 3800, "to": 5700, "scenery": "ousley", "ground": 7306570, "sky": 12899034 },
+    { "id": "seacliff", "from": 5700, "to": 7000, "scenery": "seacliff", "ground": 7047758, "sky": 9225966, "sea": 3 },
+    { "id": "wollongong", "from": 7000, "to": 8600, "scenery": "wollongong", "ground": 7314002, "sky": 10275818, "sea": 8 },
+    { "id": "shellharbour", "from": 8600, "to": 9700, "scenery": "shellharbour", "ground": 7775318, "sky": 10670064, "sea": 8 },
+    { "id": "kiama", "from": 9700, "to": 10500, "scenery": "kiama", "ground": 8368986, "sky": 11130098, "sea": 8 }
   ],
   "bridges": [
     { "from": 150, "to": 650, "style": "harbour" },
@@ -84,5 +84,13 @@
     { "type": "turbo", "s": 9100, "lane": 2 },
     { "type": "timePlus", "s": 9800, "lane": 3 },
     { "type": "ghost", "s": 10200, "lane": 2 }
+  ],
+  "trafficZones": [
+    { "from": 1600, "to": 3800, "traffic": { "darkvan": 0.35, "wagon": 0.15, "van": 0.15, "pickup": 0.15, "commuter": 0.15, "police": 0.05, "taxi": 0, "bus": 0, "sport": 0 } },
+    { "from": 3800, "to": 5700, "traffic": { "semi": 0.78, "darkvan": 0.08, "van": 0.05, "pickup": 0.04, "wagon": 0.03, "police": 0.01, "commuter": 0.01, "taxi": 0, "bus": 0, "sport": 0 } },
+    { "from": 5700, "to": 7000, "traffic": { "darkvan": 0.35, "lovebus": 0.2, "wagon": 0.2, "commuter": 0.2, "police": 0.05, "taxi": 0, "bus": 0, "van": 0, "pickup": 0, "sport": 0 } },
+    { "from": 7000, "to": 8600, "traffic": { "darkvan": 0.3, "commuter": 0.15, "semi": 0.12, "van": 0.12, "bus": 0.1, "pickup": 0.1, "taxi": 0.06, "police": 0.05, "sport": 0 } },
+    { "from": 8600, "to": 9700, "traffic": { "darkvan": 0.35, "wagon": 0.15, "pickup": 0.15, "semi": 0.1, "commuter": 0.15, "van": 0.1, "taxi": 0, "bus": 0, "sport": 0, "police": 0 } },
+    { "from": 9700, "to": 10500, "traffic": { "darkvan": 0.35, "wagon": 0.2, "lovebus": 0.15, "pickup": 0.15, "commuter": 0.1, "semi": 0.05, "taxi": 0, "bus": 0, "van": 0, "sport": 0, "police": 0 } }
   ]
 }

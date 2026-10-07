@@ -86,8 +86,12 @@ export const THEMES = {
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
   // bathurst: Mount Panorama, a racetrack on a mountain in the New South Wales bush: the land climbs
   // and falls with the circuit (terrain: grass where it is gentle, red clay where it is steep), gum
-  // trees all over the hill, the town's plain below, blue ranges in the haze
+  // trees all over the hill
   bathurst: { sky: 0xa9d2ef, ground: 0x9aa55e, road: 0x45474c, scenery: 'bathurst', terrain: { gentle: 0x93a25a, steep: 0x9b6b4a, rough: 0.35, flat: 10, rise: 60 } },
+  // panorama: the same mountain as an everyday road through the bush (Panorama Avenue: roadside: no circuit
+  // walls, kerbs or stands, white guide posts along the edges and rocks in the grass), in the colours of
+  // the Southern Highlands bushland (Sydney to Kiama's bush)
+  panorama: { sky: 0xb3d0e2, ground: 0x7d8a52, road: 0x4a4c50, scenery: 'bathurst', roadside: true, terrain: { gentle: 0x7d8a52, steep: 0x8f6e4c, rough: 0.35, flat: 10, rise: 60 } },
   // montreal: Circuit Gilles-Villeneuve, on Île Notre-Dame in the St Lawrence: parkland, a summer sky
   montreal: { sky: 0xa6d2f2, ground: 0x5d9a4a, road: 0x3e4147, scenery: 'montreal' },
   // sea: open water everywhere, the way through it the same water, unmarked (water: no ruts either),
@@ -2148,19 +2152,35 @@ const buildRoad = () => {
     }
   } else if (theme.scenery === 'bathurst') {
     // ---- bathurst: Mount Panorama: the circuit's trackside (walls, catch fences, kerbs), the pits and
-    // grandstands, gum trees standing on the hill all round (never on the road), the town's plain
-    // below, and blue ranges in the haze
-    circuitTrackside(false);
-    grandstands(false);
-    const trunks = [], clumps = [], p = {}, spot = new THREE.Object3D();
+    // grandstands, and gum trees standing on the hill all round (never on the road). As an everyday road
+    // (theme.roadside: Panorama Avenue), white guide posts along both edges instead, the bush thicker, and
+    // sandstone rocks in the grass
+    const trunks = [], clumps = [], rocks = [], p = {}, spot = new THREE.Object3D();
+    if (theme.roadside) {
+      const posts = [], reflectors = [];
+      for (let s = Track.start; s < Track.end; s += 25) for (const side of [-1, 1]) {
+        posts.push([s, beside(side, s, 0.6), 0.55, 0.14, 1.1, 0.14]);
+        reflectors.push([s, beside(side, s, 0.6), 0.95, 0.15, 0.12, 0.15]);
+      }
+      instances(cube, 0xf2f2ee, posts);
+      instances(cube, 0xd8261b, reflectors, true);
+    } else {
+      circuitTrackside(false);
+      grandstands(false);
+    }
     const roadHalf = Math.max(Track.hi(0), -Track.lo(0));
-    for (let s = Track.start; s < Track.end; s += 7) {
+    for (let s = Track.start; s < Track.end; s += theme.roadside ? 5 : 7) {
       for (const side of [-1, 1]) {
         if (Math.random() < 0.3) continue;
-        const d = 9 + Math.random() * 70;
+        const d = (theme.roadside ? 6 : 9) + Math.random() * 70;
         Track.toWorld(s + Math.random() * 6, beside(side, s, d), p);
-        if (Track.mainDistance(p.x, p.z) < roadHalf + 7) continue;
+        if (Track.mainDistance(p.x, p.z) < roadHalf + (theme.roadside ? 4 : 7)) continue;
         const y = terrainAt(p.x, p.z), h = 9 + Math.random() * 9;
+        if (theme.roadside && Math.random() < 0.12) { // (a sandstone rock, half sunk in the grass)
+          const w = 1.5 + Math.random() * 3;
+          rocks.push([p.x, y + w * 0.15, p.z, w, w * 0.55, w * (0.8 + Math.random() * 0.6)]);
+          continue;
+        }
         trunks.push([p.x, y + h * 0.3, p.z, 0.5, h * 0.6, 0.5]); // (pale, and bare a long way up)
         for (let k = 0; k < 3; k++) {
           const w = 3 + Math.random() * 3;
@@ -2180,22 +2200,7 @@ const buildRoad = () => {
     };
     placed(tube, 0xd9cfbf, trunks);
     placed(new THREE.SphereGeometry(0.5, 8, 6), 0x7a8f62, clumps);
-    // blue ranges all round, far off in the haze: round the middle of the circuit (not a point on
-    // it), each well clear of the land the circuit stands on
-    let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
-    for (let s = 0; s < Track.length; s += 20) {
-      Track.toWorld(s, 0, p);
-      x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); z0 = Math.min(z0, p.z); z1 = Math.max(z1, p.z);
-    }
-    const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, spread = Math.hypot(x1 - x0, z1 - z0) / 2;
-    const range = new THREE.MeshLambertMaterial({ color: 0x7f97b0 });
-    for (let k = 0; k < 18; k++) {
-      const a = k / 18 * Math.PI * 2 + Math.random() * 0.2, r = 300 + Math.random() * 200, h = 120 + Math.random() * 110;
-      const far = spread + 400 + r + Math.random() * 400; // (beyond the land round the circuit: see buildTerrain)
-      const hill = new THREE.Mesh(new THREE.ConeGeometry(r, h, 8), range);
-      hill.position.set(cx + Math.sin(a) * far, h / 2 - 10, cz + Math.cos(a) * far);
-      levelGroup.add(hill);
-    }
+    if (rocks.length) placed(new THREE.DodecahedronGeometry(0.6), 0xb8915c, rocks);
   } else if (theme.scenery === 'alpine') {
     // ---- alpine: guardrails and snowbanks along both edges, snowy pines on the mountainside,
     // peaks all round in the haze, and snow falling

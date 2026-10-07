@@ -455,7 +455,7 @@ export const Player = {
     // (a level can switch the timer off altogether: "shoulderTimer": false)
     // (and nor does a car pulled over with a flat tyre, or just after changing it)
     if (this.puncture) {
-      this.fixing = this.speed < 0.3 ? this.fixing + dt : 0; // (stopped, the tyre is being changed)
+      if (this.speed < 0.3) this.fixing += dt; // (stopped, the tyre is being changed: the work so far is kept, if it moves off before it's done)
       if (this.fixing >= CONFIG.puncture.fixTime) {
         this.puncture = 0;
         this.tyreGrace = CONFIG.puncture.grace;

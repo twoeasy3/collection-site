@@ -135,7 +135,7 @@ export const CONFIG = {
   // (see CONFIG.rival), until it is gone from the road; it gives up the chase after giveUp s
   driveBy: { every: { min: 3, max: 7 }, range: 120, alongside: 2.5, shots: 9, shotGap: 0.11, fleePace: 1.6, giveUp: 14 },
   // a punctured tyre (the player's: see Player.punctureTyre): topSpeed and accel are shares of the car's
-  // own; the car pulls to that side at up to pull m/s; stopped for fixTime s, the tyre is changed; and for
+  // own; the car pulls to that side at up to pull m/s; stopped for fixTime s in all, the tyre is changed; and for
   // grace s afterwards (as while punctured) the shoulder meter doesn't run down
   // (and braking with a flat, the car brakes brake times as hard, right down to a stop, and stays stopped)
   puncture: { topSpeed: 0.5, accel: 0.5, pull: 1.6, fixTime: 4, grace: 6, brake: 2 },

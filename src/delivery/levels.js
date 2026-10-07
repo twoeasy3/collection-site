@@ -36,7 +36,7 @@
 //              for 250 m before the exit and after the merge (room for the flyovers).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
-//   theme      'city' (default), 'bathurst' (Mount Panorama: a mountain), 'montreal' (Circuit Gilles-Villeneuve's island: its landmarks 'river', 'basin',
+//   theme      'city' (default), 'bathurst' (Mount Panorama: a mountain), 'panorama' (the same, as a road through the bush), 'montreal' (Circuit Gilles-Villeneuve's island: its landmarks 'river', 'basin',
 //              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
@@ -55,7 +55,6 @@
 //              round each is kept clear of the town; rot: which way it faces
 //   gunfire    [{ from, to, every? }]: a gang's turf, where the houses beside the road shoot (see gunfire.js);
 //              every: { min, max } s between bursts, if not CONFIG.gunfire.every
-//   policeZones [{ from, to, share }]: police only in these stretches, as that share of the traffic (none elsewhere)
 //   rival      'opposite' | 'evil' | 'good': a rival courier races the player to the drop (see Game.start;
 //              ?rival puts one on any delivery level, to try it out)
 //   rivals     [{ name, car, colors: ['#body', '#stripe'], mark: '#marker' }]: up to three rival couriers
@@ -101,10 +100,13 @@
 //              tumbling, looping round when they reach its end. Only a sight: nothing can hit them.
 //   tractors   { s, lane }         a tractor: slow traffic that starts from that spot every run
 //   parked     { s, side }         a car parked on that shoulder ('left' | 'right'), hazards on, every run
-//   zones      { id, from, to, scenery, ground, sky, sea, traffic }: stretches of the level with a look
-//              of their own (on a level whose theme is 'zones': see render/road.js) and, if given, a
-//              traffic list of their own for the traffic turning up there. The player is welcomed
-//              into each (messages.json: zones, by id)
+//   zones      { id, from, to, scenery, ground, sky, sea }: stretches of the level with a look of their
+//              own (on a level whose theme is 'zones': see render/road.js). The player is welcomed into
+//              each (messages.json: zones, by id). (Their traffic: see trafficZones)
+//   trafficZones [{ from, to, traffic: { kind: weight } }]: stretches where the traffic turning up is
+//              different: each sets the weights of the kinds it names over the level's "traffic" (0 takes
+//              a kind away), a later one over an earlier. With police only in such stretches, a police
+//              car stays on station at the edge of its stretch (The Hood)
 //   ice        { from, to, lane }  an ice patch on that lane (no lane: across the road) (see CONFIG.ice)
 //   tide       { from, to, start, end, waves: { every: { min, max }, reach: { min, max } } }: a causeway
 //              the sea comes in over, on the player's side of the road only, from the kerb in. It
@@ -183,6 +185,7 @@ import safari from './levels/safari.json';
 import airport from './levels/airport.json';
 import construction from './levels/construction.json';
 import theHood from './levels/the-hood.json';
+import panoramaAvenue from './levels/panorama-avenue.json';
 import grandPrix from './levels/grand-prix.json';
 import marinaBay from './levels/marina-bay.json';
 import testbed from './levels/testbed.json';
@@ -195,7 +198,7 @@ import showdown from './levels/showdown.json';
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

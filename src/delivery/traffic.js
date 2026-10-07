@@ -60,18 +60,17 @@ export const Traffic = (() => {
 
   // the level's "traffic" list: which kinds of vehicle turn up, and how often relative to
   // each other. An empty list means no traffic.
-  // (in a zone with a traffic list of its own, at s, that one)
-  // (on a level with "policeZones", police only inside them, as `share` of all the traffic there)
-  const mix = (s) => {
-    let list = Object.entries((s !== undefined && Track.zoneAt(s)?.traffic) || LEVEL.traffic || {})
-      .filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0);
-    if (LEVEL.policeZones) {
-      list = list.filter(([kind]) => kind !== 'police');
-      const zone = s !== undefined && LEVEL.policeZones.find(z => s >= z.from && s <= z.to);
-      if (zone) list.push(['police', list.reduce((sum, [, rate]) => sum + rate, 0) * zone.share / (1 - zone.share)]);
-    }
-    return list;
+  // (at s, as its "trafficZones" there have it: each sets the weights of the kinds it names over the
+  // level's own, a weight of 0 taking that kind away, a later one over an earlier)
+  const weightsAt = (s) => {
+    const weights = { ...(LEVEL.traffic || {}) };
+    if (s !== undefined) for (const z of LEVEL.trafficZones || []) if (s >= z.from && s < z.to) Object.assign(weights, z.traffic);
+    return weights;
   };
+  const mix = (s) => Object.entries(weightsAt(s)).filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0);
+  // police only where its traffic zones put them (none in the level's own list)? Then one that comes to
+  // the edge of such a stretch stays there, on station (see update)
+  const policeOnStation = () => !(LEVEL.traffic?.police > 0) && (LEVEL.trafficZones || []).some(z => z.traffic.police > 0);
   const pickKind = (s) => {
     const kinds = mix(s);
     let r = Math.random() * kinds.reduce((sum, [, rate]) => sum + rate, 0);
@@ -1397,11 +1396,12 @@ export const Traffic = (() => {
         if (car.racer && LEVEL.grid?.rival) target = rivalPace(car, target, dt); // (a rival courier: see rivalPace)
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
         if (car.kind === 'driveby' && !car.punctured) target = driveBy(car, target, dt); // (out for trouble)
-        // (on a level with "policeZones", a police car that comes to the edge of its stretch stays there,
-        // parked on the shoulder with its lights going: the gangs' turf beyond has no police at all)
-        if (car.kind === 'police' && LEVEL.policeZones && !car.stationed) {
-          const zone = LEVEL.policeZones.find(z => car.s >= z.from - 5 && car.s <= z.to + 5);
-          if (!zone || (car.dir > 0 ? car.s > zone.to - 15 : car.s < zone.from + 15)) car.stationed = true;
+        // (on a level whose police are only in some stretches, its traffic zones', a police car that comes
+        // to the edge of its stretch stays there, parked on the shoulder with its lights going: beyond it,
+        // as in The Hood's gang turf, there are no police at all)
+        if (car.kind === 'police' && !car.stationed && policeOnStation()) {
+          const ahead = car.s + car.dir * 15;
+          if (!(weightsAt(car.s).police > 0) || !(weightsAt(ahead).police > 0)) car.stationed = true;
         }
         if (car.stationed) target = Math.abs(car.lat - Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s)) < 0.8 ? 0 : car.baseSpeed * 0.35;
         // (a flat tyre: over onto the shoulder on its side, slowing, and stopped once there)
