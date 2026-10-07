@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
 import { Track } from '../track.js';
-import { houseAt, LOT } from '../gunfire.js';
+import { houseAt, gangHouse, LOT } from '../gunfire.js';
 import { Game } from '../game.js';
 import { Player } from '../player.js';
 import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
@@ -1323,6 +1323,7 @@ const buildRoad = () => {
     const walls = WALLS.map(() => []), roofs = [], doors = [], windows = [], drives = [];
     const pickets = [], rails = [], mailPosts = [], mailboxes = [], trunks = [], crowns = [], lampPosts = [], lampHeads = [];
     const boards = [], holes = [], burnt = [], burntRoofs = [], dirt = [], branches = [], wrecks = [], wreckTops = [], bags = [], tags = [[], [], []];
+    const gangWalls = [], gangWindows = [], gangDoors = [], gangTags = [], poles = [], flags = [], beacons = [];
     const tree = (at, lat) => {
       const h = 0.8 + Math.random() * 0.5;
       if (odds(0.5)) { // (a dead one: a bare trunk and a few bare branches)
@@ -1348,21 +1349,32 @@ const buildRoad = () => {
         }
         const { along, across, tall, front } = house, h = tall ? 6 : 3.4; // (front: m of front lawn, from the pavement edge to the house)
         const lat = beside(side, mid, front + across / 2), face = beside(side, mid, front - 0.06);
-        const shell = odds(0.1); // (burnt out: blackened, its roof fallen in, its windows empty)
-        if (shell) {
+        // (a gang house, which shoots: see gunfire.js. Marked out: black, its windows glowing red behind
+        // the guns, a red door, a red tag across the front, and a red flag flying from a pole on the roof)
+        const gang = rundown && gangHouse(side, lot);
+        const shell = !gang && odds(0.1); // (burnt out: blackened, its roof fallen in, its windows empty)
+        if (gang) {
+          gangWalls.push([mid, lat, h / 2, across, h, along]);
+          roofs.push([mid, lat, h + 1.1, across * 1.12, 2.2, along * 1.12]);
+          gangTags.push([mid, beside(side, mid, front - 0.09), h * 0.55, 0.06, 1.2, along * 0.85]);
+          const pole = beside(side, mid, front + across / 2);
+          poles.push([mid, pole, h + 3.6, 0.14, 5, 0.14]);
+          flags.push([mid + 1.1, pole, h + 5.3, 0.06, 1.4, 2.2]);
+          beacons.push([mid, pole, h + 6.2, 0.45, 0.45, 0.45]);
+        } else if (shell) {
           burnt.push([mid, lat, h / 2, across, h, along]);
           burntRoofs.push([mid, lat, h + 0.35, across * 0.9, 0.7, along * 0.9]);
         } else {
           walls[Math.floor(Math.random() * WALLS.length)].push([mid, lat, h / 2, across, h, along]);
           roofs.push([mid, lat, h + 1.1, across * 1.12, 2.2, along * 1.12]);
         }
-        (shell || odds(0.25) ? holes : doors).push([mid - 1.5, face, 1.1, 0.12, 2.2, 1.1]); // (a door, or the hole where it was)
-        const pane = (at, y) => (shell ? holes : odds(0.5) ? boards : windows).push([at, face, y, 0.1, 1.2, 1.7]); // (or boarded up)
+        (gang ? gangDoors : shell || odds(0.25) ? holes : doors).push([mid - 1.5, face, 1.1, 0.12, 2.2, 1.1]); // (a door, or the hole where it was)
+        const pane = (at, y) => (gang ? gangWindows : shell ? holes : odds(0.5) ? boards : windows).push([at, face, y, 0.1, 1.2, 1.7]); // (or boarded up)
         for (const floor of tall ? [1.6, 4.4] : [1.6]) {
           pane(mid + 2.2, floor);
           if (floor > 2) pane(mid - 1.5, floor);
         }
-        if (!shell && odds(0.35)) tags[Math.floor(Math.random() * 3)].push([mid + Math.random() * 3 - 1.5, beside(side, mid, front - 0.08), 0.9, 0.06, 1.1, 2.4 + Math.random() * 2]); // (graffiti)
+        if (!shell && !gang && odds(0.35)) tags[Math.floor(Math.random() * 3)].push([mid + Math.random() * 3 - 1.5, beside(side, mid, front - 0.08), 0.9, 0.06, 1.1, 2.4 + Math.random() * 2]); // (graffiti)
         if (rundown) { // the lawn: bare dirt in patches, now and then a wreck on it, and bags of rubbish by the mailbox
           for (let k = 0; k < 2; k++) dirt.push([s + 3 + Math.random() * (LOT - 6), beside(side, mid, FENCE + 1.5 + Math.random() * (front - FENCE - 3)), 0.02, 2 + Math.random() * 3, 0.04, 3 + Math.random() * 4]);
           if (odds(0.2)) {
@@ -1409,14 +1421,21 @@ const buildRoad = () => {
     if (rundown) {
       instances(cube, 0x8a6a42, boards);            // boarded-up windows
       instances(cube, 0x161616, holes);             // doorways and windows with nothing in them
-      instances(cube, 0x2a2622, burnt);             // burnt-out shells
-      instances(cube, 0x1a1816, burntRoofs);
+      instances(cube, 0x57514b, burnt);             // burnt-out shells, sooty grey (only the gang's houses are black)
+      instances(cube, 0x3a3532, burntRoofs);
       instances(cube, 0x7a6644, dirt);              // bare dirt on the lawns
       instances(cube, 0x4a3c30, branches);          // dead trees' branches
       instances(cube, 0x7a4a2a, wrecks);            // rusting wrecks
       instances(cube, 0x5a3a24, wreckTops);
       instances(new THREE.SphereGeometry(0.5, 8, 6), 0x161618, bags); // rubbish bags
       [0xd9367a, 0x2fb3d9, 0xe0d23a].forEach((color, i) => instances(cube, color, tags[i])); // graffiti
+      instances(cube, 0x1c1a1f, gangWalls);           // the gang houses: black,
+      instances(cube, 0xff2a2a, gangWindows, true);   // their windows glowing red,
+      instances(cube, 0xc81e1e, gangDoors);           // a red door,
+      instances(cube, 0xe01818, gangTags);            // a red tag across the front,
+      instances(cube, 0x2a2a2a, poles);               // and a red flag on a pole,
+      instances(cube, 0xe31b1b, flags);
+      instances(new THREE.SphereGeometry(0.5, 10, 8), 0xff3030, beacons, true); // with a red light on top
     }
     instances(cube, 0x55595f, lampPosts);
     instances(cube, 0xfff3c4, lampHeads, true);

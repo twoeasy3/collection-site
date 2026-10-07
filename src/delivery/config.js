@@ -121,20 +121,24 @@ export const CONFIG = {
   // the marker over a rival courier (see render/emotes.js): its tip `above` m over the car's roof (the mood
   // face pops up from 0.5 to 1.6 m over it), growing in proportion beyond growFrom m from the camera
   rivalMark: { above: 2.1, growFrom: 35 },
-  // a level's gang war (see gunfire.js): in its turf, a burst from a house beside the road every `every` s,
-  // from one between near.min and near.max m ahead of the player: `shots` shots, shotGap s apart, at
-  // speed m/s, off true by up to spread m, out to range m. Each hit does `damage`, and punctures a tyre
+  // a level's gang war (see gunfire.js): in its turf, gangShare of the houses are the gang's (marked out:
+  // see render/road.js). Each fires across the road from its windows, only within `arc` radians of straight
+  // out, at whatever is in that arc within range m (picked at random; only houses within range + seen m
+  // of the player fire): `shots` shots, shotGap s apart, at speed
+  // m/s, off true by up to spread m; then it waits `every` s. Each hit does `damage`, and punctures a tyre
   // with a chance of `puncture`. A muzzle flash shows for flashTime s
-  gunfire: { every: { min: 2.5, max: 5.5 }, near: { min: 10, max: 70 }, shots: { min: 4, max: 8 }, shotGap: 0.09, speed: 110,
-    spread: 1.4, range: 90, damage: 2, puncture: 0.06, flashTime: 0.06 },
+  gunfire: { gangShare: 0.35, arc: 0.52, seen: 80, every: { min: 3, max: 6 }, shots: { min: 4, max: 8 }, shotGap: 0.09, speed: 110,
+    spread: 1.4, range: 60, damage: 2, puncture: 0.06, flashTime: 0.06 },
   // a drive-by car (traffic kind 'driveby'): every `every` s, within range m of the player, it picks a target
   // (the player, or a car near it), pulls up alongside it (within alongside m), fires `shots` shots shotGap s
-  // apart, then makes off at fleePace times its pace for fleeTime s; it gives up the chase after giveUp s
-  driveBy: { every: { min: 3, max: 7 }, range: 120, alongside: 2.5, shots: 9, shotGap: 0.11, fleePace: 1.5, fleeTime: 6, giveUp: 14 },
+  // apart, then makes its getaway for good at fleePace times its pace, pushing through traffic as a rival courier does
+  // (see CONFIG.rival), until it is gone from the road; it gives up the chase after giveUp s
+  driveBy: { every: { min: 3, max: 7 }, range: 120, alongside: 2.5, shots: 9, shotGap: 0.11, fleePace: 1.6, giveUp: 14 },
   // a punctured tyre (the player's: see Player.punctureTyre): topSpeed and accel are shares of the car's
   // own; the car pulls to that side at up to pull m/s; stopped for fixTime s, the tyre is changed; and for
   // grace s afterwards (as while punctured) the shoulder meter doesn't run down
-  puncture: { topSpeed: 0.5, accel: 0.5, pull: 1.6, fixTime: 4, grace: 6 },
+  // (and braking with a flat, the car brakes brake times as hard, right down to a stop, and stays stopped)
+  puncture: { topSpeed: 0.5, accel: 0.5, pull: 1.6, fixTime: 4, grace: 6, brake: 2 },
   // a rival courier (a level's "rival", or ?rival: see Game.start): its pace, a share of the player's car's
   // top speed; its health; and s before an evil one's first throw at
   // the player (then as any evil car's: enemyThrowMin..Max)
@@ -586,7 +590,7 @@ export const CONFIG = {
   startMood: {             // chance of each starting emotion (the remainder start neutral)
     good: { happy: 0.45, angry: 0.15 },
     evil: { happy: 0.1, angry: 0.6 },
-  },                       // (a level can override both: "drivers": { "evil", "happy", "angry" })
+  },                       // (a level can override both: "drivers": { "evil", "happy", "angry" }, or each side's: "goodMood" / "evilMood": { "happy", "angry" })
 
   // the screensaver: no player car, just a point gliding along the road that the camera follows
   screensaver: {

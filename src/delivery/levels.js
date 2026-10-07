@@ -72,7 +72,8 @@
 //   trafficCount, oncomingCount  how many vehicles are about at once, each way (defaults in
 //              CONFIG; together no more than CONFIG.trafficPool)
 //   drivers    { evil, happy, angry }: the share of drivers that are evil, and the chance a
-//              driver starts out happy or angry (defaults: CONFIG.evilShare and startMood)
+//              driver starts out happy or angry (defaults: CONFIG.evilShare and startMood); or for
+//              each side, goodMood / evilMood: { happy, angry }
 //   trafficSpeed  { min, max } m/s the traffic cruises at (default CONFIG.trafficMin/MaxSpeed)
 //   emergencies  { every: { min, max } }: now and then (every min-max s) an ambulance comes
 //              through, siren going, either way (see CONFIG.emergency)

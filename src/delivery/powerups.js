@@ -25,11 +25,13 @@ const CARDS = [
   ] },
   { type: 'ghost', name: 'Ghost', time: CONFIG.ghostTime, says: says('powerups', 'ghost'), rules: [
     'Your car turns see-through: you pass straight through <strong>traffic and barriers</strong>.',
+    'Bullets pass straight through you too: no damage, and no punctures.',
     'The structure of a bridge and the splash of a package still get you.',
     'You only turn solid again once you are clear of every car.',
   ] },
   { type: 'wrench', name: 'Wrench', says: says('powerups', 'wrench'), rules: [
     `Repairs <strong>${Math.round(CONFIG.wrenchRepair * 100)}%</strong> of your car's health, on the spot.`,
+    `Fixes a <strong>puncture</strong> too, without stopping to change the tyre.`,
     'Like the stopwatches, it <strong>doesn\'t</strong> replace the power-up you have running.',
   ] },
   { type: 'passenger', name: 'Inflatable Passenger', time: CONFIG.passengerTime, says: says('powerups', 'passenger'), rules: [
@@ -63,6 +65,7 @@ const CARDS = [
   ] },
   { type: 'armour', name: 'Armour', time: CONFIG.armour.time, says: says('powerups', 'armour'), rules: [
     `Your car takes <strong>${Math.round(CONFIG.armour.damage * 100)}%</strong> of any damage, from crashes, packages and the rest.`,
+    `No shot can <strong>puncture</strong> a tyre while it lasts.`,
   ] },
   { type: 'bigSplash', name: 'Big Splash', time: CONFIG.bigSplash.time, says: says('powerups', 'bigSplash'), rules: [
     `Your packages catch <strong>every car within ${CONFIG.bigSplash.radius} m</strong> of where they hit or land: gifts cheer them all up, flaming packages burn them all.`,

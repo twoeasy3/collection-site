@@ -167,6 +167,12 @@ export const Player = {
   collect(type) {
     if (type === 'wrench') {
       this.health = Math.min(this.maxHealth, this.health + this.maxHealth * CONFIG.wrenchRepair);
+      if (this.puncture) { // (and a flat tyre fixed there and then, no need to stop: see punctureTyre)
+        this.puncture = 0;
+        this.fixing = 0;
+        this.tyreGrace = CONFIG.puncture.grace;
+        Message.say('events', 'tyreChanged');
+      }
       return;
     }
     // cash: kept, and banked with the tip on delivery; it leaves the powerup running alone
@@ -261,7 +267,7 @@ export const Player = {
   // a tyre shot out (see Gunfire): a limp on, slower and pulling to that side, until the car stops to
   // change it. (Nothing without tyres: the tank, the UFO, the boat)
   punctureTyre(side) {
-    if (this.puncture || this.tank > 0 || CAR.noWheels || !this.active) return;
+    if (this.puncture || this.tank > 0 || CAR.noWheels || !this.active || this.armour > 0) return; // (armour shields the tyres too)
     this.puncture = side;
     this.fixing = 0;
     Message.say('events', 'puncture');
@@ -324,7 +330,8 @@ export const Player = {
     if (wet) top *= Math.max(CONFIG.tide.slowest, 1 - CONFIG.tide.crossing * (1 - R.slowest) * (1 - crossing));
     let drive = throttle;
     const grip = this.onIce ? CONFIG.ice.brakeGrip : 1; // (braking on ice)
-    if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed)) drive = 1;
+    // (but with a flat tyre, not: the car can be brought to a stop to change it, and stays there)
+    if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed) && !this.puncture) drive = 1;
     if (drive === 0 && boosted) drive = 1; // the turbo pulls unless you brake
     if (this.speed > top) {
       // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
@@ -332,6 +339,8 @@ export const Player = {
       this.speed = Math.max(top, this.speed - (rails || wet || mud ? R.bite : CONFIG.brake * 0.5) * dt);
     } else if (drive > 0) {
       this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * (this.puncture ? CONFIG.puncture.accel : 1) * dt);
+    } else if (drive < 0 && this.puncture) { // (a flat tyre: hard, and all the way down to a stop)
+      this.speed = Math.max(0, this.speed + drive * CONFIG.brake * CONFIG.puncture.brake * grip * dt);
     } else if (drive < 0 && this.speed > CONFIG.minSpeed) {
       this.speed = Math.max(CONFIG.minSpeed, this.speed + drive * CONFIG.brake * grip * dt);
     }

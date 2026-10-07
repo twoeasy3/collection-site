@@ -36,7 +36,7 @@
     "puncture": ["You got a puncture!! Pull over to change a tyre."],
     "tyreChanged": ["Tyre changed! Back on the road"],
     "driveBy": ["DRIVE-BY!!"],
-    "turf": ["Gang turf! Watch the houses"],
+    "turf": ["Gang turf! Watch the marked houses"],
     "rivalPassed": ["${name} is past you!", "${name} gets ahead!"],
     "rivalBeaten": ["You're past ${name}!", "${name} is behind you!"],
     "rivalIn": ["${name} delivered first! No tip for you"],

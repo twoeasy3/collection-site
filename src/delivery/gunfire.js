@@ -32,29 +32,44 @@ export const houseAt = (side, k) => {
   return { s, front: 9 + lotRand(side, k, 2) * 3, along: 9 + lotRand(side, k, 3) * 4, across: 8 + lotRand(side, k, 4) * 3, tall: lotRand(side, k, 5) < 0.4 };
 };
 
+// a gang house: one of the houses in a stretch of turf (a level's "gunfire") the gang shoots from, the
+// same every run, marked out for all to see (see render/road.js); or null
+export const gangHouse = (side, k) => {
+  const house = houseAt(side, k);
+  if (!house || !(LEVEL.gunfire || []).some(z => house.s > z.from && house.s < z.to)) return null;
+  return lotRand(side, k, 6) < CONFIG.gunfire.gangShare ? house : null;
+};
+// where a house's front windows are on the road's map: { s, lat }, and which way across the road they face
+const windowOf = (side, house) => ({ s: house.s, lat: side < 0 ? Track.lo(house.s) - house.front : Track.hi(house.s) + house.front, facing: -side });
+
 export const Gunfire = {
   bullets: [],  // { s, lat, y, vs, vl, vy, life, owner, s0, lat0, y0 }
   flashes: [],  // muzzle flashes: { s, lat, y, t }
-  bursts: [],   // a house's burst under way: { s, lat, y, target, left, wait }
-  wait: 0,      // s to the next burst from a house
+  bursts: [],   // a house's burst under way: { s, lat, y, facing, left, wait }
+  cool: new Map(), // each gang house's s to wait before its next burst, by lot ('side:k')
   zone: null,   // the stretch of turf the player is in
 
   reset() {
     this.bullets.length = 0;
     this.flashes.length = 0;
     this.bursts.length = 0;
-    this.wait = between(CONFIG.gunfire.every);
+    this.cool.clear();
     this.zone = null;
   },
 
-  // one shot from (s, lat, y) at a vehicle, led for its speed, a little off true
+  // one shot from (s, lat, y) at a vehicle, led for its speed, a little off true; from a house window
+  // (from.facing), never further round than CONFIG.gunfire.arc from straight out across the road
   shoot(from, target, owner) {
     const G = CONFIG.gunfire;
     const tv = target.isPlayer ? Player.speed * Player.dir : target.vs;
     const far = Math.hypot(target.s - from.s, target.lat - from.lat);
     const flight = far / G.speed;
-    const aimS = target.s + tv * flight + (Math.random() - 0.5) * 2 * G.spread;
+    let aimS = target.s + tv * flight + (Math.random() - 0.5) * 2 * G.spread;
     const aimLat = target.lat + (Math.random() - 0.5) * 2 * G.spread;
+    if (from.facing) { // (out of a window: within its arc)
+      const most = Math.abs(aimLat - from.lat) * Math.tan(G.arc);
+      aimS = from.s + Math.max(-most, Math.min(most, aimS - from.s));
+    }
     const aimY = 0.7 + Math.random() * 0.5;
     const ds = aimS - from.s, dl = aimLat - from.lat, dy = aimY - from.y, len = Math.hypot(ds, dl, dy) || 1;
     this.bullets.push({ s: from.s, lat: from.lat, y: from.y, vs: ds / len * G.speed, vl: dl / len * G.speed, vy: dy / len * G.speed,
@@ -80,33 +95,41 @@ export const Gunfire = {
 
   update(dt) {
     const G = CONFIG.gunfire;
-    // the turf: where the houses shoot (and the player is told so, on coming into it)
+    // the turf: where the houses shoot (and the player is told so, on coming into it); the houses only fire
+    // within `seen` m beyond their range of the player (see CONFIG.gunfire)
     const zone = Player.active ? (LEVEL.gunfire || []).find(z => Player.s >= z.from && Player.s <= z.to) || null : null;
     if (zone && zone !== this.zone) Message.say('events', 'turf');
     this.zone = zone;
-    // a burst from a house, now and then, at the player (or the car it can see best, nearer the house)
-    if (zone && (this.wait -= dt) <= 0) {
-      this.wait = between(zone.every || G.every);
-      const spots = [];
+    // a gang house (near the player, where it can be seen) fires a burst at whatever is passing through
+    // its arc (a narrow one, out across the road from its windows) within range: any car, the player's no
+    // more than the rest, picked at random; and then it waits a while before the next
+    for (const [key, t] of this.cool) this.cool.set(key, t - dt);
+    if (Player.active) {
+      const near = G.range + G.seen;
       for (const side of [-1, 1]) {
-        const k0 = Math.floor((Player.s + G.near.min - Track.start - (side > 0 ? 0 : LOT / 2)) / LOT);
-        const k1 = Math.floor((Player.s + G.near.max - Track.start - (side > 0 ? 0 : LOT / 2)) / LOT);
+        const k0 = Math.floor((Player.s - near - Track.start - (side > 0 ? 0 : LOT / 2)) / LOT);
+        const k1 = Math.floor((Player.s + near - Track.start - (side > 0 ? 0 : LOT / 2)) / LOT);
         for (let k = k0; k <= k1; k++) {
-          const house = houseAt(side, k);
-          if (house && house.s > zone.from && house.s < zone.to) spots.push({ side, house });
+          const house = gangHouse(side, k), key = side + ':' + k;
+          if (!house || (this.cool.get(key) ?? 0) > 0) continue;
+          const w = windowOf(side, house);
+          const inArc = Collision.bodies.filter(v => {
+            if (!v.active || v.junction || v.parked) return false;
+            const ds = v.s - w.s, dl = v.lat - w.lat;
+            return Math.hypot(ds, dl) <= G.range && Math.atan2(Math.abs(ds), Math.abs(dl)) <= G.arc;
+          });
+          if (!inArc.length) continue;
+          this.cool.set(key, between(zone?.every || G.every));
+          this.bursts.push({ ...w, target: inArc[Math.floor(Math.random() * inArc.length)], y: house.tall && Math.random() < 0.5 ? 4.4 : 1.6,
+            left: Math.round(between(G.shots)), wait: 0 });
         }
-      }
-      if (spots.length) {
-        const { side, house } = spots[Math.floor(Math.random() * spots.length)];
-        const lat = side < 0 ? Track.lo(house.s) - house.front : Track.hi(house.s) + house.front;
-        this.bursts.push({ s: house.s, lat, y: house.tall && Math.random() < 0.5 ? 4.4 : 1.6, left: Math.round(between(G.shots)), wait: 0 });
       }
     }
     for (const b of this.bursts) {
       if ((b.wait -= dt) > 0 || b.left <= 0) continue;
       b.wait = G.shotGap;
       b.left--;
-      if (Player.active) this.shoot(b, Player, null);
+      if (b.target.active) this.shoot(b, b.target, null);
     }
     this.bursts = this.bursts.filter(b => b.left > 0);
     // the bullets: straight on until they stop in something, or are spent

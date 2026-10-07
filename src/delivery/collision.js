@@ -61,7 +61,8 @@ export const Collision = (() => {
     const headOn = a.bound !== b.bound;     // one northbound, one southbound
     // a rival courier against ordinary traffic (not the player, nor another rival): it has much the
     // better of it (see CONFIG.rival.ram)
-    const courier = a.courier && !b.courier && !b.isPlayer ? a : b.courier && !a.courier && !a.isPlayer ? b : null;
+    const strong = (v) => v.courier || v.escaping; // (a rival courier, or a drive-by making its getaway)
+    const courier = strong(a) && !strong(b) && !b.isPlayer ? a : strong(b) && !strong(a) && !a.isPlayer ? b : null;
     const R = CONFIG.rival.ram, struck = courier === a ? b : a;
 
     // Contact with a police car is a bust, unless it wasn't the player's doing: the police car
