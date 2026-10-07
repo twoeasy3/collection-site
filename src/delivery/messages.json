@@ -32,7 +32,18 @@
     "emergency": ["Emergency vehicle oncoming!! Give way!"],
     "wave": ["WAVE INCOMING!! Get out of the water!"],
     "lap": ["Lap complete!"],
-    "finalLap": ["FINAL LAP!"]
+    "finalLap": ["FINAL LAP!"],
+    "rivalPassed": ["Your rival is past you!", "Rival ahead!"],
+    "rivalBeaten": ["You're past your rival!", "Rival behind you!"],
+    "rivalIn": ["Your rival delivered first! No tip for you"],
+    "rivalPickup": {
+      "turbo": ["Your rival grabbed a turbo!"],
+      "wrench": ["Your rival patched up!"],
+      "armour": ["Your rival armoured up!"],
+      "bigSplash": ["Incoming! Your rival found a Big Splash!"],
+      "badGas": ["Your rival filled up with bad gas!"],
+      "heavyMass": ["Your rival is weighed down!"]
+    }
   },
   "zones": {
     "sydney": ["Sydney"],

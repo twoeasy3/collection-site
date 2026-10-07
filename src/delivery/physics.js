@@ -64,7 +64,7 @@ export const emotionOf = (mood) => mood > 1 / 3 ? 'happy' : mood < -1 / 3 ? 'ang
 // a damaged traffic car may spin out: the more of its health is gone, the likelier
 // (crit: how much likelier than usual a critical hit is)
 export const maybeSpinOut = (v, amount, scale = 1, crit = 1) => {
-  if (v.isPlayer || v.spin > 0 || v.health <= 0) return;
+  if (v.isPlayer || v.unspinnable || v.spin > 0 || v.health <= 0) return; // (a rival courier never spins, nor takes a critical hit)
   const lost = 1 - v.health / v.maxHealth;
   const chance = scale * CONFIG.spinPerDamage * (amount / v.maxHealth) * (1 + CONFIG.spinRamp * lost * lost);
   // a critical hit: the car wobbles for a moment, then spins out whatever state it was in
@@ -73,6 +73,7 @@ export const maybeSpinOut = (v, amount, scale = 1, crit = 1) => {
 };
 // the car loses all control: it arcs away, turning a full circle, and then blows up
 export const spinOut = (v) => {
+  if (v.unspinnable) return;
   sfxAt('screech', v.s);
   v.spinIce = false; // (one that skidded on ice says so itself: see Traffic)
   v.wobble = 0;

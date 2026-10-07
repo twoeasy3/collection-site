@@ -114,6 +114,16 @@ export const CONFIG = {
   // overlapping it, has its top speed raised by up to `draft` of it, the more the closer it is; so
   // it can outdrag the car it follows. A racer on a straight with a car up to seekReach m ahead in
   // the lane beside moves over into its tow (every seekEvery s at most), then pulls out to pass.
+  // a rival courier (a level's "rival", or ?rival: see Game.start): its pace, a share of the player's car's
+  // top speed; its health; and s before an evil one's first throw at
+  // the player (then as any evil car's: enemyThrowMin..Max)
+  // Behind the player, it is faster, from catchUp.from m behind up to catchUp.pace times its pace at
+  // catchUp.full m. It looks lookAhead m (and lookTime s at its speed) ahead for obstacles, steering
+  // round any within obstacleRoom m of its line (and round a pickup that would do it harm); one that would do
+  // it good, it moves over for, within pickupReach m (and lookTime s at its speed). A pickup it gets that is
+  // heard of within heard m is said
+  rival: { pace: { min: 0.96, max: 1.0 }, health: 4000, firstThrow: 6, catchUp: { from: 15, full: 150, pace: 1.15 },
+    lookAhead: 20, lookTime: 2.2, obstacleRoom: 0.5, pickupReach: 40, heard: 150 },
   race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5,
     towReach: 130, draft: 0.2, seekReach: 160, seekEvery: 1.5,
     // Racecraft: each driver's nerve in the bends is its own, from nerve.min to nerve.max times the
@@ -125,6 +135,12 @@ export const CONFIG = {
     // for the bend), and a racer with one alongside on the attack as a bend comes gives it the
     // corner, easing to cede of its pace (an evil one, evilCede: it gives up as little as it can)
     diveLookout: 0.55, cede: 0.9, evilCede: 0.97, passMax: 8,
+    // Overtaking on the wrong side of a two-way road (with no lane of its own to pass in): only with
+    // `edge` m/s more pace than the car holding it up; past the whole queue (cars within queueGap m of
+    // the next) and margin m more; with nothing coming that could reach it in that time, and spare m
+    // to spare. It pulls back in at the first gap (room for it and cutIn m behind it), at once with
+    // anything coming within panic s, and after longest s regardless
+    oncoming: { edge: 4, queueGap: 22, margin: 14, spare: 60, cutIn: 4, panic: 2.2, longest: 12 },
     // Going by the player, a racer picks a side and keeps to it; shut out, it switches to the other,
     // if that is open (a dummy), at most every feintEvery s; and on the attack it moves across
     // passSharp times as sharply

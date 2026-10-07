@@ -55,7 +55,7 @@ export const Game = {
   // seconds left on the clock; below zero is the tip countdown
   get remaining() { return this.allowed - this.time; },
   // the level's tip: whole until the clock hits zero, then draining to nothing over the tip countdown
-  get tip() { return LEVEL.tip * clamp(1 + this.remaining / CONFIG.tipCountdown, 0, 1); },
+  get tip() { return this.rivalIn ? 0 : LEVEL.tip * clamp(1 + this.remaining / CONFIG.tipCountdown, 0, 1); }, // (none if a rival delivered first)
 
   // Builds everything that depends on the level: roads, obstacles, pickups, targets, and
   // (through the onLoad hooks, which the rendering modules register) the scenery.
@@ -122,6 +122,16 @@ export const Game = {
     this.start();
   },
   start() {
+    // a rival courier (?rival: an experiment): on a delivery level (not a circuit), a race of one
+    // other car, the player's own kind, from the start line to the drop. 'evil', 'good', or
+    // 'opposite' (the other side to the player's)
+    const rivalSide = LEVEL.rival || this.rival;
+    if (rivalSide && !LEVEL.laps && (!LEVEL.grid || LEVEL.grid.rival)) {
+      const evil = rivalSide === 'evil' || (rivalSide === 'opposite' && !this.evil);
+      LEVEL.grid = { count: 1, rival: true, evil, from: 6, gap: 0, pace: CONFIG.rival.pace };
+    } else if (!rivalSide && LEVEL.grid?.rival) delete LEVEL.grid;
+    this.rivalIn = false;   // the rival over the line first
+    this.rivalAhead = null; // whether it was ahead of the player, when last looked
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
     useLevelCar(LEVEL.car); // a UFO on the space level, otherwise the garage's car
     Player.evil = this.evil;
@@ -184,7 +194,7 @@ export const Game = {
     // (a hidden level, off the menu, banks nothing and records nothing: see HIDDEN_LEVELS)
     const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, this.tip + this.cash, this.remaining, this.evil);
     resultTitle.textContent = {
-      delivered: 'Delivered!',
+      delivered: this.rivalIn ? 'Delivered - but your rival got there first' : LEVEL.grid?.rival ? 'Delivered - you beat your rival!' : 'Delivered!',
       late: 'Too late - level failed',
       timeout: 'Out of time - level failed',
       busted: 'Busted! Game over',
@@ -318,6 +328,18 @@ export const Game = {
         Player.s -= Track.length;
         Pickups.reset();
         Message.say('events', this.lap === LEVEL.laps - 1 ? 'finalLap' : 'lap');
+      }
+      // a rival courier: who is ahead, said as it changes, and whether it got there first
+      if (LEVEL.grid?.rival) {
+        const rival = Traffic.cars.find(c => c.racer);
+        if (rival && rival.done && !this.rivalIn && !Track.finished(Player.s)) {
+          this.rivalIn = true;
+          Message.say('events', 'rivalIn');
+        } else if (rival && rival.active && !this.rivalIn) {
+          const ahead = rival.s > Player.s;
+          if (this.rivalAhead !== null && ahead !== this.rivalAhead) Message.say('events', ahead ? 'rivalPassed' : 'rivalBeaten');
+          this.rivalAhead = ahead;
+        }
       }
       if (Player.active && Track.finished(Player.s)) this.finish(this.remaining >= 0 ? 'delivered' : 'late');
       else if (this.remaining <= -CONFIG.tipCountdown) this.finish('timeout'); // tip countdown ran out

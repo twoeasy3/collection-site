@@ -29,6 +29,7 @@ export const Pickups = (() => {
     for (const p of items) {
       p.taken = !!p.washed;
       p.pending = false;
+      p.rivalHad = false; // (a rival courier has had its good of it: see Traffic)
     }
   };
   // a washed-up pickup of that type that isn't in use (one already behind the player will do), or null

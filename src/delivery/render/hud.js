@@ -26,6 +26,12 @@ const hudCopWatch = document.getElementById('copWatch');
 const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill'), hudTowLabel = document.getElementById('towLabel');
 const hudSocial = document.getElementById('social'), hudSocialFill = document.getElementById('socialFill');
 const hudBusts = document.getElementById('busts');
+// a rival courier's health (wrecked: waiting to be set back down), and the player's busts, as on any delivery level
+const rivalLine = () => {
+  const rival = Traffic.cars.find(c => c.racer);
+  const health = !rival ? '' : rival.active ? Math.ceil(100 * Math.max(0, rival.health) / rival.maxHealth) + '%' : 'WRECKED';
+  return '   RIVAL ' + health + '   BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
+};
 const hudDangerFill = document.getElementById('dangerFill');
 const hudFade = document.getElementById('fade');
 const runButtons = document.getElementById('runButtons');
@@ -93,7 +99,8 @@ export const updateHud = () => {
   const raced = (laps, s) => (LEVEL.laps ? laps * Track.length : 0) + Track.along(s);
   hudBusts.textContent = LEVEL.grid
     ? 'POSITION ' + (1 + Traffic.cars.filter(c => c.racer && raced(c.laps || 0, c.s) > raced(Game.lap, Player.s)).length) + ' / ' + (LEVEL.grid.count + 1) +
-      (LEVEL.laps ? '   LAP ' + Math.min(LEVEL.laps, Game.lap + 1) + ' / ' + LEVEL.laps : '')
+      (LEVEL.laps ? '   LAP ' + Math.min(LEVEL.laps, Game.lap + 1) + ' / ' + LEVEL.laps : '') +
+      (LEVEL.grid.rival ? rivalLine() : '')
     : 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
   // a police car near enough to see what the player does (on the shoulder, a bust on the spot; not
   // on a level without the shoulder rule, nor for a tank, which nobody busts)

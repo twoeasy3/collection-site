@@ -53,6 +53,8 @@
 //              'bay', 'flyer', 'mbs', 'esplanade', 'fullerton', 'merlion', 'padang', 'gardens',
 //              'artscience', 'helix' (r: half its length), 'float', 'cbd', 'suntec', 'gallery', 'domes'); r m
 //              round each is kept clear of the town; rot: which way it faces
+//   rival      'opposite' | 'evil' | 'good': a rival courier races the player to the drop (see Game.start;
+//              ?rival puts one on any delivery level, to try it out)
 //   shoulder   m of shoulder each side of the road, if not CONFIG.shoulder (a street circuit's walls close by)
 //   runoff     { from, to, side, width }: the shoulder on that side `width` m wider over that stretch (run-off
 //              on the outside of a corner, where a circuit has it), easing in and out
@@ -180,12 +182,13 @@ import testbed from './levels/testbed.json';
 import ohMine from './levels/oh-mine.json';
 import montreal from './levels/montreal.json';
 import bathurst from './levels/bathurst.json';
+import rivalRun from './levels/rival-run.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction];
-export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst];
+export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones
 export const levelLabel = (index) => index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (index - MAIN_LEVELS.length + 1);
