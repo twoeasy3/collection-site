@@ -1392,15 +1392,52 @@ try {
       `tanks keep their lanes unless hunting or dodging (${wandered} wanders by ${tanks.length} tanks in 6 s); ` +
       `a green 8x8 shells a red tank behind it, its turret swung ${gunner.turret?.toFixed(2)} rad`);
 
-    // the player's gun: the throw button fires a small shell dead ahead, every so often
+    // the player's gun: the throw button fires a small shell, then must wait; with nobody in reach dead ahead...
     fresh(); alone(); untake();
     Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 20, launching: false });
     Packages.throwOne();
     const shell = Packages.list.find(p => p.active && p.owner === Player);
     Packages.throwOne();
     const shells = Packages.list.filter(p => p.active && p.owner === Player).length;
-    check(shell?.kind === 'shell' && shell.gun === cars.CAR.cannon && shells === 1,
-      `the player's 8x8 fires a shell (${cars.CAR.cannon.range} m ahead, ${cars.CAR.cannon.damage} damage) with the throw button, then must wait ${cars.CAR.cannon.cooldown} s`);
+    // ...otherwise at the nearest enemy in its reach, as a package is aimed (one behind counting as further off),
+    // never at the green army
+    fresh(); alone(); untake();
+    Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1, launching: false, ghost: 9 });
+    army('jeep', 1, 3, 615, 0.01); army('tank', 1, 1, 625, 0.01); // (green, nearer)
+    // (the one behind 25 m off, so as good as 50 m: the one 40 m ahead is nearer)
+    const redFar = army('apc', -1, 5, 640, 0.01), redBehind = army('jeep', -1, 4, 575, 0.01);
+    Packages.throwOne();
+    const aimed = Packages.list.find(p => p.active && p.owner === Player);
+    const aimedAt = !!aimed && Math.abs(aimed.lat + aimed.vlat * aimed.flight - redFar.lat) < 1 && Math.abs(aimed.s + aimed.vs * aimed.flight - redFar.s) < 3;
+    redFar.active = false;
+    Packages.list.forEach(p => { p.active = false; });
+    const shotBehind = () => { for (let i = 0; i < 240; i++) { Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1 }); redBehind.s = 575; step(); if (Packages.list.some(p => p.active && p.owner === Player)) break; Packages.throwOne(); } return Packages.list.find(p => p.active && p.owner === Player); };
+    const back = shotBehind();
+    const backAt = !!back && Math.abs(back.s + back.vs * back.flight - redBehind.s) < 4;
+    // how many of its shells it takes to destroy each of the red army's vehicles, sat still 40 m ahead (crits vary it)
+    const shotsFor = (kind) => {
+      const counts = [];
+      for (let k = 0; k < 20; k++) {
+        fresh(); alone(); untake();
+        const target = army(kind, -1, 2, 640, 0.01);
+        let n = 0;
+        for (let i = 0; i < 120 * 30 && target.active && target.health > 0; i++) {
+          Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1, launching: false, ghost: 9 });
+          target.vs = -0.01; target.s = 640;
+          if (!Packages.list.some(p => p.active && p.owner === Player) && Packages.ready) { Packages.throwOne(); n++; }
+          step();
+        }
+        counts.push(target.active && target.health > 0 ? Infinity : n);
+      }
+      counts.sort((x, y) => x - y);
+      return counts;
+    };
+    const tally = Object.fromEntries(['jeep', 'apc', 'tank'].map(k => [k, shotsFor(k)]));
+    const spread = (c) => { const m = c[Math.floor(c.length / 2)]; return `${c[0]}-${c[c.length - 1]} (mostly ${m})`; };
+    console.log('    shots to destroy: ' + Object.entries(tally).map(([k, c]) => `${k} ${c.join(',')}`).join('; '));
+    check(shell?.kind === 'shell' && shell.gun === cars.CAR.cannon && shells === 1 && aimedAt && backAt && Object.values(tally).every(c => c.every(Number.isFinite)),
+      `the player's 8x8 fires a shell (${cars.CAR.cannon.range} m reach, ${cars.CAR.cannon.damage} damage) with the throw button, then must wait ${cars.CAR.cannon.cooldown} s: ` +
+      `at the nearest red vehicle in reach, ahead or behind, past green ones nearer; shells to destroy a red jeep ${spread(tally.jeep)}, 8x8 ${spread(tally.apc)}, tank ${spread(tally.tank)}`);
 
     // landmines: down the lanes; whatever touches one (the player's car, a ghost aside, or traffic, which never
     // steers round one) is destroyed outright, and the mine is gone

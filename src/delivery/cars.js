@@ -88,7 +88,7 @@ export const LEVEL_CARS = {
   // that fires dead ahead (cannon: see CONFIG.battle.guns; its rank: see CONFIG.vehicles.apc), and nothing
   // a bullet does to its tyres stops it
   apc: { id: 'apc', name: '8x8', price: 0, color: 0x3f7a2e, evilColor: 0x3f7a2e, model: 'apc', rank: 2, runFlat: true,
-    cannon: { range: 34, cooldown: 1.1, direct: 2.6, splash: 7, damage: 40, scale: 0.8 },
+    cannon: { range: 60, cooldown: 1.1, direct: 2.6, splash: 7, damage: 40, scale: 0.8 },
     maxSpeed: 32, accel: 9, crossing: 1, agility: 0.9, health: 240, mass: 3, hw: 1.35, hl: 3.4, height: 2.5 },
 };
 
