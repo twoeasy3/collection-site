@@ -879,6 +879,10 @@ export const CONFIG = {
     dodge: 0.5,            // chance a vehicle a hunter is after tries to get out of its way
     hunt: 90,              // m ahead a hunter looks for one to run into...
     look: 55,              // ...and a vehicle looks out for one coming at it
+    tank: { hunt: 35, laneWait: { min: 7, max: 11 } }, // a tank lumbers: it hunts only this close, and waits this
+                           // long (s) between lane changes of its own (hunting, dodging); none on a whim
+    goodFire: { reach: 90, behind: 30, rate: 0.6 }, // the green army's override: it fires on any red within reach
+                           // (m ahead, or behind), its turret snapping straight to it, rate times as long between shots
     reach: 70,             // m a gun reaches (the player's 8x8's: CAR.cannon)
     near: 12,              // m: no closer than this does a gun fire
     guns: {                // each kind's gun: s between shots, and what its shell does (as CONFIG.cannon*)

@@ -1333,21 +1333,64 @@ try {
     check(tankGun.fired === 'shell' && Math.abs(tankGun.turned) > 0.1 && tankGun.hurt && tankGun.friendly && jeepThrow.fired === 'bomb' && jeepThrow.friendly,
       `a red tank turns its gun (${tankGun.turned.toFixed(2)} rad) on a green jeep off to one side and shells it, sparing the red tank beside it; a red jeep throws a package at a green 8x8, sparing its own side too`);
 
-    // hunting and dodging: a tank steers into the lane of an 8x8 coming at it; that 8x8 dodges half the time;
-    // two of a kind always steer clear of each other
-    let hunted = 0, dodged = 0, clear = 0;
+    // hunting and dodging: a tank steers into the lane of an 8x8 coming at it, but lumbers: only once it is close
+    // (B.tank.hunt), and one lane change in a while (B.tank.laneWait), so an 8x8 lanes away gets by; that 8x8
+    // dodges half the time; two of a kind always steer clear of each other
+    let hunted = 0, dodged = 0, clear = 0, steps = 0, escaped = 0;
     for (let k = 0; k < 40; k++) {
       fresh(); alone(); untake();
-      const hunter = army('tank', -1, 1, 1000, 10), prey = army('apc', 1, 4, 930, 10);
+      const hunter = army('tank', -1, 3, 1000, 10), prey = army('apc', 1, 4, 930, 10);
       for (let i = 0; i < 120 * 2.5; i++) { hold(800); step(); }
       if (hunter.lane === prey.lane || prey.dodging === hunter) hunted++;
       if (prey.dodging === hunter && prey.dodges) dodged++;
+      if (k < 10) { // (one three lanes away)
+        fresh(); alone(); untake();
+        const far = army('tank', -1, 3, 1000, 10), fast = army('apc', 1, 0, 930, 10);
+        let last = far.lane, met = false;
+        for (let i = 0; i < 120 * 4; i++) {
+          hold(800); step();
+          if (far.lane !== last) { steps++; last = far.lane; }
+          met ||= !fast.active || fast.health < fast.maxHealth;
+        }
+        if (!met) escaped++;
+      }
       fresh(); alone(); untake();
       const a = army('jeep', 1, 2, 900, 10), b = army('jeep', -1, 2, 950, 10);
       if (!watch([a, b], 120 * 3, () => hold(700)).includes('wrecked')) clear++;
     }
-    check(hunted >= 36 && dodged > 8 && dodged < 32 && clear >= 36,
-      `a tank goes after an 8x8 coming at it (${hunted} of 40), which tries to dodge it ${dodged} times of 40 (about half); two jeeps meeting steer clear of each other ${clear} times of 40`);
+    check(hunted >= 36 && dodged > 8 && dodged < 32 && clear >= 36 && steps <= 10 && escaped >= 9,
+      `a tank goes after an 8x8 a lane over coming at it (${hunted} of 40), which tries to dodge it ${dodged} times of 40 (about half); ` +
+      `one three lanes over gets by ${escaped} times of 10 (the tank changing lanes ${steps} times in all); two jeeps meeting steer clear of each other ${clear} times of 40`);
+
+    // tanks don't wander lanes on a whim (a free-for-all, the player held back out of it)
+    fresh();
+    const tanks = Traffic.cars.filter(c => c.active && c.kind === 'tank');
+    const lanesOf = new Map(tanks.map(c => [c, [c.lane, c.s]]));
+    let wandered = 0;
+    for (let i = 0; i < 120 * 6; i++) {
+      hold(Player.s);
+      step();
+      for (const c of tanks) {
+        const [lane, s] = lanesOf.get(c);
+        // (not knocked over by a shell, nor gone and come back on elsewhere)
+        if (c.active && c.kind === 'tank' && !c.foe && !c.stun && !c.spin && c.lane !== lane && Math.abs(c.s - s) < 5) wandered++;
+        lanesOf.set(c, [c.lane, c.s]);
+      }
+    }
+
+    // the green army's override (B.goodFire): a green 8x8 fires on a red tank behind it, its turret snapped round
+    fresh(); alone(); untake();
+    const gunner = army('apc', 1, 1, 900, 0.01, { gunWait: 0.2 }), behind = army('tank', -1, 4, 900 - 20, 0.01);
+    let shot = null;
+    for (let i = 0; i < 120 * 2 && !shot; i++) {
+      for (const c of [gunner, behind]) { c.vs = c.dir * 0.01; c.lat = T().laneOffset(c.lane, c.s); }
+      hold(700);
+      step();
+      shot = Packages.list.find(p => p.active && p.owner === gunner) || null;
+    }
+    check(tanks.length > 0 && wandered === 0 && shot?.kind === 'shell' && Math.abs(gunner.turret) > 1.5,
+      `tanks keep their lanes unless hunting or dodging (${wandered} wanders by ${tanks.length} tanks in 6 s); ` +
+      `a green 8x8 shells a red tank behind it, its turret swung ${gunner.turret?.toFixed(2)} rad`);
 
     // the player's gun: the throw button fires a small shell dead ahead, every so often
     fresh(); alone(); untake();
