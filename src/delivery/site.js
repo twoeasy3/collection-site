@@ -13,6 +13,8 @@
 //                                  it (no more often than every min-max s), one rolls off, with a
 //                                  rumble, across the shoulder and on across the road (an obstacle)
 // (rollers and forklifts on the shoulder are machinery: see machinery.js)
+// A level's "potholes" ({ s, lane, r }) are the same idea in the lanes: a wheel dropping into one is
+// a jolt. Either can give the car a flat tyre (CONFIG.site.trenchPuncture, potholePuncture).
 // This is what they do; render/site.js draws them (the barrows and pipes are drawn as obstacles).
 // ============================================================================
 import { CONFIG } from './config.js';
@@ -33,6 +35,9 @@ export const Site = {
   // the pipe stacks: { s, side, wait (s before another can roll) }
   stacks: [],
   lastGap: null, // the trench gap the player's wheel last dropped into (one jolt a gap)
+  // the potholes: { s, lat, r }
+  holes: [],
+  lastHole: null, // the pothole the player's wheel last dropped into (one jolt each)
 
   reset() {
     const W = CONFIG.site;
@@ -44,6 +49,16 @@ export const Site = {
     this.stacks = works.filter(w => w.kind === 'pipes').map(w => ({ s: w.s, side: sideOf(w), every: w.every || W.pipeEvery, wait: 0 }));
     for (const o of Collision.obstacles) if (o.roll) o.roll.stack = this.stacks.find(st => st.s === o.roll.at) || null;
     this.lastGap = null;
+    this.holes = (LEVEL.potholes || []).map(h => {
+      const s = Track.place(h);
+      return { s, lat: Track.laneOffset(h.lane, s) + (h.off || 0), r: h.r || W.potholeR };
+    });
+    this.lastHole = null;
+  },
+  // the pothole a wheel of the player's car (one each side, inset from its sides) is in, if any
+  pothole(s, lat) {
+    const wheel = Math.max(0.3, Player.hw - 0.3);
+    return this.holes.find(h => Math.abs(s - h.s) < h.r && (Math.abs(lat - wheel - h.lat) < h.r || Math.abs(lat + wheel - h.lat) < h.r)) || null;
   },
   // the bucket of an excavator: where it is (s, lat) and how high (it is low only over the road)
   bucket(d) {
@@ -76,8 +91,22 @@ export const Site = {
         Player.stun = Math.max(Player.stun, 0.3);
         Game.shake = Math.max(Game.shake, 0.7);
         sfx('crash', 0.8);
+        // (and maybe a flat tyre, on the trench's side)
+        const trench = (LEVEL.siteWorks || []).find(w => w.kind === 'trench' && Player.s >= w.from && Player.s <= w.to);
+        if (trench && Math.random() < W.trenchPuncture) Player.punctureTyre(sideOf(trench));
       }
       this.lastGap = gap;
+      // potholes: the same jolt, a little less, and maybe a flat on the side that hit it
+      const hole = this.pothole(Player.s, Player.lat);
+      if (hole && hole !== this.lastHole && Player.shield <= 0 && Player.tank <= 0) {
+        hurt(Player, W.potholeDamage);
+        Player.speed *= W.potholeKept;
+        Player.stun = Math.max(Player.stun, 0.2);
+        Game.shake = Math.max(Game.shake, 0.5);
+        sfx('crash', 0.6);
+        if (Math.random() < W.potholePuncture) Player.punctureTyre(hole.lat < Player.lat ? -1 : 1);
+      }
+      this.lastHole = hole;
     }
     // excavators swinging their arms out over the road and back
     for (const d of this.diggers) {

@@ -383,3 +383,99 @@ OBSTACLE_MODELS.asteroid = (o) => {
   group.userData = { rock };
   return group;
 };
+
+// ---- the hidden gimmicks level's (see ../cameras.js, CONFIG.rockfall and CONFIG.peloton) ----
+// a speed camera: a grey pole, a yellow box on top with its lens and flash looking back down the road
+// (local -z: at traffic coming up to it), and a blue sign under it. userData.lamp: the flash's material
+OBSTACLE_MODELS.camera = (o) => {
+  const lamp = new THREE.MeshBasicMaterial({ color: 0x555a60 });
+  const group = boxModel([
+    [lambert(0x8a9096), 0.2, o.height - 0.7, 0.2, 0, (o.height - 0.7) / 2, 0],               // the pole
+    [lambert(0xf2c21c), 0.9, 1.0, 1.1, 0, o.height - 0.4, 0],                                // the box
+    [lambert(0x1b1d22), 0.96, 0.14, 1.16, 0, o.height + 0.17, 0],                            // its lid
+    [lambert(0x1b1d22), 0.45, 0.45, 0.06, 0, o.height - 0.55, -0.57],                        // the lens
+    [lamp, 0.65, 0.2, 0.06, 0, o.height - 0.13, -0.57],                                      // the flash
+    [lambert(0x2f5fd8), 0.9, 0.9, 0.05, 0, o.height - 1.75, -0.12],                          // the sign
+    [lambert(0xf4f4f4), 0.6, 0.16, 0.06, 0, o.height - 1.75, -0.15],                         // (its white bar)
+  ]);
+  group.userData.lamp = lamp;
+  return group;
+};
+// a rock come down the hillside: a lumpy grey-brown boulder, tumbling as it falls. userData.rock: the boulder
+OBSTACLE_MODELS.rock = (o) => {
+  const group = new THREE.Group();
+  const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(o.r, 0), lambert([0x7a7066, 0x8d8174, 0x6b625a][Math.floor(Math.random() * 3)]));
+  rock.scale.set(1, 0.8, 1.1);
+  rock.rotation.set(Math.random() * 3, Math.random() * 3, 0);
+  rock.position.y = o.r * 0.75;
+  group.add(rock);
+  group.userData.rock = rock;
+  return group;
+};
+// a cyclist, cartoon style: a chunky rider in a bright jersey, a big round head under a striped
+// helmet, hunched over the bars of a bike with fat tyres. userData.animate(t) pedals, turning
+// the wheels and the legs, and bobs the rider up and down with each stroke
+OBSTACLE_MODELS.cyclist = () => {
+  const colors = [[0xffd23f, 0x2f7de1], [0xff4f8b, 0xffd23f], [0x2f7de1, 0xff7a1a], [0x39d353, 0xb026ff], [0xff7a1a, 0x2bd4ff], [0xb026ff, 0x39d353]];
+  const [main, trim] = colors[Math.floor(Math.random() * colors.length)];
+  const jersey = lambert(main), stripe = lambert(trim), black = lambert(0x1b1d22), skin = lambert(0xf2c09a);
+  const white = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  const frame = lambert(trim);
+  const group = new THREE.Group(), rider = new THREE.Group();
+  const add = (parent, geometry, material, x, y, z) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.set(x, y, z);
+    parent.add(mesh);
+    return mesh;
+  };
+  // the bike: fat tyres, a thick frame, a seat and bars
+  const wheels = [-0.55, 0.55].map(z => {
+    const wheel = add(group, new THREE.TorusGeometry(0.34, 0.09, 8, 18), black, 0, 0.43, z);
+    wheel.rotation.y = Math.PI / 2;
+    add(wheel, new THREE.CylinderGeometry(0.08, 0.08, 0.1, 10).rotateX(Math.PI / 2), frame, 0, 0, 0); // (the hub)
+    return wheel;
+  });
+  const tube = (x0, y0, z0, x1, y1, z1) => {
+    const a = new THREE.Vector3(x0, y0, z0), b = new THREE.Vector3(x1, y1, z1);
+    const mesh = add(group, new THREE.CylinderGeometry(0.06, 0.06, a.distanceTo(b), 8), frame, (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize());
+  };
+  tube(0, 0.43, -0.55, 0, 0.95, -0.15); // seat stay to the seat
+  tube(0, 0.43, -0.1, 0, 0.95, -0.15);  // the seat tube
+  tube(0, 0.43, -0.1, 0, 0.95, 0.45);   // the down tube
+  tube(0, 0.95, -0.15, 0, 0.95, 0.45);  // the top tube
+  tube(0, 0.43, 0.55, 0, 1.08, 0.48);   // the fork
+  add(group, new THREE.BoxGeometry(0.62, 0.08, 0.08), black, 0, 1.1, 0.5);        // the bars
+  add(group, new THREE.BoxGeometry(0.2, 0.08, 0.34), black, 0, 1.0, -0.17);       // the seat
+  // the rider: a round body leaning over the bars, a big head, its arms out to the bars
+  group.add(rider);
+  const body = add(rider, new THREE.SphereGeometry(0.36, 14, 10), jersey, 0, 1.35, 0.02);
+  body.scale.set(0.95, 0.85, 1.25);
+  body.rotation.x = 0.5;
+  add(rider, new THREE.TorusGeometry(0.3, 0.05, 6, 16), stripe, 0, 1.4, 0.05).rotation.x = Math.PI / 2 + 0.5; // (a band round the jersey)
+  for (const x of [-0.27, 0.27]) {
+    const arm = add(rider, new THREE.CylinderGeometry(0.07, 0.07, 0.55, 8), jersey, x, 1.3, 0.33);
+    arm.rotation.x = 1.1;
+  }
+  add(rider, new THREE.SphereGeometry(0.3, 16, 12), skin, 0, 1.75, 0.38);           // the head...
+  const helmet = add(rider, new THREE.SphereGeometry(0.33, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2), stripe, 0, 1.8, 0.34);
+  helmet.scale.set(1, 0.85, 1.3);
+  add(rider, new THREE.BoxGeometry(0.08, 0.06, 0.8), jersey, 0, 2.08, 0.32);       // (the helmet's stripe)
+  // the legs, pedalling: each a thigh and a shin, pumping round
+  const legs = [-1, 1].map(side => {
+    const hip = new THREE.Group();
+    hip.position.set(side * 0.17, 1.08, -0.12);
+    group.add(hip);
+    add(hip, new THREE.CylinderGeometry(0.09, 0.08, 0.5, 8), black, 0, -0.25, 0.05);
+    add(hip, new THREE.SphereGeometry(0.1, 8, 6), white, 0, -0.52, 0.12);          // (a white shoe)
+    return hip;
+  });
+  group.userData.animate = (t) => {
+    for (const wheel of wheels) wheel.rotation.x = -t * 9;
+    legs.forEach((leg, k) => { leg.rotation.x = Math.sin(t * 6 + k * Math.PI) * 0.6; });
+    rider.position.y = Math.abs(Math.sin(t * 6)) * 0.06; // (bobbing with each stroke)
+    rider.rotation.z = Math.sin(t * 3) * 0.05;
+  };
+  group.scale.setScalar(1.15);
+  return group;
+};

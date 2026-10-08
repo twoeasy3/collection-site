@@ -976,6 +976,249 @@ try {
       `Car Swap: the Commuter is lent ${lentOut.size} different cars over 40 swaps (never itself or the Tank), each with the same share of health, and given back after, and on leaving the run`);
   }
 
+  section('Gimmick Road: cameras, crossings, stop / go, fog, potholes, rockfall, pelotons, processions');
+  {
+    const { SpeedCameras } = await load('/src/delivery/cameras.js');
+    const { Crossings } = await load('/src/delivery/crossing.js');
+    const { StopGo } = await load('/src/delivery/stopgo.js');
+    const { Site } = await load('/src/delivery/site.js');
+    const T = () => track.Track;
+    const fresh = () => {
+      levels.selectSpecial(levels.HIDDEN_LEVELS['gimmick-road']);
+      cars.selectCar('commuter');
+      Game.evil = false;
+      Game.start();
+    };
+    // the player at s in its lane doing speed, nothing else about
+    const setPlayer = (s, speed, extra = {}) => Object.assign(Player, { s, lat: T().laneOffset(1, s), speed, launching: false, shield: 0, ghost: 0, latVel: 0, ...extra });
+    const step = (n = 1) => { for (let i = 0; i < n; i++) { Game.update(1 / 120); FxQueue.length = 0; } };
+    const clearRoad = () => { for (const c of Traffic.cars) c.active = false; };
+    // one traffic car, kind, going dir in lane at s doing speed (taken from the pool)
+    const placeCar = (dir, lane, s, speed, extra = {}) => {
+      const car = Traffic.cars.find(c => !c.active && !c.unused && c.dir === dir) || Traffic.cars.find(c => !c.unused && !c.fixed && c.dir === dir), type = CONFIG.vehicles.commuter;
+      Object.assign(car, { active: true, kind: 'commuter', fixed: false, parked: false, emergency: false, racer: false, procession: 0, junction: null,
+        s, lane, lat: T().laneOffset(lane, s), vs: dir * speed, baseSpeed: speed, latVel: 0, yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0,
+        toad: null, arrest: -1, think: 99, rival: null, pendingLane: null, evil: false, mood: 0, emotion: 'neutral', hesitant: false, tap: 0,
+        hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health, maxHealth: type.health, stopGoFor: null, pulledOver: false, ...extra });
+      return car;
+    };
+    fresh();
+    check(T().problems.length === 0 && T().length === 5000, 'Gimmick Road loads with no problems' + (T().problems.length ? ': ' + T().problems.join('; ') : ''));
+
+    // speed cameras: over the limit, the first a fine and the next a bust; under it, run over, or with a radar detector, nothing
+    const C = CONFIG.speedCamera, cams = SpeedCameras.list;
+    const pass = (cam, speed, extra) => { setPlayer(cam.s - 3, speed, extra); SpeedCameras.lastS = Player.s; step(30); };
+    fresh(); clearRoad();
+    pass(cams[0], cams[0].limit * 0.85);
+    const slow = SpeedCameras.caught;
+    fresh(); clearRoad();
+    pass(cams[0], cams[0].limit * 1.3);
+    const fined = Game.fines, busted1 = Player.busted;
+    pass(cams[1], cams[1].limit * 1.3);
+    const busted2 = Player.busted;
+    fresh(); clearRoad();
+    pass(cams[0], cams[0].limit * 1.3, { radar: 5 });
+    const radar = SpeedCameras.caught;
+    fresh(); clearRoad();
+    cams[0].obstacle.gone = true;
+    pass(cams[0], cams[0].limit * 1.3);
+    check(slow === 0 && fined === C.fine && !busted1 && busted2 && radar === 0 && SpeedCameras.caught === 0,
+      `speed cameras: under the limit, nothing; over it, a $${fined} fine, then a bust at the next; with a radar detector, or the camera run over, nothing`);
+    // the fine comes off what the run banks
+    fresh(); clearRoad();
+    pass(cams[0], cams[0].limit * 1.3);
+    check(Game.fines === C.fine, `a fine of $${Game.fines} is taken off the tip and cash banked on delivery`);
+
+    // a level crossing: set off as the player comes near; traffic waits at the booms; the train wrecks what is on the line
+    fresh(); clearRoad();
+    const X = CONFIG.crossing;
+    let cross = Crossings.list[0]; // (made afresh as each run starts)
+    setPlayer(cross.s - X.trigger - 20, 0.1, { speed: 0.1 });
+    step(5);
+    const quiet = cross.state;
+    setPlayer(cross.s - X.trigger + 10, 0.1);
+    step(2);
+    const set = cross.state;
+    const waiting = placeCar(1, 1, cross.s - 60, 12);
+    const onLine = placeCar(-1, 0, cross.s, 0.01, { baseSpeed: 0.01 });
+    let maxLowered = 0, sawTrain = false, front = -Infinity, lineWrecked = false;
+    for (let i = 0; i < 120 * 8 && !(sawTrain && cross.state === 'idle'); i++) {
+      Player.s = cross.s - X.trigger + 10; Player.speed = 0.1;
+      if (onLine.health > 0 && !lineWrecked) { onLine.s = cross.s; onLine.vs = -0.01; }
+      step();
+      lineWrecked ||= onLine.health <= 0;
+      maxLowered = Math.max(maxLowered, Crossings.lowered(cross));
+      if (cross.state === 'train') sawTrain = true;
+      if (Crossings.flashing(cross)) front = Math.max(front, waiting.s + waiting.hl); // (the furthest its nose gets while the lights flash)
+    }
+    const stopLine = cross.s - X.stopLine;
+    check(quiet === 'idle' && set === 'warn' && sawTrain && maxLowered === 1 && front < stopLine && front > cross.s - 60 && lineWrecked,
+      `level crossing: quiet until the player is within ${X.trigger} m, then lights, booms down and a train; a car waits ${(stopLine - front).toFixed(1)} m short of the boom, and one left on the line is wrecked`);
+    // the player on the line as the train goes by is wrecked; a ghost isn't; driving through a lowered boom breaks it
+    fresh(); clearRoad();
+    cross = Crossings.list[0];
+    Crossings.start(cross);
+    cross.t = X.warn; // (the train comes now)
+    let wrecked = false;
+    for (let i = 0; i < 120 * 3 && !wrecked; i++) { setPlayer(cross.s, 0.1); step(); wrecked = Player.health <= 0 || !Player.active; }
+    fresh(); clearRoad();
+    cross = Crossings.list[0];
+    Crossings.start(cross);
+    cross.t = X.warn;
+    let ghosted = true;
+    for (let i = 0; i < 120 * 3; i++) { setPlayer(cross.s, 0.1, { ghost: 5 }); step(); ghosted &&= Player.active && Player.health > 0; }
+    fresh(); clearRoad();
+    cross = Crossings.list[0];
+    Crossings.start(cross);
+    cross.t = X.lower;
+    setPlayer(stopLine - 6, 15);
+    const health0 = Player.health;
+    step(60);
+    check(wrecked && ghosted && cross.broken[0] && Player.health < health0,
+      'level crossing: the player\'s car on the line as the train goes by is wrecked (a ghost passes through), and driving through a lowered boom breaks it, with a knock' +
+      (wrecked && ghosted && cross.broken[0] ? '' : ` [wrecked ${wrecked}, ghost ok ${ghosted}, boom broken ${cross.broken[0]}]`));
+
+    // stop / go: the sign goes round; traffic waits at its STOP; coming the other way, it goes through in the player's lane
+    fresh(); clearRoad();
+    const G = CONFIG.stopGo, works = StopGo.list[0];
+    const seen = new Set();
+    for (let i = 0; i < 120 * (2 * G.go + 2 * G.clear + 1); i++) { StopGo.update(1 / 120); seen.add(works.phase); }
+    works.phase = 2; works.t = 0; // (GO the other way: STOP for the player's way)
+    setPlayer(works.from - 400, 0.1);
+    const queued = placeCar(1, 1, works.from - 70, 12);
+    const through = placeCar(-1, 0, works.to + 30, 10);
+    let detourLat = -Infinity;
+    for (const c of Traffic.cars) if (c !== queued && c !== through) Object.assign(c, { active: false, unused: true }); // (just the two of them)
+    for (let i = 0; i < 120 * 6; i++) {
+      Player.s = works.from - 400; Player.speed = 0.1;
+      step();
+      if (through.s < works.to - 10 && through.s > works.from) detourLat = Math.max(detourLat, through.lat);
+    }
+    check(seen.size === 4 && queued.active && queued.s + queued.hl < works.from - StopGo.taper && queued.s > works.from - 70 && Math.abs(queued.vs) < 0.5 &&
+      Math.abs(detourLat - StopGo.openLat(works.from)) < 0.4,
+      `stop / go: GO, clear, GO the other way, clear; a car waits at its STOP ${(works.from - queued.s - queued.hl).toFixed(1)} m short of the works (clear of the traffic coming out of it), and one coming the other way goes through in the player's lane`);
+
+    // fog: thickest in the bank, easing in over its edges; the police see less in it
+    fresh(); clearRoad();
+    const fog = levels.HIDDEN_LEVELS['gimmick-road'].fog[0], E = CONFIG.fog.edge;
+    const foggy = [fog.from - E - 5, fog.from - E / 2, fog.from + 10, (fog.from + fog.to) / 2, fog.to + E + 5].map(s => T().foggy(s));
+    const cop = placeCar(1, 1, 0, 1, { kind: 'police' });
+    const sees = (s, ahead) => { setPlayer(s, 0.1); cop.s = s + ahead; cop.lat = Player.lat; return Traffic.policeNear(); };
+    const sight = CONFIG.policeSightRange;
+    check(foggy[0] === 0 && foggy[1] > 0.4 && foggy[1] < 0.6 && foggy[2] === 1 && foggy[3] === 1 && foggy[4] === 0 &&
+      sees(500, sight * 0.8) && !sees((fog.from + fog.to) / 2, sight * 0.8) && sees((fog.from + fog.to) / 2, sight * CONFIG.fog.policeSight * 0.8),
+      `fog: none, half, thick, thick, none along the bank; a police car ${(sight * 0.8).toFixed(0)} m off sees the player out of it, not in it (in it, only within ${(sight * CONFIG.fog.policeSight).toFixed(0)} m)`);
+
+    // potholes and trenches: a jolt each, and sometimes a flat tyre (on the side that hit)
+    const W = CONFIG.site;
+    let holes = 0, holeFlats = 0, gaps = 0, gapFlats = 0, sideOk = true;
+    for (let k = 0; k < 200; k++) {
+      fresh(); clearRoad();
+      const hole = Site.holes[0];
+      setPlayer(hole.s - 6, 20, { health: Player.maxHealth, lat: hole.lat + 0.3 });
+      for (let i = 0; i < 40; i++) step();
+      if (Player.health < Player.maxHealth) holes++;
+      if (Player.puncture) { holeFlats++; sideOk &&= Player.puncture === -1; }
+      fresh(); clearRoad();
+      const trench = levels.HIDDEN_LEVELS['gimmick-road'].siteWorks[0];
+      Object.assign(Player, { s: trench.from + W.plateLength + 1, lat: T().hi(trench.from + 10) - 1.2, speed: 4, launching: false, shield: 0, latVel: 0, health: Player.maxHealth });
+      Site.lastGap = null;
+      step(2);
+      if (Player.health < Player.maxHealth) gaps++;
+      if (Player.puncture) { gapFlats++; sideOk &&= Player.puncture === 1; }
+    }
+    check(holes === 200 && gaps === 200 && sideOk && Math.abs(holeFlats / 200 - W.potholePuncture) < 0.1 && Math.abs(gapFlats / 200 - W.trenchPuncture) < 0.09,
+      `potholes and trenches: a jolt every time; a flat tyre on the side that hit in ${holeFlats} of 200 potholes (about ${W.potholePuncture * 200}) and ${gapFlats} of 200 trench gaps (about ${W.trenchPuncture * 200})` +
+      (holes === 200 && gaps === 200 && sideOk ? '' : ` [jolts ${holes} / ${gaps}, sides right ${sideOk}]`));
+
+    // rockfall: up the hillside until the player is near, then down onto the road; only the player hits one
+    fresh(); clearRoad();
+    const rocks = Collision.obstacles.filter(o => o.kind === 'rock');
+    const up = rocks.every(r => r.h === CONFIG.rockfall.height);
+    const fall = levels.HIDDEN_LEVELS['gimmick-road'].rockfall[0];
+    for (let s = fall.from - 200; s < fall.to + 10; s += 2) { setPlayer(s, 0.1, { ghost: 9 }); step(6); }
+    step(120 * 3);
+    const down = rocks.every(r => r.h === 0 && r.lat > T().lo(r.s) && r.lat < T().hi(r.s));
+    const rock = rocks[0], passer = placeCar(1, 1, rock.s - 4, 10, { lat: rock.lat, lane: T().nearestLane(rock.lat, rock.s) });
+    const passerHealth = passer.health;
+    let passed = false;
+    for (let i = 0; i < 120; i++) { passer.lat = rock.lat; setPlayer(rock.s - 40, 0.1, { ghost: 9 }); step(); passed ||= passer.s > rock.s + rock.hl + passer.hl; }
+    check(up && down && !rock.gone && passed && passer.active && passer.health === passerHealth,
+      `rockfall: all ${rocks.length} rocks up the hillside to start with, all down on the road once the player has come by, and traffic drives through them untouched`);
+
+    // a peloton: waiting until the player is near, then riding along by the kerb; only the player hits a cyclist
+    fresh(); clearRoad();
+    const riders = Collision.obstacles.filter(o => o.ride), ride0 = riders[0], P = CONFIG.peloton;
+    setPlayer(ride0.ride.s0 - P.trigger - 50, 0.1);
+    step(120);
+    const waited = riders.every(r => !r.ride.on && Math.abs(r.s - r.ride.s0) < 1e-6);
+    setPlayer(ride0.ride.s0 - P.trigger + 20, 0.1);
+    step(1);
+    const s1 = ride0.s;
+    step(120);
+    const rode = ride0.s - s1;
+    const byKerb = riders.every(r => r.lat > T().laneOffset(1, r.s) && r.lat < T().laneHi(r.s));
+    const through2 = placeCar(1, 1, ride0.s - 6, 20, { lat: ride0.lat });
+    const health2 = through2.health;
+    for (let i = 0; i < 60; i++) { through2.lat = ride0.lat; Player.s = ride0.ride.s0 - P.trigger + 20; Player.speed = 0.1; step(); }
+    setPlayer(ride0.s - 3, 15, { lat: ride0.lat, health: Player.maxHealth });
+    step(20);
+    check(waited && Math.abs(rode - P.speed) < 0.2 && byKerb && through2.health === health2 && riders.some(r => r.gone) && Player.health < Player.maxHealth,
+      `peloton: ${riders.length} cyclists wait until the player is within ${P.trigger} m, then ride at ${rode.toFixed(1)} m/s by the kerb; traffic passes through them, the player knocks one flying`);
+    // traffic coming up behind the peloton on this one-lane-each-way road isn't held up by it (it goes
+    // straight through), and nothing swerves out round it into the oncoming traffic: no head-ons.
+    // (just a car coming up behind and one coming the other way, on their own)
+    fresh();
+    const pack = Collision.obstacles.filter(o => o.ride);
+    setPlayer(pack[0].ride.s0 - 250, 0.1, { ghost: 9 });
+    step(2); // (it sets off)
+    const back0 = Math.min(...pack.map(o => o.s));
+    const follower = placeCar(1, 1, back0 - 60, 18), oncoming = placeCar(-1, 0, back0 + 120, 15);
+    for (const c of Traffic.cars) if (c !== follower && c !== oncoming) Object.assign(c, { active: false, unused: true });
+    let slowest = Infinity, drift = 0, wrecks = 0, passedPack = false;
+    for (let i = 0; i < 120 * 20 && !passedPack; i++) {
+      setPlayer(Math.min(...pack.map(o => o.s)) - 250, 0.1, { ghost: 9 });
+      step();
+      const back = Math.min(...pack.map(o => o.s)), front = Math.max(...pack.map(o => o.s));
+      if (follower.s > back - 30 && follower.s < front + 5) slowest = Math.min(slowest, Math.abs(follower.vs) / follower.baseSpeed);
+      drift = Math.max(drift, Math.abs(follower.lat - T().laneOffset(1, follower.s)), Math.abs(oncoming.lat - T().laneOffset(0, oncoming.s)));
+      if (follower.health <= 0 || oncoming.health <= 0 || !follower.active || !oncoming.active) wrecks++;
+      passedPack = follower.s > front + 5;
+    }
+    check(passedPack && slowest > 0.95 && drift < 0.3 && wrecks === 0,
+      `a peloton on a one-lane road: a car coming up behind goes straight through it at ${Math.round(slowest * 100)}% of its speed, keeping its lane (${drift.toFixed(2)} m off), and the car coming the other way is never met head-on`);
+
+    // ...which is a bust with a police car watching, and no offence without one
+    const knock = (police) => {
+      fresh(); clearRoad();
+      const rider = Collision.obstacles.find(o => o.ride);
+      const cop = police ? placeCar(1, 0, rider.s + 20, 0.1, { kind: 'police', lane: 0 }) : null;
+      for (const c of Traffic.cars) if (c !== cop) Object.assign(c, { active: false, unused: true }); // (no other police about)
+      setPlayer(rider.s - 3, 15, { lat: rider.lat });
+      step(20);
+      return { hit: Collision.obstacles.some(o => o.ride && o.gone), busted: Player.busted };
+    };
+    const seen2 = knock(true), unseen = knock(false);
+    check(seen2.hit && seen2.busted && unseen.hit && !unseen.busted,
+      'knocking a cyclist off with a police car watching is a bust; with none about, it is not');
+
+    // a funeral procession: a hearse and its cars in black, nose to tail; crash into one and all of them are furious
+    fresh(); clearRoad();
+    let started = false;
+    for (let k = 0; k < 10 && !started; k++) started = Traffic.startProcession(1);
+    const train = Traffic.cars.filter(c => c.active && c.procession).sort((a, b) => b.s - a.s);
+    const rightCars = train.length === CONFIG.procession.cars + 1 && train[0].kind === 'hearse' && train.slice(1).every(c => c.colors?.[0] === CONFIG.procession.paint);
+    for (let i = 0; i < 120 * 8; i++) { setPlayer(train[0].s - 300, 0.1, { ghost: 9, health: Player.maxHealth }); step(); } // (out of everyone's way)
+    const lane = train.every(c => c.lane === train[0].lane) && train.every(c => Math.abs(Math.abs(c.vs) - CONFIG.procession.speed) < 0.3);
+    const gapsOk = train.slice(1).every((c, i) => { const g = train[i].s - c.s - train[i].hl - c.hl; return g > 1 && g < 15; });
+    const calm = train.every(c => c.emotion !== 'angry');
+    const last = train[train.length - 1];
+    setPlayer(last.s - last.hl - Player.hl - 0.5, 20, { lat: last.lat });
+    step(30);
+    check(started && rightCars && lane && gapsOk && calm && train.every(c => c.emotion === 'angry'),
+      `funeral procession: a hearse and ${CONFIG.procession.cars} cars in black, keeping their lane at ${CONFIG.procession.speed} m/s nose to tail, calm until the player runs into the back of it, then all of them furious`);
+  }
+
   section('emergency vehicles');
   {
     const { Message } = await load('/src/delivery/messages.js');

@@ -312,6 +312,16 @@ const createTrack = () => {
   // is s in the mud? (a level's "mud": stretches of the main road where it gives way to mud)
   const mud = LEVEL.mud || [];
   const muddy = (s) => isMain(s) && mud.some(m => s >= m.from && s <= m.to);
+  // how thick a fog bank is at s (a level's "fog"): 0 (none) .. 1, thickening over its edges (see CONFIG.fog)
+  const fogBanks = LEVEL.fog || [];
+  const foggy = (s) => {
+    let most = 0;
+    for (const f of fogBanks) {
+      const E = CONFIG.fog.edge, u = Math.min(s - f.from + E, f.to + E - s) / E;
+      if (u > 0) most = Math.max(most, Math.min(1, u));
+    }
+    return most;
+  };
   // is a car (lat, half width hw) over the railway's track at s? (a level with a "railway")
   const onRails = (s, lat, hw) => !!LEVEL.railway && isMain(s) && Math.abs(lat) - hw < CONFIG.railCrossing.width / 2;
   // the level's zone at s, if any (a level's "zones": see levels.js)
@@ -637,6 +647,34 @@ const createTrack = () => {
       if (!['trench', 'excavator', 'workers', 'pipes'].includes(w.kind)) problems.push('site works at ' + at + ': no kind called "' + w.kind + '"');
       else if (!(at >= 0 && at <= length) || (w.to !== undefined && !(w.to > w.from && w.to <= length))) problems.push('site works at ' + at + ': beyond the road');
     }
+    // the hidden gimmicks level's (see levels.js)
+    const straight = (from, to) => { for (let s = from; s <= to; s += 5) if (curveAt(s)) return false; return true; };
+    for (const c of LEVEL.cameras || []) {
+      if (!(c.s >= 0 && c.s <= length)) problems.push('camera at ' + c.s + ': beyond the road');
+      else if (!['left', 'right', 'centre'].includes(c.side)) problems.push('camera at ' + c.s + ': side is left, right or centre');
+    }
+    for (const c of LEVEL.crossings || []) {
+      const R = CONFIG.crossing.stopLine + 10;
+      if (!(c.s - R >= 0 && c.s + R <= length)) problems.push('level crossing at ' + c.s + ': beyond the road');
+      else if (!straight(c.s - R, c.s + R)) problems.push('level crossing at ' + c.s + ': the road must run straight through it');
+    }
+    for (const z of LEVEL.stopGo || []) {
+      const R = CONFIG.stopGo.stopLine + 10;
+      if (!(z.from < z.to) || z.from - R < 0 || z.to + R > length) problems.push('stop / go at ' + z.from + ': from before to, on the road');
+      else if (ONE_WAY || LEFT !== 1 || RIGHT !== 1 || MID) problems.push('stop / go at ' + z.from + ': only on a two-way road of one lane each way');
+      else if (!straight(z.from - R, z.to + R)) problems.push('stop / go at ' + z.from + ': the road must run straight through it');
+    }
+    for (const z of [...(LEVEL.fog || []), ...(LEVEL.rockfall || [])]) {
+      if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.count ? 'rockfall' : 'fog') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
+      else if (z.count && z.side !== 'left' && z.side !== 'right') problems.push('rockfall at ' + z.from + ': side is left or right');
+    }
+    for (const h of LEVEL.potholes || []) {
+      if (!(h.s >= 0 && h.s <= length) || !(Number.isInteger(h.lane) && h.lane >= 0 && h.lane < LANES)) problems.push('pothole at ' + h.s + ': in a lane on the road');
+    }
+    for (const p of LEVEL.pelotons || []) {
+      if (!(p.s >= 0 && p.s <= length) || !(p.count > 0)) problems.push('peloton at ' + p.s + ': on the road, with a count');
+      else if (FLOW === 'south') problems.push('peloton at ' + p.s + ': it rides the player\'s way');
+    }
     for (const e of LEVEL.wreckage || []) {
       const name = 'wreckage at ' + e.at;
       if (!CONFIG.wreckage.kinds[e.kind]) problems.push(name + ': there is no kind of wreckage called "' + e.kind + '"');
@@ -738,7 +776,7 @@ const createTrack = () => {
     laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesOn, edge, extraLane, onBridge, icy, muddy, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
+    lanesOn, edge, extraLane, onBridge, icy, muddy, foggy, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

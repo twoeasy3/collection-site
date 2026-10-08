@@ -150,6 +150,21 @@
 //              straight on (stub m of it) where the route turns off at `at`; set off at trigger m
 //              short of there, it comes crashing down across that road (only a sight)
 //   parkedPlanes  { s, d, turn }: airliners parked d m off the road on the left, turned a little
+//   cameras    { s, side, limit }: a speed camera on its pole, on a shoulder (side 'left' | 'right') or
+//              on the centre line ('centre'); limit in km/h (default CONFIG.speedCamera.limit). Passing
+//              it faster is a fine the first time in a run, a bust after; run over, it's no offence
+//   processions  { every: { min, max } }: now and then a funeral procession, a hearse and its cars,
+//              slow, nose to tail (see CONFIG.procession)
+//   crossings  { s, trigger, every }: a level crossing: lights, booms, and a short fast train across
+//              the road, set off as the player comes within trigger m (see CONFIG.crossing). On straight road
+//   stopGo     { from, to }: stop / go roadworks on a two-way road: the oncoming side dug up over that
+//              stretch, both ways taking turns through the lane left (see CONFIG.stopGo). On straight road
+//   fog        { from, to }: a fog bank: the fog closes right in, and the police see less (see CONFIG.fog)
+//   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
+//   rockfall   { from, to, count, side }: rocks tumbling down onto the road from that side as the player
+//              comes near: obstacles, which only the player hits (see CONFIG.rockfall)
+//   pelotons   { s, count, speed, trigger }: cyclists two abreast by the kerb on the player's side,
+//              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton)
 //   hippos     { from, to, every: { min, max } }: a river beside the road (on the right) over that
 //              stretch, out of which a hippo charges across the road every min-max s, aimed at the
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
@@ -190,6 +205,7 @@ import panoramaAvenue from './levels/panorama-avenue.json';
 import grandPrix from './levels/grand-prix.json';
 import marinaBay from './levels/marina-bay.json';
 import testbed from './levels/testbed.json';
+import gimmickRoad from './levels/gimmick-road.json';
 import ohMine from './levels/oh-mine.json';
 import montreal from './levels/montreal.json';
 import bathurst from './levels/bathurst.json';
@@ -210,8 +226,11 @@ export const SCREENSAVER_LEVEL = chaos;
 // for the test track). A run on one banks nothing and records no best time. The test track has
 // every pickup laid out, twice, a mix of every kind of traffic, ambulances and TANK RAGE targets,
 // to try new things out on without putting them in a real level. The Singapore Grand Prix (once
-// S3, round Singapore II's streets) is kept here too: ?hidden=grand-prix
-export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix };
+// S3, round Singapore II's streets) is kept here too: ?hidden=grand-prix. Gimmick Road
+// (?hidden=gimmick-road) tries out the newest gimmicks, each on a stretch of its own: speed cameras,
+// potholes, a trench, a level crossing, stop / go roadworks, a fog bank, rockfall, a cyclist
+// peloton, and funeral processions
+export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix, 'gimmick-road': gimmickRoad };
 // the class every race is run in: 'f1', 'gt' (GT road cars) or 'lmp' (Le Mans prototypes): the player's car
 // and the grid (the menu's Race cars button; ?gt or ?lmp for that class whatever it says)
 export const RACE_CLASSES = { f1: 'F1', gt: 'GT', lmp: 'LMP' };

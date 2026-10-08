@@ -221,6 +221,9 @@ export const Collision = (() => {
     // box, a lifeguard chair, and a wrecked car (which spins on the spot as it drifts)
     umbrella: [1.2, 1.2, 3.0], surfboard: [0.6, 0.25, 2.6], cooler: [0.8, 0.6, 1.2], chair: [1.0, 1.0, 3.4],
     wreck: [1.0, 2.1, 1.4],
+    // the hidden gimmicks level's: a speed camera on its pole, a rock come down the hillside (its
+    // size replaced by its own radius), a cyclist on its bike
+    camera: [0.3, 0.3, 4.2], rock: [1, 1, 2], cyclist: [0.35, 0.95, 2.1],
   };
   const obstacles = [];
   const add = (kind, s, lat, extra) => {
@@ -255,6 +258,41 @@ export const Collision = (() => {
       }
     }
     for (const z of LEVEL.frogs || []) add('frog', 0, 0, { ...stretch(z), fromS: 0, fromLat: 0, toS: 0, toLat: 0, t: 1, rest: 0 });
+    // stop / go roadworks: cones down the centre line, and across the dug-up lane at each end (see StopGo)
+    for (const z of LEVEL.stopGo || []) {
+      const from = Track.place({ s: z.from }), to = from + (z.to - z.from);
+      for (let s = from; s <= to; s += CONFIG.stopGo.coneEvery) add('cone', s, -0.55);
+      for (const s of [from - 2, to + 2]) {
+        const lo = Track.laneLo(s) + 0.6;
+        for (let k = 0; k < 3; k++) add('cone', s, lo + (-0.55 - lo) * k / 2);
+      }
+    }
+    // speed cameras on their poles: on a shoulder, or on the centre line (see SpeedCameras)
+    (LEVEL.cameras || []).forEach((c, i) => {
+      const s = Track.place(c);
+      add('camera', s, c.side === 'centre' ? 0 : Track.shoulderOffset(c.side === 'left' ? -1 : 1, s), { camera: i });
+    });
+    // rockfall: each rock somewhere in its stretch, landing anywhere across the road, up the hillside
+    // on its side until the player is near (see CONFIG.rockfall). Seeded: the same rocks every run
+    let rockSeed = 97531;
+    const rockRand = () => ((rockSeed = (rockSeed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    for (const z of LEVEL.rockfall || []) {
+      const R = CONFIG.rockfall, side = z.side === 'left' ? -1 : 1;
+      for (let i = 0; i < (z.count || 5); i++) {
+        const s = Track.place({ s: z.from + (z.to - z.from) * (i + rockRand()) / (z.count || 5) });
+        const r = R.size.min + rockRand() * (R.size.max - R.size.min);
+        const lat = Track.lo(s) + r + rockRand() * (Track.hi(s) - Track.lo(s) - 2 * r);
+        add('rock', s, lat, { r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, side, land: lat, nearAt: R.near.min + rockRand() * (R.near.max - R.near.min) });
+      }
+    }
+    // pelotons: cyclists two abreast along the kerb of the player's side, waiting to set off
+    for (const p of LEVEL.pelotons || []) {
+      const P = CONFIG.peloton;
+      for (let i = 0; i < p.count; i++) {
+        const s = Track.place(p) - Math.floor(i / 2) * P.spacing, row = i % 2;
+        add('cyclist', s, 0, { ride: { s0: s, row, speed: p.speed || P.speed, trigger: p.trigger || P.trigger, on: false, t: Math.random() * 9 } });
+      }
+    }
     for (const z of LEVEL.dropBears || []) { // (each somewhere in its stretch, anywhere across the road)
       for (let i = 0; i < (z.count || 3); i++) {
         const s = Track.place({ s: z.from + Math.random() * (z.to - z.from) });
@@ -485,6 +523,34 @@ export const Collision = (() => {
           o.h = Math.max(0, o.h - o.fall * dt);
           if (o.h === 0) sfxAt('crash', o.s, 0.6); // (thud)
         }
+      } else if (o.kind === 'rock') {
+        // up the hillside until the player is near: then it tumbles down onto the road, bounding
+        // out across it to where it lands (it can only be hit once it is down)
+        if (o.h <= 0) continue;
+        if (!o.fall && o.s - Player.s > 0 && o.s - Player.s < o.nearAt) {
+          o.fall = 0.01;
+          sfxAt('crash', o.s, 0.4); // (the crack as it comes away)
+        }
+        if (o.fall) {
+          o.fall += 9.8 * dt;
+          o.h = Math.max(0, o.h - o.fall * dt);
+          const R = CONFIG.rockfall, u = 1 - o.h / R.height, edge = o.side < 0 ? Track.lo(o.s) - R.out : Track.hi(o.s) + R.out;
+          o.lat = edge + (o.land - edge) * Math.min(1, u * 1.25);
+          o.spin = (o.spin || 0) + dt * 6;
+          if (o.h === 0) {
+            o.lat = o.land;
+            sfxAt('crash', o.s, 0.8); // (thud)
+            if (Math.abs(o.s - Player.s) < 40) Game.shake = Math.max(Game.shake, 0.5);
+          }
+        }
+      } else if (o.ride) { // a cyclist: waiting until the player comes near, then riding along by the kerb
+        const P = CONFIG.peloton, w = o.ride;
+        if (!w.on && w.s0 - Player.s < w.trigger) w.on = true;
+        w.t += dt;
+        if (w.on) o.s += w.speed * dt;
+        const kerb = Track.laneHi(o.s) - 0.55 - w.row * 0.9;
+        o.lat = kerb + Math.sin(w.t * 1.7 + w.row) * P.wobble;
+        o.face = Math.cos(w.t * 1.7 + w.row) * 0.05;
       } else if (o.kind === 'cow' || o.kind === 'kangaroo') {
         const roo = o.kind === 'kangaroo';
         if (o.rest > 0) { o.rest -= dt; o.h = 0; continue; } // standing at the roadside
@@ -540,7 +606,7 @@ export const Collision = (() => {
     for (const o of obstacles) {
       if (o.gone || Math.abs(o.s - Player.s) > CONFIG.broadPhaseDistance) continue;
       if (o.kind === 'asteroid' && !atRoadLevel(o)) continue; // it passes over or under the car
-      if (o.kind === 'dropBear' && o.h > Player.height) continue; // (still up in its tree, or falling)
+      if ((o.kind === 'dropBear' || o.kind === 'rock') && o.h > Player.height) continue; // (still up in its tree, or falling)
       if (o.dance && o.h > Player.height) continue; // (a portaloo up in the air: the car goes underneath)
       if (!overlap(Player, o)) continue;
       // any touch blows the obstacle up: the car is damaged and loses speed, but drives on
@@ -553,7 +619,10 @@ export const Collision = (() => {
         if (!cost.light) Player.stun = Math.max(Player.stun, CONFIG.stunTime * 0.5);
       }
       Game.shake = Math.max(Game.shake, cost.light ? 0.3 : 1);
-      FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false });
+      // (a cyclist goes up on its own, small, its wheels flying: the rest of the bunch rides on)
+      FxQueue.push(o.ride ? { type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false, scale: 0.55, smoke: 0.5, tyres: true }
+        : { type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false });
+      if (o.kind === 'cyclist' && Traffic.policeNear()) Player.bust('cyclist'); // (knocking a cyclist off in front of the police)
     }
   };
   // a dancing portaloo, `t` s into its row's dance (every one in a row keeps time with the rest)
@@ -606,6 +675,19 @@ export const Collision = (() => {
         o.near = CONFIG.dropBear.near.min + Math.random() * (CONFIG.dropBear.near.max - CONFIG.dropBear.near.min);
         continue;
       }
+      if (o.kind === 'rock') { // back up the hillside
+        o.h = CONFIG.rockfall.height;
+        o.fall = 0;
+        o.spin = 0;
+        o.lat = o.side < 0 ? Track.lo(o.s) - CONFIG.rockfall.out : Track.hi(o.s) + CONFIG.rockfall.out;
+        continue;
+      }
+      if (o.ride) { // a cyclist back where its peloton waits
+        o.s = o.ride.s0;
+        o.ride.on = false;
+        o.lat = Track.laneHi(o.s) - 0.55 - o.ride.row * 0.9;
+        continue;
+      }
       if (o.migrate) { // back to where it started out in the herd
         o.lat = o.lat0;
         continue;
@@ -656,7 +738,12 @@ export const Collision = (() => {
         // broad phase: nearby along the track and within neighbouring lanes
         if (Math.abs(b.s - a.s) > CONFIG.broadPhaseDistance ||
             Math.abs(b.lat - a.lat) > CONFIG.laneWidth * 1.5) continue;
-        if (overlap(a, b)) resolve(a, b);
+        if (overlap(a, b)) {
+          resolve(a, b);
+          // (the player crashing into a funeral procession: all of it is furious: see Traffic.mourn)
+          if (a.isPlayer && b.procession) Traffic.mourn(b.procession);
+          else if (b.isPlayer && a.procession) Traffic.mourn(a.procession);
+        }
       }
     }
     hitObstacles();

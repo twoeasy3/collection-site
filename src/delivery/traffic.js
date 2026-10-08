@@ -14,6 +14,8 @@ import { Social } from './social.js';
 import { Collision } from './collision.js';
 import { Pickups } from './pickups.js';
 import { Gunfire } from './gunfire.js';
+import { Crossings } from './crossing.js';
+import { StopGo } from './stopgo.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -82,7 +84,8 @@ export const Traffic = (() => {
   };
   // is a police car close enough to see what the player is doing?
   const policeNear = () => cars.some(c => c.active && !c.junction && c.kind === 'police' && !c.toad && c.stun <= 0 &&
-    Math.abs(c.s - Player.s) < Social.policeSight && Math.abs(c.lat - Player.lat) < 25); // (as far as the player's standing lets it)
+    Math.abs(c.s - Player.s) < Social.policeSight * (1 - (1 - CONFIG.fog.policeSight) * Track.foggy(Player.s)) && // (as far as the player's standing lets it, and less in fog)
+    Math.abs(c.lat - Player.lat) < 25);
 
   const MOOD_START = { happy: 0.7, neutral: 0, angry: -0.7 };
   // evil cars are more likely to start out angry (a level's "drivers" can set the chances
@@ -204,7 +207,7 @@ export const Traffic = (() => {
   let swinging = false;
   const swing = (car) => {
     const type = CONFIG.vehicles[car.kind];
-    if (car.swung || car.racer || car.courier || type.special || type.evilOnly) return;
+    if (car.swung || car.racer || car.courier || car.procession || type.special || type.evilOnly) return;
     car.evil = !car.evil;
     car.swung = true;
   };
@@ -299,6 +302,8 @@ export const Traffic = (() => {
     car.blocker = null;     // ...the vehicle in its way, if any...
     car.blockTime = 0;      // ...for how long (s) it has been close behind it...
     car.sparePlayer = false; // ...and done waiting for a player nobody could bust
+    car.procession = 0;     // the funeral procession it is in (see startProcession), 0 = none
+    car.stopGoFor = null;   // the stop / go works it has decided whether to run the STOP at (see StopGo)
     if (toads) makeToad(car);
     car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
     car.think = Math.random() * 2;
@@ -406,7 +411,7 @@ export const Traffic = (() => {
   // how a traffic driver treats the player (see CONFIG.attitude): by its side, its mood and the
   // player's side. null: it pays the player no special attention. (Not racers, who have race rules
   // of their own; nor the police, ambulances, nor trucks and tractors, which keep to themselves)
-  const minds = (car) => Player.active && !car.racer && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
+  const minds = (car) => Player.active && !car.racer && !car.procession && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
     !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir;
   const attitude = (car) => {
     if (!minds(car)) return null;
@@ -892,7 +897,7 @@ export const Traffic = (() => {
   };
 
   const think = (car) => {
-    if (car.punctured || car.stationed) return; // (pulled over with a flat, or a police car on station)
+    if (car.punctured || car.stationed || car.procession) return; // (pulled over with a flat, a police car on station, or in a funeral procession)
     if (car.kind === 'tractor' || CONFIG.vehicles[car.kind].kerb) return; // a tractor just trundles along its lane, and a truck keeps to the kerb
     if (car.pendingLane !== null) return; // (already signalling for a move)
     if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
@@ -952,6 +957,59 @@ export const Traffic = (() => {
     if (dir > 0) Message.say('events', 'emergency'); // (only one coming up behind the player says so)
     return car;
   };
+  // ---- funeral processions (see CONFIG.procession) ---------------------------------------------
+  // A hearse and its cars, all in black, nose to tail in one lane at a crawl, turning up where new
+  // traffic does (going the player's way, ahead of it; or coming the other way). They take cars from
+  // the pool that the level leaves unused (keeping one spare for an ambulance). False if there was
+  // no room for it just now.
+  let nextProcession = Infinity, processions = 0;
+  const startProcession = (dir) => {
+    const P = CONFIG.procession;
+    const spare = cars.filter(c => !c.active && c.unused);
+    if (spare.length < P.cars + 2 || !Player.active || !Track.isMain(Player.s) || !mix().length) return false;
+    // its cars, end to end from the hearse at s0, up the road behind it (the way it has come)
+    const kinds = ['hearse', ...Array.from({ length: P.cars }, () => P.kinds[Math.floor(Math.random() * P.kinds.length)])];
+    const spots = (s0) => {
+      const at = [s0];
+      for (let k = 1; k < kinds.length; k++) at.push(at[k - 1] - dir * (CONFIG.vehicles[kinds[k - 1]].hl + CONFIG.vehicles[kinds[k]].hl + P.gap));
+      return at;
+    };
+    for (let tries = 0; tries < 4; tries++) {
+      const s0 = Player.s + CONFIG.spawnMin + Math.random() * (CONFIG.spawnMax - CONFIG.spawnMin);
+      const [first, last] = Track.laneRange(dir, s0);
+      const lane = Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), s0);
+      const at = spots(s0);
+      // (room for all of it, clear of the traffic in that lane)
+      if (!at.every(s => Track.inBounds(s) && cars.every(o => !o.active || o.junction || o.lane !== lane || Math.abs(o.s - s) > 20))) continue;
+      const id = ++processions;
+      kinds.forEach((kind, k) => {
+        const car = spare[k];
+        car.dir = dir;
+        car.bound = dir > 0 ? 'north' : 'south';
+        car.s = at[k];
+        outfit(car, kind, lane);
+        Object.assign(car, { procession: id, evil: false, defiant: false, viaSide: false, hesitant: false, emotion: 'neutral', mood: 0,
+          baseSpeed: P.speed, vs: dir * P.speed, colors: k ? [P.paint, P.paint] : null, showMood: false });
+      });
+      if (dir > 0) Message.say('events', 'procession');
+      return true;
+    }
+    return false;
+  };
+
+  // the player crashed into a procession: every car of it is furious
+  const mourn = (id) => {
+    let said = false;
+    for (const car of cars) {
+      if (!car.active || car.procession !== id) continue;
+      if (car.emotion !== 'angry') said = true;
+      car.mood = -1;
+      car.emotion = 'angry';
+      car.showMood = true;
+    }
+    if (said) Message.say('events', 'mourners');
+  };
+
   // where its lane is at s
   const pathLat = (car, s) => Track.laneOffset(Track.openLane(car.lane, s), s);
   const driveEmergency = (car, dt) => {
@@ -1116,6 +1174,7 @@ export const Traffic = (() => {
     });
     placeFixed();
     nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
+    nextProcession = LEVEL.processions ? between(LEVEL.processions.every) : Infinity;
     if (!mix().length) return; // otherwise an empty road
     // (when everything is oncoming, the first of it starts further off)
     for (const car of cars) if (!car.active && !car.unused) spawn(car, Track.flow === 'south' ? 200 : 60, CONFIG.spawnMax);
@@ -1127,6 +1186,12 @@ export const Traffic = (() => {
     if (LEVEL.emergencies && !cars.some(c => c.active && c.emergency) && (nextEmergency -= dt) <= 0) {
       const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1 : Math.random() < 0.5 ? 1 : -1;
       nextEmergency = startEmergency(dir) ? between(LEVEL.emergencies.every) : 1;
+    }
+    // now and then a funeral procession, either way (one at a time; with no room for it just now,
+    // it tries again a little later)
+    if (LEVEL.processions && !cars.some(c => c.active && c.procession) && (nextProcession -= dt) <= 0) {
+      const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1 : Math.random() < 0.6 ? 1 : -1;
+      nextProcession = startProcession(dir) ? between(LEVEL.processions.every) : 2;
     }
     if (Track.junctions.length) junctionState();
     if (LEVEL.grid) raceMood(dt);
@@ -1335,7 +1400,7 @@ export const Traffic = (() => {
         // a jerk (a mystery): every driver going the player's way and near enough goes after the
         // player as if the player were its rival, and an evil one throws at the player. (Not the
         // police, whose swerving into the player would be a bust, nor oncoming traffic: a head-on.)
-        if (Player.mystery === 'jerk' && Player.active && car.kind !== 'police' && !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir &&
+        if (Player.mystery === 'jerk' && Player.active && car.kind !== 'police' && !car.procession && !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir &&
             Math.abs(Player.s - car.s) < CONFIG.rivalryRange) {
           rival = Player;
           car.grudge = true;
@@ -1667,6 +1732,8 @@ export const Traffic = (() => {
         // (on ice, and on a level where cars understeer, they don't slow for a bend: they slide wide instead;
         // though a racer, knowing the track, slows for the bends ahead as much as lets it slide a little)
         target = Math.min(target, giveWay(car), car.onIce || LEVEL.understeer ? Infinity : cornerSpeed(car.s, weightOf(car)));
+        const hold = Math.min(Crossings.holdFor(car), StopGo.holdFor(car)); // (waiting at a level crossing, or a STOP)
+        target = Math.min(target, hold);
         if (Player.mystery === 'sundayDrivers' && !car.racer && !car.emergency) target *= CONFIG.mystery.sundayPace; // (Sunday Drivers, a mystery: pottering along)
         if (car.racer) target = Math.min(target, racingLine(car) * ceding);
         if (car.racer && !Track.loop && Track.finished(car.s)) { car.done = true; target = 0; } // (a rival courier, delivered: it pulls up past the line)
@@ -1683,14 +1750,16 @@ export const Traffic = (() => {
           target *= H.tapPace;
         }
         car.braking = car.tap > 0 || Math.abs(car.vs) > target + 0.8;
-        car.vs += (car.dir * target - car.vs) * damp(car.tap > 0 || (car.racer && car.braking) ? 3 : car.racer ? 1.2 * CONFIG.race.aiPickup : 1.2, dt);
+        if (hold < Math.abs(car.vs)) { // (pulling up at a stop line: braking firmly, so as to stop at it, not past it)
+          car.vs -= car.dir * Math.min(Math.abs(car.vs) - target, 1.5 * CONFIG.junction.stopping * dt);
+        } else car.vs += (car.dir * target - car.vs) * damp(car.tap > 0 || (car.racer && car.braking) ? 3 : car.racer ? 1.2 * CONFIG.race.aiPickup : 1.2, dt);
 
         // spring back to the lane centre
         // (alongside its rival it steers straight at it)
         const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
         let aimLat = beside ? rival.lat
           : car.pulledOver || car.shoulderRun || car.punctured || car.stationed ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
-          : Track.laneOffset(car.lane, car.s);
+          : StopGo.detour(car) ?? Track.laneOffset(car.lane, car.s); // (through stop / go works, coming the other way: in the lane left open)
         if (car.passing === Player && car.attack > 0 && !beside && Math.abs(Player.s - car.s) < Player.hl + car.hl + 10) {
           // (going by the player, it keeps as far from it as the road allows: squeezing by, if the player is astride the lanes)
           const side = car.passSide || Math.sign(aimLat - Player.lat) || 1, clear = Player.lat + side * (Player.hw + car.hw + 0.3);
@@ -1741,5 +1810,5 @@ export const Traffic = (() => {
     placeFixed();
   };
 
-  return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer };
+  return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, startProcession, mourn, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer };
 })();

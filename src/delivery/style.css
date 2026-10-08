@@ -225,6 +225,9 @@ body.in-garage #hud, body.in-garage .throw, body.in-garage #banner, body.in-gara
 @keyframes copGlow { 0%, 40% { opacity: 1; } 50%, 90% { opacity: 0; } 100% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { #copGlow i { animation: none; opacity: .5; } }
 body.cinematic #copGlow, body.in-garage #copGlow { display: none; }
+/* a speed camera catching the player: the screen flashes white (see render/roadside.js) */
+#cameraFlash { position: fixed; inset: 0; pointer-events: none; background: #fff; opacity: 0; }
+body.cinematic #cameraFlash, body.in-garage #cameraFlash { display: none; }
 /* who is coming up behind (a race, or a rival courier): an arrow at the foot of the screen, pointing back at them */
 #behind { display: none; position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   text-align: center; pointer-events: none; z-index: 4; font-size: 13px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px #000; }
