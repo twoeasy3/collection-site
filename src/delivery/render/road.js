@@ -7,6 +7,7 @@ import { Game } from '../game.js';
 import { Player } from '../player.js';
 import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
 import { setHeadlights } from './headlights.js';
+import { THEMES } from '../themes.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -51,62 +52,8 @@ const buildDashes = (sFrom, sTo, lat, show) => {
   return geo;
 };
 
-// The looks a level can have (its "theme" field).
-export const THEMES = {
-  city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city' },
-  farm: { sky: 0xc4e6f5, ground: 0x8fb556, road: 0x57514a, scenery: 'farm' },
-  // beach: sand, a stormy sky, the sea along the right, palms and beach huts
-  beach: { sky: 0x7e8d9e, ground: 0xdccb95, road: 0x45484e, scenery: 'beach' },
-  // space: no ground and no road surface, only glowing lane lines among the stars
-  // singapore: the garden city: towers and housing blocks, rain trees, Supertrees and Marina Bay Sands
-  singapore: { sky: 0xc9dde6, ground: 0x6d9a52, road: 0x3a3d42, scenery: 'singapore' },
-  // singaporeNight: the same city at night, floodlit as for the Grand Prix (a city that is never
-  // dark: a glowing navy sky, and everything well lit): lit windows, glowing Supertrees, light
-  // pylons over the road, concrete walls and catch fences, kerbs on the corners
-  singaporeNight: { sky: 0x1d2d55, ground: 0x3f6440, road: 0x4b4f57, scenery: 'singapore', night: true, lit: true, headlights: true,
-    light: { sky: 0xd6dcff, ground: 0x6a6878, ambient: 1.25, sun: 0xfff0d6, sunlight: 0.75 } },
-  // coast: a level in zones (its "zones"), each with a look of its own: see the 'zones' scenery,
-  // and syncZones, which blends the sky and the ground from one zone's colours to the next
-  coast: { sky: 0x9fc8ee, ground: 0x6f9a52, road: 0x44474d, scenery: 'zones' },
-  // safari: a level in zones on a dirt road: no markings, only the ruts worn into it
-  safari: { sky: 0xc6dcea, ground: 0xc2a85a, road: 0xa47a4c, scenery: 'zones', unmarked: true },
-  // construction: a road being built: bare earth all round, a hazy sky, the road giving way to mud
-  construction: { sky: 0xc4d2dc, ground: 0x9a8160, road: 0x4a4c50, scenery: 'construction' },
-  // airport: an airport going up in flames: a smoky orange sky, dry grass between concrete aprons, the runway
-  airport: { sky: 0xc98e62, ground: 0x8c8f62, road: 0x45484d, scenery: 'airport' },
-  // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
-  snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
-  // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
-  canberra: { sky: 0xb9d8ee, ground: 0xa3ad66, road: 0x4a4c50, scenery: 'canberra', median: 0x7f9a4f },
-  // hood: the same suburb gone to seed (rundown: see the suburb scenery): dead grass and bare dirt, drab
-  // houses with boarded-up windows, burnt-out shells, broken fences, dead trees, wrecks and rubbish
-  hood: { sky: 0xbcc3c2, ground: 0x9a8d55, road: 0x46474a, scenery: 'suburb', rundown: true },
-  // suburb: lawns, pavements, picket fences and houses in a row
-  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb' },
-  hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
-  // battlefield: a dirt track through a war (unmarked: only the ruts worn into it), churned mud under a smoky
-  // sky, shell craters, sandbagged trenches, tank traps, barbed wire and shattered trees (and the pillboxes:
-  // render/battle.js)
-  battlefield: { sky: 0xa89f92, ground: 0x6d6248, road: 0x7d6440, scenery: 'battlefield', unmarked: true },
-  // bathurst: Mount Panorama, a racetrack on a mountain in the New South Wales bush: the land climbs
-  // and falls with the circuit (terrain: grass where it is gentle, red clay where it is steep), gum
-  // trees all over the hill
-  bathurst: { sky: 0xa9d2ef, ground: 0x9aa55e, road: 0x45474c, scenery: 'bathurst', terrain: { gentle: 0x93a25a, steep: 0x9b6b4a, rough: 0.35, flat: 10, rise: 60 } },
-  // panorama: the same mountain as an everyday road through the bush (Panorama Avenue: roadside: no circuit
-  // walls, kerbs or stands, white guide posts along the edges and rocks in the grass), in the colours of
-  // the Southern Highlands bushland (Sydney to Kiama's bush)
-  panorama: { sky: 0xb3d0e2, ground: 0x7d8a52, road: 0x4a4c50, scenery: 'bathurst', roadside: true, terrain: { gentle: 0x7d8a52, steep: 0x8f6e4c, rough: 0.35, flat: 10, rise: 60 } },
-  // montreal: Circuit Gilles-Villeneuve, on Île Notre-Dame in the St Lawrence: parkland, a summer sky
-  montreal: { sky: 0xa6d2f2, ground: 0x5d9a4a, road: 0x3e4147, scenery: 'montreal' },
-  // sea: open water everywhere, the way through it the same water, unmarked (water: no ruts either),
-  // its edges blocked by breakwaters of rock and lines of marker buoys, islands off in the distance
-  sea: { sky: 0x9fd2f0, ground: 0x1d7a96, road: 0x1d7a96, scenery: 'sea', unmarked: true, water: true },
-  space: { sky: 0x05060d, ground: null, road: null, scenery: 'space', line: 0x7fe8ff, centre: 0xff62d6 },
-  // night: the city after dark. The road and the ground are lit surfaces (lit: true), dark but
-  // for a faint blue moon and the player's headlights; other cars show their own lamps.
-  night: { sky: 0x05070e, ground: 0x34492d, road: 0x45484e, scenery: 'city', lit: true, headlights: true,
-    light: { sky: 0x5d72b0, ground: 0x10141c, ambient: 0.3, sun: 0x9fb4ff, sunlight: 0.25 } },
-};
+// The looks a level can have (its "theme" field): see ../themes.js
+export { THEMES };
 
 // Everything built here for the loaded level goes in this group, which is emptied and
 // rebuilt each time a level is loaded.
@@ -122,34 +69,56 @@ scene.add(levelGroup);
 // (theme.terrain may give its colours: { gentle, steep }, snow and rock otherwise; how rough the
 // land is away from the road, `rough` (1: as the alpine pass); and `flat`, m more of it level with the road)
 // Returns the height of the land at a world point (x, z).
-const buildTerrain = (colours) => {
-  const pts = [], p = {};
+const buildTerrain = (colours, others) => {
+  // every road there is, as points along it: where it is, half its width there, and the point after it on the
+  // same road (or -1). The expressway by its own width at each (an exit lane's, a run-off's and all; its two
+  // ways apart where a split parts them); then every other road (`others`: side roads, flyovers), on level ground
+  const X = [], Y = [], Z = [], W = [], NEXT = [], p = {};
+  const point = (x, y, z, w, follows) => {
+    const n = X.length;
+    X.push(x); Y.push(y); Z.push(z); W.push(w); NEXT.push(-1);
+    if (follows >= 0) NEXT[follows] = n;
+    return n;
+  };
+  const centre = -Track.medianHalf;
+  let whole = -1, left = -1;
   for (let s = Track.start; s <= Track.end; s += 8) {
-    Track.toWorld(s, 0, p);
-    pts.push(p.x, p.y, p.z);
+    const lo = Track.lo(s), hi = Track.hi(s), split = Track.apart(s) > 1 && lo < centre;
+    Track.toWorld(s, split ? (centre + hi) / 2 : (lo + hi) / 2, p);
+    whole = point(p.x, p.y, p.z, (hi - (split ? centre : lo)) / 2, whole);
+    if (split) {
+      Track.toWorld(s, (lo + centre) / 2 - 0.01, p);
+      left = point(p.x, p.y, p.z, (centre - lo) / 2, left);
+    } else left = -1;
   }
-  const N = pts.length / 3;
-  const flatTo = Math.max(Track.hi(0), -Track.lo(0)) + 12 + (colours?.flat ?? 0); // (wider than a grid square, so no slope reaches the road)
+  for (let k = 0, last = -1; k < others.length; k += 3) {
+    const near = last >= 0 && Math.hypot(others[k] - X[last], others[k + 1] - Z[last]) < 12; // (the same road, on from the last)
+    last = point(others[k], 0, others[k + 1], others[k + 2], near ? last : -1);
+  }
+  const N = X.length, PREV = new Int32Array(N).fill(-1);
+  for (let k = 0; k < N; k++) if (NEXT[k] >= 0) PREV[NEXT[k]] = k;
+  const flatTo = 12 + (colours?.flat ?? 0); // (m of level land beyond a road's edge: wider than a grid square, so no slope reaches the road)
   const heightAt = (x, z) => {
+    // (the nearest road: by how far it is to its edge, not its middle)
     let best = Infinity, bi = 0, wsum = 0, hsum = 0;
-    for (let i = 0; i < N; i++) {
-      const dx = x - pts[i * 3], dz = z - pts[i * 3 + 2], d2 = dx * dx + dz * dz;
-      if (d2 < best) { best = d2; bi = i; }
+    for (let k = 0; k < N; k++) {
+      const dx = x - X[k], dz = z - Z[k], d2 = dx * dx + dz * dz, e = Math.sqrt(d2) - W[k];
+      if (e < best) { best = e; bi = k; }
       const w = 1 / (d2 * d2 + 1);
       wsum += w;
-      hsum += w * pts[i * 3 + 1];
+      hsum += w * Y[k];
     }
     // (the road's height there: along the line between the samples either side of the nearest,
     // not the nearest sample's own, which on a steep hill can be most of a metre out)
-    let bestY = pts[bi * 3 + 1];
-    for (const j of [bi - 1, bi]) {
-      if (j < 0 || j + 1 >= N) continue;
-      const ax = pts[j * 3], az = pts[j * 3 + 2], ex = pts[j * 3 + 3] - ax, ez = pts[j * 3 + 5] - az;
-      const u = Math.max(0, Math.min(1, ((x - ax) * ex + (z - az) * ez) / (ex * ex + ez * ez || 1)));
-      const qx = ax + ex * u - x, qz = az + ez * u - z, q2 = qx * qx + qz * qz;
-      if (q2 <= best + 1e-6) { best = q2; bestY = pts[j * 3 + 1] + (pts[j * 3 + 4] - pts[j * 3 + 1]) * u; }
+    let bestY = Y[bi];
+    for (const [a, b] of [[PREV[bi], bi], [bi, NEXT[bi]]]) {
+      if (a < 0 || b < 0) continue;
+      const ex = X[b] - X[a], ez = Z[b] - Z[a];
+      const u = Math.max(0, Math.min(1, ((x - X[a]) * ex + (z - Z[a]) * ez) / (ex * ex + ez * ez || 1)));
+      const e = Math.hypot(X[a] + ex * u - x, Z[a] + ez * u - z) - (W[a] + (W[b] - W[a]) * u);
+      if (e <= best + 1e-6) { best = e; bestY = Y[a] + (Y[b] - Y[a]) * u; }
     }
-    const d = Math.sqrt(best), road = bestY - 0.3;
+    const d = Math.max(0, best), road = bestY - 0.3;
     if (d < flatTo) return road;
     const away = d - flatTo;
     const rough = (Math.sin(x * 0.05) * Math.cos(z * 0.043) * 5 + Math.sin(x * 0.013 + z * 0.017) * 16) * Math.min(1, away / 90) * (colours?.rough ?? 1);
@@ -160,8 +129,8 @@ const buildTerrain = (colours) => {
   // the grid: every 8 m, over the road and 350 m round it
   let x0 = Infinity, x1 = -Infinity, z0 = Infinity, z1 = -Infinity;
   for (let i = 0; i < N; i++) {
-    x0 = Math.min(x0, pts[i * 3]); x1 = Math.max(x1, pts[i * 3]);
-    z0 = Math.min(z0, pts[i * 3 + 2]); z1 = Math.max(z1, pts[i * 3 + 2]);
+    x0 = Math.min(x0, X[i]); x1 = Math.max(x1, X[i]);
+    z0 = Math.min(z0, Z[i]); z1 = Math.max(z1, Z[i]);
   }
   const G = 8, M = 350;
   const cols = Math.ceil((x1 - x0 + 2 * M) / G) + 1, rows = Math.ceil((z1 - z0 + 2 * M) / G) + 1;
@@ -227,6 +196,20 @@ const offBridges = (stretches) => {
 // dressed as its zone.scenery says. Kits of things beside the road, each over a stretch [a, b],
 // collected per kind and drawn at the end, one draw call each; and the landmarks, one by one.
 let groundMesh = null;
+// the zones a level is dressed in: its own, where its theme is one in zones; on a level with none, the theme's
+// own (THEMES: zones), laid end to end along the road in equal shares (and with no sea, where a side road
+// would have to run out over it); with any other theme, none
+let zoneList = null, zonesFor = null;
+const zonesOf = () => {
+  if (zonesFor === LEVEL) return zoneList;
+  zonesFor = LEVEL;
+  const theme = THEMES[LEVEL.theme] || THEMES.city;
+  if (theme.scenery !== 'zones') return (zoneList = null);
+  if (LEVEL.zones && LEVEL.zones.length) return (zoneList = LEVEL.zones);
+  const own = theme.zones || [], n = own.length, dry = (LEVEL.exits || []).length > 0;
+  return (zoneList = own.map((z, i) => ({ id: z.scenery, ...z, sea: dry ? undefined : z.sea,
+    from: i ? Math.round(Track.length * i / n) : Track.start, to: i === n - 1 ? Track.end : Math.round(Track.length * (i + 1) / n) })));
+};
 const SEA = 0x2b6fa8, SAND = 0xe4d29a, SANDSTONE = 0xc9a26b;
 const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
   const sphere = new THREE.SphereGeometry(0.5, 9, 6), p = {};
@@ -421,7 +404,7 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     return p;
   };
 
-  for (const z of LEVEL.zones) {
+  for (const z of zonesOf()) {
     const a = z.from, b = z.to;
     if (z.sea !== undefined) { // (under the cliffs, straight into the sea; elsewhere, a beach first)
       const cliffs = z.scenery === 'seacliff';
@@ -604,7 +587,7 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
   }
   for (const [geometry, colour, list, glowing] of Object.values(kinds)) instances(geometry, colour, list, glowing);
   // the sign before the causeway: the road goes under the sea at high tide
-  if (LEVEL.tide && LEVEL.zones.some(z => z.scenery === 'gois')) {
+  if (LEVEL.tide && zonesOf().some(z => z.scenery === 'gois')) {
     const at = LEVEL.tide.from - 90, steel = new THREE.MeshLambertMaterial({ color: 0x9a9da3 });
     for (const dl of [-1.6, 1.6]) {
       Track.toWorld(at, beside(1, at, 2 + dl), p);
@@ -715,8 +698,9 @@ const kangarooSign = () => {
 const skyNow = new THREE.Color(), skyWant = new THREE.Color();
 let zoneS = 0;
 export const syncZones = (dt) => {
-  if (!LEVEL.zones || !Track) return;
-  const zone = Track.zoneAt(Player.s) || LEVEL.zones[Player.s < 0 ? 0 : LEVEL.zones.length - 1];
+  const zones = Track && zonesOf();
+  if (!zones || !zones.length) return;
+  const zone = zones.find(z => Player.s >= z.from && Player.s < z.to) || zones[Player.s < zones[0].from ? 0 : zones.length - 1];
   const k = Math.abs(Player.s - zoneS) > 100 ? 1 : Math.min(1, dt * 0.6);
   zoneS = Player.s;
   skyWant.set(zone.sky ?? (THEMES[LEVEL.theme] || THEMES.city).sky);
@@ -731,7 +715,7 @@ const buildRoad = () => {
   clearGroup(levelGroup);
   const theme = THEMES[LEVEL.theme] || THEMES.city;
   applySky(theme.sky);
-  if (LEVEL.zones) skyNow.set((LEVEL.zones[0].sky ?? theme.sky));
+  if (zonesOf() && zonesOf().length) skyNow.set((zonesOf()[0].sky ?? theme.sky));
   applyLight(theme.light);
   setHeadlights(!!theme.headlights);
   const flat = (color) => new (theme.lit ? THREE.MeshLambertMaterial : THREE.MeshBasicMaterial)({ color, side: THREE.DoubleSide });
@@ -746,6 +730,27 @@ const buildRoad = () => {
   const pave = (geo) => { if (theme.road !== null) add(geo, asphalt); }; // (no road surface in space)
   const LW = CONFIG.laneWidth, ZONE = CONFIG.ramps.laneZone, RAMP = CONFIG.ramps.ramp;
   const exits = Track.exits;
+  // every other road's pavement (side roads, and flyovers where an exit has them), as points along its middle:
+  // x, z, and half its width there and a little over. Nothing of any theme's scenery stands on one (see
+  // instances, and offRoads), and the land of a theme with terrain lies level under it (see buildTerrain)
+  const others = [];
+  for (const x of exits) {
+    const along = (from, to, lo, hi) => {
+      for (let s = from; s <= to; s += 5) {
+        Track.toWorld(s, (lo(s) + hi(s)) / 2, tmp);
+        others.push(tmp.x, tmp.z, (hi(s) - lo(s)) / 2 + 1.5);
+      }
+    };
+    along(x.side0, x.sideEnd, Track.lo, Track.hi);
+    if (x.flyovers) for (const from of [x.flyA0, x.flyB0]) along(from, from + CONFIG.ramps.flyoverLength, () => -LW / 2 - 0.5, () => LW / 2 + 0.5);
+  }
+  // is a world point clear of every one of them (by `margin` m more)?
+  const offRoads = (x, z, margin = 0) => {
+    for (let k = 0; k < others.length; k += 3) {
+      if (Math.hypot(x - others[k], z - others[k + 1]) < others[k + 2] + margin) return false;
+    }
+    return true;
+  };
   // painted markings lie a couple of centimetres above the road; this keeps them on top of it
   for (const mat of [lineMat, centreMat]) {
     mat.polygonOffset = true;
@@ -777,7 +782,12 @@ const buildRoad = () => {
   };
 
   // ---- expressway -------------------------------------------------------------------
-  pave(buildStrip(Track.start, Track.end, Track.lo, Track.hi, 0));
+  // (where the two ways part, a level's "splits", each is a road of its own: so the two sides are paved apart)
+  const HALF = Track.medianHalf;
+  if ((LEVEL.splits || []).length) {
+    pave(buildStrip(Track.start, Track.end, Track.lo, -HALF - 0.01, 0));
+    pave(buildStrip(Track.start, Track.end, -HALF, Track.hi, 0));
+  } else pave(buildStrip(Track.start, Track.end, Track.lo, Track.hi, 0));
   line(Track.start, Track.end, Track.laneLo);
   // right edge line: solid, along the outside of the exit / merge lane where there is one. At
   // each fork it is in two pieces: the expressway's own edge, which runs on under the side
@@ -802,7 +812,7 @@ const buildRoad = () => {
   if (!twoWay && Track.leftLanes && Track.rightLanes) add(buildDashes(Track.start, Track.end, () => 0, dashOutside), lineMat);
   for (const side of [-1, 1]) {
     if (twoWay && !HM) for (const [p, q] of unmarked(Track.start, Track.end)) add(buildStrip(p, q, side * 0.12, side * 0.28, 0.02), centreMat);
-    if (HM) line(Track.start, Track.end, () => side * HM);
+    if (HM) line(Track.start, Track.end, () => side * HM - (side < 0 ? 0.11 : 0)); // (wholly on its own side of a split)
     // dashed dividers between the lanes of each side, only where both lanes exist
     for (let k = 1; k < (side < 0 ? Track.leftLanes : Track.rightLanes); k++) {
       add(buildDashes(Track.start, Track.end, () => side * (HM + k * LW),
@@ -901,16 +911,20 @@ const buildRoad = () => {
   const steel = new THREE.MeshLambertMaterial({ color: 0x9a9da3 });
   const pillars = [];
   for (const x of exits) {
-    // side road: two lanes, yellow centre line where both exist
+    // side road: its lanes (see its exit's "lanes"), dashes between them where both are there; and between
+    // lanes 0 and 1, from where lane 0 turns oncoming, a double yellow line
     pave(buildStrip(x.side0, x.sideEnd, Track.lo, Track.hi, 0.005));
     line(x.side0, x.sideEnd, Track.laneLo);
     line(x.side0, x.sideEnd, Track.laneHi);
-    if (twoWay) add(buildStrip(x.side0 + RAMP, x.sideEnd - RAMP, -0.08, 0.08, 0.02), centreMat);
-    else add(buildDashes(x.side0 + RAMP, x.sideEnd - RAMP, () => 0, () => true), lineMat);
+    const both = (k) => (s) => k ? Track.sideWidth(s) > k + 1.6 : Track.sideLeft(s) > 0.6; // (lanes k and k + 1)
+    const yellowFrom = x.side0 + Math.max(RAMP, x.oncomingFrom);
+    if (x.oncoming) for (const side of [-1, 1]) add(buildStrip(yellowFrom, x.sideEnd - RAMP, side * 0.12, side * 0.28, 0.02), centreMat);
+    add(buildDashes(x.side0 + RAMP, Math.min(yellowFrom, x.sideEnd - RAMP), () => 0, both(0)), lineMat);
+    for (let k = 1; k < Math.max(...x.lanes.map(l => l.count)) - 1; k++) add(buildDashes(x.side0 + RAMP, x.sideEnd - RAMP, () => k * LW, both(k)), lineMat);
 
     // flyovers: raised decks with kerbs, so they read as structures
-    // (they carry the oncoming traffic, so a one-way road has none)
-    for (const from of twoWay ? [x.flyA0, x.flyB0] : []) {
+    // (they carry the oncoming traffic, at an exit that has them: its "flyovers")
+    for (const from of x.flyovers ? [x.flyA0, x.flyB0] : []) {
       const to = from + CONFIG.ramps.flyoverLength;
       add(buildStrip(from, to, -LW / 2 - 0.4, LW / 2 + 0.4, 0.03, 3), deck);
       for (const side of [-1, 1]) {
@@ -974,7 +988,7 @@ const buildRoad = () => {
   ground.position.set(tmp.x, -0.05, tmp.z);
   levelGroup.add(ground);
 
-  const terrainAt = theme.terrain ? buildTerrain(theme.terrain === true ? null : theme.terrain) : null; // (the height of the land at a world point)
+  const terrainAt = theme.terrain ? buildTerrain(theme.terrain === true ? null : theme.terrain, others) : null; // (the height of the land at a world point)
   if (Track.hilly && theme.ground !== null && !theme.terrain) {
     // Hills: the land beside the road rises and falls with it. It is a wide ribbon of grass
     // just under the road, with a skirt sloping down to the flat ground along each edge.
@@ -983,7 +997,7 @@ const buildRoad = () => {
     const LAND = 130;
     // (a level in zones has its land in each zone's own colour; and where a zone is by the sea
     // (zone.sea: m from the road to the water), none out over the sea on that side, the right)
-    const zones = LEVEL.zones && LEVEL.zones.length ? LEVEL.zones : null;
+    const zones = zonesOf() && zonesOf().length ? zonesOf() : null;
     // (and none under a bridge, where there is the water to see, far below)
     const stretches = offBridges(zones ? zones.map((z, i) => [i ? z.from : Track.start, i === zones.length - 1 ? Track.end : zones[i + 1].from, z.ground ?? theme.ground, z.sea])
       : [[Track.start, Track.end, theme.ground, undefined]]);
@@ -1089,6 +1103,15 @@ const buildRoad = () => {
     dummy.updateMatrix();
   };
   const instances = (geometry, color, list, glowing) => {
+    // (not what would stand on another road, where a side road or a flyover leaves the expressway or comes
+    // back to it: whatever the theme, its fences, walls, posts and trees break off there)
+    if (others.length) {
+      list = list.filter(([s, lat, , , , , to]) => {
+        if (!Track.isMain(s)) return true;
+        Track.toWorld(to ? (s + to[0]) / 2 : s, to ? (lat + to[1]) / 2 : lat, tmp);
+        return offRoads(tmp.x, tmp.z);
+      });
+    }
     if (!list.length) return;
     const material = glowing ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshLambertMaterial({ color });
     const mesh = new THREE.InstancedMesh(geometry, material, list.length);
@@ -1184,8 +1207,8 @@ const buildRoad = () => {
   if (theme.scenery === 'city') {
     // ---- roadside poles and blocks (instanced), so speed is readable -----------------------------
     // nothing is put where it would stand on another road, at a junction, or in a river
-    // (a one-way road has no flyovers, so only the ramps themselves need to be kept clear)
-    const junction = (s) => exits.some(x => twoWay
+    // (an exit with no flyovers: only the ramps themselves need to be kept clear)
+    const junction = (s) => exits.some(x => x.flyovers
       ? (s > x.landingAt - 60 && s < x.exitAt + 120) || (s > x.mergeAt - 120 && s < x.flyoverAt + 60)
       : (s > x.exitAt - 20 && s < x.exitAt + 120) || (s > x.mergeAt - 120 && s < x.mergeAt + 20));
     const nearBridge = (s) => (LEVEL.bridges || []).some(b => s > b.from - 30 && s < b.to + 30);
@@ -2045,7 +2068,8 @@ const buildRoad = () => {
     // place of lanes (see inJunction), edge lights, and hangars and terminal piers beyond its edges.
     // Nothing on the old road carrying straight on where the route turns off, nor by the buildings
     // that blow up (both: see render/wreckage.js), nor where the parked airliners stand.
-    const T = LEVEL.tower, R = LEVEL.runway, turn = T ? T.at : Infinity, runway = R ? R.from : Infinity, RW = R ? R.width : 0;
+    // (on a level with no tower to turn at, nor a runway: the perimeter road all the way)
+    const T = LEVEL.tower, R = LEVEL.runway, turn = T ? T.at : Track.end, runway = R ? R.from : Infinity, RW = R ? R.width : 0;
     const stubFrom = {}, h = T ? Track.toWorld(T.at, 0, stubFrom) : 0;
     const offStub = (s, lat) => { // (clear of the old road and the fallen tower)
       if (!T) return true;
@@ -2178,7 +2202,7 @@ const buildRoad = () => {
         if (Math.random() < 0.3) continue;
         const d = (theme.roadside ? 6 : 9) + Math.random() * 70;
         Track.toWorld(s + Math.random() * 6, beside(side, s, d), p);
-        if (Track.mainDistance(p.x, p.z) < roadHalf + (theme.roadside ? 4 : 7)) continue;
+        if (Track.mainDistance(p.x, p.z) < roadHalf + (theme.roadside ? 4 : 7) || !offRoads(p.x, p.z, 3)) continue;
         const y = terrainAt(p.x, p.z), h = 9 + Math.random() * 9;
         if (theme.roadside && Math.random() < 0.12) { // (a sandstone rock, half sunk in the grass)
           const w = 1.5 + Math.random() * 3;
@@ -2226,7 +2250,7 @@ const buildRoad = () => {
         if (Math.random() < 0.35) continue;
         const d = 10 + Math.random() * 45;
         Track.toWorld(s + Math.random() * 6, beside(side, s, d), p);
-        if (Track.mainDistance(p.x, p.z) < Math.max(Track.hi(s), -Track.lo(s)) + 4) continue;
+        if (Track.mainDistance(p.x, p.z) < Math.max(Track.hi(s), -Track.lo(s)) + 4 || !offRoads(p.x, p.z, 3)) continue;
         const y = terrainAt(p.x, p.z), h = 6 + Math.random() * 6;
         trunks.push([p.x, y + h * 0.1, p.z, 0.5, h * 0.2, 0.5]);
         for (let k = 0; k < 3; k++) {

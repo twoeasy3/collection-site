@@ -3,9 +3,10 @@
 // one lane each way, the oncoming side dug up over a stretch, so both ways take turns through the
 // one lane left, the player's. A worker at each end turns a STOP / GO sign: GO the player's way,
 // a pause for the last through to clear, GO the other way (coming down the player's lane), a pause,
-// and round again. Traffic waits at its STOP (an evil driver may run it); the player can't stop,
-// so it is a matter of timing, or of meeting what comes the other way. Cones down the middle and
-// across the dug-up lane are obstacles (see Collision).
+// and round again. Traffic waits at its STOP (an evil driver may run it); the player may wait there
+// too (holding the brake), or chance it and meet what comes the other way. Cones down the middle and
+// across the dug-up lane are obstacles (see Collision). How long the works are is the level's (from, to),
+// and how long each turn lasts can be too (go, clear: or CONFIG.stopGo's).
 // This is what they do; render/stopgo.js draws them.
 // ============================================================================
 import { CONFIG } from './config.js';
@@ -17,18 +18,19 @@ import { Track } from './track.js';
 const TAPER = 18;
 
 export const StopGo = {
-  // { from, to, phase: 0 GO the player's way, 1 clearing, 2 GO the other way, 3 clearing; t (s into it) }
+  // { from, to, go, clear (s each lasts), phase: 0 GO the player's way, 1 clearing, 2 GO the other way, 3 clearing; t (s into it) }
   list: [],
   taper: TAPER,
 
   reset() {
-    this.list = (LEVEL.stopGo || []).map((z, i) => ({ from: Track.place({ s: z.from }), to: Track.place({ s: z.from }) + (z.to - z.from), phase: i % 2 ? 2 : 0, t: 0 }));
+    const G = CONFIG.stopGo;
+    this.list = (LEVEL.stopGo || []).map((z, i) => ({ from: Track.place({ s: z.from }), to: Track.place({ s: z.from }) + (z.to - z.from),
+      go: z.go ?? G.go, clear: z.clear ?? G.clear, phase: i % 2 ? 2 : 0, t: 0 }));
   },
   update(dt) {
-    const G = CONFIG.stopGo;
     for (const z of this.list) {
       z.t += dt;
-      if (z.t >= (z.phase % 2 ? G.clear : G.go)) {
+      if (z.t >= (z.phase % 2 ? z.clear : z.go)) {
         z.phase = (z.phase + 1) % 4;
         z.t = 0;
       }

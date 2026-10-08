@@ -7,6 +7,10 @@
 // (a pickup, an obstacle or a TANK RAGE target), and a right-click on one removes it; each change is
 // passed back to the editor, which keeps its copy of the level in step.
 // ?cam=x,y,z,yaw,pitch puts the camera there to begin with (in the scene's terms; yaw and pitch in degrees).
+// What a level only sets off as the player comes up to it is not there to be seen in a level standing still:
+// buried landmines, drop bears, a rockfall's rocks, the airport's wreckage and its tower. T (or the editor's
+// button, or ?reveal in the address) shows all of it as it ends up, set off: the mines up, the bears and the
+// rocks down on the road, the wreckage landed and the tower fallen; and T again puts it all back.
 import * as THREE from 'three';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
@@ -14,8 +18,35 @@ import { Game } from '../game.js';
 import { LEVEL } from '../levels.js';
 import { camera, scene, tmp } from './scene.js';
 import { rebuildItems } from './items.js';
+import { CONFIG } from '../config.js';
+import { Collision } from '../collision.js';
+import { Wreckage } from '../wreckage.js';
 
-export const Fly = { on: false };
+export const Fly = { on: false, reveal: false };
+// everything that is only set off later, shown as it ends up (or put back as it was): see the top of this file
+const was = new Map(); // (each thing changed, and what it was like before)
+const set = (thing, to) => {
+  if (!was.has(thing)) was.set(thing, Object.fromEntries(Object.keys(to).map(k => [k, thing[k]])));
+  Object.assign(thing, to);
+};
+export const reveal = (on) => {
+  Fly.reveal = on;
+  for (const [thing, before] of was) Object.assign(thing, before);
+  was.clear();
+  if (on) {
+    for (const o of Collision.obstacles) {
+      if (o.kind === 'landmine') set(o, { buried: false, rise: 1 });
+      else if (o.kind === 'dropBear') set(o, { h: 0 });
+      else if (o.kind === 'rock') set(o, { h: 0, lat: o.land });
+    }
+    for (const e of Wreckage.list) { // (landed, long since: an airliner where it comes to rest)
+      const rest = e.slide ? Wreckage.airliner(e, 1e6).s : (e.s0 + e.s1) / 2;
+      set(e, { t: 1e6, landed: true, sliding: false, swept: CONFIG.wreckage.blastBalls, s0: rest - e.depth / 2, s1: rest + e.depth / 2 });
+    }
+    if (Wreckage.tower) set(Wreckage.tower, { t: 1e6, down: true });
+  }
+  tell({ type: 'reveal', on });
+};
 const keys = new Set(), at = new THREE.Vector3(), step = new THREE.Vector3();
 let yaw = 0, pitch = -0.3, speed = 40, look = null, down = null, tool = null;
 
@@ -45,6 +76,7 @@ const placeAt = (cx, cy) => {
     : { s, side: r.lat < 0 ? 'left' : 'right' };
   (LEVEL[tool.kind] ||= []).push(item);
   rebuildItems();
+  if (Fly.reveal) reveal(true); // (the obstacles are new ones)
   tell({ type: 'placed', list: tool.kind, item });
 };
 const removeAt = (cx, cy) => { // the nearest item within a few metres of the spot, taken away
@@ -62,6 +94,7 @@ const removeAt = (cx, cy) => { // the nearest item within a few metres of the sp
   if (!best) return;
   LEVEL[best.list].splice(best.i, 1);
   rebuildItems();
+  if (Fly.reveal) reveal(true);
   tell({ type: 'removed', list: best.list, item: best.item });
 };
 
@@ -78,7 +111,7 @@ export const startFly = () => {
     camera.position.set(cam[0], cam[1], cam[2]);
     if (cam.length >= 5) { yaw = cam[3] * Math.PI / 180; pitch = cam[4] * Math.PI / 180; }
   }
-  window.addEventListener('keydown', (e) => { keys.add(e.code); if (e.code === 'Space') e.preventDefault(); });
+  window.addEventListener('keydown', (e) => { keys.add(e.code); if (e.code === 'Space') e.preventDefault(); if (e.code === 'KeyT' && !e.repeat) reveal(!Fly.reveal); });
   window.addEventListener('keyup', (e) => keys.delete(e.code));
   window.addEventListener('blur', () => keys.clear());
   window.addEventListener('pointerdown', (e) => { if (e.button === 0) { look = [e.clientX, e.clientY]; down = [e.clientX, e.clientY]; } });
@@ -87,7 +120,11 @@ export const startFly = () => {
     look = down = null;
   });
   window.addEventListener('contextmenu', (e) => { e.preventDefault(); removeAt(e.clientX, e.clientY); });
-  window.addEventListener('message', (e) => { if (e.data && e.data.type === 'tool') tool = e.data.tool; }); // (the editor's tool)
+  window.addEventListener('message', (e) => { // (the editor's tool, and its button for what is set off later)
+    if (e.data && e.data.type === 'tool') tool = e.data.tool;
+    if (e.data && e.data.type === 'reveal') reveal(!!e.data.on);
+  });
+  if (new URLSearchParams(location.search).get('reveal') !== null) reveal(true);
   tell({ type: 'flyReady' });
   window.addEventListener('pointermove', (e) => {
     if (!look) return;

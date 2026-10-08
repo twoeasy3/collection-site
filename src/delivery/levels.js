@@ -20,21 +20,38 @@
 //   flow       'north' = every vehicle goes the player's way, 'south' = every vehicle comes
 //              the other way; either way the traffic uses all the lanes. 'mixed' = both ways, and
 //              every lane open to either (the Battlefield: oncoming traffic in every lane). Left out, the left
-//              half of the road is oncoming. A one-way level's exits have no flyovers, and
-//              need no straight road around them. Exits can't be combined with 'south'.
+//              half of the road is oncoming. A one-way level's exits can't have flyovers
+//              (see exits). Exits can't be combined with 'south'.
 //   shoulderRows  { kind, from, to, every, side } a row of obstacles standing on the
 //              shoulder, one every `every` metres. kind: 'cone' | 'sign' (or any obstacle
 //              kind); side: 'left' | 'right' | 'both' (default). Exit and merge lanes are left clear.
 //   shoulderTimer  false = no danger timer: the shoulders can be driven on freely, and
 //              police cars don't bust for it either
 //   helicopter false = the rescue and police helicopters are not drawn (they still act)
-//   narrows    stretches where each side of the expressway drops to `lanesPerSide` lanes
+//   narrows    stretches where each side of the expressway drops to `lanesPerSide` lanes; with side: 'left' or
+//              'right', only that side does (the level's "lanes" are the most each way ever has: a way that
+//              gains a lane further on is narrowed until then)
+//   splits     { from, to, apart? }: a two-way road's two ways part: the oncoming side swings away to the left,
+//              runs on by itself `apart` m off (CONFIG.split.apart if not said), and comes back in. Nothing
+//              crosses the centre line while they are apart
 //   bridges    stretches where a bridge's structure stands on both shoulders
 //   exits      side roads: an exit lane opens beside the right-hand lane before `exitAt`,
 //              where the side road forks off; it comes back as a merge lane at `mergeAt`.
 //              The side road's shape is worked out from those two points, so it always
-//              joins up; the expressway has to swing away in between, and be straight
-//              for 250 m before the exit and after the merge (room for the flyovers).
+//              joins up; the expressway has to swing away in between.
+//              An exit can shape its side road (see track.js): out: m its middle is pushed out, away from
+//              the expressway; bends: { count, size }: that many bends in a row, each `size` m off its line.
+//              Or segments: [{ length, curve }], as the level's own, from the exit on: the side road follows
+//              them, and a curve of its own making brings it from where they end to the merge.
+//              lanes: how many lanes wide it is between its ramps (2 if not said, 4 at most), or
+//              [{ at, count }] to widen and narrow it along the way (at: m along the side road).
+//              oncomingFrom: m along it from which its left lane (lane 0) is oncoming and the double yellow
+//              line is drawn; before that, every lane goes the player's way.
+//              oncoming: true / false: whether its other lane carries traffic coming the other way (if not
+//              said: on a two-way level it does, on a one-way one it doesn't). That traffic just turns up at
+//              one end and is gone at the other, unless the exit has flyovers: true (a two-way level only):
+//              a flyover at each end carries it over from the expressway and back, and the expressway then
+//              has to be straight for 250 m before the exit and after the merge (room for them).
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
 //   theme      'city' (default), 'bathurst' (Mount Panorama: a mountain), 'panorama' (the same, as a road through the bush), 'montreal' (Circuit Gilles-Villeneuve's island: its landmarks 'river', 'basin',
@@ -42,6 +59,7 @@
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo', 'f1')
+//   alwaysGood true = the player is Good on it, whatever the side picked on the menu (as on the Battlefield)
 //   grid       { count, kind, gap, pace: { min, max }, from }: a race. `count` cars of that kind on a
 //              grid, two by two, `gap` m apart, ahead of the player, all the player's way, half of them
 //              evil, each at its own share (pace) of the player's car's top speed; they race on,
@@ -158,8 +176,10 @@
 //              slow, nose to tail (see CONFIG.procession)
 //   crossings  { s, trigger, every }: a level crossing: lights, booms, and a short fast train across
 //              the road, set off as the player comes within trigger m (see CONFIG.crossing). On straight road
-//   stopGo     { from, to }: stop / go roadworks on a two-way road: the oncoming side dug up over that
-//              stretch, both ways taking turns through the lane left (see CONFIG.stopGo). On straight road
+//   stopGo     { from, to, go?, clear? }: stop / go roadworks on a two-way road: the oncoming side dug up
+//              over that stretch (as long as it likes), both ways taking turns through the lane left. go: s
+//              each way gets the GO; clear: s between, for the last through to clear (a long works wants
+//              longer), if not CONFIG.stopGo's. On straight road
 //   fog        { from, to }: a fog bank: the fog closes right in, and the police see less (see CONFIG.fog)
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side }: rocks tumbling down onto the road from that side as the player

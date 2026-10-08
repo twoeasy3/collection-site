@@ -27,6 +27,14 @@ export const Packages = (() => {
   }
   let cooldown = 0;
   const spread = (range) => (Math.random() - 0.5) * 2 * range;
+  // how far apart two things { s, lat } are, in the world: not along the road and across it, by which what
+  // is on the other side of a split (a level's "splits") or on another road at a fork would seem close by
+  const pointA = {}, pointB = {};
+  const distance = (a, b) => {
+    Track.toWorld(a.s, a.lat, pointA);
+    Track.toWorld(b.s, b.lat, pointB);
+    return Math.hypot(pointB.x - pointA.x, pointB.z - pointA.z);
+  };
 
   const reset = () => {
     cooldown = 0;
@@ -34,13 +42,21 @@ export const Packages = (() => {
     Player.turret = 0;
     Player.gunTarget = null;
   };
+  // the way round from the player's nose to a vehicle (rad, + = to its right), in the world, not along the
+  // road: the gun sits on a hull that swerves (Player.yaw), on a road that bends away under its target
+  const here = {}, there = {};
+  const bearing = (foe) => {
+    const nose = Track.toWorld(Player.s, Player.lat, here) - Player.yaw;
+    Track.toWorld(foe.s, foe.lat, there);
+    return nose - Math.atan2(there.x - here.x, there.z - here.z);
+  };
   // the way the player's 8x8's gun is turned (rad from straight ahead, + = to its right): to the target it would
   // fire at (see gunTarget), turning at twice an army turret's rate, or back to straight ahead with none
   const aimTurret = (dt) => {
     const gun = Player.tank > 0 ? null : CAR.cannon;
     const foe = gun && Player.active ? gunTarget(gun) : null;
     Player.gunTarget = foe;
-    const want = foe ? Math.atan2(foe.lat - Player.lat, foe.s - Player.s) : 0;
+    const want = foe ? bearing(foe) : 0;
     const turn = 2 * CONFIG.battle.turn * dt, now = Player.turret || 0;
     Player.turret = now + clamp(Math.atan2(Math.sin(want - now), Math.cos(want - now)), -turn, turn);
   };
@@ -57,11 +73,20 @@ export const Packages = (() => {
     p.h = 1.2;
     p.endH = aim.height || 0.6;
     p.arc = kind === 'shell' ? 0.4 : CONFIG.throwArc;
-    p.flight = flight || clamp(Math.hypot(aim.s - p.s, aim.lat - p.lat) / CONFIG.throwSpeed,
+    p.flight = flight || clamp(distance(aim, p) / CONFIG.throwSpeed,
       CONFIG.throwFlightMin, CONFIG.throwFlightMax);
     p.vs = (aim.s + aim.vs * p.flight - p.s) / p.flight;
     p.vlat = (aim.lat + aim.latVel * p.flight - p.lat) / p.flight;
     p.from = p.to = null; // (see the cannon)
+    // (thrown over to the other side of a split: it flies straight across the gap, as the cannon's shell does,
+    // not along the road, on which there is no gap for it to cross)
+    const centre = -Track.medianHalf, landS = p.s + p.vs * p.flight, landLat = p.lat + p.vlat * p.flight;
+    if (Track.isMain(p.s) && (p.lat < centre) !== (landLat < centre) && (Track.apart(p.s) > 0 || Track.apart(landS) > 0)) {
+      p.from = {};
+      Track.toWorld(p.s, p.lat, p.from);
+      p.to = {};
+      Track.toWorld(landS, landLat, p.to);
+    }
     p.gun = null;         // (a Battlefield gun's shell: how hard it hits, see blast)
     p.active = true;
     return p;
@@ -73,13 +98,13 @@ export const Packages = (() => {
     let best = null, bestDist = CONFIG.throwRange;
     for (const t of Targets.items) {
       if (t.used || t.s - Player.s <= Player.hl) continue;
-      const dist = Math.hypot(t.s - Player.s, t.lat - Player.lat);
+      const dist = distance(t, Player);
       if (dist < bestDist) { best = t; bestDist = dist; }
     }
     if (best) return best;
     for (const car of Traffic.cars) {
       if (!car.active || car.courier) continue; // (a rival courier is no target: see CONFIG.rival)
-      const dist = Math.hypot(car.s - Player.s, car.lat - Player.lat) * (car.s < Player.s ? CONFIG.throwBehind : 1);
+      const dist = distance(car, Player) * (car.s < Player.s ? CONFIG.throwBehind : 1);
       if (dist < bestDist) { best = car; bestDist = dist; }
     }
     return best;
@@ -88,7 +113,7 @@ export const Packages = (() => {
     let best = null, bestDist = gun.range;
     for (const car of Traffic.cars) {
       if (!car.active || car.courier || car.health <= 0 || sameSide(car, Player) || (!LEVEL.battle && !car.evil)) continue; // (not Good)
-      const dist = Math.hypot(car.s - Player.s, car.lat - Player.lat) * (car.s < Player.s ? CONFIG.throwBehind : 1);
+      const dist = distance(car, Player) * (car.s < Player.s ? CONFIG.throwBehind : 1);
       if (dist < bestDist) { best = car; bestDist = dist; }
     }
     return best;
@@ -107,7 +132,7 @@ export const Packages = (() => {
     if (foe) {
       if (fireShell(Player, foe, gun)) {
         cooldown = gun.cooldown;
-        Player.turret = Math.atan2(foe.lat - Player.lat, foe.s - Player.s); // (it fires where it points)
+        Player.turret = bearing(foe); // (it fires where it points)
       }
       return;
     }
@@ -146,7 +171,7 @@ export const Packages = (() => {
   // its muzzle to where the target will be, quickly
   const fireShell = (car, target, gun) => {
     const tv = target.isPlayer ? Player.speed : target.vs;
-    const far = Math.hypot(target.s - car.s, target.lat - car.lat), flight = Math.max(0.2, far / CONFIG.battle.shellSpeed);
+    const far = distance(target, car), flight = Math.max(0.2, far / CONFIG.battle.shellSpeed);
     const p = launch(car, { s: target.s, lat: target.lat, vs: tv, latVel: target.latVel || 0 }, 'shell', flight);
     if (!p) return false;
     p.gun = gun;
@@ -176,7 +201,7 @@ export const Packages = (() => {
       let best = CONFIG.enemyThrowCarRange;
       for (const o of Traffic.cars) {
         if (o === car || !o.active || o.kind === 'police' || o.courier) continue;
-        const dist = Math.hypot(o.s - Player.s, o.lat - Player.lat);
+        const dist = distance(o, Player);
         if (dist < best) { best = dist; victim = o; }
       }
     } else if (!victim) {
@@ -184,7 +209,7 @@ export const Packages = (() => {
       const rival = car.rival && car.rival.active && car.rival.kind !== 'police' ? car.rival : null;
       for (const o of rival ? [rival] : Traffic.cars) {
         if (o === car || !o.active || o.kind === 'police' || o.courier) continue;
-        const dist = Math.hypot(o.s - car.s, o.lat - car.lat);
+        const dist = distance(o, car);
         if (dist < best) { best = dist; victim = o; }
       }
     }
@@ -209,7 +234,7 @@ export const Packages = (() => {
   const splash = (p) => {
     for (const v of Collision.bodies) {
       if (!v.active || v === p.owner || v.shield > 0 || v.tank > 0 || v.courier || sameSide(v, p.owner)) continue; // (nor a rival courier)
-      if (Math.hypot(v.s - p.s, v.lat - p.lat) > CONFIG.splashRadius) continue;
+      if (distance(v, p) > CONFIG.splashRadius) continue;
       hurt(v, CONFIG.splashDamage);
       breakTrack(v, CONFIG.brokenTracks.splash);
       if (v.isPlayer) {
@@ -236,7 +261,7 @@ export const Packages = (() => {
     const G = p.gun, direct = G ? G.direct : CONFIG.cannonDirectRadius, reach = G ? G.splash : CONFIG.cannonSplashRadius;
     for (const car of Traffic.cars) {
       if (!car.active || car.courier || car === p.owner || sameSide(car, p.owner)) continue;
-      const dist = Math.hypot(car.s - p.s, car.lat - p.lat);
+      const dist = distance(car, p);
       if (dist < direct + car.hl * 0.5) {
         if (G) hurt(car, G.damage * 2, CONFIG.cannonCrit);
         else car.health = 0;
@@ -249,13 +274,13 @@ export const Packages = (() => {
     }
     // (an army's shell, on the player: see CONFIG.battle.shellOnPlayer)
     if (p.owner !== Player && Player.active && Player.shield <= 0 && Player.ghost <= 0 && !sameSide(Player, p.owner)) {
-      const dist = Math.hypot(Player.s - p.s, Player.lat - p.lat), S = CONFIG.battle.shellOnPlayer;
+      const dist = distance(Player, p), S = CONFIG.battle.shellOnPlayer;
       if (dist < direct + Player.hl * 0.5) hurt(Player, S.direct);
       else if (dist < reach) hurt(Player, S.splash * (1 - dist / reach));
       if (dist < reach) Game.shake = Math.max(Game.shake, 0.8);
     }
     for (const o of Collision.obstacles) {
-      if (o.gone || o.kind === 'landmine' || Math.hypot(o.s - p.s, o.lat - p.lat) > reach) continue; // (a blast sets off no landmine)
+      if (o.gone || o.kind === 'landmine' || distance(o, p) > reach) continue; // (a blast sets off no landmine)
       o.gone = true;
       FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: 0, big: false });
     }
@@ -321,7 +346,7 @@ export const Packages = (() => {
     if (!(Player.bigSplash > 0) || (p.kind !== 'gift' && p.kind !== 'fire')) return;
     for (const car of Traffic.cars) {
       if (car === hit || !car.active || car.arrest >= 0 || car.emergency || car.junction || car.courier) continue;
-      if (Math.hypot(car.s - p.s, car.lat - p.lat) > CONFIG.bigSplash.radius) continue;
+      if (distance(car, p) > CONFIG.bigSplash.radius) continue;
       const was = doomed(car);
       deliver(p, car);
       if (!was && doomed(car)) car.wreckedByPlayer = true;

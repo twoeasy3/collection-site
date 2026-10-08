@@ -4,7 +4,8 @@ import './style.css';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
-import { selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
+import { LEVEL, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
+import { THEMES } from './themes.js';
 import { Progress } from './progress.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
@@ -82,6 +83,8 @@ if (params.get('racewatch') !== null) {
     selectSpecial(edited || HIDDEN_LEVELS.testbed);
   } else if (hidden) selectSpecial(HIDDEN_LEVELS[hidden] || HIDDEN_LEVELS.testbed);
   else selectLevel((Number(params.get('level')) || 1) - 1);
+  // ?theme=snow: the level in that theme, whatever its own (a copy of it: nothing of the run is saved)
+  if (params.get('theme') && THEMES[params.get('theme')]) selectSpecial({ ...LEVEL, theme: params.get('theme') });
   if (params.get('car')) { // ?car=lowrider: drive that car for this visit, owned or not (nothing is saved)
     Progress.data.cars.push(params.get('car'));
     Progress.data.car = params.get('car');

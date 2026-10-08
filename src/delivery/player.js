@@ -353,9 +353,12 @@ export const Player = {
     const wet = this.wading > CONFIG.tide.wet;
     if (wet) top *= Math.max(CONFIG.tide.slowest, 1 - CONFIG.tide.crossing * (1 - R.slowest) * (1 - crossing));
     let drive = throttle;
+    // the slowest the brakes bring it: on a lapped circuit, minSpeed; anywhere else, to a stop, for as long
+    // as the brake is held (let go, it rolls on up to minSpeed again by itself)
+    const slowest = LEVEL.laps ? CONFIG.minSpeed : 0;
     const grip = this.onIce ? CONFIG.ice.brakeGrip : 1; // (braking on ice)
     // (but with a flat tyre, not: the car can be brought to a stop to change it, and stays there)
-    if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed) && !this.puncture) drive = 1;
+    if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed) && !this.puncture && !(drive < 0 && !this.launching && slowest < CONFIG.minSpeed)) drive = 1;
     if (drive === 0 && boosted && !lifting) drive = 1; // the turbo pulls unless you brake (or lift off)
     if (this.speed > top) {
       // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
@@ -365,8 +368,8 @@ export const Player = {
       this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * (this.puncture ? CONFIG.puncture.accel : 1) * dt);
     } else if (drive < 0 && this.puncture) { // (a flat tyre: hard, and all the way down to a stop)
       this.speed = Math.max(0, this.speed + drive * CONFIG.brake * CONFIG.puncture.brake * grip * dt);
-    } else if (drive < 0 && this.speed > CONFIG.minSpeed) {
-      this.speed = Math.max(CONFIG.minSpeed, this.speed + drive * CONFIG.brake * grip * dt);
+    } else if (drive < 0 && this.speed > slowest) {
+      this.speed = Math.max(slowest, this.speed + drive * CONFIG.brake * grip * dt);
     } else if (lifting && drive === 0) { // (no brakes, lifting off: coasting down; with a flat tyre, to a stop to change it)
       this.speed = Math.max(Math.min(this.speed, this.puncture ? 0 : CONFIG.minSpeed), this.speed - CONFIG.mystery.noBrakes.coast * dt);
     }
@@ -376,7 +379,7 @@ export const Player = {
     if (hard && !this.braking) sfx('brake', 0.7);
     this.braking = hard;
     if (lead) this.speed = Math.max(Math.max(0, lead.vs), this.speed - CONFIG.autoBrake * grip * dt);
-    this.brakeLight = (throttle < 0 && this.speed > CONFIG.minSpeed) || !!lead;
+    this.brakeLight = (throttle < 0 && this.speed > slowest) || !!lead;
   },
   // The screensaver's camera dolly: no car (nothing of the player is drawn), just this point
   // gliding down the centre line at a steady speed for the chase camera to follow. It is a

@@ -13,16 +13,21 @@ export const CONFIG = {
   runoffEase: 25,          // m a stretch of run-off (a level's "runoff") eases in and out over
   gradeEase: 60,           // m each way over which one slope is blended into the next (crests and dips)
   bridgeWallInset: 0.4,    // gap between the outer lane line and a bridge's structure
-  ramps: {                 // exits, merges and their flyovers
+  ramps: {                 // exits, merges and their flyovers (an exit's "flyovers": true)
     laneZone: 180,         // m of exit lane before an exit / merge lane after a merge: an extra lane
                            // outside the expressway's right-hand lane, with the shoulder beyond it
     gore: 50,              // m over which that lane opens at the start of the exit zone, and over which
                            // the expressway's pavement blends with the side road's at each fork
     ramp: 110,             // m at each end of a side road that is a single-lane ramp
+    laneTaper: 60,         // m over which a side road widens or narrows by its exit's "lanes"
+    shapeLead: 130,        // m at each end of a side road an exit's own shape ("out", "bends") leaves alone...
+    shapeEase: 120,        // ...and m beyond that it eases in over
+    tightest: 35,          // m: the tightest a side road's bend may be (its radius)
     leftShoulder: 1,       // m; a side road's right shoulder is the normal driveable width
     flyoverLength: 360,
     flyoverHeight: 7,
     trafficShare: 0.45,    // share of traffic that takes a side road
+    sideOncoming: 4,       // on a one-way level, the cars coming the other way along a side road that has oncoming traffic
   },
 
   // shoulder policing
@@ -35,7 +40,8 @@ export const CONFIG = {
   policeCrawlSpeed: 8,     // m/s it is slowed to in that time
   policeHoldTime: 4,       // s from being grabbed to being dropped back in a lane
 
-  // speed (m/s): hold accelerate / brake to change it, release and it holds
+  // speed (m/s): hold accelerate / brake to change it, release and it holds. minSpeed: the slowest it rolls
+  // along by itself; held, the brake brings it to a stop, but not on a lapped circuit (see Player.updateSpeed)
   minSpeed: 7,
 
   // turbocharger pickups: fixed spots on the track that raise the top speed for a while
@@ -288,6 +294,9 @@ export const CONFIG = {
   junction: {
     forward: 0.35,         // share of the traffic going the player's way that carries straight on at a turn
     turnOff: 0.3,          // share of that in the outside lane that turns off at a junction straight on
+    clearBehind: 16,       // a car only carries straight on at a turn with nothing going its way beside it on the outside of
+    clearAhead: 30,        // the bend, from this many m behind it to this many ahead, where one slowing for the bend still is (it would cut across it: see Traffic)
+    crossing: 2,           // s it takes to get across, more or less: what is closing on it in that time counts as beside it
     stopping: 8,           // m/s^2 traffic slows at, giving way
   },
   // A railway track (a level's "railway", down its median) slows a car crossing it, by the car's
@@ -846,10 +855,16 @@ export const CONFIG = {
   // may run the STOP
   stopGo: {
     go: 9,                 // s each way gets the GO...
-    clear: 5,              // ...with this long between, for the last through to clear
+    clear: 5,              // ...with this long between, for the last through to clear (a works can set its own: "go", "clear")
     runChance: 0.35,       // chance an evil driver runs the STOP
     stopLine: 4,           // m short of the works traffic waits at
     coneEvery: 5,          // m between the cones down the middle
+  },
+  // split carriageways (a level's "splits": see track.js): the oncoming side of the road parts from the
+  // player's, runs on by itself, and comes back
+  split: {
+    apart: 70,             // m the two ways are apart, unless the split says ("apart")
+    ease: 320,             // m over which they part, and come back together
   },
   // a fog bank (a level's "fog": { from, to }): the fog closes right in, easing in and out over its edges
   fog: {

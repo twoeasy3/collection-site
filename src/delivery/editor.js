@@ -4,20 +4,23 @@
 // segments; items are placed by clicking the road, moved by dragging, and changed or deleted once
 // selected. "Play it" opens the game on the level as it stands (?edited: see main.js; a hidden
 // level, so nothing is saved), and "Download .json" saves it, to drop into ./levels.
-// Only the main road is drawn: everything else the level has (exits, zones, bridges, the tide...) is
-// edited as JSON in the Special features box; a change to the road can leave it in the wrong place.
+// The main road is drawn, and its side roads (a level's "exits": laid out by the game's own Track, so they
+// are where the game puts them, with whatever it finds wrong with the level listed under the map); the rest
+// of what a level has (zones, bridges, the tide...) is edited as JSON in the Special features box; a change
+// to the road can leave it in the wrong place.
 // ============================================================================
 import './editor.css';
 import { CONFIG } from './config.js';
-import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
+import { LEVELS, HIDDEN_LEVELS, levelLabel, selectSpecial } from './levels.js';
+import { buildTrack, Track } from './track.js';
 import { LEVEL_CARS, CARS } from './cars.js';
+import { THEMES } from './themes.js';
 import { PICKUP_COLOR } from './render/pickupModels.js';
 
 const $ = (id) => document.getElementById(id);
 const view3d = $('view3d'); // (the 3D view: see show3d)
 const LW = CONFIG.laneWidth, STEP = 2; // m between the points the road is drawn through
-const THEMES = ['city', 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast', 'safari',
-  'airport', 'construction', 'hell', 'space', 'night', 'sea'];
+const THEME_NAMES = Object.keys(THEMES); // (every one: see themes.js)
 const PICKUPS = Object.keys(PICKUP_COLOR);
 const OBSTACLES = ['barrier', 'cone', 'sign', 'bale', 'potty', 'sewage', 'pile', 'beam', 'umbrella', 'surfboard', 'cooler', 'chair', 'mine'];
 const hex = (n) => '#' + n.toString(16).padStart(6, '0');
@@ -68,8 +71,11 @@ const build = () => {
   }
 };
 const length = () => points.length ? points[points.length - 1].s : 0;
+// how far the oncoming side of the road has parted from the player's at s (a level's "splits": see Track.apart)
+const apartAt = (s) => Track && Track.apart && (level.splits || []).length ? Track.apart(s) : 0;
 const at = (s, lat = 0) => { // a point on the map, s along the road and lat across it
   const p = points[Math.max(0, Math.min(points.length - 1, Math.round(s / STEP)))];
+  if (lat < -HM()) lat -= apartAt(s);
   return { x: p.x + Math.cos(p.h) * lat, y: p.y - Math.sin(p.h) * lat };
 };
 const nearest = (x, y) => { // the road's nearest point to a map point: s along it, lat across it
@@ -78,7 +84,10 @@ const nearest = (x, y) => { // the road's nearest point to a map point: s along 
     const d = (p.x - x) ** 2 + (p.y - y) ** 2;
     if (d < bestD) { bestD = d; best = p; }
   }
-  return { s: best.s, lat: (x - best.x) * Math.cos(best.h) - (y - best.y) * Math.sin(best.h), off: Math.sqrt(bestD) };
+  let lat = (x - best.x) * Math.cos(best.h) - (y - best.y) * Math.sin(best.h), off = Math.sqrt(bestD);
+  const gap = apartAt(best.s);
+  if (gap && lat < -HM() - gap / 2) { lat += gap; off = Math.abs(lat); } // (on the side that has parted)
+  return { s: best.s, lat, off };
 };
 const nearestLane = (lat) => { // (or shoulder: 'left' | 'right')
   const [a, b] = edges();
@@ -88,7 +97,67 @@ const nearestLane = (lat) => { // (or shoulder: 'left' | 'right')
   for (let k = 1; k < laneCount(); k++) if (Math.abs(laneLat(k) - lat) < Math.abs(laneLat(best) - lat)) best = k;
   return best;
 };
-// where an item is on the map (items on a side road, which isn't drawn, aren't anywhere)
+// ---- the side roads: the level laid out by the game's own Track (see track.js), for what the editor doesn't
+// work out for itself: each exit's side road and flyovers, as the game will have them, and the problems the
+// game finds with the level. On the map a point of the game's world is (-x, z): the map has right to the right
+let sideRoads = [], problems = [];
+const mapPoint = (s, lat) => { const p = {}; Track.toWorld(s, lat, p); return { x: -p.x, y: p.z }; };
+const survey = () => {
+  sideRoads = [];
+  problems = [];
+  try {
+    selectSpecial(structuredClone(level));
+    buildTrack();
+  } catch (error) {
+    problems = ['the game could not lay this level out: ' + error.message];
+    return;
+  }
+  problems = Track.problems;
+  const FLY = CONFIG.ramps.flyoverLength;
+  sideRoads = Track.exits.map((x, i) => {
+    const rows = [];
+    for (let d = 0; ; d = Math.min(x.length, d + 4)) {
+      const at = x.side0 + d;
+      rows.push({ d, lo: mapPoint(at, Track.lo(at)), laneLo: mapPoint(at, Track.laneLo(at)), mid: mapPoint(at, 0), laneHi: mapPoint(at, Track.laneHi(at)), hi: mapPoint(at, Track.hi(at)) });
+      if (d >= x.length) break;
+    }
+    const flyovers = !x.flyovers ? [] : [x.flyA0, x.flyB0].map(from => {
+      const line = [];
+      for (let d = 0; d <= FLY; d += 6) line.push(mapPoint(from + d, 0));
+      return line;
+    });
+    // (how far along it the level's own segments run, before the game's curve to the merge takes over)
+    const own = (level.exits[i].segments || []).reduce((sum, seg) => sum + (seg.length || 0), 0);
+    return { x, i, rows, flyovers, own };
+  });
+};
+// the point of a side road nearest a map point: { road, d (m along it), off (m from its middle) }, or null
+const nearestSide = (mx, my) => {
+  let best = null;
+  for (const road of sideRoads) for (const row of road.rows) {
+    const off = Math.hypot(row.mid.x - mx, row.mid.y - my);
+    if (!best || off < best.off) best = { road, d: row.d, off };
+  }
+  return best;
+};
+// where an exit's lane 0 turns oncoming: set (m along its side road), for the map and the JSON to follow
+const setOncomingFrom = (i, d) => {
+  level.exits[i].oncomingFrom = Math.max(0, Math.round(d));
+  if (level.exits[i].oncoming === false) delete level.exits[i].oncoming;
+  survey();
+  extraBox();
+  if (picked && picked.key === 'exits') itemPanel();
+  status();
+};
+// where an item on a side road is on the map (only shown: it is moved in the JSON), or null
+const sideItemAt = (list, it) => {
+  const x = it.road === 'side' && Track && Track.exits[it.exit || 0];
+  if (!x || !(it.s >= 0 && it.s <= x.length)) return null;
+  const at = x.side0 + it.s;
+  if (list === 'targets') return mapPoint(at, it.side === 'left' ? Track.lo(at) - CONFIG.targetOffset * 0.5 : Track.hi(at) + CONFIG.targetOffset * 0.5);
+  return mapPoint(at, it.lane === 'left' ? (Track.lo(at) + Track.laneLo(at)) / 2 : it.lane === 'right' ? (Track.hi(at) + Track.laneHi(at)) / 2 : Track.laneOffset(it.lane ?? 1, at));
+};
+// where an item is on the map (one on a side road is only shown: see sideItemAt)
 const itemAt = (list, it) => {
   if (it.road) return null;
   if (list === 'targets') return at(it.s, (it.side === 'left' ? edges()[0] - shoulder() : edges()[1] + shoulder()) + (it.side === 'left' ? -CONFIG.targetOffset : CONFIG.targetOffset) * 0.5);
@@ -100,7 +169,7 @@ const itemAt = (list, it) => {
 // row of its own for each kind; a point (s, or at, or a runway's from) a marker on the road.
 // (Entries on a side road, which isn't drawn, are left out.)
 const FEATURE_TEMPLATES = {
-  stretches: { mud: {}, ice: {}, bridges: {}, narrows: { lanesPerSide: 1 }, frogs: {}, herds: { count: 6 },
+  stretches: { splits: {}, mud: {}, ice: {}, bridges: {}, narrows: { lanesPerSide: 1 }, frogs: {}, herds: { count: 6 },
     drifters: { kind: 'cone', count: 6, pattern: 'circle' }, dropBears: { count: 4 }, hippos: { every: { min: 6, max: 10 } } },
   points: { tractors: { lane: 2 }, parked: { side: 'right' } },
 };
@@ -133,7 +202,7 @@ const toScreen = (x, y) => [canvas.width / 2 + (x - view.ox) * view.k, canvas.he
 const toMap = (px, py) => [view.ox + (px - canvas.width / 2) / view.k, view.oy - (py - canvas.height / 2) / view.k];
 const fit = () => {
   let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
-  for (const p of points) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
+  for (const p of [...points, ...sideRoads.flatMap(r => r.rows.map(row => row.mid))]) { x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); }
   view = { ox: (x0 + x1) / 2, oy: (y0 + y1) / 2, k: Math.min(canvas.width / (x1 - x0 + 120), canvas.height / (y1 - y0 + 120)) };
 };
 const ribbon = (from, to, color) => { // the road between two offsets across it, the whole way along
@@ -157,6 +226,70 @@ const across = (s, color, width) => { // a line across the road at s
   pen.beginPath(); pen.moveTo(x1, y1); pen.lineTo(x2, y2);
   pen.strokeStyle = color; pen.lineWidth = width; pen.stroke();
 };
+// a side road: its pavement and lanes, its centre line (yellow with traffic coming the other way, white
+// dashes one-way), its flyovers, and its name; the stretch of it the level's own segments lay out is drawn
+// lighter than the game's curve on to the merge, with a tick across where the one hands over to the other
+const path = (list, get) => list.forEach((row, i) => { const [sx, sy] = toScreen(get(row).x, get(row).y); i ? pen.lineTo(sx, sy) : pen.moveTo(sx, sy); });
+const drawSide = ({ x, i, rows, flyovers, own }) => {
+  const band = (list, a, b, color) => {
+    if (list.length < 2) return;
+    pen.beginPath();
+    path(list, r => r[a]);
+    path([...list].reverse(), r => r[b]);
+    pen.fillStyle = color;
+    pen.fill();
+  };
+  band(rows, 'lo', 'hi', '#3a4150');
+  band(rows, 'laneLo', 'laneHi', own ? '#4f5666' : '#5a6272');
+  if (own) band(rows.filter(r => r.d <= own + 4), 'laneLo', 'laneHi', '#5a6272');
+  pen.lineWidth = 1;
+  for (const line of flyovers) {
+    pen.beginPath();
+    path(line, q => q);
+    pen.strokeStyle = '#9aa1ab';
+    pen.lineWidth = Math.max(2, LW * view.k);
+    pen.stroke();
+  }
+  if (view.k > 0.6) { // the line between lanes 0 and 1: white dashes, and yellow from where lane 0 turns oncoming
+    const R = CONFIG.ramps.ramp, turn = Math.max(R, x.oncomingFrom);
+    for (const yellow of [false, true]) {
+      const part = rows.filter(r => r.d >= R && r.d <= x.length - R && (yellow ? r.d >= turn - 4 : r.d <= turn) && Track.sideLeft(x.side0 + r.d) > 0.6);
+      if (part.length < 2) continue;
+      pen.beginPath();
+      path(part, r => r.mid);
+      pen.strokeStyle = yellow ? 'rgba(255,210,63,.9)' : 'rgba(255,255,255,.35)';
+      pen.setLineDash(yellow ? [] : [6, 8]);
+      pen.lineWidth = yellow ? 2 : 1;
+      pen.stroke();
+      pen.setLineDash([]);
+    }
+  }
+  if (x.oncoming) { // the point its lane 0 turns oncoming at: a handle, to drag along it
+    const q = mapPoint(x.side0 + Math.max(0, Math.min(x.length, x.oncomingFrom)), 0), [hx, hy] = toScreen(q.x, q.y);
+    pen.beginPath();
+    pen.moveTo(hx, hy - 7); pen.lineTo(hx + 7, hy); pen.lineTo(hx, hy + 7); pen.lineTo(hx - 7, hy); pen.closePath();
+    pen.fillStyle = '#ffd23f';
+    pen.fill();
+    pen.strokeStyle = '#11151c';
+    pen.lineWidth = 1;
+    pen.stroke();
+    pen.fillStyle = '#ffd23f';
+    pen.fillText('oncoming from here', hx + 10, hy + 4);
+  }
+  const tick = own && rows.find(r => r.d >= own);
+  if (tick) {
+    pen.beginPath();
+    pen.moveTo(...toScreen(tick.lo.x, tick.lo.y));
+    pen.lineTo(...toScreen(tick.hi.x, tick.hi.y));
+    pen.strokeStyle = '#ffd23f';
+    pen.lineWidth = 2;
+    pen.stroke();
+  }
+  const label = rows[Math.floor(rows.length / 2)].hi, [lx, ly] = toScreen(label.x, label.y);
+  pen.fillStyle = featureColor('exits');
+  pen.font = '11px system-ui';
+  pen.fillText(`exit ${i}: ${Math.round(x.length)} m${x.oncoming ? ', two-way' : ', one-way'}${x.flyovers ? ', flyovers' : ''}`, lx + 6, ly);
+};
 const draw = () => {
   const w = canvas.clientWidth, h = canvas.clientHeight;
   if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
@@ -164,8 +297,14 @@ const draw = () => {
   pen.fillRect(0, 0, canvas.width, canvas.height);
   if (points.length < 2) return;
   const [a, b] = edges();
-  ribbon(a - shoulder(), b + shoulder(), '#3a4150');                          // the shoulders...
-  ribbon(a, b, '#5a6272');                                                    // ...and the lanes
+  for (const road of sideRoads) drawSide(road);
+  if ((level.splits || []).length) { // (each way a road of its own, where they part)
+    ribbon(a - shoulder(), -HM() - 0.01, '#3a4150'); ribbon(-HM(), b + shoulder(), '#3a4150');
+    ribbon(a, -HM() - 0.01, '#5a6272'); ribbon(-HM(), b, '#5a6272');
+  } else {
+    ribbon(a - shoulder(), b + shoulder(), '#3a4150');                        // the shoulders...
+    ribbon(a, b, '#5a6272');                                                  // ...and the lanes
+  }
   if (view.k > 1.5) for (let k = 1; k < laneCount(); k++) lineAlong((laneLat(k - 1) + laneLat(k)) / 2, 'rgba(255,255,255,.35)', [6, 8]);
   for (let s = 500; s < length(); s += 500) { // every half a kilometre, marked
     across(s, 'rgba(255,255,255,.18)', 1);
@@ -217,7 +356,7 @@ const draw = () => {
   // the items
   for (const list of ['targets', 'obstacles', 'pickups']) {
     level[list].forEach((it, i) => {
-      const p = itemAt(list, it);
+      const p = itemAt(list, it) || sideItemAt(list, it);
       if (!p) return;
       const [sx, sy] = toScreen(p.x, p.y), r = Math.max(4, Math.min(9, view.k * 1.6));
       pen.beginPath();
@@ -236,9 +375,10 @@ const status = () => {
   const L = length(), good = (level.time || 1) * CONFIG.timeScale.good, evil = (level.time || 1) * CONFIG.timeScale.evil;
   $('length').textContent = (L / 1000).toFixed(2) + ' km';
   $('status').textContent = `${(L / 1000).toFixed(2)} km: an average of ${(L / good * 3.6).toFixed(0)} km/h needed playing Good, ` +
-    `${(L / evil * 3.6).toFixed(0)} km/h Evil. ${level.pickups.length} pickups, ${level.obstacles.length} obstacles, ${level.targets.length} targets.`;
+    `${(L / evil * 3.6).toFixed(0)} km/h Evil. ${level.pickups.length} pickups, ${level.obstacles.length} obstacles, ${level.targets.length} targets.` +
+    (problems.length ? ` \u26a0 ${problems.length === 1 ? 'A problem' : problems.length + ' problems'} the game finds with it: ${problems.join('; ')}.` : '');
 };
-const changed = () => { build(); status(); draw(); };
+const changed = () => { build(); survey(); status(); draw(); };
 const fields = () => {
   $('f-name').value = level.name || '';
   $('f-id').value = level.id || '';
@@ -263,8 +403,8 @@ const extraNote = (text, bad) => {
 const extraBox = () => {
   $('extra').value = JSON.stringify(extras(), null, 2);
   const keys = Object.keys(extras());
-  extraNote(keys.length ? `${keys.length} in this level: ${keys.join(', ')}. They aren't drawn on the map (the 3D view shows them); ` +
-    'a change to the road can leave them out of place.' : 'None in this level. Add any from levels.js, e.g. "mud": [{ "from": 800, "to": 900 }]', false);
+  extraNote(keys.length ? `${keys.length} in this level: ${keys.join(', ')}. Side roads (exits) are drawn on the map, the rest only marked along the road ` +
+    '(the 3D view shows them); a change to the road can leave them out of place.' : 'None in this level. Add any from levels.js, e.g. "mud": [{ "from": 800, "to": 900 }]', false);
 };
 $('extra').addEventListener('input', (e) => {
   let parsed;
@@ -300,7 +440,7 @@ field('f-traffic', (v) => {
   }
   level.traffic = mix;
 });
-$('f-theme').innerHTML = THEMES.map(t => `<option>${t}</option>`).join('');
+$('f-theme').innerHTML = THEME_NAMES.map(t => `<option>${t}</option>`).join('');
 $('f-car').innerHTML = '<option value="">the garage\'s</option>' + [...Object.keys(LEVEL_CARS), ...CARS.map(c => c.id)].map(c => `<option>${c}</option>`).join('');
 
 // the road, as a table of its segments: length, how far it bends (degrees, + right) and its slope
@@ -338,6 +478,7 @@ $('tools').innerHTML = toolButton('Select / move', { kind: 'select' }) +
   '<h3>Pickups</h3>' + PICKUPS.map(p => toolButton(p, { kind: 'pickups', type: p }, hex(PICKUP_COLOR[p]))).join('') +
   '<h3>Obstacles</h3>' + OBSTACLES.map(o => toolButton(o, { kind: 'obstacles', type: o }, '#ff8a3d')).join('') +
   '<h3>TANK RAGE targets</h3>' + toolButton('left', { kind: 'targets', side: 'left' }, '#39ff6a') + toolButton('right', { kind: 'targets', side: 'right' }, '#39ff6a') +
+  '<h3>Side roads</h3>' + toolButton('oncoming from here', { kind: 'oncomingFrom' }, '#ffd23f') +
   '<h3>Stretches (150 m, from where you click)</h3>' + Object.keys(FEATURE_TEMPLATES.stretches).map(k => toolButton(k, { kind: 'stretch', key: k }, featureColor(k))).join('') +
   '<h3>Points</h3>' + Object.keys(FEATURE_TEMPLATES.points).map(k => toolButton(k, { kind: 'point', key: k }, featureColor(k))).join('');
 const showTool = () => { for (const b of $('tools').children) if (b.dataset.tool) b.classList.toggle('on', b.dataset.tool === JSON.stringify(tool)); };
@@ -347,7 +488,8 @@ $('tools').addEventListener('click', (e) => { const b = e.target.closest('button
 window.addEventListener('message', (e) => {
   const m = e.data;
   if (!m || e.source !== view3d.contentWindow) return;
-  if (m.type === 'flyReady') toolTo3d();
+  if (m.type === 'flyReady') { toolTo3d(); if (revealed) view3d.contentWindow.postMessage({ type: 'reveal', on: true }, '*'); } // (still showing, in a view made afresh)
+  if (m.type === 'reveal') { revealed = !!m.on; showRevealed(); }
   if (m.type === 'placed') {
     level[m.list].push(m.item);
     selected = { list: m.list, i: level[m.list].length - 1 };
@@ -454,6 +596,20 @@ const local = (e) => { const r = canvas.getBoundingClientRect(); return [e.clien
 canvas.addEventListener('pointerdown', (e) => {
   const [px, py] = local(e), got = hit(px, py);
   canvas.setPointerCapture(e.pointerId);
+  // a side road's "oncoming from here": its handle dragged, or (with that tool) set where the click is
+  const handle = sideRoads.find(({ x }) => {
+    if (!x.oncoming) return false;
+    const q = mapPoint(x.side0 + Math.max(0, Math.min(x.length, x.oncomingFrom)), 0), [hx, hy] = toScreen(q.x, q.y);
+    return Math.hypot(hx - px, hy - py) < 10;
+  });
+  const onSide = nearestSide(...toMap(px, py));
+  if (tool.kind === 'oncomingFrom' ? onSide && onSide.off < 12 : handle && !got) {
+    const i = tool.kind === 'oncomingFrom' ? onSide.road.i : handle.i;
+    if (tool.kind === 'oncomingFrom') setOncomingFrom(i, onSide.d);
+    drag = { oncoming: i };
+    draw();
+    return;
+  }
   if (got) { selected = got; picked = null; itemPanel(); drag = { item: got }; draw(); return; }
   const feature = tool.kind === 'select' || tool.kind === 'stretch' || tool.kind === 'point' ? hitFeature(px, py) : null;
   if (feature && tool.kind === 'select') {
@@ -469,7 +625,7 @@ canvas.addEventListener('pointerdown', (e) => {
   const onRoad = n.off < Math.max(Math.abs(a), b) + shoulder() + 4 && n.s > 0 && n.s < length();
   if ((tool.kind === 'stretch' || tool.kind === 'point') && onRoad) { // a special feature, from a template
     const s = Math.round(n.s), kinds = FEATURE_TEMPLATES[tool.kind === 'stretch' ? 'stretches' : 'points'];
-    const entry = tool.kind === 'stretch' ? { from: s, to: Math.min(Math.round(length()), s + 150), ...kinds[tool.key] } : { s, ...kinds[tool.key] };
+    const entry = tool.kind === 'stretch' ? { from: s, to: Math.min(Math.round(length()), s + (tool.key === 'splits' ? 900 : 150)), ...kinds[tool.key] } : { s, ...kinds[tool.key] };
     if (!Array.isArray(level[tool.key])) level[tool.key] = [];
     level[tool.key].push(entry);
     picked = { key: tool.key, i: level[tool.key].length - 1 };
@@ -496,7 +652,17 @@ canvas.addEventListener('pointerdown', (e) => {
 canvas.addEventListener('pointermove', (e) => {
   if (!drag) return;
   const [px, py] = local(e);
-  if (drag.pan) {
+  if (drag.feature && drag.feature.key === 'exits') survey(); // (its side road follows it as it is dragged)
+  if (drag.oncoming !== undefined) {
+    const road = sideRoads.find(r => r.i === drag.oncoming);
+    let best = null;
+    const [mx, my] = toMap(px, py);
+    for (const row of road ? road.rows : []) {
+      const off = Math.hypot(row.mid.x - mx, row.mid.y - my);
+      if (!best || off < best.off) best = { d: row.d, off };
+    }
+    if (best) setOncomingFrom(drag.oncoming, best.d);
+  } else if (drag.pan) {
     view.ox -= (px - drag.pan[0]) / view.k;
     view.oy += (py - drag.pan[1]) / view.k;
     drag.pan = [px, py];
@@ -537,9 +703,10 @@ const show3d = (on) => {
   canvas.hidden = on;
   $('fit').hidden = on;
   $('refresh3d').hidden = !on;
+  $('reveal3d').hidden = !on;
   $('show3d').textContent = on ? 'Map' : '3D view';
   $('hint').innerHTML = on ? 'W A S D to fly &middot; drag to look &middot; E / Space up, Q / C down &middot; Shift faster &middot; scroll for speed &middot; ' +
-      'click the road to place the tool picked in Place &middot; right-click an item to remove it'
+      'click the road to place the tool picked in Place &middot; right-click an item to remove it &middot; T shows what only triggers later'
     : 'Scroll to zoom &middot; drag the road to pan &middot; click to place or select &middot; drag an item to move it &middot; Delete removes it';
   if (on && hand()) view3d.src = './?edited&fly&v=' + Date.now(); // (afresh, with the edits so far)
   if (on) view3d.focus();
@@ -554,6 +721,11 @@ if (matchMedia('(hover: none) and (pointer: coarse)').matches) {
   $('show3d').textContent = '3D view (desktop only)';
 }
 $('refresh3d').addEventListener('click', () => show3d(true));
+// what a level only sets off as the player comes up to it (mines, drop bears, rockfalls, wreckage), shown in
+// the 3D view as it ends up, or not: the view is told, and tells back what it is showing (see render/fly.js)
+let revealed = false;
+const showRevealed = () => { $('reveal3d').textContent = revealed ? 'Hide what triggers later' : 'Show what triggers later'; $('reveal3d').classList.toggle('primary', revealed); };
+$('reveal3d').addEventListener('click', () => { if (view3d.contentWindow) view3d.contentWindow.postMessage({ type: 'reveal', on: !revealed }, '*'); view3d.focus(); });
 window.addEventListener('resize', () => draw());
 
 // ---- open, play and download ---------------------------------------------------------------------
@@ -562,7 +734,7 @@ const open = (i) => {
   level = structuredClone(i < 0 ? BLANK : sources[i][1]);
   lists();
   selected = picked = null;
-  fields(); segmentRows(); itemPanel(); build(); status();
+  fields(); segmentRows(); itemPanel(); build(); survey(); status();
   draw(); fit(); draw();
 };
 $('pick').addEventListener('change', (e) => open(Number(e.target.value)));

@@ -1,6 +1,7 @@
 {
   "id": "gimmick-road",
   "name": "Gimmick Road",
+  "car": "miata",
   "time": 420,
   "tip": 50,
   "lanes": 2,
@@ -40,7 +41,7 @@
     { "s": 1680 }
   ],
   "stopGo": [
-    { "from": 2250, "to": 2400 }
+    { "from": 2250, "to": 2310 }
   ],
   "fog": [
     { "from": 2550, "to": 3050 }

@@ -22,7 +22,7 @@
     { "from": 740, "to": 900 }
   ],
   "exits": [
-    { "exitAt": 1200, "mergeAt": 2200 }
+    { "exitAt": 1200, "mergeAt": 2200, "bends": { "count": 5, "size": 14 }, "oncoming": true }
   ],
   "frogs": [
     { "from": 950, "to": 1110 },

@@ -48,6 +48,17 @@ export const keepOnRoad = (v, bounce) => {
     v.latVel *= -bounce;
     v.onWall = true;
   } else v.onWall = false;
+  // where the two ways have parted (a level's "splits": see Track.apart) there is no crossing the centre: each
+  // keeps to the side it is on
+  const gap = Track.apart(v.s);
+  if (gap > 0) {
+    const centre = -Track.medianHalf, margin = Math.min(v.hw + 0.05, gap / 2);
+    if (v.lat < centre ? v.lat > centre - margin : v.lat < centre + margin) {
+      const side = v.lat < centre ? -1 : 1;
+      v.lat = centre + side * margin;
+      if (v.latVel * side < 0) v.latVel *= -bounce;
+    }
+  }
 };
 
 // the top speed in the bend at s (see CONFIG.cornering) of a car that weighs `weight` (1 = the

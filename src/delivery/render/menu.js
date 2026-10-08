@@ -62,11 +62,11 @@ const pickSide = (evil) => {
 };
 sideBtn.addEventListener('click', () => pickSide(!Game.evil));
 const levelBox = document.getElementById('levels'), groupBox = document.getElementById('levelGroups');
-// the levels in groups: the main ones five at a time, and the special ones together. A button for each
-// group; below them, the levels of the group shown (to begin with, the one with the level picked)
+// the levels in groups: the main ones five at a time, and then the special ones five at a time. A button for
+// each group; below them, the levels of the group shown (to begin with, the one with the level picked)
 const GROUPS = [];
 for (let i = 0; i < MAIN_LEVELS.length; i += 5) GROUPS.push([i, Math.min(MAIN_LEVELS.length, i + 5)]);
-GROUPS.push([MAIN_LEVELS.length, LEVELS.length]);
+for (let i = MAIN_LEVELS.length; i < LEVELS.length; i += 5) GROUPS.push([i, Math.min(LEVELS.length, i + 5)]);
 const groupOf = (i) => Math.max(0, GROUPS.findIndex(([a, b]) => i >= a && i < b));
 let shownGroup = null; // (null: the group with the level picked)
 const shopBox = document.getElementById('shop');
@@ -88,11 +88,12 @@ const draw = () => {
     // (the most time to spare delivering it, on each side)
     const good = Progress.bestTime(level.id, false), evil = Progress.bestTime(level.id, true);
     const spare = (t) => t === undefined ? '-' : formatTime(t);
+    const onlyGood = level.battle || level.alwaysGood;
     return card(levelLabel(i) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
-      level.battle ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
+      onlyGood ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
         : 'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
-      level.battle ? (good === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good))
+      onlyGood ? (good === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good))
         : good === undefined && evil === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good) + ' Good / ' + spare(evil) + ' Evil',
     ] : ['Locked', 'Deliver level ' + levelLabel(i - 1) + ' on time to open it'], {
       current: i === LEVEL_INDEX,
@@ -111,7 +112,7 @@ const draw = () => {
     'Top speed ' + Math.round(CAR.maxSpeed * 3.6) + ' km/h',
     'Acceleration ' + CAR.accel + '  |  Health ' + CAR.health,
     LEVEL.car ? 'You must use this vehicle on this level. The garage car returns on other levels.' : 'Open the garage to change or buy cars',
-  ], { current: true, onPick: () => Garage.open(), image: CAR_SHOTS[CAR.id + (Game.evil ? '-evil' : '-good')] }));
+  ], { current: true, onPick: () => Garage.open(), image: CAR_SHOTS[CAR.id + (Game.evil && !LEVEL.battle && !LEVEL.alwaysGood ? '-evil' : '-good')] }));
   // the side picked, and what it means
   sideBtn.className = 'side-btn ' + (Game.evil ? 'evil' : 'good');
   sideName.textContent = Game.evil ? 'Evil' : 'Good';

@@ -26,10 +26,10 @@
     { "length": 400, "curve": 0 }
   ],
   "exits": [
-    { "exitAt": 300, "mergeAt": 900 },
-    { "exitAt": 1300, "mergeAt": 2100 },
-    { "exitAt": 2500, "mergeAt": 3100 },
-    { "exitAt": 3500, "mergeAt": 4300 }
+    { "exitAt": 300, "mergeAt": 900, "bends": { "count": 2, "size": 14 }, "oncoming": true },
+    { "exitAt": 1300, "mergeAt": 2100, "out": 60 },
+    { "exitAt": 2500, "mergeAt": 3100, "bends": { "count": 3, "size": 10 }, "oncoming": true },
+    { "exitAt": 3500, "mergeAt": 4300, "out": 35, "bends": { "count": 2, "size": 12 } }
   ],
   "shoulderRows": [
     { "kind": "sign", "from": 80, "to": 4650, "every": 90, "side": "left" },

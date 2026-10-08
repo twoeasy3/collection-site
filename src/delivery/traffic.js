@@ -47,7 +47,7 @@ export const Traffic = (() => {
     if (car.viaSide) {
       for (const x of Track.exits) {
         if (car.dir > 0 ? car.s > x.exitAt - zone && car.s < x.exitAt
-          : car.s > x.flyoverAt && car.s < x.flyoverAt + zone) leaving = true;
+          : x.flyovers && car.s > x.flyoverAt && car.s < x.flyoverAt + zone) leaving = true;
       }
     }
     if (car.dir > 0) {
@@ -717,6 +717,7 @@ export const Traffic = (() => {
   // after all, it pulls back in at once, wherever it is
   const oppositeLane = (car) => {
     if (Track.flow !== 'both') return null; // (a one-way road, or the Battlefield's: no oncoming lane)
+    if (Track.apart(car.s) > 0 || Track.apart(car.s + car.dir * 250) > 0) return null; // (nor where the two ways have parted, or are about to)
     const [first, last] = Track.laneRange(car.dir, car.s), lane = car.dir > 0 ? first - 1 : last + 1;
     const [ofirst, olast] = Track.laneRange(-car.dir, car.s);
     return lane >= ofirst && lane <= olast ? lane : null;
@@ -862,10 +863,12 @@ export const Traffic = (() => {
       c.aheadGap = place > 0 ? field[place - 1].at - at : 0; // (to the car in front in the running order: see chasing)
     });
   };
-  // a horn to suit the vehicle (police cars have sirens instead), only near the player
+  // a horn to suit the vehicle (police cars have sirens instead), only near the player. (Nobody at war
+  // or in a race honks: an army's vehicles, a race's grid)
+  const noHorn = (car) => LEVEL.battle || car.racer;
   const HORNS = { commuter: 'hornSmall', sport: 'hornSmall', darkvan: 'hornBig', van: 'hornBig', tractor: 'hornBig', bus: 'hornBus' };
   const honk = (car) => {
-    if (car.kind === 'police' || car.honkWait > 0 || Math.abs(car.s - Player.s) > CONFIG.hornRange) return;
+    if (car.kind === 'police' || noHorn(car) || car.honkWait > 0 || Math.abs(car.s - Player.s) > CONFIG.hornRange) return;
     car.honkWait = CONFIG.hornWait;
     sfxAt(HORNS[car.kind] || 'horn', car.s);
   };
@@ -1280,8 +1283,20 @@ export const Traffic = (() => {
     let path;
     if (jn.way) {
       // (not across an oncoming car that is in the box, or about to be: then it follows the road)
-      const oncoming = cars.some(c => c.active && !c.junction && c.dir < 0 && c.s > jn.s - 2 && c.s < jn.end + 12);
-      if (oncoming || Math.random() >= jn.forward) return false;
+      // (or will be, in the time this car takes to get across: `crossing` s)
+      const J = CONFIG.junction, pace = Math.max(5, Math.abs(car.vs));
+      const oncoming = cars.some(c => c.active && !c.junction && c.dir < 0 && c.s > jn.s - 2 &&
+        c.s < jn.end + 12 + Math.abs(c.vs) * (jn.radius + jn.half + 5) / pace);
+      // (nor across anything beside it on the outside of the bend, going its way: that follows the road round,
+      // across the way straight on. Beside it, or about to be: one catching it up from further back, or one
+      // ahead that it is catching up. From the outside lane there is never anything to cross)
+      const beside = (v) => {
+        if (v === car || (v.lat - car.lat) * jn.way >= -1) return false;
+        const gain = ((v.isPlayer ? v.speed : v.vs) - pace) * J.crossing; // (m it gains on this car, getting across)
+        return v.s > car.s - J.clearBehind - Math.max(0, gain) && v.s < car.s + J.clearAhead + Math.max(0, -gain);
+      };
+      const across = cars.some(c => c.active && !c.junction && c.dir > 0 && beside(c)) || (Player.active && beside(Player));
+      if (oncoming || across || Math.random() >= jn.forward) return false;
       path = [{ start, dir: jn.f0, length: jn.radius + jn.arms[0].length }];
     } else {
       const [, last] = Track.laneRange(1, car.s);
@@ -1329,12 +1344,14 @@ export const Traffic = (() => {
     // how many are about, each way: the level's counts, or the usual ones
     const count = LEVEL.trafficCount !== undefined ? LEVEL.trafficCount : CONFIG.trafficCount;
     const oncoming = LEVEL.oncomingCount !== undefined ? LEVEL.oncomingCount : CONFIG.oncomingCount;
+    // (a one-way road with a side road that has oncoming traffic: a few more, coming the other way, for that alone)
+    const sideOnly = Track.flow === 'north' && Track.exits.some(x => x.oncoming) ? CONFIG.ramps.sideOncoming : 0;
     cars.forEach((car, i) => {
-      const north = Track.flow === 'north' || (Track.flow !== 'south' && i < count);
+      const north = Track.flow === 'north' ? i < count + oncoming || i >= count + oncoming + sideOnly : Track.flow !== 'south' && i < count;
       car.dir = north ? 1 : -1;
       car.bound = north ? 'north' : 'south';
       car.active = false;
-      car.unused = i >= count + oncoming; // (never spawned on this level)
+      car.unused = i >= count + oncoming + sideOnly; // (never spawned on this level)
       car.fixed = false;
       // (and nothing left over from the last run, on a car that may not be dealt out again for a while)
       Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, racer: false, slideVel: 0, respawnIn: 0, shield: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null, rush: false, swung: false });
@@ -1969,7 +1986,7 @@ export const Traffic = (() => {
       }
 
       // an oncoming car passing close by may lean on its horn as it goes
-      if (car.dir < 0 && Player.active && car.s > Player.s && car.s + car.vs * dt <= Player.s &&
+      if (car.dir < 0 && !noHorn(car) && Player.active && car.s > Player.s && car.s + car.vs * dt <= Player.s &&
           Math.abs(car.lat - Player.lat) < CONFIG.passByRange && Math.random() < CONFIG.passByChance) sfxAt('passBy', car.s);
       // understeer (a level with "understeer"): in a bend, what it asks of the tyres beyond the ice's
       // grip slides it to the outside, the more so the faster and heavier it is (as the player on ice)

@@ -312,6 +312,18 @@ export const syncPickups = (dt) => {
     }
     if (o.roll && mesh.userData.roller) mesh.userData.roller.rotation.z = -o.roll.dir * (o.spun || 0); // (a pipe rolling across)
     if (o.kind === 'rock') mesh.userData.rock.rotation.x = o.spin || 0; // (tumbling down the hillside)
+    if (o.kind === 'dropBear') { // (not to be seen up in its tree: it fades in as it comes down, there by a quarter of the way)
+      mesh.visible = o.fall > 0 || o.h <= 0;
+      const opacity = Math.min(1, (1 - o.h / CONFIG.dropBear.height) * 4);
+      if (mesh.visible && mesh.userData.opacity !== opacity) {
+        mesh.userData.opacity = opacity;
+        mesh.traverse(part => {
+          if (!part.material) return;
+          if (part.material.transparent !== opacity < 1) { part.material.transparent = opacity < 1; part.material.needsUpdate = true; }
+          part.material.opacity = opacity;
+        });
+      }
+    }
     if (o.ride) mesh.userData.animate(o.ride.on ? o.ride.t : 0); // (a cyclist pedalling)
     if (o.kind === 'landmine') { // (its light flashing, each in its own time)
       const F = CONFIG.battle.mineFlash, lit = ((performance.now() / 1000 / F.period + o.phase) % 1) < F.on;

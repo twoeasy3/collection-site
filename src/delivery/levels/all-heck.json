@@ -2,6 +2,8 @@
   "id": "all-heck",
   "name": "All Heck",
   "theme": "hell",
+  "car": "hearse",
+  "alwaysGood": true,
   "flow": "south",
   "lanes": 8,
   "time": 130,

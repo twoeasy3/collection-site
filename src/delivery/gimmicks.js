@@ -68,6 +68,7 @@ const GROUPS = [
     { name: 'Side roads', color: 0x2e8b4a, has: (l) => l.exits?.length, rules: [
       'An exit lane opens beside the right-hand lane: take it, and the side road runs on beside the expressway and joins it again further up.',
       'Traffic takes it too, and it can be a way round a jam (or into one).',
+      'No two need be alike: one runs straight, another swings far out or winds through a string of bends; some are one-way, others have traffic coming at you in the other lane.',
     ], build: () => {
       const g = road(9, 14);
       const ramp = box(4, 0.1, 10, lambert(0x3b3e44), 6.2, 0.1, 2);
@@ -153,15 +154,15 @@ const GROUPS = [
       `Then the bullet train: it appears up the line and comes straight down it at ${kmh(BT.speed)}, about ${BT.warning} s after you're warned. It destroys everything it touches, you included (unless you're a ghost).`,
       `While it is about, the shoulder's police meter runs down at ${pct(BT.dangerMercy)} speed. It can also turn up in your lane as a mystery.`,
     ], build: () => {
-      const g = group(box(5, 0.1, 30, lambert(0x6f6a60), 0, -0.05, 0));
-      for (let z = -14; z <= 14; z += 1.2) g.add(box(3.2, 0.12, 0.35, lambert(0x5a4636), 0, 0.03, z));
-      for (const x of [-0.75, 0.75]) g.add(box(0.12, 0.15, 30, lambert(0x9aa1ab), x, 0.15, 0));
+      // (full size, filling the card: it stands where it is, and the sleepers run by under it)
+      const g = group(box(5, 0.1, 28, lambert(0x6f6a60), 0, -0.05, 0)), sleepers = group();
+      for (let z = -12.6; z <= 12.6; z += 1.2) sleepers.add(box(3.2, 0.12, 0.35, lambert(0x5a4636), 0, 0.03, z));
+      for (const x of [-0.75, 0.75]) g.add(box(0.12, 0.15, 28, lambert(0x9aa1ab), x, 0.15, 0));
       const train = makeCarriage(true, true);
       train.visible = true;
-      train.scale.setScalar(0.5);
-      g.add(train);
+      g.add(sleepers, train);
       g.rotation.y = Math.PI / 2;
-      return { model: group(g), spin: false, tick: (t) => { train.position.z = ((t * 14) % 44) - 22; } };
+      return { model: group(g), spin: false, tick: (t) => { sleepers.position.z = 0.6 - ((t * 5) % 1.2); } };
     } },
   ] },
   { name: 'Wildlife', cards: [
@@ -504,7 +505,7 @@ const GROUPS = [
     { name: 'Stop / go roadworks', color: 0x2e9b3d, has: (l) => l.stopGo?.length, rules: [
       'On a road of one lane each way, the oncoming side is dug up, so both ways take turns through the one lane left: yours.',
       `A worker at each end turns a STOP / GO sign: ${CONFIG.stopGo.go} s of GO each way, with ${CONFIG.stopGo.clear} s between for the last through to clear. Traffic waits at its STOP; an evil driver may run it.`,
-      "You can't stop: time your arrival, or meet whatever is coming the other way down your lane.",
+      "Hold the brake to wait at the STOP, or chance it and meet whatever is coming the other way down your lane.",
     ], build: () => {
       const g = road(7, 12);
       g.add(box(3.2, 0.04, 12, lambert(0x3a2a1c), -1.8, 0.02, 0));

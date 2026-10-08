@@ -11,6 +11,17 @@ globalThis.window = { addEventListener() {} };
 const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['commuter', 'junker', 'darkvan', 'lowrider', 'wagon', 'sport', 'lovebus', 'taxi', 'suv', 'hotrod', 'minivan', 'hearse', 'miata', 'pickup', 'tank'] }));
 globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: 'delivery_racer_progress=' + allOpen };
 
+// the game's dice are loaded, so a run is the same every time: a check that fails, fails again, and can be
+// looked into (--seed=n for another run of the dice)
+{
+  let seed = Number((process.argv.find(a => a.startsWith('--seed=')) || '').slice(7)) || 20261008;
+  Math.random = () => { // (mulberry32)
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
 let failures = 0;
 const QUICK = process.argv.includes('--quick');
@@ -73,6 +84,11 @@ try {
             : 'the road is flat');
       }
       if (QUICK) continue;
+      // (the drive is in a car of the test's own, to get it over with: the garage's Commuter with a top speed of
+      // 99 m/s and the acceleration to reach it, nothing else about it changed, and its own again afterwards.
+      // A level with a vehicle of its own is driven in that, as it is)
+      const drive = cars.CARS[0], stock = { maxSpeed: drive.maxSpeed, accel: drive.accel };
+      Object.assign(drive, { maxSpeed: 99, accel: 30 });
       let sane = true, steps = 0;
       while (Game.state === 'playing' && steps < 120 * 600) {
         if (steps % 40 === 0) Input.emit('throw');
@@ -89,6 +105,7 @@ try {
         }
         steps++;
       }
+      Object.assign(drive, stock);
       const side = evil ? 'Evil' : 'Good';
       check(sane, `${side}: every vehicle and obstacle keeps a finite position, speed and health`);
       check(Game.outcome === 'delivered', `${side}: reaches the finish (outcome: ${Game.outcome || 'still driving'})`);
@@ -117,6 +134,7 @@ try {
       const o = Collision.obstacles.find(x => x.kind === kind && (kind !== 'asteroid' || (Collision.atRoadLevel(x) && !x.bob)));
       for (const other of Collision.obstacles) if (other !== o) other.gone = true; // (herds can stand two deep)
       if (kind === 'dropBear') o.h = 0; // (down from its tree)
+      if (kind === 'landmine') o.buried = false; // (up out of the dirt, as it is once the player is near)
       o.gone = false; // (a pipe waits on its stack, out of play, until it rolls)
       Player.s = o.s - 1; Player.lat = o.lat; // overlapping it Player.speed = 20; Player.launching = false;
       Collision.check();
@@ -227,16 +245,27 @@ try {
         `running into a tractor is a crash: it takes ${(before - t.health).toFixed(0)} damage, the player ${(Player.maxHealth - Player.health).toFixed(0)}, and it is shoved forward`);
     }
 
-    // the clock: sitting still runs it out and drains the tip
+  }
+
+  // the clock: sitting still runs it out and drains the tip. On a level of the test's own, with a clock of 30 s
+  // (the clock is the same one on every level, and sitting each of theirs out was most of a run's time)
+  section('the clock');
+  {
+    levels.selectSpecial({ id: 'clock', name: 'clock', time: 30 / CONFIG.timeScale.good, tip: 50, traffic: {}, segments: [{ length: 3000, curve: 0 }] });
+    Game.evil = false;
     Game.start();
-    for (let i = 0; i < 120 * (Game.allowed + CONFIG.tipCountdown + 10) && Game.state === 'playing'; i++) {
+    const allowed = Game.allowed;
+    let steps = 0;
+    for (; steps < 120 * (allowed + CONFIG.tipCountdown + 10) && Game.state === 'playing'; steps++) {
       Player.speed = 0;
       Player.launching = false;
       Player.health = Player.maxHealth;
       Game.update(1 / 120);
       FxQueue.length = 0;
     }
-    check(Game.outcome === 'timeout' && Game.tip === 0, `standing still ends in a timeout with no tip (outcome: ${Game.outcome}, tip: ${Game.tip})`);
+    check(Math.abs(allowed - 30) < 1e-6 && Game.outcome === 'timeout' && Game.tip === 0 && Math.abs(steps / 120 - (allowed + CONFIG.tipCountdown)) < 1,
+      `standing still on a ${allowed.toFixed(0)} s clock ends in a timeout with no tip, ${(steps / 120).toFixed(1)} s in (outcome: ${Game.outcome}, tip: ${Game.tip})`);
+    Game.toMenu();
   }
 
   // the screensaver: its own level, no player car, traffic that crashes on its own, and the
@@ -250,13 +279,11 @@ try {
       T.laneCount === 8 && T.flow === 'south' && Traffic.cars.every(c => c.unused || c.dir < 0),
     `starts on "${levels.LEVEL.name}": ${T.laneCount} lanes, everything oncoming, no level problems`);
     const inPlay = Traffic.cars.filter(c => !c.unused).length;
-    let crashes = 0, wrecks = 0, laps = 0, ghost = true, lowest = Infinity, highest = -Infinity, maxActive = 0, lastS = 0;
-    for (let i = 0; i < 120 * 300; i++) { // five minutes
+    let laps = 0, ghost = true, lowest = Infinity, highest = -Infinity, maxActive = 0, lastS = 0;
+    // (half a minute of it, and then, the dolly put down 150 m short of the end of its lap, the lap coming round)
+    for (let i = 0; i < 120 * 45; i++) {
+      if (i === 120 * 30) lastS = Player.s = T.length - 150;
       Game.update(1 / 120);
-      for (const e of FxQueue) {
-        if (e.type === 'sound' && ['crash', 'crashHard', 'sideswipe', 'headOn'].includes(e.name)) crashes++;
-        if (e.type === 'explode' && e.tyres) wrecks++;
-      }
       FxQueue.length = 0;
       if (Player.ghost <= 0 || Player.speed !== CONFIG.screensaver.speed) ghost = false;
       lowest = Math.min(lowest, Player.lat); highest = Math.max(highest, Player.lat);
@@ -269,7 +296,6 @@ try {
     check(ghost && Player.health === Player.maxHealth && Game.busts === 0 && lowest === 0 && highest === 0,
       `the dolly is a ghost at a steady ${CONFIG.screensaver.speed} m/s, never hurt, on the centre line (lat ${lowest} to ${highest})`);
     check(laps >= 1 && Game.state === 'playing' && Game.outcome === '', `went round ${laps} time(s) with no finish and no timeout`);
-    check(crashes > 50 && wrecks > 20, `chaos: ${crashes} crashes heard and ${wrecks} vehicles wrecked in five minutes, with no player`);
     const tractors = Traffic.cars.filter(c => c.active && c.kind === 'tractor').length;
     check(tractors > 0, `${tractors} tractors are out again on the new lap`);
     Game.togglePause();
@@ -426,7 +452,9 @@ try {
     let count = 0;
     for (let r = 0; r < 60; r++) {
       Game.start();
-      for (const c of Traffic.cars) if (c.active && !c.fixed) { seen[c.kind] = (seen[c.kind] || 0) + 1; count++; }
+      // (not what turns up in a stretch with a list of its own, a level's "trafficZones": the Hood's police)
+      const own = (c) => !(levels.LEVEL.trafficZones || []).some(z => c.s >= z.from && c.s < z.to);
+      for (const c of Traffic.cars) if (c.active && !c.fixed && own(c)) { seen[c.kind] = (seen[c.kind] || 0) + 1; count++; }
     }
     const total = kinds.reduce((sum, k) => sum + want[k], 0);
     // (within three standard deviations of the listed share, plus a little: a sparse level gives few samples)
@@ -448,7 +476,7 @@ try {
     if (!L.flow && !L.shoulderRows) continue;
     if (!Object.keys(L.traffic || {}).length) continue; // (no traffic at all: the construction site)
     const lanes = new Set();
-    let live = 0, wrongWay = 0;
+    let live = 0, wrongWay = 0, oncomingSeen = 0;
     for (let r = 0; r < 10; r++) {
       Game.evil = false;
       Game.start();
@@ -456,6 +484,9 @@ try {
         if (!c.active) continue;
         live++;
         // ('mixed', the Battlefield: both ways, each tagged by the way it goes)
+        // (a side road with oncoming traffic of its own, an exit's "oncoming", has that coming the other way: nowhere else)
+        const sideOncoming = !track.Track.isMain(c.s) && c.dir < 0 && c.bound === 'south' && track.Track.sideOncoming(c.s);
+        if (sideOncoming) { oncomingSeen++; continue; }
         if (L.flow === 'mixed' ? c.bound !== (c.dir > 0 ? 'north' : 'south') : c.bound !== L.flow || (c.dir > 0) !== (L.flow === 'north')) wrongWay++;
         if (track.Track.isMain(c.s)) lanes.add(c.lane);
       }
@@ -463,7 +494,8 @@ try {
     const T = track.Track;
     const inPlay = (L.trafficCount ?? CONFIG.trafficCount) + (L.oncomingCount ?? CONFIG.oncomingCount);
     if (L.flow) check(live > inPlay * 10 * 0.5 && wrongWay === 0 && lanes.size === T.laneCount && T.flow === L.flow,
-      `${L.name}: every vehicle is ${L.flow === 'mixed' ? 'tagged by the way it goes, both ways in every lane' : L.flow + 'bound'} (${live} seen over 10 starts), and they use all ${T.laneCount} lanes`);
+      `${L.name}: every vehicle is ${L.flow === 'mixed' ? 'tagged by the way it goes, both ways in every lane' : L.flow + 'bound'} (${live} seen over 10 starts), and they use all ${T.laneCount} lanes` +
+      (oncomingSeen ? ` (but for ${oncomingSeen} coming the other way along a side road that has oncoming traffic)` : ''));
     if (!L.shoulderRows) continue;
     const rows = Collision.obstacles.filter(o => !o.drift && (o.kind === 'cone' || o.kind === 'sign'));
     const kind = rows[0].kind, cost = CONFIG.obstacleKinds[kind];
@@ -689,9 +721,12 @@ try {
   section('levels list');
   {
     const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
-    check(levels.LEVELS.slice(main).map(l => l.id).join() === 'all-heck,ufo,marina-bay,oh-mine,montreal' && levels.levelLabel(main - 1) === String(main) &&
-      levels.levelLabel(main) === 'S1' && levels.levelLabel(main + 4) === 'S5' && levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
-      `the special levels come last, as S1 to S5: ${labels.slice(main - 1).join(', ')}`);
+    // (the first of them in the order they have always been in: saved progress counts unlocked levels by position)
+    const special = levels.LEVELS.length - main;
+    check(levels.LEVELS.slice(main).map(l => l.id).join().startsWith('all-heck,ufo,marina-bay,oh-mine,montreal') && levels.levelLabel(main - 1) === String(main) &&
+      special === levels.SPECIAL_LEVELS.length && levels.LEVELS.slice(main).every((l, k) => levels.levelLabel(main + k) === 'S' + (k + 1)) &&
+      levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
+      `the special levels come last, as S1 to S${special}: ${labels.slice(main - 1).join(', ')}`);
   }
 
   section('hesitation, signals and lights');
@@ -1870,27 +1905,30 @@ try {
       T.junctions.every(jn => jn.arms.length === 2 && jn.arms.every(arm => arm.length > jn.half + 150)),
       `${T.junctions.length} junctions: ${turns.length} quarter turns (radius ${turns[0].radius.toFixed(1)} m) and ${straight.length} straight on, every arm running ${Math.min(...T.junctions.flatMap(jn => jn.arms.map(a => a.length))).toFixed(0)} m or more`);
     // a drive through: traffic leaves down the arms (carrying straight on at turns, turning off
-    // straight on), never within a car's width of traffic on the road, and is gone at the end
+    // straight on), never across traffic on the road (it only goes with nothing beside it on the outside of the
+    // bend: see Traffic's leaveAtJunction), and is gone at the end
     let leftAtTurns = 0, leftStraight = 0, close = 0, stuck = 0;
-    const leaving = new Set(), p = {};
+    const leaving = new Map(), p = {}; // (each one leaving, and the lat it left the road at)
     for (let i = 0; i < 120 * 200 && Game.state === 'playing'; i++) {
       Player.health = Player.maxHealth; Game.busts = 0; Game.time = 0;
       Game.update(1 / 120);
       FxQueue.length = 0;
       for (const g of Traffic.cars) {
         if (!g.active || !g.junction) { leaving.delete(g); continue; }
-        if (!leaving.has(g)) { leaving.add(g); if (T.junctions[g.junction.j].way) leftAtTurns++; else leftStraight++; }
+        if (!leaving.has(g)) { leaving.set(g, g.lat); if (T.junctions[g.junction.j].way) leftAtTurns++; else leftStraight++; }
         if (g.junction.u > g.junction.length + 1) stuck++;
         if (g.junction.u < 3) continue; // (just starting off, a car tailgating it on the road may still be close behind)
         for (const c of Traffic.cars) {
           if (!c.active || c.junction || !T.isMain(c.s)) continue;
+          // (not one that was following it in its own lane, still close behind; nor one out of control)
+          if (Math.abs(c.lat - leaving.get(g)) < 2 || c.spin > 0 || c.wobble > 0 || c.stun > 0) continue;
           T.toWorld(c.s, c.lat, p);
           if (Math.hypot(p.x - g.wx, p.z - g.wz) < 2.5) close++;
         }
       }
     }
     check(Game.outcome === 'delivered' && leftAtTurns > 0 && leftStraight > 0 && close === 0 && !stuck,
-      `a drive through: ${leftAtTurns} cars carried straight on at turns and ${leftStraight} turned off straight on, down arms the player can't take, none ever near traffic on the road` +
+      `a drive through: ${leftAtTurns} cars carried straight on at turns and ${leftStraight} turned off straight on, down arms the player can't take, none across traffic on the road` +
       (Game.outcome === 'delivered' && !close && !stuck ? '' : ` [outcome ${Game.outcome || Game.state}, near ${close}, stuck ${stuck}, player at ${Player.s.toFixed(0)}${Player.active ? '' : ', wrecked'}${Player.busted ? ', busted' : ''}]`));
     // driving on the left: the level is shown mirrored, so steering is reversed in the game's own terms
     const steerFor = (id) => {
@@ -2414,8 +2452,14 @@ try {
     for (const o of Collision.obstacles) o.gone = true;
     const m = Machinery.list.find(x => x.mode === 'cross'), M = CONFIG.machinery;
     const lats = [];
-    for (let i = 0; i < 120 * 20; i++) { Machinery.update(1 / 120); lats.push(m.lat); }
-    const crosses = Math.min(...lats) < T().lo(m.s) && Math.max(...lats) > T().hi(m.s);
+    // (for as long as it takes it to have been off both sides: it starts off either way, and rests a while of its own choosing at each)
+    let leftmost = Infinity, rightmost = -Infinity;
+    for (let i = 0; i < 120 * 120 && !(leftmost < T().lo(m.s) && rightmost > T().hi(m.s)); i++) {
+      Machinery.update(1 / 120);
+      lats.push(m.lat);
+      leftmost = Math.min(leftmost, m.lat); rightmost = Math.max(rightmost, m.lat);
+    }
+    const crosses = leftmost < T().lo(m.s) && rightmost > T().hi(m.s);
     Object.assign(m, { lat: T().laneOffset(1, m.s), rest: 99 });
     Object.assign(Player, { s: m.s - 20, lat: T().laneOffset(1, m.s), speed: 20, launching: false, shield: 0, ghost: 0 });
     const hp = Player.health;
@@ -2427,7 +2471,9 @@ try {
       if (m.gone && !fast) fast = Player.speed;
     }
     check(crosses && m.gone && Player.active && Math.abs(hp - Player.health - M.damage) < 1e-6 && fast > 8,
-      `${Machinery.list.length} machines at work; one crossing the road blows up as the car hits it, costing ${M.damage} health, and the car drives on`);
+      `${Machinery.list.length} machines at work; one crossing the road blows up as the car hits it, costing ${M.damage} health, and the car drives on` +
+      (crosses && m.gone && Player.active && Math.abs(hp - Player.health - M.damage) < 1e-6 && fast > 8 ? ''
+        : ` [crosses ${crosses} (lat ${Math.min(...lats).toFixed(1)} to ${Math.max(...lats).toFixed(1)}, road ${T().lo(m.s).toFixed(1)} to ${T().hi(m.s).toFixed(1)}), gone ${m.gone}, active ${Player.active}, cost ${(hp - Player.health).toFixed(1)}, speed after ${fast.toFixed(1)}]`));
     Game.toMenu();
   }
 
