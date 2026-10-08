@@ -25,7 +25,11 @@
       "insuranceUp": ["Your insurance just went up $250"],
       "insuranceDown": ["Your insurance just went down $250"],
       "ufo": ["UFO AIR STRIKE!!!"],
-      "bulletTrain": ["BULLET TRAIN INCOMING!!!"]
+      "bulletTrain": ["BULLET TRAIN INCOMING!!!"],
+      "sundayDrivers": ["Sunday drivers! Everyone's out for a gentle cruise."],
+      "rushHour": ["RUSH HOUR!! The roads are packed!"],
+      "carSwap": ["Car swap! Take this one for a spin."],
+      "moodSwing": ["Mood swing! Good is evil and evil is good!"]
     }
   },
   "events": {

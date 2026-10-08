@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial } from './levels.js';
 import { Progress } from './progress.js';
-import { useLevelCar } from './cars.js';
+import { useLevelCar, returnCar } from './cars.js';
 import { Input } from './input.js';
 import { clamp } from './util.js';
 import { Track, buildTrack } from './track.js';
@@ -73,6 +73,7 @@ export const Game = {
   toMenu() {
     this.state = 'start';
     this.paused = false;
+    returnCar(); // (a car lent by Car Swap goes back)
     if (this.screensaver) { // the menu's own level is picked again
       this.screensaver = false;
       this.raceWatch = false;
@@ -192,6 +193,7 @@ export const Game = {
   },
   finish(outcome) {
     this.state = 'finished';
+    returnCar(); // (a car lent by Car Swap goes back: the results are the player's own car's)
     this.settleTank(outcome === 'delivered' || outcome === 'late');
     this.outcome = outcome;
     sfx(outcome === 'delivered' ? 'win' : 'fail');

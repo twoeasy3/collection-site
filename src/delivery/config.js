@@ -75,6 +75,15 @@ export const CONFIG = {
   // is in messages.json, under powerups.mystery
   mystery: {
     effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo', 'bulletTrain'],
+    // a second pool, not drawn for now: only ?mystery= in the address picks one of these
+    //   sundayDrivers  every driver potters along at sundayPace of its speed (not an ambulance, nor a racer)
+    //   rushHour       rushHour times the traffic, each way, as far as the pool allows; the extra cars
+    //                  turn up at once, and once it is over, each one that goes isn't replaced
+    //   carSwap        the player is put in another of the garage's cars at random, and given its own back after
+    //   moodSwing      every driver that can be evil swaps sides: good turns evil, evil turns good, and back after
+    extraEffects: ['sundayDrivers', 'rushHour', 'carSwap', 'moodSwing'],
+    sundayPace: 0.5,
+    rushHour: 2,
     time: 12,              // s the lasting ones last (insuranceUp / insuranceDown, ufo and bulletTrain are over at once)
     rickety: 1.5,          // damage the car takes while rickety, against the usual
     toadSpeed: 20 / 3.6,   // m/s every toad goes along at in TOAD RAGE

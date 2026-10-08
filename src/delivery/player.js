@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
-import { CAR } from './cars.js';
+import { CAR, CARS, lendCar, returnCar } from './cars.js';
 import { clamp, damp } from './util.js';
 import { Track } from './track.js';
 import { updateYaw, keepOnRoad, sfx, cornerSpeed } from './physics.js';
@@ -69,6 +69,13 @@ export const Player = {
   get vs() { return this.speed; },
   set vs(v) { this.speed = v; },
 
+  // swap the car under the player mid-run (Car Swap: see startMystery): its shape and health are
+  // the new car's, keeping the same share of health it had
+  takeCar(swap) {
+    const share = this.maxHealth > 0 ? this.health / this.maxHealth : 1;
+    swap();
+    Object.assign(this, { maxHealth: CAR.health, health: CAR.health * share, hw: CAR.hw, hl: CAR.hl, height: CAR.height });
+  },
   reset() {
     // take on whichever car is in use now: it may have been swapped in the garage
     this.maxHealth = CAR.health;
@@ -230,14 +237,14 @@ export const Player = {
   // UFO air strike and the bullet train are over at once (the strike and the train go on by
   // themselves: UfoStrike, BulletTrain)
   startMystery() {
-    const { effects, time } = CONFIG.mystery;
+    const { effects, extraEffects, time } = CONFIG.mystery;
     // (a tank only ever gets the air strike)
     // (the good ones the likelier, the higher the player's standing: see Social)
     const weights = effects.map(e => Social.mysteryWeight(e));
     let roll = Math.random() * weights.reduce((a, w) => a + w, 0), drawn = effects[effects.length - 1];
     for (let i = 0; i < effects.length; i++) if ((roll -= weights[i]) < 0) { drawn = effects[i]; break; }
     const effect = this.tank > 0 ? 'ufo'
-      : effects.find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || drawn; // (?mystery=UFO works too)
+      : [...effects, ...extraEffects].find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || drawn; // (?mystery=UFO works too, and picks from the unused pool)
     Message.say('powerups', 'mystery', effect);
     if (effect === 'ufo') UfoStrike.start();
     if (effect === 'bulletTrain') BulletTrain.start();
@@ -246,9 +253,18 @@ export const Player = {
     this.mysteryTime = time + Social.powerUpShift(effect);
     if (effect === 'toad') Traffic.toadify(true);
     if (effect === 'angel' || effect === 'jerk') for (const car of Traffic.cars) car.showMood = true; // (moods: see Traffic)
+    if (effect === 'rushHour') Traffic.rushHour(true);
+    if (effect === 'moodSwing') Traffic.moodSwing(true);
+    if (effect === 'carSwap') { // (any of the garage's cars but this one and the Tank; none for a level's own vehicle)
+      const others = CARS.includes(CAR) ? CARS.filter(c => c !== CAR && !c.tank) : [];
+      if (others.length) this.takeCar(() => lendCar(others[Math.floor(Math.random() * others.length)]));
+    }
   },
   endMystery() {
     if (this.mystery === 'toad') Traffic.toadify(false);
+    if (this.mystery === 'rushHour') Traffic.rushHour(false);
+    if (this.mystery === 'moodSwing') Traffic.moodSwing(false);
+    if (this.mystery === 'carSwap') this.takeCar(returnCar);
     this.mystery = '';
     this.mysteryTime = 0;
   },

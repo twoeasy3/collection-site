@@ -899,6 +899,83 @@ try {
       `an empty danger meter on the shoulder: no bust while the train is about, nor until ${wait.toFixed(2)} s after it has gone`);
   }
 
+  section('the unused mystery pool');
+  {
+    const { Message } = await load('/src/delivery/messages.js');
+    const M = CONFIG.mystery;
+    const fresh = () => { levels.selectLevel(0); cars.selectCar('commuter'); Game.evil = false; Game.start(); };
+    const pick = (effect) => { Player.nextMystery = effect; Player.collect('mystery'); Player.nextMystery = ''; };
+    const step = (n) => { for (let i = 0; i < n; i++) { Traffic.update(1 / 120); FxQueue.length = 0; } };
+    const running = () => Traffic.cars.filter(c => c.active && !c.fixed && !c.emergency);
+    check(M.extraEffects.every(e => !M.effects.includes(e) && Message.pick('powerups', 'mystery', e)),
+      `${M.extraEffects.join(', ')}: never drawn by chance (not in the mystery's effects), each with its own message`);
+
+    // Sunday Drivers: everyone slows to sundayPace of their speed, and picks up again after
+    fresh();
+    step(240);
+    const pace = (list) => list.filter(c => c.active).reduce((a, c) => a + Math.abs(c.vs) / c.baseSpeed, 0) / Math.max(1, list.filter(c => c.active).length);
+    const watched = running(), before = pace(watched);
+    pick('sundayDrivers');
+    step(360);
+    const during = pace(watched);
+    Player.endMystery();
+    step(480);
+    const after = pace(watched);
+    check(Player.mystery === '' && before > 0.85 && Math.abs(during - M.sundayPace) < 0.12 && after > 0.85,
+      `Sunday Drivers: traffic at ${(before * 100).toFixed(0)}% of its speed slows to ${(during * 100).toFixed(0)}% in 3 s, back to ${(after * 100).toFixed(0)}% 4 s after`);
+
+    // Rush Hour: the traffic each way doubles at once; after, the extra cars aren't replaced
+    fresh();
+    step(120);
+    const used = Traffic.cars.filter(c => !c.unused).length, ways = (dir) => running().filter(c => c.dir === dir).length;
+    const north = ways(1), south = ways(-1);
+    pick('rushHour');
+    const rushNorth = ways(1), rushSouth = ways(-1), spare = Traffic.cars.filter(c => !c.active && c.unused).length;
+    Player.endMystery();
+    const usedAfter = Traffic.cars.filter(c => !c.unused).length;
+    step(120 * 90);
+    const settled = running().length;
+    check(rushNorth >= north * 1.8 && rushSouth >= south * 1.8 && spare >= 2 && usedAfter === used && settled <= used,
+      `Rush Hour: ${north} cars going your way and ${south} oncoming become ${rushNorth} and ${rushSouth} at once (${spare} left spare); ` +
+      `after it, ${settled} about once the extra ones have gone (the level's ${used})`);
+
+    // Mood Swing: every driver that can be evil swaps sides, new ones too; specials never; and back after
+    fresh();
+    step(60);
+    const newcomer = Traffic.cars.find(c => !c.active && !c.unused) || running()[0]; // (one that will turn up during it)
+    newcomer.active = false;
+    const sides = new Map(running().map(c => [c, c.evil]));
+    const special = (c) => CONFIG.vehicles[c.kind].special || CONFIG.vehicles[c.kind].evilOnly;
+    pick('moodSwing');
+    const swapped = [...sides].every(([c, evil]) => special(c) ? c.evil === evil : c.evil === !evil);
+    let fresh1 = false;
+    for (let k = 0; k < 50 && !fresh1; k++) { step(1); fresh1 = newcomer.active && (special(newcomer) || newcomer.swung); }
+    Player.endMystery();
+    const back = [...sides].every(([c, evil]) => c.evil === evil) && !Traffic.cars.some(c => c.swung);
+    check(swapped && fresh1 && back, `Mood Swing: all ${sides.size} drivers about swap sides (special vehicles excepted), a new one turns up swapped too, and all swap back after`);
+
+    // Car Swap: lent another of the garage's cars, keeping its share of health, and given its own back
+    // after, on leaving the run, and never the Tank
+    fresh();
+    const own = cars.CAR;
+    Player.health = Player.maxHealth / 2;
+    const lentOut = new Set();
+    let fits = true;
+    for (let k = 0; k < 40; k++) {
+      pick('carSwap');
+      const lent = cars.CAR;
+      lentOut.add(lent.id);
+      fits &&= lent !== own && cars.CARS.includes(lent) && !lent.tank && Player.hw === lent.hw && Player.maxHealth === lent.health && Math.abs(Player.health / Player.maxHealth - 0.5) < 1e-9;
+      Player.endMystery();
+      fits &&= cars.CAR === own && Player.hw === own.hw && Math.abs(Player.health / Player.maxHealth - 0.5) < 1e-9;
+    }
+    pick('carSwap');
+    const lentNow = cars.CAR;
+    Game.exit();
+    check(fits && lentOut.size > 3 && lentNow !== own && cars.CAR === own,
+      `Car Swap: the Commuter is lent ${lentOut.size} different cars over 40 swaps (never itself or the Tank), each with the same share of health, and given back after, and on leaving the run`);
+  }
+
   section('emergency vehicles');
   {
     const { Message } = await load('/src/delivery/messages.js');

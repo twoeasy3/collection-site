@@ -178,6 +178,47 @@ export const Traffic = (() => {
     }
   };
 
+  // RUSH HOUR (a mystery): rushHour times the traffic each way, as far as the pool goes (keeping
+  // two spare for the level's emergencies and specials). The extra cars turn up at once, over the
+  // road ahead as at the start of a run; once it is over, each that goes is not replaced
+  const rushHour = (on) => {
+    if (!on) {
+      for (const car of cars) if (car.rush) { car.rush = false; car.unused = true; }
+      return;
+    }
+    if (!mix().length) return; // (a level with no traffic stays empty)
+    const spare = cars.filter(c => !c.active && c.unused);
+    const extra = (dir) => Math.round(cars.filter(c => !c.unused && c.dir === dir && !c.fixed).length * (CONFIG.mystery.rushHour - 1));
+    const wanted = [...Array(extra(1)).fill(1), ...Array(extra(-1)).fill(-1)];
+    for (const car of spare.slice(0, Math.max(0, spare.length - 2))) {
+      const dir = wanted.shift();
+      if (!dir) break;
+      Object.assign(car, { dir, bound: dir > 0 ? 'north' : 'south', unused: false, rush: true, fixed: false, junction: null, parked: false, stalled: false,
+        halted: 0, racer: false, slideVel: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
+      spawn(car, 60, CONFIG.spawnMax);
+      if (toads && car.active) makeToad(car); // (in TOAD RAGE, they come as toads)
+    }
+  };
+  // MOOD SWING (a mystery): every driver that can be evil swaps sides (not a special vehicle, nor a
+  // racer or a rival courier), new ones too, and back again afterwards
+  let swinging = false;
+  const swing = (car) => {
+    const type = CONFIG.vehicles[car.kind];
+    if (car.swung || car.racer || car.courier || type.special || type.evilOnly) return;
+    car.evil = !car.evil;
+    car.swung = true;
+  };
+  const moodSwing = (on) => {
+    swinging = on;
+    for (const car of cars) {
+      if (on && car.active) swing(car);
+      else if (!on && car.swung) {
+        car.evil = !car.evil;
+        car.swung = false;
+      }
+    }
+  };
+
   // the top speed of each of the garage's cars, by id (which is also its kind of traffic)
   const GARAGE_TOP = Object.fromEntries(CARS.map(c => [c.id, c.maxSpeed]));
   const CARS_BY_ID = LEVEL_CARS;
@@ -213,6 +254,8 @@ export const Traffic = (() => {
     car.vs = car.dir * car.baseSpeed;
     const evilShare = drivers().evil !== undefined ? drivers().evil : CONFIG.evilShare;
     car.evil = !!type.evilOnly || (!type.special && Math.random() < Social.evilShare(evilShare)); // fixed for this car's life (fewer, the higher the player's standing)
+    car.swung = false;
+    if (swinging) swing(car); // (in a Mood Swing, a new driver turns up on the other side too)
     car.defiant = car.evil && Math.random() < CONFIG.emergency.defiance; // won't give way to an ambulance
     // (and the higher the player's standing, the happier every driver starts out)
     car.mood = clamp(MOOD_START[pickEmotion(car.evil)] + Social.moodLift, -1, 1);
@@ -1069,7 +1112,7 @@ export const Traffic = (() => {
       car.unused = i >= count + oncoming; // (never spawned on this level)
       car.fixed = false;
       // (and nothing left over from the last run, on a car that may not be dealt out again for a while)
-      Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, racer: false, slideVel: 0, respawnIn: 0, shield: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null });
+      Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, racer: false, slideVel: 0, respawnIn: 0, shield: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null, rush: false, swung: false });
     });
     placeFixed();
     nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
@@ -1624,6 +1667,7 @@ export const Traffic = (() => {
         // (on ice, and on a level where cars understeer, they don't slow for a bend: they slide wide instead;
         // though a racer, knowing the track, slows for the bends ahead as much as lets it slide a little)
         target = Math.min(target, giveWay(car), car.onIce || LEVEL.understeer ? Infinity : cornerSpeed(car.s, weightOf(car)));
+        if (Player.mystery === 'sundayDrivers' && !car.racer && !car.emergency) target *= CONFIG.mystery.sundayPace; // (Sunday Drivers, a mystery: pottering along)
         if (car.racer) target = Math.min(target, racingLine(car) * ceding);
         if (car.racer && !Track.loop && Track.finished(car.s)) { car.done = true; target = 0; } // (a rival courier, delivered: it pulls up past the line)
         if (Track.muddy(car.s)) target *= CONFIG.mud.trafficPace; // (in mud)
@@ -1697,5 +1741,5 @@ export const Traffic = (() => {
     placeFixed();
   };
 
-  return { cars, reset, update, lap, policeNear, toadify, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer };
+  return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer };
 })();
