@@ -151,7 +151,7 @@ export const Gunfire = {
         });
         if (!inArc.length) return;
         this.cool.set(key, between(G.every));
-        this.bursts.push({ s: box.s, lat: box.lat, facing: box.facing, target: inArc[Math.floor(Math.random() * inArc.length)], y: 1.1,
+        this.bursts.push({ s: box.s, lat: box.lat, facing: box.facing, target: inArc[Math.floor(Math.random() * inArc.length)], y: 1.15 * CONFIG.battle.pillboxScale, // (out of its slit)
           left: Math.round(between(G.shots)), wait: 0 });
       });
     }

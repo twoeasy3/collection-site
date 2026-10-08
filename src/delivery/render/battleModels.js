@@ -25,5 +25,6 @@ export const makePillbox = (team) => {
   add(group, new THREE.CylinderGeometry(0.05, 0.05, 2.4, 6), POLE, -0.9, 3.3, -0.6);     // the flagpole...
   const flag = add(group, new THREE.BoxGeometry(0.04, 0.6, 1.0), TEAM[team], -0.9, 4.15, -0.08); // ...and flag
   group.userData.flag = flag;
+  group.scale.setScalar(CONFIG.battle.pillboxScale);
   return group;
 };

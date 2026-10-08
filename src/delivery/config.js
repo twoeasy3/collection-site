@@ -891,7 +891,12 @@ export const CONFIG = {
     shellOnPlayer: { direct: 50, splash: 20 }, // health an enemy shell costs the player: a direct hit, or near it
     pillboxEvery: 130,     // m between pillboxes, on each side
     mineFlash: { period: 0.9, on: 0.35 }, // s a landmine's light takes to flash round, and the share of it lit
-    pillboxOut: 6,         // m off the road's edge
+    pillboxOut: 10,        // m off the road's edge...
+    pillboxScale: 1.8,     // ...each this much bigger than its model (a bunker the size of a small house)
+    // airstrikes: only a sight (render/battle.js). Every `every` s a pair of jets comes over from behind the
+    // player, low (height m) and fast (speed m/s), down one side of the road, dropping a stick of bombs that
+    // walk across the fields there: never nearer the road than `out` m beyond its edge, nor further than out + spread
+    airstrike: { every: { min: 8, max: 16 }, height: 32, speed: 95, bombs: { min: 5, max: 8 }, out: 14, spread: 45, from: 160, to: 520 },
   },
   // a cyclist peloton (a level's "pelotons": { s, count, speed, trigger }): cyclists riding two abreast
   // along the kerb of the player's side, setting off as the player comes within trigger m. Obstacles:

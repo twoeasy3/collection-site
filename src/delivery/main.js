@@ -166,7 +166,7 @@ const frame = (now) => {
     syncGunfire();
     syncSite();
     syncRoadside(dt);
-    syncBattle();
+    syncBattle(dt);
     syncZones(dt);
     syncStorm(dt);
     emitVehicleSmoke(dt);
