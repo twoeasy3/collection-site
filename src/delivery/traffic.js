@@ -304,6 +304,7 @@ export const Traffic = (() => {
     car.sparePlayer = false; // ...and done waiting for a player nobody could bust
     car.procession = 0;     // the funeral procession it is in (see startProcession), 0 = none
     car.stopGoFor = null;   // the stop / go works it has decided whether to run the STOP at (see StopGo)
+    car.passingPack = null; // where it is steering by a peloton, out past it (see passPeloton)
     if (toads) makeToad(car);
     car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
     car.think = Math.random() * 2;
@@ -1008,6 +1009,54 @@ export const Traffic = (() => {
       car.showMood = true;
     }
     if (said) Message.say('events', 'mourners');
+  };
+
+  // ---- cyclists (a level's "pelotons": see CONFIG.peloton) ----------------------------------------
+  // A good driver coming up behind a peloton in its lane gives it room: it eases out past it, over
+  // towards the centre line, as far as clears the cyclists with room to spare. If anything else is in
+  // the way of that (a car coming the other way too wide to pass, a car alongside), it hangs back behind
+  // the bunch at its pace until there is room. Once out past them it carries on by. (An evil one
+  // ploughs straight through, as everything else does.) Returns { hold: the speed it may go, lat: where
+  // to steer, or null }
+  const NONE = { hold: Infinity, lat: null };
+  const passPeloton = (car) => {
+    const P = CONFIG.peloton;
+    if (car.evil || car.dir < 0 || car.racer || car.emergency || car.toad || car.junction || car.pulledOver || car.shoulderRun) return NONE;
+    const own = Track.laneOffset(car.lane, car.s);
+    // the cyclists ahead of it (or alongside) that are in its way
+    let inner = Infinity, back = Infinity, front = -Infinity, pace = 0;
+    for (const o of Collision.obstacles) {
+      if (!o.ride || o.gone) continue;
+      const ahead = o.s - car.s;
+      if (ahead < -(car.hl + o.hl + P.passRoom) || ahead > P.lookout) continue;
+      if (Math.abs(o.lat - (car.passingPack ?? own)) > car.hw + o.hw + P.room + 1) continue;
+      inner = Math.min(inner, o.lat - o.hw);
+      back = Math.min(back, o.s - o.hl);
+      front = Math.max(front, o.s + o.hl);
+      pace = o.ride.on ? o.ride.speed : 0;
+    }
+    if (inner === Infinity) { car.passingPack = null; return NONE; }
+    const lat = Math.max(Track.lo(car.s) + car.hw, inner - P.room - car.hw); // (clear of them by `room`)
+    if (lat > own - 0.05 && car.passingPack == null) return NONE; // (there is room in its own lane already)
+    // committed (alongside them already): carry on by
+    if (car.passingPack != null) return { hold: Infinity, lat: car.passingPack };
+    // room to go out there? Nothing within reach whose sides would meet it as it passes
+    const reach = front - car.s + P.passRoom;
+    const blocked = (o) => {
+      if (o === car || !o.active || o.junction) return false;
+      const ds = o.s - car.s;
+      // (one coming the other way: all the way to where it would meet it, as it closes)
+      const span = o.dir !== car.dir ? reach + (Math.abs(o.vs) + Math.abs(car.vs)) * reach / Math.max(5, Math.abs(car.vs) - pace) : reach;
+      if (ds < -(o.hl + car.hl + 3) || ds > span) return false;
+      return Math.abs(o.lat - lat) < o.hw + car.hw + P.room;
+    };
+    if (!cars.some(blocked) && !(Player.active && Player.ghost <= 0 && blocked(Player))) {
+      car.passingPack = lat;
+      return { hold: Infinity, lat };
+    }
+    // no room: hang back behind the bunch, at its pace
+    const gap = back - car.s - car.hl - P.room - 1;
+    return { hold: Math.max(0, pace + Math.max(0, gap) * 0.6), lat: null };
   };
 
   // where its lane is at s
@@ -1733,7 +1782,8 @@ export const Traffic = (() => {
         // though a racer, knowing the track, slows for the bends ahead as much as lets it slide a little)
         target = Math.min(target, giveWay(car), car.onIce || LEVEL.understeer ? Infinity : cornerSpeed(car.s, weightOf(car)));
         const hold = Math.min(Crossings.holdFor(car), StopGo.holdFor(car)); // (waiting at a level crossing, or a STOP)
-        target = Math.min(target, hold);
+        const cyclists = passPeloton(car); // (giving cyclists room, or waiting behind them for it)
+        target = Math.min(target, hold, cyclists.hold);
         if (Player.mystery === 'sundayDrivers' && !car.racer && !car.emergency) target *= CONFIG.mystery.sundayPace; // (Sunday Drivers, a mystery: pottering along)
         if (car.racer) target = Math.min(target, racingLine(car) * ceding);
         if (car.racer && !Track.loop && Track.finished(car.s)) { car.done = true; target = 0; } // (a rival courier, delivered: it pulls up past the line)
@@ -1750,7 +1800,7 @@ export const Traffic = (() => {
           target *= H.tapPace;
         }
         car.braking = car.tap > 0 || Math.abs(car.vs) > target + 0.8;
-        if (hold < Math.abs(car.vs)) { // (pulling up at a stop line: braking firmly, so as to stop at it, not past it)
+        if (Math.min(hold, cyclists.hold) < Math.abs(car.vs)) { // (pulling up at a stop line, or behind cyclists: braking firmly, so as to stop at it, not past it)
           car.vs -= car.dir * Math.min(Math.abs(car.vs) - target, 1.5 * CONFIG.junction.stopping * dt);
         } else car.vs += (car.dir * target - car.vs) * damp(car.tap > 0 || (car.racer && car.braking) ? 3 : car.racer ? 1.2 * CONFIG.race.aiPickup : 1.2, dt);
 
@@ -1759,7 +1809,7 @@ export const Traffic = (() => {
         const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
         let aimLat = beside ? rival.lat
           : car.pulledOver || car.shoulderRun || car.punctured || car.stationed ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
-          : StopGo.detour(car) ?? Track.laneOffset(car.lane, car.s); // (through stop / go works, coming the other way: in the lane left open)
+          : StopGo.detour(car) ?? cyclists.lat ?? Track.laneOffset(car.lane, car.s); // (through stop / go works, coming the other way: in the lane left open)
         if (car.passing === Player && car.attack > 0 && !beside && Math.abs(Player.s - car.s) < Player.hl + car.hl + 10) {
           // (going by the player, it keeps as far from it as the road allows: squeezing by, if the player is astride the lanes)
           const side = car.passSide || Math.sign(aimLat - Player.lat) || 1, clear = Player.lat + side * (Player.hw + car.hw + 0.3);

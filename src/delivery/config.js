@@ -182,7 +182,7 @@ export const CONFIG = {
     // shoves the other car aside at `shove` m/s a step; a head-on wrecks the other car, costing it headOn
     // health and all but headOnSpeed of its speed. Stuck behind a car with no way by for `after` s, it
     // rams it, closing at `closing` m/s, and an evil one throws at it every throwEvery s
-    ram: { share: 0.15, damage: 4, shove: 0.25, headOn: 600, headOnSpeed: 0.35, after: 0.8, closing: 6, throwEvery: 1.5 } },
+    ram: { share: 0.15, damage: 4, shove: 0.25, headOn: 600, headOnSpeed: 0.35, after: 0.3, closing: 6, throwEvery: 1.5 } },
   race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5,
     towReach: 130, draft: 0.2, seekReach: 160, seekEvery: 1.5,
     // Racecraft: each driver's nerve in the bends is its own, from nerve.min to nerve.max times the
@@ -866,6 +866,9 @@ export const CONFIG = {
     trigger: 300,
     spacing: 2.6,          // m between rows
     wobble: 0.18,          // m they weave
+    // a good driver gives them room: it eases out past them, room m clear, if nothing is in the way
+    // (looking lookout m ahead for them); otherwise it waits behind them. Done once passRoom m past them
+    room: 0.5, lookout: 45, passRoom: 4,
   },
 
   // scenery

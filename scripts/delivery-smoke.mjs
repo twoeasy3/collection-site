@@ -1165,28 +1165,36 @@ try {
     step(20);
     check(waited && Math.abs(rode - P.speed) < 0.2 && byKerb && through2.health === health2 && riders.some(r => r.gone) && Player.health < Player.maxHealth,
       `peloton: ${riders.length} cyclists wait until the player is within ${P.trigger} m, then ride at ${rode.toFixed(1)} m/s by the kerb; traffic passes through them, the player knocks one flying`);
-    // traffic coming up behind the peloton on this one-lane-each-way road isn't held up by it (it goes
-    // straight through), and nothing swerves out round it into the oncoming traffic: no head-ons.
-    // (just a car coming up behind and one coming the other way, on their own)
-    fresh();
-    const pack = Collision.obstacles.filter(o => o.ride);
-    setPlayer(pack[0].ride.s0 - 250, 0.1, { ghost: 9 });
-    step(2); // (it sets off)
-    const back0 = Math.min(...pack.map(o => o.s));
-    const follower = placeCar(1, 1, back0 - 60, 18), oncoming = placeCar(-1, 0, back0 + 120, 15);
-    for (const c of Traffic.cars) if (c !== follower && c !== oncoming) Object.assign(c, { active: false, unused: true });
-    let slowest = Infinity, drift = 0, wrecks = 0, passedPack = false;
-    for (let i = 0; i < 120 * 20 && !passedPack; i++) {
-      setPlayer(Math.min(...pack.map(o => o.s)) - 250, 0.1, { ghost: 9 });
-      step();
-      const back = Math.min(...pack.map(o => o.s)), front = Math.max(...pack.map(o => o.s));
-      if (follower.s > back - 30 && follower.s < front + 5) slowest = Math.min(slowest, Math.abs(follower.vs) / follower.baseSpeed);
-      drift = Math.max(drift, Math.abs(follower.lat - T().laneOffset(1, follower.s)), Math.abs(oncoming.lat - T().laneOffset(0, oncoming.s)));
-      if (follower.health <= 0 || oncoming.health <= 0 || !follower.active || !oncoming.active) wrecks++;
-      passedPack = follower.s > front + 5;
-    }
-    check(passedPack && slowest > 0.95 && drift < 0.3 && wrecks === 0,
-      `a peloton on a one-lane road: a car coming up behind goes straight through it at ${Math.round(slowest * 100)}% of its speed, keeping its lane (${drift.toFixed(2)} m off), and the car coming the other way is never met head-on`);
+    // a good driver coming up behind the peloton on this one-lane-each-way road eases out past it,
+    // touching none of them, waiting behind them while something is coming the other way, so never
+    // meeting it head-on; an evil one ploughs straight through. (Just the cars in question, on their own)
+    const overtake = (evil, oncomingAt, behind = 60) => {
+      fresh();
+      const pack = Collision.obstacles.filter(o => o.ride);
+      setPlayer(pack[0].ride.s0 - 250, 0.1, { ghost: 9 });
+      step(2); // (it sets off)
+      const back0 = Math.min(...pack.map(o => o.s));
+      const follower = placeCar(1, 1, back0 - behind, 18, { evil }), oncoming = oncomingAt ? placeCar(-1, 0, back0 + oncomingAt, 15) : null;
+      for (const c of Traffic.cars) if (c !== follower && c !== oncoming) Object.assign(c, { active: false, unused: true });
+      let touched = 0, wrecks = 0, waited = false, passedPack = false, slowest = Infinity, widest = Infinity;
+      for (let i = 0; i < 120 * 30 && !passedPack; i++) {
+        setPlayer(Math.min(...pack.map(o => o.s)) - 250, 0.1, { ghost: 9 });
+        step();
+        const back = Math.min(...pack.map(o => o.s)), front = Math.max(...pack.map(o => o.s));
+        if (pack.some(o => Collision.overlap(follower, o))) touched++;
+        if (follower.health <= 0 || !follower.active || (oncoming && (oncoming.health <= 0 || !oncoming.active))) wrecks++;
+        if (follower.s > back - 30 && follower.s < front) slowest = Math.min(slowest, Math.abs(follower.vs) / follower.baseSpeed);
+        if (follower.s > back - 30 && follower.s < back && Math.abs(follower.vs) < pack[0].ride.speed + 1) waited = true;
+        if (follower.s > back - 2 && follower.s < front) widest = Math.min(widest, follower.lat);
+        passedPack = follower.s > front + 5;
+      }
+      return { touched, wrecks, waited, passedPack, slowest, widest };
+    };
+    const clearRoadPass = overtake(false, 0), meet = overtake(false, 90, 15), plough = overtake(true, 0); // (meet: the two of them would meet by the bunch)
+    check(clearRoadPass.passedPack && clearRoadPass.touched === 0 && clearRoadPass.wrecks === 0 && clearRoadPass.widest < T().laneOffset(1, 0) - 0.5 &&
+      meet.passedPack && meet.touched === 0 && meet.wrecks === 0 && meet.waited &&
+      plough.passedPack && plough.slowest > 0.95,
+      `a peloton on a one-lane road: a good driver eases out past it (to ${clearRoadPass.widest.toFixed(2)} m), touching none; with a car coming the other way it waits behind the bunch first, and no head-on; an evil one ploughs through at ${Math.round(plough.slowest * 100)}% of its speed`);
 
     // ...which is a bust with a police car watching, and no offence without one
     const knock = (police) => {
