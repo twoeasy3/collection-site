@@ -885,7 +885,8 @@ export const CONFIG = {
     tank: { hunt: 35, laneWait: { min: 7, max: 11 } }, // a tank lumbers: it hunts only this close, and waits this
                            // long (s) between lane changes of its own (hunting, dodging); none on a whim
     goodArmy: { pace: { min: 24, max: 34 }, tankPace: 0.85, fromBehind: 0.5, overtake: { min: 2, max: 6 } },
-                           // the green army advances with the player: its pace (m/s; a tank's this share of it), the share
+                           // the green army advances with the player: its pace (m/s; a tank's this share of it; one that turns
+                           // up ahead of the player hesitates, as CONFIG.hesitation, whatever the level says), the share
                            // of its reinforcements that come up from behind the player (as CONFIG.hesitation.behind) rather
                            // than far ahead, and how much (m/s) faster than the player those come, so as to come by
     goodFire: { reach: 90, behind: 30, rate: 0.6 }, // the green army's override: it fires on any red within reach

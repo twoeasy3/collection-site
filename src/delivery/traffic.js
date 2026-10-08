@@ -133,7 +133,8 @@ export const Traffic = (() => {
     car.active = false;
     for (let tries = 0; tries < 5; tries++) {
       if (!placeAt(car, minAhead + Math.random() * (maxAhead - minAhead))) continue;
-      if (hesitation() && car.dir === Player.dir && car.baseSpeed > H.above && !CONFIG.vehicles[car.kind].cruise) {
+      // (on the Battlefield, the green army's all do, so the player can catch them up: see CONFIG.battle.goodArmy)
+      if ((LEVEL.battle && car.dir > 0 || hesitation() && car.dir === Player.dir && car.baseSpeed > H.above) && !CONFIG.vehicles[car.kind].cruise) {
         car.hesitant = true;
         car.baseSpeed = between(H.pace);
         car.vs = car.dir * car.baseSpeed;

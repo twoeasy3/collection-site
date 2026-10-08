@@ -1279,9 +1279,22 @@ try {
     check(active.length > 10 && active.every(c => c.evil === (c.dir < 0) && c.colors?.[0] === B.colors[c.dir > 0 ? 'good' : 'evil'][c.kind]) &&
       new Set(active.map(c => c.kind)).size === 3 && new Set(active.filter(c => c.dir < 0).map(c => c.lane)).size > 2,
       'its traffic is jeeps, 8x8s and tanks: going the player\'s way the green army (good), the other way the red (evil), each kind its own shade, the red army down every lane');
-    const GA = B.goodArmy, greens = active.filter(c => c.dir > 0);
-    check(greens.length > active.length / 2 && greens.every(c => c.baseSpeed >= GA.pace.min * (c.kind === 'tank' ? GA.tankPace : 1) - 1e-9 && c.baseSpeed <= GA.pace.max),
-      `the green army outnumbers the red (${greens.length} of ${active.length}) and advances with the player, at ${GA.pace.min}-${GA.pace.max} m/s (a tank ${Math.round(GA.tankPace * 100)}% of that)`);
+    // the green army: those that turn up ahead hesitate (so the player catches them up); reinforcements come up from
+    // behind at its own pace, a little faster than the player
+    const GA = B.goodArmy, HS = CONFIG.hesitation, greens = active.filter(c => c.dir > 0);
+    const dawdling = greens.every(c => c.s > Player.s && c.hesitant && c.baseSpeed >= HS.pace.min && c.baseSpeed <= HS.pace.max);
+    const reinforcement = Traffic.cars.find(c => c.active && c.dir > 0);
+    Object.assign(Player, { speed: 30 });
+    reinforcement.active = false;
+    let fromBehind = null;
+    for (let k = 0; k < 40 && !fromBehind; k++) {
+      reinforcement.active = false;
+      Traffic.update(1 / 120);
+      if (reinforcement.active && reinforcement.s < Player.s) fromBehind = { pace: reinforcement.baseSpeed, hesitant: reinforcement.hesitant };
+    }
+    check(greens.length > active.length / 2 && dawdling && fromBehind && !fromBehind.hesitant && fromBehind.pace >= 30 + GA.overtake.min,
+      `the green army outnumbers the red (${greens.length} of ${active.length}); those turning up ahead hesitate (at ${HS.pace.min}-${HS.pace.max} m/s), ` +
+      `reinforcements from behind come by at ${fromBehind?.pace.toFixed(1)} m/s (the player doing 30)`);
 
     // head-ons: a tank beats an 8x8 and an 8x8 a jeep, at half their health; a jeep and a tank, or two of a kind, both wrecked
     const meet = (north, south) => {
