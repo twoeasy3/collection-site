@@ -133,7 +133,8 @@ export const Traffic = (() => {
     car.active = false;
     for (let tries = 0; tries < 5; tries++) {
       if (!placeAt(car, minAhead + Math.random() * (maxAhead - minAhead))) continue;
-      if (hesitation() && car.dir === Player.dir && car.baseSpeed > H.above && !CONFIG.vehicles[car.kind].cruise) {
+      // (on the Battlefield, the green army's all do, so the player can catch them up: see CONFIG.battle.goodArmy)
+      if ((LEVEL.battle && car.dir > 0 || hesitation() && car.dir === Player.dir && car.baseSpeed > H.above) && !CONFIG.vehicles[car.kind].cruise) {
         car.hesitant = true;
         car.baseSpeed = between(H.pace);
         car.vs = car.dir * car.baseSpeed;
@@ -151,7 +152,8 @@ export const Traffic = (() => {
       if (!placeAt(car, -between(H.behind))) continue;
       const own = GARAGE_TOP[car.kind];
       const type = CONFIG.vehicles[car.kind];
-      car.baseSpeed = type.cruise ? between(type.cruise) : (own || type.speed * speeds().max) * between(H.behindPace);
+      car.baseSpeed = LEVEL.battle ? Math.max(car.baseSpeed, Player.speed + between(CONFIG.battle.goodArmy.overtake)) // (green reinforcements, coming by)
+        : type.cruise ? between(type.cruise) : (own || type.speed * speeds().max) * between(H.behindPace);
       car.vs = car.dir * car.baseSpeed;
       car.fromBehind = true;
       return true;
@@ -278,6 +280,10 @@ export const Traffic = (() => {
       car.foe = null;     // the enemy it is after (see battle)
       car.dodging = null; // the hunter it has decided about getting out of the way of...
       car.dodges = false; // ...and whether it does
+      car.laneWait = 0;   // s before a tank may change lanes again (see battle)
+      // (the green army keeps up with the player: see CONFIG.battle.goodArmy; the red comes on slowly)
+      car.baseSpeed = car.evil ? car.baseSpeed * B.evilPace : between(B.goodArmy.pace) * (kind === 'tank' ? B.goodArmy.tankPace : 1);
+      car.vs = car.dir * car.baseSpeed;
     }
     car.wobble = 0;     // s left of wobbling after a critical hit, before it spins out
     car.spin = 0;       // s left of an uncontrolled spin, which ends in an explosion
@@ -306,6 +312,7 @@ export const Traffic = (() => {
     car.racer = false;      // one of a race's grid (see placeFixed)
     car.slideVel = 0;       // m/s it is sliding wide in a bend (a level with "understeer")
     car.stalled = false;    // stalled in the tide's water, hazards on (see Tide)
+    car.tracksBroken = false; // a tank's track broken by a blast: halted for good (see CONFIG.brokenTracks)
     car.halted = 0;         // pulled over for good (to the shoulder on this side: -1 | 1), its lane blocked ahead (see Wreckage)
     car.junction = null;    // leaving the road at a junction: on its way off, in the world (see leaveAtJunction)
     car.junctionSeen = -1;  // the s of the last junction it came to (and chose a way at)
@@ -916,6 +923,7 @@ export const Traffic = (() => {
     if (car.kind === 'tractor' || CONFIG.vehicles[car.kind].kerb) return; // a tractor just trundles along its lane, and a truck keeps to the kerb
     if (car.pendingLane !== null) return; // (already signalling for a move)
     if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
+    if (LEVEL.battle && car.kind === 'tank') return; // (a tank changes lanes only to hunt or dodge: see battle)
     // angry evil drivers pick on whoever is nearest (a good one only fights back, when it is hit)
     if (car.emotion === 'angry' && car.evil && !car.rival && !LEVEL.battle && Math.random() < CONFIG.rivalryPickChance) {
       let best = null, bestGap = CONFIG.rivalryRange;
@@ -1050,26 +1058,32 @@ export const Traffic = (() => {
         (Math.abs(o.lat - lat) > o.hw + car.hw + 0.3 && (o.isPlayer || Math.abs(Track.laneOffset(o.lane, o.s) - lat) > o.hw + car.hw + 0.3)));
   };
   const battle = (car, dt) => {
-    const B = CONFIG.battle, foes = enemies(car);
+    const B = CONFIG.battle, foes = enemies(car), G = B.goodFire;
     const ahead = (o) => (o.s - car.s) * car.dir;
-    // the nearest enemy ahead within its gun's reach: its gun turns to it
-    let foe = null, best = B.reach;
+    // the nearest enemy ahead within its gun's reach: its gun turns to it. (The green army's override,
+    // goodFire: any red within its reach, ahead or a little behind, and its turret snaps straight to it)
+    const good = car.dir > 0 && !!G;
+    let foe = null, best = good ? G.reach : B.reach;
     for (const o of foes) {
       const d = ahead(o);
-      if (d < 0 || d > best) continue;
-      best = d;
+      if (d < (good ? -G.behind : 0) || Math.abs(d) > best) continue;
+      best = Math.abs(d);
       foe = o;
     }
     car.foe = foe;
-    const want = foe ? Math.atan2((foe.lat - car.lat) * car.dir, Math.max(1, ahead(foe))) : 0;
-    car.turret += clamp(want - car.turret, -B.turn * dt, B.turn * dt);
+    const want = foe ? Math.atan2((foe.lat - car.lat) * car.dir, good ? ahead(foe) : Math.max(1, ahead(foe))) : 0;
+    car.turret = good && foe ? want : car.turret + clamp(want - car.turret, -B.turn * dt, B.turn * dt);
     const gun = B.guns[car.kind];
-    if ((car.gunWait -= dt) <= 0 && foe && best > B.near && Math.abs(want - car.turret) < 0.1) {
+    if ((car.gunWait -= dt) <= 0 && foe && Math.hypot(foe.s - car.s, foe.lat - car.lat) > B.near && Math.abs(want - car.turret) < 0.1) {
       if (gun) Packages.fireShell(car, foe, gun);
       else if (best < CONFIG.enemyThrowCarRange) Packages.throwAtGround(car, foe); // (a jeep: a package at it)
-      car.gunWait = between(gun?.every || B.throwEvery);
+      car.gunWait = between(gun?.every || B.throwEvery) * (good ? G.rate : 1);
     }
-    if (car.stun > 0 || car.spin > 0) return;
+    if (car.stun > 0 || car.spin > 0 || car.tracksBroken) return;
+    // (a tank lumbers: a lane change of its own only every laneWait)
+    const tank = car.kind === 'tank';
+    if (tank && (car.laneWait -= dt) > 0) return;
+    const moved = () => { if (tank) car.laneWait = between(B.tank.laneWait); };
     // coming at it in its lane: an enemy it beats (it stays put: let it come), or one it doesn't
     const lat = Track.laneOffset(car.lane, car.s);
     let threat = null, near = B.look;
@@ -1090,6 +1104,7 @@ export const Traffic = (() => {
           if (!laneFree(car, car.lane + d, foes)) continue;
           car.lane += d;
           car.pendingLane = null;
+          moved();
           break;
         }
       }
@@ -1097,7 +1112,7 @@ export const Traffic = (() => {
     }
     // a hunter: steering for a head-on with an enemy it beats, coming at it
     let prey = null;
-    near = B.hunt;
+    near = tank ? B.tank.hunt : B.hunt;
     for (const o of foes) {
       const d = ahead(o);
       if (d < 8 || d > near || !beats(car, o)) continue;
@@ -1110,6 +1125,7 @@ export const Traffic = (() => {
       if (step && laneFree(car, car.lane + step, foes)) {
         car.lane += step;
         car.pendingLane = null;
+        moved();
       }
     }
   };
@@ -1366,7 +1382,8 @@ export const Traffic = (() => {
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
         if (!car.fixed && !car.unused && mix().length) {
-          const behind = hesitation() && car.dir === Player.dir && Math.random() < H.behindChance && hesitantAhead();
+          const behind = hesitation() && car.dir === Player.dir && Math.random() < H.behindChance && hesitantAhead() ||
+            LEVEL.battle && car.dir > 0 && Math.random() < CONFIG.battle.goodArmy.fromBehind; // (green reinforcements, coming up behind the player)
           if (!(behind && spawnBehind(car))) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
         }
         continue;
@@ -1489,6 +1506,20 @@ export const Traffic = (() => {
         car.braking = false;
         car.signal = 0;
         car.hazards = true;
+        updateYaw(car, dt);
+        continue;
+      }
+      if (car.tracksBroken) { // a broken track: it grinds to a halt where it is and goes nowhere after (its gun still works)
+        car.vs -= Math.sign(car.vs) * Math.min(Math.abs(car.vs), CONFIG.brokenTracks.stopping * dt);
+        car.latVel -= car.latVel * Math.min(1, dt * 6);
+        car.s += car.vs * dt;
+        Track.transfer(car);
+        car.lat += car.latVel * dt;
+        keepOnRoad(car, 0.3);
+        car.braking = Math.abs(car.vs) > 0.5;
+        car.signal = 0;
+        car.pendingLane = null;
+        if (LEVEL.battle) battle(car, dt);
         updateYaw(car, dt);
         continue;
       }
