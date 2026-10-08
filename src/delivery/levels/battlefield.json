@@ -1,0 +1,36 @@
+{
+  "id": "battlefield",
+  "name": "Battlefield",
+  "time": 260,
+  "tip": 80,
+  "lanes": 6,
+  "flow": "mixed",
+  "battle": true,
+  "pillboxes": true,
+  "landmines": [{ "from": 350, "to": 4400, "count": 45 }],
+  "car": "apc",
+  "theme": "battlefield",
+  "shoulderTimer": false,
+  "helicopter": false,
+  "hesitation": false,
+  "traffic": { "jeep": 0.5, "apc": 0.3, "tank": 0.2 },
+  "trafficCount": 10,
+  "oncomingCount": 12,
+  "segments": [
+    { "length": 700, "curve": 0 },
+    { "length": 400, "curve": 0.0015 },
+    { "length": 900, "curve": 0 },
+    { "length": 400, "curve": -0.0018 },
+    { "length": 1000, "curve": 0 },
+    { "length": 300, "curve": 0.0012 },
+    { "length": 800, "curve": 0 }
+  ],
+  "pickups": [
+    { "type": "wrench", "s": 900, "lane": 2 },
+    { "type": "armour", "s": 1700, "lane": 3 },
+    { "type": "wrench", "s": 2600, "lane": 1 },
+    { "type": "turbo", "s": 3300, "lane": 4 },
+    { "type": "wrench", "s": 4000, "lane": 2 }
+  ],
+  "targets": []
+}

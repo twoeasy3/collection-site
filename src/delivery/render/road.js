@@ -84,6 +84,10 @@ export const THEMES = {
   // suburb: lawns, pavements, picket fences and houses in a row
   suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb' },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
+  // battlefield: a dirt track through a war (unmarked: only the ruts worn into it), churned mud under a smoky
+  // sky, shell craters, sandbagged trenches, tank traps, barbed wire and shattered trees (and the pillboxes:
+  // render/battle.js)
+  battlefield: { sky: 0xa89f92, ground: 0x6d6248, road: 0x7d6440, scenery: 'battlefield', unmarked: true },
   // bathurst: Mount Panorama, a racetrack on a mountain in the New South Wales bush: the land climbs
   // and falls with the circuit (terrain: grass where it is gentle, red clay where it is steep), gum
   // trees all over the hill
@@ -2277,6 +2281,39 @@ const buildRoad = () => {
       };
       levelGroup.add(snow);
     }
+  } else if (theme.scenery === 'battlefield') {
+    // ---- battlefield: craters, sandbags, tank traps, barbed wire and shattered trees ------------------
+    const craters = [], rims = [], bags = [], traps = [], posts = [], stumps = [], wrecks = [];
+    for (let s = Track.start; s < Track.end; s += 9) {
+      for (const side of [-1, 1]) {
+        const at = s + Math.random() * 8, roll = Math.random();
+        if (roll < 0.22) { // a shell crater: a dark pit inside a ring of thrown-up earth
+          const r = 2 + Math.random() * 4, lat = beside(side, at, 6 + Math.random() * 70);
+          rims.push([at, lat, 0.05, r * 2.6, 0.3, r * 2.6]);
+          craters.push([at, lat, 0.12, r * 2, 0.3, r * 2]);
+        } else if (roll < 0.3) { // a line of sandbags
+          bags.push([at, beside(side, at, 3 + Math.random() * 14), 0.45, 1.2, 0.9, 6 + Math.random() * 6]);
+        } else if (roll < 0.4) { // a tank trap: three steel beams crossed
+          const lat = beside(side, at, 2 + Math.random() * 22);
+          traps.push([at, lat, 0.7, 0.25, 1.4, 1.6], [at, lat, 0.7, 1.6, 1.4, 0.25], [at, lat, 0.7, 0.25, 0.25, 1.8]);
+        } else if (roll < 0.5) { // a shattered tree
+          const h = 2 + Math.random() * 5;
+          stumps.push([at, beside(side, at, 8 + Math.random() * 60), h / 2, 0.5, h, 0.5]);
+        } else if (roll < 0.53) { // a burnt-out wreck
+          wrecks.push([at, beside(side, at, 10 + Math.random() * 50), 0.9, 3, 1.8, 6]);
+        }
+      }
+    }
+    // barbed wire on posts along both sides
+    for (let s = Track.start; s < Track.end; s += 5) for (const side of [-1, 1]) posts.push([s, beside(side, s, 1.6), 0.55, 0.12, 1.1, 0.12]);
+    for (const side of [-1, 1]) for (const y of [0.45, 0.85]) add(buildStrip(Track.start, Track.end, (q) => beside(side, q, 1.55), (q) => beside(side, q, 1.65), y), flat(0x6d6a63));
+    instances(tube, 0x5a4e36, rims);
+    instances(tube, 0x2e2618, craters);
+    instances(cube, 0xb8a676, bags);
+    instances(cube, 0x3c3a36, traps);
+    instances(cube, 0x5a554c, posts);
+    instances(tube, 0x2b231a, stumps);
+    instances(cube, 0x2a2622, wrecks);
   } else if (theme.scenery === 'hell') {
     // ---- hell: rivers of lava, black spires of rock, and fires along the roadside ------------------
     const glow = (color) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthWrite: false });

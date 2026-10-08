@@ -5,7 +5,9 @@
 // and stops in the first vehicle in its way (so a car between the player and the shooter is a shield),
 // doing a little damage, and now and then puncturing a tyre: traffic pulls over onto the shoulder and
 // stops; the player limps on (see Player.puncture) until it stops to change it.
-// This is the shooting; render/gunfire.js draws the tracers and the muzzle flashes.
+// On the Battlefield (a level's "battle" with "pillboxes") the houses are pillboxes beside the road, half of
+// them each army's, and each fires its bursts only at the other army's vehicles (the player is in the green).
+// This is the shooting; render/gunfire.js draws the tracers and the muzzle flashes (render/battle.js the pillboxes).
 // ============================================================================
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
@@ -48,8 +50,19 @@ export const Gunfire = {
   bursts: [],   // a house's burst under way: { s, lat, y, facing, left, wait }
   cool: new Map(), // each gang house's s to wait before its next burst, by lot ('side:k')
   zone: null,   // the stretch of turf the player is in
+  // the Battlefield's pillboxes: { s, side, team (1: the green army's, going the player's way; -1: the red's), lat, facing }
+  pillboxes: [],
 
   reset() {
+    const B = CONFIG.battle;
+    this.pillboxes = [];
+    if (LEVEL.battle && LEVEL.pillboxes) {
+      for (const side of [-1, 1]) {
+        for (let s = Track.start + 80 + (side > 0 ? 0 : B.pillboxEvery / 2), k = 0; s < Track.end - 40; s += B.pillboxEvery, k++) {
+          this.pillboxes.push({ s, side, team: (k + (side > 0 ? 0 : 1)) % 2 ? 1 : -1, lat: side < 0 ? Track.lo(s) - B.pillboxOut : Track.hi(s) + B.pillboxOut, facing: -side });
+        }
+      }
+    }
     this.bullets.length = 0;
     this.flashes.length = 0;
     this.bursts.length = 0;
@@ -124,6 +137,23 @@ export const Gunfire = {
             left: Math.round(between(G.shots)), wait: 0 });
         }
       }
+    }
+    // the Battlefield's pillboxes: the same, but each only at the other army's vehicles
+    if (Player.active) {
+      const near = G.range + G.seen;
+      this.pillboxes.forEach((box, i) => {
+        const key = 'pb:' + i;
+        if (Math.abs(box.s - Player.s) > near || (this.cool.get(key) ?? 0) > 0) return;
+        const inArc = Collision.bodies.filter(v => {
+          if (!v.active || v.junction || (v.isPlayer ? 1 : v.dir) === box.team || (v.isPlayer && Player.ghost > 0)) return false;
+          const ds = v.s - box.s, dl = v.lat - box.lat;
+          return Math.hypot(ds, dl) <= G.range && Math.atan2(Math.abs(ds), Math.abs(dl)) <= G.arc;
+        });
+        if (!inArc.length) return;
+        this.cool.set(key, between(G.every));
+        this.bursts.push({ s: box.s, lat: box.lat, facing: box.facing, target: inArc[Math.floor(Math.random() * inArc.length)], y: 1.15 * CONFIG.battle.pillboxScale, // (out of its slit)
+          left: Math.round(between(G.shots)), wait: 0 });
+      });
     }
     for (const b of this.bursts) {
       if ((b.wait -= dt) > 0 || b.left <= 0) continue;

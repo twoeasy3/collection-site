@@ -122,9 +122,10 @@ try {
       Collision.check();
       FxQueue.length = 0;
       const cost = CONFIG.obstacleKinds[kind];
-      const damage = kind === 'asteroid' ? Math.min(cost.maxDamage, cost.damage * o.r) : cost.damage;
+      // (a landmine destroys the car outright, whatever its health)
+      const damage = kind === 'landmine' ? Player.maxHealth : kind === 'asteroid' ? Math.min(cost.maxDamage, cost.damage * o.r) : cost.damage;
       check(o.gone && Math.abs(Player.health - (Player.maxHealth - damage)) < 1e-6,
-        `hitting a ${kind} destroys it and costs ${damage.toFixed(0)} health`);
+        `hitting a ${kind} destroys it and costs ${kind === 'landmine' ? 'all its' : damage.toFixed(0)} health`);
     }
 
     if (kinds.includes('asteroid')) {
@@ -454,14 +455,15 @@ try {
       for (const c of Traffic.cars) {
         if (!c.active) continue;
         live++;
-        if (c.bound !== L.flow || (c.dir > 0) !== (L.flow === 'north')) wrongWay++;
+        // ('mixed', the Battlefield: both ways, each tagged by the way it goes)
+        if (L.flow === 'mixed' ? c.bound !== (c.dir > 0 ? 'north' : 'south') : c.bound !== L.flow || (c.dir > 0) !== (L.flow === 'north')) wrongWay++;
         if (track.Track.isMain(c.s)) lanes.add(c.lane);
       }
     }
     const T = track.Track;
     const inPlay = (L.trafficCount ?? CONFIG.trafficCount) + (L.oncomingCount ?? CONFIG.oncomingCount);
     if (L.flow) check(live > inPlay * 10 * 0.5 && wrongWay === 0 && lanes.size === T.laneCount && T.flow === L.flow,
-      `${L.name}: every vehicle is ${L.flow}bound (${live} seen over 10 starts), and they use all ${T.laneCount} lanes`);
+      `${L.name}: every vehicle is ${L.flow === 'mixed' ? 'tagged by the way it goes, both ways in every lane' : L.flow + 'bound'} (${live} seen over 10 starts), and they use all ${T.laneCount} lanes`);
     if (!L.shoulderRows) continue;
     const rows = Collision.obstacles.filter(o => !o.drift && (o.kind === 'cone' || o.kind === 'sign'));
     const kind = rows[0].kind, cost = CONFIG.obstacleKinds[kind];
@@ -501,6 +503,8 @@ try {
   section('police');
   {
     const meet = (label, place, want) => {
+      levels.selectLevel(0); // (the Expressway, in the Commuter: whatever level the sections before left picked)
+      cars.selectCar('commuter');
       Game.evil = false;
       Game.start();
       for (const c of Traffic.cars) c.active = false;
@@ -1225,6 +1229,186 @@ try {
     step(30);
     check(started && rightCars && lane && gapsOk && calm && train.every(c => c.emotion === 'angry'),
       `funeral procession: a hearse and ${CONFIG.procession.cars} cars in black, keeping their lane at ${CONFIG.procession.speed} m/s nose to tail, calm until the player runs into the back of it, then all of them furious`);
+  }
+
+  section('the Battlefield: armies, head-ons, guns, pillboxes');
+  {
+    const { Packages } = await load('/src/delivery/packages.js');
+    const { Gunfire } = await load('/src/delivery/gunfire.js');
+    const { Collision } = await load('/src/delivery/collision.js');
+    const B = CONFIG.battle;
+    const T = () => track.Track;
+    const fresh = (evil = false) => {
+      levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'battlefield'));
+      Game.evil = evil;
+      Game.start();
+    };
+    const step = (n = 1) => { for (let i = 0; i < n; i++) { Game.update(1 / 120); FxQueue.length = 0; } };
+    const alone = () => { for (const c of Traffic.cars) Object.assign(c, { active: false, unused: true }); };
+    // one army vehicle of that kind, going dir in lane at s doing speed
+    const army = (kind, dir, lane, s, speed = 10, extra = {}) => {
+      const car = Traffic.cars.find(c => !c.active && c.unused && !c.taken);
+      const type = CONFIG.vehicles[kind];
+      Object.assign(car, { active: true, unused: false, taken: true, kind, dir, bound: dir > 0 ? 'north' : 'south', fixed: false, junction: null, racer: false,
+        procession: 0, emergency: false, parked: false, s, lane, lat: T().laneOffset(lane, s), vs: dir * speed, baseSpeed: speed, latVel: 0, yaw: 0, yawVel: 0,
+        stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, think: 99, rival: null, pendingLane: null, evil: dir < 0, mood: 0, emotion: 'neutral',
+        hesitant: false, tap: 0, hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health, maxHealth: type.health,
+        turret: 0, gunWait: 99, foe: null, dodging: null, dodges: false, pulledOver: false, shield: 0, ...extra });
+      return car;
+    };
+    const untake = () => { for (const c of Traffic.cars) c.taken = false; };
+    // the player held out of it all, a ghost, at s (near enough that nothing it watches is gone for being too far off)
+    const hold = (s) => Object.assign(Player, { s, lat: T().laneOffset(2, s), speed: 0.1, ghost: 9, launching: false });
+    // how a vehicle comes out of it: its lowest health while the steps run ('wrecked' at 0)
+    const watch = (list, n, each) => {
+      const low = new Map(list.map(c => [c, c.health]));
+      for (let i = 0; i < n; i++) {
+        each?.();
+        step();
+        for (const c of list) low.set(c, Math.min(low.get(c), c.active ? c.health : 0));
+      }
+      return list.map(c => low.get(c) <= 0 ? 'wrecked' : Math.round(low.get(c) / c.maxHealth * 100) + '%');
+    };
+
+    fresh(true);
+    const active = Traffic.cars.filter(c => c.active);
+    const { clockFor } = await load('/src/delivery/game.js');
+    check(T().problems.length === 0 && T().flow === 'mixed' && T().laneRange(1, 100).join() === '0,5' && T().laneRange(-1, 100).join() === '0,5' &&
+      cars.CAR.id === 'apc' && !Player.evil && Game.allowed === clockFor(levels.LEVEL, false) && Gunfire.pillboxes.length > 20,
+      `the Battlefield loads: 6 lanes open both ways, the player in the 8x8 and in the green army, on Good's clock, even having picked Evil; ${Gunfire.pillboxes.length} pillboxes`);
+    check(active.length > 10 && active.every(c => c.evil === (c.dir < 0) && c.colors?.[0] === B.colors[c.dir > 0 ? 'good' : 'evil'][c.kind]) &&
+      new Set(active.map(c => c.kind)).size === 3 && new Set(active.filter(c => c.dir < 0).map(c => c.lane)).size > 2,
+      'its traffic is jeeps, 8x8s and tanks: going the player\'s way the green army (good), the other way the red (evil), each kind its own shade, the red army down every lane');
+
+    // head-ons: a tank beats an 8x8 and an 8x8 a jeep, at half their health; a jeep and a tank, or two of a kind, both wrecked
+    const meet = (north, south) => {
+      fresh(); alone(); untake();
+      const a = army(north, 1, 2, 600, 8), b = army(south, -1, 2, 600 + CONFIG.vehicles[north].hl + CONFIG.vehicles[south].hl + 1, 8);
+      for (const c of [a, b]) c.dodging = c === a ? b : a; // (neither dodges: decided)
+      return watch([a, b], 60, () => hold(400)).join(' / ');
+    };
+    const outcomes = { 'tank-apc': meet('tank', 'apc'), 'apc-tank': meet('apc', 'tank'), 'apc-jeep': meet('apc', 'jeep'), 'jeep-tank': meet('jeep', 'tank'),
+      'jeep-jeep': meet('jeep', 'jeep'), 'apc-apc': meet('apc', 'apc') };
+    check(outcomes['tank-apc'] === '50% / wrecked' && outcomes['apc-tank'] === 'wrecked / 50%' && outcomes['apc-jeep'] === '50% / wrecked' &&
+      outcomes['jeep-tank'] === 'wrecked / wrecked' && outcomes['jeep-jeep'] === 'wrecked / wrecked' && outcomes['apc-apc'] === 'wrecked / wrecked',
+      'head-ons: ' + Object.entries(outcomes).map(([k, v]) => `${k} ${v}`).join(', '));
+    // ...and the player's 8x8 the same: it beats a jeep at half its health, and a tank beats it
+    const playerMeets = (kind) => {
+      fresh(); alone(); untake();
+      Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 8, launching: false, shield: 0, ghost: 0, latVel: 0, health: Player.maxHealth });
+      const foe = army(kind, -1, 2, 600 + Player.hl + CONFIG.vehicles[kind].hl + 1, 8);
+      foe.dodging = Player;
+      let low = Player.health, foeLow = foe.health;
+      for (let i = 0; i < 60; i++) {
+        step();
+        low = Math.min(low, Player.active ? Player.health : 0);
+        foeLow = Math.min(foeLow, foe.active ? foe.health : 0);
+      }
+      return { player: low <= 0 ? 'wrecked' : Math.round(low / Player.maxHealth * 100) + '%', foe: foeLow <= 0 ? 'wrecked' : 'standing' };
+    };
+    const vsJeep = playerMeets('jeep'), vsTank = playerMeets('tank');
+    check(vsJeep.player === '50%' && vsJeep.foe === 'wrecked' && vsTank.player === 'wrecked' && vsTank.foe === 'standing',
+      `the player's 8x8 head-on: against a jeep it comes off at ${vsJeep.player}, the jeep ${vsJeep.foe}; against a tank it is ${vsTank.player}`);
+
+    // guns: an 8x8 or a tank turns its gun on the nearest enemy ahead in reach and fires; a jeep throws a package at it;
+    // nobody's shell or package hurts its own side
+    // (at one it won't go after head-on, so it stays where it is and has to turn its gun to it)
+    const shoot = (kind, at) => {
+      fresh(); alone(); untake();
+      const gunner = army(kind, -1, 0, 900, 0.01, { gunWait: 0.5 });
+      const target = army(at, 1, 4, 900 - 35, 0.01), friend = army('tank', -1, 3, 900 - 34, 0.01);
+      for (const c of [gunner, target, friend]) c.baseSpeed = 0.01;
+      let fired = null;
+      for (let i = 0; i < 120 * 3 && !fired; i++) {
+        for (const c of [gunner, target, friend]) { c.vs = c.dir * 0.01; c.lat = T().laneOffset(c.lane, c.s); }
+        hold(700);
+        step();
+        fired = Packages.list.find(p => p.active && p.owner === gunner) || null;
+      }
+      const kindFired = fired?.kind, turned = gunner.turret;
+      const [, targetLow, friendLow] = watch([gunner, target, friend], 120 * 2, () => { for (const c of [gunner, target, friend]) c.vs = c.dir * 0.01; hold(700); });
+      return { fired: kindFired, turned, hurt: targetLow !== '100%', friendly: friendLow === '100%' };
+    };
+    const tankGun = shoot('tank', 'jeep'), jeepThrow = shoot('jeep', 'apc');
+    check(tankGun.fired === 'shell' && Math.abs(tankGun.turned) > 0.1 && tankGun.hurt && tankGun.friendly && jeepThrow.fired === 'bomb' && jeepThrow.friendly,
+      `a red tank turns its gun (${tankGun.turned.toFixed(2)} rad) on a green jeep off to one side and shells it, sparing the red tank beside it; a red jeep throws a package at a green 8x8, sparing its own side too`);
+
+    // hunting and dodging: a tank steers into the lane of an 8x8 coming at it; that 8x8 dodges half the time;
+    // two of a kind always steer clear of each other
+    let hunted = 0, dodged = 0, clear = 0;
+    for (let k = 0; k < 40; k++) {
+      fresh(); alone(); untake();
+      const hunter = army('tank', -1, 1, 1000, 10), prey = army('apc', 1, 4, 930, 10);
+      for (let i = 0; i < 120 * 2.5; i++) { hold(800); step(); }
+      if (hunter.lane === prey.lane || prey.dodging === hunter) hunted++;
+      if (prey.dodging === hunter && prey.dodges) dodged++;
+      fresh(); alone(); untake();
+      const a = army('jeep', 1, 2, 900, 10), b = army('jeep', -1, 2, 950, 10);
+      if (!watch([a, b], 120 * 3, () => hold(700)).includes('wrecked')) clear++;
+    }
+    check(hunted >= 36 && dodged > 8 && dodged < 32 && clear >= 36,
+      `a tank goes after an 8x8 coming at it (${hunted} of 40), which tries to dodge it ${dodged} times of 40 (about half); two jeeps meeting steer clear of each other ${clear} times of 40`);
+
+    // the player's gun: the throw button fires a small shell dead ahead, every so often
+    fresh(); alone(); untake();
+    Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 20, launching: false });
+    Packages.throwOne();
+    const shell = Packages.list.find(p => p.active && p.owner === Player);
+    Packages.throwOne();
+    const shells = Packages.list.filter(p => p.active && p.owner === Player).length;
+    check(shell?.kind === 'shell' && shell.gun === cars.CAR.cannon && shells === 1,
+      `the player's 8x8 fires a shell (${cars.CAR.cannon.range} m ahead, ${cars.CAR.cannon.damage} damage) with the throw button, then must wait ${cars.CAR.cannon.cooldown} s`);
+
+    // landmines: down the lanes; whatever touches one (the player's car, a ghost aside, or traffic, which never
+    // steers round one) is destroyed outright, and the mine is gone
+    fresh(); alone(); untake();
+    const mines = Collision.obstacles.filter(o => o.kind === 'landmine');
+    const inLanes = mines.every(m => [0, 1, 2, 3, 4, 5].some(l => Math.abs(m.lat - T().laneOffset(l, m.s)) < 1e-6));
+    const mine = mines[5];
+    Object.assign(Player, { s: mine.s - Player.hl - 2, lat: mine.lat, speed: 10, launching: false, shield: 0, ghost: 0, latVel: 0, health: Player.maxHealth });
+    let blown = false;
+    for (let i = 0; i < 120 && !blown; i++) { step(); blown = !Player.active || Player.health <= 0; }
+    const gone = mine.gone;
+    fresh(); alone(); untake();
+    const mine2 = Collision.obstacles.filter(o => o.kind === 'landmine')[5];
+    Object.assign(Player, { s: mine2.s - Player.hl - 2, lat: mine2.lat, speed: 10, launching: false, shield: 0, ghost: 5, latVel: 0, health: Player.maxHealth });
+    for (let i = 0; i < 120; i++) step();
+    const ghostOk = Player.active && Player.health === Player.maxHealth && !mine2.gone;
+    fresh(); alone(); untake();
+    const mine3 = Collision.obstacles.filter(o => o.kind === 'landmine')[8];
+    const lane3 = [0, 1, 2, 3, 4, 5].find(l => Math.abs(mine3.lat - T().laneOffset(l, mine3.s)) < 1e-6);
+    const victim = army('tank', -1, lane3, mine3.s + 20, 12);
+    let lowest = victim.health, drift = 0;
+    for (let i = 0; i < 120 * 2.5 && lowest > 0; i++) { // (until it goes up)
+      hold(mine3.s - 300);
+      step();
+      if (victim.active) drift = Math.max(drift, Math.abs(victim.lat - mine3.lat));
+      lowest = Math.min(lowest, victim.active ? victim.health : 0);
+    }
+    check(mines.length === 45 && inLanes && blown && gone && ghostOk && lowest <= 0 && mine3.gone && drift < 0.2,
+      `landmines: ${mines.length} down the lanes; the player's car driving onto one is destroyed and the mine gone, a ghost passes over; ` +
+      `a tank drives straight onto one (${drift.toFixed(2)} m off its line) and is destroyed, the mine with it`);
+
+    // pillboxes fire only at the other army: a red one at the player and the green army, a green one at the red
+    fresh(); alone(); untake();
+    const red = Gunfire.pillboxes.find(b => b.team < 0), green = Gunfire.pillboxes.find(b => b.team > 0 && b.s > red.s + 300);
+    const shotAt = (box, kinds) => {
+      Gunfire.reset();
+      Gunfire.pillboxes.length = 0;
+      Gunfire.pillboxes.push(box);
+      Object.assign(Player, { s: box.s + 2, lat: T().laneOffset(box.side > 0 ? 5 : 0, box.s), speed: 0.1, ghost: 0, shield: 0, health: Player.maxHealth });
+      const targets = [];
+      Gunfire.bursts.length = 0;
+      for (let i = 0; i < 120 * 2; i++) {
+        Player.s = box.s + 2; Player.speed = 0.1;
+        step();
+        for (const b of Gunfire.bursts) targets.push(b.target);
+      }
+      return targets;
+    };
+    const fromRed = shotAt(red), fromGreen = shotAt(green);
+    check(fromRed.length > 0 && fromRed.every(t => t.isPlayer || t.dir > 0) && fromGreen.every(t => !t.isPlayer && t.dir < 0),
+      `pillboxes: a red one fires on the player (${fromRed.filter(t => t.isPlayer).length} bursts at it), a green one never does`);
   }
 
   section('emergency vehicles');

@@ -58,7 +58,7 @@ export const Player = {
   speed: 0,
   health: CAR.health, maxHealth: CAR.health, smoke: 0, // (top speed, acceleration and health are the car's: see cars.js)
   hw: CAR.hw, hl: CAR.hl, height: CAR.height, // hitbox half width / half length, body height
-  get mass() { return this.heavy > 0 ? CONFIG.heavyMass.mass : 1; },
+  get mass() { return this.heavy > 0 ? CONFIG.heavyMass.mass : CAR.mass || 1; },
   // how heavy the car is, for sliding on ice: by its size, against the Commuter's, and its mass
   get weight() { return this.mass * Math.sqrt(this.hw * this.hl * this.height / CONFIG.ice.weightRef); },
   // how well the car takes a railway track, and wades through water: 1 = no bother, 0 = worst of all
@@ -290,7 +290,7 @@ export const Player = {
   // a tyre shot out (see Gunfire): a limp on, slower and pulling to that side, until the car stops to
   // change it. (Nothing without tyres: the tank, the UFO, the boat)
   punctureTyre(side) {
-    if (this.puncture || this.tank > 0 || CAR.noWheels || !this.active || this.armour > 0) return; // (armour shields the tyres too)
+    if (this.puncture || this.tank > 0 || CAR.noWheels || CAR.runFlat || !this.active || this.armour > 0) return; // (armour shields the tyres too)
     this.puncture = side;
     this.fixing = 0;
     Message.say('events', 'puncture');

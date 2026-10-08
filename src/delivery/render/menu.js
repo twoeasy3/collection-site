@@ -90,8 +90,10 @@ const draw = () => {
     const spare = (t) => t === undefined ? '-' : formatTime(t);
     return card(levelLabel(i) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
-      'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
-      good === undefined && evil === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good) + ' Good / ' + spare(evil) + ' Evil',
+      level.battle ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
+        : 'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
+      level.battle ? (good === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good))
+        : good === undefined && evil === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good) + ' Good / ' + spare(evil) + ' Evil',
     ] : ['Locked', 'Deliver level ' + levelLabel(i - 1) + ' on time to open it'], {
       current: i === LEVEL_INDEX,
       disabled: !open,

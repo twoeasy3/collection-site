@@ -30,6 +30,7 @@ import { syncMachinery } from './render/machinery.js';
 import { syncGunfire } from './render/gunfire.js';
 import { syncSite } from './render/site.js';
 import { syncRoadside } from './render/roadside.js';
+import { syncBattle } from './render/battle.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
 import { syncTankCorner } from './render/tankcorner.js';
@@ -165,6 +166,7 @@ const frame = (now) => {
     syncGunfire();
     syncSite();
     syncRoadside(dt);
+    syncBattle(dt);
     syncZones(dt);
     syncStorm(dt);
     emitVehicleSmoke(dt);

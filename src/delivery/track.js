@@ -32,7 +32,9 @@ const createTrack = () => {
   const HM = MID * LW / 2; // half the median's width: each side's lanes start this far out
   // which way the traffic goes: 'both' (the left half of the road is oncoming), or every
   // vehicle 'north' (the player's way) or 'south' (against the player), using all the lanes
-  const FLOW = LEVEL.flow === 'north' || LEVEL.flow === 'south' ? LEVEL.flow : 'both';
+  // ('mixed': traffic both ways, every lane open to either: the Battlefield. Its lanes are laid out as a
+  // one-way road's, no oncoming half)
+  const FLOW = ['north', 'south', 'mixed'].includes(LEVEL.flow) ? LEVEL.flow : 'both';
   const ONE_WAY = FLOW !== 'both';
   const smooth = (t) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 
@@ -667,6 +669,9 @@ const createTrack = () => {
     for (const z of [...(LEVEL.fog || []), ...(LEVEL.rockfall || [])]) {
       if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.count ? 'rockfall' : 'fog') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
       else if (z.count && z.side !== 'left' && z.side !== 'right') problems.push('rockfall at ' + z.from + ': side is left or right');
+    }
+    for (const z of LEVEL.landmines || []) {
+      if (!(z.from < z.to) || z.from < 0 || z.to > length || !(z.count > 0)) problems.push('landmines at ' + z.from + '-' + z.to + ': from before to, on the road, with a count');
     }
     for (const h of LEVEL.potholes || []) {
       if (!(h.s >= 0 && h.s <= length) || !(Number.isInteger(h.lane) && h.lane >= 0 && h.lane < LANES)) problems.push('pothole at ' + h.s + ': in a lane on the road');

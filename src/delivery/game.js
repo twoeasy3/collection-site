@@ -143,7 +143,7 @@ export const Game = {
     this.rivalAhead = new Map(); // for each, whether it was ahead of the player when last looked
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
     useLevelCar(LEVEL.car); // a UFO on the space level, otherwise the garage's car
-    Player.evil = this.evil;
+    Player.evil = this.evil && !LEVEL.battle; // (on the Battlefield the player is in the green army, the good one, whatever the side on the menu)
     Social.reset(); // (before the player: its shoulder allowance goes by it)
     Player.reset();
     Wreckage.reset(); // (before the traffic is dealt out: none goes where wreckage lies)
@@ -154,7 +154,7 @@ export const Game = {
     Collision.resetObstacles();
     FxQueue.length = 0;
     this.time = 0;
-    this.allowed = clockFor(LEVEL, this.evil); // (Good gets longer)
+    this.allowed = clockFor(LEVEL, Player.evil); // (Good gets longer; the side the player is on: always Good on the Battlefield)
     this.outcome = '';
     this.shake = 0;
     this.respawn = -1;
@@ -183,6 +183,7 @@ export const Game = {
     SpeedCameras.reset();
     Crossings.reset();
     StopGo.reset();
+    if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
     startScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');
@@ -208,7 +209,7 @@ export const Game = {
     const tip = '$' + this.tip.toFixed(2);
     // delivered on time: the tip goes in the bank, the time to spare may be a best, and the next level opens
     // (a hidden level, off the menu, banks nothing and records nothing: see HIDDEN_LEVELS)
-    const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, Math.max(0, this.tip + this.cash - this.fines), this.remaining, this.evil);
+    const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, Math.max(0, this.tip + this.cash - this.fines), this.remaining, Player.evil);
     resultTitle.textContent = {
       delivered: !LEVEL.grid?.rival ? 'Delivered!'
         : !this.rivalsIn ? (LEVEL.grid.count > 1 ? 'Delivered first - you beat them all!' : 'Delivered - you beat your rival!')
@@ -222,8 +223,8 @@ export const Game = {
       : outcome === 'late' ? 'Tip ' + tip + ' of $' + LEVEL.tip
       : Math.floor(this.progress * 100) + '% of the way';
     resultNote.textContent = (outcome === 'delivered' ? formatTime(this.remaining) + ' to spare' +
-      (LEVEL_INDEX < 0 ? ' (test run: nothing saved)' : record ? ' (new best)' : ' (best ' + formatTime(Progress.bestTime(LEVEL.id, this.evil)) + ')') + '  |  ' : '') +
-      (this.evil ? 'Evil' : 'Good') + '  |  Wrecked: ' + this.wrecks + '  |  Busted: ' + this.busts +
+      (LEVEL_INDEX < 0 ? ' (test run: nothing saved)' : record ? ' (new best)' : ' (best ' + formatTime(Progress.bestTime(LEVEL.id, Player.evil)) + ')') + '  |  ' : '') +
+      (Player.evil ? 'Evil' : 'Good') + '  |  Wrecked: ' + this.wrecks + '  |  Busted: ' + this.busts +
       '  |  Bank $' + Progress.data.money.toFixed(2);
     resultScreen.classList[outcome === 'delivered' ? 'remove' : 'add']('failed');
     resultScreen.classList.remove('hidden');

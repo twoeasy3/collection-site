@@ -458,6 +458,7 @@ export const CONFIG = {
     camera: { damage: 8, speedKept: 0.85, light: true }, // a speed camera on its pole
     rock: { damage: 25, speedKept: 0.6 },
     cyclist: { damage: 12, speedKept: 0.85, light: true },
+    landmine: { damage: 0, speedKept: 1 }, // (no ordinary knock: it destroys whatever touches it outright, see Collision)
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -589,6 +590,10 @@ export const CONFIG = {
     hotrod:  { hw: 0.9,  hl: 2.1, height: 1.2, mass: 1,   health: 55,  model: 'hotrod' },
     minivan: { hw: 1.05, hl: 2.45, height: 2.0, mass: 1.7, health: 110, model: 'minivan' },
     hearse:  { hw: 1.0,  hl: 2.8, height: 1.65, mass: 1.6, health: 100, model: 'hearse' },
+    // the Battlefield's armies (a level's "battle": see CONFIG.battle). rank: who wins a head-on (see Collision)
+    jeep:    { hw: 0.95, hl: 2.0, height: 1.8, mass: 1.2, health: 60,  speed: 1.1, model: 'jeep', rank: 1 },
+    apc:     { hw: 1.35, hl: 3.4, height: 2.5, mass: 4,   health: 160, speed: 0.9, model: 'apc', rank: 2, noSpin: true },
+    tank:    { hw: 1.6,  hl: 3.3, height: 2.4, mass: 6,   health: 260, speed: 0.75, model: 'armytank', rank: 3, noSpin: true },
     pickup:  { hw: 1.05, hl: 2.6, height: 2.1, mass: 1.8, health: 120, model: 'pickup' },
     miata:   { hw: 0.85, hl: 1.95, height: 1.1, mass: 0.8, health: 50, model: 'miata' },
     // boats, the traffic of a level on the water (boat: it leaves a wake, has no tyres to puncture, shows no
@@ -857,6 +862,41 @@ export const CONFIG = {
     out: 14,               // ...this far off the road's edge
     near: { min: 60, max: 130 }, // m short of it the player sets one off
     size: { min: 0.6, max: 1.4 }, // m, a rock's radius
+  },
+  // THE BATTLEFIELD (a level's "battle": see levels.js). Two armies drive at each other down every lane
+  // of the road: the player's (good, green), all of it going the player's way, and the enemy's (evil, red),
+  // all coming the other way. Each goes after the other's vehicles: the guns (an 8x8's, a tank's) turn and
+  // fire on the nearest enemy in range, a jeep lobs packages at one, and each steers for a head-on with an
+  // enemy it beats (rank in CONFIG.vehicles: a tank beats an 8x8, an 8x8 a jeep, the player's 8x8 too),
+  // which that one tries to dodge (dodge of the time; one it can't beat, and won't wreck by meeting, it always
+  // steers clear of). A head-on won costs the winner `win` of its full health; anything else, a jeep against
+  // a tank or two of a kind, wrecks both, as usual. Pillboxes beside the road fire bursts (as The Hood's gang
+  // houses: CONFIG.gunfire) at the other army, the player included if they are red
+  battle: {
+    // each army's colours, a shade for each kind so they tell apart at a glance: jeeps light, 8x8s mid, tanks dark
+    colors: { good: { jeep: 0x86c95e, apc: 0x3f7a2e, tank: 0x1f4418 }, evil: { jeep: 0xec7a5c, apc: 0xa8281f, tank: 0x5a120e } },
+    win: 0.5,              // share of its full health a head-on win costs
+    dodge: 0.5,            // chance a vehicle a hunter is after tries to get out of its way
+    hunt: 90,              // m ahead a hunter looks for one to run into...
+    look: 55,              // ...and a vehicle looks out for one coming at it
+    reach: 70,             // m a gun reaches (the player's 8x8's: CAR.cannon)
+    near: 12,              // m: no closer than this does a gun fire
+    guns: {                // each kind's gun: s between shots, and what its shell does (as CONFIG.cannon*)
+      apc: { every: { min: 2.2, max: 3.6 }, direct: 2.8, splash: 7, damage: 45, scale: 0.8 },
+      tank: { every: { min: 3, max: 4.5 }, direct: 4.5, splash: 11, damage: 63, scale: 1.4 },
+    },
+    turn: 2.5,             // rad/s a turret turns
+    shellSpeed: 110,       // m/s an army gun's shell flies
+    throwEvery: { min: 1.6, max: 3 }, // s between a jeep's packages (at an enemy within CONFIG.enemyThrowCarRange)
+    shellOnPlayer: { direct: 50, splash: 20 }, // health an enemy shell costs the player: a direct hit, or near it
+    pillboxEvery: 130,     // m between pillboxes, on each side
+    mineFlash: { period: 0.9, on: 0.35 }, // s a landmine's light takes to flash round, and the share of it lit
+    pillboxOut: 10,        // m off the road's edge...
+    pillboxScale: 1.8,     // ...each this much bigger than its model (a bunker the size of a small house)
+    // airstrikes: only a sight (render/battle.js). Every `every` s a pair of jets comes over from behind the
+    // player, low (height m) and fast (speed m/s), down one side of the road, dropping a stick of bombs that
+    // walk across the fields there: never nearer the road than `out` m beyond its edge, nor further than out + spread
+    airstrike: { every: { min: 8, max: 16 }, height: 32, speed: 95, bombs: { min: 5, max: 8 }, out: 14, spread: 45, from: 160, to: 520 },
   },
   // a cyclist peloton (a level's "pelotons": { s, count, speed, trigger }): cyclists riding two abreast
   // along the kerb of the player's side, setting off as the player comes within trigger m. Obstacles:

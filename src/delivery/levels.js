@@ -18,7 +18,8 @@
 //   railway    { every: { min, max } }: a railway down the median (it needs one), with a bullet
 //              train coming through, against the player, every min-max s
 //   flow       'north' = every vehicle goes the player's way, 'south' = every vehicle comes
-//              the other way; either way the traffic uses all the lanes. Left out, the left
+//              the other way; either way the traffic uses all the lanes. 'mixed' = both ways, and
+//              every lane open to either (the Battlefield: oncoming traffic in every lane). Left out, the left
 //              half of the road is oncoming. A one-way level's exits have no flyovers, and
 //              need no straight road around them. Exits can't be combined with 'south'.
 //   shoulderRows  { kind, from, to, every, side } a row of obstacles standing on the
@@ -165,6 +166,14 @@
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall)
 //   pelotons   { s, count, speed, trigger }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton)
+//   battle     true = the Battlefield: two armies at war down the road (see CONFIG.battle). Its traffic
+//              going the player's way is the player's side, green (good, whatever the player's side
+//              on the menu); coming the other way, the enemy's, red (evil). Best with "flow": "mixed"
+//   landmines  { from, to, count }: landmines scattered down the lanes over that stretch, their lights
+//              flashing: whatever touches one, the player's car or traffic, is destroyed outright (a ghost
+//              passes over), and the mine with it. Traffic never steers round them
+//   pillboxes  true = (with battle) pillboxes beside the road every CONFIG.battle.pillboxEvery m, half
+//              each army's, firing bursts at the other's vehicles (as The Hood's gang houses)
 //   hippos     { from, to, every: { min, max } }: a river beside the road (on the right) over that
 //              stretch, out of which a hippo charges across the road every min-max s, aimed at the
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
@@ -206,6 +215,7 @@ import grandPrix from './levels/grand-prix.json';
 import marinaBay from './levels/marina-bay.json';
 import testbed from './levels/testbed.json';
 import gimmickRoad from './levels/gimmick-road.json';
+import battlefield from './levels/battlefield.json';
 import ohMine from './levels/oh-mine.json';
 import montreal from './levels/montreal.json';
 import bathurst from './levels/bathurst.json';
@@ -216,7 +226,7 @@ import showdown from './levels/showdown.json';
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue];
-export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown];
+export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown, battlefield];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones
 export const levelLabel = (index) => index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (index - MAIN_LEVELS.length + 1);

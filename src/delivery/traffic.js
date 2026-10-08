@@ -265,6 +265,20 @@ export const Traffic = (() => {
     car.emotion = emotionOf(car.mood);
     car.paint = Math.floor(Math.random() * 1000);
     car.showMood = false;
+    if (LEVEL.battle) { // (the Battlefield: its side is its army's, by the way it is going; in its army's colours)
+      const B = CONFIG.battle;
+      car.evil = car.dir < 0;
+      car.defiant = false;
+      const shade = (car.evil ? B.colors.evil : B.colors.good)[kind] ?? (car.evil ? B.colors.evil : B.colors.good).apc;
+      car.colors = [shade, shade];
+      car.mood = 0;
+      car.emotion = 'neutral';
+      car.turret = 0;     // the way its gun is turned, from straight ahead (rad, + = to its right)
+      car.gunWait = between(B.guns[kind]?.every || B.throwEvery);
+      car.foe = null;     // the enemy it is after (see battle)
+      car.dodging = null; // the hunter it has decided about getting out of the way of...
+      car.dodges = false; // ...and whether it does
+    }
     car.wobble = 0;     // s left of wobbling after a critical hit, before it spins out
     car.spin = 0;       // s left of an uncontrolled spin, which ends in an explosion
     car.rival = null;   // another traffic car this one is bullying
@@ -412,7 +426,7 @@ export const Traffic = (() => {
   // how a traffic driver treats the player (see CONFIG.attitude): by its side, its mood and the
   // player's side. null: it pays the player no special attention. (Not racers, who have race rules
   // of their own; nor the police, ambulances, nor trucks and tractors, which keep to themselves)
-  const minds = (car) => Player.active && !car.racer && !car.procession && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
+  const minds = (car) => Player.active && !LEVEL.battle && !car.racer && !car.procession && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
     !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir;
   const attitude = (car) => {
     if (!minds(car)) return null;
@@ -696,7 +710,7 @@ export const Traffic = (() => {
   // (see CONFIG.race.oncoming). It pulls back in at the first gap; and with something coming
   // after all, it pulls back in at once, wherever it is
   const oppositeLane = (car) => {
-    if (Track.flow === 'north' || Track.flow === 'south') return null; // (a one-way road: no oncoming lane)
+    if (Track.flow !== 'both') return null; // (a one-way road, or the Battlefield's: no oncoming lane)
     const [first, last] = Track.laneRange(car.dir, car.s), lane = car.dir > 0 ? first - 1 : last + 1;
     const [ofirst, olast] = Track.laneRange(-car.dir, car.s);
     return lane >= ofirst && lane <= olast ? lane : null;
@@ -903,7 +917,7 @@ export const Traffic = (() => {
     if (car.pendingLane !== null) return; // (already signalling for a move)
     if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
     // angry evil drivers pick on whoever is nearest (a good one only fights back, when it is hit)
-    if (car.emotion === 'angry' && car.evil && !car.rival && Math.random() < CONFIG.rivalryPickChance) {
+    if (car.emotion === 'angry' && car.evil && !car.rival && !LEVEL.battle && Math.random() < CONFIG.rivalryPickChance) {
       let best = null, bestGap = CONFIG.rivalryRange;
       for (const o of cars) {
         if (o === car || !o.active || o.junction || o.dir !== car.dir) continue;
@@ -1009,6 +1023,95 @@ export const Traffic = (() => {
       car.showMood = true;
     }
     if (said) Message.say('events', 'mourners');
+  };
+
+  // ---- the Battlefield (a level's "battle": see CONFIG.battle) ------------------------------------
+  // Every army vehicle goes after the other army's: its gun (an 8x8's, a tank's) turns to the nearest enemy
+  // ahead within reach and fires on it, a jeep lobs packages at it; and it steers for a head-on with an
+  // enemy it beats (rank), coming at it. One coming at a vehicle that it can't beat, it gets out of the way
+  // of: always, unless the other is out to get it, when only `dodge` of the time (decided once).
+  const rankOf = (v) => v.isPlayer ? CAR.rank || 0 : CONFIG.vehicles[v.kind]?.rank || 0;
+  // does a beat b head-on? (a tank an 8x8, an 8x8 a jeep: see Collision)
+  const beats = (a, b) => rankOf(a) === rankOf(b) + 1;
+  const enemies = (car) => {
+    const list = cars.filter(o => o.active && !o.junction && o.dir !== car.dir && o.health > 0);
+    if (car.dir < 0 && Player.active && Player.ghost <= 0) list.push(Player); // (the player is in the green army)
+    return list;
+  };
+  // is lane free for car to move into: nobody of its own side close by in it, and nobody coming at it in it
+  // that it would come off worse against (or both wrecked)
+  const laneFree = (car, lane, foes) => {
+    const [first, last] = Track.laneRange(car.dir, car.s);
+    if (lane < first || lane > last) return false;
+    const lat = Track.laneOffset(lane, car.s), B = CONFIG.battle;
+    return cars.every(o => !o.active || o === car || o.dir !== car.dir || Math.abs(o.s - car.s) > o.hl + car.hl + 4 || Math.abs(o.lat - lat) > o.hw + car.hw) &&
+      foes.every(o => beats(car, o) || (o.s - car.s) * car.dir < 0 || (o.s - car.s) * car.dir > B.look ||
+        // (where it is, and where it is moving over to: two dodging the same way would only meet again)
+        (Math.abs(o.lat - lat) > o.hw + car.hw + 0.3 && (o.isPlayer || Math.abs(Track.laneOffset(o.lane, o.s) - lat) > o.hw + car.hw + 0.3)));
+  };
+  const battle = (car, dt) => {
+    const B = CONFIG.battle, foes = enemies(car);
+    const ahead = (o) => (o.s - car.s) * car.dir;
+    // the nearest enemy ahead within its gun's reach: its gun turns to it
+    let foe = null, best = B.reach;
+    for (const o of foes) {
+      const d = ahead(o);
+      if (d < 0 || d > best) continue;
+      best = d;
+      foe = o;
+    }
+    car.foe = foe;
+    const want = foe ? Math.atan2((foe.lat - car.lat) * car.dir, Math.max(1, ahead(foe))) : 0;
+    car.turret += clamp(want - car.turret, -B.turn * dt, B.turn * dt);
+    const gun = B.guns[car.kind];
+    if ((car.gunWait -= dt) <= 0 && foe && best > B.near && Math.abs(want - car.turret) < 0.1) {
+      if (gun) Packages.fireShell(car, foe, gun);
+      else if (best < CONFIG.enemyThrowCarRange) Packages.throwAtGround(car, foe); // (a jeep: a package at it)
+      car.gunWait = between(gun?.every || B.throwEvery);
+    }
+    if (car.stun > 0 || car.spin > 0) return;
+    // coming at it in its lane: an enemy it beats (it stays put: let it come), or one it doesn't
+    const lat = Track.laneOffset(car.lane, car.s);
+    let threat = null, near = B.look;
+    for (const o of foes) {
+      const d = ahead(o);
+      if (d < 0 || d > near || Math.abs(o.lat - lat) > o.hw + car.hw + 0.3 || beats(car, o)) continue;
+      near = d;
+      threat = o;
+    }
+    if (threat) {
+      // (out to get it, a hunter: only dodge of the time, decided once; anything else, always)
+      if (car.dodging !== threat) {
+        car.dodging = threat;
+        car.dodges = !beats(threat, car) || Math.random() < B.dodge;
+      }
+      if (car.dodges) {
+        for (const d of Math.random() < 0.5 ? [1, -1] : [-1, 1]) {
+          if (!laneFree(car, car.lane + d, foes)) continue;
+          car.lane += d;
+          car.pendingLane = null;
+          break;
+        }
+      }
+      return;
+    }
+    // a hunter: steering for a head-on with an enemy it beats, coming at it
+    let prey = null;
+    near = B.hunt;
+    for (const o of foes) {
+      const d = ahead(o);
+      if (d < 8 || d > near || !beats(car, o)) continue;
+      near = d;
+      prey = o;
+    }
+    if (prey) {
+      const lane = clamp(Track.nearestLane(prey.lat, car.s), ...Track.laneRange(car.dir, car.s));
+      const step = Math.sign(lane - car.lane);
+      if (step && laneFree(car, car.lane + step, foes)) {
+        car.lane += step;
+        car.pendingLane = null;
+      }
+    }
   };
 
   // ---- cyclists (a level's "pelotons": see CONFIG.peloton) ----------------------------------------
@@ -1428,7 +1531,7 @@ export const Traffic = (() => {
         // often still; a wingman throws only at the cars about the player
         if (car.offended > 0) car.offended -= dt;
         const att = attitude(car);
-        if (car.evil && Player.active && !LEVEL.noPackages &&
+        if (car.evil && Player.active && !LEVEL.noPackages && !LEVEL.battle &&
             Math.abs(car.s - Player.s) < CONFIG.enemyThrowRange) {
           const A = CONFIG.attitude;
           car.throwTimer -= dt * (att === 'turf' ? A.turfThrowRate : att === 'rage' ? A.rageThrowRate : 1);
@@ -1530,6 +1633,7 @@ export const Traffic = (() => {
           car.think = 1 + Math.random() * 2;
           think(car);
         }
+        if (LEVEL.battle) battle(car, dt); // (at war: see battle)
 
         // hold back behind anything directly ahead (in this car's direction of travel)
         // (a racer in another's slipstream can go that much faster: see CONFIG.race)
@@ -1624,6 +1728,7 @@ export const Traffic = (() => {
         const nudging = car.racer && rival && !rival.isPlayer;
         for (const o of cars) {
           if (o === car || !o.active || (o === rival && !nudging) || o.junction) continue;
+          if (LEVEL.battle && o.dir !== car.dir) continue; // (on the Battlefield an enemy coming at it is no car to follow)
           const gap = (o.s - car.s) * car.dir;
           if (o === rival) {
             if (gap > 0 && gap < o.hl + car.hl + 6 && Math.abs(o.lat - car.lat) < o.hw + car.hw) target = Math.min(target, Math.abs(o.vs) + CONFIG.race.nudge);

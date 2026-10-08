@@ -2,7 +2,7 @@ import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
 import { clamp } from './util.js';
 import { Track } from './track.js';
-import { FxQueue, maybeSpinOut, startRivalry, hurt, sfx } from './physics.js';
+import { FxQueue, maybeSpinOut, startRivalry, hurt, sfx, sfxAt } from './physics.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -10,6 +10,7 @@ import { Targets } from './pickups.js';
 import { Game } from './game.js';
 import { Message } from './messages.js';
 import { Social } from './social.js';
+import { CAR } from './cars.js';
 
 // ============================================================================
 // PACKAGES - thrown at the nearest car ahead within range; each flies an arc in
@@ -18,9 +19,9 @@ import { Social } from './social.js';
 export const Packages = (() => {
   // kind: 'gift' (a Good player's care package), 'fire' (an Evil player's flaming one),
   // 'bomb' (an evil traffic car's, aimed at the road),
-  // 'shell' (the tank's cannon)
+  // 'shell' (the tank's cannon; or a gun's on the Battlefield, the player's 8x8's or an army's: p.gun)
   const list = [];
-  for (let i = 0; i < 16; i++) {
+  for (let i = 0; i < 64; i++) {
     list.push({ active: false, owner: null, kind: 'gift', s: 0, lat: 0, h: 0, endH: 0.6, arc: 0,
       vs: 0, vlat: 0, t: 0, flight: 1, yaw: 0, hw: 0.35, hl: 0.35 });
   }
@@ -49,6 +50,7 @@ export const Packages = (() => {
     p.vs = (aim.s + aim.vs * p.flight - p.s) / p.flight;
     p.vlat = (aim.lat + aim.latVel * p.flight - p.lat) / p.flight;
     p.from = p.to = null; // (see the cannon)
+    p.gun = null;         // (a Battlefield gun's shell: how hard it hits, see blast)
     p.active = true;
     return p;
   };
@@ -71,17 +73,18 @@ export const Packages = (() => {
     return best;
   };
   const throwOne = () => {
-    if (LEVEL.noPackages) return false; // (a level where nobody throws anything)
     if (!Player.active || Player.busted || cooldown > 0) return; // (no throwing while being busted)
     if (Player.butterfingers > 0) return; // (butterfingers: it slips through them)
-    if (Player.tank > 0) {
+    const gun = Player.tank > 0 ? null : CAR.cannon; // (the Battlefield's 8x8: a gun of its own, smaller)
+    if (LEVEL.noPackages && !gun) return false; // (a level where nobody throws anything)
+    if (Player.tank > 0 || gun) {
       // The cannon isn't aimed: the shell flies dead straight the way the tank is pointing, not
       // round a bend with the road, and lands cannonRange ahead of where the tank will be by
       // then. It is drawn flying between the two world points (from, to); where it lands is
       // that point's place on the road.
       const flight = 0.3, centre = {};
       const h = Track.toWorld(Player.s, Player.lat, centre) - Player.yaw; // (the way the nose points)
-      const reach = CONFIG.cannonRange + Player.speed * flight;
+      const reach = (gun ? gun.range : CONFIG.cannonRange) + Player.speed * flight;
       const to = { x: centre.x + Math.sin(h) * reach, z: centre.z + Math.cos(h) * reach };
       const land = Track.fromWorld(to.x, to.z, Player.s + reach);
       Track.toWorld(land.s, land.lat, to); // (and its height there)
@@ -90,7 +93,8 @@ export const Packages = (() => {
         p.from = {};
         Track.toWorld(p.s, p.lat, p.from); // (the muzzle)
         p.to = to;
-        cooldown = CONFIG.cannonCooldown;
+        p.gun = gun;
+        cooldown = gun ? gun.cooldown : CONFIG.cannonCooldown;
         sfx('cannon');
       }
       return;
@@ -103,6 +107,26 @@ export const Packages = (() => {
       sfx('throw');
     }
   };
+
+  // a Battlefield gun firing (an 8x8's or a tank's, gun: CONFIG.battle.guns): a shell flying straight from
+  // its muzzle to where the target will be, quickly
+  const fireShell = (car, target, gun) => {
+    const tv = target.isPlayer ? Player.speed : target.vs;
+    const far = Math.hypot(target.s - car.s, target.lat - car.lat), flight = Math.max(0.2, far / CONFIG.battle.shellSpeed);
+    const p = launch(car, { s: target.s, lat: target.lat, vs: tv, latVel: target.latVel || 0 }, 'shell', flight);
+    if (!p) return false;
+    p.gun = gun;
+    p.from = {};
+    Track.toWorld(p.s, p.lat, p.from);
+    p.from.y += car.height * 0.8;
+    p.to = {};
+    Track.toWorld(p.s + p.vs * flight, p.lat + p.vlat * flight, p.to);
+    sfxAt('cannon', car.s, 0.7);
+    return true;
+  };
+  // (on the Battlefield nobody's shell or package hurts its own side: an army's going the way it does,
+  // the player's going the player's way)
+  const sameSide = (v, owner) => LEVEL.battle && !!owner && (v.isPlayer ? 1 : v.dir) === (owner.isPlayer ? 1 : owner.dir);
 
   // an evil car's throw, aimed at the road where its victim will be (the splash does the
   // damage): near the player if the player has upset this driver (or, now and then, given it a gift), otherwise at
@@ -143,7 +167,7 @@ export const Packages = (() => {
   // an evil car's package going off on the road
   const splash = (p) => {
     for (const v of Collision.bodies) {
-      if (!v.active || v === p.owner || v.shield > 0 || v.tank > 0 || v.courier) continue; // (nor a rival courier)
+      if (!v.active || v === p.owner || v.shield > 0 || v.tank > 0 || v.courier || sameSide(v, p.owner)) continue; // (nor a rival courier)
       if (Math.hypot(v.s - p.s, v.lat - p.lat) > CONFIG.splashRadius) continue;
       hurt(v, CONFIG.splashDamage);
       if (v.isPlayer) {
@@ -164,21 +188,34 @@ export const Packages = (() => {
 
   // the cannon shell going off: destroys what it lands on, badly damages what is near
   // (it goes off with the lighter 'burst' sound, not a full explosion's)
+  // (a Battlefield gun's shell hits as its gun says, p.gun: a direct hit only destroys a vehicle outright
+  // if the gun's damage would; the rest of its splash, in proportion. Never its own side)
   const blast = (p) => {
+    const G = p.gun, direct = G ? G.direct : CONFIG.cannonDirectRadius, reach = G ? G.splash : CONFIG.cannonSplashRadius;
     for (const car of Traffic.cars) {
-      if (!car.active || car.courier) continue;
+      if (!car.active || car.courier || car === p.owner || sameSide(car, p.owner)) continue;
       const dist = Math.hypot(car.s - p.s, car.lat - p.lat);
-      if (dist < CONFIG.cannonDirectRadius + car.hl * 0.5) car.health = 0;
-      else if (dist < CONFIG.cannonSplashRadius) hurt(car, CONFIG.cannonSplashDamage, CONFIG.cannonCrit);
+      if (dist < direct + car.hl * 0.5) {
+        if (G) hurt(car, G.damage * 2, CONFIG.cannonCrit);
+        else car.health = 0;
+      } else if (dist < reach) hurt(car, G ? G.damage * (1 - dist / reach) : CONFIG.cannonSplashDamage, CONFIG.cannonCrit);
+      if (G && car.health <= 0 && p.owner === Player) car.wreckedByPlayer = true;
+    }
+    // (an army's shell, on the player: see CONFIG.battle.shellOnPlayer)
+    if (p.owner !== Player && Player.active && Player.shield <= 0 && Player.ghost <= 0 && !sameSide(Player, p.owner)) {
+      const dist = Math.hypot(Player.s - p.s, Player.lat - p.lat), S = CONFIG.battle.shellOnPlayer;
+      if (dist < direct + Player.hl * 0.5) hurt(Player, S.direct);
+      else if (dist < reach) hurt(Player, S.splash * (1 - dist / reach));
+      if (dist < reach) Game.shake = Math.max(Game.shake, 0.8);
     }
     for (const o of Collision.obstacles) {
-      if (o.gone || Math.hypot(o.s - p.s, o.lat - p.lat) > CONFIG.cannonSplashRadius) continue;
+      if (o.gone || Math.hypot(o.s - p.s, o.lat - p.lat) > reach) continue;
       o.gone = true;
       FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: 0, big: false });
     }
-    Game.shake = Math.max(Game.shake, 0.7);
+    if (p.owner === Player) Game.shake = Math.max(Game.shake, 0.7);
     FxQueue.push({ type: 'explode', s: p.s, lat: p.lat, vs: 0, big: true,
-      scale: CONFIG.cannonBlastScale, smoke: CONFIG.cannonSmoke, sound: 'burst' });
+      scale: G ? G.scale : CONFIG.cannonBlastScale, smoke: CONFIG.cannonSmoke, sound: 'burst' });
   };
 
   // a police car (not one turned into a toad in TOAD RAGE): it has reactions of its own
@@ -308,6 +345,6 @@ export const Packages = (() => {
   // the screensaver going round again: packages in the air move back a lap with the road
   const lap = (length) => { for (const p of list) if (p.active) p.s -= length; };
 
-  return { list, reset, update, lap, throwOne, throwAtGround,
+  return { list, reset, update, lap, throwOne, throwAtGround, fireShell,
     get ready() { return cooldown <= 0 && !Player.busted; } };
 })();

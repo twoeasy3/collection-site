@@ -21,6 +21,7 @@ import { makeWorker } from './render/siteModels.js';
 import { makeCarriage } from './render/trainModel.js';
 import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
+import { makePillbox } from './render/battleModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -393,6 +394,58 @@ const GROUPS = [
       const boat = MODELS.jetboat({ ...LEVEL_CARS.jetboat });
       const sea = mesh(new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2), lambert(0x1d7a96), 0, 0.15, 0);
       return { model: group(sea, boat), tick: (t) => boat.userData.animate?.(t) };
+    } },
+  ] },
+  { name: 'The Battlefield', cards: [
+    { name: 'Two armies', color: 0x3f7a2e, has: (l) => l.battle, rules: [
+      'Every lane runs both ways: your army (green) comes up the road with you, the enemy (red) comes down every lane at you.',
+      `Jeeps, 8x8s and tanks. Each goes after the other army: 8x8s and tanks turn their guns on the nearest enemy within ${CONFIG.battle.reach} m, jeeps lob packages.`,
+      'Each kind in its own shade: jeeps light, 8x8s mid, tanks dark.',
+      `They steer for head-ons with an enemy they beat (a tank beats an 8x8, an 8x8 a jeep), which tries to dodge ${pct(CONFIG.battle.dodge)} of the time. The winner loses ${pct(CONFIG.battle.win)} of its health; anything else (a jeep and a tank, two of a kind) wrecks both.`,
+    ], build: () => {
+      const g = road(13, 26), B = CONFIG.battle;
+      // (green's three, and red's coming the other way: each kind in its own shade)
+      const army = [['jeep', 'good', -3.6, 5], ['apc', 'good', -3.6, -2], ['armytank', 'good', -3.6, -9], ['jeep', 'evil', 3.6, -6], ['apc', 'evil', 3.6, 1], ['armytank', 'evil', 3.6, 8]].map(([model, side, x, z], k) => {
+        const kind = ['jeep', 'apc', 'tank'][k % 3], color = B.colors[side][kind];
+        const m = MODELS[model]({ ...CONFIG.vehicles[kind], color });
+        m.position.set(x, 0, z);
+        if (side === 'evil') m.rotation.y = Math.PI;
+        g.add(m);
+        return m;
+      });
+      return { model: g, tick: (t) => army.forEach((m, k) => m.userData.aim?.(Math.sin(t * 0.8 + k) * 0.8)) };
+    } },
+    { name: 'Your 8x8', color: 0x2a5420, has: (l) => l.car === 'apc', rules: [
+      `On the Battlefield you drive an 8x8, always in the green army: ${LEVEL_CARS.apc.health} health, heavy and slow to get going, its tyres run flat.`,
+      `The throw button fires its small gun dead ahead (${LEVEL_CARS.apc.cannon.range} m, every ${LEVEL_CARS.apc.cannon.cooldown} s): it can't be aimed. Enemy shells cost you ${CONFIG.battle.shellOnPlayer.direct} on a direct hit.`,
+      'You beat a jeep head-on (at half your health); a tank beats you; another 8x8 takes you both out.',
+    ], build: () => {
+      const m = MODELS.apc({ ...LEVEL_CARS.apc });
+      return { model: m };
+    } },
+    { name: 'Landmines', color: 0xff2a1a, has: (l) => l.landmines?.length, rules: [
+      'Mines scattered down the lanes, each with a red light flashing on top.',
+      '<strong>Touch one and you are destroyed outright</strong>, whatever you are driving (a ghost passes over), and the mine is gone. The traffic pays them no heed, and goes up the same way.',
+      'A shell landing near one sets it off.',
+    ], build: () => {
+      const g = road(9, 12), mines = [[-2, 3], [2, -1], [-1.5, -4]].map(([x, z]) => { const m = ob('landmine'); m.position.set(x, 0, z); g.add(m); return m; });
+      return { model: g, lift: 0.7, tick: (t) => mines.forEach((m, k) => {
+        const lit = ((t / CONFIG.battle.mineFlash.period + k * 0.33) % 1) < CONFIG.battle.mineFlash.on;
+        m.userData.light.color.setHex(lit ? 0xff2a1a : 0x3a0e0a);
+        m.userData.halo.material.opacity = lit ? 0.55 : 0;
+      }) };
+    } },
+    { name: 'Pillboxes', color: 0x9a2a22, has: (l) => l.pillboxes, rules: [
+      `Concrete pillboxes beside the road every ${CONFIG.battle.pillboxEvery} m, each side's in its colour, firing bursts at the other army as it passes (as the gang houses do in The Hood). The red ones fire at you.`,
+    ], build: () => {
+      const g = road(9, 10);
+      const red = makePillbox(-1), green = makePillbox(1);
+      red.position.set(-7.5, 0, -1);
+      red.rotation.y = Math.PI / 2;
+      green.position.set(7.5, 0, 2);
+      green.rotation.y = -Math.PI / 2;
+      g.add(red, green);
+      return { model: g };
     } },
   ] },
   { name: 'Gimmick Road', cards: [
