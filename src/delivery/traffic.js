@@ -1395,6 +1395,8 @@ export const Traffic = (() => {
       }
       const ahead = Track.along(car.s) - Track.along(Player.s); // along the course, whichever road
       if (car.fixed && !car.racer && ahead > CONFIG.spawnMax) continue; // still waiting where the level put it
+      // (a red one gone by goes up, by no one's hand: see CONFIG.battle.evilBehind)
+      if (LEVEL.battle && car.evil && car.health > 0 && ahead < -CONFIG.battle.evilBehind) Object.assign(car, { health: 0, wreckedByPlayer: false, hitBy: null });
       // (an emergency vehicle going the player's way starts out behind the player, and is gone
       // once it is well ahead; one coming the other way once it is behind)
       const gone = !car.emergency ? ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 150

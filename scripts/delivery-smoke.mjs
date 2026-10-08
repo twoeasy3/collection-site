@@ -1424,15 +1424,15 @@ try {
     fresh(); alone(); untake();
     Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1, launching: false, ghost: 9 });
     army('jeep', 1, 3, 615, 0.01); army('tank', 1, 1, 625, 0.01); // (green, nearer)
-    // (the one behind 25 m off, so as good as 50 m: the one 40 m ahead is nearer)
-    const redFar = army('apc', -1, 5, 640, 0.01), redBehind = army('jeep', -1, 4, 575, 0.01);
+    // (the one behind 15 m off, so as good as 30 m: the one 25 m ahead is nearer; and not so far behind it goes up)
+    const redFar = army('apc', -1, 5, 625, 0.01), redBehind = army('jeep', -1, 4, 585, 0.01);
     Packages.throwOne();
     const aimed = Packages.list.find(p => p.active && p.owner === Player);
     const turnedTo = Math.abs(Player.turret - Math.atan2(redFar.lat - Player.lat, redFar.s - Player.s)) < 0.01;
     const aimedAt = !!aimed && Math.abs(aimed.lat + aimed.vlat * aimed.flight - redFar.lat) < 1 && Math.abs(aimed.s + aimed.vs * aimed.flight - redFar.s) < 3;
     redFar.active = false;
     Packages.list.forEach(p => { p.active = false; });
-    const shotBehind = () => { for (let i = 0; i < 240; i++) { Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1 }); redBehind.s = 575; step(); if (Packages.list.some(p => p.active && p.owner === Player)) break; Packages.throwOne(); } return Packages.list.find(p => p.active && p.owner === Player); };
+    const shotBehind = () => { for (let i = 0; i < 240; i++) { Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1 }); redBehind.s = 585; step(); if (Packages.list.some(p => p.active && p.owner === Player)) break; Packages.throwOne(); } return Packages.list.find(p => p.active && p.owner === Player); };
     const back = shotBehind();
     const backAt = !!back && Math.abs(back.s + back.vs * back.flight - redBehind.s) < 4;
     // how many of its shells it takes to destroy each of the red army's vehicles, sat still 40 m ahead (crits vary it)
@@ -1459,6 +1459,39 @@ try {
     check(shell?.kind === 'shell' && shell.gun === cars.CAR.cannon && shells === 1 && aimedAt && turnedTo && backAt && Object.values(tally).every(c => c.every(Number.isFinite)),
       `the player's 8x8 fires a shell (${cars.CAR.cannon.range} m reach, ${cars.CAR.cannon.damage} damage) with the throw button, then must wait ${cars.CAR.cannon.cooldown} s: ` +
       `at the nearest red vehicle in reach, ahead or behind, past green ones nearer, its turret turned to it; shells to destroy a red jeep ${spread(tally.jeep)}, 8x8 ${spread(tally.apc)}, tank ${spread(tally.tank)}`);
+
+    // Big Splash: the 8x8's shell hits bigSplash.gun.damage times as hard, and its blast reaches bigSplash.gun.splash
+    // times as far, so it catches an enemy beside its target too
+    const splashShot = (boosted) => {
+      fresh(); alone(); untake();
+      Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1, launching: false, ghost: 9, bigSplash: boosted ? 5 : 0 });
+      const target = army('apc', -1, 2, 640, 0.01), beside = army('jeep', -1, 4, 640, 0.01); // (its neighbour two lanes over)
+      Gunfire.pillboxes.length = 0; // (only the shell hurting them)
+      Packages.throwOne();
+      let low = { target: target.health, beside: beside.health };
+      for (let i = 0; i < 120; i++) {
+        Object.assign(Player, { s: 600, speed: 0.1 });
+        for (const c of [target, beside]) { c.s = 640; c.vs = -0.01; c.wobble = 0; }
+        step();
+        low = { target: Math.min(low.target, target.active ? target.health : 0), beside: Math.min(low.beside, beside.active ? beside.health : 0) };
+      }
+      return { target: low.target <= 0 ? 'wrecked' : Math.round(low.target), beside: Math.round(Math.max(0, low.beside)), max: beside.maxHealth };
+    };
+    const plain = splashShot(false), big = splashShot(true);
+    check(plain.target !== 'wrecked' && big.target === 'wrecked' && big.beside < plain.beside - 20,
+      `Big Splash: one shell leaves a red 8x8 at ${plain.target} health and the jeep two lanes over at ${plain.beside} of ${plain.max}; ` +
+      `with Big Splash it wrecks the 8x8 and the jeep comes off at ${big.beside}`);
+
+    // red vehicles that have got evilBehind m past the player go up, by no one's hand (so they don't thin out the
+    // green army coming up behind)
+    fresh(); alone(); untake();
+    Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1, launching: false, ghost: 9 });
+    const justBy = army('jeep', -1, 5, 600 - B.evilBehind + 5, 10), longGone = army('tank', -1, 0, 600 - B.evilBehind - 5, 10), friend = army('apc', 1, 3, 600 - B.evilBehind - 10, 10);
+    step();
+    const goneNow = !longGone.active && !longGone.wreckedByPlayer, keptOn = justBy.active && friend.active;
+    for (let i = 0; i < 120 * 2 && justBy.active; i++) { Object.assign(Player, { s: 600, speed: 0.1 }); step(); }
+    check(goneNow && keptOn && !justBy.active,
+      `red vehicles ${B.evilBehind} m past the player go up there and then (not the player's doing); green ones carry on`);
 
     // broken tracks: a shell's blast can break a tank's track (here always), and it grinds to a halt in its lane and
     // stays there, its gun still firing; nothing but a blast does it (here: rammed by a green 8x8, never)

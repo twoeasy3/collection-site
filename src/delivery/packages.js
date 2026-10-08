@@ -96,11 +96,14 @@ export const Packages = (() => {
   const throwOne = () => {
     if (!Player.active || Player.busted || cooldown > 0) return; // (no throwing while being busted)
     if (Player.butterfingers > 0) return; // (butterfingers: it slips through them)
-    const gun = Player.tank > 0 ? null : CAR.cannon; // (the Battlefield's 8x8: a gun of its own, smaller)
+    let gun = Player.tank > 0 ? null : CAR.cannon; // (the Battlefield's 8x8: a gun of its own, smaller)
     if (LEVEL.noPackages && !gun) return false; // (a level where nobody throws anything)
     // the 8x8's gun picks its target as a package does (the nearest, one behind counting as throwBehind
     // times as far off), within its range, but never a vehicle of the green army; with none, it fires straight
     const foe = gun && gunTarget(gun);
+    // (Big Splash: the shell hits harder and its blast reaches further, catching the enemies about the target too)
+    const S = CONFIG.bigSplash.gun;
+    if (gun && Player.bigSplash > 0) gun = { ...gun, damage: gun.damage * S.damage, splash: gun.splash * S.splash, scale: gun.scale * S.scale };
     if (foe) {
       if (fireShell(Player, foe, gun)) {
         cooldown = gun.cooldown;
