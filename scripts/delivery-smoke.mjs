@@ -1244,7 +1244,11 @@ try {
       Game.start();
     };
     const step = (n = 1) => { for (let i = 0; i < n; i++) { Game.update(1 / 120); FxQueue.length = 0; } };
-    const alone = () => { for (const c of Traffic.cars) Object.assign(c, { active: false, unused: true }); };
+    // (and no landmines, but in the tests of them: a test's vehicles would run onto them)
+    const alone = (mines = false) => {
+      for (const c of Traffic.cars) Object.assign(c, { active: false, unused: true });
+      if (!mines) for (const o of Collision.obstacles) if (o.kind === 'landmine') o.gone = true;
+    };
     // one army vehicle of that kind, going dir in lane at s doing speed
     const army = (kind, dir, lane, s, speed = 10, extra = {}) => {
       const car = Traffic.cars.find(c => !c.active && c.unused && !c.taken);
@@ -1253,7 +1257,7 @@ try {
         procession: 0, emergency: false, parked: false, s, lane, lat: T().laneOffset(lane, s), vs: dir * speed, baseSpeed: speed, latVel: 0, yaw: 0, yawVel: 0,
         stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, think: 99, rival: null, pendingLane: null, evil: dir < 0, mood: 0, emotion: 'neutral',
         hesitant: false, tap: 0, hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health, maxHealth: type.health,
-        turret: 0, gunWait: 99, foe: null, dodging: null, dodges: false, pulledOver: false, shield: 0, ...extra });
+        turret: 0, gunWait: 99, foe: null, dodging: null, dodges: false, pulledOver: false, shield: 0, laneWait: 0, tracksBroken: false, punctured: false, ...extra });
       return car;
     };
     const untake = () => { for (const c of Traffic.cars) c.taken = false; };
@@ -1277,24 +1281,23 @@ try {
       cars.CAR.id === 'apc' && !Player.evil && Game.allowed === clockFor(levels.LEVEL, false) && Gunfire.pillboxes.length > 20,
       `the Battlefield loads: 6 lanes open both ways, the player in the 8x8 and in the green army, on Good's clock, even having picked Evil; ${Gunfire.pillboxes.length} pillboxes`);
     check(active.length > 10 && active.every(c => c.evil === (c.dir < 0) && c.colors?.[0] === B.colors[c.dir > 0 ? 'good' : 'evil'][c.kind]) &&
-      new Set(active.map(c => c.kind)).size === 3 && new Set(active.filter(c => c.dir < 0).map(c => c.lane)).size > 2,
+      active.every(c => ['jeep', 'apc', 'tank'].includes(c.kind)) && new Set(active.filter(c => c.dir < 0).map(c => c.lane)).size > 2,
       'its traffic is jeeps, 8x8s and tanks: going the player\'s way the green army (good), the other way the red (evil), each kind its own shade, the red army down every lane');
-    // the green army: those that turn up ahead hesitate (so the player catches them up); reinforcements come up from
-    // behind at its own pace, a little faster than the player
-    const GA = B.goodArmy, HS = CONFIG.hesitation, greens = active.filter(c => c.dir > 0);
-    const dawdling = greens.every(c => c.s > Player.s && c.hesitant && c.baseSpeed >= HS.pace.min && c.baseSpeed <= HS.pace.max);
-    const reinforcement = Traffic.cars.find(c => c.active && c.dir > 0);
-    Object.assign(Player, { speed: 30 });
-    reinforcement.active = false;
-    let fromBehind = null;
-    for (let k = 0; k < 40 && !fromBehind; k++) {
-      reinforcement.active = false;
+    // the green army: none of it starts out ahead of the player; it all comes up from behind, at its own pace,
+    // a little faster than the player, so as to come by
+    const GA = B.goodArmy, aheadAtStart = active.filter(c => c.dir > 0).length;
+    Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 30, ghost: 99 });
+    const arrivals = new Map();
+    for (let i = 0; i < 120 * 2; i++) {
+      Player.s += 30 / 120; Player.speed = 30;
       Traffic.update(1 / 120);
-      if (reinforcement.active && reinforcement.s < Player.s) fromBehind = { pace: reinforcement.baseSpeed, hesitant: reinforcement.hesitant };
+      FxQueue.length = 0;
+      for (const c of Traffic.cars) if (c.active && c.dir > 0 && !arrivals.has(c)) arrivals.set(c, { behind: c.s < Player.s, pace: c.baseSpeed });
     }
-    check(greens.length > 0 && dawdling && fromBehind && !fromBehind.hesitant && fromBehind.pace >= 30 + GA.overtake.min,
-      `the green army (${greens.length} of ${active.length} on the road): those turning up ahead hesitate (at ${HS.pace.min}-${HS.pace.max} m/s), ` +
-      `reinforcements from behind come by at ${fromBehind?.pace.toFixed(1)} m/s (the player doing 30)`);
+    const came = [...arrivals.values()];
+    check(aheadAtStart === 0 && came.length > 3 && came.every(a => a.behind && a.pace >= 30 + GA.overtake.min),
+      `the green army: none ahead at the start; ${came.length} came up from behind the player in 2 s, ` +
+      `at ${Math.min(...came.map(a => a.pace)).toFixed(1)}+ m/s (the player doing 30)`);
 
     // head-ons: a tank beats an 8x8 and an 8x8 a jeep, at half their health; a jeep and a tank, or two of a kind, both wrecked
     const meet = (north, south) => {
@@ -1380,6 +1383,7 @@ try {
 
     // tanks don't wander lanes on a whim (a free-for-all, the player held back out of it)
     fresh();
+    for (let k = 0; k < 10 && !Traffic.cars.some(c => c.active && c.kind === 'tank'); k++) fresh(); // (one with some tanks about)
     const tanks = Traffic.cars.filter(c => c.active && c.kind === 'tank');
     const lanesOf = new Map(tanks.map(c => [c, [c.lane, c.s]]));
     let wandered = 0;
@@ -1424,6 +1428,7 @@ try {
     const redFar = army('apc', -1, 5, 640, 0.01), redBehind = army('jeep', -1, 4, 575, 0.01);
     Packages.throwOne();
     const aimed = Packages.list.find(p => p.active && p.owner === Player);
+    const turnedTo = Math.abs(Player.turret - Math.atan2(redFar.lat - Player.lat, redFar.s - Player.s)) < 0.01;
     const aimedAt = !!aimed && Math.abs(aimed.lat + aimed.vlat * aimed.flight - redFar.lat) < 1 && Math.abs(aimed.s + aimed.vs * aimed.flight - redFar.s) < 3;
     redFar.active = false;
     Packages.list.forEach(p => { p.active = false; });
@@ -1451,9 +1456,9 @@ try {
     const tally = Object.fromEntries(['jeep', 'apc', 'tank'].map(k => [k, shotsFor(k)]));
     const spread = (c) => { const m = c[Math.floor(c.length / 2)]; return `${c[0]}-${c[c.length - 1]} (mostly ${m})`; };
     console.log('    shots to destroy: ' + Object.entries(tally).map(([k, c]) => `${k} ${c.join(',')}`).join('; '));
-    check(shell?.kind === 'shell' && shell.gun === cars.CAR.cannon && shells === 1 && aimedAt && backAt && Object.values(tally).every(c => c.every(Number.isFinite)),
+    check(shell?.kind === 'shell' && shell.gun === cars.CAR.cannon && shells === 1 && aimedAt && turnedTo && backAt && Object.values(tally).every(c => c.every(Number.isFinite)),
       `the player's 8x8 fires a shell (${cars.CAR.cannon.range} m reach, ${cars.CAR.cannon.damage} damage) with the throw button, then must wait ${cars.CAR.cannon.cooldown} s: ` +
-      `at the nearest red vehicle in reach, ahead or behind, past green ones nearer; shells to destroy a red jeep ${spread(tally.jeep)}, 8x8 ${spread(tally.apc)}, tank ${spread(tally.tank)}`);
+      `at the nearest red vehicle in reach, ahead or behind, past green ones nearer, its turret turned to it; shells to destroy a red jeep ${spread(tally.jeep)}, 8x8 ${spread(tally.apc)}, tank ${spread(tally.tank)}`);
 
     // broken tracks: a shell's blast can break a tank's track (here always), and it grinds to a halt in its lane and
     // stays there, its gun still firing; nothing but a blast does it (here: rammed by a green 8x8, never)
@@ -1483,9 +1488,10 @@ try {
       `broken tracks: a red tank whose track a shell breaks grinds to a halt in ${stoppedIn?.toFixed(2)} s and stays put in its lane, ` +
       `still firing (${lameShot.length} shots); a ram never breaks one (odds: ${Math.round(BT.direct * 100)}% on a direct hit, ${Math.round(BT.splash * 100)}% in the splash)`);
 
-    // landmines: down the lanes; whatever touches one (the player's car, a ghost aside, or traffic, which never
-    // steers round one) is destroyed outright, and the mine is gone
-    fresh(); alone(); untake();
+    // landmines: down the lanes, buried (harmless) until the player is mineRise.ahead off, when they pop up; whatever
+    // touches one then (the player's car, a ghost aside, or traffic, which never steers round one) is destroyed
+    // outright, and the mine is gone; a shell's blast never sets one off
+    fresh(); alone(true); untake();
     const mines = Collision.obstacles.filter(o => o.kind === 'landmine');
     const inLanes = mines.every(m => [0, 1, 2, 3, 4, 5].some(l => Math.abs(m.lat - T().laneOffset(l, m.s)) < 1e-6));
     const mine = mines[5];
@@ -1493,25 +1499,43 @@ try {
     let blown = false;
     for (let i = 0; i < 120 && !blown; i++) { step(); blown = !Player.active || Player.health <= 0; }
     const gone = mine.gone;
-    fresh(); alone(); untake();
+    fresh(); alone(true); untake();
     const mine2 = Collision.obstacles.filter(o => o.kind === 'landmine')[5];
     Object.assign(Player, { s: mine2.s - Player.hl - 2, lat: mine2.lat, speed: 10, launching: false, shield: 0, ghost: 5, latVel: 0, health: Player.maxHealth });
     for (let i = 0; i < 120; i++) step();
     const ghostOk = Player.active && Player.health === Player.maxHealth && !mine2.gone;
-    fresh(); alone(); untake();
+    fresh(); alone(true); untake();
     const mine3 = Collision.obstacles.filter(o => o.kind === 'landmine')[8];
     const lane3 = [0, 1, 2, 3, 4, 5].find(l => Math.abs(mine3.lat - T().laneOffset(l, mine3.s)) < 1e-6);
     const victim = army('tank', -1, lane3, mine3.s + 20, 12);
+    Gunfire.pillboxes.length = 0; // (nothing shooting at it on the way)
     let lowest = victim.health, drift = 0;
     for (let i = 0; i < 120 * 2.5 && lowest > 0; i++) { // (until it goes up)
-      hold(mine3.s - 300);
+      hold(mine3.s - 100);
+      Player.lat = T().laneOffset((lane3 + 3) % 6, Player.s); // (out of its way)
       step();
       if (victim.active) drift = Math.max(drift, Math.abs(victim.lat - mine3.lat));
       lowest = Math.min(lowest, victim.active ? victim.health : 0);
     }
-    check(mines.length === 45 && inLanes && blown && gone && ghostOk && lowest <= 0 && mine3.gone && drift < 0.2,
-      `landmines: ${mines.length} down the lanes; the player's car driving onto one is destroyed and the mine gone, a ghost passes over; ` +
-      `a tank drives straight onto one (${drift.toFixed(2)} m off its line) and is destroyed, the mine with it`);
+    const mine3Gone = mine3.gone; // (before the mines are laid again)
+    // (buried: a tank drives over one with the player far off, and the mine is still there; once up, a shell
+    // bursting on it leaves it be)
+    fresh(); alone(true); untake();
+    const MR = B.mineRise, mine4 = Collision.obstacles.filter(o => o.kind === 'landmine')[12];
+    const lane4 = [0, 1, 2, 3, 4, 5].find(l => Math.abs(mine4.lat - T().laneOffset(l, mine4.s)) < 1e-6);
+    const crosser = army('tank', -1, lane4, mine4.s + 15, 12);
+    let crossedLow = crosser.health;
+    for (let i = 0; i < 120 * 2.5; i++) { hold(mine4.s - MR.ahead - 200); step(); crossedLow = Math.min(crossedLow, crosser.active ? crosser.health : 0); }
+    const stillBuried = mine4.buried && !mine4.gone && crossedLow > 0;
+    for (let i = 0; i < 120; i++) { hold(mine4.s - MR.ahead + 10); step(); }
+    const popped = !mine4.buried && mine4.rise === 1;
+    Packages.list.forEach(p => { p.active = false; });
+    const mineShot = Packages.fireShell({ s: mine4.s - 40, lat: mine4.lat, dir: 1, hl: 1, height: 2 }, { s: mine4.s, lat: mine4.lat, vs: 0, latVel: 0 }, B.guns.tank);
+    for (let i = 0; i < 120; i++) { hold(mine4.s - MR.ahead + 10); step(); }
+    const survived = mineShot && !mine4.gone;
+    check(mines.length === 70 && inLanes && blown && gone && ghostOk && lowest <= 0 && mine3Gone && drift < 0.2 && stillBuried && popped && survived,
+      `landmines: ${mines.length} down the lanes, buried until the player is ${MR.ahead} m off, then popping up; the player's car driving onto one is destroyed and the mine gone, a ghost passes over; ` +
+      `a tank drives straight onto one (${drift.toFixed(2)} m off its line) and is destroyed, the mine with it, but over a buried one unharmed; a shell bursting on one leaves it be`);
 
     // pillboxes fire only at the other army: a red one at the player and the green army, a green one at the red
     fresh(); alone(); untake();

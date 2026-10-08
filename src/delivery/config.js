@@ -884,11 +884,10 @@ export const CONFIG = {
     look: 55,              // ...and a vehicle looks out for one coming at it
     tank: { hunt: 35, laneWait: { min: 7, max: 11 } }, // a tank lumbers: it hunts only this close, and waits this
                            // long (s) between lane changes of its own (hunting, dodging); none on a whim
-    goodArmy: { pace: { min: 24, max: 34 }, tankPace: 0.85, fromBehind: 0.5, overtake: { min: 2, max: 6 } },
-                           // the green army advances with the player: its pace (m/s; a tank's this share of it; one that turns
-                           // up ahead of the player hesitates, as CONFIG.hesitation, whatever the level says), the share
-                           // of its reinforcements that come up from behind the player (as CONFIG.hesitation.behind) rather
-                           // than far ahead, and how much (m/s) faster than the player those come, so as to come by
+    goodArmy: { pace: { min: 24, max: 34 }, tankPace: 0.85, overtake: { min: 2, max: 6 } },
+                           // the green army advances with the player: its pace (m/s; a tank's this share of it). All of it
+                           // comes up from behind the player (as CONFIG.hesitation.behind), this much (m/s) faster than the
+                           // player, so as to come by
     evilPace: 0.6,         // the red army goes at this share of its usual pace (as CONFIG.vehicles' speed): slower
                            // coming at the player, so there is longer to shoot at it
     goodFire: { reach: 90, behind: 30, rate: 0.6 }, // the green army's override: it fires on any red within reach
@@ -905,6 +904,8 @@ export const CONFIG = {
     shellOnPlayer: { direct: 50, splash: 20 }, // health an enemy shell costs the player: a direct hit, or near it
     pillboxEvery: 130,     // m between pillboxes, on each side
     mineFlash: { period: 0.9, on: 0.35 }, // s a landmine's light takes to flash round, and the share of it lit
+    mineRise: { ahead: 120, time: 0.4 }, // a landmine lies buried (harmless, unseen) until the player is this many m
+                           // from it, then pops up out of the dirt over this many s
     pillboxOut: 10,        // m off the road's edge...
     pillboxScale: 1.8,     // ...each this much bigger than its model (a bunker the size of a small house)
     // airstrikes: only a sight (render/battle.js). Every `every` s a pair of jets comes over from behind the

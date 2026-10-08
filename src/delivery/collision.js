@@ -310,7 +310,7 @@ export const Collision = (() => {
       for (let i = 0; i < z.count; i++) {
         const s = Track.place({ s: z.from + (z.to - z.from) * (i + mineRand()) / z.count });
         const [first, last] = Track.laneRange(1, s), lane = first + Math.floor(mineRand() * (last - first + 1));
-        add('landmine', s, Track.laneOffset(lane, s), { phase: mineRand() });
+        add('landmine', s, Track.laneOffset(lane, s), { phase: mineRand(), buried: true, rise: 0 }); // (see CONFIG.battle.mineRise)
       }
     }
     // pelotons: cyclists two abreast along the kerb of the player's side, waiting to set off
@@ -528,6 +528,12 @@ export const Collision = (() => {
   const updateObstacles = (dt) => {
     for (const o of obstacles) {
       if (o.gone) continue;
+      if (o.kind === 'landmine') { // (buried until the player is near, then popping up out of the dirt)
+        const R = CONFIG.battle.mineRise;
+        if (o.buried && (o.s - Player.s) * Player.dir < R.ahead) o.buried = false;
+        if (!o.buried) o.rise = Math.min(1, o.rise + dt / R.time);
+        continue;
+      }
       if (o.kind === 'frog') {
         if (o.t < 1) { // mid-hop
           o.t = Math.min(1, o.t + dt / CONFIG.frogHopTime);
@@ -630,7 +636,7 @@ export const Collision = (() => {
   // destroyed outright, as the player's car is, and the mine with it
   const trafficMines = () => {
     for (const o of obstacles) {
-      if (o.gone || o.kind !== 'landmine') continue;
+      if (o.gone || o.kind !== 'landmine' || o.buried) continue;
       for (const car of Traffic.cars) {
         if (!car.active || car.junction || car.health <= 0 || Math.abs(car.s - o.s) > car.hl + o.hl || !overlap(car, o)) continue;
         car.health = 0;
@@ -650,6 +656,7 @@ export const Collision = (() => {
       if (o.kind === 'asteroid' && !atRoadLevel(o)) continue; // it passes over or under the car
       if ((o.kind === 'dropBear' || o.kind === 'rock') && o.h > Player.height) continue; // (still up in its tree, or falling)
       if (o.dance && o.h > Player.height) continue; // (a portaloo up in the air: the car goes underneath)
+      if (o.buried) continue; // (a landmine not yet up out of the dirt)
       if (!overlap(Player, o)) continue;
       if (o.kind === 'landmine') { // (a landmine: the car is destroyed outright, whatever it is, and the mine is gone)
         o.gone = true;

@@ -133,8 +133,7 @@ export const Traffic = (() => {
     car.active = false;
     for (let tries = 0; tries < 5; tries++) {
       if (!placeAt(car, minAhead + Math.random() * (maxAhead - minAhead))) continue;
-      // (on the Battlefield, the green army's all do, so the player can catch them up: see CONFIG.battle.goodArmy)
-      if ((LEVEL.battle && car.dir > 0 || hesitation() && car.dir === Player.dir && car.baseSpeed > H.above) && !CONFIG.vehicles[car.kind].cruise) {
+      if (hesitation() && car.dir === Player.dir && car.baseSpeed > H.above && !CONFIG.vehicles[car.kind].cruise) {
         car.hesitant = true;
         car.baseSpeed = between(H.pace);
         car.vs = car.dir * car.baseSpeed;
@@ -1345,7 +1344,8 @@ export const Traffic = (() => {
     nextProcession = LEVEL.processions ? between(LEVEL.processions.every) : Infinity;
     if (!mix().length) return; // otherwise an empty road
     // (when everything is oncoming, the first of it starts further off)
-    for (const car of cars) if (!car.active && !car.unused) spawn(car, Track.flow === 'south' ? 200 : 60, CONFIG.spawnMax);
+    // (the Battlefield's green army never starts out ahead: it all comes up from behind the player, see update)
+    for (const car of cars) if (!car.active && !car.unused && !(LEVEL.battle && car.dir > 0)) spawn(car, Track.flow === 'south' ? 200 : 60, CONFIG.spawnMax);
   };
 
   const update = (dt) => {
@@ -1382,8 +1382,9 @@ export const Traffic = (() => {
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
         if (!car.fixed && !car.unused && mix().length) {
-          const behind = hesitation() && car.dir === Player.dir && Math.random() < H.behindChance && hesitantAhead() ||
-            LEVEL.battle && car.dir > 0 && Math.random() < CONFIG.battle.goodArmy.fromBehind; // (green reinforcements, coming up behind the player)
+          // (the Battlefield's green army: only ever from behind the player, coming by; with no room there yet, later)
+          if (LEVEL.battle && car.dir > 0) { spawnBehind(car); continue; }
+          const behind = hesitation() && car.dir === Player.dir && Math.random() < H.behindChance && hesitantAhead();
           if (!(behind && spawnBehind(car))) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
         }
         continue;
