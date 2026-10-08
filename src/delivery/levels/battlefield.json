@@ -7,7 +7,7 @@
   "flow": "mixed",
   "battle": true,
   "pillboxes": true,
-  "landmines": [{ "from": 350, "to": 4400, "count": 45 }],
+  "landmines": [{ "from": 350, "to": 4400, "count": 70 }],
   "car": "apc",
   "theme": "battlefield",
   "shoulderTimer": false,
@@ -26,11 +26,21 @@
     { "length": 800, "curve": 0 }
   ],
   "pickups": [
-    { "type": "wrench", "s": 900, "lane": 2 },
-    { "type": "armour", "s": 1700, "lane": 3 },
-    { "type": "wrench", "s": 2600, "lane": 1 },
-    { "type": "turbo", "s": 3300, "lane": 4 },
-    { "type": "wrench", "s": 4000, "lane": 2 }
+    { "type": "wrench", "s": 550, "lane": 2 },
+    { "type": "armour", "s": 850, "lane": 3 },
+    { "type": "wrench", "s": 1150, "lane": 1 },
+    { "type": "bigSplash", "s": 1300, "lane": 4 },
+    { "type": "armour", "s": 1450, "lane": 4 },
+    { "type": "wrench", "s": 1750, "lane": 0 },
+    { "type": "armour", "s": 2050, "lane": 5 },
+    { "type": "wrench", "s": 2350, "lane": 2 },
+    { "type": "armour", "s": 2650, "lane": 3 },
+    { "type": "wrench", "s": 2950, "lane": 1 },
+    { "type": "turbo", "s": 3250, "lane": 4 },
+    { "type": "bigSplash", "s": 3400, "lane": 0 },
+    { "type": "wrench", "s": 3550, "lane": 2 },
+    { "type": "armour", "s": 3850, "lane": 3 },
+    { "type": "wrench", "s": 4150, "lane": 1 }
   ],
   "targets": []
 }

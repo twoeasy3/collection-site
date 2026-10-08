@@ -101,7 +101,8 @@ export const Gunfire = {
     } else {
       hurt(v, G.damage);
       v.showMood = true;
-      if (!v.courier && !v.racer && !CONFIG.vehicles[v.kind]?.noWheels && Math.random() < G.puncture) v.punctured = true; // (nothing without tyres)
+      // (nothing without tyres; a tank's tracks only a blast breaks: see CONFIG.brokenTracks)
+      if (!v.courier && !v.racer && !CONFIG.vehicles[v.kind]?.noWheels && v.kind !== 'tank' && Math.random() < G.puncture) v.punctured = true;
     }
     return true;
   },

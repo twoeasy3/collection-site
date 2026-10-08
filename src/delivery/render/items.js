@@ -317,6 +317,9 @@ export const syncPickups = (dt) => {
       const F = CONFIG.battle.mineFlash, lit = ((performance.now() / 1000 / F.period + o.phase) % 1) < F.on;
       mesh.userData.light.color.setHex(lit ? 0xff2a1a : 0x3a0e0a);
       mesh.userData.halo.material.opacity = lit ? 0.55 : 0;
+      mesh.visible = !o.buried; // (buried until the player is near, then popping up: see CONFIG.battle.mineRise)
+      const up = 1 - (1 - o.rise) * (1 - o.rise);
+      mesh.position.y = tmp.y - 0.5 * (1 - up) + Math.sin(up * Math.PI) * 0.25;
     }
     if (o.camera !== undefined) mesh.userData.lamp.color.setHex(SpeedCameras.list[o.camera]?.flash > 0 ? 0xffffff : 0x555a60); // (a speed camera flashing)
     if (o.drift && mesh.userData.roller) { // a bale on the move rolls the way it is going
@@ -354,6 +357,7 @@ export const syncPickups = (dt) => {
     custom.userData.animate(performance.now() / 1000);
     paintOf(custom.userData.body).color.setHex(livery);
     custom.userData.livery?.(Player.evil);
+    custom.userData.aim?.(Player.turret || 0); // (the 8x8's gun, turned to its target: see Packages)
   }
   const standard = !tank && !ufo && !custom;
   carMesh.userData.body.visible = carMesh.userData.cabin.visible = standard;

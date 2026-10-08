@@ -398,9 +398,10 @@ const GROUPS = [
   ] },
   { name: 'The Battlefield', cards: [
     { name: 'Two armies', color: 0x3f7a2e, has: (l) => l.battle, rules: [
-      'Every lane runs both ways: your army (green) comes up the road with you, the enemy (red) comes down every lane at you.',
+      'Every lane runs both ways: your army (green) comes up the road from behind you and on by, the enemy (red) comes slowly down every lane at you.',
       `Jeeps, 8x8s and tanks. Each goes after the other army: 8x8s and tanks turn their guns on the nearest enemy within ${CONFIG.battle.reach} m (the green army's on any red within ${CONFIG.battle.goodFire.reach} m, even behind), jeeps lob packages.`,
       'Each kind in its own shade: jeeps light, 8x8s mid, tanks dark.',
+      `A red vehicle that gets ${CONFIG.battle.evilBehind} m past you blows up, so it never thins out the green army coming up behind.`,
       `They steer for head-ons with an enemy they beat (a tank beats an 8x8, an 8x8 a jeep), which tries to dodge ${pct(CONFIG.battle.dodge)} of the time. The winner loses ${pct(CONFIG.battle.win)} of its health; anything else (a jeep and a tank, two of a kind) wrecks both.`,
     ], build: () => {
       const g = road(13, 26), B = CONFIG.battle;
@@ -417,16 +418,17 @@ const GROUPS = [
     } },
     { name: 'Your 8x8', color: 0x2a5420, has: (l) => l.car === 'apc', rules: [
       `On the Battlefield you drive an 8x8, always in the green army: ${LEVEL_CARS.apc.health} health, heavy and slow to get going, its tyres run flat.`,
-      `The throw button fires its small gun (every ${LEVEL_CARS.apc.cannon.cooldown} s) at the nearest red vehicle within ${LEVEL_CARS.apc.cannon.range} m, as a package is aimed, never at your own side; with none in reach, dead ahead. A red jeep takes one shell, an 8x8 two, a tank four (tanks take no critical hits). A blast can break a tank's track: it grinds to a halt where it is, its gun still firing. Enemy shells cost you ${CONFIG.battle.shellOnPlayer.direct} on a direct hit.`,
+      `The throw button fires its small gun (every ${LEVEL_CARS.apc.cannon.cooldown} s) at the nearest red vehicle within ${LEVEL_CARS.apc.cannon.range} m, as a package is aimed, never at your own side; its turret turns to whatever it would fire at; with none in reach, dead ahead. A red jeep takes one shell, an 8x8 two, a tank four (tanks take no critical hits). A blast can break a tank's track: it grinds to a halt where it is, its gun still firing. Enemy shells cost you ${CONFIG.battle.shellOnPlayer.direct} on a direct hit.`,
+      `Big Splash: ${CONFIG.bigSplash.gun.damage}x your shells' damage, and their blast reaches ${CONFIG.bigSplash.gun.splash}x as far, catching the enemies about your target.`,
       'You beat a jeep head-on (at half your health); a tank beats you; another 8x8 takes you both out.',
     ], build: () => {
       const m = MODELS.apc({ ...LEVEL_CARS.apc });
       return { model: m };
     } },
     { name: 'Landmines', color: 0xff2a1a, has: (l) => l.landmines?.length, rules: [
-      'Mines scattered down the lanes, each with a red light flashing on top.',
+      `Mines scattered down the lanes, each with a red light flashing on top. Each lies buried until you are ${CONFIG.battle.mineRise.ahead} m off, then pops up out of the dirt.`,
       '<strong>Touch one and you are destroyed outright</strong>, whatever you are driving (a ghost passes over), and the mine is gone. The traffic pays them no heed, and goes up the same way.',
-      'A shell landing near one sets it off.',
+      'Shells and blasts never set one off: only driving onto it.',
     ], build: () => {
       const g = road(9, 12), mines = [[-2, 3], [2, -1], [-1.5, -4]].map(([x, z]) => { const m = ob('landmine'); m.position.set(x, 0, z); g.add(m); return m; });
       return { model: g, lift: 0.7, tick: (t) => mines.forEach((m, k) => {

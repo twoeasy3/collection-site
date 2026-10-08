@@ -31,6 +31,18 @@ export const Packages = (() => {
   const reset = () => {
     cooldown = 0;
     for (const p of list) p.active = false;
+    Player.turret = 0;
+    Player.gunTarget = null;
+  };
+  // the way the player's 8x8's gun is turned (rad from straight ahead, + = to its right): to the target it would
+  // fire at (see gunTarget), turning at twice an army turret's rate, or back to straight ahead with none
+  const aimTurret = (dt) => {
+    const gun = Player.tank > 0 ? null : CAR.cannon;
+    const foe = gun && Player.active ? gunTarget(gun) : null;
+    Player.gunTarget = foe;
+    const want = foe ? Math.atan2(foe.lat - Player.lat, foe.s - Player.s) : 0;
+    const turn = 2 * CONFIG.battle.turn * dt, now = Player.turret || 0;
+    Player.turret = now + clamp(Math.atan2(Math.sin(want - now), Math.cos(want - now)), -turn, turn);
   };
 
   // aim is a point { s, lat, vs, latVel }; the throw leads it by the flight time
@@ -84,13 +96,19 @@ export const Packages = (() => {
   const throwOne = () => {
     if (!Player.active || Player.busted || cooldown > 0) return; // (no throwing while being busted)
     if (Player.butterfingers > 0) return; // (butterfingers: it slips through them)
-    const gun = Player.tank > 0 ? null : CAR.cannon; // (the Battlefield's 8x8: a gun of its own, smaller)
+    let gun = Player.tank > 0 ? null : CAR.cannon; // (the Battlefield's 8x8: a gun of its own, smaller)
     if (LEVEL.noPackages && !gun) return false; // (a level where nobody throws anything)
     // the 8x8's gun picks its target as a package does (the nearest, one behind counting as throwBehind
     // times as far off), within its range, but never a vehicle of the green army; with none, it fires straight
     const foe = gun && gunTarget(gun);
+    // (Big Splash: the shell hits harder and its blast reaches further, catching the enemies about the target too)
+    const S = CONFIG.bigSplash.gun;
+    if (gun && Player.bigSplash > 0) gun = { ...gun, damage: gun.damage * S.damage, splash: gun.splash * S.splash, scale: gun.scale * S.scale };
     if (foe) {
-      if (fireShell(Player, foe, gun)) cooldown = gun.cooldown;
+      if (fireShell(Player, foe, gun)) {
+        cooldown = gun.cooldown;
+        Player.turret = Math.atan2(foe.lat - Player.lat, foe.s - Player.s); // (it fires where it points)
+      }
       return;
     }
     if (Player.tank > 0 || gun) {
@@ -237,7 +255,7 @@ export const Packages = (() => {
       if (dist < reach) Game.shake = Math.max(Game.shake, 0.8);
     }
     for (const o of Collision.obstacles) {
-      if (o.gone || Math.hypot(o.s - p.s, o.lat - p.lat) > reach) continue;
+      if (o.gone || o.kind === 'landmine' || Math.hypot(o.s - p.s, o.lat - p.lat) > reach) continue; // (a blast sets off no landmine)
       o.gone = true;
       FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: 0, big: false });
     }
@@ -311,6 +329,7 @@ export const Packages = (() => {
   };
   const update = (dt) => {
     cooldown = Math.max(0, cooldown - dt);
+    aimTurret(dt);
     // a boosted gift's pelting of an evil driver, a point of damage at a time (see deliver)
     for (const car of Traffic.cars) {
       if (!(car.pelts > 0)) continue;
