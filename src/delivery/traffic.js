@@ -281,10 +281,9 @@ export const Traffic = (() => {
       car.dodging = null; // the hunter it has decided about getting out of the way of...
       car.dodges = false; // ...and whether it does
       car.laneWait = 0;   // s before a tank may change lanes again (see battle)
-      if (!car.evil) { // (the green army keeps up with the player: see CONFIG.battle.goodArmy)
-        car.baseSpeed = between(B.goodArmy.pace) * (kind === 'tank' ? B.goodArmy.tankPace : 1);
-        car.vs = car.dir * car.baseSpeed;
-      }
+      // (the green army keeps up with the player: see CONFIG.battle.goodArmy; the red comes on slowly)
+      car.baseSpeed = car.evil ? car.baseSpeed * B.evilPace : between(B.goodArmy.pace) * (kind === 'tank' ? B.goodArmy.tankPace : 1);
+      car.vs = car.dir * car.baseSpeed;
     }
     car.wobble = 0;     // s left of wobbling after a critical hit, before it spins out
     car.spin = 0;       // s left of an uncontrolled spin, which ends in an explosion

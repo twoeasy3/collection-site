@@ -889,6 +889,8 @@ export const CONFIG = {
                            // up ahead of the player hesitates, as CONFIG.hesitation, whatever the level says), the share
                            // of its reinforcements that come up from behind the player (as CONFIG.hesitation.behind) rather
                            // than far ahead, and how much (m/s) faster than the player those come, so as to come by
+    evilPace: 0.6,         // the red army goes at this share of its usual pace (as CONFIG.vehicles' speed): slower
+                           // coming at the player, so there is longer to shoot at it
     goodFire: { reach: 90, behind: 30, rate: 0.6 }, // the green army's override: it fires on any red within reach
                            // (m ahead, or behind), its turret snapping straight to it, rate times as long between shots
     reach: 70,             // m a gun reaches (the player's 8x8's: CAR.cannon)
