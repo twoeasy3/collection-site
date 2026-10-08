@@ -122,9 +122,10 @@ try {
       Collision.check();
       FxQueue.length = 0;
       const cost = CONFIG.obstacleKinds[kind];
-      const damage = kind === 'asteroid' ? Math.min(cost.maxDamage, cost.damage * o.r) : cost.damage;
+      // (a landmine destroys the car outright, whatever its health)
+      const damage = kind === 'landmine' ? Player.maxHealth : kind === 'asteroid' ? Math.min(cost.maxDamage, cost.damage * o.r) : cost.damage;
       check(o.gone && Math.abs(Player.health - (Player.maxHealth - damage)) < 1e-6,
-        `hitting a ${kind} destroys it and costs ${damage.toFixed(0)} health`);
+        `hitting a ${kind} destroys it and costs ${kind === 'landmine' ? 'all its' : damage.toFixed(0)} health`);
     }
 
     if (kinds.includes('asteroid')) {
@@ -454,14 +455,15 @@ try {
       for (const c of Traffic.cars) {
         if (!c.active) continue;
         live++;
-        if (c.bound !== L.flow || (c.dir > 0) !== (L.flow === 'north')) wrongWay++;
+        // ('mixed', the Battlefield: both ways, each tagged by the way it goes)
+        if (L.flow === 'mixed' ? c.bound !== (c.dir > 0 ? 'north' : 'south') : c.bound !== L.flow || (c.dir > 0) !== (L.flow === 'north')) wrongWay++;
         if (track.Track.isMain(c.s)) lanes.add(c.lane);
       }
     }
     const T = track.Track;
     const inPlay = (L.trafficCount ?? CONFIG.trafficCount) + (L.oncomingCount ?? CONFIG.oncomingCount);
     if (L.flow) check(live > inPlay * 10 * 0.5 && wrongWay === 0 && lanes.size === T.laneCount && T.flow === L.flow,
-      `${L.name}: every vehicle is ${L.flow}bound (${live} seen over 10 starts), and they use all ${T.laneCount} lanes`);
+      `${L.name}: every vehicle is ${L.flow === 'mixed' ? 'tagged by the way it goes, both ways in every lane' : L.flow + 'bound'} (${live} seen over 10 starts), and they use all ${T.laneCount} lanes`);
     if (!L.shoulderRows) continue;
     const rows = Collision.obstacles.filter(o => !o.drift && (o.kind === 'cone' || o.kind === 'sign'));
     const kind = rows[0].kind, cost = CONFIG.obstacleKinds[kind];
@@ -501,6 +503,8 @@ try {
   section('police');
   {
     const meet = (label, place, want) => {
+      levels.selectLevel(0); // (the Expressway, in the Commuter: whatever level the sections before left picked)
+      cars.selectCar('commuter');
       Game.evil = false;
       Game.start();
       for (const c of Traffic.cars) c.active = false;
@@ -1268,9 +1272,10 @@ try {
 
     fresh(true);
     const active = Traffic.cars.filter(c => c.active);
+    const { clockFor } = await load('/src/delivery/game.js');
     check(T().problems.length === 0 && T().flow === 'mixed' && T().laneRange(1, 100).join() === '0,5' && T().laneRange(-1, 100).join() === '0,5' &&
-      cars.CAR.id === 'apc' && !Player.evil && Gunfire.pillboxes.length > 20,
-      `the Battlefield loads: 6 lanes open both ways, the player in the 8x8 and in the green army even having picked Evil, ${Gunfire.pillboxes.length} pillboxes`);
+      cars.CAR.id === 'apc' && !Player.evil && Game.allowed === clockFor(levels.LEVEL, false) && Gunfire.pillboxes.length > 20,
+      `the Battlefield loads: 6 lanes open both ways, the player in the 8x8 and in the green army, on Good's clock, even having picked Evil; ${Gunfire.pillboxes.length} pillboxes`);
     check(active.length > 10 && active.every(c => c.evil === (c.dir < 0) && c.colors?.[0] === B.colors[c.dir > 0 ? 'good' : 'evil'][c.kind]) &&
       new Set(active.map(c => c.kind)).size === 3 && new Set(active.filter(c => c.dir < 0).map(c => c.lane)).size > 2,
       'its traffic is jeeps, 8x8s and tanks: going the player\'s way the green army (good), the other way the red (evil), each kind its own shade, the red army down every lane');
