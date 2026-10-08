@@ -14,11 +14,18 @@ import { Game } from './game.js';
 import { Social } from './social.js';
 
 // how hard a car is pushed to the outside of the bend it is in, beyond what its tyres hold (m/s^2,
-// signed: a bend to the right pushes it left); 0 within their grip (see CONFIG.ice)
+// signed: a bend to the right pushes it left); 0 within their grip, and 0 where the car doesn't
+// understeer at all but slows for the bend instead (see CONFIG.cornering)
 const understeer = (v) => {
-  const bend = Track.bend(v.s), asked = v.speed * v.speed * Math.abs(bend);
-  const hard = LEVEL.understeer && !v.onIce ? CONFIG.race.understeer : 1; // (in a race, far harder: see CONFIG.race)
-  return -Math.sign(bend) * Math.max(0, asked * v.weight / v.agility - CONFIG.ice.grip) * CONFIG.ice.understeer * hard;
+  const bend = Track.bend(v.s), asked = v.speed * v.speed * Math.abs(bend) * v.weight / v.agility;
+  let grip, hard = 1;
+  if (LEVEL.understeer) { // a race: everywhere, and far harder off the ice (see CONFIG.race)
+    grip = CONFIG.ice.grip;
+    if (!v.onIce) hard = CONFIG.race.understeer;
+  } else if (v.onIce) grip = CONFIG.ice.grip; // on ice (see CONFIG.ice)
+  else if (v.mystery === 'noBrakes') grip = CONFIG.cornering.grip; // no brakes: past the bend's limit (see CONFIG.mystery.noBrakes)
+  else return 0;
+  return -Math.sign(bend) * Math.max(0, asked - grip) * CONFIG.ice.understeer * hard;
 };
 
 export const Player = {
@@ -279,7 +286,9 @@ export const Player = {
       this.brakeLight = this.speed > 0;
       return;
     }
-    if (this.mystery === 'noBrakes') throttle = Math.max(0, throttle); // (and no braking by itself, below)
+    // no brakes: braking only lifts off (it coasts down: see CONFIG.mystery.noBrakes), and no braking by itself, below
+    const lifting = this.mystery === 'noBrakes' && throttle < 0;
+    if (this.mystery === 'noBrakes') throttle = Math.max(0, throttle);
     if (this.busted) { // caught: the police slow the car to a crawl, it keeps rolling (no throttle or brake)
       this.speed = Math.max(Math.min(this.speed, CONFIG.policeCrawlSpeed), this.speed - CONFIG.brake * dt);
       this.brakeLight = true;
@@ -316,8 +325,8 @@ export const Player = {
       if (crossing < 1) Game.shake = Math.max(Game.shake, 0.25 * (1 - crossing));
     }
     // in a bend, a lower top speed: the sharper, and the heavier and less agile the car, the lower
-    // (but not on ice, nor where cars understeer: there they slide wide instead)
-    if (!this.onIce && !LEVEL.understeer) top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility));
+    // (but not on ice, nor where cars understeer, nor with no brakes: there they slide wide instead)
+    if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility));
     // in mud, slowed just as on a railway track (see CONFIG.mud)
     const mud = Track.muddy(this.s);
     if (mud) {
@@ -331,7 +340,7 @@ export const Player = {
     const grip = this.onIce ? CONFIG.ice.brakeGrip : 1; // (braking on ice)
     // (but with a flat tyre, not: the car can be brought to a stop to change it, and stays there)
     if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed) && !this.puncture) drive = 1;
-    if (drive === 0 && boosted) drive = 1; // the turbo pulls unless you brake
+    if (drive === 0 && boosted && !lifting) drive = 1; // the turbo pulls unless you brake (or lift off)
     if (this.speed > top) {
       // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
       // (or on a railway track: slowed down to it hard)
@@ -342,6 +351,8 @@ export const Player = {
       this.speed = Math.max(0, this.speed + drive * CONFIG.brake * CONFIG.puncture.brake * grip * dt);
     } else if (drive < 0 && this.speed > CONFIG.minSpeed) {
       this.speed = Math.max(CONFIG.minSpeed, this.speed + drive * CONFIG.brake * grip * dt);
+    } else if (lifting && drive === 0) { // (no brakes, lifting off: coasting down; with a flat tyre, to a stop to change it)
+      this.speed = Math.max(Math.min(this.speed, this.puncture ? 0 : CONFIG.minSpeed), this.speed - CONFIG.mystery.noBrakes.coast * dt);
     }
     // off the accelerator, the car brakes by itself for a slower car ahead
     const lead = throttle <= 0 && this.mystery !== 'noBrakes' ? this.carAhead() : null;
@@ -422,8 +433,8 @@ export const Player = {
     // (a flat tyre drags the car towards its side, the harder the faster it goes)
     if (this.puncture && !this.busted) wantVel += this.puncture * CONFIG.puncture.pull * Math.min(1, this.speed / 15);
     // a hard knock briefly weakens steering
-    // (on a level where cars understeer, a car sliding wide in a bend has lost its grip, as on ice)
-    const sliding = LEVEL.understeer && !this.onIce && understeer(this) !== 0;
+    // (a car sliding wide in a bend, on a level where cars understeer or with no brakes, has lost its grip, as on ice)
+    const push = understeer(this), sliding = !this.onIce && push !== 0;
     const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce || sliding ? CONFIG.ice.steerGrip : 1) *
       (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) ? CONFIG.mud.steerGrip : 1);
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
@@ -431,9 +442,16 @@ export const Player = {
     if (this.wading > CONFIG.tide.wet && !this.busted && Tide.rushing(this.s)) this.latVel -= CONFIG.tide.shove * dt;
     // on ice in a bend, the car understeers: what the bend asks of the tyres beyond the little
     // grip they have left pushes it to the outside (heavier cars more, more agile ones less)
-    // (and on a level where cars understeer, "understeer", everywhere)
-    const slide = (this.onIce || LEVEL.understeer) && !this.busted ? understeer(this) : 0;
-    if (LEVEL.understeer) this.speed = Math.max(0, this.speed - Math.abs(slide) * CONFIG.race.scrub * dt); // (the tyres scrubbing, sliding wide)
+    // (and on a level where cars understeer, "understeer", everywhere; and with no brakes, taken too fast)
+    const slide = this.busted ? 0 : push;
+    const scrub = LEVEL.understeer ? CONFIG.race.scrub : this.mystery === 'noBrakes' ? CONFIG.mystery.noBrakes.scrub : 0;
+    this.speed = Math.max(0, this.speed - Math.abs(slide) * scrub * dt); // (the tyres scrubbing, sliding wide)
+    // no brakes: steering scrubs off a little speed too, by how fast the car is moving across
+    // (only a feel of control before a bend: see CONFIG.mystery.noBrakes)
+    if (this.mystery === 'noBrakes' && steer !== 0 && !this.busted && this.speed > CONFIG.minSpeed) {
+      const across = Math.min(1, Math.abs(this.latVel) / (CONFIG.steerSpeed * this.agility));
+      this.speed = Math.max(CONFIG.minSpeed, this.speed - CONFIG.mystery.noBrakes.steerScrub * Math.abs(steer) * across * dt);
+    }
     // (where walls hurt, "wallDamage", nothing stops the slide carrying the car into one: see keepOnRoad)
     if (!LEVEL.wallDamage) this.latVel += slide * dt;
 
