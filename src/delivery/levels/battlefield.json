@@ -14,8 +14,8 @@
   "helicopter": false,
   "hesitation": false,
   "traffic": { "jeep": 0.5, "apc": 0.3, "tank": 0.2 },
-  "trafficCount": 15,
-  "oncomingCount": 7,
+  "trafficCount": 9,
+  "oncomingCount": 11,
   "segments": [
     { "length": 700, "curve": 0 },
     { "length": 400, "curve": 0.0015 },

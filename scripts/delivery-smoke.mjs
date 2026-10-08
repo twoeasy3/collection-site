@@ -1292,8 +1292,8 @@ try {
       Traffic.update(1 / 120);
       if (reinforcement.active && reinforcement.s < Player.s) fromBehind = { pace: reinforcement.baseSpeed, hesitant: reinforcement.hesitant };
     }
-    check(greens.length > active.length / 2 && dawdling && fromBehind && !fromBehind.hesitant && fromBehind.pace >= 30 + GA.overtake.min,
-      `the green army outnumbers the red (${greens.length} of ${active.length}); those turning up ahead hesitate (at ${HS.pace.min}-${HS.pace.max} m/s), ` +
+    check(greens.length > 0 && dawdling && fromBehind && !fromBehind.hesitant && fromBehind.pace >= 30 + GA.overtake.min,
+      `the green army (${greens.length} of ${active.length} on the road): those turning up ahead hesitate (at ${HS.pace.min}-${HS.pace.max} m/s), ` +
       `reinforcements from behind come by at ${fromBehind?.pace.toFixed(1)} m/s (the player doing 30)`);
 
     // head-ons: a tank beats an 8x8 and an 8x8 a jeep, at half their health; a jeep and a tank, or two of a kind, both wrecked
