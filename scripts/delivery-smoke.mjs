@@ -1128,6 +1128,32 @@ try {
     const want = 400 * CONFIG.ice.spinPerSpeed * 15;
     check(Math.abs(spins - want) < 4 * Math.sqrt(want), `traffic hitting the ice at 15 m/s: ${spins} of 400 spin out (about ${want.toFixed(0)} expected)`);
 
+    // no brakes (a mystery): the car doesn't slow for a bend, it slides wide past the bend's limit,
+    // scrubbing off a little; braking only lifts off, coasting down; steering scrubs a very little
+    const NB = CONFIG.mystery.noBrakes;
+    const run = (s, speed, noBrakes, throttle, steer, time) => {
+      Game.start();
+      for (const c of Traffic.cars) c.active = false;
+      Object.assign(Player, { s, lat: T2().laneOffset(0, s), speed, launching: false, shield: 0, latVel: 0, heavy: 0,
+        mystery: noBrakes ? 'noBrakes' : '', mysteryTime: noBrakes ? 99 : 0 });
+      const lat0 = Player.lat;
+      for (let i = 0; i < time * 120; i++) Player.update(1 / 120, throttle, typeof steer === 'function' ? steer(i) : steer, false);
+      const out = { lost: speed - Player.speed, slid: Player.lat - lat0 };
+      Player.mystery = '';
+      return out;
+    };
+    const limit = Math.sqrt(CONFIG.cornering.grip / Math.abs(T2().bend(606)));
+    const capped = run(606, 24, false, 0, 0, 1), skid = run(606, 24, true, 0, 0, 1), within = run(606, 15, true, 0, 0, 1);
+    check(capped.lost > 2 && Math.abs(capped.slid) < 0.05 && skid.slid > 0.5 && skid.lost > 0 && skid.lost < capped.lost / 2 &&
+      Math.abs(within.slid) < 0.05 && Math.abs(within.lost) < 1e-6,
+      `no brakes, round a hairpin (limit ${limit.toFixed(1)} m/s) hands off for 1 s: at 24 m/s the car slides ${skid.slid.toFixed(2)} m wide and scrubs off ` +
+      `${skid.lost.toFixed(2)} m/s (with brakes it is slowed ${capped.lost.toFixed(1)} m/s and doesn't slide); at 15 it neither slides nor slows`);
+    const lift = run(300, 24, true, -1, 0, 1), hold = run(300, 24, true, 0, 0, 1);
+    const weave = run(300, 24, true, 0, (i) => (Math.floor(i / 30) % 2 ? -1 : 1), 1);
+    check(Math.abs(lift.lost - NB.coast) < 0.05 && Math.abs(hold.lost) < 1e-6 && weave.lost > 0 && weave.lost < NB.coast / 4,
+      `no brakes, on the straight for 1 s: holding brake coasts ${lift.lost.toFixed(2)} m/s off, hands off holds speed, ` +
+      `weaving scrubs only ${weave.lost.toFixed(2)} m/s off`);
+
     // the level checks catch a bend too tight for the road, and a road that runs into itself
     levels.selectSpecial({ id: 'tight', name: 'tight', time: 99, tip: 1, traffic: {}, segments: [{ length: 200, curve: 0 }, { length: 20, curve: 0.15 }, { length: 200, curve: 0 }] });
     Game.start();

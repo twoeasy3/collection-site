@@ -79,6 +79,12 @@ export const CONFIG = {
     rickety: 1.5,          // damage the car takes while rickety, against the usual
     toadSpeed: 20 / 3.6,   // m/s every toad goes along at in TOAD RAGE
     toad: { hw: 1.2, hl: 1.4, height: 1.8, mass: 1 }, // a toad's hitbox
+    // noBrakes: the car no longer slows for a bend by itself. Taken too fast (past cornering.grip),
+    // it understeers wide as on ice (ice.understeer, ice.steerGrip), scrubbing off `scrub` m/s^2 for
+    // every m/s^2 of the slide. Holding brake lifts off: it coasts down at `coast` m/s^2. Steering
+    // scrubs a little too, up to `steerScrub` m/s^2 at full sideways speed: something to feel
+    // before a bend, never a way to stop (far less than lifting off)
+    noBrakes: { coast: 3, scrub: 0.3, steerScrub: 0.5 },
   },
   // UFO AIR STRIKE (a mystery): the saucer's visit, and the burn that follows it
   // Emergency vehicles (a level's "emergencies"): now and then an ambulance comes through with its

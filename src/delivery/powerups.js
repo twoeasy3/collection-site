@@ -96,7 +96,7 @@ const CARDS = [
     ['angel', 'Every driver adores you, and their moods stay that way afterwards.'],
     ['jerk', 'Every driver hates you: cars going your way come after you, and evil ones throw at you.'],
     ['invincible', 'No damage, and you win head-ons. Driving into the end of a bridge still gets you.'],
-    ['noBrakes', 'No brakes, and no braking by itself for the car in front either.'],
+    ['noBrakes', `No brakes, and no braking by itself for the car in front or for a bend either: take a bend too fast and you slide wide, scrubbing off a little speed. Holding brake only lifts off, coasting down at ${M.noBrakes.coast} m/s&sup2;.`],
     ['insuranceUp', 'Just the news.'],
     ['insuranceDown', 'Just the news.'],
     ['ufo', 'A flying saucer hovers over you, then flies off, and every car on the road burns up within a few seconds.'],
