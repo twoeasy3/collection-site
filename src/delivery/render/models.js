@@ -1203,8 +1203,9 @@ Object.assign(MODELS, {
     const group = new THREE.Group();
     const w = car.hw * 2, l = car.hl * 2;
     const paint = lambert(car.color), dark = lambert(ARMY_DARK), steel = lambert(ARMY_STEEL);
+    const tracks = [];
     for (const side of [-1, 1]) {
-      box(group, dark, w * 0.24, 0.85, l, side * w * 0.38, 0.45, 0);                   // the tracks...
+      tracks.push(box(group, dark, w * 0.24, 0.85, l, side * w * 0.38, 0.45, 0));      // the tracks...
       for (let k = 0; k < 5; k++) {                                                     // ...and their road wheels
         const wheelMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, w * 0.25, 12), steel);
         wheelMesh.rotation.z = Math.PI / 2;
@@ -1229,7 +1230,17 @@ Object.assign(MODELS, {
     brake.rotation.x = Math.PI / 2;
     brake.position.set(0, 0.32, l * 0.21 + 3.5);
     turret.add(brake);
-    group.userData = { body, animate: () => {}, aim: (yaw) => { turret.rotation.y = -yaw; } };
+    // a broken track (see Traffic's tracksBroken): its left one thrown, the rear of it off its wheels and
+    // lying out flat on the road behind
+    const thrown = box(group, dark, w * 0.24, 0.12, l * 0.9, -w * 0.38, 0.06, -l * 0.85);
+    thrown.rotation.y = 0.12;
+    thrown.visible = false;
+    const broken = (on) => {
+      thrown.visible = on;
+      tracks[0].scale.z = on ? 0.55 : 1;
+      tracks[0].position.z = on ? l * 0.225 : 0;
+    };
+    group.userData = { body, animate: () => {}, aim: (yaw) => { turret.rotation.y = -yaw; }, broken };
     return group;
   },
 });

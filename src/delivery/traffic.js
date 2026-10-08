@@ -151,7 +151,8 @@ export const Traffic = (() => {
       if (!placeAt(car, -between(H.behind))) continue;
       const own = GARAGE_TOP[car.kind];
       const type = CONFIG.vehicles[car.kind];
-      car.baseSpeed = type.cruise ? between(type.cruise) : (own || type.speed * speeds().max) * between(H.behindPace);
+      car.baseSpeed = LEVEL.battle ? Math.max(car.baseSpeed, Player.speed + between(CONFIG.battle.goodArmy.overtake)) // (green reinforcements, coming by)
+        : type.cruise ? between(type.cruise) : (own || type.speed * speeds().max) * between(H.behindPace);
       car.vs = car.dir * car.baseSpeed;
       car.fromBehind = true;
       return true;
@@ -279,6 +280,10 @@ export const Traffic = (() => {
       car.dodging = null; // the hunter it has decided about getting out of the way of...
       car.dodges = false; // ...and whether it does
       car.laneWait = 0;   // s before a tank may change lanes again (see battle)
+      if (!car.evil) { // (the green army keeps up with the player: see CONFIG.battle.goodArmy)
+        car.baseSpeed = between(B.goodArmy.pace) * (kind === 'tank' ? B.goodArmy.tankPace : 1);
+        car.vs = car.dir * car.baseSpeed;
+      }
     }
     car.wobble = 0;     // s left of wobbling after a critical hit, before it spins out
     car.spin = 0;       // s left of an uncontrolled spin, which ends in an explosion
@@ -307,6 +312,7 @@ export const Traffic = (() => {
     car.racer = false;      // one of a race's grid (see placeFixed)
     car.slideVel = 0;       // m/s it is sliding wide in a bend (a level with "understeer")
     car.stalled = false;    // stalled in the tide's water, hazards on (see Tide)
+    car.tracksBroken = false; // a tank's track broken by a blast: halted for good (see CONFIG.brokenTracks)
     car.halted = 0;         // pulled over for good (to the shoulder on this side: -1 | 1), its lane blocked ahead (see Wreckage)
     car.junction = null;    // leaving the road at a junction: on its way off, in the world (see leaveAtJunction)
     car.junctionSeen = -1;  // the s of the last junction it came to (and chose a way at)
@@ -1073,7 +1079,7 @@ export const Traffic = (() => {
       else if (best < CONFIG.enemyThrowCarRange) Packages.throwAtGround(car, foe); // (a jeep: a package at it)
       car.gunWait = between(gun?.every || B.throwEvery) * (good ? G.rate : 1);
     }
-    if (car.stun > 0 || car.spin > 0) return;
+    if (car.stun > 0 || car.spin > 0 || car.tracksBroken) return;
     // (a tank lumbers: a lane change of its own only every laneWait)
     const tank = car.kind === 'tank';
     if (tank && (car.laneWait -= dt) > 0) return;
@@ -1376,7 +1382,8 @@ export const Traffic = (() => {
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
         if (!car.fixed && !car.unused && mix().length) {
-          const behind = hesitation() && car.dir === Player.dir && Math.random() < H.behindChance && hesitantAhead();
+          const behind = hesitation() && car.dir === Player.dir && Math.random() < H.behindChance && hesitantAhead() ||
+            LEVEL.battle && car.dir > 0 && Math.random() < CONFIG.battle.goodArmy.fromBehind; // (green reinforcements, coming up behind the player)
           if (!(behind && spawnBehind(car))) spawn(car, CONFIG.spawnMin, CONFIG.spawnMax);
         }
         continue;
@@ -1499,6 +1506,20 @@ export const Traffic = (() => {
         car.braking = false;
         car.signal = 0;
         car.hazards = true;
+        updateYaw(car, dt);
+        continue;
+      }
+      if (car.tracksBroken) { // a broken track: it grinds to a halt where it is and goes nowhere after (its gun still works)
+        car.vs -= Math.sign(car.vs) * Math.min(Math.abs(car.vs), CONFIG.brokenTracks.stopping * dt);
+        car.latVel -= car.latVel * Math.min(1, dt * 6);
+        car.s += car.vs * dt;
+        Track.transfer(car);
+        car.lat += car.latVel * dt;
+        keepOnRoad(car, 0.3);
+        car.braking = Math.abs(car.vs) > 0.5;
+        car.signal = 0;
+        car.pendingLane = null;
+        if (LEVEL.battle) battle(car, dt);
         updateYaw(car, dt);
         continue;
       }

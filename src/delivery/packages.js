@@ -180,12 +180,20 @@ export const Packages = (() => {
     }
   };
 
+  // a blast breaking a traffic tank's track, chance of the time (see CONFIG.brokenTracks): it grinds to a halt
+  const breakTrack = (v, chance) => {
+    if (v.isPlayer || v.kind !== 'tank' || v.tracksBroken || v.health <= 0 || Math.random() >= chance) return;
+    v.tracksBroken = true;
+    sfxAt('sideswipe', v.s); // (the track snapping)
+  };
+
   // an evil car's package going off on the road
   const splash = (p) => {
     for (const v of Collision.bodies) {
       if (!v.active || v === p.owner || v.shield > 0 || v.tank > 0 || v.courier || sameSide(v, p.owner)) continue; // (nor a rival courier)
       if (Math.hypot(v.s - p.s, v.lat - p.lat) > CONFIG.splashRadius) continue;
       hurt(v, CONFIG.splashDamage);
+      breakTrack(v, CONFIG.brokenTracks.splash);
       if (v.isPlayer) {
         Game.shake = Math.max(Game.shake, 0.4);
         Traffic.arrest(p.owner); // (under the player's siren, the thrower is taken away)
@@ -214,7 +222,11 @@ export const Packages = (() => {
       if (dist < direct + car.hl * 0.5) {
         if (G) hurt(car, G.damage * 2, CONFIG.cannonCrit);
         else car.health = 0;
-      } else if (dist < reach) hurt(car, G ? G.damage * (1 - dist / reach) : CONFIG.cannonSplashDamage, CONFIG.cannonCrit);
+        breakTrack(car, CONFIG.brokenTracks.direct);
+      } else if (dist < reach) {
+        hurt(car, G ? G.damage * (1 - dist / reach) : CONFIG.cannonSplashDamage, CONFIG.cannonCrit);
+        breakTrack(car, CONFIG.brokenTracks.splash);
+      }
       if (G && car.health <= 0 && p.owner === Player) car.wreckedByPlayer = true;
     }
     // (an army's shell, on the player: see CONFIG.battle.shellOnPlayer)

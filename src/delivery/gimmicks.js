@@ -417,7 +417,7 @@ const GROUPS = [
     } },
     { name: 'Your 8x8', color: 0x2a5420, has: (l) => l.car === 'apc', rules: [
       `On the Battlefield you drive an 8x8, always in the green army: ${LEVEL_CARS.apc.health} health, heavy and slow to get going, its tyres run flat.`,
-      `The throw button fires its small gun (every ${LEVEL_CARS.apc.cannon.cooldown} s) at the nearest red vehicle within ${LEVEL_CARS.apc.cannon.range} m, as a package is aimed, never at your own side; with none in reach, dead ahead. A red jeep takes one shell, an 8x8 two, a tank two to four. Enemy shells cost you ${CONFIG.battle.shellOnPlayer.direct} on a direct hit.`,
+      `The throw button fires its small gun (every ${LEVEL_CARS.apc.cannon.cooldown} s) at the nearest red vehicle within ${LEVEL_CARS.apc.cannon.range} m, as a package is aimed, never at your own side; with none in reach, dead ahead. A red jeep takes one shell, an 8x8 two, a tank four (tanks take no critical hits). A blast can break a tank's track: it grinds to a halt where it is, its gun still firing. Enemy shells cost you ${CONFIG.battle.shellOnPlayer.direct} on a direct hit.`,
       'You beat a jeep head-on (at half your health); a tank beats you; another 8x8 takes you both out.',
     ], build: () => {
       const m = MODELS.apc({ ...LEVEL_CARS.apc });

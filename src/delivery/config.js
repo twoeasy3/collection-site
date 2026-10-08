@@ -593,7 +593,7 @@ export const CONFIG = {
     // the Battlefield's armies (a level's "battle": see CONFIG.battle). rank: who wins a head-on (see Collision)
     jeep:    { hw: 0.95, hl: 2.0, height: 1.8, mass: 1.2, health: 60,  speed: 1.1, model: 'jeep', rank: 1 },
     apc:     { hw: 1.35, hl: 3.4, height: 2.5, mass: 4,   health: 160, speed: 0.9, model: 'apc', rank: 2, noSpin: true },
-    tank:    { hw: 1.6,  hl: 3.3, height: 2.4, mass: 6,   health: 260, speed: 0.75, model: 'armytank', rank: 3, noSpin: true },
+    tank:    { hw: 1.6,  hl: 3.3, height: 2.4, mass: 6,   health: 260, speed: 0.75, model: 'armytank', rank: 3, noSpin: true, crit: 0 }, // (no critical hits: only its health, or a mine, finishes it)
     pickup:  { hw: 1.05, hl: 2.6, height: 2.1, mass: 1.8, health: 120, model: 'pickup' },
     miata:   { hw: 0.85, hl: 1.95, height: 1.1, mass: 0.8, health: 50, model: 'miata' },
     // boats, the traffic of a level on the water (boat: it leaves a wake, has no tyres to puncture, shows no
@@ -761,6 +761,9 @@ export const CONFIG = {
   cannonCrit: 3,           // times likelier than usual that a car the splash catches takes a critical hit
   cannonBlastScale: 1.4,   // size of the shell's explosion (fire and debris) against a big wreck's
   cannonSmoke: 0.3,        // and of its smoke: kept light, as the tank drives straight into it
+  // broken tracks: a traffic tank's puncture, only ever from a shell's blast or a package's splash. Chance
+  // a direct hit, or the splash, breaks a track; then it grinds to a halt (m/s²) and goes nowhere again
+  brokenTracks: { direct: 0.35, splash: 0.15, stopping: 18 },
 
   // chase camera
   camBack: 14,
@@ -881,6 +884,10 @@ export const CONFIG = {
     look: 55,              // ...and a vehicle looks out for one coming at it
     tank: { hunt: 35, laneWait: { min: 7, max: 11 } }, // a tank lumbers: it hunts only this close, and waits this
                            // long (s) between lane changes of its own (hunting, dodging); none on a whim
+    goodArmy: { pace: { min: 24, max: 34 }, tankPace: 0.85, fromBehind: 0.5, overtake: { min: 2, max: 6 } },
+                           // the green army advances with the player: its pace (m/s; a tank's this share of it), the share
+                           // of its reinforcements that come up from behind the player (as CONFIG.hesitation.behind) rather
+                           // than far ahead, and how much (m/s) faster than the player those come, so as to come by
     goodFire: { reach: 90, behind: 30, rate: 0.6 }, // the green army's override: it fires on any red within reach
                            // (m ahead, or behind), its turret snapping straight to it, rate times as long between shots
     reach: 70,             // m a gun reaches (the player's 8x8's: CAR.cannon)

@@ -1279,6 +1279,9 @@ try {
     check(active.length > 10 && active.every(c => c.evil === (c.dir < 0) && c.colors?.[0] === B.colors[c.dir > 0 ? 'good' : 'evil'][c.kind]) &&
       new Set(active.map(c => c.kind)).size === 3 && new Set(active.filter(c => c.dir < 0).map(c => c.lane)).size > 2,
       'its traffic is jeeps, 8x8s and tanks: going the player\'s way the green army (good), the other way the red (evil), each kind its own shade, the red army down every lane');
+    const GA = B.goodArmy, greens = active.filter(c => c.dir > 0);
+    check(greens.length > active.length / 2 && greens.every(c => c.baseSpeed >= GA.pace.min * (c.kind === 'tank' ? GA.tankPace : 1) - 1e-9 && c.baseSpeed <= GA.pace.max),
+      `the green army outnumbers the red (${greens.length} of ${active.length}) and advances with the player, at ${GA.pace.min}-${GA.pace.max} m/s (a tank ${Math.round(GA.tankPace * 100)}% of that)`);
 
     // head-ons: a tank beats an 8x8 and an 8x8 a jeep, at half their health; a jeep and a tank, or two of a kind, both wrecked
     const meet = (north, south) => {
@@ -1438,6 +1441,34 @@ try {
     check(shell?.kind === 'shell' && shell.gun === cars.CAR.cannon && shells === 1 && aimedAt && backAt && Object.values(tally).every(c => c.every(Number.isFinite)),
       `the player's 8x8 fires a shell (${cars.CAR.cannon.range} m reach, ${cars.CAR.cannon.damage} damage) with the throw button, then must wait ${cars.CAR.cannon.cooldown} s: ` +
       `at the nearest red vehicle in reach, ahead or behind, past green ones nearer; shells to destroy a red jeep ${spread(tally.jeep)}, 8x8 ${spread(tally.apc)}, tank ${spread(tally.tank)}`);
+
+    // broken tracks: a shell's blast can break a tank's track (here always), and it grinds to a halt in its lane and
+    // stays there, its gun still firing; nothing but a blast does it (here: rammed by a green 8x8, never)
+    const BT = CONFIG.brokenTracks, odds = { ...BT };
+    Object.assign(BT, { direct: 1, splash: 1 });
+    fresh(); alone(); untake();
+    const lame = army('tank', -1, 2, 660, 10, { gunWait: 99 }), mark = army('jeep', 1, 5, 615, 0.01, { gunWait: 99 }); // (something to shoot at)
+    let stoppedIn = null, t = 0, hit = false;
+    const laneAt = lame.lane, lameShot = [];
+    for (let i = 0; i < 120 * 6 && lame.active; i++, t += 1 / 120) {
+      Object.assign(Player, { s: 600, lat: T().laneOffset(2, 600), speed: 0.1, launching: false, ghost: 9 });
+      Object.assign(mark, { s: 615, vs: 0.01, gunWait: 99, health: mark.maxHealth });
+      if (!hit && Packages.ready) { Packages.throwOne(); hit = true; }
+      step();
+      if (lame.tracksBroken && stoppedIn === null && Math.abs(lame.vs) < 0.05) stoppedIn = t;
+      if (lame.tracksBroken) lame.gunWait = Math.min(lame.gunWait, 0.5);
+      for (const p of Packages.list) if (p.active && p.owner === lame && !lameShot.includes(p)) lameShot.push(p);
+    }
+    const stayed = lame.active && Math.abs(lame.vs) < 0.05 && lame.lane === laneAt, broke = lame.tracksBroken; // (before its slot is dealt out again)
+    fresh(); alone(); untake();
+    const rammed = army('tank', -1, 2, 640, 8), rammer = army('apc', 1, 2, 640 - 7.5, 8);
+    for (const c of [rammed, rammer]) c.dodging = c === rammed ? rammer : rammed;
+    watch([rammed, rammer], 120, () => hold(400));
+    const notByRam = !rammed.tracksBroken;
+    Object.assign(BT, odds);
+    check(broke && stoppedIn !== null && stoppedIn < 1.5 && stayed && lameShot.length > 0 && notByRam,
+      `broken tracks: a red tank whose track a shell breaks grinds to a halt in ${stoppedIn?.toFixed(2)} s and stays put in its lane, ` +
+      `still firing (${lameShot.length} shots); a ram never breaks one (odds: ${Math.round(BT.direct * 100)}% on a direct hit, ${Math.round(BT.splash * 100)}% in the splash)`);
 
     // landmines: down the lanes; whatever touches one (the player's car, a ghost aside, or traffic, which never
     // steers round one) is destroyed outright, and the mine is gone
