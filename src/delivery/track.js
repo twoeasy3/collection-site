@@ -32,7 +32,9 @@ const createTrack = () => {
   const HM = MID * LW / 2; // half the median's width: each side's lanes start this far out
   // which way the traffic goes: 'both' (the left half of the road is oncoming), or every
   // vehicle 'north' (the player's way) or 'south' (against the player), using all the lanes
-  const FLOW = LEVEL.flow === 'north' || LEVEL.flow === 'south' ? LEVEL.flow : 'both';
+  // ('mixed': traffic both ways, every lane open to either: the Battlefield. Its lanes are laid out as a
+  // one-way road's, no oncoming half)
+  const FLOW = ['north', 'south', 'mixed'].includes(LEVEL.flow) ? LEVEL.flow : 'both';
   const ONE_WAY = FLOW !== 'both';
   const smooth = (t) => { t = Math.max(0, Math.min(1, t)); return t * t * (3 - 2 * t); };
 

@@ -87,7 +87,7 @@ export const spinOut = (v) => {
 };
 // one traffic car taking against another (see Traffic.update for what it then does)
 export const startRivalry = (car, other) => {
-  if (car.isPlayer || other.isPlayer) return;
+  if (car.isPlayer || other.isPlayer || LEVEL.battle) return; // (the Battlefield's armies have a war to fight)
   if (car.racer && !car.evil) return; // (a good racer races clean, whatever is done to it)
   if (car.courier || other.courier) return; // (a rival courier has no time for feuds, and is in too much of a hurry to be picked on)
   car.rival = other;

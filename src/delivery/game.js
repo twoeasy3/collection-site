@@ -143,7 +143,7 @@ export const Game = {
     this.rivalAhead = new Map(); // for each, whether it was ahead of the player when last looked
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
     useLevelCar(LEVEL.car); // a UFO on the space level, otherwise the garage's car
-    Player.evil = this.evil;
+    Player.evil = this.evil && !LEVEL.battle; // (on the Battlefield the player is in the green army, the good one, whatever the side on the menu)
     Social.reset(); // (before the player: its shoulder allowance goes by it)
     Player.reset();
     Wreckage.reset(); // (before the traffic is dealt out: none goes where wreckage lies)
@@ -183,6 +183,7 @@ export const Game = {
     SpeedCameras.reset();
     Crossings.reset();
     StopGo.reset();
+    if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
     startScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');

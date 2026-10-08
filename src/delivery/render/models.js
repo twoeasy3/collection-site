@@ -1133,3 +1133,103 @@ export const MODELS = {
     return group;
   },
 };
+
+// ---- the Battlefield's armies (CONFIG.vehicles: jeep, apc, tank; the player's 8x8: LEVEL_CARS.apc) ------
+// Each in its army's colours (the paint: userData.body; a darker second colour on its trim), with a gun that
+// turns (userData.aim(yaw): rad from straight ahead, + to its right) on all but the jeep.
+const ARMY_DARK = 0x2b2e26, ARMY_STEEL = 0x4a4d45;
+// a turret on a ring, turning about its middle: the group to add the gun and the hatch to
+const turretOn = (group, y, z) => {
+  const turret = new THREE.Group();
+  turret.position.set(0, y, z);
+  group.add(turret);
+  return turret;
+};
+Object.assign(MODELS, {
+  // an army jeep: an open-topped four-by-four with a roll bar, a spare wheel on the back and a
+  // machine gun on a post (no turret: it throws packages)
+  jeep: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.42;
+    const paint = lambert(car.color), dark = lambert(ARMY_DARK), steel = lambert(ARMY_STEEL);
+    const body = box(group, paint, w, 0.55, l * 0.9, 0, 0.75, 0);                        // the tub
+    box(group, paint, w * 0.95, 0.3, l * 0.32, 0, 1.1, l * 0.28);                         // bonnet
+    box(group, dark, w * 0.9, 0.08, 0.06, 0, 1.45, l * 0.12);                            // the windscreen frame
+    box(group, lambert(GLASS), w * 0.84, 0.36, 0.04, 0, 1.28, l * 0.12);                 // folded flat glass
+    for (const side of [-1, 1]) {
+      box(group, steel, 0.08, 0.75, 0.08, side * w * 0.42, 1.4, -l * 0.18);              // the roll bar
+      wheel(group, R, 0.32, side * (w / 2 + 0.02), R, l * 0.32, steel);
+      wheel(group, R, 0.32, side * (w / 2 + 0.02), R, -l * 0.32, steel);
+      box(group, dark, 0.2, 0.1, l * 0.3, side * (w / 2 + 0.05), 0.95, l * 0.32);        // the wings over the wheels
+      box(group, dark, 0.2, 0.1, l * 0.3, side * (w / 2 + 0.05), 0.95, -l * 0.32);
+    }
+    box(group, steel, w * 0.84, 0.08, 0.08, 0, 1.78, -l * 0.18);                         // across the roll bar
+    box(group, dark, 0.08, 0.6, 0.08, 0, 1.4, -l * 0.02);                                // the gun post...
+    box(group, dark, 0.1, 0.12, 0.9, 0, 1.75, l * 0.1);                                  // ...and gun
+    const spare = new THREE.Mesh(new THREE.CylinderGeometry(R, R, 0.26, 14), lambert(0x141414));
+    spare.rotation.x = Math.PI / 2;
+    spare.position.set(0, 1.0, -l / 2 - 0.15);
+    group.add(spare);
+    box(group, LAMP, w * 0.18, 0.12, 0.05, -w * 0.3, 1.0, l * 0.45);
+    box(group, LAMP, w * 0.18, 0.12, 0.05, w * 0.3, 1.0, l * 0.45);
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+  // an 8x8: a long armoured car with a sloped nose, eight big wheels, and a small turret with a gun
+  apc: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.55;
+    const paint = lambert(car.color), dark = lambert(ARMY_DARK), steel = lambert(ARMY_STEEL);
+    const body = box(group, paint, w, 1.0, l * 0.88, 0, 1.15, -l * 0.04);              // the hull
+    prism(group, paint, w, [[l * 0.4, 0.65], [l * 0.5, 0.9], [l * 0.42, 1.65], [l * 0.36, 1.65], [l * 0.36, 0.65]]); // its sloped nose
+    box(group, dark, w * 0.9, 0.08, l * 0.75, 0, 1.68, -l * 0.06);                      // the roof
+    for (const side of [-1, 1]) {
+      for (const z of [0.36, 0.17, -0.12, -0.31]) wheel(group, R, 0.42, side * (w / 2 - 0.05), R, l * z, steel);
+      box(group, dark, 0.06, 0.25, l * 0.82, side * (w / 2 + 0.02), 1.4, -l * 0.04);    // a dark band down each side
+      box(group, LAMP, 0.18, 0.1, 0.05, side * w * 0.33, 1.28, l * 0.49);
+    }
+    const turret = turretOn(group, 1.72, l * 0.04);
+    box(turret, paint, w * 0.55, 0.45, w * 0.6, 0, 0.22, 0);
+    box(turret, dark, 0.3, 0.12, 0.3, -0.25, 0.5, -0.15);                               // the hatch
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.8, 10), dark);
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(0, 0.25, 1.15);
+    turret.add(barrel);
+    group.userData = { body, animate: () => {}, aim: (yaw) => { turret.rotation.y = -yaw; } };
+    return group;
+  },
+  // a tank: on its tracks, a long low hull and a big turret with a long gun
+  armytank: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2;
+    const paint = lambert(car.color), dark = lambert(ARMY_DARK), steel = lambert(ARMY_STEEL);
+    for (const side of [-1, 1]) {
+      box(group, dark, w * 0.24, 0.85, l, side * w * 0.38, 0.45, 0);                   // the tracks...
+      for (let k = 0; k < 5; k++) {                                                     // ...and their road wheels
+        const wheelMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, w * 0.25, 12), steel);
+        wheelMesh.rotation.z = Math.PI / 2;
+        wheelMesh.position.set(side * w * 0.38, 0.38, -l * 0.38 + k * l * 0.19);
+        group.add(wheelMesh);
+      }
+    }
+    const body = box(group, paint, w * 0.8, 0.7, l * 0.95, 0, 1.15, 0);                 // the hull
+    prism(group, paint, w * 0.8, [[l * 0.47, 0.8], [l * 0.5, 1.15], [l * 0.42, 1.5], [l * 0.35, 1.5], [l * 0.35, 0.8]]);
+    box(group, dark, w * 0.4, 0.06, l * 0.2, 0, 1.52, -l * 0.35);                       // the engine deck
+    const turret = turretOn(group, 1.5, -l * 0.05);
+    box(turret, paint, w * 0.62, 0.62, l * 0.42, 0, 0.31, 0);
+    box(turret, paint, w * 0.45, 0.45, l * 0.15, 0, 0.3, -l * 0.27);                    // its bustle
+    const hatch = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.1, 12), dark);
+    hatch.position.set(0.3, 0.66, -0.2);
+    turret.add(hatch);
+    const barrel = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 3.6, 12), dark);
+    barrel.rotation.x = Math.PI / 2;
+    barrel.position.set(0, 0.32, l * 0.21 + 1.8);
+    turret.add(barrel);
+    const brake = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.4, 12), dark);
+    brake.rotation.x = Math.PI / 2;
+    brake.position.set(0, 0.32, l * 0.21 + 3.5);
+    turret.add(brake);
+    group.userData = { body, animate: () => {}, aim: (yaw) => { turret.rotation.y = -yaw; } };
+    return group;
+  },
+});

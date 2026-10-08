@@ -84,6 +84,12 @@ export const LEVEL_CARS = {
   // a jetboat: a sleek little cruiser with a captain's cabin, quick and nimble on the water, bobbing on the swell
   jetboat: { id: 'jetboat', name: 'Jetboat', price: 0, color: 0xe8432e, evilColor: 0x1b1d22, model: 'jetboat', wake: true, noWheels: true,
     maxSpeed: 34, accel: 13, crossing: 1, agility: 1.4, health: 120, hw: 1.0, hl: 2.7, height: 1.6 },
+  // the Battlefield's 8x8: an armoured car on eight wheels, slow to get going and heavy, with a small gun
+  // that fires dead ahead (cannon: see CONFIG.battle.guns; its rank: see CONFIG.vehicles.apc), and nothing
+  // a bullet does to its tyres stops it
+  apc: { id: 'apc', name: '8x8', price: 0, color: 0x3f7a2e, evilColor: 0x3f7a2e, model: 'apc', rank: 2, runFlat: true,
+    cannon: { range: 34, cooldown: 1.1, direct: 2.6, splash: 7, damage: 40, scale: 0.8 },
+    maxSpeed: 32, accel: 9, crossing: 1, agility: 0.9, health: 240, mass: 3, hw: 1.35, hl: 3.4, height: 2.5 },
 };
 
 // Secret vehicles: never parked in the garage or for sale, but once owned they are driven

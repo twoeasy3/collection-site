@@ -39,6 +39,7 @@
     "mourners": ["You crashed into a funeral procession!! The mourners are furious!"],
     "crossing": ["Level crossing! The lights are flashing!"],
     "fog": ["Fog bank ahead!"],
+    "battle": ["BATTLEFIELD! You're with the green army. Fire with the throw button!"],
     "wave": ["WAVE INCOMING!! Get out of the water!"],
     "lap": ["Lap complete!"],
     "finalLap": ["FINAL LAP!"],

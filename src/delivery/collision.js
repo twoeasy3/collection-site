@@ -7,6 +7,7 @@ import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Game } from './game.js';
 import { Message } from './messages.js';
+import { CAR } from './cars.js';
 
 // ============================================================================
 // COLLISION - oriented boxes in track space: x = distance along track, y = lateral
@@ -85,6 +86,20 @@ export const Collision = (() => {
       a.speed *= Math.max(0.35, 1 - CONFIG.tankRamSlow * b.mass); // ramming does slow it
       Game.shake = Math.max(Game.shake, 0.6);
       sfx('heavy');
+      return;
+    }
+    // the Battlefield: a head-on between an army's vehicle (or the player's 8x8) and one a rank below goes
+    // to the bigger one, at a cost of CONFIG.battle.win of its full health (a tank against an 8x8, an 8x8
+    // against a jeep); anything else, as anywhere: both wrecked
+    const rank = (v) => v.isPlayer ? CAR.rank || 0 : CONFIG.vehicles[v.kind]?.rank || 0;
+    if (headOn && LEVEL.battle && rank(a) && rank(b) && Math.abs(rank(a) - rank(b)) === 1) {
+      const [winner, loser] = rank(a) > rank(b) ? [a, b] : [b, a];
+      if (loser.mystery !== 'invincible') loser.health = 0;
+      if (winner.mystery !== 'invincible' && !(winner.isPlayer && winner.shield > 0)) winner.health -= winner.maxHealth * CONFIG.battle.win;
+      if (heard(a, b)) {
+        if (a.isPlayer || b.isPlayer) Game.shake = 1;
+        sfx('headOn');
+      }
       return;
     }
     if (headOn && courier) { // (the oncoming car is wrecked; the courier takes a hard knock, and slows right down)
