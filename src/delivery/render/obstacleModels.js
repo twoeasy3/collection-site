@@ -479,3 +479,34 @@ OBSTACLE_MODELS.cyclist = () => {
   group.scale.setScalar(1.15);
   return group;
 };
+
+// a landmine (the Battlefield's): a squat olive-drab disc half sunk in the dirt, a ring of pressure studs on
+// top round a red light that flashes. userData.light: the light's material
+OBSTACLE_MODELS.landmine = () => {
+  const group = new THREE.Group();
+  const drab = lambert(0x4f5a2e), dark = lambert(0x22261a);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.56, 0.22, 16), drab);
+  body.position.y = 0.11;
+  group.add(body);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.05, 6, 20), dark);
+  rim.rotation.x = Math.PI / 2;
+  rim.position.y = 0.22;
+  group.add(rim);
+  for (let k = 0; k < 6; k++) {
+    const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.08, 6), dark);
+    stud.position.set(Math.cos(k * Math.PI / 3) * 0.3, 0.25, Math.sin(k * Math.PI / 3) * 0.3);
+    group.add(stud);
+  }
+  const light = new THREE.MeshBasicMaterial({ color: 0x3a0e0a });
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.11, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), light);
+  bulb.position.y = 0.22;
+  group.add(bulb);
+  // (and a faint glow round it while lit, so it shows down the road)
+  const halo = new THREE.Mesh(new THREE.CircleGeometry(0.42, 16).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0 }));
+  halo.position.y = 0.235;
+  group.add(halo);
+  group.userData.light = light;
+  group.userData.halo = halo;
+  group.scale.setScalar(1.4); // (bigger than life, so it is seen in time)
+  return group;
+};

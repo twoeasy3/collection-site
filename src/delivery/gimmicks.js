@@ -423,6 +423,18 @@ const GROUPS = [
       const m = MODELS.apc({ ...LEVEL_CARS.apc });
       return { model: m };
     } },
+    { name: 'Landmines', color: 0xff2a1a, has: (l) => l.landmines?.length, rules: [
+      'Mines scattered down the lanes, each with a red light flashing on top.',
+      '<strong>Touch one and you are destroyed outright</strong>, whatever you are driving (a ghost passes over), and the mine is gone. The traffic pays them no heed, and goes up the same way.',
+      'A shell landing near one sets it off.',
+    ], build: () => {
+      const g = road(9, 12), mines = [[-2, 3], [2, -1], [-1.5, -4]].map(([x, z]) => { const m = ob('landmine'); m.position.set(x, 0, z); g.add(m); return m; });
+      return { model: g, lift: 0.7, tick: (t) => mines.forEach((m, k) => {
+        const lit = ((t / CONFIG.battle.mineFlash.period + k * 0.33) % 1) < CONFIG.battle.mineFlash.on;
+        m.userData.light.color.setHex(lit ? 0xff2a1a : 0x3a0e0a);
+        m.userData.halo.material.opacity = lit ? 0.55 : 0;
+      }) };
+    } },
     { name: 'Pillboxes', color: 0x9a2a22, has: (l) => l.pillboxes, rules: [
       `Concrete pillboxes beside the road every ${CONFIG.battle.pillboxEvery} m, each side's in its colour, firing bursts at the other army as it passes (as the gang houses do in The Hood). The red ones fire at you.`,
     ], build: () => {

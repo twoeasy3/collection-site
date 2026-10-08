@@ -169,6 +169,9 @@
 //   battle     true = the Battlefield: two armies at war down the road (see CONFIG.battle). Its traffic
 //              going the player's way is the player's side, green (good, whatever the player's side
 //              on the menu); coming the other way, the enemy's, red (evil). Best with "flow": "mixed"
+//   landmines  { from, to, count }: landmines scattered down the lanes over that stretch, their lights
+//              flashing: whatever touches one, the player's car or traffic, is destroyed outright (a ghost
+//              passes over), and the mine with it. Traffic never steers round them
 //   pillboxes  true = (with battle) pillboxes beside the road every CONFIG.battle.pillboxEvery m, half
 //              each army's, firing bursts at the other's vehicles (as The Hood's gang houses)
 //   hippos     { from, to, every: { min, max } }: a river beside the road (on the right) over that

@@ -239,6 +239,8 @@ export const Collision = (() => {
     // the hidden gimmicks level's: a speed camera on its pole, a rock come down the hillside (its
     // size replaced by its own radius), a cyclist on its bike
     camera: [0.3, 0.3, 4.2], rock: [1, 1, 2], cyclist: [0.35, 0.95, 2.1],
+    // the Battlefield's: a landmine in a lane (see landmines below)
+    landmine: [0.75, 0.75, 0.4],
   };
   const obstacles = [];
   const add = (kind, s, lat, extra) => {
@@ -298,6 +300,17 @@ export const Collision = (() => {
         const r = R.size.min + rockRand() * (R.size.max - R.size.min);
         const lat = Track.lo(s) + r + rockRand() * (Track.hi(s) - Track.lo(s) - 2 * r);
         add('rock', s, lat, { r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, side, land: lat, nearAt: R.near.min + rockRand() * (R.near.max - R.near.min) });
+      }
+    }
+    // landmines: scattered down the lanes over their stretch, in the middle of a lane, each with its light
+    // flashing in its own time. Seeded: the same mines every run
+    let mineSeed = 424243;
+    const mineRand = () => ((mineSeed = (mineSeed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    for (const z of LEVEL.landmines || []) {
+      for (let i = 0; i < z.count; i++) {
+        const s = Track.place({ s: z.from + (z.to - z.from) * (i + mineRand()) / z.count });
+        const [first, last] = Track.laneRange(1, s), lane = first + Math.floor(mineRand() * (last - first + 1));
+        add('landmine', s, Track.laneOffset(lane, s), { phase: mineRand() });
       }
     }
     // pelotons: cyclists two abreast along the kerb of the player's side, waiting to set off
@@ -613,6 +626,20 @@ export const Collision = (() => {
     }
   };
 
+  // landmines: traffic pays them no heed (it never steers round one), and one that drives onto a mine is
+  // destroyed outright, as the player's car is, and the mine with it
+  const trafficMines = () => {
+    for (const o of obstacles) {
+      if (o.gone || o.kind !== 'landmine') continue;
+      for (const car of Traffic.cars) {
+        if (!car.active || car.junction || car.health <= 0 || Math.abs(car.s - o.s) > car.hl + o.hl || !overlap(car, o)) continue;
+        car.health = 0;
+        o.gone = true;
+        FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: 0, big: false, sound: 'none' });
+        break;
+      }
+    }
+  };
   // an asteroid can only be hit while some of it is at the height of the car
   const atRoadLevel = (o) => o.h - o.r < Player.height && o.h + o.r > 0;
 
@@ -624,6 +651,12 @@ export const Collision = (() => {
       if ((o.kind === 'dropBear' || o.kind === 'rock') && o.h > Player.height) continue; // (still up in its tree, or falling)
       if (o.dance && o.h > Player.height) continue; // (a portaloo up in the air: the car goes underneath)
       if (!overlap(Player, o)) continue;
+      if (o.kind === 'landmine') { // (a landmine: the car is destroyed outright, whatever it is, and the mine is gone)
+        o.gone = true;
+        Player.health = 0;
+        FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: 0, big: true });
+        continue;
+      }
       // any touch blows the obstacle up: the car is damaged and loses speed, but drives on
       o.gone = true;
       const cost = CONFIG.obstacleKinds[o.kind];
@@ -762,6 +795,7 @@ export const Collision = (() => {
       }
     }
     hitObstacles();
+    trafficMines();
     // anything out of health blows up (the explosion itself hurts nobody)
     for (const v of bodies) {
       if (!v.active || v.health > 0) continue;

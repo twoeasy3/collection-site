@@ -313,6 +313,11 @@ export const syncPickups = (dt) => {
     if (o.roll && mesh.userData.roller) mesh.userData.roller.rotation.z = -o.roll.dir * (o.spun || 0); // (a pipe rolling across)
     if (o.kind === 'rock') mesh.userData.rock.rotation.x = o.spin || 0; // (tumbling down the hillside)
     if (o.ride) mesh.userData.animate(o.ride.on ? o.ride.t : 0); // (a cyclist pedalling)
+    if (o.kind === 'landmine') { // (its light flashing, each in its own time)
+      const F = CONFIG.battle.mineFlash, lit = ((performance.now() / 1000 / F.period + o.phase) % 1) < F.on;
+      mesh.userData.light.color.setHex(lit ? 0xff2a1a : 0x3a0e0a);
+      mesh.userData.halo.material.opacity = lit ? 0.55 : 0;
+    }
     if (o.camera !== undefined) mesh.userData.lamp.color.setHex(SpeedCameras.list[o.camera]?.flash > 0 ? 0xffffff : 0x555a60); // (a speed camera flashing)
     if (o.drift && mesh.userData.roller) { // a bale on the move rolls the way it is going
       const last = mesh.userData.last || (mesh.userData.last = { s: o.s, lat: o.lat });

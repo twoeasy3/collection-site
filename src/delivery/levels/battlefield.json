@@ -7,6 +7,7 @@
   "flow": "mixed",
   "battle": true,
   "pillboxes": true,
+  "landmines": [{ "from": 350, "to": 4400, "count": 45 }],
   "car": "apc",
   "theme": "battlefield",
   "shoulderTimer": false,

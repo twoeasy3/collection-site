@@ -1231,6 +1231,7 @@ try {
   {
     const { Packages } = await load('/src/delivery/packages.js');
     const { Gunfire } = await load('/src/delivery/gunfire.js');
+    const { Collision } = await load('/src/delivery/collision.js');
     const B = CONFIG.battle;
     const T = () => track.Track;
     const fresh = (evil = false) => {
@@ -1352,6 +1353,36 @@ try {
     const shells = Packages.list.filter(p => p.active && p.owner === Player).length;
     check(shell?.kind === 'shell' && shell.gun === cars.CAR.cannon && shells === 1,
       `the player's 8x8 fires a shell (${cars.CAR.cannon.range} m ahead, ${cars.CAR.cannon.damage} damage) with the throw button, then must wait ${cars.CAR.cannon.cooldown} s`);
+
+    // landmines: down the lanes; whatever touches one (the player's car, a ghost aside, or traffic, which never
+    // steers round one) is destroyed outright, and the mine is gone
+    fresh(); alone(); untake();
+    const mines = Collision.obstacles.filter(o => o.kind === 'landmine');
+    const inLanes = mines.every(m => [0, 1, 2, 3, 4, 5].some(l => Math.abs(m.lat - T().laneOffset(l, m.s)) < 1e-6));
+    const mine = mines[5];
+    Object.assign(Player, { s: mine.s - Player.hl - 2, lat: mine.lat, speed: 10, launching: false, shield: 0, ghost: 0, latVel: 0, health: Player.maxHealth });
+    let blown = false;
+    for (let i = 0; i < 120 && !blown; i++) { step(); blown = !Player.active || Player.health <= 0; }
+    const gone = mine.gone;
+    fresh(); alone(); untake();
+    const mine2 = Collision.obstacles.filter(o => o.kind === 'landmine')[5];
+    Object.assign(Player, { s: mine2.s - Player.hl - 2, lat: mine2.lat, speed: 10, launching: false, shield: 0, ghost: 5, latVel: 0, health: Player.maxHealth });
+    for (let i = 0; i < 120; i++) step();
+    const ghostOk = Player.active && Player.health === Player.maxHealth && !mine2.gone;
+    fresh(); alone(); untake();
+    const mine3 = Collision.obstacles.filter(o => o.kind === 'landmine')[8];
+    const lane3 = [0, 1, 2, 3, 4, 5].find(l => Math.abs(mine3.lat - T().laneOffset(l, mine3.s)) < 1e-6);
+    const victim = army('tank', -1, lane3, mine3.s + 20, 12);
+    let lowest = victim.health, drift = 0;
+    for (let i = 0; i < 120 * 2.5 && lowest > 0; i++) { // (until it goes up)
+      hold(mine3.s - 300);
+      step();
+      if (victim.active) drift = Math.max(drift, Math.abs(victim.lat - mine3.lat));
+      lowest = Math.min(lowest, victim.active ? victim.health : 0);
+    }
+    check(mines.length === 45 && inLanes && blown && gone && ghostOk && lowest <= 0 && mine3.gone && drift < 0.2,
+      `landmines: ${mines.length} down the lanes; the player's car driving onto one is destroyed and the mine gone, a ghost passes over; ` +
+      `a tank drives straight onto one (${drift.toFixed(2)} m off its line) and is destroyed, the mine with it`);
 
     // pillboxes fire only at the other army: a red one at the player and the green army, a green one at the red
     fresh(); alone(); untake();

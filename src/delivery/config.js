@@ -458,6 +458,7 @@ export const CONFIG = {
     camera: { damage: 8, speedKept: 0.85, light: true }, // a speed camera on its pole
     rock: { damage: 25, speedKept: 0.6 },
     cyclist: { damage: 12, speedKept: 0.85, light: true },
+    landmine: { damage: 0, speedKept: 1 }, // (no ordinary knock: it destroys whatever touches it outright, see Collision)
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -889,6 +890,7 @@ export const CONFIG = {
     throwEvery: { min: 1.6, max: 3 }, // s between a jeep's packages (at an enemy within CONFIG.enemyThrowCarRange)
     shellOnPlayer: { direct: 50, splash: 20 }, // health an enemy shell costs the player: a direct hit, or near it
     pillboxEvery: 130,     // m between pillboxes, on each side
+    mineFlash: { period: 0.9, on: 0.35 }, // s a landmine's light takes to flash round, and the share of it lit
     pillboxOut: 6,         // m off the road's edge
   },
   // a cyclist peloton (a level's "pelotons": { s, count, speed, trigger }): cyclists riding two abreast
