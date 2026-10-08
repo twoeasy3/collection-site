@@ -25,11 +25,20 @@
       "insuranceUp": ["Your insurance just went up $250"],
       "insuranceDown": ["Your insurance just went down $250"],
       "ufo": ["UFO AIR STRIKE!!!"],
-      "bulletTrain": ["BULLET TRAIN INCOMING!!!"]
+      "bulletTrain": ["BULLET TRAIN INCOMING!!!"],
+      "sundayDrivers": ["Sunday drivers! Everyone's out for a gentle cruise."],
+      "rushHour": ["RUSH HOUR!! The roads are packed!"],
+      "carSwap": ["Car swap! Take this one for a spin."],
+      "moodSwing": ["Mood swing! Good is evil and evil is good!"]
     }
   },
   "events": {
     "emergency": ["Emergency vehicle oncoming!! Give way!"],
+    "speedFine": ["SPEED CAMERA! ${speed} in a ${limit}: ${fine} fine. Next time it's a bust!"],
+    "procession": ["Funeral procession ahead. Show some respect."],
+    "mourners": ["You crashed into a funeral procession!! The mourners are furious!"],
+    "crossing": ["Level crossing! The lights are flashing!"],
+    "fog": ["Fog bank ahead!"],
     "wave": ["WAVE INCOMING!! Get out of the water!"],
     "lap": ["Lap complete!"],
     "finalLap": ["FINAL LAP!"],
@@ -78,7 +87,9 @@
     "assault": ["The police witnessed vehicular assault!!"],
     "assaultCop": ["Assault on a POLICE CAR!!"],
     "bump": ["You hit a cop car!!"],
-    "emergency": ["Failure to give way to an emergency vehicle!!"]
+    "emergency": ["Failure to give way to an emergency vehicle!!"],
+    "speeding": ["Caught on camera speeding, AGAIN!!"],
+    "cyclist": ["The police saw you knock a cyclist off!!"]
   },
   "reactions": {
     "goodOnPolice": [

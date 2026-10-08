@@ -216,6 +216,18 @@ body.in-garage #hud, body.in-garage .throw, body.in-garage #banner, body.in-gara
 #copWatch .lights i { width: 12px; height: 12px; border-radius: 3px; background: #ff2a2a; animation: copFlash .5s steps(1) infinite; }
 #copWatch .lights i + i { background: #2a6aff; animation-delay: .25s; }
 @keyframes copFlash { 50% { opacity: .25; } }
+/* ...and the screen's edges glow faintly red and blue in turn, in time with them (under the HUD) */
+#copGlow { position: fixed; inset: 0; pointer-events: none; opacity: 0; transition: opacity .4s; }
+#copGlow.on { opacity: 1; }
+#copGlow i { position: absolute; inset: 0; box-shadow: inset 0 0 10vmin 1vmin rgba(255,42,42,.35); animation: copGlow .5s linear infinite; }
+#copGlow i + i { box-shadow: inset 0 0 10vmin 1vmin rgba(42,106,255,.35); animation-delay: -.25s; }
+#copGlow:not(.on) i { animation-play-state: paused; }
+@keyframes copGlow { 0%, 40% { opacity: 1; } 50%, 90% { opacity: 0; } 100% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { #copGlow i { animation: none; opacity: .5; } }
+body.cinematic #copGlow, body.in-garage #copGlow { display: none; }
+/* a speed camera catching the player: the screen flashes white (see render/roadside.js) */
+#cameraFlash { position: fixed; inset: 0; pointer-events: none; background: #fff; opacity: 0; }
+body.cinematic #cameraFlash, body.in-garage #cameraFlash { display: none; }
 /* who is coming up behind (a race, or a rival courier): an arrow at the foot of the screen, pointing back at them */
 #behind { display: none; position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   text-align: center; pointer-events: none; z-index: 4; font-size: 13px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px #000; }

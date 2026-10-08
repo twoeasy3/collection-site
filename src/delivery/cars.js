@@ -105,10 +105,24 @@ export let CAR = find();
 // the car picked in the garage. Called when a level is picked and when a run starts.
 export const useLevelCar = (id) => {
   CAR = (id && (LEVEL_CARS[id] || CARS.find(c => c.id === id))) || find(); // (a special vehicle, or one of the garage's)
+  lent = null;
 };
 
 // switch to a car the player owns (saved to their progress)
 export const selectCar = (id) => {
   Progress.useCar(id);
   CAR = find();
+  lent = null;
+};
+
+// Car Swap (a mystery): the player is lent another car for a while (nothing saved), and
+// returnCar gives back the one it had. (Picking a car or a level forgets the loan.)
+let lent = null; // the car lent out, while one is
+export const lendCar = (car) => {
+  lent = lent || CAR;
+  CAR = car;
+};
+export const returnCar = () => {
+  if (lent) CAR = lent;
+  lent = null;
 };

@@ -75,6 +75,15 @@ export const CONFIG = {
   // is in messages.json, under powerups.mystery
   mystery: {
     effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo', 'bulletTrain'],
+    // a second pool, not drawn for now: only ?mystery= in the address picks one of these
+    //   sundayDrivers  every driver potters along at sundayPace of its speed (not an ambulance, nor a racer)
+    //   rushHour       rushHour times the traffic, each way, as far as the pool allows; the extra cars
+    //                  turn up at once, and once it is over, each one that goes isn't replaced
+    //   carSwap        the player is put in another of the garage's cars at random, and given its own back after
+    //   moodSwing      every driver that can be evil swaps sides: good turns evil, evil turns good, and back after
+    extraEffects: ['sundayDrivers', 'rushHour', 'carSwap', 'moodSwing'],
+    sundayPace: 0.5,
+    rushHour: 2,
     time: 12,              // s the lasting ones last (insuranceUp / insuranceDown, ufo and bulletTrain are over at once)
     rickety: 1.5,          // damage the car takes while rickety, against the usual
     toadSpeed: 20 / 3.6,   // m/s every toad goes along at in TOAD RAGE
@@ -173,7 +182,7 @@ export const CONFIG = {
     // shoves the other car aside at `shove` m/s a step; a head-on wrecks the other car, costing it headOn
     // health and all but headOnSpeed of its speed. Stuck behind a car with no way by for `after` s, it
     // rams it, closing at `closing` m/s, and an evil one throws at it every throwEvery s
-    ram: { share: 0.15, damage: 4, shove: 0.25, headOn: 600, headOnSpeed: 0.35, after: 0.8, closing: 6, throwEvery: 1.5 } },
+    ram: { share: 0.15, damage: 4, shove: 0.25, headOn: 600, headOnSpeed: 0.35, after: 0.3, closing: 6, throwEvery: 1.5 } },
   race: { respawnTime: 4.5, respawnShield: 1.5, understeer: 6, scrub: 0.3, aiTyres: 1.6, aiGrip: 2.2, aiPickup: 2.4, aiLookout: 35, wallFrom: 1.5, wallDamage: 5,
     towReach: 130, draft: 0.2, seekReach: 160, seekEvery: 1.5,
     // Racecraft: each driver's nerve in the bends is its own, from nerve.min to nerve.max times the
@@ -340,6 +349,12 @@ export const CONFIG = {
     plateLength: 4,        // ...each this long
     trenchDamage: 8,       // health a wheel in a gap costs...
     trenchKept: 0.7,       // ...and the share of its speed the car keeps
+    trenchPuncture: 0.15,  // ...and the chance it gives the car a flat tyre (on that side)
+    // potholes (a level's "potholes": { s, lane, r }): a wheel dropping into one is the same jolt
+    potholeR: 0.9,         // m, a pothole's radius (a level can give each its own: r)
+    potholeDamage: 6,      // health it costs...
+    potholeKept: 0.8,      // ...the share of its speed the car keeps...
+    potholePuncture: 0.25, // ...and the chance of a flat tyre (on the side of the car it hit)
     digOut: 4,             // m off the road an excavator stands...
     reach: 9.5,            // ...its bucket this far from it...
     swingPeriod: 5,        // ...swinging out and back in this many s
@@ -439,6 +454,10 @@ export const CONFIG = {
     cooler: { damage: 6, speedKept: 0.92, light: true },
     chair: { damage: 30, speedKept: 0.6 },
     wreck: { damage: 35, speedKept: 0.5 },
+    // the hidden gimmicks level's
+    camera: { damage: 8, speedKept: 0.85, light: true }, // a speed camera on its pole
+    rock: { damage: 25, speedKept: 0.6 },
+    cyclist: { damage: 12, speedKept: 0.85, light: true },
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -773,6 +792,83 @@ export const CONFIG = {
     length: 15,            // m ahead of the vehicle's nose
     width: 6,              // m across at its widest
     strength: 0.5,         // how bright, 0..1
+  },
+
+  // ---- the hidden gimmicks level's new things (see levels.js) ----
+  // speed cameras (a level's "cameras": cameras.js): passing one faster than its limit is caught
+  // on camera. The first time in a run is a fine (off what the run banks), every one after it a
+  // bust. Running one over (it is an obstacle) is no offence. A radar detector warns of them: it
+  // keeps the car from being caught at all
+  speedCamera: {
+    limit: 70,             // km/h, unless the camera has its own
+    fine: 20,              // $ the first offence costs
+    flash: 0.35,           // s the flash lasts
+  },
+  // a funeral procession (a level's "processions": see Traffic.startProcession): a hearse and its
+  // cars, nose to tail, slow, in one lane; no lane changes, no throwing. Crash into any of them and
+  // the whole procession is angry with you
+  procession: {
+    cars: 3,               // cars following the hearse
+    kinds: ['commuter', 'wagon', 'minivan', 'suv'], // what they are (all in black)
+    paint: 0x151515,
+    speed: 11,             // m/s
+    gap: 4,                // m nose to tail
+  },
+  // a level crossing (a level's "crossings": crossing.js): as the player comes near (or every so often
+  // after), its lights flash and its booms come down across the lanes coming up to it, and a short
+  // fast train shoots across the road. Traffic waits at the booms; whatever is on the line is wrecked
+  crossing: {
+    trigger: 230,          // m short of it the player sets it off (a crossing can give its own)
+    warn: 2.6,             // s of flashing lights before the train reaches the road...
+    lower: 1.2,            // ...the booms coming down over the first this many
+    raise: 1.0,            // s they take to go back up once the train is clear
+    every: { min: 14, max: 24 }, // s between trains after that, while the player hasn't gone by
+    speed: 70,             // m/s the train goes at...
+    cars: 2,               // ...carriages...
+    carLength: 18,         // ...each this long...
+    hw: 1.6,               // ...and half this wide
+    reach: 70,             // m either side of the road the line runs out to (the train comes from that far)
+    stopLine: 6,           // m short of the line traffic stops at (the booms stand there)
+    boomDamage: 10,        // health a lowered boom costs the player driving through it...
+    boomKept: 0.8,         // ...and the share of its speed kept
+  },
+  // stop / go roadworks (a level's "stopGo": stopgo.js): the oncoming side dug up, so both ways take
+  // turns through the one lane left, a worker at each end turning a STOP / GO sign. Evil drivers
+  // may run the STOP
+  stopGo: {
+    go: 9,                 // s each way gets the GO...
+    clear: 5,              // ...with this long between, for the last through to clear
+    runChance: 0.35,       // chance an evil driver runs the STOP
+    stopLine: 4,           // m short of the works traffic waits at
+    coneEvery: 5,          // m between the cones down the middle
+  },
+  // a fog bank (a level's "fog": { from, to }): the fog closes right in, easing in and out over its edges
+  fog: {
+    near: 4,               // m the fog starts at, at its thickest (the usual: 120)...
+    far: 70,               // ...and where it is solid (the usual: 520)
+    edge: 60,              // m it thickens over, at each end
+    policeSight: 0.4,      // share of their usual sight the police have in it
+    color: 0xc4c9ce,
+  },
+  // rockfall (a level's "rockfall": { from, to, count, side }): rocks tumbling down from that side
+  // onto the road as the player comes near. Obstacles: only the player can hit them
+  rockfall: {
+    height: 22,            // m up the hillside a rock starts...
+    out: 14,               // ...this far off the road's edge
+    near: { min: 60, max: 130 }, // m short of it the player sets one off
+    size: { min: 0.6, max: 1.4 }, // m, a rock's radius
+  },
+  // a cyclist peloton (a level's "pelotons": { s, count, speed, trigger }): cyclists riding two abreast
+  // along the kerb of the player's side, setting off as the player comes within trigger m. Obstacles:
+  // only the player can hit them, and knocking one off with a police car watching is a bust
+  peloton: {
+    speed: 9,              // m/s
+    trigger: 300,
+    spacing: 2.6,          // m between rows
+    wobble: 0.18,          // m they weave
+    // a good driver gives them room: it eases out past them, room m clear, if nothing is in the way
+    // (looking lookout m ahead for them); otherwise it waits behind them. Done once passRoom m past them
+    room: 0.5, lookout: 45, passRoom: 4,
   },
 
   // scenery

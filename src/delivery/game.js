@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial } from './levels.js';
 import { Progress } from './progress.js';
-import { useLevelCar } from './cars.js';
+import { useLevelCar, returnCar } from './cars.js';
 import { Input } from './input.js';
 import { clamp } from './util.js';
 import { Track, buildTrack } from './track.js';
@@ -10,6 +10,9 @@ import { Message } from './messages.js';
 import { UfoStrike } from './ufostrike.js';
 import { BulletTrain } from './bullettrain.js';
 import { Tide } from './tide.js';
+import { SpeedCameras } from './cameras.js';
+import { Crossings } from './crossing.js';
+import { StopGo } from './stopgo.js';
 import { Hippos } from './hippos.js';
 import { Elephants } from './elephants.js';
 import { Wreckage } from './wreckage.js';
@@ -73,6 +76,7 @@ export const Game = {
   toMenu() {
     this.state = 'start';
     this.paused = false;
+    returnCar(); // (a car lent by Car Swap goes back)
     if (this.screensaver) { // the menu's own level is picked again
       this.screensaver = false;
       this.raceWatch = false;
@@ -158,12 +162,14 @@ export const Game = {
     this.wrecks = 0;
     this.busts = 0;
     this.cash = 0;    // $ of cash pickups collected this run (banked with the tip on delivery)
+    this.fines = 0;   // $ of speeding fines this run (taken off what it banks: see SpeedCameras)
     this.over = false;
     this.paused = false;
     this.screensaver = false;
     this.raceWatch = false;
     this.tankPieces = Progress.data.tankPieces || 0; // (the run's own, until it is settled)
     this.zone = null; // the level zone the player is in (see update)
+    this.inFog = false; // in a fog bank (see update)
     this.lap = 0;     // laps done, on a lapped level ("laps")
     Message.clear();
     UfoStrike.reset();
@@ -174,6 +180,9 @@ export const Game = {
     Machinery.reset();
     Gunfire.reset();
     Site.reset();
+    SpeedCameras.reset();
+    Crossings.reset();
+    StopGo.reset();
     this.state = 'playing';
     startScreen.classList.add('hidden');
     resultScreen.classList.add('hidden');
@@ -192,13 +201,14 @@ export const Game = {
   },
   finish(outcome) {
     this.state = 'finished';
+    returnCar(); // (a car lent by Car Swap goes back: the results are the player's own car's)
     this.settleTank(outcome === 'delivered' || outcome === 'late');
     this.outcome = outcome;
     sfx(outcome === 'delivered' ? 'win' : 'fail');
     const tip = '$' + this.tip.toFixed(2);
     // delivered on time: the tip goes in the bank, the time to spare may be a best, and the next level opens
     // (a hidden level, off the menu, banks nothing and records nothing: see HIDDEN_LEVELS)
-    const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, this.tip + this.cash, this.remaining, this.evil);
+    const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, Math.max(0, this.tip + this.cash - this.fines), this.remaining, this.evil);
     resultTitle.textContent = {
       delivered: !LEVEL.grid?.rival ? 'Delivered!'
         : !this.rivalsIn ? (LEVEL.grid.count > 1 ? 'Delivered first - you beat them all!' : 'Delivered - you beat your rival!')
@@ -208,7 +218,7 @@ export const Game = {
       timeout: 'Out of time - level failed',
       busted: 'Busted! Game over',
     }[outcome];
-    resultTime.textContent = outcome === 'delivered' ? 'Tip ' + tip + (this.cash ? ' + $' + this.cash + ' cash' : '')
+    resultTime.textContent = outcome === 'delivered' ? 'Tip ' + tip + (this.cash ? ' + $' + this.cash + ' cash' : '') + (this.fines ? ' - $' + this.fines + ' fines' : '')
       : outcome === 'late' ? 'Tip ' + tip + ' of $' + LEVEL.tip
       : Math.floor(this.progress * 100) + '% of the way';
     resultNote.textContent = (outcome === 'delivered' ? formatTime(this.remaining) + ' to spare' +
@@ -314,8 +324,15 @@ export const Game = {
       const zone = Track.zoneAt(Player.s);
       if (zone && zone !== this.zone) Message.say('zones', zone.id);
       if (zone) this.zone = zone;
+      // driving into a fog bank (a level's "fog"): said as it starts to close in
+      const fog = Track.foggy(Player.s) > 0;
+      if (fog && !this.inFog) Message.say('events', 'fog');
+      this.inFog = fog;
     }
+    if (playing) Crossings.update(dt);
+    StopGo.update(dt);
     Traffic.update(dt);
+    if (playing) SpeedCameras.update(dt);
     UfoStrike.update(dt);
     BulletTrain.update(dt);
     if (playing) Tide.update(dt);

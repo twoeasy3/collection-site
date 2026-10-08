@@ -81,6 +81,8 @@ const SAMPLES = {
   waveCrash: null,              // ...and breaking over the road
   hippo: null,                  // a hippo surfacing, with a bellow, to charge
   rumble: null,                 // a concrete pipe rolling off its stack
+  camera: null,                 // a speed camera catching the player (a shutter's click and whine)
+  bell: null,                   // a level crossing's bell, ringing while its lights flash
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -280,6 +282,8 @@ Object.assign(SYNTH, {
   rumble: (v) => { noise(160, 60, 1.4, 0.6 * v); tone(55, 40, 1.2, 0.3 * v, 'sine'); },
   hippo: (v) => { noise(1800, 300, 0.5, 0.5 * v); tone(110, 70, 0.9, 0.35 * v, 'sawtooth', 0.15); tone(82, 55, 0.9, 0.3 * v, 'square', 0.2); },
   waveCrash: (v) => { noise(2600, 300, 1.6, 0.6 * v); noise(700, 150, 1.4, 0.4 * v, 'lowpass', 0.1); },
+  camera: (v) => { noise(6000, 3000, 0.04, 0.4 * v, 'bandpass'); tone(2400, 4200, 0.25, 0.08 * v, 'sine', 0.03); },
+  bell: (v) => { tone(1350, 1350, 0.18, 0.12 * v, 'triangle'); tone(2700, 2700, 0.12, 0.05 * v, 'sine'); },
 });
 
 export const Sound = {

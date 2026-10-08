@@ -10,7 +10,7 @@ import * as THREE from 'three';
 import './powerups.css';
 import './gimmicks.css';
 import { CONFIG } from './config.js';
-import { LEVELS, levelLabel } from './levels.js';
+import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
 import { LEVEL_CARS } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
 import { OBSTACLE_MODELS } from './render/obstacleModels.js';
@@ -52,8 +52,10 @@ const sign = (text, bg, fg = '#fff', w = 3.2, h = 1.4) => {
   const board = mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), side: THREE.DoubleSide }), 0, 3.4, 0);
   return group(box(0.15, 3, 0.15, lambert(0x8a8f96), 0, 1.5, -0.05), board);
 };
-// where the levels are: every level (on the menu) that has it, by its number and name
-const where = (has) => LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null).filter(Boolean);
+// where the levels are: every level (on the menu) that has it, by its number and name; and the test
+// level, Gimmick Road (off the menu: ?hidden=gimmick-road), where the newest are tried out first
+const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null),
+  has(HIDDEN_LEVELS['gimmick-road']) ? '<span>Test</span> Gimmick Road (?hidden=gimmick-road)' : null].filter(Boolean);
 
 // ---- every gimmick, by group ---------------------------------------------------------------------
 // { name, has: (level) => bool (the levels it is in), rules: [...], build: () => { model, tick?(t, dt) },
@@ -264,7 +266,7 @@ const GROUPS = [
     } },
     { name: 'Trenches', color: 0x8a6a45, has: (l) => l.siteWorks?.some(w => w.kind === 'trench'), rules: [
       `The shoulder is dug up into a deep trench, with a ${S.plateLength} m steel plate laid across it every ${S.plateEvery} m and open gaps between.`,
-      `Drive along it and every gap a wheel drops into is a jolt: ${S.trenchDamage} damage, and you keep ${pct(S.trenchKept)} of your speed. Over and over, for as long as you stay on it.`,
+      `Drive along it and every gap a wheel drops into is a jolt: ${S.trenchDamage} damage, and you keep ${pct(S.trenchKept)} of your speed. Over and over, for as long as you stay on it. Each jolt is a ${pct(S.trenchPuncture)} chance of a flat tyre.`,
       'The lanes themselves are untouched: it is the price of using that shoulder.',
     ], build: () => {
       const g = road(7, 13);
@@ -391,6 +393,111 @@ const GROUPS = [
       const boat = MODELS.jetboat({ ...LEVEL_CARS.jetboat });
       const sea = mesh(new THREE.PlaneGeometry(12, 12).rotateX(-Math.PI / 2), lambert(0x1d7a96), 0, 0.15, 0);
       return { model: group(sea, boat), tick: (t) => boat.userData.animate?.(t) };
+    } },
+  ] },
+  { name: 'Gimmick Road', cards: [
+    { name: 'Speed cameras', color: 0xf2c21c, has: (l) => l.cameras?.length, rules: [
+      `A camera on its pole, on the shoulder or on the centre line. Pass it over its limit (${CONFIG.speedCamera.limit} km/h unless it says otherwise) and the screen flashes white.`,
+      `The first time in a run is a <strong>$${CONFIG.speedCamera.fine} fine</strong>, taken off what you bank. Every one after that is a <strong>bust</strong>.`,
+      'Run it over and there is no offence (just the knock). A radar detector keeps you from being caught at all.',
+    ], build: () => {
+      const g = road(9, 12), cam = ob('camera', { height: 4.2 });
+      cam.position.set(0, 0, 0);
+      cam.rotation.y = Math.PI;
+      g.add(cam);
+      return { model: g, tick: (t) => cam.userData.lamp.color.setHex(t % 2 < 0.2 ? 0xffffff : 0x555a60) };
+    } },
+    { name: 'Funeral processions', color: 0x8a8a9a, has: (l) => l.processions, rules: [
+      `Now and then a hearse and ${CONFIG.procession.cars} cars in black, nose to tail in one lane at ${kmh(CONFIG.procession.speed)}, either way. They keep their lane and never throw.`,
+      'Crash into any of them and the whole procession is furious with you.',
+    ], build: () => {
+      const g = road(5, 26);
+      const cars = ['hearse', ...CONFIG.procession.kinds.slice(0, CONFIG.procession.cars)];
+      let z = 9;
+      for (const kind of cars) {
+        const car = kind === 'hearse' ? vehicle('hearse', 0x151515) : painted(vehicle(kind, CONFIG.procession.paint), CONFIG.procession.paint);
+        car.position.set(1.2, 0, z);
+        g.add(car);
+        z -= CONFIG.vehicles[kind].hl + 2.8 + CONFIG.procession.gap;
+      }
+      return { model: g };
+    } },
+    { name: 'Level crossings', color: 0xd8262b, has: (l) => l.crossings?.length, rules: [
+      `As you come within ${CONFIG.crossing.trigger} m the lights flash and the bell rings; the booms come down over ${CONFIG.crossing.lower} s, and ${CONFIG.crossing.warn} s on, a short train shoots across at ${kmh(CONFIG.crossing.speed)}.`,
+      'Traffic waits at the booms. Anything on the line as the train goes by is wrecked, you included (unless you are a ghost).',
+      `You can't stop, so ease off and arrive after it, or beat it across. A boom down is only a knock (${CONFIG.crossing.boomDamage} damage), and it breaks.`,
+    ], build: () => {
+      const g = road(9, 12);
+      const line = group(box(16, 0.06, 2.8, lambert(0x5b544c), 0, 0.02, 0), box(16, 0.12, 0.1, lambert(0x9aa0a6), 0, 0.1, -0.75), box(16, 0.12, 0.1, lambert(0x9aa0a6), 0, 0.1, 0.75));
+      g.add(line);
+      const lamps = [glow(0x3a1210), glow(0x3a1210)];
+      const post = group(box(0.16, 3.6, 0.16, lambert(0x8a9096), 0, 1.8, 0), box(1.2, 0.45, 0.08, lambert(0x1b1d22), 0, 2.5, 0),
+        mesh(new THREE.CircleGeometry(0.17, 14), lamps[0], -0.35, 2.5, 0.05), mesh(new THREE.CircleGeometry(0.17, 14), lamps[1], 0.35, 2.5, 0.05));
+      for (const r of [0.6, -0.6]) { const x = box(1.5, 0.22, 0.06, lambert(0xf4f4f4), 0, 3.3, 0); x.rotation.z = r; post.add(x); }
+      post.position.set(5, 0, 4);
+      const swing = new THREE.Group();
+      for (let k = 0; k < 5; k++) swing.add(box(1, 0.14, 0.14, lambert(k % 2 ? 0xf4f4f4 : 0xd8262b), -k - 0.5, 0, 0));
+      const pivot = group(swing);
+      pivot.position.set(4.6, 1.1, 3.6);
+      g.add(post, pivot);
+      return { model: g, tick: (t) => {
+        const phase = Math.floor(t * 2.5) % 2;
+        lamps.forEach((lamp, i) => lamp.color.setHex(i === phase ? 0xff2a1a : 0x3a1210));
+        swing.rotation.z = -Math.max(0, Math.sin(t * 0.8)) * Math.PI / 2 * 0.95;
+      } };
+    } },
+    { name: 'Stop / go roadworks', color: 0x2e9b3d, has: (l) => l.stopGo?.length, rules: [
+      'On a road of one lane each way, the oncoming side is dug up, so both ways take turns through the one lane left: yours.',
+      `A worker at each end turns a STOP / GO sign: ${CONFIG.stopGo.go} s of GO each way, with ${CONFIG.stopGo.clear} s between for the last through to clear. Traffic waits at its STOP; an evil driver may run it.`,
+      "You can't stop: time your arrival, or meet whatever is coming the other way down your lane.",
+    ], build: () => {
+      const g = road(7, 12);
+      g.add(box(3.2, 0.04, 12, lambert(0x3a2a1c), -1.8, 0.02, 0));
+      for (let z = -5.5; z <= 5.5; z += 2.2) { const c = ob('cone'); c.position.set(-0.2, 0, z); g.add(c); }
+      const worker = makeWorker();
+      worker.position.set(4.3, 0, 3);
+      const face = mesh(new THREE.CircleGeometry(0.62, 20), glow(0xd8262b), 0.35, 2.85, 0.24);
+      worker.add(box(0.06, 1.9, 0.06, lambert(0x8a9096), 0.35, 1.6, 0.2), face);
+      g.add(worker);
+      return { model: g, tick: (t) => face.material.color.setHex(t % 6 < 3 ? 0xd8262b : 0x2e9b3d) };
+    } },
+    { name: 'Fog banks', color: 0xc4c9ce, has: (l) => l.fog?.length, rules: [
+      `The fog closes right in round you: you can see only ${CONFIG.fog.far} m or so, easing in and out over ${CONFIG.fog.edge} m at each end.`,
+      `The police see you from only ${pct(CONFIG.fog.policeSight)} as far as usual: the shoulder is easier to get away with. But everything else turns up late too.`,
+    ], build: () => {
+      const g = road(9, 14);
+      for (const [x, z, r] of [[-3, -3, 2.2], [2.5, -1, 2.6], [0, 3, 2.4], [-2, 1, 1.8], [3, 4, 1.6]]) {
+        g.add(mesh(new THREE.SphereGeometry(r, 12, 8), lambert(0xdfe3e6, { transparent: true, opacity: 0.55 }), x, r * 0.5, z));
+      }
+      return { model: g };
+    } },
+    { name: 'Potholes', color: 0x55504a, has: (l) => l.potholes?.length, rules: [
+      `Ragged holes in the lanes. A wheel dropping into one is a jolt: ${S.potholeDamage} damage, and you keep ${pct(S.potholeKept)} of your speed.`,
+      `Each one is a ${pct(S.potholePuncture)} chance of a flat tyre on the side that hit it.`,
+    ], build: () => {
+      const g = road(9, 12);
+      for (const [x, z, r] of [[2.2, -2, 1], [-2, 3, 0.8], [2.6, 3.5, 0.6]]) {
+        const rim = mesh(new THREE.CircleGeometry(r * 1.4, 9).rotateX(-Math.PI / 2), lambert(0x4d4a46), x, 0.02, z);
+        const hole = mesh(new THREE.CircleGeometry(r, 7).rotateX(-Math.PI / 2), lambert(0x15120f), x, 0.03, z);
+        g.add(rim, hole);
+        for (let k = 0; k < 4; k++) { const chunk = box(0.2, 0.1, 0.25, lambert(0x3a3b3f), x + Math.cos(k * 1.7) * r * 1.7, 0.05, z + Math.sin(k * 1.7) * r * 1.7); chunk.rotation.y = k; g.add(chunk); }
+      }
+      return { model: g };
+    } },
+    { name: 'Rockfall', color: 0x8d8174, has: (l) => l.rockfall?.length, rules: [
+      `Rocks come away from the hillside and tumble down onto the road as you come near (${range(CONFIG.rockfall.near, ' m')} short of them), bounding out across it to where they land.`,
+      `A rock on the road is an obstacle: ${CONFIG.obstacleKinds.rock.damage} damage. Only you hit them: traffic drives straight through.`,
+    ], build: () => {
+      const g = road(9, 12), rocks = [0.8, 1.2, 0.6].map((r, k) => { const rock = ob('rock', { r }); rock.position.set(-2.5 + k * 2.6, 0, k - 1); g.add(rock); return rock; });
+      return { model: g, tick: (t) => { rocks[2].position.y = Math.max(0, 4 - ((t * 3) % 6)) ; rocks[2].userData.rock.rotation.x = t * 4; } };
+    } },
+    { name: 'Cyclist pelotons', color: 0xff4f8b, has: (l) => l.pelotons?.length, rules: [
+      `A bunch of cyclists riding two abreast by the kerb on your side at ${kmh(CONFIG.peloton.speed)}, setting off as you come within ${CONFIG.peloton.trigger} m.`,
+      `Hit one and it is knocked flying (${CONFIG.obstacleKinds.cyclist.damage} damage); with a police car watching, that is a <strong>bust</strong>. Traffic drives straight through them.`,
+    ], build: () => {
+      const g = road(7, 12), riders = [];
+      for (let k = 0; k < 4; k++) { const c = ob('cyclist'); c.position.set(1.6 + (k % 2) * 1.0, 0, 3 - Math.floor(k / 2) * 3); g.add(c); riders.push(c); }
+      return { model: g, tick: (t) => riders.forEach((c, k) => c.userData.animate(t + k * 0.7)) };
     } },
   ] },
 ];

@@ -13,6 +13,9 @@ npm run build          # builds it along with the rest of the site
 npm run test:delivery  # headless check of the game logic on every level
 ```
 
+`?hidden=gimmick-road` plays Gimmick Road, a hidden test level with the newest gimmicks (speed cameras, potholes,
+a level crossing, stop / go roadworks, a fog bank, rockfall, a cyclist peloton and funeral processions).
+
 Testing shortcuts in the address: `?autostart` (or `?autostart=evil`) skips the start screen;
 with it, `&level=3` picks a level whether or not it is unlocked, `&at=1650` starts that many
 metres along, and `&ff=5` runs five seconds first. `?garage` opens the garage.
@@ -41,6 +44,9 @@ distance along a road (`s`) plus a sideways offset (`lat`).
 | `src/delivery/packages.js` | Thrown packages and the tank's cannon |
 | `src/delivery/pickups.js` | Pickups and TANK RAGE targets |
 | `src/delivery/game.js` | Game state, countdown clock, tip, results |
+| `src/delivery/cameras.js` | Speed cameras: catching the player, fines and busts |
+| `src/delivery/crossing.js` | Level crossings: lights, booms, the train, traffic waiting |
+| `src/delivery/stopgo.js` | Stop / go roadworks: the signs, traffic taking turns through one lane |
 | `src/delivery/render/*.js` | three.js scene, road and vehicle meshes, effects, helicopter, HUD, menu |
 | `src/delivery/main.js` | Entry point and frame loop |
 

@@ -15,6 +15,7 @@ import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
 import { TURBO_COLOR, PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 import { OBSTACLE_MODELS } from './obstacleModels.js';
+import { SpeedCameras } from '../cameras.js';
 
 // Everything here that belongs to the loaded level (bridges, obstacles, pickups, targets)
 // lives in this group and is rebuilt by buildItems() each time a level is loaded.
@@ -310,6 +311,9 @@ export const syncPickups = (dt) => {
       mesh.position.set(tmp.x, tmp.y + o.h + (mesh.userData.bob ? Math.sin(performance.now() / 1000 * 2.2 + i) * 0.06 : 0), tmp.z);
     }
     if (o.roll && mesh.userData.roller) mesh.userData.roller.rotation.z = -o.roll.dir * (o.spun || 0); // (a pipe rolling across)
+    if (o.kind === 'rock') mesh.userData.rock.rotation.x = o.spin || 0; // (tumbling down the hillside)
+    if (o.ride) mesh.userData.animate(o.ride.on ? o.ride.t : 0); // (a cyclist pedalling)
+    if (o.camera !== undefined) mesh.userData.lamp.color.setHex(SpeedCameras.list[o.camera]?.flash > 0 ? 0xffffff : 0x555a60); // (a speed camera flashing)
     if (o.drift && mesh.userData.roller) { // a bale on the move rolls the way it is going
       const last = mesh.userData.last || (mesh.userData.last = { s: o.s, lat: o.lat });
       mesh.userData.roller.rotation.x += Math.hypot(o.s - last.s, o.lat - last.lat) / (o.height / 2);

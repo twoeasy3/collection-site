@@ -24,6 +24,7 @@ const hudTurbo = document.getElementById('turbo');
 const hudDanger = document.getElementById('danger');
 const hudFlat = document.getElementById('flat'), hudFlatFill = document.getElementById('flatFill');
 const hudCopWatch = document.getElementById('copWatch');
+const hudCopGlow = document.getElementById('copGlow');
 const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill'), hudTowLabel = document.getElementById('towLabel');
 const hudSocial = document.getElementById('social'), hudSocialFill = document.getElementById('socialFill');
 const hudBusts = document.getElementById('busts');
@@ -134,6 +135,7 @@ export const updateHud = () => {
   // on a level without the shoulder rule, nor for a tank, which nobody busts)
   const watched = Game.state === 'playing' && Player.active && !Game.screensaver && LEVEL.shoulderTimer !== false && Player.tank <= 0 && Traffic.policeNear();
   hudCopWatch.style.display = watched ? 'block' : 'none';
+  hudCopGlow.classList.toggle('on', watched); // (and the screen's edges flash red and blue)
   // in a car's slipstream, and how deep in it (a race)
   // (or, just out of it, the slingshot, and how much of it is left)
   const flung = Player.slingTime > 0 && !(Player.tow > 0);
