@@ -1,10 +1,11 @@
 // ---- garage: the car shop, a 3D parking lot with a garage behind it ---------------------
-// Every car in CARS is parked in a bay (the Blue Star ones once they are open: see garageCars). Tap any car, owned or not, to see its stats; the button under them
+// Every car in CARS is parked in a bay (the Blue Star ones once they are open: see garageCars; the amphibious ones
+// from the start, in a section of their own at the end of the tiers: see buildLot). Tap any car, owned or not, to see its stats; the button under them
 // uses it, or buys it (hovering shows the price). The Good / Evil toggle swaps every car to its
 // other livery: buying a car buys both.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CARS, CAR, SECRET_CARS, EARNED_CARS, selectCar, stars, starColour, blueStarsOpen, garageCars } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, EARNED_CARS, selectCar, stars, starColour, STAR_COLOURS, blueStarsOpen, garageCars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { renderer } from './scene.js';
@@ -30,7 +31,8 @@ export const withStars = (car) => {
   return [car.name + ' ', span];
 };
 const bulk = (car) => car.hw * car.hl * car.height; // how big a car is, to park the bigger ones further back
-const rank = (car) => (car.tier || 99) + (car.blue ? 0.5 : 0); // (a tier's Blue Star cars park after its gold ones)
+// (and the amphibious cars after every tier, a section of their own: see buildLot)
+const rank = (car) => car.amphibious ? 50 + car.tier : (car.tier || 99) + (car.blue ? 0.5 : 0); // (a tier's Blue Star cars park after its gold ones)
 // (the lot is built for the cars on show: it grows when the Blue Star cars arrive. See buildLot)
 let order = [], COLS = 0, LOT_W = 0, parked = [], built = null;
 const onShow = () => garageCars().length; // (what the lot was built for: it only ever grows)
@@ -77,7 +79,23 @@ const buildLot = () => {
   // (sorted and filtered by the bar's Sort and Show buttons: see render/garageview.js)
   const sorted = arrange(garageCars().sort((a, b) => rank(a) - rank(b) || a.price - b.price));
   order = [];
-  for (let i = 0; i < sorted.length; i += ROWS) order.push(...sorted.slice(i, i + ROWS).sort((a, b) => GarageView.usual ? bulk(a) - bulk(b) : 0)); // (in each column, the biggest at the back; sorted some other way, strictly in that order)
+  // (parked as usual, the amphibious cars are a section: columns of their own, the bays left over in the column
+  // before them and in their last one standing empty (null in `order`), on a slipway under a sign of their own.
+  // Sorted some other way they park among the rest; Show: Amphibious parks them alone)
+  const sections = [];
+  for (const car of sorted) {
+    const last = sections[sections.length - 1];
+    if (!last || (GarageView.usual && !!last[0].amphibious !== !!car.amphibious)) sections.push([car]);
+    else last.push(car);
+  }
+  const slipways = []; // [first column, columns] of each amphibious section
+  const slipX = (from, cols) => colX(from) + (cols - 1) * BAY_W / 2, slipW = (cols) => Math.max(9, cols * BAY_W - 0.6); // (its middle, and its sign's width)
+  sections.forEach((cars, k) => {
+    const from = order.length / ROWS;
+    for (let i = 0; i < cars.length; i += ROWS) order.push(...cars.slice(i, i + ROWS).sort((a, b) => GarageView.usual ? bulk(a) - bulk(b) : 0)); // (in each column, the biggest at the back; sorted some other way, strictly in that order)
+    if (k < sections.length - 1) while (order.length % ROWS) order.push(null);
+    if (GarageView.usual && cars[0].amphibious) slipways.push([from, Math.ceil(cars.length / ROWS)]);
+  });
   COLS = Math.ceil(order.length / ROWS);
   LOT_W = COLS * BAY_W;
   const mid = (LOT_W - BAY_W) / 2, left = -BAY_W / 2, right = LOT_W - BAY_W / 2;
@@ -98,15 +116,26 @@ const buildLot = () => {
   box(trim, LOT_W + 5, 0.5, 0.3, mid, H + 0.25, frontZ + 0.8);
   const garageSign = label('GARAGE', 512, 96, 64);
   for (let x = mid - Math.floor(COLS / 8) * 8 * BAY_W / 2; x <= right; x += 8 * BAY_W) { // (one every eight bays)
+    if (slipways.some(([from, cols]) => Math.abs(x - slipX(from, cols)) < 6.5 + slipW(cols) / 2)) continue; // (the Amphibious section's own sign is there)
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.25), new THREE.MeshBasicMaterial({ map: garageSign }));
     sign.position.set(x, H + 1.9, frontZ + 0.8);
     lot.add(sign);
   }
-  parked = order.map(parkCar);
+  // the Amphibious section: its bays a slipway's wet blue, a sign for it on the roof over them
+  for (const [from, cols] of slipways) {
+    const x = slipX(from, cols);
+    box(lambert(0x2f7f9a), cols * BAY_W - 0.14, 0.03, ROW_Z[0] - ROW_Z[2] + BAY_D - 0.14, x, 0.035, (ROW_Z[0] + ROW_Z[2]) / 2);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(slipW(cols), 2.25),
+      new THREE.MeshBasicMaterial({ map: label('AMPHIBIOUS', 512, 96, 60, STAR_COLOURS.amphibious, '#12323a') }));
+    sign.position.set(x, H + 1.9, frontZ + 0.8);
+    lot.add(sign);
+  }
+  parked = order.map(parkCar).filter(Boolean);
 };
 
 // ---- a car, parked in its bay: column by column --------------------------------------------------
 const parkCar = (car, i) => {
+  if (!car) return null; // (a bay left empty: see buildLot)
   const mesh = car.tank ? makeTankMesh(car.color) : car.ufo ? makeUfo() : car.model ? MODELS[car.model](car) : makeCarMesh(car.color); // (ufo: the earned Saucer)
   if (!car.tank && !car.ufo && !car.model) shapeCarMesh(mesh, car);
   mesh.position.set(colX(Math.floor(i / ROWS)), car.ufo ? 1 : 0, ROW_Z[i % ROWS]); // (a saucer hovers)

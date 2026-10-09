@@ -21,7 +21,8 @@ const SHOWS = [
   { id: 'owned', name: 'Owned', has: (car) => Progress.owns(car.id) },
   { id: 'sale', name: 'For sale', has: (car) => !Progress.owns(car.id) },
   { id: 'afford', name: 'Can afford', has: (car) => !Progress.owns(car.id) && Progress.data.money >= car.price },
-  { id: 'gold', name: 'Gold stars', has: (car) => !!car.tier && !car.blue, when: blueStarsOpen },
+  { id: 'amphibious', name: 'Amphibious', has: (car) => !!car.amphibious },
+  { id: 'gold', name: 'Gold stars', has: (car) => !!car.tier && !car.blue && !car.amphibious, when: blueStarsOpen },
   { id: 'blue', name: 'Blue stars', has: (car) => !!car.blue, when: blueStarsOpen },
 ];
 
