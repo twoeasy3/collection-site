@@ -38,7 +38,7 @@ const pick = (shares) => {
 const envelope = (t) => {
   const { rise, hold, fall, low, back } = W();
   if (t <= 0) return 0;
-  if (t < rise) return smooth(t / rise);
+  if (t < rise) return 1 - (1 - t / rise) ** 2; // (it comes in at speed, as its crest did, and slows to its height)
   if ((t -= rise) < hold) return 1;
   if ((t -= hold) < fall) return 1 - 2 * smooth(t / fall);
   if ((t -= fall) < low) return -1;

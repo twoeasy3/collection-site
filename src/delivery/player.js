@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
-import { CAR, CARS, lendCar, returnCar } from './cars.js';
+import { CAR, CARS, lendCar, returnCar, superOf } from './cars.js';
 import { clamp, damp } from './util.js';
 import { Track } from './track.js';
 import { updateYaw, keepOnRoad, sfx, cornerSpeed } from './physics.js';
@@ -12,6 +12,7 @@ import { Tide } from './tide.js';
 import { Wreckage } from './wreckage.js';
 import { Game } from './game.js';
 import { Social } from './social.js';
+import { Mysteries } from './mysteries.js';
 
 // how hard a car is pushed to the outside of the bend it is in, beyond what its tyres hold (m/s^2,
 // signed: a bend to the right pushes it left); 0 within their grip, and 0 where the car doesn't
@@ -245,20 +246,25 @@ export const Player = {
     const weights = effects.map(e => Social.mysteryWeight(e));
     let roll = Math.random() * weights.reduce((a, w) => a + w, 0), drawn = effects[effects.length - 1];
     for (let i = 0; i < effects.length; i++) if ((roll -= weights[i]) < 0) { drawn = effects[i]; break; }
-    const effect = this.tank > 0 ? 'ufo'
+    let effect = this.tank > 0 ? 'ufo'
       : [...effects, ...extraEffects].find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || drawn; // (?mystery=UFO works too, and picks from the unused pool)
+    // (one that doesn't suit this level, or this car: souped up, in a car with no Super version. Another in its place)
+    if (!Mysteries.fits(effect) || (effect === 'soupedUp' && !superOf(CAR))) effect = CONFIG.mystery.fallback;
     Message.say('powerups', 'mystery', effect);
     if (effect === 'ufo') UfoStrike.start();
     if (effect === 'bulletTrain') BulletTrain.start();
     if (effect === 'ufo' || effect === 'bulletTrain' || effect.startsWith('insurance')) return;
+    if (effect === 'rewind') return Mysteries.start(effect); // (over at once: see mysteries.js)
     this.mystery = effect;
-    this.mysteryTime = time + Social.powerUpShift(effect);
+    this.mysteryTime = (CONFIG.mystery[effect]?.time || time) + Social.powerUpShift(effect); // (one with a time of its own lasts that long)
+    Mysteries.start(effect); // (earthquake, giant, swapSides, magnet, blackout, trafficFreeze: see mysteries.js; nothing for the rest)
+    if (effect === 'soupedUp') this.takeCar(() => lendCar(superOf(CAR))); // (the car's Super version: see cars.js superOf)
     if (effect === 'toad') Traffic.toadify(true);
     if (effect === 'angel' || effect === 'jerk') for (const car of Traffic.cars) car.showMood = true; // (moods: see Traffic)
     if (effect === 'rushHour') Traffic.rushHour(true);
     if (effect === 'moodSwing') Traffic.moodSwing(true);
     if (effect === 'carSwap') { // (any of the garage's cars but this one and the Tank; none for a level's own vehicle)
-      const others = CARS.includes(CAR) ? CARS.filter(c => c !== CAR && !c.tank) : [];
+      const others = CARS.includes(CAR) ? CARS.filter(c => c !== CAR && !c.tank && !c.earned) : [];
       if (others.length) this.takeCar(() => lendCar(others[Math.floor(Math.random() * others.length)]));
     }
   },
@@ -266,7 +272,8 @@ export const Player = {
     if (this.mystery === 'toad') Traffic.toadify(false);
     if (this.mystery === 'rushHour') Traffic.rushHour(false);
     if (this.mystery === 'moodSwing') Traffic.moodSwing(false);
-    if (this.mystery === 'carSwap') this.takeCar(returnCar);
+    if (this.mystery === 'carSwap' || this.mystery === 'soupedUp') this.takeCar(returnCar);
+    Mysteries.end(this.mystery); // (the ones in mysteries.js)
     this.mystery = '';
     this.mysteryTime = 0;
   },

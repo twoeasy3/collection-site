@@ -29,7 +29,15 @@
       "sundayDrivers": ["Sunday drivers! Everyone's out for a gentle cruise."],
       "rushHour": ["RUSH HOUR!! The roads are packed!"],
       "carSwap": ["Car swap! Take this one for a spin."],
-      "moodSwing": ["Mood swing! Good is evil and evil is good!"]
+      "moodSwing": ["Mood swing! Good is evil and evil is good!"],
+      "earthquake": ["EARTHQUAKE!! Hold on to something!"],
+      "rewind": ["Rewind! Ten seconds ago..."],
+      "giant": ["GIANT! Mind the traffic. Or don't."],
+      "swapSides": ["Swap sides! You're ${side} for a while..."],
+      "magnet": ["Magnet! The pickups are coming to you."],
+      "blackout": ["Blackout! Headlights only..."],
+      "trafficFreeze": ["TRAFFIC FREEZE! Everything but you stands still."],
+      "soupedUp": ["Your car has been souped up!"]
     }
   },
   "events": {
@@ -50,11 +58,6 @@
     "wideLoad": ["Wide load ahead. Don't pass while the escort is watching!"],
     "jackknife": ["Road train jackknifing!! Find the open lane!"],
     "stampede": ["STAMPEDE!! They're coming down the road at you!"],
-    "tollPaid": ["Toll paid: ${fee}."],
-    "tollRam": ["You ran the toll!!"],
-    "averageStart": ["Average speed check: ${limit} km/h for the next ${length} m."],
-    "averageOk": ["Average ${speed} km/h. Thank you for not speeding."],
-    "averageFine": ["AVERAGE SPEED CAMERA! ${speed} in a ${limit}: ${fine} fine. Next time it's a bust!"],
     "wrongWay": ["WRONG-WAY DRIVER!! Coming at you in the right-hand lane!"],
     "tunnel": ["Tunnel! Lights on."],
     "parade": ["Street parade ahead! The whole road's taken."],
@@ -122,8 +125,7 @@
     "cyclist": ["The police saw you knock a cyclist off!!"],
     "runner": ["The police saw you knock a runner down!!"],
     "school": ["You ran a school crossing!!"],
-    "wideLoad": ["The escort saw you overtake a wide load!!"],
-    "toll": ["Toll evasion!!"]
+    "wideLoad": ["The escort saw you overtake a wide load!!"]
   },
   "reactions": {
     "goodOnPolice": [
@@ -318,5 +320,31 @@
     "turretHull": ["You found a tank turret hull!"],
     "gunTurret": ["You found a tank gun turret!"],
     "gunBarrel": ["You found a tank gun barrel!"]
+  },
+  "milestones": {
+    "packagesLanded_10": ["10 packages landed: Paper boy"],
+    "packagesLanded_100": ["100 packages landed: Postie"],
+    "packagesLanded_1000": ["1000 packages landed: Postmaster General"],
+    "copsOutrun_5": ["5 cops outrun: Lead foot"],
+    "copsOutrun_50": ["50 cops outrun: Smokey's nightmare"],
+    "copsOutrun_500": ["500 cops outrun: The Bandit"],
+    "hipposSurvived_1": ["1 hippo survived: Close shave"],
+    "hipposSurvived_10": ["10 hippos survived: River dancer"],
+    "hipposSurvived_100": ["100 hippos survived: Hippo whisperer"],
+    "levelsDelivered_1": ["1 level delivered: On the payroll"],
+    "levelsDelivered_10": ["10 levels delivered: Regular"],
+    "levelsDelivered_35": ["35 levels delivered: Employee of the month"],
+    "wrecks_1": ["1 wreck: It happens"],
+    "wrecks_25": ["25 wrecks: Insurance risk"],
+    "wrecks_250": ["250 wrecks: Crash test dummy"],
+    "busts_1": ["1 bust: A caution"],
+    "busts_25": ["25 busts: Known to police"],
+    "busts_250": ["250 busts: Most wanted"],
+    "trainsDodged_1": ["1 train dodged: Mind the gap"],
+    "trainsDodged_10": ["10 trains dodged: Level crossing"],
+    "trainsDodged_100": ["100 trains dodged: Trainspotter"],
+    "kmDriven_10": ["10 km driven: Round the block"],
+    "kmDriven_100": ["100 km driven: Road trip"],
+    "kmDriven_1000": ["1000 km driven: High mileage"]
   }
 }

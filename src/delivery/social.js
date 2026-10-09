@@ -13,7 +13,8 @@ import { Player } from './player.js';
 
 const C = CONFIG.social;
 // the mysteries that are good for the player, and those that are bad (the rest are neither)
-const GOOD_MYSTERIES = ['toad', 'invincible', 'angel', 'ufo', 'sundayDrivers'], BAD_MYSTERIES = ['rickety', 'jerk', 'noBrakes', 'rushHour'];
+const GOOD_MYSTERIES = ['toad', 'invincible', 'angel', 'ufo', 'sundayDrivers', 'soupedUp', 'giant', 'magnet', 'trafficFreeze', 'rewind'],
+  BAD_MYSTERIES = ['rickety', 'jerk', 'noBrakes', 'rushHour', 'earthquake', 'blackout'];
 
 export const Social = {
   standing: 0,

@@ -40,12 +40,13 @@ export const TIERS = 5;
 // scripts/.balance-check.mjs checks every Blue Star against it.
 export const NEXT_TIER_CAPS = { maxSpeed: 52, accel: 24, health: 450 };
 export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only the stars it has: no empty ones)
-export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff' };
-export const starColour = (car) => car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
+// (a 6-star car, earned rather than bought, has magenta stars: see EARNED_CARS)
+export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff', earned: '#ff5fd2' };
+export const starColour = (car) => car.earned ? STAR_COLOURS.earned : car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
 // the Blue Star cars are in the garage once level CONFIG.blueStarsAfter is delivered (which opens the next)
 export const blueStarsOpen = () => Progress.data.unlocked > CONFIG.blueStarsAfter;
-// the cars the garage shows now
-export const garageCars = () => CARS.filter(car => !car.blue || blueStarsOpen());
+// the cars the garage shows now (an earned car only once it is earned: see EARNED_CARS)
+export const garageCars = () => [...CARS.filter(car => !car.blue || blueStarsOpen()), ...EARNED_CARS.filter(car => Progress.earned(car))];
 
 export const CARS = [
   // In tiers, cheapest first: each tier a little faster and a little tougher than the one
@@ -170,9 +171,42 @@ export const SECRET_CARS = {
     maxSpeed: 25, accel: 5, crossing: 0.7, health: 220, hw: 1.3, hl: 5.5, height: 3.1 },
 };
 
+// ---- tier 6: earned, not bought ------------------------------------------------------------
+// One car for each special level: that level's own kind of vehicle brought into the garage (or a car in
+// its spirit), to drive on ANY level. It is earned by beating the level's par (earned.par: seconds to
+// spare, by side; a level played on one side only asks for that side) on every side it names, and is
+// never for sale (price 0, no bay until it is earned: see garageCars). Nothing more is saved for it:
+// Progress.earned(car) reads the best times, and Progress.owns() says yes to one that is earned, so it
+// is picked and driven like any other. Par: about a quarter of the Good clock, a fifth of the Evil one
+// (levels/*.json "clock"). They are kept out of CARS (which traffic, Car Swap and "Unlock everything"
+// go by), and a level's vehicle here has an id of its own ('earned-f1') and its `base` (whose engine
+// and horn it has). The tier's stats are held within NEXT_TIER_CAPS, whatever the vehicle does on its
+// own level: 49 to 52 m/s (EARNED_SPEED), and no more acceleration or health than the caps.
+const EARNED_SPEED = { min: 49, max: NEXT_TIER_CAPS.maxSpeed };
+const earnedCar = (level, par, car, base) => ({ ...car, ...(base ? { id: 'earned-' + base.id, base } : {}), tier: 6, price: 0, earned: { level, par },
+  maxSpeed: Math.max(EARNED_SPEED.min, Math.min(EARNED_SPEED.max, car.maxSpeed)), accel: Math.min(NEXT_TIER_CAPS.accel, car.accel), health: Math.min(NEXT_TIER_CAPS.health, car.health) });
+export const EARNED_CARS = [
+  earnedCar('all-heck', { good: 39 }, { id: 'hellrod', name: 'Hell Rod', color: 0xff5a00, evilColor: 0x1a0608, model: 'hotrod',
+    maxSpeed: 50, accel: 18, crossing: 0.4, health: 200, hw: 0.9, hl: 2.1, height: 1.2, perk: 'Straight out of All Heck' }),
+  earnedCar('ufo', { good: 36, evil: 20 }, { ...LEVEL_CARS.ufo, name: 'Saucer', color: 0x9fe0c8, evilColor: 0x33184a }, LEVEL_CARS.ufo),
+  earnedCar('marina-bay', { good: 99, evil: 56 }, { ...LEVEL_CARS.gt, name: 'GT Racer', color: 0x6fb7d8, evilColor: 0x5a6b7a }, LEVEL_CARS.gt),
+  earnedCar('oh-mine', { good: 66, evil: 37 }, { ...LEVEL_CARS.jetboat, name: 'Land Jetboat', color: 0xf2f2f2, evilColor: 0x2a4a3a, perk: 'It drives on land too, somehow' }, LEVEL_CARS.jetboat),
+  earnedCar('montreal', { good: 87, evil: 49 }, { ...LEVEL_CARS.f1, name: 'Road F1', color: 0x1d3f9c, evilColor: 0x7a1fa8 }, LEVEL_CARS.f1),
+  earnedCar('bathurst', { good: 90, evil: 51 }, { ...LEVEL_CARS.lmp, name: 'Road Prototype', color: 0x18a35a, evilColor: 0x8a1a2a }, LEVEL_CARS.lmp),
+  earnedCar('rival-run', { good: 75, evil: 57 }, { id: 'courier', name: 'Courier Special', color: 0xffb400, evilColor: 0x2b1a3a, model: 'sleeper',
+    maxSpeed: 50, accel: 19, agility: 1.5, crossing: 0.6, health: 220, hw: 0.92, hl: 2.5, height: 1.45 }),
+  earnedCar('showdown', { good: 50, evil: 38 }, { id: 'showdown', name: 'Showdown Muscle', color: 0x8a1030, evilColor: 0x1a1f3a, model: 'muscle',
+    maxSpeed: 52, accel: 17, crossing: 0.45, health: 300, mass: 2, hw: 1.0, hl: 2.5, height: 1.35 }),
+  // (the toughest car there is: the tier's health cap)
+  earnedCar('battlefield', { good: 78 }, { ...LEVEL_CARS.apc, name: 'Road 8x8', health: NEXT_TIER_CAPS.health, color: 0x6b6f5a, evilColor: 0x4a4e3a, perk: 'Its gun fires in place of packages' }, LEVEL_CARS.apc),
+];
+Progress.earnedCars = EARNED_CARS;
+// the car a special level earns (undefined for a level with none)
+export const earnedFor = (levelId) => EARNED_CARS.find(car => car.earned.level === levelId);
+
 // The car in use. It is a live binding: every module that imports CAR sees the new car as
 // soon as selectCar() changes it, so swapping cars needs no reload.
-const find = () => [...CARS, ...Object.values(SECRET_CARS)]
+const find = () => [...CARS, ...EARNED_CARS, ...Object.values(SECRET_CARS)]
   .find(car => car.id === Progress.data.car && Progress.owns(car.id)) || CARS[0];
 export let CAR = find();
 
@@ -200,4 +234,66 @@ export const lendCar = (car) => {
 export const returnCar = () => {
   if (lent) CAR = lent;
   lent = null;
+};
+
+// ---- the Super cars ------------------------------------------------------------------------
+// Every garage car in the tiers (but the Lowrider, whose Super version is a car of its own) has a
+// "Super" version: the same car souped up by two tiers' worth (CONFIG.superCar), in a livery of its
+// own with a racing stripe (and a body kit: render/carExtras.js addSuperKit). Never in the garage:
+// it is lent for a while by the "souped up" mystery (see Player.startMystery), or ?car=super-<id>.
+// SUPER_LIVERIES: by car id, good: [body, stripe], evil: [body, stripe]; kit: parts of the kit turned
+// off ({ wing: false }), or on (lights: true, a roof rack of lamps, for the vans). A car without an
+// entry gets a metallic version of its own colours (see superLivery).
+export const SUPER_LIVERIES = {
+  commuter: { good: [0xe3b522, 0x151515], evil: [0x101010, 0xe3b522] },                 // gold with black / black with gold
+  junker: { good: [0x1c1c1c, 0xc81e1e], evil: [0x7a2a16, 0xe8dcc0] },                   // matte black, a red stripe / rust with bone
+  darkvan: { good: [0xc9ccd2, 0x151515], evil: [0x2a2d33, 0xd0101c], kit: { wing: false, lights: true } }, // chrome silver / gunmetal with red
+  postvan: { good: [0xb3121c, 0xf0c030], evil: [0xd99a10, 0x151515] },                  // crimson with gold / gold with black
+  keitruck: { good: [0xf7f7f2, 0xd8262b], evil: [0x4a9ad0, 0xf2f2f2] },                 // pearl with rising-sun red / ice blue with white
+  mini: { good: [0x1f5a3a, 0xf2f2f2], evil: [0xf0701a, 0x151515] },                     // racing green, white stripes / orange with black
+  lovebus: { good: [0x8fd14a, 0xe03aa0], evil: [0x9a1420, 0x151515], kit: { wing: false, lights: true } }, // lime with magenta / deep red with black
+  wagon: { good: [0x62a8e8, 0xf4f4f4], evil: [0xf25aa8, 0x151515] },                    // sky metallic with white / hot pink with black
+  sport: { good: [0x4dff2a, 0x151515], evil: [0x151515, 0x4dff2a] },                    // neon green with black / black with neon green
+  hothatch: { good: [0xf7f7f2, 0xd8262b], evil: [0xf2c418, 0x151515] },                 // pearl with red / yellow with black
+  ute: { good: [0x1a4fb0, 0xf4f4f4], evil: [0x9ae03a, 0x151515] },                      // deep blue with white / lime with black
+  buggy: { good: [0x22c8d8, 0xf2862a], evil: [0x8a35d0, 0xb6ff3a] },                    // teal with orange / purple with lime
+  liftedtruck: { good: [0x1d5bbf, 0xd0d4da], evil: [0xd2b07a, 0x151515] },              // royal blue with silver / desert tan with black
+  hearse: { good: [0x101010, 0xd4a52a], evil: [0xf2f2f2, 0x6a2bb3] },                   // black with gold / white with purple
+  minivan: { good: [0xe0cfa0, 0x6b4a2a], evil: [0x3a4a5e, 0xf08a2a] },                  // champagne with brown / slate with orange
+  pickup: { good: [0xd0621c, 0xf4e8c8], evil: [0x2f5a2a, 0xc8a86a] },                   // burnt orange with cream / forest with tan
+  hotrod: { good: [0x7a2fd0, 0xff8a1a], evil: [0x4b5320, 0xc81e1e] },                   // purple with flame orange / olive drab with red
+  sleeper: { good: [0x6a2030, 0x8a8a8a], evil: [0xd2cab8, 0x151515] },                  // maroon with grey / beige with black (still a sleeper)
+  rally: { good: [0x1d3f9e, 0xf2d21f], evil: [0xe24a8c, 0xf4f4f4] },                    // blue with yellow / pink with white
+  towtruck: { good: [0xf4f4f4, 0xd8262b], evil: [0x2a6fb8, 0xf2c418] },                 // white with red / blue with yellow
+  rotary: { good: [0xf2c218, 0x151515], evil: [0x1f8a5c, 0xf4f4f4] },                   // yellow with black / green with white
+  taxi: { good: [0xffc81a, 0x151515], evil: [0x6b7a2e, 0xffc81a] },                     // yellow with black / olive with yellow
+  suv: { good: [0x1f3f8f, 0xd0d4da], evil: [0xf2f2f2, 0x1f3f8f] },                      // navy with silver / white with navy
+  miata: { good: [0xd8262b, 0xf4f4f4], evil: [0xffd21f, 0x151515] },                    // red with white / yellow with black
+  muscle: { good: [0xc81e1e, 0xf4f4f4], evil: [0x101010, 0xc81e1e] },                   // red with white / black with red
+  fullsize: { good: [0x2f5a3a, 0xd4a52a], evil: [0x5a1f22, 0xf4e8c8] },                 // deep green with gold / wine with cream
+  evsaloon: { good: [0xe8e4dc, 0x2a8cff], evil: [0x2b3440, 0x40e8ff] },                 // pearl with electric blue / slate with cyan
+  superlowrider: { good: [0x1a3cff, 0xf0c030], evil: [0x5a0a2a, 0xd8d8d8] },            // blue with gold / wine with chrome
+  classicgt: { good: [0x1f4d36, 0xd8b040], evil: [0xb0121c, 0xf4f4f4] },                // racing green with gold / red with white
+  sixbysix: { good: [0xe2dccc, 0x151515], evil: [0x4b5320, 0xf08a2a] },                 // sand with black / olive with orange
+};
+// a colour's metallic version (lighter, more saturated) and its deep version, for a car with no entry
+const shade = (hex, lift, sat) => {
+  const c = [(hex >> 16) & 255, (hex >> 8) & 255, hex & 255], mean = (c[0] + c[1] + c[2]) / 3;
+  return c.map(v => Math.max(0, Math.min(255, Math.round((mean + (v - mean) * sat) * lift)))).reduce((acc, v) => (acc << 8) | v, 0);
+};
+const superLivery = (car) => SUPER_LIVERIES[car.id] ||
+  { good: [shade(car.color, 1.25, 1.4), shade(car.evilColor, 0.7, 1.2)], evil: [shade(car.evilColor, 0.6, 1.3), shade(car.color, 1.25, 1.4)] };
+const supers = {}; // the Super versions built so far, by the base car's id
+// the Super version of a garage car (null for a car that has none: one out of the tiers, the Lowrider,
+// a level's vehicle, an earned car, or a Super car itself): built once and kept. `base` is the car it is made from
+export const superOf = (car) => {
+  if (!car || !car.tier || car.earned || car.id === 'lowrider' || car.super) return null;
+  if (!supers[car.id]) {
+    const S = CONFIG.superCar, livery = superLivery(car);
+    supers[car.id] = { ...car, id: 'super-' + car.id, name: 'Super ' + car.name, super: true, base: car, price: 0, kit: livery.kit || {},
+      color: livery.good[0], stripe: livery.good[1], evilColor: livery.evil[0], evilStripe: livery.evil[1],
+      maxSpeed: car.maxSpeed + S.maxSpeed, accel: car.accel + S.accel, health: Math.round(car.health * S.health),
+      agility: (car.agility || 1) + S.agility, crossing: Math.min(1, (car.crossing ?? CONFIG.railCrossing.usual) + S.crossing) };
+  }
+  return supers[car.id];
 };

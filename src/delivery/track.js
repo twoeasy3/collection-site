@@ -959,8 +959,8 @@ const createTrack = () => {
       if (!onRoad(p) || !(p.count > 0)) problems.push('peloton at ' + p.s + where(p) + ': on the road, with a count');
       else if (p.dir === -1 ? FLOW === 'north' : FLOW === 'south') problems.push('peloton at ' + p.s + ': there is no ' + (p.dir === -1 ? 'oncoming side' : 'side the player\'s way') + ' for it to ride');
     }
-    // Gimmick Road 2's (see hazards.js, and cameras.js for the average-speed cameras)
-    for (const [name, list, R] of [['school crossing', LEVEL.schoolCrossings, CONFIG.schoolCrossing.stopLine + 10], ['drawbridge', LEVEL.drawbridges, CONFIG.drawbridge.stopLine + 10], ['toll', LEVEL.tolls, 30]]) {
+    // Gimmick Road 2's (see hazards.js)
+    for (const [name, list, R] of [['school crossing', LEVEL.schoolCrossings, CONFIG.schoolCrossing.stopLine + 10], ['drawbridge', LEVEL.drawbridges, CONFIG.drawbridge.stopLine + 10]]) {
       for (const c of list || []) {
         if (!onRoad(c, c.s - R) || !onRoad(c, c.s + R)) problems.push(name + ' at ' + c.s + where(c) + ': beyond the road');
         else if (c.road !== 'side' && !straight(c.s - R, c.s + R)) problems.push(name + ' at ' + c.s + ': the road must run straight through it');
@@ -980,7 +980,7 @@ const createTrack = () => {
       if (!onRoad(m) || !laneOn(m, m.lane) || !(m.count > 0)) problems.push('marathon at ' + m.s + where(m) + ': in a lane on the road, with a count');
       else if (m.water !== undefined && !onRoad(m, m.water)) problems.push('marathon at ' + m.s + ': its water station is beyond the road');
     }
-    for (const [name, list] of [['trolleys', LEVEL.trolleys], ['stampede', LEVEL.stampedes], ['average-speed cameras', LEVEL.averageCameras]]) {
+    for (const [name, list] of [['trolleys', LEVEL.trolleys], ['stampede', LEVEL.stampedes]]) {
       for (const z of list || []) {
         if (!(z.from < z.to) || !onRoad(z, z.from) || !onRoad(z, z.to)) problems.push(name + ' at ' + z.from + where(z) + ': from before to, on the road');
         else if (name === 'stampede' && z.kind !== undefined && z.kind !== 'cow' && z.kind !== 'kangaroo') problems.push(name + ' at ' + z.from + ': kind is cow or kangaroo');

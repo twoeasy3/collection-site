@@ -248,8 +248,6 @@
 //   wideLoads  { s, lanes: [n, n + 1] }: a load two lanes wide crawling along; passing it while its escort watches is a bust
 //   trolleys   { from, to, count }: shopping trolleys rolling across the road with its camber
 //   marathons  { s, lane, count, water? }: runners in one lane behind a pace car; water: where its water station stands
-//   averageCameras { from, to, limit? }: two gantries; over the limit (km/h) on average between them is an offence
-//   tolls      { s, fee? }: a toll plaza: slow down to pay, or ram its boom and risk a bust
 //   stampedes  { from, to, count, kind: 'cow' | 'kangaroo' }: animals charging down the road at the player
 //   (and wreckage of kind 'roadtrain': a road train jackknifing across its lanes)
 //   pelotons   { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
@@ -364,7 +362,7 @@ export const SCREENSAVER_LEVEL = chaos;
 // potholes, a trench, a level crossing, stop / go roadworks, a fog bank, rockfall, a cyclist
 // peloton, and funeral processions
 // Gimmick Road 2 (?hidden=gimmick-road-2): the next batch, the same way (see hazards.js): burst water mains, a school
-// crossing, shopping trolleys, a marathon, a toll plaza, average-speed cameras, a hot-air balloon, a wide load, a
+// crossing, shopping trolleys, a marathon, a hot-air balloon, a wide load, a
 // drawbridge and a road train jackknifing; and on its side road a camera, potholes, a level crossing and a stampede
 export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix, 'gimmick-road': gimmickRoad, 'gimmick-road-2': gimmickRoad2 };
 // the class every race is run in: 'f1', 'gt' (GT road cars) or 'lmp' (Le Mans prototypes): the player's car

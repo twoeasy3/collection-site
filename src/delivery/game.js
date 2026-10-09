@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial, nextOnTab } from './levels.js';
 import { Progress } from './progress.js';
-import { useLevelCar, returnCar } from './cars.js';
+import { useLevelCar, returnCar, earnedFor } from './cars.js';
 import { Input } from './input.js';
 import { clamp } from './util.js';
 import { Track, buildTrack } from './track.js';
@@ -23,6 +23,8 @@ import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
 import { Hazards } from './hazards.js';
 import { Social } from './social.js';
+import { Mysteries } from './mysteries.js';
+import { Milestones } from './milestones.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -148,6 +150,7 @@ export const Game = {
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
     useLevelCar(LEVEL.car); // a UFO on the space level, otherwise the garage's car
     Player.evil = this.evil && !LEVEL.battle && !LEVEL.alwaysGood; // (on the Battlefield the player is in the green army, the good one, whatever the side on the menu; a level can say so too)
+    Mysteries.reset(); // (before the player: a side swap or a giant left from the last run is not undone over this one)
     Social.reset(); // (before the player: its shoulder allowance goes by it)
     Player.reset();
     Wreckage.reset(); // (before the traffic is dealt out: none goes where wreckage lies)
@@ -189,6 +192,7 @@ export const Game = {
     Crossings.reset();
     StopGo.reset();
     Hazards.reset();
+    Milestones.reset();
     WaterMains.reset();
     if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
@@ -209,6 +213,7 @@ export const Game = {
   },
   finish(outcome) {
     this.state = 'finished';
+    if (Player.mystery === 'swapSides') Player.endMystery(); // (back on its own side: the results and the best time are that side's)
     returnCar(); // (a car lent by Car Swap goes back: the results are the player's own car's)
     this.settleTank(outcome === 'delivered' || outcome === 'late');
     this.outcome = outcome;
@@ -216,6 +221,7 @@ export const Game = {
     const tip = '$' + this.tip.toFixed(2);
     // delivered on time: the tip goes in the bank, the time to spare may be a best, and the next level opens
     // (a hidden level, off the menu, banks nothing and records nothing: see HIDDEN_LEVELS)
+    const prize = earnedFor(LEVEL.id), hadPrize = !!prize && Progress.earned(prize); // (a 6-star car this level earns, and whether it was earned before this run)
     const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, Math.max(0, this.tip + this.cash - this.fines), this.remaining, Player.evil);
     resultTitle.textContent = {
       delivered: !LEVEL.grid?.rival ? 'Delivered!'
@@ -233,6 +239,7 @@ export const Game = {
       (LEVEL_INDEX < 0 ? ' (test run: nothing saved)' : record ? ' (new best)' : ' (best ' + formatTime(Progress.bestTime(LEVEL.id, Player.evil)) + ')') + '  |  ' : '') +
       (Player.evil ? 'Evil' : 'Good') + '  |  Wrecked: ' + this.wrecks + '  |  Busted: ' + this.busts +
       '  |  Bank $' + Progress.data.money.toFixed(2);
+    if (prize && !hadPrize && Progress.earned(prize)) resultNote.textContent += '  |  You earned the ' + prize.name + '!'; // (its par beaten on every side: it is in the garage)
     resultScreen.classList[outcome === 'delivered' ? 'remove' : 'add']('failed');
     resultScreen.classList.remove('hidden');
     for (const hook of this.onFinish) hook();
@@ -356,6 +363,8 @@ export const Game = {
     if (playing) Gunfire.update(dt);
     if (playing) Site.update(dt);
     if (playing) Hazards.update(dt);
+    if (playing) Mysteries.update(dt);
+    if (playing) Milestones.update(dt); // (the counters watched each step: see milestones.js)
     if (playing) Social.update(dt);
     Packages.update(dt);
     Pickups.update();

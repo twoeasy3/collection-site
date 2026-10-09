@@ -1,4 +1,5 @@
 import { CONFIG } from './config.js';
+import { Progress } from './progress.js';
 import { LEVEL } from './levels.js';
 import { clamp } from './util.js';
 import { Track } from './track.js';
@@ -293,6 +294,7 @@ export const Packages = (() => {
   const cop = (car) => car.kind === 'police' && !car.toad;
   // the player's care package arriving
   const deliver = (p, car) => {
+    Progress.count('packagesLanded'); // (a milestone counter: see milestones.js)
     const boosted = Player.bigSplash > 0, B = CONFIG.bigSplash; // (Big Splash: harder hits)
     if (p.kind === 'fire') { // an Evil player's package: real damage, and it makes enemies
       const damage = boosted ? B.fireDamage : CONFIG.evilPackageDamage;

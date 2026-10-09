@@ -37,22 +37,43 @@ also got a parade, cargo trucks, water mains and a tunnel.
 
 ## Not done
 
-- Mystery pool: earthquake, rewind, giant, swap sides, magnet, blackout, traffic freeze, "souped up".
-  Plan sketched: add to `CONFIG.mystery.effects`, handle in `Player.startMystery/endMystery`; `freeze` =
-  skip traffic movement and `Collision.updateObstacles`; `giant` = a `Player.crush` getter replacing the
-  `tank > 0` checks in `collision.js` (lines ~52, 86, 713); `magnet` in `Pickups.update` (meshes need
-  repositioning in `render/items.js` `syncPickups`, which only moves washed-up ones); `blackout` as a
-  render module toggling `applyLight`/`setHeadlights`. Add new effects to `GOOD_MYSTERIES`/`BAD_MYSTERIES`
-  in `social.js`, wording in `messages.json` under `powerups.mystery`, and cards in `powerups.js`.
-- Super versions of every car (except the Lowrider, which has the Super Lowrider): a `superOf(car)` in
-  `cars.js`, a render kit (spoiler, scoop, pipes) in `render/items.js`, `ENGINES` lookup in
-  `render/audio.js` falling back to the base id.
-- 6-star tier earned per special level, visible damage, horn per car (`HORNS` in `traffic.js`,
-  `KEYS` in `input.js`), postcards (level shots on delivery), milestones wall.
-- Gimmicks page (`gimmicks.js`) has no cards for any of the new gimmicks.
+Updated 2026-10-10. The rest of the brief was built on `main` that day (see "Done since" below), ported
+from a second, uncommitted implementation of this brief (the `delivery-city-levels` work, kept as a stash);
+its own versions of the levels and gimmicks above were discarded on the owner's word. What is left:
+
+- **Nothing built on 2026-10-10 has been seen or heard in a browser.** Most wanted by eye: the Super
+  cars' body kit (`addSuperKit` ray-casts each part onto the model, so every model needs a look:
+  `?car=super-<id>`), the dents on each model, the blackout, the earthquake's bob, the giant, pulled
+  pickups, the two panels (`?album&unlock`, `?milestones&unlock`), the garage with 6-star cars in it. By
+  ear: the 42 horns' pitches.
+- Rough edges known: the rooftop passenger sits too high on a giant car; the Super cars and the 6-star
+  cars have no menu pictures (`carshots/`); a rewind does not put back a level's own machinery (trains,
+  hazards, the tide: only the player, the traffic still on the road, obstacles, pickups and the clock);
+  a traffic freeze stops traffic, obstacles and `Hazards`, not the other gimmick modules (hippos,
+  elephants, level crossings, the tide); the 6-star pars are a quarter of the Good clock and a fifth of
+  the Evil one, not play-tested; "hippos survived" and "trains dodged" are counted by code no check drove.
+- Traffic's own honks are as before (`HORNS` in `traffic.js`, three sample names); only the player's
+  horn is per car.
+- The Gimmicks page got its cards for the new gimmicks on 2026-10-10 (the menus branch).
 - Level clocks for the five new levels were set by hand; `node scripts/level-clocks.mjs hong-kong tokyo
   mumbai stelvio christmas --write` should redo them.
 - Pictures for the menu: `levelshots/<id>.jpg` for the five levels (`?cine`).
+
+## Done since (2026-10-10, on `main`)
+
+| What | Where | Commit |
+|---|---|---|
+| Eight mystery effects: earthquake, rewind, giant, swap sides, magnet, blackout, traffic freeze, souped up. All in `CONFIG.mystery.effects`; one that does not suit the level or car becomes `CONFIG.mystery.fallback` | `mysteries.js`, `render/mysteries.js`, `Player.startMystery` | `e05ed11` |
+| Super cars: every tiered car but the Lowrider, lent by "souped up" or `?car=super-<id>` | `superOf`, `SUPER_LIVERIES` in `cars.js`; `CONFIG.superCar`; `addSuperKit` in `render/carExtras.js` | `e05ed11` |
+| 6-star tier: nine cars, one earned on each special level by its par on every side it is played on. Kept out of `CARS`; within `NEXT_TIER_CAPS`; nothing new saved | `EARNED_CARS` in `cars.js`, `Progress.earned` | `37eb71c` |
+| Visible damage: the player's car crumples in three steps and its paint darkens; traffic's paint darkens | `render/dents.js`, `CONFIG.dents` | `fda617c` |
+| A horn per car, for the player's horn (H) | `HORNS` in `render/audio.js`, `horn.js` | `e9ebe12` |
+| Postcards album (`?album`) | `render/album.js` | `e8ccc6c` |
+| Milestones wall (`?milestones`): eight counters in the save's `stats` | `milestones.js`, `render/milestones.js`, `Progress.count`, `CONFIG.milestones` | `8c0d76e` |
+
+Checks written for them, each a few seconds, none needing a browser: `node scripts/.mysteries-check.mjs`,
+`.earned-check.mjs`, `.dents-check.mjs`, `.milestones-check.mjs`, and `.bundle-check.mjs` (every import of
+every page resolves: the one check that covers the render files, which cannot be loaded headless).
 
 ## Verified headless
 

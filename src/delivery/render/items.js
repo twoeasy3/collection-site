@@ -15,6 +15,8 @@ import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
 import { TURBO_COLOR, PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 import { OBSTACLE_MODELS } from './obstacleModels.js';
+import { addSuperKit } from './carExtras.js';
+import { damageShare, dentModel, scorch } from './dents.js';
 import { SpeedCameras } from '../cameras.js';
 import { Hazards } from '../hazards.js';
 
@@ -29,6 +31,7 @@ const playerModels = {};
 const playerModel = (car) => {
   if (!playerModels[car.id]) {
     const model = MODELS[car.model](car);
+    if (car.super) addSuperKit(model, car); // (a Super car: its base car's model with the body kit on)
     model.userData.body.material.transparent = true; // (so it can go see-through as a ghost)
     carMesh.add(model);
     playerModels[car.id] = model;
@@ -326,7 +329,7 @@ export const syncPickups = (dt) => {
     mesh.userData.gem.rotation.y += dt * 3;
     mesh.userData.gem.userData.livery?.(Player.evil); // (one that looks different by the player's side)
     if (mesh.visible) mesh.userData.gem.userData.animate?.(performance.now() / 1000 + i); // (and one that moves)
-    if (p.washed && !p.taken) { // (washed up by the tide: wherever it was left, bobbing)
+    if ((p.washed || p.pulled) && !p.taken) { // (washed up by the tide, or pulled by a magnet: wherever it is now, bobbing)
       mesh.rotation.y = Track.toWorld(p.s, p.lat, tmp);
       mesh.position.copy(tmp);
       mesh.userData.gem.position.y = 1.7 + 0.25 * Math.sin(performance.now() * 0.004 + i);
@@ -393,6 +396,10 @@ export const syncPickups = (dt) => {
   // the garage's Tank wears its own liveries; a car in TANK RAGE turns army olive
   paintOf(tankMesh.userData.body).color.setHex(!CAR.tank ? TANK_OLIVE : livery);
   paintOf(carMesh.userData.body).color.setHex(livery);
+  // a damaged car looks it: its panels crumple in steps and its paint is scorched (see dents.js; not a tank, nor a UFO)
+  const worn = Player.active ? damageShare(Player) : 0;
+  dentModel(carMesh, carMesh.userData.body, worn);
+  scorch(paintOf(carMesh.userData.body).color, worn);
   // a car with an animated model of its own shows that in place of the standard box car,
   // and its animation runs for as long as it is on screen
   const custom = CAR.model && !tank ? playerModel(CAR) : null;
@@ -400,6 +407,8 @@ export const syncPickups = (dt) => {
   if (custom) {
     custom.userData.animate(performance.now() / 1000);
     paintOf(custom.userData.body).color.setHex(livery);
+    dentModel(custom, custom.userData.body, worn);
+    scorch(paintOf(custom.userData.body).color, worn);
     custom.userData.livery?.(Player.evil);
     custom.userData.aim?.(Player.turret || 0); // (the 8x8's gun, turned to its target: see Packages)
   }

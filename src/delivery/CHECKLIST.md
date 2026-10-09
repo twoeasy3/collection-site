@@ -1,7 +1,7 @@
 # Delivery Racer: ideas checklist
 
 Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly done (see the note),
-`[ ]` not started. Each done item says what was and was not verified.
+`[ ]` not started, `[-]` built and then taken out. Each done item says what was and was not verified.
 
 ## New gimmicks
 
@@ -13,8 +13,8 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 - [x] 17. Hot-air balloon landing: blocks the road, then takes off again. Logic checked headless (`scripts/.hazards-check.mjs`); seen in a screenshot on Gimmick Road 2 (`?hidden=gimmick-road-2`); not played by hand, and in no real level yet.
 - [x] 18. Road-train jackknife: a scripted trailer swing across the lanes (wreckage of kind `roadtrain`). Logic checked headless (`scripts/.hazards-check.mjs`); seen in a screenshot on Gimmick Road 2 (`?hidden=gimmick-road-2`); not played by hand, and in no real level yet.
 - [x] 19. Marathon: runners and a water station in one lane, plus a pace car. Logic checked headless (`scripts/.hazards-check.mjs`) on Gimmick Road 2 (`?hidden=gimmick-road-2`); its drawing was not looked at closely; not played by hand, and in no real level yet.
-- [x] 20. Average-speed cameras: timed between two gantries. Logic checked headless (`scripts/.hazards-check.mjs`) on Gimmick Road 2 (`?hidden=gimmick-road-2`); its drawing was not looked at closely; not played by hand, and in no real level yet.
-- [x] 21. Toll plazas: pay to pass, or ram the barrier and risk a bust. Logic checked headless (`scripts/.hazards-check.mjs`); seen in a screenshot on Gimmick Road 2 (`?hidden=gimmick-road-2`); not played by hand, and in no real level yet.
+- [-] 20. Average-speed cameras: timed between two gantries. **Removed on 2026-10-10 at the owner's request** ("terribly unfun"): logic, gantries, tuning, messages, level field, Gimmicks card and its checks all taken out. The ordinary speed cameras stay.
+- [-] 21. Toll plazas: pay to pass, or ram the barrier and risk a bust. **Removed on 2026-10-10 at the owner's request** ("terribly unfun"): logic, plaza and booths, tuning, messages, level field, Gimmicks card and its checks all taken out. `scripts/.hazards-check.mjs` still passes without them; Gimmick Road 2 is bare from 2300 to 3200 m where the two stood.
 - [x] 22. Animal stampede on side roads: cows or kangaroos charging down a side road at the player (`stampedes`). Logic checked headless (`scripts/.hazards-check.mjs`) on Gimmick Road 2 (`?hidden=gimmick-road-2`); its drawing was not looked at closely; not played by hand, and in no real level yet. Read as a stampede on the side road, not animals spilling out of it onto the expressway.
 - [x] 23. Side-road gimmicks: potholes, crossings and cameras on side roads (`road: 'side'`), and all of the new ones. Logic checked headless (`scripts/.hazards-check.mjs`) on Gimmick Road 2 (`?hidden=gimmick-road-2`); its drawing was not looked at closely; not played by hand, and in no real level yet.
 
@@ -32,10 +32,10 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 
 ## Garage and menus
 
-- [ ] 35. Sort and filter the garage
-- [ ] 36. Car comparison card
-- [ ] 38. Level select: best times and medals on the thumbnails, and a gimmick preview
-- [x] 39. Gimmicks page: wrong-way drivers, quarries and blasts, two-way pelotons, boulders. Three new cards, and the peloton card now shows a bunch each way. Syntax-checked only: the page was not opened.
+- [x] 35. Sort and filter the garage: Sort and Show buttons on the garage's bar (`render/garageview.js`). Sort by stars (as before), price, top speed, acceleration or health; show all, owned, for sale, can afford, and gold or blue stars once the Blue Stars are in. The lot is built again each press; neither choice is saved. Seen in a screenshot sorted by top speed showing owned cars (`?garage&sort=speed&show=owned`); the buttons were not clicked, and an empty lot (nothing to show) was not looked at.
+- [x] 36. Car comparison card: with a car other than the one in use tapped in the garage, a card sets the two side by side (top speed, acceleration, health, handling, weight, crossing, price, perk) with the difference in green or red (`render/compare.js`). Seen in a screenshot (`?garage&look=rally`) before it was moved to the bottom left corner; not seen there, nor on a phone, where it sits above the stats.
+- [x] 38. Level select: each side's best time and its medal across the foot of the level's picture, and the level's gimmicks named under the words (`levelinfo.js`, `render/levelcards.js`). Bronze is any delivery on time; silver and gold are 45% and 85% of the time to spare a clean run in the reference car leaves (`CONFIG.medals`), my numbers, for the owner to overrule. Seen in a screenshot with a made-up save (`?demo`, which saves nothing). The "Best to spare" line under the picture now says the same thing twice: left in, as `render/menu.js` was being edited on other branches. Not seen on a phone.
+- [x] 39. Gimmicks page: wrong-way drivers, quarries and blasts, two-way pelotons, boulders. Three new cards, and the peloton card now shows a bunch each way. Syntax-checked only: the page was not opened. On 2026-10-10 a City streets group was added, eight cards: tunnels, parades, police roadblocks, falling cargo, ice-cream stops, reversible lanes, convoys and rubbernecking (burst water mains had a card already; the toll and average-speed cards went with their gimmicks). The page opens and lists the group (screenshot of its top); the new cards' models were not looked at one by one. The bullet train's card logs a three.js error (`Object3D.add` of undefined) that was there before.
 
 ## Fixes and balance
 
@@ -54,4 +54,4 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 - [ ] 49. Speed up the full smoke test: levels in parallel workers
 - [ ] 50. Lint and format setup, plus a CI workflow running the quick suite on PRs
 - [ ] 51. Performance: instance more scenery, lower the draw distance on phones
-- [ ] 52. Save data: export and import a save code. Also to check: the progress cookie may be near the 4 KB cap with every level and car saved (not measured); consider making local storage the main store
+- [x] 52. Save data. Measured first (`scripts/.save-check.mjs`): a full save's cookie (40 levels on both sides, 33 cars) was 4013 bytes of the 4096 allowed, so three more levels would have lost it. Now local storage is read first and the cookie only if it has nothing; best times are saved to 0.1 s and the bank to the cent, which brings the same save's cookie to 2931 bytes; and the menu has Export save and Import save (`render/savecode.js`), a code of about 2,600 characters that is checked and tidied on the way in. Checked headless: sizes, a code out and back, five bad codes refused. Both panels seen in a screenshot (`?savepanel`, `?savepanel=import`); the Copy and Load buttons were not clicked, and the menu's refresh after an import was not seen.

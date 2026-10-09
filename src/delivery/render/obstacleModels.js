@@ -687,11 +687,3 @@ OBSTACLE_MODELS.escort = (o) => {
   group.userData.beacons = beacons;
   return group;
 };
-// a toll plaza's end booth: a cabin on a concrete island, striped at its nose
-OBSTACLE_MODELS.tollBooth = (o) => boxModel([
-  [lambert(0xb9bcc0), o.hw * 2, 0.35, o.hl * 2 + 2, 0, 0.17, 0],
-  [lambert(0xe8e4dc), o.hw * 1.7, 2.0, o.hl * 1.3, 0, 1.35, 0],
-  [lambert(0x2f3e4a), o.hw * 1.74, 0.8, o.hl * 1.0, 0, 1.7, 0],
-  [lambert(0x1f6b3a), o.hw * 2.2, 0.2, o.hl * 1.8, 0, 2.45, 0],
-  [lambert(0xffd23f), o.hw * 1.6, 0.6, 0.3, 0, 0.6, -o.hl - 0.8], [lambert(0x1b1d22), o.hw * 0.5, 0.6, 0.32, 0, 0.6, -o.hl - 0.8],
-]);

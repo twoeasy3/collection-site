@@ -247,6 +247,12 @@ export const Traffic = (() => {
     car.parade = car.roadblock = car.icecream = car.convoy = car.reversible = null; // (a float in a parade, a car in a roadblock, an ice-cream van at its stop, a convoy's member, an oncoming car down a reversed lane: see placeFixed, startConvoy, reversed)
     car.shedSaid = false; car.shedWait = undefined; // (a shedding truck: see shed)
     car.patience = 0; // (an evil driver's, in a jam: see rubbernecking)
+    // (timers and tallies that are only set as they are first used: seekTow, the overtakes in update, mayBlock,
+    // Packages. Each is put back here, or a car picked up again would carry on from its last use, and two runs
+    // from one seed would differ: see REPLAY-NOTES.md and scripts/.replay-check.mjs)
+    car.seek = car.overtake = car.feint = car.attack = car.passFor = car.dodge = car.slingLeft = 0;
+    car.blockWait = car.yieldWait = car.quietWait = car.aheadGap = car.peltWait = car.pelts = car.shield = car.laps = 0;
+    car.passing = null; car.sling = 0; car.tow = 0;
     car.smoke = 0;
     car.lane = lane;
     car.lat = Track.laneOffset(lane, car.s);
@@ -1579,6 +1585,7 @@ export const Traffic = (() => {
   };
 
   const update = (dt) => {
+    if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: every car stands where it is, solid; see mysteries.js)
     // now and then an emergency vehicle, either way (one at a time; if there is no room for it
     // just now, it tries again a second later)
     if (LEVEL.emergencies && !cars.some(c => c.active && c.emergency) && (nextEmergency -= dt) <= 0) {
@@ -2372,5 +2379,6 @@ export const Traffic = (() => {
   };
 
   return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, startProcession, mourn, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer,
-    noteWreck, hornedAt, get reversibles() { return reversibles; } };
+    noteWreck, hornedAt, get reversibles() { return reversibles; },
+    frozen: false }; // (TRAFFIC FREEZE: set by Mysteries; update, Collision.updateObstacles and Hazards.update stand still while it is)
 })();

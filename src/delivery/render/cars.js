@@ -4,11 +4,13 @@ import { CAR, CARS } from '../cars.js';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Traffic } from '../traffic.js';
+import { Mysteries } from '../mysteries.js';
 import { scene, tmp } from './scene.js';
 import { MODELS, AMBULANCE_BOX } from './models.js';
 import './trafficModels.js'; // (more of them, added to MODELS)
 import { makeCrashDummy } from './pickupModels.js';
 import { makeTractorModel, makeUfo } from './carExtras.js';
+import { damageShare, scorch } from './dents.js';
 
 // ---- cars (front faces local +z), sized from each vehicle's hitbox -----------
 export const unitBox = new THREE.BoxGeometry(1, 1, 1);
@@ -267,6 +269,7 @@ export const syncTraffic = () => {
     } else {
       mesh.rotation.y = Track.toWorld(car.s, car.lat, tmp) - car.yaw + (car.dir < 0 ? Math.PI : 0); // (a spin-out's turn is in yaw too)
       mesh.position.copy(tmp);
+      mesh.position.y += Mysteries.heave(car.s); // (riding an earthquake's wave: 0 without one)
       mesh.rotation.x = car.spin > 0 ? 0 : -Math.atan(Track.grade(car.s)) * car.dir; // tilt with the slope
     }
     shapeCarMesh(mesh, car);
@@ -277,6 +280,8 @@ export const syncTraffic = () => {
     const paint = car.colors ? car.colors[0] : car.kind === 'driveby' ? 0x3a1840 : police || ambulance ? POLICE_PAINT : RACE_PAINTS[car.kind] ? racePaint(car)
       : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
+    const worn = car.toad ? 0 : damageShare(car); // (a damaged car's paint is scorched: see dents.js)
+    scorch(mesh.userData.body.material.color, worn);
     mesh.userData.bar.visible = police || ambulance;
     mesh.userData.barMount.visible = ambulance;
     // (on the roof: an ambulance's at the front of its box's roof, just behind the cab, where it
@@ -287,6 +292,7 @@ export const syncTraffic = () => {
     for (const kind in mesh.userData.models) mesh.userData.models[kind].visible = mesh.userData.models[kind] === own;
     if (own && own.userData.body) { // (one of the garage's models: it takes this car's paint, and animates)
       own.userData.body.material.color.setHex(paint);
+      scorch(own.userData.body.material.color, worn);
       own.userData.livery?.(car.evil);
       if (car.colors) own.userData.stripe?.(car.colors[1]); // (a rival courier's own scheme)
       own.userData.firing?.(car.driveBy?.state === 'fire'); // (a drive-by, shooting)

@@ -17,7 +17,9 @@ export const Horn = {
   press() {
     if (Game.state !== 'playing' || Game.paused || Game.screensaver || !Player.active || Game.time < this.next) return;
     this.next = Game.time + (CONFIG.horn?.wait || 0.6);
-    sfx(Player.tank > 0 ? 'hornBig' : CAR.kind === 'darkvan' || CAR.kind === 'truck' ? 'hornBig' : 'horn');
+    // (each car has a horn of its own: a sound named 'horn:<car id>', see HORNS in render/audio.js. A Super
+    // car, and a level's vehicle earned for the garage, sound their base car's)
+    sfx('horn:' + (Player.tank > 0 ? 'tank' : CAR.base?.id || CAR.id));
     Traffic.hornedAt();
   },
 };

@@ -69,7 +69,7 @@ const base = `http://localhost:${server.config.server.port}/delivery/`;
 let failed = 0;
 try {
   for (const [name, address] of shots) {
-    const game = address.startsWith('?') && !/[?&](autostart|hidden|test|edited|screensaver|racewatch|garage)\b/.test(address);
+    const game = address.startsWith('?') && !/[?&](autostart|hidden|test|edited|screensaver|racewatch|garage|album|milestones)\b/.test(address);
     const url = base + (game ? address.replace('?', '?autostart&') : address);
     const file = join(out, name + '.png');
     // (not spawnSync: the server answering the browser is in this process, and has to keep running meanwhile)

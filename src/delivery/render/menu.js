@@ -3,18 +3,19 @@
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
-import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, earnedFor } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { Garage, withStars } from './garage.js';
 import { Sound } from './audio.js';
 import { Input } from '../input.js';
+import { decorateLevelCard } from './levelcards.js';
 
 const money = (amount) => '$' + amount.toFixed(2);
 
 // a card is a button with a title and a few lines of small print
 // each level's still for its card, by level id (taken with ?cine: see main.js)
-const LEVEL_SHOTS = Object.fromEntries(Object.entries(
+export const LEVEL_SHOTS = Object.fromEntries(Object.entries( // (the postcard album uses them too: render/album.js)
   import.meta.glob('../levelshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
 
@@ -70,6 +71,7 @@ for (let i = 0; i < MAIN_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Ma
 for (let i = MAIN_LEVELS.length; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
 for (let i = 0; i < RACE_LEVELS.length; i += 5) TABS.race.groups.push([i, Math.min(RACE_LEVELS.length, i + 5)]);
 let tab = isRace(LEVEL) ? 'race' : 'delivery'; // (the tab shown: the one with the level picked, to begin with)
+if (new URLSearchParams(location.search).get('tab') === 'races') tab = 'race'; // (?tab=races: the menu opens on the races, for a check)
 const groupOf = (k) => Math.max(0, TABS[tab].groups.findIndex(([a, b]) => k >= a && k < b));
 let shownGroup = null; // (null: the group with the level picked)
 // a race is always open; a delivery level once the one before it has been delivered
@@ -100,19 +102,23 @@ const draw = () => {
     // (the most time to spare delivering it, on each side)
     const good = Progress.bestTime(level.id, false), evil = Progress.bestTime(level.id, true);
     const spare = (t) => t === undefined ? '-' : formatTime(t);
-    const onlyGood = level.battle || level.alwaysGood;
-    return card(label(level) + '. ' + level.name, open ? [
+    const onlyGood = level.battle || level.alwaysGood, prize = earnedFor(level.id);
+    // (and on the card once made: its best times' medals, and the level's gimmicks. See render/levelcards.js)
+    return decorateLevelCard(card(label(level) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
       onlyGood ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
         : 'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
       onlyGood ? (good === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good))
         : good === undefined && evil === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good) + ' Good / ' + spare(evil) + ' Evil',
+      // (a special level's 6-star car, and the time to spare that earns it: see cars.js EARNED_CARS)
+      ...(prize ? ['6-star car: ' + prize.name + (Progress.earned(prize) ? ' (earned)'
+        : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare')] : []),
     ] : ['Locked', 'Deliver level ' + label(list[first + k - 1]) + ' on time to open it'], {
       current: level === LEVEL,
       disabled: !open,
       onPick: () => { selectLevel(i); useLevelCar(level.car); shownGroup = null; draw(); }, // (the groups follow the level picked)
       image: LEVEL_SHOTS[level.id],
-    });
+    }), level, open);
   }));
   // (where the levels are a row to swipe along, the one picked is brought to the middle)
   if (levelBox.scrollWidth > levelBox.clientWidth) {
@@ -223,6 +229,20 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   window.dispatchEvent(new Event('carchange')); // (the car in use may have been one that was bought)
   showAutoGas(); // (a reset forgets the choice)
   showRaceClass();
+  draw();
+});
+
+// a save brought in by its code (render/savecode.js): everything the menu shows is the new save's
+window.addEventListener('progresschange', () => {
+  Game.evil = !!Progress.data.evil;
+  selectLevel(Math.min(Math.max(0, LEVEL_INDEX), Progress.data.unlocked - 1)); // (never left on a level it has not opened)
+  shownGroup = null;
+  selectCar(Progress.data.car);
+  window.dispatchEvent(new Event('carchange'));
+  Sound.toggleMute(); toggleMute(); // (twice, so as it was saved: this sets the volume by it, and the button's words)
+  showAutoGas();
+  showRaceClass();
+  showRaceTrack();
   draw();
 });
 

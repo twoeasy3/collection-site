@@ -13,6 +13,7 @@
 // This is the movement and the damage; render/bullettrain.js draws it.
 // ============================================================================
 import { CONFIG } from './config.js';
+import { Progress } from './progress.js';
 import { LEVEL } from './levels.js';
 import { Message } from './messages.js';
 import { Track } from './track.js';
@@ -90,6 +91,7 @@ export const BulletTrain = {
       this.active = false;
       this.after = T.mercyAfter;
       if (LEVEL.railway) this.next = this.wait();
+      if (Player.active && Player.health > 0) Progress.count('trainsDodged'); // (by, and the player still in one piece: a milestone counter, see milestones.js)
       return;
     }
     box.hl = T.carLength / 2;

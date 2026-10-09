@@ -104,7 +104,27 @@ export const CONFIG = {
   // the mystery pickup: one of these effects at random (see Player.startMystery); the wording
   // is in messages.json, under powerups.mystery
   mystery: {
-    effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo', 'bulletTrain'],
+    // (the last eight are the second batch: see mysteries.js, and below)
+    effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo', 'bulletTrain',
+      'soupedUp', 'earthquake', 'rewind', 'giant', 'swapSides', 'magnet', 'blackout', 'trafficFreeze'],
+    //   soupedUp       the player's car is swapped for its Super version (cars.js superOf) for soupedUp.time s
+    //   earthquake     the road ripples: everything bobs, and every car is bounced into the lane beside it
+    //   rewind         ten seconds back, clock and all (over at once)
+    //   giant          the car twice its size, crushing any traffic it touches
+    //   swapSides      Good turns Evil, or Evil Good, for a while
+    //   magnet         pickups ahead drift toward the car
+    //   blackout       every light off but the headlights
+    //   trafficFreeze  everything but the player stops dead
+    // (one with a `time` of its own lasts that long instead of `time` below. One that doesn't suit the level or
+    // the car, a Super version of a car that has none, say, is `fallback` instead)
+    fallback: 'invincible',
+    soupedUp: { time: 15 },
+    earthquake: { time: 10, every: 3, amp: 0.35, wavelength: 24, speed: 9, shake: 0.35, kick: 3 }, // s; s between bounces; m the road heaves; m of the wave; rad/s; camera shake kept up; m/s a bounced car is shoved
+    rewind: { seconds: 10, every: 0.5, flash: 0.6 }, // s back; s between snapshots; s the screen flashes
+    giant: { time: 12, scale: 2, step: 6 },  // s; times the car's size; m between footsteps
+    magnet: { range: 120, speed: 25 },      // m ahead a pickup is drawn from; m/s it comes at
+    blackout: { fog: [3, 42], light: { sky: 0x1a1a28, ground: 0x000000, ambient: 0.3, sun: 0x000000, sunlight: 0 } }, // m the fog starts and ends at; the light left (see render/scene.js applyLight)
+    trafficFreeze: { time: 8 },
     // a second pool, not drawn for now: only ?mystery= in the address picks one of these
     //   sundayDrivers  every driver potters along at sundayPace of its speed (not an ambulance, nor a racer)
     //   rushHour       rushHour times the traffic, each way, as far as the pool allows; the extra cars
@@ -125,6 +145,9 @@ export const CONFIG = {
     // before a bend, never a way to stop (far less than lifting off)
     noBrakes: { coast: 3, scrub: 0.3, steerScrub: 0.5 },
   },
+  // A Super car (cars.js superOf: the "souped up" mystery, ?car=super-<id>): what it adds to its base car,
+  // about two tiers' worth (in CARS a tier adds on average 5.5 m/s, 2 m/s^2 and a fifth more health)
+  superCar: { maxSpeed: 10, accel: 4, health: 1.3, agility: 0.15, crossing: 0.1 }, // (health: times; crossing: added, up to 1)
   // UFO AIR STRIKE (a mystery): the saucer's visit, and the burn that follows it
   // Emergency vehicles (a level's "emergencies"): now and then an ambulance comes through with its
   // siren going, either way. One going the player's way sets off behind the player, with a
@@ -510,7 +533,6 @@ export const CONFIG = {
     paceCar: { damage: 30, speedKept: 0.5 },
     wideLoad: { damage: 40, speedKept: 0.35 },
     escort: { damage: 30, speedKept: 0.5 },
-    tollBooth: { damage: 35, speedKept: 0.4 },
     marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
     // falling cargo (a shedding truck's load: see CONFIG.cargo): bales, crates and tyres
     crate: { damage: 18, speedKept: 0.75 },
@@ -769,6 +791,15 @@ export const CONFIG = {
   passByRange: 4,
   passByChance: 0.4,
   horn: { range: 60, wait: 0.6 },
+  // dents and scorch on a damaged car (render/dents.js): at each `steps` share of damage the body's
+  // geometry is swapped for a more crumpled one (vertices shoved `amount` of the body's size per step,
+  // the same way every time); the paint darkens toward black by `scorch` at full damage
+  dents: { steps: [0.25, 0.5, 0.75], amount: 0.06, scorch: 0.35 },
+  // milestones (milestones.js): the thresholds each counter in the save's stats has a title for
+  // (messages.json: milestones). A police car is outrun once it is `outrun` m behind the player (having been
+  // near enough to see it) without a bust; a hippo survived is one that crossed within hippoNear m of the player
+  milestones: { packagesLanded: [10, 100, 1000], copsOutrun: [5, 50, 500], hipposSurvived: [1, 10, 100], levelsDelivered: [1, 10, 35],
+    wrecks: [1, 25, 250], busts: [1, 25, 250], trainsDodged: [1, 10, 100], kmDriven: [10, 100, 1000], outrun: 60, hippoNear: 120 },
   // a police car on station at the edge of its stretch (see Traffic: policeOnStation) stops this many m
   // short of the edge, braking at no more than stationBrake m/s^2 to do it
   stationShort: 3,
@@ -916,6 +947,10 @@ export const CONFIG = {
   // it gives back)
   clock: { car: 'sport', good: 1.5, evil: 1.15, round: 5, timePlus: 5 },
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing
+  // medals on the menu's level cards (levelinfo.js): a delivery on time is a bronze; silver and gold are for
+  // this share of the time to spare a clean run in the reference car leaves (1 = as good as that run).
+  // gimmicks: how many of a level's gimmicks its card names before "+ n more"
+  medals: { silver: 0.45, gold: 0.85, gimmicks: 5 },
   packageMoodBoost: 0.5,   // mood gained by a good car that gets one
   giftOffence: 15,         // s an evil car that gets one is offended: furious, but it drives no differently
                            // (no road rage), and all its throws are at the player; and after that...
@@ -1173,14 +1208,6 @@ export const CONFIG = {
   // setting off as the player comes within `trigger` m, a pace car `lead` m ahead of them, and (water: s)
   // a water station's tables standing in that lane. Knock a runner down with the police watching: a bust
   marathon: { speed: 4.2, trigger: 300, spacing: 3.2, lead: 14, wobble: 0.12 },
-  // average-speed cameras ("averageCameras": { from, to, limit }): timed between two gantries, and
-  // caught (as by a speed camera: a fine first, then a bust) if the average is over the limit (km/h)
-  averageSpeed: { limit: 90 },
-  // a toll plaza ("tolls": { s, fee? }): a boom across each lane going the player's way. Come up to it
-  // at paySpeed m/s or slower, within `reach` m, and the fee is paid (off what the run banks) and the
-  // boom lifts over `lift` s. Go through it down: a knock (boomDamage, boomKept), and a bust if the
-  // police are near, or bustChance of the time anyway. Traffic rolls through at `slow` m/s
-  toll: { fee: 15, paySpeed: 9, reach: 26, lift: 0.5, boomDamage: 10, boomKept: 0.75, bustChance: 0.5, slow: 8, zone: 45 },
   // a stampede ("stampedes": { from, to, count, kind, road?, exit? }): animals waiting along that
   // stretch (a side road's, usually), which come charging down the road at the player once it is
   // within `trigger` m of the stretch, each at its own `speed`, weaving `weave` m

@@ -319,3 +319,33 @@ body.screensaver #behind, body.cinematic #behind { display: none !important; }
 #socialFill { height: 100%; width: 0; background: #ffd23f; }
 #social.protected #socialFill { background: #fff3b0; box-shadow: 0 0 8px #ffd23f; }
 body.in-garage #touchControls { display: none; }
+
+/* ---- the panels over the start screen: the postcard album (render/album.js) and the milestones wall (render/milestones.js) ---- */
+.overlay.panel { z-index: 20; }
+.overlay.panel .bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: center; font-size: 22px; }
+.overlay.panel .bar .count { font-size: 15px; opacity: .8; }
+.overlay.panel .bar button.level { margin: 0; }
+/* a postcard: the level's picture in a white border, a hand-written caption, a stamp in the corner; a blank until earned */
+.postcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 22px; width: 100%; max-width: 1100px; padding: 8px 4px 24px; }
+.postcard { position: relative; background: #fbf8ef; color: #2a2a2a; padding: 10px 10px 8px; border-radius: 3px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.45); transform: rotate(var(--tilt, 0deg)); text-align: left; }
+.postcard .photo { aspect-ratio: 600 / 267; background: #c9c4b6 center / cover; }
+.postcard .caption { margin-top: 8px; min-height: 2.6em; font: italic 600 16px/1.3 "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive; }
+.postcard .stamp { position: absolute; top: 16px; right: 16px; padding: 5px 8px; border: 2px dashed #fff; border-radius: 4px;
+  background: #b8862b; color: #fff; font-size: 12px; font-weight: 700; text-align: center; transform: rotate(6deg); box-shadow: 0 2px 5px rgba(0,0,0,.4); }
+.postcard .stamp small { display: block; font-weight: 400; }
+.postcard .stamp.good { background: #2f8f4e; }
+.postcard .stamp.evil { background: #7a1f1f; }
+.postcard.locked { background: #3a404b; color: #aab1bd; box-shadow: none; }
+.postcard.locked .photo { background: #2a2f38; }
+.postcard.locked .caption { font: 13px/1.4 system-ui, sans-serif; }
+/* the milestones wall: a row for each counter, its count and its plaques (lit once earned) */
+.overlay.panel .wall { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 900px; padding-bottom: 24px; }
+.overlay.panel .wall .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; background: #262c37; border-radius: 10px; padding: 10px; text-align: left; }
+.overlay.panel .wall .counter { flex: 0 0 150px; display: flex; flex-direction: column; justify-content: center; }
+.overlay.panel .wall .counter span { font-size: 26px; font-weight: 700; color: #ffd23f; }
+.overlay.panel .wall .plaques { flex: 1 1 300px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.overlay.panel .wall .plaque { display: flex; flex-direction: column; gap: 2px; justify-content: center; padding: 8px 10px; border-radius: 8px;
+  border: 2px solid #3a414e; background: #1b2029; color: #7d8594; }
+.overlay.panel .wall .plaque small { font-size: 12px; }
+.overlay.panel .wall .plaque.lit { border-color: #ffd23f; background: #4a3d12; color: #fff; }
