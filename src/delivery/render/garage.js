@@ -12,8 +12,8 @@ import { makeCarMesh, shapeCarMesh, makeTankMesh } from './cars.js';
 import { MODELS } from './models.js';
 
 // The lot: three rows of bays, a long covered garage along the back, the cars parked strictly column by
-// column (front, middle, back, then the next column), in order of their stars and price, cheapest first
-// (one with no stars, the Tank, last). It runs off to the right as far as the cars do, and is scrolled
+// column in order of their stars and price, cheapest first (one with no stars, the Tank, last), and in
+// each column the smallest at the front and the biggest at the back, under the roof. It runs off to the right as far as the cars do, and is scrolled
 // side to side (a drag or swipe, the wheel, the arrow keys): the camera frames the three rows to the
 // screen's height, so on a phone held upright each car is big, and a few columns show at a time
 const ROWS = 3, BAY_W = 3.9, BAY_D = 6.6;
@@ -26,6 +26,7 @@ export const withStars = (car) => {
   span.style.color = starColour(car);
   return [car.name + ' ', span];
 };
+const bulk = (car) => car.hw * car.hl * car.height; // how big a car is, to park the bigger ones further back
 const rank = (car) => (car.tier || 99) + (car.blue ? 0.5 : 0); // (a tier's Blue Star cars park after its gold ones)
 // (the lot is built for the cars on show: it grows when the Blue Star cars arrive. See buildLot)
 let order = [], COLS = 0, LOT_W = 0, parked = [], built = null;
@@ -69,7 +70,9 @@ const label = (text, w, h, size, colour = '#ffd23f', ground = '#20242c') => {
 const buildLot = () => {
   built = blueStarsOpen();
   lot.clear();
-  order = garageCars().sort((a, b) => rank(a) - rank(b) || a.price - b.price);
+  const sorted = garageCars().sort((a, b) => rank(a) - rank(b) || a.price - b.price);
+  order = [];
+  for (let i = 0; i < sorted.length; i += ROWS) order.push(...sorted.slice(i, i + ROWS).sort((a, b) => bulk(a) - bulk(b))); // (in each column, the biggest at the back)
   COLS = Math.ceil(order.length / ROWS);
   LOT_W = COLS * BAY_W;
   const mid = (LOT_W - BAY_W) / 2, left = -BAY_W / 2, right = LOT_W - BAY_W / 2;
@@ -299,8 +302,11 @@ export const Garage = {
     camera.position.set(scrollX, 20 * back, 27 * back);
     camera.lookAt(scrollX, 0, 0.5);
     camera.updateProjectionMatrix();
-    const distance = camera.position.distanceTo(new THREE.Vector3(scrollX, 0, 0.5));
-    view.width = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * aspect;
+    // (measured across the front of the front row, the nearest the camera and so the narrowest: the end cars
+    // there must fit, or the lot scrolls)
+    const front = new THREE.Vector3(scrollX, 0, ROW_Z[0] + BAY_D / 2).sub(camera.position);
+    const depth = front.dot(camera.getWorldDirection(new THREE.Vector3()));
+    view.width = 2 * depth * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * aspect;
 
     for (const mesh of parked) {
       mesh.userData.tag.rotation.y = now / 500;
