@@ -28,7 +28,8 @@
 //               on no map) stand at the road's edge: only a mapped gravel trap or apron is run-off }
 //   pit         { way: id } the pit lane (if not the relation's pit_lane member): where the pits are drawn
 //   stands      extra grandstands, as the level's own "stands" (those mapped are found by themselves)
-//   landmarks   [{ kind, lat, lon, r?, rot? }] a point, or [{ kind, ways: [ids] }] the ways' lines, or
+//   landmarks   [{ kind, lat, lon, r?, rot? }] a point (or { kind, at: way id }: that way's middle), or
+//               [{ kind, ways: [ids] }] the ways' lines, or
 //               [{ kind, area: way or relation id }] an outline: each put into the level's own coordinates
 //   level       fields of the level file to set (laps, name, theme, tip, ...)
 // What the level already has is kept, but for segments, runoff, stands, landmarks, pickups and "level"'s fields.
@@ -557,7 +558,13 @@ stands.sort((a, b) => a.from - b.from);
 const round1 = (v) => Math.round(v * 10) / 10;
 const landmarks = [];
 for (const l of CFG.landmarks || []) {
-  const { lat, lon, ways, area, ...rest } = l;
+  const { ways, area, at, ...rest } = l;
+  let { lat, lon } = l;
+  delete rest.lat; delete rest.lon;
+  if (at !== undefined && WAYS.has(at)) { // (a point: the middle of that way)
+    const pts = wayPts(WAYS.get(at)), mid = [pts.reduce((a, q) => a + q[0], 0) / pts.length, pts.reduce((a, q) => a + q[1], 0) / pts.length];
+    [lat, lon] = toLL(mid);
+  }
   if (lat !== undefined) {
     const g = toGame(toM(lat, lon));
     landmarks.push({ ...rest, x: round1(g.x), z: round1(g.z), s: Math.round(((g.s % LENGTH) + LENGTH) % LENGTH), off: round1(g.lat) });
