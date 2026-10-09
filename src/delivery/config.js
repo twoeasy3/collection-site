@@ -19,11 +19,34 @@ export const CONFIG = {
     gore: 50,              // m over which that lane opens at the start of the exit zone, and over which
                            // the expressway's pavement blends with the side road's at each fork
     ramp: 110,             // m at each end of a side road that is a single-lane ramp
+    apart: 14,             // m between the expressway's lanes and a side road's, at the least, once they have parted...
+    part: 120,             // ... which they do over this many m from the fork (and to the merge)
+    partEase: 25,          // m each way over which whatever moves a side road out to keep that gap is evened out
+    dropLine: {            // the lane-drop line between the through lane and an exit or merge lane:
+      length: 1.5,         // m each of its dashes is long (a lane line's are CONFIG.dashLength) ...
+      spacing: 3.5,        // ... one every this many m ...
+      width: 0.3,          // ... and this wide: short, fat and close together
+      from: 0.12,          // drawn where that much of the lane's width is open (0 .. 1)
+    },
+    nose: {                // the hatched wedge between the two roads' solid lines at a fork (and a merge):
+      reach: 90,           // m from its tip it is looked for over
+      from: 0.9,           // m apart the lines are where the first chevron stands
+      every: 4.5,          // m from one chevron to the next
+      thick: 0.9,          // m thick each chevron's arms are, along the road
+      sweep: 1.6,          // how far its arms sweep back: this many times half the wedge's width
+      inset: 0.3,          // m its arms stop short of the solid lines
+    },
     laneTaper: 60,         // m over which a side road widens or narrows by its exit's "lanes"
     shapeLead: 130,        // m at each end of a side road an exit's own shape ("out", "bends") leaves alone...
     shapeEase: 120,        // ...and m beyond that it eases in over
     tightest: 35,          // m: the tightest a side road's bend may be (its radius)
-    leftShoulder: 1,       // m; a side road's right shoulder is the normal driveable width
+    gradeEase: 30,         // m over which a side road's slope is evened out, where it has left the expressway (on hills)
+    level: 30,             // m out from the expressway's pavement within which a side road is exactly as high as it
+    steepest: 0.06,        // the steepest a side road climbs or falls where it has left the expressway (rise per metre)
+    verge: 4,              // m of land of its own along a side road's left edge on hills, and (up to) ...
+    land: 130,             // ... along its right: the land beside it, at its height, with a bank down to the ground
+    clear: 1.5,            // m of verge beside every road's pavement that another road's scenery is kept off, whatever it is...
+    clearBuilding: 2,      // ...and m more for a building
     flyoverLength: 360,
     flyoverHeight: 7,
     trafficShare: 0.45,    // share of traffic that takes a side road
