@@ -517,5 +517,20 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   by both versions. Seen on Gimmick Road 2 (the lane version); the round `watermains.js` pool was not
   caught spraying in a screenshot. The Gimmicks page card still draws its own rectangle.
   Also fixed there: a frame's dt could be negative after `?ff` (the camera off the road in shots).
-- 4. Run-off smoothing: in progress.
-- 5. Sand traps: not started.
+- **4. Run-off smoothing: done, `8621adb`.** A run-off stretch can taper (`width` to `end`, no
+  easing); the tool narrows the measured widths to a line changing at most 1 m per m, smooths it on
+  the narrow side and writes tapers that join. Largest step between neighbours: Monza 47.5 m -> 0,
+  Spa 27.5 m -> 0. Stretches: Monza 105 -> 230, Spa 95 -> 190 (MORE pieces, each a taper: the count
+  went up, the steps went away; `runoff.fit` in a circuit's config trades count for fidelity). The
+  walls are 2.1-2.6 m (Monza) and 0.9-1.2 m (Spa) inside the measured line on average: the owner may
+  prefer less smoothing (`runoff.smooth`, 12 m).
+- **5. Gravel traps: done, `70ef5dc`.** Level field `gravel` (its own list, not a field of a run-off
+  stretch, since those are now many short tapers), `Track.gravelAt`, `CONFIG.gravel`. From OSM:
+  Monza left 692-776, 1004-1624, 1872-1980, 2192-2436, 2520-2712, 3760-3884, 4876-5232, right
+  656-768, 3656-3780, 3844-3940; Spa left 280-468, 2500-2688, 2912-3088, 4332-4480, 4816-5648, right
+  2244-2580, 3220-3296, 3684-4248, 4476-4676, 5700-6344. Albert Park: none. `.gravel-check` passes.
+  Not seen: a car actually in the gravel on screen (stones, dust, the beaching), nor heard; the AI's
+  steering back out is a plain sideways push, not checked in a race.
+- Not looked into: `.hazards-check` throwing at its line 38 straight after other checks.
+- Screenshots: scratchpad `shots-fixes/` (`before`, `bridge`, `load`, `water`, `runoff-before`,
+  `runoff-after`, `gravel`, and `monza-/spa-before.svg`, `-after.svg`).

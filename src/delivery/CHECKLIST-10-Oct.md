@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `558f5c4` (main). Agents 1 to 5 and 7 are finished and merged; agent 6 is on its last part; two slots are free and the queue is empty.
+Last updated: after `70ef5dc` (main). All seven agents are finished and everything is on `main`; no agent is running and the queue is empty.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -88,12 +88,13 @@ Last updated: after `558f5c4` (main). Agents 1 to 5 and 7 are finished and merge
    - [ ] Never played by hand: afloat handling, wakes and currents, prices, clocks
    - [ ] The slipway is faked (water 0.32 m over a flat road); boats tie up at the far bank and do not turn back
    - [ ] For the owner to overrule: section open from the start, A1-A5 numbering, prices, sea-green stars, 74% afloat
-3. Gimmick fixes and circuit run-off: **started**, agent 6, on `main`
-   - [x] Drawbridge: the car climbs the raised leaf at its angle and crests it. `1f18343`. Not yet seen by the orchestrator
-   - [x] Wide loads are passable: the load swings side to side and an arrow board shows the side to pass on, at speed; a mistake is a knock, never a bust. `f673318`. Not yet seen by the orchestrator
+3. Gimmick fixes and circuit run-off: **finished**, agent 6, on `main` (levels, hazards and gravel checks pass)
+$1. Seen in a still: the car on the raised leaf. A "JUMP 70+" board stands before it; every garage car clears it at top speed. A car that rolls back waits at the foot until the leaves come down (the cost of a miss: owner may overrule)
+$1. Seen in a still: the load over on the shoulder with its arrows lit. On an unlucky phase neither side is open on arrival at one fixed speed
    - [x] Burst water mains: irregular, soft-edged pools and a fountain. `39ac540`. Not yet seen by the orchestrator
-   - [x] Run-off edges on Monza and Spa smoothed: the tool filters the measured widths, a stretch can taper, both circuits regenerated. `8621adb`. Not yet seen by the orchestrator
-   - [~] Sand traps as part of a shoulder, slowing cars far more
+$1. Largest step between neighbouring widths: Monza 47.5 m to 0, Spa 27.5 m to 0. The stretch count went up (105 to 230, 95 to 190), each now a taper. Seen in a still of Spa
+   - [x] Gravel traps (`gravel: [{ from, to, side, inner?, outer? }]`): heavy drag, 35% steering, a car that stops is beached for 1.6 s; from 144 km/h one second in gravel leaves 43 km/h. On Monza and Spa from the map's sand and gravel; none on Albert Park (none mapped). `70ef5dc`. Seen in a still of Spa; a car in the gravel never seen, the sound never heard
+   - [x] Found on the way: a negative first frame after `?ff` threw the camera off the road in screenshots; fixed in `main.js`. `39ac540`
 4. The cargo: **finished**, agent 7, merged into `main` as `558f5c4` (no conflicts into main; levels, cargo, save and bundle checks pass)
    - [x] Five normal things: tower of pizzas, wedding cake, goldfish, gift-wrapped cactus, grandfather clock. `9b2aebb`
    - [x] Five odd things for Evil, animated, three states each: ticking parcel, porcupine, crate of bees, cursed doll, specimen jar. `9b2aebb`
