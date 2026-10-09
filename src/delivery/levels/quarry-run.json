@@ -2,7 +2,10 @@
   "id": "quarry-run",
   "name": "Quarry Run",
   "theme": "construction",
-  "clock": { "good": 215, "evil": 165 },
+  "clock": {
+    "good": 215,
+    "evil": 165
+  },
   "tip": 210,
   "lanes": 2,
   "shoulderTimer": false,
@@ -55,6 +58,23 @@
       "curve": 0
     }
   ],
+  "quarries": [
+    {
+      "from": 1550,
+      "to": 2100,
+      "side": "left"
+    },
+    {
+      "from": 2420,
+      "to": 2760,
+      "side": "right"
+    },
+    {
+      "from": 3500,
+      "to": 4050,
+      "side": "left"
+    }
+  ],
   "stopGo": [
     {
       "from": 900,
@@ -76,7 +96,20 @@
       "from": 3650,
       "to": 3900,
       "count": 7,
-      "side": "right"
+      "side": "left"
+    }
+  ],
+  "wreckage": [
+    {
+      "at": 2600,
+      "kind": "blast",
+      "from": "right",
+      "lanes": [
+        1,
+        1
+      ],
+      "rock": true,
+      "distance": 18
     }
   ],
   "fog": [
@@ -137,13 +170,13 @@
     },
     {
       "kind": "trench",
-      "from": 2650,
-      "to": 2700,
+      "from": 3150,
+      "to": 3200,
       "side": "right"
     },
     {
       "kind": "pipes",
-      "s": 4000,
+      "s": 4250,
       "side": "left"
     }
   ],

@@ -167,7 +167,11 @@
 //              Or 'blast': a building `distance` m off the road on its side (from) blows out across
 //              its lanes out to the road's edge, wrecking all there just then, and leaves the road clear;
 //              it goes by the player's pace (see CONFIG.wreckage.blastWarn), not a trigger: with
-//              "ahead" (s), that much sooner, out of the player's reach unless the player speeds up
+//              "ahead" (s), that much sooner, out of the player's reach unless the player speeds up.
+//              rock: true makes a blast a quarry's: a crag of the rock face blasted out, rock and dust, not a building
+//   quarries   { from, to, side }: (the construction theme) a quarry beside the road over that stretch, on that
+//              side ('left' | 'right'): its floor, its rock face cut back in benches, crusher, heaps and trucks
+//              (only scenery; see CONFIG.quarry). A blast with rock: true (see wreckage) blows its face out
 //   runway     { from, width }: from there on the road is a runway, `width` m of concrete beyond each
 //              edge, with a runway's markings in place of lanes (the airport's look)
 //   tower      { at, trigger, distance, stub }: the control tower, beside the old road carrying

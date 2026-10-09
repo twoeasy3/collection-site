@@ -384,6 +384,9 @@ export const CONFIG = {
   // each, out to `beyond` m either side and round again; galloping, bobbing up to `hop` m, `hops` times a second
   migration: { speed: { min: 4, max: 7 }, beyond: 35, hop: 0.2, hops: 2.5 },
   // wreckage (a level's "wreckage" and "tower": see wreckage.js), the scripted destruction
+  // a level's quarries (render/road.js: LEVEL.quarries): the floor from floorFrom to floorTo m off the
+  // road, then `benches` benches of the rock face, each benchDepth m deep and benchHeight m higher than the last
+  quarry: { floorFrom: 14, floorTo: 48, benches: 4, benchDepth: 12, benchHeight: 6 },
   wreckage: {
     trigger: 110,          // m short of it the player is when it is set off (a level's can say otherwise)
     flight: 1.6,           // s it takes to fly in and land
