@@ -313,6 +313,12 @@ export const SUPER_LIVERIES = {
   superlowrider: { good: [0x1a3cff, 0xf0c030], evil: [0x5a0a2a, 0xd8d8d8] },            // blue with gold / wine with chrome
   classicgt: { good: [0x1f4d36, 0xd8b040], evil: [0xb0121c, 0xf4f4f4] },                // racing green with gold / red with white
   sixbysix: { good: [0xe2dccc, 0x151515], evil: [0x4b5320, 0xf08a2a] },                 // sand with black / olive with orange
+  // (the amphibious cars: boat colours)
+  herald: { good: [0xf4f1e6, 0x1d4f9c], evil: [0x1a2a3a, 0xe8c040] },                   // sail white with navy / midnight with brass
+  floatvan: { good: [0xf2862a, 0xf4f4f4], evil: [0x2a2d33, 0x22c8d8] },                 // lifeboat orange with white / gunmetal with teal
+  toybota: { good: [0xd8262b, 0xf4f4f4], evil: [0x151515, 0xd8262b] },                  // rescue red with white / black with red
+  dampervan: { good: [0x22a8a0, 0xf4e8c8], evil: [0x5a1f6a, 0xb6ff3a] },                // sea green with cream / plum with lime
+  nissank: { good: [0x1d5bbf, 0xf2c418], evil: [0x8a1030, 0xd0d4da] },                  // powerboat blue with yellow / wine with silver
 };
 // a colour's metallic version (lighter, more saturated) and its deep version, for a car with no entry
 const shade = (hex, lift, sat) => {
