@@ -11,9 +11,10 @@ import './powerups.css';
 import './gimmicks.css';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
-import { LEVEL_CARS } from './cars.js';
+import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
 import './render/trafficModels.js';
+import './render/boatModels.js';
 import { OBSTACLE_MODELS } from './render/obstacleModels.js';
 import { makeElephant } from './render/elephantModel.js';
 import { makeHippo } from './render/hippoModel.js';
@@ -440,6 +441,32 @@ const GROUPS = [
       const ufo = makeUfo();
       return { model: ufo, tick: (t, dt) => { ufo.userData.lamps.rotation.y += dt * 4; ufo.position.y = Math.sin(t * 2) * 0.15; } };
     } },
+    // (water stages: a level's "water", see water.js. The model: a slipway into a channel, an amphibious car afloat)
+    { name: 'Water stages', color: 0x2a7f9c, has: (l) => l.water?.length, rules: [
+      `The road runs down a slipway into a channel of water as wide as the road, and back up one at the far end. The lanes carry on as lanes, marked by buoys. Only an amphibious car floats: these levels start in nothing else (the garage's Amphibious section has ${amphibiousCars().length}, one at each star level).`,
+      `Nothing stops you at the water's edge: drive in at speed. Afloat the car keeps ${pct(CONFIG.water.topSpeed)} of its top speed and ${pct(CONFIG.water.brake)} of its brakes, and its steering takes slowly, so it slides on like a boat. A reach can have a current that carries you sideways all the way across.`,
+      `Traffic that can't float pulls onto its own shoulder and queues short of the slipway, at most ${CONFIG.water.queue.most} a side, so every lane stays open. Amphibious traffic drives in and out with you. There is no shoulder to be busted on while you are afloat.`,
+    ], build: () => {
+      const car = amphibiousCars().find(c => c.id === 'toybota') || amphibiousCars()[0];
+      const model = MODELS[car.model]({ ...car }), K = CONFIG.water.colours;
+      model.position.set(1.6, CONFIG.water.surface - (car.draft ?? CONFIG.water.draft), -1.5);
+      const g = group(box(9, 0.1, 5, lambert(0x3b3e44), 0, -0.05, 6.5), box(9, 0.12, 2.4, lambert(K.slip), 0, -0.02, 2.8), model,
+        mesh(new THREE.PlaneGeometry(9, 9).rotateX(-Math.PI / 2), lambert(K.deep), 0, CONFIG.water.surface, -2.9));
+      for (let k = 0; k < 6; k++) g.add(box(9, 0.03, 0.12, lambert(K.rib), 0, 0.05, 1.8 + k * 0.4));           // the slipway's ribs
+      const buoys = [-2.25, 0, 2.25].flatMap(x => [-0.5, -4.5].map(z => mesh(new THREE.ConeGeometry(0.28, 0.75, 8), lambert(x ? 0xf4f1e6 : 0xf2c418), x, CONFIG.water.surface + 0.3, z)));
+      g.add(...buoys);
+      return { model: g, tick: (t) => { model.userData.animate?.(t); model.rotation.z = Math.sin(t * 2.4) * CONFIG.water.bob.roll; model.position.y = CONFIG.water.surface - (car.draft ?? CONFIG.water.draft) + Math.sin(t * 3) * CONFIG.water.bob.height; } };
+    } },
+    { name: 'Boats', color: 0x1f6f5c, has: (l) => l.water?.length && Object.keys(l.traffic || {}).some(k => CONFIG.vehicles[k]?.boat), rules: [
+      `The traffic of a water stage: dinghies (${range(CONFIG.vehicles.dinghy.cruise, ' m/s')}), ferries (${range(CONFIG.vehicles.ferry.cruise, ' m/s')}), barges (${range(CONFIG.vehicles.barge.cruise, ' m/s')}, ${CONFIG.vehicles.barge.hl * 2} m long) and pedal boats (${range(CONFIG.vehicles.pedalo.cruise, ' m/s')}). They keep to the lanes as cars do, both ways on a two-way road, and are hit like cars: all of them are slower than you.`,
+      `A boat under way drags a wake: for ${CONFIG.water.wake.length} m astern of it the water shoves your car sideways off the boat's line, hardest close in. Pass wide, or steer into it and hold your lane.`,
+      'A boat never leaves the water: at the end of its reach it ties up at the bank, out of the lanes. In a narrow channel a barge is slipped round on the bank side, where the water is as good as any lane.',
+    ], build: () => {
+      const sea = mesh(new THREE.PlaneGeometry(15, 26).rotateX(-Math.PI / 2), lambert(CONFIG.water.colours.deep), 0, 0, 0);
+      const kinds = ['barge', 'ferry', 'dinghy', 'pedalo'], colors = [0x3a4a5e, 0x1f6f5c, 0xff9f43, 0xf2c418], spots = [[-3.6, -2], [3.4, 4], [3.2, -7.5], [-3.4, 9.5]];
+      const models = kinds.map((kind, k) => { const m = vehicle(kind, colors[k]); m.position.set(spots[k][0], 0, spots[k][1]); return m; });
+      return { model: group(sea, ...models), tick: (t) => models.forEach((m, k) => { m.userData.animate(t); m.position.y = Math.sin(t * 2.6 + k * 1.7) * 0.05; }) };
+    } },
     { name: 'The jetboat', color: 0xe8432e, has: (l) => l.car === 'jetboat', rules: [
       `On its level you drive a jetboat across open water: ${kmh(LEVEL_CARS.jetboat.maxSpeed)} top speed, nimble, bobbing on the chop. The way through is marked by breakwaters and buoys.`,
     ], build: () => {
@@ -650,23 +677,24 @@ const GROUPS = [
       return { model: g, tick: (t) => { b.position.y = Math.max(0, Math.sin(t * 0.7)) * 5; } };
     } },
     { name: 'Drawbridges', color: 0x2e6c8f, has: (l) => l.drawbridges?.length, rules: [
-      `Bells and booms for ${H.bridge.warn} s, then the two leaves lift and stand open, leaving a ${H.bridge.gap} m gap over the river, for about ${H.bridge.open} s in all. Traffic waits.`,
-      `At ${kmh(H.bridge.jumpSpeed)} or more you <strong>jump it</strong> (${H.bridge.landDamage} damage on landing). Any slower and you drop into the river: wrecked. Or hold the brake and wait for it to come down.`,
+      `Bells and booms for ${H.bridge.warn} s, then the two ${H.bridge.leaf} m leaves lift to ${Math.round(H.bridge.angle * 180 / Math.PI)}° and stand open, their lips ${(2 * H.bridge.leaf * (1 - Math.cos(H.bridge.angle))).toFixed(1)} m apart over the river, for about ${H.bridge.open} s in all. Traffic waits.`,
+      `You never have to: the car drives up the leaf, and the speed you reach its foot with decides the rest. The board on the way in gives the speed that <strong>jumps it</strong> (every car's top speed is more); a hard landing costs ${H.bridge.landDamage} damage. A little short and you drop into the river: wrecked. Far too slow and you stop on the leaf and roll back to wait.`,
     ], build: () => {
       const g = group(mesh(new THREE.PlaneGeometry(26, 8).rotateX(-Math.PI / 2), lambert(0x2e6c8f), 0, -0.2, 0));
       g.add(box(9, 0.3, 5, lambert(0x3b3e44), 0, -0.05, 6.5), box(9, 0.3, 5, lambert(0x3b3e44), 0, -0.05, -6.5));
       const leaves = [-1, 1].map((d) => { const pivot = new THREE.Group(), leaf = box(9, 0.3, 4, lambert(0x4b4f57), 0, 0, -d * 2); pivot.position.set(0, 0, d * 4); pivot.add(leaf); g.add(pivot); return { pivot, d }; });
-      return { model: g, tick: (t) => { const open = Math.max(0, Math.sin(t * 0.8)); leaves.forEach(({ pivot, d }) => { pivot.rotation.x = d * open * 1.15; }); } };
+      return { model: g, tick: (t) => { const open = Math.max(0, Math.sin(t * 0.8)); leaves.forEach(({ pivot, d }) => { pivot.rotation.x = d * open * H.bridge.angle; }); } };
     } },
     { name: 'Wide loads', color: 0xffd23f, has: (l) => l.wideLoads?.length, rules: [
       `Half a house on a low loader, two lanes wide, crawling along at ${kmh(H.load.speed)} with an escort car ${H.load.behind} m behind it.`,
-      `The escort watches for ${H.load.watch} s (its amber beacons flashing), then looks away for ${H.load.rest} s. Get past the load's nose while it is watching and it is a <strong>bust</strong>. Pass while the beacons are dark.`,
-      `Running into the load costs ${CONFIG.obstacleKinds.wideLoad.damage} damage. Traffic drives through it.`,
+      `<strong>Pass it at speed, on the side its arrow board points to.</strong> The load swings from one side to the other, ${H.load.dwell} s at each: over on the shoulder, the lane on its left is open; back in its lanes, the way past is on its right, on the shoulder (the shoulder's rules apply). The arrows flash for the last ${H.load.warn} s; a red cross means it is swinging over.`,
+      `The escort is no policeman: it moves over to stay in front of you, slowly. Wrong-foot it. There is no bust.`,
+      `Running into either is a knock, not a wreck: ${CONFIG.obstacleKinds.wideLoad.damage} damage into the load's tail (${CONFIG.obstacleKinds.wideLoad.sideDamage} alongside it), and they are still there. Traffic drives through it.`,
     ], build: () => {
       const g = road(11, 26), load = ob('wideLoad', { hw: 3.2, hl: 6.5, height: 3.6 }), escort = ob('escort', { hw: 0.95, hl: 2.2, height: 1.7 });
       load.position.set(1.7, 0, 5); escort.position.set(1.7, 0, -9);
       g.add(load, escort);
-      return { model: g, tick: (t) => escort.userData.beacons.color.setHex(t % 4 < 2.2 && Math.floor(t * 5) % 2 ? 0xffb020 : 0x4a3a1a) };
+      return { model: g, tick: (t) => { const right = t % 8 < 4, u = Math.min(1, (t % 4) / 1.2); load.position.x = 1.7 - 1.9 * (right ? u : 1 - u); load.userData.arrows.forEach((arrow) => { arrow.group.visible = u >= 1 && arrow.side === (right ? -1 : 1); }); load.userData.cross.visible = u < 1; escort.userData.beacons.color.setHex(Math.floor(t * 5) % 2 ? 0xffb020 : 0x4a3a1a); } };
     } },
     { name: 'Shopping trolleys', color: 0xc4c9ce, has: (l) => l.trolleys?.length, rules: [
       'Escaped trolleys roll across the road with its camber: down from the crown to the kerbs on the straight, to the inside of a bend, bouncing back off the kerb.',
@@ -811,7 +839,9 @@ const slug = (name) => name.toLowerCase().replace(/[^a-z]+/g, '-');
 document.getElementById('groups').innerHTML = GROUPS.map(g => `<a href="#${slug(g.name)}">${g.name}</a>`).join('');
 const cardBox = document.getElementById('cards');
 const views = [];
-for (const g of GROUPS) {
+// (gimmicks.html?group=vehicles shows that group alone, and &from=5 only its cards from the fifth on: for a look at a card)
+const only = new URLSearchParams(location.search).get('group'), fromCard = Number(new URLSearchParams(location.search).get('from') || 1);
+for (const g of GROUPS.filter(g => !only || slug(g.name) === only).map(g => only ? { ...g, cards: g.cards.slice(fromCard - 1) } : g)) {
   const heading = document.createElement('h2');
   heading.className = 'group';
   heading.id = slug(g.name);

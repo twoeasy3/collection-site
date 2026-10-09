@@ -657,7 +657,6 @@ OBSTACLE_MODELS.wideLoad = (o) => {
     [lambert(0xe8dcc4), w * 0.96, 2.2, l * 0.62, 0, 2.1, -l * 0.12],             // the house: its walls,
     [lambert(0x7a4a3a), w * 1.0, 0.25, l * 0.66, 0, 3.3, -l * 0.12],             // its roof's eaves,
     [lambert(0x8a5646), w * 0.6, 0.4, l * 0.66, 0, 3.55, -l * 0.12],             // and ridge
-    [lambert(0x9fd0e8), 1.2, 1.0, 0.06, -w * 0.25, 2.2, -l * 0.43 - 0.02], [lambert(0x9fd0e8), 1.2, 1.0, 0.06, w * 0.25, 2.2, -l * 0.43 - 0.02],
     [lambert(0xffd23f), w * 0.9, 0.5, 0.08, 0, 1.1, -l / 2 - 0.02],              // "OVERSIZE", at the back
   ];
   for (let k = 0; k < 6; k++) parts.push([lambert(k % 2 ? 0xf4f4f4 : 0xd8262b), w / 6, 0.3, 0.1, -w / 2 + w / 12 + k * w / 6, 0.55, -l / 2 - 0.04]);
@@ -669,10 +668,40 @@ OBSTACLE_MODELS.wideLoad = (o) => {
     lamp.position.set(x * w * 0.48, 3.5, -l * 0.12 + z * l * 0.31);
     group.add(lamp);
   }
+  // the arrow board on its tail (see Hazards.loadSignal; render/items.js lights it): a black board, on it a
+  // row of green chevrons pointing to the side to pass on (userData.arrows: [{ side: -1 | 1, group }]), or
+  // a red cross while it swings over (userData.cross). The model's +x is the road's left
+  const back = new THREE.Group();
+  back.position.set(0, 2.35, -l * 0.43 - 0.1);
+  back.add(new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 1.7, 0.08), dark));
+  const green = new THREE.MeshBasicMaterial({ color: 0x35f06a }), red = new THREE.MeshBasicMaterial({ color: 0xff3524 });
+  const bar = (parent, material, x, y, length, turn) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(length, 0.2, 0.05), material);
+    mesh.position.set(x, y, -0.07);
+    mesh.rotation.z = turn;
+    parent.add(mesh);
+  };
+  group.userData.arrows = [-1, 1].map((side) => {
+    const arrows = new THREE.Group(), point = -side; // (which way along the model's x its chevrons point)
+    for (let k = -1; k <= 1; k++) {
+      bar(arrows, green, k * 1.5 + point * 0.2, 0.25, 0.85, -point * 0.75);
+      bar(arrows, green, k * 1.5 + point * 0.2, -0.25, 0.85, point * 0.75);
+    }
+    arrows.visible = false;
+    back.add(arrows);
+    return { side, group: arrows };
+  });
+  const cross = new THREE.Group();
+  bar(cross, red, 0, 0, 1.8, 0.7);
+  bar(cross, red, 0, 0, 1.8, -0.7);
+  cross.visible = false;
+  back.add(cross);
+  group.userData.cross = cross;
+  group.add(back);
   return group;
 };
 // its escort: a white pilot car, a yellow WIDE LOAD board across its roof, two amber beacons.
-// userData.beacons: their material (lit while it watches: see render/hazards.js)
+// userData.beacons: their material (lit while it moves over to block: see render/items.js)
 OBSTACLE_MODELS.escort = (o) => {
   const w = o.hw * 2, l = o.hl * 2, white = lambert(0xf4f4f4), dark = lambert(0x1b1d22);
   const beacons = new THREE.MeshBasicMaterial({ color: 0x4a3a1a });

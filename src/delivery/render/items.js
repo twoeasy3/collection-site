@@ -357,9 +357,15 @@ export const syncPickups = (dt) => {
     if (o.kind === 'rock') mesh.userData.rock.rotation.x = o.spin || 0; // (tumbling down the hillside)
     if (o.ride) mesh.userData.animate(o.ride.on ? o.ride.t : 0); // (a cyclist pedalling)
     if (o.run && mesh.userData.animate) mesh.userData.animate(o.run.t || 0); // (a marathon runner running)
-    if (mesh.userData.beacons) { // (a wide load's escort: its beacons flash while it watches)
+    if (mesh.userData.beacons) { // (a wide load's escort: its beacons flash while it is moving over to block)
       const load = Hazards.loads.find(w => w.escort === o);
-      mesh.userData.beacons.color.setHex(load && Hazards.watching(load) && Math.floor(performance.now() / 180) % 2 ? 0xffb020 : 0x4a3a1a);
+      mesh.userData.beacons.color.setHex(load && Hazards.blocking(load) && Math.floor(performance.now() / 180) % 2 ? 0xffb020 : 0x4a3a1a);
+    }
+    if (mesh.userData.arrows) { // (a wide load's arrow board: the side to pass it on, flashing as that side is about to shut)
+      const load = Hazards.loads.find(w => w.load === o), sign = load ? Hazards.loadSignal(load) : { side: 0 };
+      const lit = !sign.closing || Math.floor(performance.now() / 120) % 2;
+      mesh.userData.arrows.forEach((arrow) => { arrow.group.visible = sign.side === arrow.side && !!lit; });
+      mesh.userData.cross.visible = sign.side === 0 && !!load?.on;
     }
     if (o.kind === 'landmine') { // (its light flashing, each in its own time)
       const F = CONFIG.battle.mineFlash, lit = ((performance.now() / 1000 / F.period + o.phase) % 1) < F.on;

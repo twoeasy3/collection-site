@@ -331,6 +331,49 @@ export const CONFIG = {
     oncomingShield: 4,     // extra s of shield for a car the helicopter can only set down on the oncoming side
     washedEach: 3,         // washed-up pickups there can be of each type at once (see Tide.washUp)
   },
+  // Water stages (a level's "water": [{ from, to }]; see water.js, and render/water.js for the look). Over each
+  // stretch the road IS water: the pavement runs down a slipway into a channel as wide as the road, shoulders
+  // and all, and comes back up one at the far end; its lanes carry on as lanes, marked by buoys. A car that
+  // floats (a car's "amphibious") drives in and carries on across as a boat: slower, softer to steer and to
+  // stop, bobbing, a bow wave and a wake. Traffic that doesn't float pulls onto its shoulder short of the
+  // slipway and waits there in a queue (the lanes all stay open); amphibious traffic drives in and out; boats
+  // (a vehicle's "boat") live on the water only, and tie up at its bank short of the slipway at its far end.
+  water: {
+    slipway: 26,           // m of slipway at each end of a stage, over which the water deepens to the channel's depth
+    afloat: 0.5,           // depth (0 = dry .. 1 = the channel's) from which a car is afloat, no longer wading
+    topSpeed: 0.74,        // share of its top speed an amphibious car keeps afloat
+    accel: 0.8,            // ...and of its acceleration
+    brake: 0.55,           // ...and of its braking (it drifts on)
+    drag: 9,               // m/s^2 the water slows a car that drives in faster than it can go afloat
+    steer: 0.85,           // share of its sideways speed it keeps afloat...
+    steerGrip: 0.38,       // ...and of how quickly its steering takes (it slides on)
+    sunkSpeed: 0.2,        // share of its top speed a car that doesn't float keeps in the channel...
+    sunkDamage: 30,        // ...and the health a second it costs it
+    trafficPace: 0.7,      // share of its cruising speed an amphibious traffic car keeps afloat
+    // the queue of traffic that can't cross, on its own shoulder: each car starts pulling over `from` m short of
+    // its place in it; the first stops `edge` m short of the slipway, each of the rest `gap` m behind the one
+    // before. Once `most` are waiting there, no more that can't cross turn up on that side of the water until
+    // the queue is gone by; and none turns up within `clear` m of where the queue starts (reach: m back from
+    // there a queue is looked for: longer than any queue gets)
+    queue: { from: 170, edge: 13, gap: 2.2, most: 6, clear: 60, reach: 120 },
+    // a boat coming to the end of its water ties up at the bank (the channel's shoulder), the same way: `edge` m
+    // short of the slipway's foot
+    moor: { from: 130, edge: 6, gap: 3, most: 12, clear: 130, reach: 260 },
+    // a boat's wake (a traffic vehicle with "boat", under way faster than `from` m/s): for `length` m astern of it
+    // and `width` m either side of its line, it shoves a car afloat away from that line, by up to `shove` m/s^2
+    // close astern (fading with distance): something to steer against, or round, never a wall
+    wake: { from: 4, length: 30, width: 3.4, shove: 9 },
+    // (and a stage can have a current, its "current": m/s^2 it carries a car afloat sideways, + = to the right)
+    // the look (render/water.js)
+    surface: 0.32,         // m the water stands over the road, in the channel (the road under it is not drawn deeper)
+    draft: 0.62,           // m of an amphibious car under the water afloat, if it has no "draft" of its own
+    boatDraft: 0.12,       // ...and of a boat
+    bob: { height: 0.06, period: 2.1, roll: 0.035, pitch: 0.02 }, // m up and down; s; rad of roll and of pitch
+    bank: 0.9,             // m the water runs on past the pavement's edge, to its quay
+    buoyEvery: 14,         // m between the buoys along each lane line
+    wakeFrom: 3,           // m/s from which a car afloat leaves a wake
+    colours: { shallow: 0x8fc7cf, deep: 0x2a7f9c, glint: 0x49a3bd, foam: 0xf2fafd, slip: 0xa9a79d, rib: 0x8a887f, quay: 0xc9c5b6 },
+  },
   // Junctions (a level's "junctions"): crossroads where the road turns right or left, or goes
   // straight on. There is only ever the one route: the arms it doesn't take are barred to the
   // player by glowing arrows, but traffic leaves the road down them, through the arrows, and is
@@ -531,8 +574,8 @@ export const CONFIG = {
     runner: { damage: 10, speedKept: 0.88, light: true },
     waterTable: { damage: 6, speedKept: 0.9, light: true },
     paceCar: { damage: 30, speedKept: 0.5 },
-    wideLoad: { damage: 40, speedKept: 0.35 },
-    escort: { damage: 30, speedKept: 0.5 },
+    wideLoad: { damage: 12, speedKept: 0.6, sideDamage: 6, sideKept: 0.85 }, // (a knock: see CONFIG.wideLoad)
+    escort: { damage: 8, speedKept: 0.6, sideDamage: 4, sideKept: 0.9 },
     marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
     // falling cargo (a shedding truck's load: see CONFIG.cargo): bales, crates and tyres
     crate: { damage: 18, speedKept: 0.75 },
@@ -680,6 +723,21 @@ export const CONFIG = {
     // brake lights or indicators, and never spins out or takes a critical hit): a cruiser as the player's jetboat, and a fishing trawler, big and slow
     boat:    { hw: 1.0, hl: 2.7, height: 1.6, mass: 1.2, health: 90, model: 'jetboat', speed: 1, boat: true, noWheels: true, crit: 0, spin: 0 },
     trawler: { hw: 1.5, hl: 4.6, height: 3.2, mass: 3.5, health: 200, model: 'trawler', speed: 0.6, boat: true, noWheels: true, crit: 0, spin: 0 },
+    // ...and the boats of a water stage (a level's "water": see CONFIG.water and water.js), which turn up on the
+    // water only: a dinghy with an outboard, quick and light; a barge, long, wide, heavy and slow, to slip round;
+    // a ferry, big and steady; and a pedal boat, hardly moving. (cruise: m/s, whatever the level's pace)
+    dinghy:  { hw: 0.8, hl: 1.7, height: 1.0, mass: 0.6, health: 50, model: 'dinghy', cruise: { min: 9, max: 13 }, boat: true, noWheels: true, crit: 0, spin: 0 },
+    barge:   { hw: 1.5, hl: 7.5, height: 2.2, mass: 7, health: 400, model: 'barge', livery: 0x3a4a5e, cruise: { min: 4.5, max: 6.5 }, boat: true, noWheels: true, special: true, crit: 0, spin: 0, noSpin: true },
+    ferry:   { hw: 1.6, hl: 5.5, height: 3.6, mass: 6, health: 320, model: 'ferry', livery: 0x1f6f5c, cruise: { min: 7, max: 9 }, boat: true, noWheels: true, special: true, crit: 0, spin: 0, noSpin: true },
+    pedalo:  { hw: 0.9, hl: 1.4, height: 1.3, mass: 0.5, health: 40, model: 'pedalo', cruise: { min: 2, max: 3.2 }, boat: true, noWheels: true, special: true, crit: 0, spin: 0 },
+    // the amphibious cars as traffic (each id is the garage car's, so it wears that car's two liveries): they drive
+    // down the slipway into a water stage and out again at the far end, slower afloat (amphibious; draft: m of it
+    // under the water afloat). They run at the level's own pace (speed), not their top speed
+    herald:   { hw: 0.8, hl: 1.95, height: 1.0, mass: 0.8, health: 50, model: 'herald', speed: 0.9, amphibious: true, draft: 0.5 },
+    floatvan: { hw: 1.3, hl: 2.3, height: 2.0, mass: 1.6, health: 100, model: 'transporter', speed: 0.9, amphibious: true, draft: 0.85 },
+    toybota:  { hw: 1.0, hl: 2.5, height: 1.6, mass: 1.5, health: 100, model: 'toybota', speed: 1.05, amphibious: true, draft: 0.62 },
+    dampervan: { hw: 1.0, hl: 2.3, height: 2.7, mass: 1.7, health: 120, model: 'dampervan', speed: 0.95, amphibious: true, draft: 0.72 },
+    nissank:  { hw: 1.35, hl: 2.6, height: 1.7, mass: 2, health: 130, model: 'nissank', speed: 1.1, amphibious: true, draft: 0.85 },
     // traffic with quirks of its own (see Traffic: quirks). jingle: an ice cream van's tune, heard near it (every
     // jingle s); stops: a bin lorry pulls up where it is every every s, for 	ime s, hazards on; learner: it
     // hesitates all the time (as CONFIG.hesitation: dabs of the brakes, drifting about its lane); tailgates: a boy
@@ -945,7 +1003,7 @@ export const CONFIG = {
   // scripts/level-clocks.mjs from a clean run (a ghost, flat out) in the reference car: that run's time
   // times good or evil, to the nearest `round` s, less `timePlus` s for each time plus on the level (the time
   // it gives back)
-  clock: { car: 'sport', good: 1.5, evil: 1.15, round: 5, timePlus: 5 },
+  clock: { car: 'sport', amphibious: 'floatvan', good: 1.5, evil: 1.15, round: 5, timePlus: 5 }, // (amphibious: the reference car on an amphibious level, a two-star car as the Sportscompact is)
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing
   // medals on the menu's level cards (levelinfo.js): a delivery on time is a bronze; silver and gold are for
   // this share of the time to spare a clean run in the reference car leaves (1 = as good as that run).
@@ -1106,7 +1164,8 @@ export const CONFIG = {
     drain: 3,              // s after a burst the road stays slippery
     warn: 150,             // m short of one spraying ahead that the player is warned
     height: 9,             // m the geyser throws its water
-    on: 5, off: 4, length: 28,
+    spread: 1.4,           // s the puddle takes to spread out, as a burst begins (the look of it only)
+    on: 5, off: 4, length: 28, dry: 1.6, // (Gimmick Road 2's, see Hazards: s on and off, m of lane, and s its puddles take to shrink away)
   },
   // rockfall (a level's "rockfall": { from, to, count, side }): rocks tumbling down from that side
   // onto the road as the player comes near. Obstacles: only the player can hit them
@@ -1190,16 +1249,34 @@ export const CONFIG = {
   balloon: { notice: 7, height: 40, descend: 5, sit: 7, rise: 3, hl: 2.2, stopLine: 8, damage: 25, speedKept: 0.4 },
   // a drawbridge ("drawbridges": { s }): set off `notice` s before the player would get there: bells for
   // `warn` s (the booms come down), then its two leaves lift over `raise` s, stand open until `open` s
-  // after they began, and come down over `close` s. Open, there is a `gap` m gap: at jumpSpeed m/s or
-  // more the car jumps it (up to jumpHeight m, landDamage on landing); slower, it drops in and is
+  // after they began, and come down over `close` s. Open, there is a gap between the lips: fast enough,
+  // the car goes up the leaf and jumps it; slower, it stops short on the leaf or drops in and is
   // wrecked. Traffic waits `stopLine` m short. Again every `every` s with the player within `again` m
-  drawbridge: { notice: 6, warn: 2.5, raise: 2, open: 9, close: 2, gap: 16, jumpSpeed: 22, jumpHeight: 3.2, landDamage: 8,
-    stopLine: 16, every: { min: 16, max: 26 }, again: 320 },
+  // (its deck: two leaves `leaf` m long, hinged `leaf` m either side of s and meeting there when down;
+  // right up they stand at `angle` rad, each lip leaf * sin(angle) up and drawn back leaf * (1 - cos(angle))
+  // from the middle: that is the gap. The car follows the leaf under it, height and pitch: `gravity`
+  // m/s^2 (the game's, not the world's) pulls it back down the slope, so too slow it stops short and
+  // rolls back at rollBack m/s; off the lip it flies an arc under the same gravity, and comes down on the
+  // far leaf or the road beyond (never thrown up faster than `launch` m/s), with landDamage if it lands harder than landSoft m/s into the surface;
+  // short of the far lip by more than lipGrace m it goes into the river, `depth` m down. A gap narrower
+  // than `step` m is driven over. The booms stand `boom` m out, traffic waits `stopLine` m out. A board
+  // `sign` m short gives the speed that clears it hands off (Hazards.bridgeJumpSpeed: every car's top
+  // speed is more), so it can always be taken at speed)
+  drawbridge: { notice: 6, warn: 2.5, raise: 2, open: 9, close: 2, leaf: 15, angle: 0.5, gravity: 20, rollBack: 5,
+    landDamage: 8, landSoft: 7, lipGrace: 1, depth: 1.6, step: 0.6, launch: 12, boom: 19, sign: 150,
+    stopLine: 22, every: { min: 16, max: 26 }, again: 320 },
   // a wide load ("wideLoads": { s, lanes: [a, b] }): a load two lanes wide crawling along at `speed`,
-  // setting off as the player comes within `trigger` m, its escort `behind` m behind it. The escort
-  // watches for `watch` s (its beacons flashing), then looks away for `rest` s: getting past the load's
-  // nose while it watches, within `sight` m of it, is a bust
-  wideLoad: { speed: 9, trigger: 280, behind: 16, watch: 5, rest: 4, sight: 90 },
+  // setting off as the player comes within `trigger` m, its escort `behind` m behind it. It is passed at
+  // speed, by timing: the load swings from one side of its lanes to the other and back, `dwell` s at each
+  // end and `shift` s between, `swing` m across (or as far as `kerb` m short of the road's edge; never
+  // opening less than `gap` m). Left, the way past is on its right (out onto the shoulder: the shoulder's
+  // rules apply); right, on its left, in the lane. The arrow board on its tail points to the open side,
+  // flashing for the last `warn` s before it shuts. The escort is no policeman: it moves over at
+  // escortSteer m/s to stay in front of a car coming up within `sight` m behind it, and holds its line once
+  // that car is `commit` s from reaching it: come up on one side of it and jink late.
+  // Running into either is a knock (obstacleKinds: damage and speedKept from behind, sideDamage and
+  // sideKept alongside), not a wreck: they stay where they are, and there is no bust
+  wideLoad: { speed: 9, trigger: 280, behind: 22, dwell: 5, shift: 1.5, warn: 1.2, swing: 3.8, gap: 2.8, kerb: 0.3, escortSteer: 1.2, sight: 70, commit: 1.1 },
   // shopping trolleys ("trolleys": { from, to, count }): rolling across the road with its camber: down
   // from the crown on the straight (accel m/s^2), to the inside of a bend (up to `bend` times that),
   // bouncing back off the kerb with `bounce` of their speed (or a shove of `kick` m/s if they have stopped)

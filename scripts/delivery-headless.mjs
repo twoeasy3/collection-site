@@ -3,7 +3,7 @@
 //   const g = await boot();  ...  await g.close();
 import { createServer } from 'vite';
 
-export const boot = async ({ cars = ['commuter', 'sport'] } = {}) => {
+export const boot = async ({ cars = ['commuter', 'sport', 'floatvan'] } = {}) => { // (floatvan: an amphibious car, for the amphibious levels)
   // the game logic touches the DOM only to show / hide screens
   const element = () => ({ classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, style: {}, textContent: '' });
   globalThis.window = globalThis.window || { addEventListener() {}, dispatchEvent() {} };

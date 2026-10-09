@@ -4,7 +4,7 @@ import './style.css';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
-import { LEVEL, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
+import { LEVEL, LEVELS, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
 import { THEMES } from './themes.js';
 import { Progress } from './progress.js';
 import './render/demo.js'; // (?demo: before the menu)
@@ -25,6 +25,7 @@ import { syncUfoStrike } from './render/ufostrike.js';
 import { syncBulletTrain } from './render/bullettrain.js';
 import { syncJunctions } from './render/junctions.js';
 import { syncTide } from './render/tide.js';
+import { syncWater } from './render/water.js';
 import { syncHippos } from './render/hippos.js';
 import { syncElephants } from './render/elephants.js';
 import { syncWreckage } from './render/wreckage.js';
@@ -57,7 +58,7 @@ import './horn.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
 import { Social } from './social.js';
-import { CAR, lendCar, superOf } from './cars.js';
+import { CAR, lendCar, superOf, ownedAmphibious } from './cars.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
 // ?test (or ?hidden=testbed) starts the hidden test track straight away (?test&evil: as Evil).
@@ -72,6 +73,14 @@ if (params.get('garage') !== null) {
   Garage.open();
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
+}
+// ?pick=41 shows the menu with that level picked, open or not (for a look at its card: nothing starts; the levels
+// are all open for this visit); with &start, Start Game is pressed too (an amphibious level with no amphibious car)
+if (params.get('pick')) {
+  Progress.data.unlocked = Math.max(Progress.data.unlocked, LEVELS.length);
+  selectLevel(Number(params.get('pick')) - 1);
+  window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
+  if (params.get('start') !== null) Game.start();
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
@@ -105,6 +114,8 @@ if (params.get('racewatch') !== null) {
     Progress.data.cars.push(params.get('car').replace(/^super-/, ''));
     Progress.data.car = params.get('car').replace(/^super-/, '');
   }
+  // (an amphibious level straight from the address, with no amphibious car owned: one for this visit, as ?car gives)
+  if (LEVEL.amphibious && !ownedAmphibious()) Progress.data.cars.push(CONFIG.clock.amphibious);
   Game.start();
   if (params.get('car')?.startsWith('super-') && superOf(CAR)) Player.takeCar(() => lendCar(superOf(CAR)));
   if (params.get('at')) Player.s = Number(params.get('at'));
@@ -151,7 +162,7 @@ const silence = () => {
 let last = performance.now();
 let prevState = Game.state;
 const frame = (now) => {
-  const dt = Math.min(0.05, (now - last) / 1000) || 0.001;
+  const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) || 0.001; // (never less than nothing: a first frame's `now` can be before `last`, after ?ff)
   last = now;
 
   if (Garage.isOpen) {
@@ -165,9 +176,11 @@ const frame = (now) => {
     // then bring the scene up to date with it
     const heading = Track.toWorld(Player.s, Player.lat, tmp);
     carMesh.position.copy(tmp);
-    carMesh.position.y += Player.air + Mysteries.heave(Player.s); // (jumping a drawbridge; riding an earthquake's wave)
+    carMesh.position.y += Player.air + Mysteries.heave(Player.s); // (on a drawbridge's leaf, or jumping it; riding an earthquake's wave)
+    carMesh.rotation.order = 'YXZ'; // (heading first, then the pitch about the car's own axle line)
     carMesh.rotation.y = heading - Player.yaw; // swerving right turns the nose toward +lat
-    carMesh.rotation.x = -Math.atan(Track.grade(Player.s)); // nose up on a climb
+    carMesh.rotation.x = -Math.atan(Track.grade(Player.s)) - Player.pitch; // nose up on a climb (and up a drawbridge's leaf)
+    if (Player.pitch) carMesh.position.y += Math.abs(Math.sin(Player.pitch)) * 0.25; // (so its low end doesn't sink into the slope)
     syncHelicopter(dt, now); // (decides whether the car is shown: blinking under a shield, dangling from the helicopter)
     // The screensaver has no player car: the mesh, and everything attached to it (the garage
     // models, the tank, the UFO, the passenger), is hidden. This comes after the helicopter,
@@ -182,6 +195,7 @@ const frame = (now) => {
     syncBulletTrain();
     syncJunctions(now);
     syncTide(now);
+    syncWater(now, dt); // (after the car and the traffic are placed: it floats them)
     syncHippos();
     syncElephants(now);
     syncWreckage(now);
@@ -220,7 +234,7 @@ const frame = (now) => {
     // (in the race screensaver: the watched car, and the rest of the field, as the camera hears them)
     const heard = Game.raceWatch && Game.state === 'playing' && !Game.paused ? raceAudio(dt) : null;
     if (heard) Sound.engine(heard.speed, CAR.id, CAR.maxSpeed, heard.gain, heard.pitch);
-    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher)
+    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : Player.afloat ? 'jetboat' : CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher; afloat on a water stage, a boat's)
       Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
     Sound.pack(heard ? heard.pack : 0);
     // the siren, louder the nearer the nearest police car or ambulance (the screensaver's too), and a radar

@@ -16,6 +16,7 @@ import { scene, tmp } from './scene.js';
 import { buildStrip } from './road.js';
 import { Particles, rnd } from './effects.js';
 import { makeWorker } from './siteModels.js';
+import { makePuddle, makeFountain } from './watermains.js';
 
 const lambert = (color, extra) => new THREE.MeshLambertMaterial({ color, ...extra });
 const glow = (color) => new THREE.MeshBasicMaterial({ color });
@@ -123,14 +124,21 @@ Game.onLoad.push(() => {
   mains = (LEVEL.waterMains || []).map((m) => {
     const from = Track.place(m), to = from + (m.length ?? CONFIG.waterMain.length);
     const lat = (s) => Track.laneOffset(m.lane, s);
-    const wet = new THREE.Mesh(buildStrip(from, to, (s) => lat(s) - LW / 2 + 0.1, (s) => lat(s) + LW / 2 - 0.1, 0.035, 2),
-      flat(0x6fb6d8, -4, { transparent: true, opacity: 0.55 }));
-    group.add(wet);
+    // (the wet lane: a run of pools down it, each its own shape, overlapping, the ones further from the main
+    // filling later and drying sooner. The pictures fade out well inside their edges, so they are cut wide)
+    const pools = [];
+    for (let k = 0, s = from + 2; s < to - 1; k++, s += 4.6) {
+      const length = Math.min(9 + (k % 3) * 1.5, (to - s) * 2 + 4), pool = makePuddle(LW * (1.3 + (k % 2) * 0.12), length, 31 + k * 13 + Math.round(from));
+      const spot = at(s, lat(s) + ((k * 7) % 3 - 1) * 0.12);
+      spot.add(pool);
+      pools.push(pool);
+    }
     const cover = at(from + 1.5, lat(from + 1.5));
     add(cover, new THREE.CylinderGeometry(0.55, 0.55, 0.08, 12), lambert(0x3a3b3f), 0, 0.04, 0);
     add(cover, box(0.9, 0.06, 0.5), lambert(0x55575c), 0.5, 0.12, 0.3).rotation.z = 0.5;
-    const jet = add(cover, new THREE.CylinderGeometry(0.25, 0.45, 5, 10), new THREE.MeshBasicMaterial({ color: 0xcfeaf7, transparent: true, opacity: 0.6 }), 0, 2.5, 0);
-    return { from, lat: lat(from + 1.5), wet, jet };
+    const jet = makeFountain(5.5);
+    cover.add(jet);
+    return { from, lat: lat(from + 1.5), pools, jet, x: cover.position.x, y: cover.position.y, z: cover.position.z };
   });
   // ---- hot-air balloons
   balloons = (LEVEL.balloons || []).map((b) => {
@@ -155,24 +163,62 @@ Game.onLoad.push(() => {
   // ---- drawbridges: the river under the gap, the two leaves, and a boom and a pair of lamps each side
   const D = CONFIG.drawbridge;
   bridges = (LEVEL.drawbridges || []).map((c) => {
-    const s = Track.place(c), lo = Track.lo(s), hi = Track.hi(s), width = hi - lo, mid = (lo + hi) / 2;
-    group.add(new THREE.Mesh(buildStrip(s - D.gap / 2, s + D.gap / 2, lo - 120, hi + 120, 0.04, 2), flat(0x2e6c8f, -4)));
-    for (const d of [-1, 1]) { // (its banks: a stone quay each side)
-      group.add(new THREE.Mesh(buildStrip(s + d * D.gap / 2 - 0.6, s + d * D.gap / 2 + 0.6, lo - 120, lo, 0.3, 2), flat(0x8a8378, -1)));
-      group.add(new THREE.Mesh(buildStrip(s + d * D.gap / 2 - 0.6, s + d * D.gap / 2 + 0.6, hi, hi + 120, 0.3, 2), flat(0x8a8378, -1)));
+    const s = Track.place(c), lo = Track.lo(s), hi = Track.hi(s), width = hi - lo, mid = (lo + hi) / 2, L = D.leaf;
+    // (the river under the whole span: the leaves, down, cover it)
+    group.add(new THREE.Mesh(buildStrip(s - L, s + L, lo - 120, hi + 120, 0.08, 2), flat(0x2e6c8f, -14)));
+    for (const d of [-1, 1]) { // (its banks: a stone quay each side, and a pier with a cabin either side of the road at each hinge)
+      group.add(new THREE.Mesh(buildStrip(s + d * L, s + d * (L + 1.2), lo - 120, lo, 0.3, 2), flat(0x8a8378, -1)));
+      group.add(new THREE.Mesh(buildStrip(s + d * L, s + d * (L + 1.2), hi, hi + 120, 0.3, 2), flat(0x8a8378, -1)));
+      for (const lat of [lo - 1.6, hi + 1.6]) {
+        const pier = at(s + d * (L + 1.5), lat);
+        add(pier, box(2.4, 1.2, 4.2), lambert(0x8a8378), 0, 0.6, 0);
+        add(pier, box(1.8, 2.4, 2.2), lambert(0xb9b2a4), 0, 2.4, 0);
+        add(pier, box(2.2, 0.25, 2.6), lambert(0x3d5a6c), 0, 3.7, 0);
+      }
     }
-    const deck = lambert(0x4b4f57), steel = lambert(0x9c4a3a);
-    const leaves = [-1, 1].map((d) => { // (each hinged at its bank, reaching to the middle)
-      const pivot = at(s + d * D.gap / 2, mid, 0.06), leaf = new THREE.Group();
-      add(leaf, box(width, 0.3, D.gap / 2), deck, 0, 0, -d * D.gap / 4);
-      for (const x of [-1, 1]) add(leaf, box(0.3, 1.1, D.gap / 2), steel, x * (width / 2 - 0.15), 0.6, -d * D.gap / 4);
-      add(leaf, box(width, 0.04, 0.3), glow(0xffd23f), 0, 0.17, -d * (D.gap / 2 - 0.2)); // (its lip, marked)
+    // each leaf: hinged at its bank, its top (local y 0) the road, reaching `leaf` m to the middle. A line
+    // from the hinge at Hazards.bridgeAngle: the same line Hazards.deck gives the car
+    const deck = lambert(0x41444b), steel = lambert(0x9c4a3a), white = glow(0xf4f4f4), yellow = glow(0xffc400);
+    const lines = []; // [x across the leaf (+ to the left), colour, dashed]
+    const lanes = [];
+    for (let n = 0; n < Track.laneCount; n++) lanes.push(Track.laneOffset(n, s));
+    for (let n = 0; n + 1 < lanes.length; n++) {
+      const between = (lanes[n] + lanes[n + 1]) / 2, median = lanes[n] < 0 && lanes[n + 1] > 0;
+      if (median) lines.push([mid - between - 0.14, yellow, false], [mid - between + 0.14, yellow, false]);
+      else lines.push([mid - between, white, true]);
+    }
+    lines.push([mid - Track.laneLo(s), white, false], [mid - Track.laneHi(s), white, false]);
+    const leaves = [-1, 1].map((d) => {
+      const pivot = at(s + d * L, mid, 0.11), leaf = new THREE.Group();
+      add(leaf, box(width, 0.4, L), deck, 0, -0.2, -d * L / 2);
+      for (const x of [-1, 1]) { // (a girder under each edge, deepest at the hinge; and a rail along the top)
+        add(leaf, box(0.4, 1.0, L * 0.98), steel, x * (width / 2 - 0.2), -0.9, -d * L / 2);
+        add(leaf, box(0.12, 0.12, L), steel, x * (width / 2 - 0.1), 0.9, -d * L / 2);
+        for (let k = 0; k <= 5; k++) add(leaf, box(0.1, 0.9, 0.1), steel, x * (width / 2 - 0.1), 0.45, -d * (0.2 + k * (L - 0.4) / 5));
+      }
+      for (const [x, material, dashed] of lines) {
+        if (!dashed) add(leaf, box(0.14, 0.02, L - 0.8), material, x, 0.012, -d * L / 2);
+        else for (let z = 1.5; z < L - 1; z += 6) add(leaf, box(0.14, 0.02, 2.4), material, x, 0.012, -d * (z + 1.2));
+      }
+      for (let k = 0; k * 1.2 < width; k++) add(leaf, box(0.6, 0.03, 0.5), glow(k % 2 ? 0x1b1d22 : 0xffd23f), -width / 2 + 0.3 + k * 1.2, 0.015, -d * (L - 0.3)); // (its lip, marked)
+      add(leaf, box(width, 0.5, 0.12), glow(0xffd23f), 0, -0.2, -d * L);
       pivot.add(leaf);
       return { leaf, d };
     });
+    // (the speed that clears it, on a board on the way up to it)
+    const need = Math.ceil(Hazards.bridgeJumpSpeed() * 3.6 / 5) * 5;
+    for (const [back, lat] of [[D.sign, Track.hi(s - D.sign) - 0.6], [D.sign / 2, Track.hi(s - D.sign / 2) - 0.6]]) {
+      if (s - back < 5) continue;
+      const post = at(s - back, lat);
+      add(post, box(0.2, 4, 0.2), lambert(0x8a9096), 0, 2, 0);
+      const sign = board('JUMP ' + need + '+', '#ffd23f', '#111', 5.4, 1.8);
+      sign.position.set(0, 4.6, 0);
+      sign.rotation.y = Math.PI;
+      post.add(sign);
+    }
     const booms = [], lamps = [];
     for (const [d, lat, reach] of [[-1, Track.laneHi(s) + 0.4, Track.laneHi(s) + 0.4], [1, Track.laneLo(s) - 0.4, -(Track.laneLo(s) - 0.4)]]) {
-      const post = at(s + d * D.stopLine, lat, 0);
+      const post = at(s + d * D.boom, lat, 0);
       add(post, box(0.18, 3.4, 0.18), lambert(0x8a9096), 0, 1.7, 0);
       add(post, box(1.2, 0.45, 0.1), lambert(0x1b1d22), 0, 3.0, 0);
       for (const x of [-0.35, 0.35]) {
@@ -210,11 +256,9 @@ export const syncHazards = (now) => {
   Hazards.mains.forEach((m, k) => {
     const mesh = mains[k];
     if (!mesh) return;
-    mesh.wet.visible = mesh.jet.visible = m.on;
-    if (!m.on || !near(m.from)) return;
-    mesh.jet.scale.set(1 + Math.sin(t * 23) * 0.15, 1 + Math.sin(t * 17) * 0.08, 1 + Math.cos(t * 19) * 0.15);
-    Track.toWorld(m.from + 1.5, mesh.lat, tmp);
-    for (let i = 0; i < 3; i++) Particles.emit(tmp.x + rnd(0.3), tmp.y + 4.5, tmp.z + rnd(0.3), rnd(4), 2 + Math.random() * 4, rnd(4), 1.1, 0.18 + Math.random() * 0.15, 0, 16, 0xcfeaf7, tmp.y);
+    const spread = Hazards.mainSpread(m), close = near(m.from);
+    mesh.pools.forEach((pool, k) => pool.userData.set(Math.max(0, Math.min(1, spread * (1 + k * 0.22) - k * 0.22)), t + k));
+    mesh.jet.userData.set(m.on ? Math.min(1, m.t / 0.5) : Math.max(0, 1 - m.t / 0.4), t, mesh.x, mesh.y, mesh.z, Game.paused || !close);
   });
   Hazards.balloons.forEach((b, k) => {
     const mesh = balloons[k];
@@ -228,8 +272,8 @@ export const syncHazards = (now) => {
   Hazards.bridges.forEach((c, k) => {
     const mesh = bridges[k];
     if (!mesh) return;
-    const open = Hazards.bridgeOpen(c), down = Hazards.bridgeBooms(c), phase = Math.floor(t * 2.5) % 2;
-    for (const { leaf, d } of mesh.leaves) leaf.rotation.x = d * open * 1.15; // (its free end up: see ../hazards.js)
+    const down = Hazards.bridgeBooms(c), phase = Math.floor(t * 2.5) % 2;
+    for (const { leaf, d } of mesh.leaves) leaf.rotation.x = d * Hazards.bridgeAngle(c); // (its free end up: see ../hazards.js)
     mesh.booms.forEach((arm) => { arm.rotation.z = (1 - down) * Math.PI / 2 * 0.95; });
     mesh.lamps.forEach((lamp, i) => lamp.color.setHex(c.state !== 'idle' && i % 2 === phase ? LAMP_ON : LAMP_OFF));
   });
