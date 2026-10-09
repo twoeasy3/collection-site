@@ -92,8 +92,16 @@ export const Progress = {
   },
   // the best time to spare on a level, for a side (undefined: not delivered on that side yet)
   bestTime(id, evil) { return this.data.bestTime[evil ? 'evil' : 'good'][id]; },
+  // (an earned car, a 6-star one, is owned once its level's par is beaten: see earned())
   owns(carId) {
-    return this.data.cars.includes(carId);
+    return this.data.cars.includes(carId) || this.earnedCars.some(car => car.id === carId && this.earned(car));
+  },
+  // the cars that are earned, not bought (set by cars.js: { id, earned: { level, par: { good, evil? } } })
+  earnedCars: [],
+  // true: the car's level has been delivered with at least its par's seconds to spare, on every side the par names
+  earned(car) {
+    const { level, par } = car.earned, best = this.data.bestTime;
+    return (best.good[level] ?? -Infinity) >= par.good && (par.evil === undefined || (best.evil[level] ?? -Infinity) >= par.evil);
   },
   // returns false if the player can't afford it
   buy(car) {

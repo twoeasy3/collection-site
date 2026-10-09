@@ -4,12 +4,13 @@
 // other livery: buying a car buys both.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CARS, CAR, SECRET_CARS, selectCar, stars, starColour, blueStarsOpen, garageCars } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, EARNED_CARS, selectCar, stars, starColour, blueStarsOpen, garageCars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { renderer } from './scene.js';
 import { makeCarMesh, shapeCarMesh, makeTankMesh } from './cars.js';
 import { MODELS } from './models.js';
+import { makeUfo } from './carExtras.js';
 
 // The lot: three rows of bays, a long covered garage along the back, the cars parked strictly column by
 // column in order of their stars and price, cheapest first (one with no stars, the Tank, last), and in
@@ -30,6 +31,7 @@ const bulk = (car) => car.hw * car.hl * car.height; // how big a car is, to park
 const rank = (car) => (car.tier || 99) + (car.blue ? 0.5 : 0); // (a tier's Blue Star cars park after its gold ones)
 // (the lot is built for the cars on show: it grows when the Blue Star cars arrive. See buildLot)
 let order = [], COLS = 0, LOT_W = 0, parked = [], built = null;
+const onShow = () => garageCars().length; // (what the lot was built for: it only ever grows)
 const colX = (col) => col * BAY_W;
 
 const scene = new THREE.Scene();
@@ -68,7 +70,7 @@ const label = (text, w, h, size, colour = '#ffd23f', ground = '#20242c') => {
 
 // ---- the lot and the building, and the cars parked in it: built afresh when the cars on show change ----
 const buildLot = () => {
-  built = blueStarsOpen();
+  built = onShow();
   lot.clear();
   const sorted = garageCars().sort((a, b) => rank(a) - rank(b) || a.price - b.price);
   order = [];
@@ -102,9 +104,9 @@ const buildLot = () => {
 
 // ---- a car, parked in its bay: column by column --------------------------------------------------
 const parkCar = (car, i) => {
-  const mesh = car.tank ? makeTankMesh(car.color) : car.model ? MODELS[car.model](car) : makeCarMesh(car.color);
-  if (!car.tank && !car.model) shapeCarMesh(mesh, car);
-  mesh.position.set(colX(Math.floor(i / ROWS)), 0, ROW_Z[i % ROWS]);
+  const mesh = car.tank ? makeTankMesh(car.color) : car.ufo ? makeUfo() : car.model ? MODELS[car.model](car) : makeCarMesh(car.color); // (ufo: the earned Saucer)
+  if (!car.tank && !car.ufo && !car.model) shapeCarMesh(mesh, car);
+  mesh.position.set(colX(Math.floor(i / ROWS)), car.ufo ? 1 : 0, ROW_Z[i % ROWS]); // (a saucer hovers)
   mesh.userData.car = car;
   lot.add(mesh); // (moves it out of the game's scene, where makeCarMesh put it)
   // a "for sale" marker floating over cars that aren't owned yet
@@ -161,7 +163,7 @@ const carAt = (event) => {
 
 const refresh = () => {
   // (a secret vehicle in use has no bay, so no ring)
-  const inUse = CARS.find(car => car.id === Progress.data.car) || SECRET_CARS[Progress.data.car] || CARS[0];
+  const inUse = [...CARS, ...EARNED_CARS].find(car => car.id === Progress.data.car) || SECRET_CARS[Progress.data.car] || CARS[0];
   bank.textContent = 'Bank ' + money(Progress.data.money);
   liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
   const shown = looking || inUse, owned = Progress.owns(shown.id);
@@ -262,7 +264,7 @@ export const Garage = {
   evil: false, // which livery is on show
 
   open() {
-    if (built !== blueStarsOpen()) buildLot(); // (first time in, or the Blue Star cars have just arrived)
+    if (built !== onShow()) buildLot(); // (first time in, or the Blue Star cars have just arrived, or a 6-star car has been earned)
     this.isOpen = true;
     carAtOpen = CAR;
     Game.inMenu = true; // Enter must not start a run from here

@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial } from './levels.js';
 import { Progress } from './progress.js';
-import { useLevelCar, returnCar } from './cars.js';
+import { useLevelCar, returnCar, earnedFor } from './cars.js';
 import { Input } from './input.js';
 import { clamp } from './util.js';
 import { Track, buildTrack } from './track.js';
@@ -218,6 +218,7 @@ export const Game = {
     const tip = '$' + this.tip.toFixed(2);
     // delivered on time: the tip goes in the bank, the time to spare may be a best, and the next level opens
     // (a hidden level, off the menu, banks nothing and records nothing: see HIDDEN_LEVELS)
+    const prize = earnedFor(LEVEL.id), hadPrize = !!prize && Progress.earned(prize); // (a 6-star car this level earns, and whether it was earned before this run)
     const record = outcome === 'delivered' && LEVEL_INDEX >= 0 && Progress.levelDone(LEVEL_INDEX, LEVEL.id, Math.max(0, this.tip + this.cash - this.fines), this.remaining, Player.evil);
     resultTitle.textContent = {
       delivered: !LEVEL.grid?.rival ? 'Delivered!'
@@ -235,6 +236,7 @@ export const Game = {
       (LEVEL_INDEX < 0 ? ' (test run: nothing saved)' : record ? ' (new best)' : ' (best ' + formatTime(Progress.bestTime(LEVEL.id, Player.evil)) + ')') + '  |  ' : '') +
       (Player.evil ? 'Evil' : 'Good') + '  |  Wrecked: ' + this.wrecks + '  |  Busted: ' + this.busts +
       '  |  Bank $' + Progress.data.money.toFixed(2);
+    if (prize && !hadPrize && Progress.earned(prize)) resultNote.textContent += '  |  You earned the ' + prize.name + '!'; // (its par beaten on every side: it is in the garage)
     resultScreen.classList[outcome === 'delivered' ? 'remove' : 'add']('failed');
     resultScreen.classList.remove('hidden');
     for (const hook of this.onFinish) hook();

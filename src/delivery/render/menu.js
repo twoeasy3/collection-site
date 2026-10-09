@@ -3,7 +3,7 @@
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, setRaceClass, RACE_CLASSES } from '../levels.js';
-import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, earnedFor } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { Garage, withStars } from './garage.js';
@@ -88,13 +88,16 @@ const draw = () => {
     // (the most time to spare delivering it, on each side)
     const good = Progress.bestTime(level.id, false), evil = Progress.bestTime(level.id, true);
     const spare = (t) => t === undefined ? '-' : formatTime(t);
-    const onlyGood = level.battle || level.alwaysGood;
+    const onlyGood = level.battle || level.alwaysGood, prize = earnedFor(level.id);
     return card(levelLabel(i) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
       onlyGood ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
         : 'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
       onlyGood ? (good === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good))
         : good === undefined && evil === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good) + ' Good / ' + spare(evil) + ' Evil',
+      // (a special level's 6-star car, and the time to spare that earns it: see cars.js EARNED_CARS)
+      ...(prize ? ['6-star car: ' + prize.name + (Progress.earned(prize) ? ' (earned)'
+        : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare')] : []),
     ] : ['Locked', 'Deliver level ' + levelLabel(i - 1) + ' on time to open it'], {
       current: i === LEVEL_INDEX,
       disabled: !open,
