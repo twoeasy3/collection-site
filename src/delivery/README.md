@@ -1,80 +1,189 @@
 # Delivery Racer
 
-Gray-box prototype of a lane-based 3D delivery racer, built with three.js and Vite.
+A lane-based 3D delivery racer, built with three.js and Vite. Drive a parcel to the drop before
+the clock runs out, as Good or as Evil, through traffic that has moods and holds grudges. It has
+35 levels on the menu, 32 cars in the garage, circuit races, two screensavers and a level editor.
+
+`HANDOVER.md` beside this file covers how the game is put together, how the owner likes changes
+made, and what is not verified. `CHECKLIST.md` is the working list of ideas.
 
 ## Running it
 
-The game is a second page of this site, served at `/delivery/` (the page is
-`delivery/index.html` at the top of the repo; the code is here in `src/delivery/`).
+The game is a second page of this site, served at `/delivery/`. Its pages are in `delivery/` at
+the top of the repo; the code is here in `src/delivery/`.
 
 ```
-npm run dev            # then open http://localhost:5173/delivery/
-npm run build          # builds it along with the rest of the site
-npm run test:delivery  # headless check of the game logic on every level
+npm run dev                  # then open http://localhost:5173/delivery/
+npx vite                     # Vite alone is enough for the game (it uses no /api)
+npm run build                # builds it along with the rest of the site
+npm run test:delivery        # headless check of the game logic on every level (about 18 min)
+npm run test:delivery:quick  # the same, without driving every level to the finish (about 8 min)
 ```
 
-`?hidden=gimmick-road` plays Gimmick Road, a hidden test level with the newest gimmicks (speed cameras, potholes,
-a level crossing, stop / go roadworks, a fog bank, rockfall, a cyclist peloton and funeral processions).
+The test is seeded, so a run is repeatable (`--seed=n` for another run of the dice). It loads the
+game's source live through Vite: don't edit `src/delivery` while it is going.
 
-Testing shortcuts in the address: `?autostart` (or `?autostart=evil`) skips the start screen;
-with it, `&level=3` picks a level whether or not it is unlocked, `&at=1650` starts that many
-metres along, and `&ff=5` runs five seconds first. `?garage` opens the garage.
+Controls: arrows or W A S D to steer, accelerate and brake, Space to throw a package, P to pause,
+Enter to confirm. On a phone or tablet the on-screen controls come on by themselves.
 
-The start screen is only a menu: a level is built when a run on it starts (`Game.load`), and
-nothing reloads the page.
+## The pages
+
+| Page | What it is |
+|---|---|
+| `delivery/index.html` | The game: start screen, garage, HUD |
+| `delivery/powerups.html` | Every pickup, its model and what it does |
+| `delivery/gimmicks.html` | Everything the levels throw at the player, and where |
+| `delivery/sides.html` | Good and Evil: what the side changes, how drivers take you |
+| `delivery/police.html` | What gets the player busted and what it costs |
+| `delivery/editor.html` | The level editor |
+
+The four reference pages read their numbers from `config.js` and their wording from
+`messages.json`, so they stay true as those change. A new page needs an entry in the client
+`input` in `vite.config.js`.
+
+## Address-bar shortcuts
+
+All on `/delivery/`. Nothing below saves progress unless it says so.
+
+| In the address | What it does |
+|---|---|
+| `?autostart`, `?autostart=evil` | Skips the start screen and starts a run |
+| `&level=3` | Picks that level (by its position on the menu), locked or not |
+| `&at=1650` | Starts that many metres along |
+| `&ff=5` | Runs the game five seconds before the first frame |
+| `&car=lowrider` | Drives that car, owned or not |
+| `&theme=snow` | The level in that theme, whatever its own |
+| `&rival`, `&rival=evil`, `&rival=good` | A rival courier on any delivery level |
+| `&mystery=toad` | Every mystery pickup is that one |
+| `&gt`, `&lmp` | Every race in GT cars or Le Mans prototypes |
+| `&fly` | Freezes the level and gives a free camera (`render/fly.js`) |
+| `&cine`, `&cine=car` | A still for the menu: the level, or the car alone on white |
+| `?hidden=gimmick-road` | A hidden level, by id (see below); `&evil` plays it as Evil |
+| `?test` | The hidden test track (`?hidden=testbed`) |
+| `?edited` | The level as the editor left it |
+| `?garage`, `?garage=evil` | Opens the garage; `&hover=tank` shows that car's stats |
+| `?screensaver` | The traffic screensaver |
+| `?racewatch` | The race screensaver; `&camcheck` logs a check of its cameras |
+| `&touch` | Shows the on-screen controls on a desktop |
 
 ## Where things are
 
-Game logic lives in `src/delivery/*.js` and never imports from `src/delivery/render/`, so it runs without a
-browser (that is what `npm test` does). Everything positions itself in track space:
+Game logic lives in `src/delivery/*.js` and never imports from `src/delivery/render/`, so it runs
+without a browser (that is what the test does). Everything positions itself in track space:
 distance along a road (`s`) plus a sideways offset (`lat`).
+
+The core:
 
 | File | What it holds |
 |---|---|
-| `src/delivery/config.js` | Every tuning value: how things behave |
-| `src/delivery/levels.js`, `src/delivery/levels/*.json` | One JSON file per level: where things are |
-| `src/delivery/cars.js` | The cars the garage sells |
-| `src/delivery/progress.js` | Saved progress (bank, unlocked levels, cars), kept in a cookie |
-| `src/delivery/input.js` | Keys and touch turned into named actions and axes |
-| `src/delivery/track.js` | Builds the level's roads, lanes, ramps and flyovers; checks the level data |
-| `src/delivery/physics.js` | Helpers shared by all vehicles: damage, spin-outs, road limits |
-| `src/delivery/player.js` | The player's car |
-| `src/delivery/traffic.js` | Traffic: spawning, lane keeping, moods, rivalries |
-| `src/delivery/collision.js` | Hitboxes, crashes, barriers and frogs |
-| `src/delivery/packages.js` | Thrown packages and the tank's cannon |
-| `src/delivery/pickups.js` | Pickups and TANK RAGE targets |
-| `src/delivery/game.js` | Game state, countdown clock, tip, results |
-| `src/delivery/cameras.js` | Speed cameras: catching the player, fines and busts |
-| `src/delivery/crossing.js` | Level crossings: lights, booms, the train, traffic waiting |
-| `src/delivery/stopgo.js` | Stop / go roadworks: the signs, traffic taking turns through one lane |
-| `src/delivery/render/*.js` | three.js scene, road and vehicle meshes, effects, helicopter, HUD, menu |
-| `src/delivery/main.js` | Entry point and frame loop |
+| `config.js` | Every tuning value: how things behave. Traffic vehicles are `CONFIG.vehicles` |
+| `levels.js`, `levels/*.json` | One JSON file per level: where things are. The format is documented at the top of `levels.js` |
+| `themes.js` | The looks a level can have: colours and scenery, as data |
+| `cars.js` | The garage's cars, the levels' own vehicles, the secret ones |
+| `progress.js` | Saved progress: a cookie, with a copy in local storage |
+| `messages.js`, `messages.json` | The lines that pop up during a run |
+| `input.js` | Keys and touch turned into named actions and axes |
+| `track.js` | Builds the level's roads, lanes, ramps, flyovers and junctions; checks the level data |
+| `physics.js` | Helpers shared by all vehicles: damage, spin-outs, road limits, the effects queue |
+| `player.js` | The player's car |
+| `traffic.js` | Traffic: spawning, lane keeping, moods, grudges, police, races |
+| `collision.js` | Hitboxes, crashes, obstacles and animals |
+| `packages.js` | Thrown packages and cannon shells |
+| `pickups.js` | Pickups and TANK RAGE targets |
+| `social.js` | A good player's standing with the public |
+| `game.js` | Game state, countdown clock, tip, results |
+| `main.js` | Entry point, address-bar shortcuts and the frame loop |
+
+One file per gimmick, each the logic for a level field of the same name:
+
+| File | What it holds |
+|---|---|
+| `cameras.js` | Speed cameras: fines and busts |
+| `crossing.js` | Level crossings: lights, booms, the train |
+| `stopgo.js` | Stop / go roadworks |
+| `tide.js` | The sea coming in over a causeway |
+| `hippos.js`, `elephants.js` | Animals that destroy whatever they touch |
+| `machinery.js`, `site.js` | A construction site's machines and shoulder works |
+| `wreckage.js` | Scripted destruction: tankers, airliners, quarry blasts |
+| `gunfire.js` | Gang houses, drive-bys, and the Battlefield's pillboxes |
+| `bullettrain.js`, `ufostrike.js` | Two of the mystery pickup's effects |
+| `racewatch.js` | The race screensaver: the race and its timing |
+
+Rendering and the rest:
+
+| File | What it holds |
+|---|---|
+| `render/scene.js` | Renderer, camera, lights |
+| `render/road.js` | Road, ground, sky and every theme's scenery |
+| `render/models.js` | The animated vehicle models |
+| `render/cars.js`, `render/items.js` | Vehicle and obstacle meshes kept in step with the logic |
+| `render/*Models.js`, `render/carExtras.js` | Models with no game state, shared with the reference pages |
+| `render/<gimmick>.js` | Draws the gimmick of the same name |
+| `render/audio.js` | Sound: the WAVs in `sounds/`, with synthesised stand-ins |
+| `render/hud.js`, `render/menu.js`, `render/garage.js`, `render/touch.js` | HUD, start screen, garage, on-screen controls |
+| `editor.js`, `powerups.js`, `gimmicks.js`, `sides.js`, `police.js` | The other pages' scripts |
+| `sounds/`, `levelshots/`, `carshots/` | WAVs, and the menu's pictures of levels and cars |
+| `scripts/delivery-smoke.mjs` | The headless test |
+| `scripts/level-clocks.mjs` | Works out a level's clock from a clean run |
+
+## The levels
+
+Levels unlock in menu order, each by delivering the one before.
+
+- **Main levels (1 to 26):** Expressway, Back Roads, Farm Lanes, Big Business, Hurricane, Night
+  Drive, Mystery Meadows, Suburbia, Canberra, Monte Carlo, Singapore, Singapore II, Sydney to
+  Kiama, Passage du Gois, Safari, Airport Apocalypse, Construction Site, The Hood, Panorama
+  Avenue, Speed Trap Alley, Mountain Pass, Outback Express, Tour de Coast, Ring Road, Market
+  Town, Quarry Run.
+- **Special levels (S1 to S9):** All Heck, Asteroid Run, Marina Bay, Oh Mine!, Montreal, Mount
+  Panorama, Rival Run, Showdown, Battlefield. These include the circuit races and the levels
+  driven in a vehicle of their own (UFO, race car, jetboat, 8x8).
+- **Hidden levels** (`?hidden=<id>`): `testbed`, `grand-prix`, `gimmick-road`. A run on one banks
+  nothing.
+- **The screensaver's level** is `chaos.json` (Pile-Up Parade), which is not on the menu.
 
 ## Adding content
 
-- **A level:** copy a file in `src/delivery/levels/`, give it a new `id`, import it in
-  `src/delivery/levels.js` and add it to `LEVELS`. The format is described at the top of
-  `src/delivery/levels.js`. Problems with the data are shown in the HUD when the level loads.
-  A level can be one-way (`"flow": "north"` or `"south"`) and can line its shoulders with
-  cones or signs (`"shoulderRows"`).
-- **A traffic vehicle:** add it to `vehicles` in `src/delivery/config.js` (give it a `model` to draw it
-  as one of the models in `src/delivery/render/models.js`), then list it in a level's `traffic`.
-- **On-screen controls** (`src/delivery/render/touch.js`) come on by themselves on a phone or tablet;
-  the menu has a switch, and `?touch` in the address shows them on a desktop.
-  `theme` picks the look (`city` or `farm`; themes are in `src/delivery/render/road.js`).
-- **An obstacle kind:** give it a size and behaviour in `src/delivery/collision.js`, a cost in
-  `obstacleKinds` in `src/delivery/config.js`, and a model in `src/delivery/render/items.js`.
-- **A car:** add an entry to `CARS` in `src/delivery/cars.js`. A car that should stay out of
-  the garage goes in `SECRET_CARS` there instead, with its own way in (the City Bus: type
-  B U S on the start screen, or `?autostart&car=bus`).
-- **Savegames:** "Unlock everything" on the start screen writes a complete game to the
-  progress cookie; "Reset progress" wipes it.
-- **The screensaver** ("Screensaver" on the start screen) runs `src/delivery/levels/chaos.json`,
-  which is not on the menu: eight lanes, two-way, dense angry traffic and tractors in every
-  lane, with no player car. A ghost dolly glides along for the camera to follow, and at the
-  end of the road everything goes round again. `/delivery/?screensaver` opens it directly;
-  the "Screensaver link" on the start screen goes there, for bookmarking. Its tuning is `CONFIG.screensaver`, and the
-  level's own knobs (`trafficCount`, `oncomingCount`, `drivers`, `trafficSpeed`) are
-  described at the top of `src/delivery/levels.js`.
-- **Pause and Exit level** buttons sit at the bottom of the screen during a run and the
-  screensaver; P also pauses.
+- **A level:** copy a file in `levels/`, give it a new `id`, import it in `levels.js` and add it
+  to `MAIN_LEVELS` or `SPECIAL_LEVELS`. Problems with the data are shown in the HUD when the
+  level loads. Then:
+  - Saved progress counts unlocked levels by position. A level put in among those already there
+    needs its position added to `INSERTED_AT` in `progress.js`, so returning players keep what
+    they had open.
+  - `node scripts/level-clocks.mjs <id> --write` works out its clock and writes it into the file.
+  - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`.
+- **A theme:** add it to `themes.js`; its scenery is drawn in `render/road.js`.
+- **A traffic vehicle:** add it to `vehicles` in `config.js` (give it a `model` to draw it as one
+  of the models in `render/models.js`), then list it in a level's `traffic`.
+- **An obstacle kind:** give it a size and behaviour in `collision.js`, a cost in `obstacleKinds`
+  in `config.js`, and a model in `render/obstacleModels.js`.
+- **A gimmick:** a level field documented in `levels.js`, its logic in a file of its own here,
+  its tuning in `config.js`, and its drawing in `render/`, called from the frame loop in
+  `main.js`. Add it to `gimmicks.js` so it shows on the gimmicks page.
+- **A car:** add an entry to `CARS` in `cars.js`, with a `tier` (its stars) and a `model` from
+  `render/models.js`. `blue: true` makes it a Blue Star car, which the garage shows once level
+  `CONFIG.blueStarsAfter` is delivered. Its pictures are `carshots/<id>-good.jpg` and
+  `carshots/<id>-evil.jpg`, taken with `?cine=car`. A vehicle that belongs to a level goes in
+  `LEVEL_CARS`; one that should stay out of the garage goes in `SECRET_CARS`, with its own way
+  in (the City Bus: type B U S on the start screen, or `?autostart&car=bus`).
+- **A sound:** drop a WAV in `sounds/` and name it in `SAMPLES` in `render/audio.js`. Game logic
+  asks for it with `sfx()` or `sfxAt()` from `physics.js`.
+- **A message:** add its wording to `messages.json`.
+
+## The start screen
+
+It is only a menu: a level is built when a run on it starts (`Game.load`), and nothing reloads
+the page. Besides the levels and the garage it has:
+
+- **Good / Evil:** the side to play on.
+- **Sound, auto accelerate, on-screen controls:** switches, saved with progress.
+- **Race cars and race track:** the class every race is run in (F1, GT, LMP) and the race
+  screensaver's circuit.
+- **Unlock everything** writes a complete game to saved progress; **Reset progress** wipes it.
+- **Screensaver** runs `chaos.json` with no player car: a ghost dolly glides along for the
+  camera to follow, and at the end of the road everything goes round again. Its tuning is
+  `CONFIG.screensaver`. **Race screensaver** shows a circuit race as on TV, with a leaderboard.
+  Each has a link beside it, for bookmarking.
+
+**Pause** and **Exit level** buttons sit at the bottom of the screen during a run and the
+screensavers.

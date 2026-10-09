@@ -1061,7 +1061,7 @@ const buildRoad = () => {
   ground.material.depthWrite = false;
   groundMesh = ground;
   Track.toWorld(Track.length / 2, 0, tmp);
-  ground.position.set(tmp.x, -0.05, tmp.z);
+  ground.position.set(tmp.x, -(theme.elevated || 0) - 0.05, tmp.z); // (an elevated road: the ground far below it)
   levelGroup.add(ground);
 
   const terrainAt = theme.terrain ? buildTerrain(theme.terrain === true ? null : theme.terrain, others) : null; // (the height of the land at a world point)
@@ -1200,6 +1200,78 @@ const buildRoad = () => {
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const tube = new THREE.CylinderGeometry(0.5, 0.5, 1, 12);
   const cone = new THREE.ConeGeometry(0.5, 1, 8);
+
+  // weather, in a box round the camera: particles drifting down, starting again at the top as they
+  // reach the bottom (two layers, one above the other, so the box is never seen to empty).
+  // size: a particle's; speed: m/s it falls; sway: m the whole box swings side to side (snow drifts, rain doesn't)
+  const precipitation = (color, count, size, speed, sway, opacity) => {
+    const BOX = 70, points = [];
+    for (let i = 0; i < count; i++) points.push((Math.random() - 0.5) * BOX * 2, Math.random() * BOX, (Math.random() - 0.5) * BOX * 2);
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+    const mat = new THREE.PointsMaterial({ color, size, transparent: true, opacity, depthWrite: false });
+    for (const layer of [0, 1]) {
+      const fall = new THREE.Points(geo, mat);
+      fall.frustumCulled = false;
+      fall.onBeforeRender = (renderer, scene, camera) => {
+        const down = (performance.now() / 1000 * speed + layer * BOX) % (BOX * 2);
+        const x = scene.scale.x < 0 ? -camera.position.x : camera.position.x; // (in the scene's own terms)
+        fall.position.set(x + Math.sin(performance.now() / 3000) * sway, camera.position.y + BOX - down, camera.position.z);
+        fall.updateMatrixWorld();
+      };
+      levelGroup.add(fall);
+    }
+  };
+  // snow falling (the alpine pass, and any theme with snow: true)
+  const snowfall = () => precipitation(0xffffff, 1400, 0.18, 2.5, 2, 0.85);
+  // rain (a theme with rain: true): fine, fast and grey, and a lot of it
+  const rainfall = () => precipitation(0xc8d4e0, 2600, 0.07, 22, 0, 0.6);
+  // an elevated road (a theme's "elevated": m above the ground): a parapet along each edge, lamps on it,
+  // and concrete piers down to the ground every so often (under the main road and every side road alike)
+  const elevatedRoad = (drop) => {
+    const walls = [], caps = [], lamps = [], posts = [], piers = [], heads = [];
+    for (let s = Track.start; s < Track.end; s += 4) {
+      for (const side of [-1, 1]) {
+        walls.push([s, beside(side, s, 0.2), 0.55, 0.3, 1.1, 4.02, [s + 4, beside(side, s + 4, 0.2)]]);
+        caps.push([s, beside(side, s, 0.2), 1.14, 0.42, 0.1, 4.02, [s + 4, beside(side, s + 4, 0.2)]]);
+      }
+    }
+    for (let s = Track.start + 15, k = 0; s < Track.end; s += 30, k++) {
+      const side = k % 2 ? 1 : -1;
+      if (Track.tunnel(s) === 0 && !(LEVEL.tunnels || []).some(t => s >= t.from - 10 && s <= t.to + 10)) {
+        posts.push([s, beside(side, s, 0.1), 4.5, 0.18, 7, 0.18]);
+        lamps.push([s, beside(side, s, -0.8), 7.9, 1.8, 0.2, 0.5]);
+      }
+      // (a pier under the middle of the road, from the ground up to its underside; a head spreading under the deck)
+      piers.push([s, 0, -drop / 2 - 0.3, 2.4, drop - 0.6, 2.4]);
+      heads.push([s, 0, -0.6, Track.hi(s) - Track.lo(s) - 1, 0.8, 2.8]);
+    }
+    for (const x of exits) {
+      for (let s = x.side0 + 20; s < x.sideEnd - 20; s += 30) {
+        piers.push([s, 0, -drop / 2 - 0.3, 2, drop - 0.6, 2]);
+        heads.push([s, 0, -0.6, Track.hi(s) - Track.lo(s) - 1, 0.8, 2.4]);
+      }
+    }
+    // (the deck's underside: a slab under the whole road, so from below it isn't a sheet of nothing)
+    add(buildStrip(Track.start, Track.end, (q) => Track.lo(q) - 0.2, (q) => Track.hi(q) + 0.2, -0.9, 6), new THREE.MeshLambertMaterial({ color: 0x6e7177, side: THREE.DoubleSide }));
+    for (const side of [-1, 1]) add(buildStrip(Track.start, Track.end, (q) => beside(side, q, -0.05), (q) => beside(side, q, 0.2), -0.45, 6), new THREE.MeshLambertMaterial({ color: 0x80848a, side: THREE.DoubleSide }));
+    instances(cube, 0x9ea2a8, walls);
+    instances(cube, 0xb8bcc2, caps);
+    instances(cube, 0x4a4f57, posts);
+    instances(cube, 0xfff1c8, lamps, true);
+    instances(cube, 0x7d8188, piers);
+    instances(cube, 0x8a8e95, heads);
+  };
+  // a city's towers at night: dark boxes with rows of lit windows up their faces (windows: a glowing grid
+  // laid a hair proud of each face along the road)
+  const litTowers = (towers, windows, s, lat, w, h, d, side) => {
+    towers.push([s, lat, h / 2, d, h, w]);
+    const face = lat - side * (d / 2 + 0.05); // (the face towards the road)
+    for (let y = 3; y < h - 2; y += 3.2) {
+      if (Math.random() < 0.25) continue; // (some floors dark)
+      windows.push([s, face, y, 0.1, 1.4, w * 0.84]);
+    }
+  };
 
   // ---- a race circuit's trackside (Singapore's Grand Prix at night, Montreal): concrete walls and
   // catch fences along both edges (broken off at each junction, and on a bridge, which has sides of its
@@ -1431,8 +1503,22 @@ const buildRoad = () => {
     const pickets = [], rails = [], mailPosts = [], mailboxes = [], trunks = [], crowns = [], lampPosts = [], lampHeads = [];
     const boards = [], holes = [], burnt = [], burntRoofs = [], dirt = [], branches = [], wrecks = [], wreckTops = [], bags = [], tags = [[], [], []];
     const gangWalls = [], gangWindows = [], gangDoors = [], gangTags = [], poles = [], flags = [], beacons = [];
-    const tree = (at, lat) => {
+    // (festive, theme.festive: Christmas. Fairy lights along every eave, a wreath on every door, and the
+    // trees in the front gardens are firs strung with lights, a star on top)
+    const festive = !!theme.festive, FAIRY = [0xff3b3b, 0x3bff5a, 0x3b8cff, 0xffd23f, 0xff6ad5];
+    const fairy = FAIRY.map(() => []), firs = [], firTrunks = [], stars = [], wreaths = [];
+    const tree = (at, lat, front) => {
       const h = 0.8 + Math.random() * 0.5;
+      if (festive && front) { // (a Christmas tree: a fir in tiers, lights all over it, a star on top)
+        firTrunks.push([at, lat, 0.4, 0.3, 0.8, 0.3]);
+        for (let k = 0; k < 3; k++) firs.push([at, lat, 1.2 + k * 1.1, 3.2 - k * 0.8, 1.6, 3.2 - k * 0.8]);
+        stars.push([at, lat, 4.4, 0.4, 0.4, 0.4]);
+        for (let k = 0; k < 14; k++) {
+          const a = k * 2.4, y = 0.7 + k * 0.25, r = 1.6 - k * 0.1;
+          fairy[k % FAIRY.length].push([at + Math.sin(a) * r, lat + Math.cos(a) * r, y, 0.16, 0.16, 0.16]);
+        }
+        return;
+      }
       if (odds(0.5)) { // (a dead one: a bare trunk and a few bare branches)
         trunks.push([at, lat, 1.6 * h, 0.3, 3.2 * h, 0.3]);
         for (let k = 0; k < 3; k++) branches.push([at + Math.random() * 1.2 - 0.6, lat + Math.random() * 1.2 - 0.6, (2.2 + k * 0.5) * h, 0.12, 0.12, 1.6 + Math.random()]);
@@ -1474,6 +1560,13 @@ const buildRoad = () => {
         } else {
           walls[Math.floor(Math.random() * WALLS.length)].push([mid, lat, h / 2, across, h, along]);
           roofs.push([mid, lat, h + 1.1, across * 1.12, 2.2, along * 1.12]);
+          if (festive) { // (fairy lights along the eave facing the road, and round the far side too)
+            for (let q = -along * 0.55, k = 0; q <= along * 0.55; q += 0.7, k++) {
+              fairy[(k + lot) % FAIRY.length].push([mid + q, beside(side, mid, front - 0.2), h + 0.05, 0.14, 0.14, 0.14]);
+              fairy[(k + lot + 2) % FAIRY.length].push([mid + q, beside(side, mid, front + across + 0.2), h + 0.05, 0.14, 0.14, 0.14]);
+            }
+            wreaths.push([mid - 1.5, beside(side, mid, front - 0.14), 1.7, 0.1, 0.7, 0.7]);
+          }
         }
         (gang ? gangDoors : shell || odds(0.25) ? holes : doors).push([mid - 1.5, face, 1.1, 0.12, 2.2, 1.1]); // (a door, or the hole where it was)
         const pane = (at, y) => (gang ? gangWindows : shell ? holes : odds(0.5) ? boards : windows).push([at, face, y, 0.1, 1.2, 1.7]); // (or boarded up)
@@ -1502,7 +1595,7 @@ const buildRoad = () => {
           for (let q = from; q <= to; q += 1.2) if (!odds(0.3)) pickets.push([q, beside(side, q, FENCE), 0.45, 0.1, 0.9, 0.1]); // (...and pickets missing)
           for (const y of [0.3, 0.65]) rails.push([(from + to) / 2, beside(side, (from + to) / 2, FENCE), y, 0.06, 0.08, to - from]);
         }
-        if (Math.random() < 0.6) tree(s + 2 + Math.random() * 5, beside(side, s, FENCE + 2 + Math.random() * 3)); // in the front garden
+        if (festive || Math.random() < 0.6) tree(s + 2 + Math.random() * 5, beside(side, s, FENCE + 2 + Math.random() * 3), true); // in the front garden
         tree(mid + Math.random() * 8 - 4, beside(side, mid, front + across + 5 + Math.random() * 10));   // and the back
       }
     }
@@ -1546,6 +1639,13 @@ const buildRoad = () => {
     }
     instances(cube, 0x55595f, lampPosts);
     instances(cube, 0xfff3c4, lampHeads, true);
+    if (festive) {
+      FAIRY.forEach((color, i) => instances(cube, color, fairy[i], true));
+      instances(tube, 0x4a3426, firTrunks);
+      instances(cone, 0x1f5a34, firs);
+      instances(new THREE.OctahedronGeometry(0.5, 0), 0xffe066, stars, true);
+      instances(new THREE.TorusGeometry(0.5, 0.14, 6, 12), 0x2e7d3a, wreaths);
+    }
   } else if (theme.scenery === 'canberra') {
     // ---- canberra: gum trees in the dry grass, concrete government blocks set back from the road,
     // kangaroos, Lake Burley Griffin under each bridge with the Captain Cook jet, Black Mountain and
@@ -2441,24 +2541,7 @@ const buildRoad = () => {
       peak.material.fog = cap.material.fog = true;
       levelGroup.add(peak, cap);
     }
-    // snow falling: two layers of flakes in a box round the camera, drifting down, one above
-    // the other, each starting again at the top as it reaches the bottom
-    const BOX = 70, flakes = [];
-    for (let i = 0; i < 1400; i++) flakes.push((Math.random() - 0.5) * BOX * 2, Math.random() * BOX, (Math.random() - 0.5) * BOX * 2);
-    const flakeGeo = new THREE.BufferGeometry();
-    flakeGeo.setAttribute('position', new THREE.Float32BufferAttribute(flakes, 3));
-    const flakeMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.85, depthWrite: false });
-    for (const layer of [0, 1]) {
-      const snow = new THREE.Points(flakeGeo, flakeMat);
-      snow.frustumCulled = false;
-      snow.onBeforeRender = (renderer, scene, camera) => {
-        const fall = (performance.now() / 1000 * 2.5 + layer * BOX) % (BOX * 2);
-        const x = scene.scale.x < 0 ? -camera.position.x : camera.position.x; // (in the scene's own terms)
-        snow.position.set(x + Math.sin(performance.now() / 3000) * 2, camera.position.y + BOX - fall, camera.position.z);
-        snow.updateMatrixWorld();
-      };
-      levelGroup.add(snow);
-    }
+    snowfall();
   } else if (theme.scenery === 'battlefield') {
     // ---- battlefield: craters, sandbags, tank traps, barbed wire and shattered trees ------------------
     const craters = [], rims = [], bags = [], traps = [], posts = [], stumps = [], wrecks = [];
@@ -2576,6 +2659,198 @@ const buildRoad = () => {
       stars.updateMatrixWorld();
     };
     levelGroup.add(stars);
+  } else if (theme.scenery === 'hongkong') {
+    // ---- hong kong: Victoria Harbour at night. The harbour along the right (theme.sea m off the road)
+    // behind a promenade and its railing, the Kowloon skyline lit across the water; a wall of lit
+    // towers along the left, crowded up to the road; neon signs hung out over the road from both sides;
+    // red taxis' worth of light everywhere. (The Star Ferry and the trams: render/movers.js)
+    const SEA = theme.sea || 14;
+    const water = new THREE.MeshBasicMaterial({ color: 0x0f2238, side: THREE.DoubleSide });
+    add(buildStrip(Track.start, Track.end, (q) => beside(1, q, SEA), (q) => beside(1, q, SEA + 520), -0.03, 8), water);
+    // (ripples: a few long pale streaks on the water, the city's lights in it)
+    const sheen = new THREE.MeshBasicMaterial({ color: 0x24405c, side: THREE.DoubleSide });
+    for (let s = Track.start; s < Track.end; s += 26) {
+      const out = SEA + 10 + Math.random() * 300, len = 6 + Math.random() * 14;
+      add(buildStrip(s, s + len, (q) => beside(1, q, out), (q) => beside(1, q, out + 0.6), -0.02, 4), sheen);
+    }
+    add(buildStrip(Track.start, Track.end, (q) => beside(1, q, 0.4), (q) => beside(1, q, SEA - 0.4), 0.03), flat(0x8c8a84)); // the promenade
+    add(buildStrip(Track.start, Track.end, (q) => beside(1, q, SEA - 1), (q) => beside(1, q, SEA), 0.6, 4), flat(0x6f6d68));     // its sea wall
+    add(buildStrip(Track.start, Track.end, (q) => beside(-1, q, 0.4), (q) => beside(-1, q, 3.2), 0.03), flat(0x8c8a84));         // and a pavement on the left
+    const rails = [], railPosts = [], towers = [], windows = [], crowns = [], signs = [[], [], [], []], signPosts = [], arms = [], farTowers = [], farWindows = [], lampPosts = [], lampHeads = [];
+    const NEON = [0xff2d95, 0x27e7ff, 0xffe12b, 0x7cff3a];
+    for (let s = Track.start; s < Track.end; s += 2.5) {
+      rails.push([s, beside(1, s, SEA - 0.6), 1.05, 0.06, 0.08, 2.52, [s + 2.5, beside(1, s + 2.5, SEA - 0.6)]]);
+      if (Math.round(s) % 5 === 0) railPosts.push([s, beside(1, s, SEA - 0.6), 0.55, 0.1, 1.1, 0.1]);
+    }
+    // the towers along the left: tall, narrow, shoulder to shoulder, lit
+    for (let s = Track.start; s < Track.end; s += 18) {
+      const w = 12 + Math.random() * 8, d = 14 + Math.random() * 10, h = 45 + Math.random() * 90;
+      const lat = beside(-1, s + w / 2, 6 + d / 2);
+      litTowers(towers, windows, s + w / 2, lat, w, h, d, -1);
+      if (Math.random() < 0.4) crowns.push([s + w / 2, lat, h + 1.5, d * 0.5, 3, w * 0.5]);
+      // (a second row behind, taller still)
+      if (Math.random() < 0.7) {
+        const h2 = 80 + Math.random() * 120, d2 = 16 + Math.random() * 10;
+        litTowers(towers, windows, s + w / 2 + 6, beside(-1, s, 6 + d + 8 + d2 / 2), w + 4, h2, d2, -1);
+      }
+    }
+    // Kowloon across the water: a skyline of lit towers along the far shore
+    for (let s = Track.start - 200; s < Track.end + 200; s += 24) {
+      const w = 16 + Math.random() * 16, h = 40 + Math.random() * 130, d = 20;
+      const lat = beside(1, Math.max(Track.start, Math.min(Track.end, s)), SEA + 420 + Math.random() * 80);
+      farTowers.push([s, lat, h / 2, d, h, w]);
+      for (let y = 4; y < h - 3; y += 4.5) if (Math.random() < 0.8) farWindows.push([s, lat - d / 2 - 0.05, y, 0.1, 1.6, w * 0.8]);
+    }
+    // neon signs hung out over the road on arms from posts at the kerb, both sides, each a slab of colour
+    // (a few stacked, as Nathan Road's) and a glow laid on the road under it
+    for (let s = Track.start + 20, k = 0; s < Track.end; s += 34, k++) {
+      const side = k % 3 === 2 ? 1 : -1; // (more on the city side)
+      signPosts.push([s, beside(side, s, 0.9), 4, 0.25, 8, 0.25]);
+      arms.push([s, beside(side, s, -2.6), 7.6, 7.4, 0.14, 0.14]);
+      const n = 1 + Math.floor(Math.random() * 3);
+      for (let j = 0; j < n; j++) signs[(k + j) % NEON.length].push([s, beside(side, s, -3.5 - j * 0.2), 6.6 - j * 1.4, 2.6 + Math.random() * 2, 1.0, 0.18]);
+    }
+    for (let s = Track.start, k = 0; s < Track.end; s += 40, k++) { // street lamps along the pavement, each side in turn
+      const side = k % 2 ? 1 : -1;
+      lampPosts.push([s, beside(side, s, 0.7), 3, 0.16, 6, 0.16]);
+      lampHeads.push([s, beside(side, s, 0.1), 5.95, 1.2, 0.18, 0.4]);
+    }
+    instances(cube, 0x9aa0a8, rails);
+    instances(cube, 0x6f747c, railPosts);
+    instances(cube, 0x14171f, towers);
+    instances(cube, 0xffe9a8, windows, true);
+    instances(cube, 0x2a2f3a, crowns);
+    instances(cube, 0x0e1118, farTowers);
+    instances(cube, 0xd8e4ff, farWindows, true);
+    instances(cube, 0x3a3f47, signPosts);
+    instances(cube, 0x3a3f47, arms);
+    NEON.forEach((color, i) => instances(cube, color, signs[i], true));
+    instances(cube, 0x4a4f57, lampPosts);
+    instances(cube, 0xfff1c8, lampHeads, true);
+  } else if (theme.scenery === 'tokyo') {
+    // ---- tokyo: the Shuto Expressway at night, up on its piers (theme.elevated: see elevatedRoad), green
+    // overhead sign gantries, the towers of the city all round below, lit, some rising well above the
+    // road; a red and white lattice tower off in the distance
+    const drop = theme.elevated || 20;
+    const towers = [], windows = [], low = [], gantryPosts = [], gantryBeams = [], boards = [], boardText = [], lowRoofs = [];
+    const p = {};
+    for (let s = Track.start - 100; s < Track.end + 100; s += 14) {
+      for (const side of [-1, 1]) {
+        const roll = Math.random();
+        const far = 14 + Math.random() * 90, at = Math.max(Track.start, Math.min(Track.end, s));
+        const lat = beside(side, at, far);
+        Track.toWorld(at, lat, p);
+        if (!offRoads(p.x, p.z, 12) || Track.mainDistance(p.x, p.z) < Math.max(Track.hi(at), -Track.lo(at)) + 10) continue;
+        if (roll < 0.35) { // a tower, from the ground far below, rising past the road
+          const w = 14 + Math.random() * 14, d = 14 + Math.random() * 14, h = drop + 10 + Math.random() * 110;
+          towers.push([s, lat, h / 2 - drop, d, h, w]);
+          const face = lat - side * (d / 2 + 0.05);
+          for (let y = -drop + 3; y < h - drop - 2; y += 3.4) if (Math.random() < 0.8) windows.push([s, face, y, 0.1, 1.3, w * 0.82]);
+        } else { // low buildings, crowded, their roofs below the road
+          const w = 8 + Math.random() * 10, d = 8 + Math.random() * 8, h = 6 + Math.random() * (drop - 8);
+          low.push([s, lat, h / 2 - drop, d, h, w]);
+          lowRoofs.push([s, lat, h - drop + 0.1, d * 0.9, 0.2, w * 0.9]);
+        }
+      }
+    }
+    // overhead gantries: a beam across the whole road on two posts, green boards hung from it over the lanes
+    for (let s = Track.start + 120; s < Track.end - 60; s += 260) {
+      if (inJunction(s)) continue;
+      if (Track.tunnel(s) > 0 || (LEVEL.tunnels || []).some(t => s >= t.from - 20 && s <= t.to + 20)) continue;
+      const lo = Track.lo(s) - 0.6, hi = Track.hi(s) + 0.6;
+      gantryPosts.push([s, lo, 3.5, 0.5, 7, 0.5], [s, hi, 3.5, 0.5, 7, 0.5]);
+      gantryBeams.push([s, (lo + hi) / 2, 6.9, hi - lo + 0.5, 0.5, 0.5]);
+      for (let lane = 0; lane < Track.laneCount; lane += 2) {
+        const lat = Track.laneOffset(lane, s) + (lane + 1 < Track.laneCount ? LW / 2 : 0);
+        boards.push([s, lat, 5.6, 2 * LW - 0.6, 2.2, 0.15]);
+        boardText.push([s, lat, 5.9, 2 * LW - 1.6, 0.35, 0.02], [s, lat, 5.2, 2 * LW - 2.4, 0.3, 0.02]);
+      }
+    }
+    // the lattice tower, off to one side of the middle of the level, lit red and white
+    const middle = {};
+    Track.toWorld(Track.length / 2, 0, middle);
+    const at = clearOfRoads(middle.x, middle.z, Math.sin(1.1), Math.cos(1.1), 500, 40, 60);
+    const H = 300;
+    for (let k = 0; k < 6; k++) { // (in six bands, red and white in turn, each a tapering open lattice)
+      const r = 40 * (1 - k / 6.5), r1 = 40 * (1 - (k + 1) / 6.5);
+      const seg = new THREE.Mesh(new THREE.CylinderGeometry(r1, r, H / 6, 4, 2, true).translate(0, H / 12, 0),
+        new THREE.MeshBasicMaterial({ color: k % 2 ? 0xf2f2f2 : 0xff4a1a, wireframe: true }));
+      seg.position.set(at.x, -drop + k * H / 6, at.z);
+      levelGroup.add(seg);
+    }
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(2.5, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3030 }));
+    beacon.position.set(at.x, -drop + H + 2, at.z);
+    levelGroup.add(beacon);
+    instances(cube, 0x14171f, towers);
+    instances(cube, 0xf4e6b8, windows, true);
+    instances(cube, 0x22252d, low);
+    instances(cube, 0x2e323a, lowRoofs);
+    instances(cube, 0x5a5f67, gantryPosts);
+    instances(cube, 0x5a5f67, gantryBeams);
+    instances(cube, 0x1e7a3c, boards);
+    instances(cube, 0xf4f4f4, boardText, true);
+    elevatedRoad(drop);
+  } else if (theme.scenery === 'mumbai') {
+    // ---- mumbai in the monsoon: low buildings in washed-out colours crowded up to the road, painted
+    // hoardings on tall frames, palms bending in the rain, awnings over the pavement, water lying in
+    // every low spot of the road, and the rain
+    for (const side of [-1, 1]) add(buildStrip(Track.start, Track.end, (q) => beside(side, q, 0.3), (q) => beside(side, q, 2.6), 0.03), flat(0x7f7b70));
+    const WASH = [0xd9a066, 0x8fb0c9, 0xc9c48a, 0xd98c8c, 0xa6c48f, 0xe0d2b8, 0x9b8fc4];
+    const walls = WASH.map(() => []), roofs = [], windows = [], awnings = [], hoardings = [], frames = [], trunks = [], fronds = [], stains = [], tanks = [];
+    const p = {};
+    for (let s = Track.start; s < Track.end; s += 9) {
+      for (const side of [-1, 1]) {
+        const w = 6 + Math.random() * 8, d = 7 + Math.random() * 7, h = 6 + Math.random() * 12;
+        const lat = beside(side, s + w / 2, 3.5 + d / 2);
+        Track.toWorld(s + w / 2, lat, p);
+        if (!offRoads(p.x, p.z, 6)) continue;
+        walls[Math.floor(Math.random() * WASH.length)].push([s + w / 2, lat, h / 2, d, h, w]);
+        roofs.push([s + w / 2, lat, h + 0.2, d + 0.6, 0.4, w + 0.6]);
+        stains.push([s + w / 2, lat - side * (d / 2 + 0.03), h * 0.2, 0.05, h * 0.4, w * 0.9]); // (the damp running down the walls)
+        const face = lat - side * (d / 2 + 0.05);
+        for (let y = 2; y < h - 1.5; y += 3) for (let q = -w / 2 + 1.2; q < w / 2 - 0.8; q += 2.2) windows.push([s + w / 2 + q, face, y, 0.1, 1.2, 1.1]);
+        if (Math.random() < 0.6) awnings.push([s + w / 2, lat - side * (d / 2 + 1.1), 2.9, 2.2, 0.12, w * 0.8]);
+        if (Math.random() < 0.5) tanks.push([s + w / 2 + (Math.random() - 0.5) * w * 0.5, lat, h + 0.9, 1.2, 1.4, 1.2]); // (water tanks on the roofs)
+        // (the odd taller block behind)
+        if (Math.random() < 0.3) {
+          const h2 = 18 + Math.random() * 20, d2 = 12 + Math.random() * 8;
+          walls[Math.floor(Math.random() * WASH.length)].push([s + w / 2, beside(side, s, 3.5 + d + 6 + d2 / 2), h2 / 2, d2, h2, w + 6]);
+        }
+      }
+    }
+    for (let s = Track.start + 40, k = 0; s < Track.end; s += 110, k++) { // hoardings: a big painted board on a steel frame, over the buildings
+      const side = k % 2 ? 1 : -1, lat = beside(side, s, 5 + Math.random() * 6);
+      frames.push([s - 3.5, lat, 7, 0.3, 14, 0.3], [s + 3.5, lat, 7, 0.3, 14, 0.3]);
+      hoardings.push([s, lat, 12, 0.25, 5, 9]);
+    }
+    for (let s = Track.start + 6; s < Track.end; s += 23) { // palms at the kerb, leaning
+      for (const side of [-1, 1]) {
+        if (Math.random() < 0.4) continue;
+        const lat = beside(side, s, 1.6), h = 6 + Math.random() * 4;
+        trunks.push([s, lat, h / 2, 0.35, h, 0.35]);
+        for (let k = 0; k < 6; k++) fronds.push([s + Math.sin(k) * 1.6, lat + Math.cos(k) * 1.6, h + 0.4 - k * 0.1, 0.5, 0.12, 3.2]);
+      }
+    }
+    // water lying on the road: wide shallow sheets, pale and glassy
+    const puddle = new THREE.MeshBasicMaterial({ color: 0x9aa6b0, transparent: true, opacity: 0.55, depthWrite: false, side: THREE.DoubleSide,
+      polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+    for (let s = Track.start + 10; s < Track.end - 10; s += 18 + Math.random() * 30) {
+      const lat = Track.lo(s) + Math.random() * (Track.hi(s) - Track.lo(s)), w = 1.5 + Math.random() * 3, l = 4 + Math.random() * 10;
+      add(buildStrip(s, s + l, lat - w, lat + w, 0.025, 2), puddle);
+    }
+    WASH.forEach((color, i) => instances(cube, color, walls[i]));
+    instances(cube, 0x6b5a4a, roofs);
+    instances(cube, 0x3a4652, windows);
+    instances(cube, 0xc9463d, awnings);
+    instances(cube, 0x5a5f67, frames);
+    [0xe8c23a, 0x3ab0e8, 0xe84a7a].forEach((color, i) => instances(cube, color, hoardings.filter((_, k) => k % 3 === i)));
+    instances(cube, 0x4a3a2a, stains);
+    instances(cube, 0x2a2a2a, tanks);
+    instances(tube, 0x6b5436, trunks);
+    instances(cube, 0x3f7a2e, fronds);
   }
+  if (theme.snow && theme.scenery !== 'alpine') snowfall();
+  if (theme.rain) rainfall();
+  if (theme.elevated && theme.scenery !== 'tokyo') elevatedRoad(theme.elevated);
 };
 Game.onLoad.push(buildRoad);

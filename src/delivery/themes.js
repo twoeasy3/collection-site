@@ -71,4 +71,22 @@ export const THEMES = {
   // for a faint blue moon and the player's headlights; other cars show their own lamps.
   night: { sky: 0x05070e, ground: 0x34492d, road: 0x45484e, scenery: 'city', lit: true, headlights: true,
     light: { sky: 0x5d72b0, ground: 0x10141c, ambient: 0.3, sun: 0x9fb4ff, sunlight: 0.25 } },
+  // hongkong: Victoria Harbour at night: the harbour along the right (sea: m from the road to the water),
+  // a wall of lit towers along the left and across the water, neon signs hung out over the road, junks
+  // and the Star Ferry crossing the harbour (ferry: true), and double-decker trams up and down the median
+  // (trams: true, on a level with a "median")
+  hongkong: { sky: 0x0b1024, ground: 0x2a2d33, road: 0x3e4148, scenery: 'hongkong', lit: true, headlights: true, night: true, sea: 14, ferry: true, trams: true,
+    light: { sky: 0x9fb0ff, ground: 0x2a2436, ambient: 0.75, sun: 0xffe0c0, sunlight: 0.45 } },
+  // tokyo: the Shuto Expressway at night, elevated the whole way (elevated: the road stands on piers, a
+  // parapet along each edge, the city far below), green overhead signs, the towers of the city all round
+  tokyo: { sky: 0x070a16, ground: 0x1d2028, road: 0x3b3e45, scenery: 'tokyo', lit: true, headlights: true, night: true, elevated: 22,
+    light: { sky: 0x8fa3ff, ground: 0x1a1a24, ambient: 0.7, sun: 0xfff0d6, sunlight: 0.4 } },
+  // mumbai: the monsoon: rain (rain: true), a leaden sky, a wet road, colour-washed low buildings crowded up
+  // to the road, hoardings, palms, and water lying everywhere
+  mumbai: { sky: 0x7d8690, ground: 0x6b6a52, road: 0x2e3136, scenery: 'mumbai', rain: true,
+    light: { sky: 0xd8dde4, ground: 0x4a4a40, ambient: 1.1, sun: 0xe8ecf2, sunlight: 0.6 } },
+  // christmas: the suburb under snow (festive: lights along the eaves, a lit tree in every garden, wreaths
+  // on the doors), snow falling (snow: true), a sleigh among whatever the level's "storm" blows over
+  christmas: { sky: 0x1a2340, ground: 0xeef2f6, road: 0x4a4e55, scenery: 'suburb', festive: true, snow: true, lit: true, headlights: true, night: true,
+    light: { sky: 0x9fb4ff, ground: 0x3a3f55, ambient: 0.9, sun: 0xdfe6ff, sunlight: 0.55 } },
 };

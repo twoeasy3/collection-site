@@ -14,8 +14,9 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // order 8, Passage du Gois at 14; order 9, Safari at 15; order 10, Airport at 16; order 11,
 // Construction Site at 17; order 12, The Hood at 18; order 13, Panorama Avenue at 19; order 14,
 // Speed Trap Alley at 20; order 15, Mountain Pass at 21; order 16, Outback Express at 22; order 17,
-// Tour de Coast at 23.
-const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]; // (for orders 2, 3, ...)
+// Tour de Coast at 23; orders 18 to 20, Ring Road, Market Town and Quarry Run at 24 to 26; orders 21 to
+// 25, Hong Kong Harbour, Tokyo Expressway, Mumbai Monsoon, Stelvio Pass and Christmas Eve at 27 to 31.
+const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 // races (the lapped levels, on the menu's Races tab) are always open, and never hold up the delivery levels: the

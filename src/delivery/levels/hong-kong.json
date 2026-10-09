@@ -1,0 +1,58 @@
+{
+  "id": "hong-kong",
+  "name": "Hong Kong Harbour",
+  "theme": "hongkong",
+  "drive": "left",
+  "clock": { "good": 200, "evil": 150 },
+  "tip": 190,
+  "lanes": { "north": 2, "south": 2 },
+  "median": 1,
+  "traffic": { "taxi": 0.3, "commuter": 0.14, "bus": 0.14, "darkvan": 0.14, "minivan": 0.1, "van": 0.08, "sport": 0.06, "police": 0.04 },
+  "trafficCount": 11,
+  "oncomingCount": 10,
+  "segments": [
+    { "length": 500, "curve": 0 },
+    { "length": 300, "curve": 0.002 },
+    { "length": 400, "curve": 0 },
+    { "length": 250, "curve": -0.0025 },
+    { "length": 650, "curve": 0 },
+    { "length": 300, "curve": 0.0018 },
+    { "length": 700, "curve": 0 },
+    { "length": 200, "curve": -0.003 },
+    { "length": 300, "curve": 0 }
+  ],
+  "tunnels": [
+    { "from": 1450, "to": 1850 }
+  ],
+  "convoys": { "every": { "min": 20, "max": 35 }, "size": 3, "kind": "taxi" },
+  "tide": { "from": 2300, "to": 2900, "start": 0.4, "end": 1.4, "waves": { "every": { "min": 9, "max": 16 }, "reach": { "min": 0.8, "max": 1.6 } },
+    "washUp": { "types": { "wrench": 1, "cash10": 1 }, "count": { "min": 0, "max": 2 } } },
+  "cameras": [
+    { "s": 1000, "side": "left", "limit": 80 },
+    { "s": 3100, "side": "right", "limit": 80 }
+  ],
+  "targets": [
+    { "s": 700, "side": "left" },
+    { "s": 2100, "side": "right" },
+    { "s": 3300, "side": "left" }
+  ],
+  "pickups": [
+    { "type": "turbo", "s": 250, "lane": 3 },
+    { "type": "ghost", "s": 620, "lane": 2 },
+    { "type": "radarDetector", "s": 880, "lane": 3 },
+    { "type": "wrench", "s": 1200, "lane": 2 },
+    { "type": "mystery", "s": 1600, "lane": 3 },
+    { "type": "siren", "s": 2000, "lane": 2 },
+    { "type": "timePlus", "s": 2250, "lane": 3 },
+    { "type": "armour", "s": 2600, "lane": 3 },
+    { "type": "wrench", "s": 2950, "lane": 2 },
+    { "type": "turbo", "s": 3250, "lane": 3 }
+  ],
+  "obstacles": [
+    { "s": 1100, "lane": 2, "kind": "cone" },
+    { "s": 1112, "lane": 2, "kind": "cone" },
+    { "s": 1124, "lane": 2, "kind": "barrier" },
+    { "s": 2050, "lane": 3, "kind": "sign" },
+    { "s": 3050, "lane": 2, "kind": "barrier" }
+  ]
+}

@@ -488,6 +488,10 @@ export const CONFIG = {
     wideLoad: { damage: 40, speedKept: 0.35 },
     escort: { damage: 30, speedKept: 0.5 },
     tollBooth: { damage: 35, speedKept: 0.4 },
+    marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
+    // falling cargo (a shedding truck's load: see CONFIG.cargo): bales, crates and tyres
+    crate: { damage: 18, speedKept: 0.75 },
+    tyre: { damage: 8, speedKept: 0.85, light: true },
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -643,6 +647,88 @@ export const CONFIG = {
     caravan: { hw: 1.1, hl: 5.2, height: 2.6, mass: 2.2, health: 110, speed: 0.75, special: true, model: 'caravan', sway: 0.45 },
     // a drive-by car (The Hood): only ever evil (evilOnly), out for trouble: see CONFIG.driveBy
     driveby: { hw: 1.0, hl: 2.65, height: 1.45, mass: 1.5, health: 120, model: 'driveby', speed: 1.1, evilOnly: true },
+    // the kei truck (Tokyo's traffic) and the post van (Christmas Eve's): the garage's, so each cruises near its own top speed
+    keitruck: { hw: 0.74, hl: 1.7, height: 1.75, mass: 0.9, health: 60, model: 'keitruck' },
+    postvan: { hw: 0.9, hl: 2.1, height: 1.85, mass: 1.2, health: 90, model: 'postvan' },
+    // an auto-rickshaw (Mumbai's): small, slow, nimble and flimsy, and painted the one way (livery)
+    rickshaw: { hw: 0.65, hl: 1.25, height: 1.75, mass: 0.5, health: 35, speed: 0.75, model: 'rickshaw', agility: 1.6, livery: 0xf2c418 },
+    // a parade float (a level's "parades": see CONFIG.parade): a long flatbed under a tower of colour, at a
+    // crawl, keeping its lane; never evil, never spun
+    float:   { hw: 1.3,  hl: 4.2, height: 3.4, mass: 3.5, health: 240, speed: 1, special: true, model: 'float', noSpin: true, crit: 0 },
+    // a cargo truck (an 18-wheeler with an open load) that sheds its load as it goes: see CONFIG.cargo
+    cargotruck: { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 20, max: 24 }, noSpin: true, sheds: true, special: true },
+    // an ice-cream van (a level's "iceCreamStops": see CONFIG.iceCream), pink, in the one livery; never evil
+    icecream: { hw: 1.0, hl: 2.4, height: 2.3, mass: 1.6, health: 120, speed: 0.9, special: true, model: 'deliveryvan', livery: 0xf7b6d2 },
+  },
+  // an ice-cream van's stop (a level's "iceCreamStops": { s, lane, wait? }): the van stopped in its lane, its
+  // jingle going, and the traffic behind it in a residential street brakes to a halt and waits, nobody
+  // pulling out round it; `wait` s after the player comes within `trigger` m, it drives off
+  iceCream: {
+    wait: 14,              // s it stays, once the player is near (a stop can set its own: "wait")
+    trigger: 220,          // m short of it the player's coming sets its clock going
+    queue: 140,            // m behind it that traffic going its way queues, making no lane changes
+    jingleEvery: 2.6,      // s between the jingle's phrases...
+    heard: 200,            // ...heard from this far
+  },
+  // a reversible lane (a level's "reversible": { from, to, lane, flipAt? }): a lane on the player's side,
+  // under overhead signs along its stretch, that flips to oncoming as the player comes within flipAt m of
+  // it: the signs go from a green arrow to a red cross, the traffic in it moves out, and oncoming cars
+  // come down it the wrong way
+  reversible: {
+    flipAt: 170,           // m short of the stretch it flips (a stretch can set its own: "flipAt")
+    every: { min: 2.5, max: 5 }, // s between oncoming cars down it, while the player is on the stretch
+    ahead: { min: 180, max: 280 }, // m ahead of the player each one appears
+    signEvery: 150,        // m between the overhead signs
+  },
+  // convoys (a level's "convoys": { every: { min, max }, size?, kind? }): three or four vehicles nose to tail
+  // in one lane, moving as one; a follower closes the gap to the one ahead, and shuts it in the player's
+  // face when the player tries to merge in
+  convoy: {
+    size: 4,
+    gap: 3.5,              // m nose to tail they keep
+    close: 1.6,            // how hard a follower closes a gap (m/s of speed per m of gap)
+    shut: 5,               // m/s a follower puts on to shut a gap the player is aiming for
+  },
+  // rubberneckers: traffic slows to look at a wreck, so the jam comes after the crash; and some evil drivers
+  // lose patience with a jam, and go up the shoulder, and are arrested for it if the police see
+  rubberneck: {
+    linger: 25,            // s a wreck is worth a look
+    range: 70,             // m short of it they slow
+    pace: 0.35,            // share of their speed they slow to
+    slowBelow: 0.4,        // share of its speed an evil driver counts as a jam...
+    patience: 3.5,         // ...for this many s before it takes to the shoulder
+    policeSight: 90,       // m a police car sees a shoulder-runner from
+    longest: 12,           // s at most up the shoulder
+  },
+  // a street parade (a level's "parades": { s }): floats abreast in every lane of the player's side at s,
+  // a marching band behind them, all going the player's way at a crawl, taking the whole road; set off as
+  // the player comes within `trigger` m, and never pulling over. The band's drum is heard from `heard` m
+  parade: {
+    speed: 3.5,            // m/s
+    trigger: 260,          // m short of it the parade sets off
+    rows: 3,               // rows of marchers behind the floats...
+    spacing: 2.2,          // ...this far apart
+    gapBehind: 9,          // m from the floats' tails to the first row
+    drumEvery: 0.55,       // s between beats
+    heard: 220,            // m
+  },
+  // falling cargo: a truck that sheds its load (a traffic kind with sheds: true, the cargo truck) drops a crate,
+  // a bale or a tyre off the back now and then, anywhere across its lane and a little either side, which
+  // slides on down the road a way and stops: an obstacle, the player's to hit (see Collision)
+  cargo: {
+    pool: 14,              // loads a level has to drop, all told, out of play until dropped (reused once well behind the player)
+    kinds: ['crate', 'bale', 'tyre', 'crate'],
+    every: { min: 3, max: 7 }, // s between drops, while a truck is within `near` m ahead of the player
+    near: 180,
+    drag: 6,               // m/s^2 a dropped load slows at (it comes off at the truck's speed, less a little)
+  },
+  // a police roadblock (a level's "roadblocks": { s, gap? }): police cars parked across every lane of the
+  // player's side but one (gap: that lane; left out, one at random each run). Touching one is a bust (not
+  // with a radar detector); with a siren going, the player is waved through: the cars pull aside
+  roadblock: {
+    wave: 160,             // m short of it a siren has the cars pulling aside
+    aside: 3,              // m/s they move
+    warn: 220,             // m short of it the player is warned
   },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
@@ -655,6 +741,11 @@ export const CONFIG = {
   // lane, swerving over (into a lane clear `room` m round it) only within swerve m of something in it
   // (for the player: a warning as one comes within warn m ahead, and its horn every horn s from there on)
   wrongWay: { look: 30, lookTime: 2, stopShort: 6, swerve: 40, room: 10, warn: 320, horn: 1.1 },
+  hornRange: 60,
+  hornWait: 2,
+  passByRange: 4,
+  passByChance: 0.4,
+  horn: { range: 60, wait: 0.6 },
   // a police car on station at the edge of its stretch (see Traffic: policeOnStation) stops this many m
   // short of the edge, braking at no more than stationBrake m/s^2 to do it
   stationShort: 3,
@@ -933,6 +1024,32 @@ export const CONFIG = {
     policeSight: 0.4,      // share of their usual sight the police have in it
     color: 0xc4c9ce,
   },
+  // a tunnel (a level's "tunnels": { from, to }): the road goes under cover: the sky and the ground gone, the
+  // fog closed in to the tunnel's lamps, the player's headlights on, the engine echoing off the walls
+  tunnel: {
+    edge: 40,              // m over which the dark closes in at a portal, and opens out again
+    near: 10,              // m the fog starts at, inside (the usual: 120)...
+    far: 140,              // ...and where it is solid (the usual: 520)
+    color: 0x0c0c10,       // the dark of it
+    height: 8.5,           // m from the road to the ceiling (raised from 5.6)
+    camHeight: 5.5,        // m camera height inside the tunnel (lowered so player views inside)
+    camBack: 12,           // m behind the car inside the tunnel
+    camEase: 35,           // m over which camera dips before portal and rises after
+    lampEvery: 12,         // m between the ceiling lamps
+    echo: 0.45,            // how much of the engine comes back off the walls, well inside (0 = none)
+  },
+  // a burst water main (a level's "waterMains": { s, lane?, every? }): a geyser out of the road, now and
+  // then, and while it sprays the road round it is as slippery as ice; a few seconds after it stops, dry
+  waterMain: {
+    spray: 5,              // s each burst lasts
+    every: { min: 6, max: 11 }, // s between bursts (a main can set its own: "every")
+    radius: 8,             // m along the road either way the water reaches...
+    half: 4.5,             // ...and m across, either side of the main
+    drain: 3,              // s after a burst the road stays slippery
+    warn: 150,             // m short of one spraying ahead that the player is warned
+    height: 9,             // m the geyser throws its water
+    on: 5, off: 4, length: 28,
+  },
   // rockfall (a level's "rockfall": { from, to, count, side }): rocks tumbling down from that side
   // onto the road as the player comes near. Obstacles: only the player can hit them
   rockfall: {
@@ -1008,9 +1125,6 @@ export const CONFIG = {
   // person steps out and holds up a STOP for `hold` s while the children cross. Traffic waits at the
   // line; the player driving over it meanwhile is busted. Then every `every` s, with the player within `again` m
   schoolCrossing: { notice: 4.5, hold: 6, stopLine: 5, every: { min: 14, max: 22 }, again: 260, children: 5 },
-  // a burst water main ("waterMains": { s, lane, length? }): it sprays for `on` s, then stops for `off`;
-  // while it sprays, its `length` m of that lane is as slippery as ice (CONFIG.ice). Warned of `warn` m out
-  waterMain: { on: 5, off: 4, length: 28, warn: 160 },
   // a hot-air balloon ("balloons": { s, lanes: [first, last] }): set off `notice` s before the player
   // would get there, it comes down from `height` m over `descend` s, sits on its lanes for `sit` s, and
   // lifts off again over `rise` s. On the ground its basket is solid (damage, speedKept: once a landing);
@@ -1049,6 +1163,12 @@ export const CONFIG = {
   // within `trigger` m of the stretch, each at its own `speed`, weaving `weave` m
   // (gone `past` m behind the player, or `run` m down the road from where they waited)
   stampede: { trigger: 240, speed: { min: 9, max: 14 }, weave: 0.8, past: 70, run: 400 },
+
+  // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it
+  // and start.pitch up (rad); it comes no nearer than `near` nor goes further than `far`, between `low` and `high`
+  // (rad) over the car; turn: rad a pixel of dragging; step: how much a notch of the wheel moves it in or out;
+  // aim: m above the road it looks at
+  photo: { start: { yaw: 2.5, pitch: 0.32, far: 13 }, near: 4, far: 70, low: 0.03, high: 1.45, turn: 0.006, step: 1.15, aim: 1, fov: 45 },
 
   // scenery
   poleSpacing: 25,

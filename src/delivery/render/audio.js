@@ -13,6 +13,7 @@ import { CONFIG } from '../config.js';
 import { Progress } from '../progress.js';
 
 let ctx = null, master = null, noiseBuffer = null;
+let echoSend = null; // the echo (a tunnel's): how much of everything is sent round the delay
 let nextBeep = 0; // when the shoulder's danger meter next beeps
 let engine = null; // { osc, lfo, lfoGain, filter, gain }: the synthesised engine
 let siren = null;  // { gain }: a synthesised police siren, silent until Sound.siren(true)
@@ -84,7 +85,10 @@ const SAMPLES = {
   camera: null,                 // a speed camera catching the player (a shutter's click and whine)
   bell: null,                   // a level crossing's bell, ringing while its lights flash
   jet: null,                    // a jet screaming over (the Battlefield's airstrikes)
-  jingle: null,                 // a bar of an ice cream van's tune (synthesised)
+  waterMain: null,              // a water main bursting up through the road
+  drum: null,                   // a parade's bass drum
+  jingle: null,                 // an ice-cream van's chimes
+  cargoDrop: ['Collide1', 'Plop Up'], // a load coming off a truck
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -130,6 +134,17 @@ const setup = () => {
   master = ctx.createGain();
   master.gain.value = Progress.data.muted ? 0 : 0.5;
   master.connect(ctx.destination);
+  // the echo: a slapback off the walls, fed back on itself a few times, dulled a little each time round
+  // (silent until Sound.echo() opens the send: inside a tunnel)
+  echoSend = ctx.createGain();
+  const delay = ctx.createDelay(0.5), feedback = ctx.createGain(), dull = ctx.createBiquadFilter();
+  delay.delayTime.value = 0.11;
+  feedback.gain.value = 0.45;
+  dull.type = 'lowpass';
+  dull.frequency.value = 1600;
+  echoSend.gain.value = 0;
+  master.connect(echoSend).connect(delay).connect(dull).connect(ctx.destination);
+  dull.connect(feedback).connect(delay);
   for (const file in URLS) if (!LAZY.has(file)) load(file);
 
   // a second of white noise, reused by every hiss, whoosh and bang
@@ -289,6 +304,11 @@ Object.assign(SYNTH, {
   bell: (v) => { tone(1350, 1350, 0.18, 0.12 * v, 'triangle'); tone(2700, 2700, 0.12, 0.05 * v, 'sine'); },
   jingle: (v) => [1047, 880, 698, 880, 1047, 1047, 1047].forEach((f, i) => tone(f, f, 0.2, 0.09 * v, 'triangle', i * 0.22)), // (a music box)
   jet: (v) => { noise(400, 3200, 1.8, 0.5 * v, 'bandpass'); noise(3000, 300, 1.4, 0.35 * v, 'bandpass', 1.2); tone(180, 90, 2.4, 0.12 * v, 'sawtooth'); },
+  // a water main bursting: a thump under the road, and the hiss and rush of the water
+  waterMain: (v) => { tone(90, 40, 0.3, 0.4 * v); noise(2400, 900, 2.5, 0.35 * v, 'bandpass', 0.1); },
+  drum: (v) => { tone(110, 45, 0.22, 0.5 * v); noise(600, 200, 0.08, 0.2 * v); },
+  jingle: (v) => [659, 587, 523, 587, 659, 659, 659].forEach((f, i) => tone(f, f, 0.28, 0.14 * v, 'triangle', i * 0.22)), // (a nursery tune's first phrase)
+  cargoDrop: (v) => { noise(900, 200, 0.2, 0.5 * v); tone(140, 60, 0.15, 0.3 * v, 'square'); },
 });
 
 export const Sound = {
@@ -374,6 +394,11 @@ export const Sound = {
   // the frog's croaking, 0 (silent) .. 1 (right beside it)
   frog(volume) {
     frogLoop.set('Frog', volume * 0.8);
+  },
+  // the echo off a tunnel's walls: 0 (none, out in the open) .. 1 (everything comes back)
+  echo(level) {
+    if (!echoSend) return;
+    echoSend.gain.setTargetAtTime(Math.max(0, Math.min(1, level)), ctx.currentTime, 0.2);
   },
   // the shoulder's danger meter, fed every frame: beeps while the player is on the shoulder,
   // faster the nearer the meter is to a bust. level: 0 = the full allowance is

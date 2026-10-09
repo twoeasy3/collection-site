@@ -35,12 +35,18 @@ import { syncHazards } from './render/hazards.js';
 import { syncBattle } from './render/battle.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
+import { Photo, syncPhoto, photoCamera, startPhoto } from './render/photo.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
+import { syncMovers } from './render/movers.js';
+import { syncTunnel } from './render/tunnel.js';
+import { syncWaterMains } from './render/watermains.js';
+import { syncReversible } from './render/reversible.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
 import './render/touch.js';
+import './horn.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
 import { Social } from './social.js';
@@ -94,11 +100,13 @@ if (params.get('racewatch') !== null) {
   Game.start();
   if (params.get('at')) Player.s = Number(params.get('at'));
   if (params.get('fly') !== null) startFly();
+  const photo = params.get('photo') !== null; // ?photo: paused, in photo mode, once ?ff has run (a check of render/photo.js)
   // ?cine: a still for the level select. The traffic is dealt out afresh around the car, ?ff lets
   // it settle, then everything stops: no HUD, and the camera off to one side (render/scene.js)
   const cine = params.get('cine') !== null;
   if (cine) Traffic.reset();
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
+  if (photo) { Game.paused = true; startPhoto(); }
   if (cine) {
     Cinematic.on = true;
     Cinematic.studio = params.get('cine') === 'car'; // (?cine=car: the car alone, on white)
@@ -173,16 +181,22 @@ const frame = (now) => {
     syncSite();
     syncRoadside(dt);
     syncHazards(now);
+    syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
+    syncWaterMains(dt);
+    syncReversible();
     syncBattle(dt);
     syncZones(dt);
     syncStorm(dt);
+    syncMovers(dt);
     emitVehicleSmoke(dt);
     syncPackages(dt);
     syncPickups(dt);
     syncTargets(dt);
     updateEffects(dt);
 
+    syncPhoto();
     if (Fly.on) flyCamera(dt); // (flying round a level: see render/fly.js)
+    else if (Photo.on) photoCamera(); // (photo mode, while paused: see render/photo.js)
     else if (Game.raceWatch) raceCamera(dt); // (the race screensaver's cameras)
     else updateCamera(dt, prevState !== 'playing' && Game.state === 'playing');
     syncRaceWatch(now);

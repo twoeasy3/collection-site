@@ -5,6 +5,7 @@ import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Game } from '../game.js';
 import { CAR } from '../cars.js';
+import { LEVEL } from '../levels.js';
 
 // ============================================================================
 // RENDERING
@@ -108,16 +109,41 @@ const cinematicCamera = () => {
   camera.updateProjectionMatrix();
 };
 
+// how far the camera is inside a tunnel (0 = fully outside, 1 = fully inside), easing smoothly over
+// CONFIG.tunnel.camEase metres so the camera dips down before passing the portal and rises after leaving
+const tunnelCamera = (camS) => {
+  if (!Track?.isMain || !Track.isMain(camS) || !LEVEL.tunnels?.length) return 0;
+  const T = CONFIG.tunnel, lead = T.camEase || 35;
+  const s = Track.loop ? (((camS % Track.length) + Track.length) % Track.length) : camS;
+  let most = 0;
+  for (const t of LEVEL.tunnels) {
+    if (s < t.from - lead || s > t.to + lead) continue;
+    if (s >= t.from && s <= t.to) return 1;
+    if (s < t.from) {
+      const u = (s - (t.from - lead)) / lead;
+      most = Math.max(most, u * u * (3 - 2 * u));
+    } else {
+      const u = (t.to + lead - s) / lead;
+      most = Math.max(most, u * u * (3 - 2 * u));
+    }
+  }
+  return most;
+};
+
 export const updateCamera = (dt, snap) => {
   if (Cinematic.on) { cinematicCamera(); return; }
   camLat += Player.camShift; // the car changed road: lat is measured from a different line now
   Player.camShift = 0;
   camLat = snap ? Player.lat : camLat + (Player.lat - camLat) * damp(CONFIG.camLateralLag, dt);
   const cam = Game.screensaver ? CONFIG.screensaver : CONFIG; // (the screensaver's camera stands further back)
-  Track.toWorld(Player.s - cam.camBack, camLat, tmp);
+  const baseBack = cam.camBack, baseH = cam.camHeight;
+  const inTunnel = tunnelCamera(Player.s - baseBack);
+  const camBack = baseBack + ((CONFIG.tunnel?.camBack ?? baseBack) - baseBack) * inTunnel;
+  const camHeight = baseH + ((CONFIG.tunnel?.camHeight ?? 5.5) - baseH) * inTunnel;
+  Track.toWorld(Player.s - camBack, camLat, tmp);
   const shake = CONFIG.hitShake * Game.shake;
   camera.position.set(tmp.x + (Math.random() - 0.5) * shake,
-    tmp.y + cam.camHeight + (Math.random() - 0.5) * shake, tmp.z);
+    tmp.y + camHeight + (Math.random() - 0.5) * shake, tmp.z);
   Track.toWorld(Player.s + cam.camLookAhead, camLat, tmp2);
   tmp2.y += 1; // (so the camera looks up a climb and down a descent)
   aim(tmp2);

@@ -4,7 +4,7 @@
   "theme": "suburb",
   "clock": { "good": 35, "evil": 25 },
   "tip": 85,
-  "traffic": { "suv": 0.4, "taxi": 0.3, "miata": 0.3, "icecream": 0.05, "binlorry": 0.05, "learner": 0.05 },
+  "traffic": { "suv": 0.4, "taxi": 0.3, "miata": 0.3 },
   "trafficCount": 8,
   "oncomingCount": 6,
   "emergencies": { "every": { "min": 20, "max": 40 } },

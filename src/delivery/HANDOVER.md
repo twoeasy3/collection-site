@@ -1,69 +1,79 @@
 # Delivery Racer: handover
 
-Written on 2026-10-04 for whoever picks up the game in this repo. It covers what was just
-done, how the game is put together, how the owner likes changes made, and what is not yet
-verified. `README.md` beside this file has the file map and the "adding content" recipes;
-read that too.
+Updated on 2026-10-09 for whoever picks up the game in this repo. It covers where the game
+stands, how it is put together, how the owner likes changes made, and what is not verified.
+`README.md` beside this file has the file map, the address-bar shortcuts and the "adding content"
+recipes; read that too. `CHECKLIST.md` is the working list of ideas not yet built.
 
-## What just happened
+## Where it stands
 
-Delivery Racer is a gray-box 3D lane-based delivery racing game (three.js, no framework).
-It was developed in a separate, non-git folder (`C:\Users\tooea\Documents\!!!!!roadwageSandboxx`)
-and has just been copied into this repo as a second page of the site.
+Delivery Racer is a 3D lane-based delivery racing game (three.js, no framework). It was written
+in a separate sandbox folder and copied into this repo on 2026-10-04 as a second page of the
+site. This repo is the only copy to edit.
 
 | In this repo | What it is |
 |---|---|
-| `delivery/index.html` | The game's page (HUD, menus, on-screen controls markup) |
-| `src/delivery/` | All game code, levels and CSS |
+| `delivery/*.html` | The game's page and five others (power-ups, gimmicks, good and evil, police, level editor) |
+| `src/delivery/` | All game code, levels, CSS, sounds and menu pictures |
 | `scripts/delivery-smoke.mjs` | Headless test of the game logic |
-| `package.json` | Added `three` 0.160.0 and the `test:delivery` script |
-| `vite.config.js` | Added `environments.client.build.rollupOptions.input` with two pages |
+| `scripts/level-clocks.mjs` | Works out a level's clock from a clean run |
+| `vite.config.js` | `environments.client.build.rollupOptions.input` lists every page |
 
-State of the repo when this was written:
+- **It is committed and live.** Pushing to `main` deploys the site, the game with it, through
+  Cloudflare's Git integration. There is no staging step.
+- **Nothing on the site links to `/delivery/`.** The owner has not said where a link should go.
+- **About 30,000 lines** of code and level data, most of it written between 2026-10-04 and
+  2026-10-09.
 
-- **Nothing is committed or deployed.** The files above are untracked or modified.
-- **The owner had unrelated uncommitted work** in `schema.sql`, `src/App.jsx`,
-  `src/components/GalleryCards.jsx`, `src/components/GalleryGrid.jsx`,
-  `src/hooks/useGalleryDom.js`, plus untracked `stats_import.sql` and `stats_to_sql.py`.
-  That is theirs; do not fold it into a game commit.
-- **The sandbox folder still exists** as a second copy. This repo is now the one to edit.
-- **Nothing on the site links to `/delivery/` yet.**
+Content now:
+
+- **35 levels on the menu:** 26 main levels and 9 special ones (S1 to S9), listed in the README.
+  Three more are hidden (`testbed`, `grand-prix`, `gimmick-road`) and one is the screensaver's.
+- **32 garage cars:** 17 gold-star cars in five tiers, 14 Blue Star cars (a second season, open
+  once level 20 is delivered), and the Tank.
+- **Vehicles that belong to levels:** UFO, F1 car, GT car, LMP prototype, jetboat and the
+  Battlefield's 8x8. One secret car, the City Bus.
+- **Models with no car yet:** the amphibious cars in `render/models.js` (`toybota`, `nissank`,
+  `herald`, `dampervan`, `transporter`) are built but no entry in `cars.js`, `config.js` or any
+  level uses them.
+- **Modes beyond delivery:** circuit races with laps and a grid (F1, GT or LMP), rival couriers,
+  the Battlefield, two screensavers.
 
 ## Running and checking it
 
 ```
-npm run dev            # Vite + the Flask server; the game is at http://localhost:5173/delivery/
-npx vite               # Vite alone is enough for the game (it uses no /api)
-npm run test:delivery  # headless logic test over every level; ends "all checks passed"
-npm run build          # writes dist/client/delivery/index.html alongside the site
+npm run dev                  # Vite + the Flask server; the game is at http://localhost:5173/delivery/
+npx vite                     # Vite alone is enough for the game (it uses no /api)
+npm run test:delivery        # headless logic test over every level; ends "all checks passed"
+npm run test:delivery:quick  # skips driving every level to the finish on both sides
+npm run build                # writes dist/client/delivery/ alongside the site
 ```
 
-Verified here: the build, the test, and the game running on the Vite dev server at
-`/delivery/`. **Not verified:** the production route through the Worker (`wrangler dev` or
-a deploy). The Worker passes non-`/api/` requests to the assets binding, so it should serve
-`dist/client/delivery/index.html`, but nobody has loaded it that way.
+About the test:
 
-Things that bit during the port:
+- **Do not run it unless the owner asks**, not even before a commit. A syntax check is enough
+  otherwise.
+- The full run takes about 18 to 20 minutes and the quick one about 8 (measured 2026-10-08).
+  Run it in the background and log to a file.
+- From the Bash tool `npm run test:delivery` fails ("'node' is not recognized"). Run
+  `node scripts/delivery-smoke.mjs` directly, with `--quick` if wanted.
+- It seeds `Math.random`, afresh for every section and check, so a failure repeats. `--seed=n`
+  gives another run of the dice.
+- It loads the game's source live through Vite. Do not edit `src/delivery` while it is going.
 
-- The two-page `input` must be set on the **client environment only**. Setting it at the top
+Things that bit:
+
+- The pages' `input` must be set on the **client environment only**. Setting it at the top
   level `build.rollupOptions` breaks the build, because the Cloudflare plugin's Worker
   environment inherits it.
 - `vite.config.js` has CRLF line endings; multi-line string matching against it fails.
 - On the owner's machine, `npm` / `npx` only work from PowerShell, not from Git Bash.
-- ESLint was used in the sandbox (flat config, `no-undef` / `no-unused-vars`) and was **not**
-  brought over. This repo has no lint step for the game.
-
-Address-bar shortcuts for testing (all on `/delivery/`):
-
-- `?autostart` or `?autostart=evil` skips the menu; `&level=4` picks a level, locked or not;
-  `&at=1650` starts that many metres along; `&ff=5` runs five seconds before the first frame.
-- `&car=lowrider` drives that car without owning it (nothing is saved).
-- `?garage` or `?garage=evil` opens the garage; `&hover=tank` shows that car's tooltip.
-- `&touch` shows the on-screen controls on a desktop.
+- There is no lint step for the game. ESLint was used in the sandbox and was not brought over.
 
 Screenshots were taken with headless Edge against a running server, for example:
 `msedge --headless=new --enable-unsafe-swiftshader --use-angle=swiftshader --window-size=1100,650 --virtual-time-budget=7000 --screenshot=out.png "http://localhost:5173/delivery/?autostart&level=4&ff=4"`.
-Edge will not go narrower than about 500 px, so use 520x900 for a portrait shot.
+Edge will not go narrower than about 500 px, so use 520x900 for a portrait shot. `&cine` gives
+the still used for a level's menu picture and `&cine=car` the one for a car's.
 
 ## How the game is built
 
@@ -71,6 +81,12 @@ Edge will not go narrower than about 500 px, so use 520x900 for a portrait shot.
   from `src/delivery/render/`. That is why the test can run without a browser. Logic talks to
   rendering through `FxQueue` (visual effects and sounds) and the `Game.onLoad` /
   `Game.onFinish` hook arrays; car swaps raise a `carchange` window event.
+- **A gimmick is a pair of files.** `hippos.js` moves the hippos and does the damage;
+  `render/hippos.js` draws them, from a `sync...` call in the frame loop in `main.js`. The
+  level field that switches it on is documented at the top of `levels.js`, and its tuning is in
+  `config.js`.
+- **Models with no game state are kept apart** (`render/*Models.js`, `render/carExtras.js`), so
+  the reference pages can show them without loading the game.
 - **Everything is in track space.** A position is `(s, lat)`: metres along a road and metres
   sideways. `Track.toWorld(s, lat, out)` turns that into world coordinates and returns the
   heading.
@@ -84,29 +100,38 @@ Edge will not go narrower than about 500 px, so use 520x900 for a portrait shot.
 - **Levels are JSON** in `src/delivery/levels/`, documented at the top of `levels.js`, and
   validated when loaded (problems show in the HUD and fail the test). A level is only built
   when a run starts (`Game.load`); the start screen is purely a menu.
+- **A level is written as if driving on the right.** `"drive": "left"` shows it as its mirror
+  image.
+- **Themes are data** in `themes.js`, read by the game and the editor alike; `render/road.js`
+  draws their scenery. Any theme can go on any level.
 - **Tuning lives in `config.js`.** Car stats are in `cars.js`.
 - **Vehicles carry a `bound` tag**, `north` (the player's way) or `south`. Any contact
   between opposite bounds is a head-on that wrecks both. A level's `flow` can make all
-  traffic one way; the pool's directions are dealt out when a run starts.
+  traffic one way, or `mixed`.
 - **Collisions only push cars along the road**, never sideways, and the player takes a
-  small share of any push (`playerPushShare`).
-- **Models** for the garage cars are in `render/models.js`; each returns a group facing +z
-  with `userData.body` (the mesh whose material is the paint) and `userData.animate(t)`.
-  Traffic kinds with a `model` in `CONFIG.vehicles` reuse them.
+  small share of any push (`playerPushShare`). A race level's `nudge` is the exception.
+- **Vehicle models** are in `render/models.js`; each returns a group facing +z with
+  `userData.body` (the mesh whose material is the paint) and `userData.animate(t)`. Traffic
+  kinds with a `model` in `CONFIG.vehicles` reuse them.
 - **Saved progress** is one cookie, `delivery_racer_progress`, with `path=/`, so it is shared
-  across the whole site's origin. Level unlocks are counted by position in `LEVELS`, so
-  reordering levels changes what a returning player has open.
-- **Sound** is synthesised with WebAudio; there are no audio files.
-
-Current content: six levels in this order (Expressway, Back Roads, Farm Lanes, Big Business,
-All Heck, Asteroid Run), eight garage cars (Delivery Hatch, Junker, Courier Coupe, Low Rider,
-Family Wagon, Sport Compact, Love Bus, Tank) and a level-only UFO.
+  across the whole site's origin, and a copy in local storage that brings it back if the cookie
+  goes. Level unlocks are counted by position in `LEVELS`. `INSERTED_AT` in `progress.js`
+  records every position a level has been put in at, so an older save opens the right levels:
+  add to it whenever a level goes in among the others.
+- **Sound** is WAV files in `sounds/`, loaded by `render/audio.js`, with synthesised WebAudio
+  stand-ins until a file has loaded and for the few sounds that have no file.
+- **Level clocks are worked out, not guessed.** `scripts/level-clocks.mjs` times a clean run in
+  the reference car and writes `clock: { good, evil }` into the level file.
+- **The level editor** (`editor.js`) hands its level to the game through local storage
+  (`delivery_editor_level`), played with `?edited`, and uses `?fly` as its 3D view.
 
 ## How the owner likes changes made
 
-These are standing preferences from the sessions that built the game:
-
 - **Start small.** When a request is large, do the barebones version first and build up.
+- **Timebox.** Land a working version and report within about 20 to 30 minutes rather than
+  chasing a metric for an hour.
+- **A sentence describing how things are now, among requests, is usually the reason** for a
+  request, not a new feature to build.
 - **Tuning values go in config**, not inline.
 - **Level content sits at fixed positions**, the same every run (pickups, obstacles, tractors,
   seeded asteroid fields).
@@ -114,37 +139,40 @@ These are standing preferences from the sessions that built the game:
 - **The start screen is strictly a menu.**
 - **Screenshot new visual features** and send the images.
 - **Report plainly what was and was not verified.**
-- Requests arrive as short feature lists; implement each item, run the test and build, then
-  report.
+- **Do not run the smoke test unless asked** (see above).
+- Requests arrive as short feature lists; implement each item, then report.
 
 ## What is not verified
 
-Nobody has checked these by eye, ear or hand:
+This list was last gone through on 2026-10-04, when the game had six levels. Nothing here records
+what has been checked by eye, ear or hand since, so treat everything added after that date as
+unverified unless the owner says otherwise. From the original list:
 
-- **Audio**: every sound effect, the engine note and the siren.
-- **Animations**: the Low Rider's hop, the Junker's shudder, the Love Bus's sway, spin-outs,
-  flying tyres, helicopters on slopes, and the speed-dependent yaw added last.
-- **Touch**: the on-screen buttons were only checked as a layout in screenshots, never
-  pressed on a real device.
-- **Menu click-through** from start screen to garage to a run.
-- **Balance of levels 4 and 5**: clocks, tips, traffic mixes and pickup placement are first
-  guesses and were not play-tested. All Heck (everything oncoming, eight lanes) may be too
-  hard.
-- **Performance on phones**: Asteroid Run has about 570 asteroids and All Heck 772 cones
-  (cones are hidden beyond 620 m, asteroids are too).
-- **The new cars as traffic**: only the Love Bus was seen up close.
+- **Audio**: the WAVs replaced the synthesised sounds after this was written; nobody has
+  recorded a listen-through.
+- **Animations**: the Lowrider's hop, the Junker's shudder, the Love Bus's sway, spin-outs,
+  flying tyres, helicopters on slopes, speed-dependent yaw.
+- **Touch**: the on-screen buttons and the phone garage on a real device.
+- **Balance**: clocks now come from `level-clocks.mjs`, but tips, traffic mixes and pickup
+  placement on most levels were not play-tested.
+- **Performance on phones**: the heavy levels (Asteroid Run's asteroids, All Heck's cones, the
+  long JSON of Oh Mine!).
 
 Known limits:
 
 - Hills (segment `grade`) cannot be combined with exits; the grades are ignored and the
-  level reports a problem.
-- Exits cannot be combined with `"flow": "south"`.
-- Traffic drives straight through obstacles by design; only the player hits them.
-- The built game bundle is about 575 kB, mostly three.js.
+  level reports a problem. Bridges must be on level road.
+- Exits cannot be combined with `"flow": "south"`, and a one-way level's exits cannot have
+  flyovers.
+- Level crossings and stop / go roadworks must be on straight road.
+- Traffic drives straight through most obstacles by design; only the player hits them.
+- `cars.js` still says the garage has 20 bays. The lot now scrolls and holds all 32 cars.
+- `cameras.js` points to `render/cameras.js`, which does not exist; the cameras are drawn as
+  obstacles and by `render/roadside.js`.
 
 ## Likely next steps
 
-- Load `/delivery/` through `wrangler dev` to confirm the production route, then commit the
-  game as its own commit and deploy.
-- Add a link to `/delivery/` from the site (the owner has not said where).
+- The ideas in `CHECKLIST.md`.
+- Give the amphibious models cars or a level to be used in.
+- Add a link to `/delivery/` from the site, once the owner says where.
 - Decide whether to bring ESLint over for `src/delivery`.

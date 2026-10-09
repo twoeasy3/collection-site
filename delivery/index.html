@@ -35,11 +35,25 @@
 <div id="fade"></div>
 <div id="banner">PAUSED<small>Resume, or press P</small></div>
 <div id="messages"><div class="line"></div><div class="line"></div></div>
+<div id="camAlert" class="hidden">
+  <div class="cam-disc"><span id="camLimit">80</span></div>
+  <div class="cam-body">
+    <div class="cam-header">
+      <span class="cam-title">SPEED CAMERA</span>
+      <span id="camStatus" class="cam-status">SLOW DOWN</span>
+    </div>
+    <div class="cam-detail">
+      <div class="cam-arrow-wrap"><div id="camArrow" class="cam-arrow"></div></div>
+      <span id="camDist" class="cam-dist">150 m</span>
+    </div>
+  </div>
+</div>
 <div id="behind"><div class="arrow"></div><span id="behindLabel"></span></div>
 <div id="raceBoard"></div>
 <div id="raceCaption"></div>
 <canvas id="raceMap" width="240" height="240"></canvas>
-<div id="runButtons"><button id="pauseBtn">Pause</button><button id="directorBtn" style="display:none">Race director</button><button id="exitBtn">Exit level</button></div>
+<div id="runButtons"><button id="pauseBtn">Pause</button><button id="photoBtn" style="display:none" title="Photo mode (C)">Photo</button><button id="directorBtn" style="display:none">Race director</button><button id="exitBtn">Exit level</button></div>
+<div id="photoBar" style="display:none"><span>Drag to look round, wheel to zoom</span><button id="photoInBtn">+</button><button id="photoOutBtn">&minus;</button><button id="photoSaveBtn">Save picture</button><button id="photoBackBtn">Back</button></div>
 <button id="throwBtnLeft" class="throw">THROW</button>
 <button id="throwBtn" class="throw">THROW</button>
 <div id="touchControls">

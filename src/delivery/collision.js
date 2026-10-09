@@ -117,6 +117,7 @@ export const Collision = (() => {
     if (headOn) {
       // a northbound and a southbound vehicle touching, however they touch, is a head-on:
       // both are wrecked outright (but an invincible player's car comes off unharmed: a mystery)
+      if ((a.isPlayer && b.procession) || (b.isPlayer && a.procession)) Traffic.mourn(a.procession || b.procession);
       if (a.mystery !== 'invincible') a.health = 0;
       if (b.mystery !== 'invincible') b.health = 0;
       if (heard(a, b)) {
@@ -135,6 +136,7 @@ export const Collision = (() => {
     // exception is the player running into the back of a traffic vehicle: then it is the
     // traffic that has the better of it, and the player who loses the speed.
     const player = a.isPlayer ? a : b.isPlayer ? b : null, other = a.isPlayer ? b : a;
+    if (player && other.procession) Traffic.mourn(other.procession);
     const rearEnd = player && !sideOn && (other.s - player.s) * player.dir > 0 && (player.vs - other.vs) * player.dir > 0;
     // (under the 1000 lb weight the player wins every shove, rear-ends included)
     const playerShare = player && player.heavy > 0 ? CONFIG.heavyMass.pushShare
@@ -251,6 +253,8 @@ export const Collision = (() => {
     // water station's table, the marathon's pace car, a wide load and its escort, a toll plaza's end booth
     trolley: [0.45, 0.6, 1.1], runner: [0.3, 0.3, 1.8], waterTable: [0.9, 0.5, 1.0], paceCar: [0.9, 2.0, 1.6],
     wideLoad: [3.2, 6.5, 3.6], escort: [0.95, 2.2, 1.7], tollBooth: [0.7, 1.6, 2.8],
+    // a parade's bandsman (see parades below); and falling cargo, shed off a truck (see Cargo)
+    marcher: [0.35, 0.35, 2.3], crate: [0.6, 0.6, 1.1], tyre: [0.5, 0.5, 0.35],
   };
   const obstacles = [];
   const loaders = []; // (others adding obstacles of their own as a level loads: each is called with add)
@@ -339,6 +343,24 @@ export const Collision = (() => {
         add('cyclist', s, kerbLat(ride, s), { ride, face: dir < 0 ? Math.PI : 0 });
       }
     }
+    // a parade's marching band: rows of bandsmen across the player's lanes, behind the floats (Traffic puts the
+    // floats out: see placeFixed), waiting to step off as the parade does (see CONFIG.parade)
+    (LEVEL.parades || []).forEach((p, id) => {
+      const P = CONFIG.parade, s0 = Track.place(p), [first, last] = Track.laneRange(1, s0);
+      const lo = Track.laneOffset(first, s0) - CONFIG.laneWidth / 2 + 0.6, hi = Track.laneOffset(last, s0) + CONFIG.laneWidth / 2 - 0.6;
+      const across = Math.max(2, Math.round((hi - lo) / 1.4) + 1);
+      for (let row = 0; row < P.rows; row++) {
+        for (let k = 0; k < across; k++) {
+          const s = s0 - CONFIG.vehicles.float.hl - P.gapBehind - row * P.spacing;
+          add('marcher', s, lo + (hi - lo) * k / (across - 1), { march: { id, s0: s, start: s0 - P.trigger, speed: p.speed || P.speed, on: false, t: Math.random() * 9 } });
+        }
+      }
+    });
+    // falling cargo: a pool of loose loads, out of play ("gone") until a shedding truck drops one (see Cargo)
+    if (Object.keys(LEVEL.traffic || {}).some(k => CONFIG.vehicles[k]?.sheds) || (LEVEL.trafficZones || []).some(z => Object.keys(z.traffic).some(k => CONFIG.vehicles[k]?.sheds))) {
+      const kinds = CONFIG.cargo.kinds;
+      for (let i = 0; i < CONFIG.cargo.pool; i++) add(kinds[i % kinds.length], 0, 0, { cargo: true, gone: true, slide: 0 });
+    }
     for (const z of LEVEL.dropBears || []) { // (each somewhere in its stretch, anywhere across the road)
       for (let i = 0; i < (z.count || 3); i++) {
         const s = Track.place({ s: z.from + Math.random() * (z.to - z.from) });
@@ -387,7 +409,8 @@ export const Collision = (() => {
     }
     for (const z of LEVEL.herds || []) {
       // a cow walks across the road, so its hitbox lies across it too
-      for (let i = 0; i < (z.count || 3); i++) add(z.kind || 'cow', 0, 0, { ...stretch(z), yaw: Math.PI / 2, dir: 1, rest: 0 });
+      // (stay: true, a herd that never leaves the road: it turns back at the lane lines, and never rests)
+      for (let i = 0; i < (z.count || 3); i++) add(z.kind || 'cow', 0, 0, { ...stretch(z), yaw: Math.PI / 2, dir: 1, rest: 0, stay: !!z.stay });
     }
     // (seeded, so every drifter moves the same way every run)
     let driftSeed = 2654435761;
@@ -595,6 +618,18 @@ export const Collision = (() => {
             if (Math.abs(o.s - Player.s) < 40) Game.shake = Math.max(Game.shake, 0.5);
           }
         }
+      } else if (o.march) { // a bandsman: waiting until the parade steps off, then marching behind the floats
+        const m = o.march;
+        if (!m.on && Player.s > m.start) m.on = true;
+        m.t += dt;
+        if (m.on) o.s += m.speed * dt;
+        o.h = m.on ? Math.abs(Math.sin(m.t * 5)) * 0.08 : 0; // (the step)
+      } else if (o.cargo) { // a load off a truck: sliding on down the road, slowing, until it stops
+        if (o.slide > 0.1) {
+          o.s += o.slide * dt;
+          o.slide = Math.max(0, o.slide - CONFIG.cargo.drag * dt);
+          o.face += dt * o.slide * 0.3;
+        }
       } else if (o.ride) { // a cyclist: waiting until the player comes near, then riding along by the kerb
         const P = CONFIG.peloton, w = o.ride;
         if (!w.on && w.s0 - Player.s < w.trigger) w.on = true;
@@ -611,11 +646,12 @@ export const Collision = (() => {
           o.h = CONFIG.kangarooHop * Math.abs(Math.sin(o.hop * Math.PI));
         }
         o.face = o.dir * Math.PI / 2;
-        const lo = Track.lo(o.s) + o.hl, hi = Track.hi(o.s) - o.hl;
+        // (a herd that stays on the road turns back at the lane lines, and doesn't stand about)
+        const lo = (o.stay ? Track.laneLo(o.s) : Track.lo(o.s)) + o.hl, hi = (o.stay ? Track.laneHi(o.s) : Track.hi(o.s)) - o.hl;
         if (o.lat > hi || o.lat < lo) { // reached the far side: stand, then head back
           o.lat = clamp(o.lat, lo, hi);
           o.dir = -o.dir;
-          o.rest = CONFIG.cowRestMin + Math.random() * (CONFIG.cowRestMax - CONFIG.cowRestMin);
+          o.rest = o.stay ? 0 : CONFIG.cowRestMin + Math.random() * (CONFIG.cowRestMax - CONFIG.cowRestMin);
         }
       } else if (o.dance) {
         danceTo(o, (o.time = (o.time || 0) + dt));
@@ -699,7 +735,7 @@ export const Collision = (() => {
       // (a cyclist goes up on its own, small, its wheels flying: the rest of the bunch rides on)
       FxQueue.push(o.ride ? { type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false, scale: 0.55, smoke: 0.5, tyres: true }
         : { type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false });
-      if ((o.kind === 'cyclist' || o.kind === 'runner') && Traffic.policeNear()) Player.bust(o.kind); // (knocking a cyclist off, or a runner down, in front of the police)
+      if ((o.kind === 'cyclist' || o.kind === 'runner' || o.kind === 'marcher') && Traffic.policeNear()) Player.bust(o.kind === 'marcher' ? 'cyclist' : o.kind); // (knocking a cyclist off, or a runner/bandsman down, in front of the police)
     }
   };
   // a dancing portaloo, `t` s into its row's dance (every one in a row keeps time with the rest)
@@ -763,6 +799,17 @@ export const Collision = (() => {
         o.s = o.ride.s0;
         o.ride.on = false;
         o.lat = kerbLat(o.ride, o.s);
+        continue;
+      }
+      if (o.march) { // a bandsman back in his row behind the floats
+        o.s = o.march.s0;
+        o.march.on = false;
+        o.h = 0;
+        continue;
+      }
+      if (o.cargo) { // a load back on its truck, so to speak
+        o.gone = true;
+        o.slide = 0;
         continue;
       }
       if (o.migrate) { // back to where it started out in the herd
@@ -830,6 +877,7 @@ export const Collision = (() => {
       if (!v.active || v.health > 0) continue;
       v.active = false;
       FxQueue.push({ type: 'explode', s: v.s, lat: v.lat, vs: v.vs, big: v.mass > 1, tyres: !v.toad });
+      Traffic.noteWreck(v); // (the traffic slows to look: see Traffic's rubbernecking)
       if (v.wreckedByPlayer) Message.say('wrecks', 'byPlayer'); // (one of the player's packages did it)
       // (the player's doing, by a package or by a hit just now: the evil drivers about may cheer)
       if (!v.isPlayer && (v.wreckedByPlayer || (v.hitBy && v.hitBy.isPlayer && Game.time - v.hitAt < 3))) Traffic.wreckedByPlayer(v);

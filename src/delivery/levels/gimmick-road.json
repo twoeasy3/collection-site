@@ -5,7 +5,7 @@
   "clock": { "good": 504, "evil": 357 },
   "tip": 50,
   "lanes": 2,
-  "traffic": { "commuter": 0.25, "darkvan": 0.15, "wagon": 0.15, "van": 0.12, "taxi": 0.1, "pickup": 0.08, "police": 0.1, "minivan": 0.05 },
+  "traffic": { "commuter": 0.25, "darkvan": 0.15, "wagon": 0.15, "van": 0.12, "taxi": 0.1, "pickup": 0.08, "police": 0.1, "minivan": 0.05, "cargotruck": 0.08 },
   "trafficCount": 8,
   "oncomingCount": 7,
   "processions": { "every": { "min": 25, "max": 40 } },
@@ -51,6 +51,16 @@
   ],
   "pelotons": [
     { "s": 3900, "count": 8 }
+  ],
+  "parades": [
+    { "s": 4300 }
+  ],
+  "waterMains": [
+    { "s": 1500, "lane": 1 },
+    { "s": 2050, "lane": 1 }
+  ],
+  "tunnels": [
+    { "from": 2650, "to": 2950 }
   ],
   "targets": []
 }

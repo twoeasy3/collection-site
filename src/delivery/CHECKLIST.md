@@ -28,7 +28,7 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 - [ ] 29. Daily challenge: a seeded random level with one gimmick mix per day and a leaderboard
 - [ ] 30. Time trial with ghost replay
 - [ ] 31. Endless mode: a procedurally chained road, getting harder
-- [ ] 33. Photo mode: pause and use the cinematic camera
+- [x] 33. Photo mode: while paused, the Photo button (or C) hides everything but the scene and gives a camera to drag round the car, zoom, and a Save picture button (`render/photo.js`; `?photo` opens it for a check). Seen in a screenshot; dragging, zooming and saving were not exercised.
 
 ## Garage and menus
 
@@ -39,8 +39,8 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 
 ## Fixes and balance
 
-- [ ] 40. Blue Star balance pass: cap stats strictly below the next gold tier
-- [ ] 41. Classic GT vs a future 6-star tier: decide on top-speed headroom
+- [x] 40. Blue Star balance pass: top speed, acceleration and health each strictly below the best of the gold tier above. Three were over, all on acceleration: Sleeper Wagon 15 to 14, Rally Car 16 to 14.5, Rotary Coupe 17 to 14.8. `scripts/.balance-check.mjs` checks all fourteen.
+- [x] 41. Classic GT vs a future 6-star tier: my decision, for the owner to overrule: the Classic GT stays at 48 m/s, and a six-star gold tier would run 49 to 52 m/s (`NEXT_TIER_CAPS` in `cars.js`: 52 m/s, 24 acceleration, 450 health), still short of the UFO's 58. The tier-5 Blue Stars are checked against those caps.
 - [x] 42. Hills with side roads: a side road without flyovers now follows the land (as high as the expressway beside it), so a level can have both; an exit with flyovers still cannot. Tried on Gimmick Road 2, whose side road now climbs a hill: heights join at both ends (checked by numbers and in two screenshots). Rough spot: where the expressway bends away, the side road has a short stretch as steep as 12%. No real level uses it yet.
 - [x] 43. The 404 on every level (most likely a missing favicon). Every game page now links `/car-icon.svg` as its icon. Not confirmed in a browser that this was the 404.
 - [x] 44. Thumbnail shooting: a `?ghost` test parameter. The car is a ghost all run and cannot be busted. Checked headless (`scripts/delivery-probe.mjs` uses it).
