@@ -34,13 +34,14 @@ export const buildStrip = (sFrom, sTo, latA, latB, y, step = 4) => {
 };
 
 // dashed line along lat(s), drawn only where show(s) is true
-const buildDashes = (sFrom, sTo, lat, show) => {
+// (dash: { length, spacing, width } of its own, if not a lane line's: a lane-drop line's, see CONFIG.ramps.dropLine)
+const buildDashes = (sFrom, sTo, lat, show, dash) => {
   const pos = [], idx = [];
-  const half = 0.08;
+  const half = dash ? dash.width / 2 : 0.08, length = dash ? dash.length : CONFIG.dashLength;
   let n = 0;
-  for (let s = sFrom; s < sTo; s += CONFIG.dashSpacing) {
+  for (let s = sFrom; s < sTo; s += dash ? dash.spacing : CONFIG.dashSpacing) {
     if (!show(s)) continue;
-    for (const [ds, dl] of [[0, -half], [0, half], [CONFIG.dashLength, -half], [CONFIG.dashLength, half]]) {
+    for (const [ds, dl] of [[0, -half], [0, half], [length, -half], [length, half]]) {
       Track.toWorld(s + ds, lat(s + ds) + dl, tmp);
       pos.push(tmp.x, tmp.y + 0.02, tmp.z);
     }
@@ -865,19 +866,59 @@ const buildRoad = () => {
     pave(buildStrip(Track.start, Track.end, -HALF, Track.hi, 0));
   } else pave(buildStrip(Track.start, Track.end, Track.lo, Track.hi, 0));
   line(Track.start, Track.end, Track.laneLo);
-  // right edge line: solid, along the outside of the exit / merge lane where there is one. At
-  // each fork it is in two pieces: the expressway's own edge, which runs on under the side
-  // road's pavement from the exit to the merge, and the extra lane's edge, which the side
-  // road's own edge line carries on from. The two meet at the fork and part, like the roads.
-  // A dashed line divides the extra lane from the lane beside it while it is open.
+  // right edge line: solid, along the outside of the exit / merge lane where there is one. A fork is marked
+  // as a real diverge is, and a merge as its mirror image (see CONFIG.ramps):
+  //   - the exit lane opens in a taper, the edge line going out round it and on down the side road's right
+  //   - a lane-drop line, short dashes close together, divides it from the through lane, up to the nose
+  //   - at the nose the two roads part: the expressway's own edge line begins there and runs on to the merge,
+  //     and the side road's left edge line begins there too (see each exit, below). The two solid lines meet
+  //     at that point, and the wedge of pavement between them, as far as the grass, is hatched with chevrons,
+  //     each pointing at the nose's tip (at a fork: against the traffic)
   {
+    const R = CONFIG.ramps, way = {};
+    // the nose at a fork (toward: 1, the roads parting from `at` on the expressway and `side` on the side road) or
+    // a merge (toward: -1, coming together there). q: m from its tip; gap(q): m between the two solid lines there
+    const nose = (at, side, toward) => {
+      const gaps = [];
+      for (let q = 0; q <= R.nose.reach; q += 2) {
+        Track.toWorld(side + toward * q, Track.laneLo(side + toward * q), way);
+        const m = Track.fromWorld(way.x, way.z, at + toward * q, 30);
+        gaps.push(Math.max(0, m.lat - Track.edge(m.s)));
+      }
+      const gap = (q) => { const f = Math.max(0, Math.min(gaps.length - 1.001, q / 2)), i = Math.floor(f); return gaps[i] + (gaps[i + 1] - gaps[i]) * (f - i); };
+      const pos = [], idx = [];
+      const corner = (q, lat) => { const s = at + toward * q; Track.toWorld(s, Track.edge(s) + lat, way); pos.push(way.x, way.y + 0.02, way.z); };
+      for (let q = 0; q < R.nose.reach; q += 0.5) { // (the first chevron: where the wedge is wide enough for one)
+        if (gap(q) < R.nose.from) continue;
+        for (; q < R.nose.reach; q += R.nose.every) {
+          const back = R.nose.sweep * gap(q) / 2; // (how far its arms sweep back from its point)
+          if (gap(q + back + R.nose.thick) > Track.shoulder + 0.3) break; // (the grass begins)
+          for (const arm of [0, 1]) { // (towards the expressway's line, then the side road's)
+            const n = pos.length / 3;
+            for (const d of [0, R.nose.thick]) {
+              corner(q + d, gap(q + d) / 2);
+              corner(q + back + d, arm ? gap(q + back + d) - R.nose.inset : R.nose.inset);
+            }
+            idx.push(n, n + 1, n + 2, n + 1, n + 3, n + 2);
+          }
+        }
+        break;
+      }
+      if (!pos.length) return;
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setIndex(idx);
+      add(geo, lineMat);
+    };
     let from = Track.start;
     for (const x of [...exits].sort((a, b) => a.exitAt - b.exitAt)) {
       line(from, x.exitAt, Track.laneHi);
       line(x.exitAt, x.mergeAt, Track.edge);
-      const open = (s) => Track.extraLane(s) > 0.3;
-      add(buildDashes(x.exitAt - ZONE, x.exitAt, Track.edge, open), lineMat);
-      add(buildDashes(x.mergeAt, x.mergeAt + ZONE, Track.edge, open), lineMat);
+      const open = (s) => Track.extraLane(s) > R.dropLine.from;
+      add(buildDashes(x.exitAt - ZONE, x.exitAt - R.dropLine.length, Track.edge, open, R.dropLine), lineMat);
+      add(buildDashes(x.mergeAt + R.dropLine.spacing - R.dropLine.length, x.mergeAt + ZONE, Track.edge, open, R.dropLine), lineMat);
+      nose(x.exitAt, x.side0, 1);
+      nose(x.mergeAt, x.sideEnd, -1);
       from = x.mergeAt;
     }
     line(from, Track.end, Track.laneHi);
@@ -1020,7 +1061,7 @@ const buildRoad = () => {
     ctx.fillStyle = '#fff';
     ctx.font = 'bold 64px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('EXIT  ↗', 256, 78);
+    ctx.fillText(Track.mirrored ? '↖  EXIT' : 'EXIT  ↗', 256, 78); // (the exit is on the left of a left-hand level)
     ctx.font = 'bold 34px sans-serif';
     const saved = Math.round(x.span - x.length);
     ctx.fillText('side road  ' + (saved >= 0 ? saved + ' m shorter' : -saved + ' m longer'), 256, 128);
@@ -1093,7 +1134,7 @@ const buildRoad = () => {
     const landEdge = (s, sea) => {
       if (edges.has(s)) return edges.get(s);
       let edge = [sea ?? LAND, null];
-      if (exits.some(x => s > x.exitAt - 40 && s < x.mergeAt + 40)) {
+      if (exits.some(x => s >= x.exitAt && s <= x.mergeAt)) { // (only where there is a side road beside it)
         search: for (let d = 0; d < edge[0]; d += 2) {
           Track.toWorld(s, within(s, Track.hi(s) + d), ray);
           for (let k = 0; k < sides.length; k += 4) {
@@ -1103,6 +1144,15 @@ const buildRoad = () => {
       }
       edges.set(s, edge);
       return edge;
+    };
+    // the rows of a stretch of land: one every 6 m, and one just before each fork and just after each merge, so
+    // the land goes right up to where a side road's own begins
+    const rowsOf = (from, to) => {
+      const rows = [];
+      for (let s = from; s < to; s += 6) rows.push(s);
+      rows.push(to);
+      for (const x of exits) rows.push(...[x.exitAt - 0.01, x.exitAt, x.mergeAt, x.mergeAt + 0.01].filter(s => s > from && s < to));
+      return rows.sort((a, b) => a - b);
     };
     const landMesh = (pos, idx, colour) => {
       const geo = new THREE.BufferGeometry();
@@ -1117,7 +1167,7 @@ const buildRoad = () => {
     };
     for (const [from, to, colour, sea] of stretches) {
       const pos = [], idx = [];
-      for (let s = from, n = 0; ; s = Math.min(to, s + 6), n++) {
+      rowsOf(from, to).forEach((s, n) => {
         const [out, y] = landEdge(s, sea);
         // (level right across the road, from the far edge of the land on the left to the pavement's on the right)
         Track.toWorld(s, within(s, Track.lo(s) - LAND), tmp);
@@ -1127,8 +1177,7 @@ const buildRoad = () => {
         Track.toWorld(s, within(s, Track.hi(s) + out), tmp);
         pos.push(tmp.x, y === null ? tmp.y - 0.04 : y - 0.2, tmp.z); // (meeting a side road: just under its own land)
         if (n > 0) { const a = (n - 1) * 3; idx.push(a, a + 1, a + 3, a + 1, a + 4, a + 3, a + 1, a + 2, a + 4, a + 2, a + 5, a + 4); }
-        if (s >= to) break;
-      }
+      });
       landMesh(pos, idx, colour);
     }
     // each side road's own land: a narrow verge on its left, where the expressway's land comes to meet it, and on
@@ -1147,6 +1196,13 @@ const buildRoad = () => {
         rows.push([s, within(s, Track.lo(s) - R.verge), within(s, Track.hi(s) + out)]);
         if (s >= x.sideEnd) break;
       }
+      // (its far edge evened out along the road: how far out it may go changes in steps from bend to bend)
+      const far = rows.map(r => r[2] - Track.hi(r[0]));
+      rows.forEach((r, n) => {
+        let least = Infinity, sum = 0, count = 0;
+        for (let k = Math.max(0, n - 10); k <= Math.min(rows.length - 1, n + 10); k++) { least = Math.min(least, far[k]); sum += far[k]; count++; }
+        r[2] = Track.hi(r[0]) + Math.min(far[n], (least + sum / count) / 2);
+      });
       const pos = [], idx = [];
       rows.forEach(([s, a, b], n) => {
         Track.toWorld(s, a, tmp); pos.push(tmp.x, tmp.y - 0.04, tmp.z);
@@ -1176,7 +1232,7 @@ const buildRoad = () => {
       const pos = [], idx = [];
       let n = 0;
       let met = true; // (no bank where the land meets a side road's)
-      for (let s = from; s <= to; s += 6, n++) {
+      for (const s of rowsOf(from, to)) {
         const before = met;
         met = side > 0 && landEdge(s, sea)[1] !== null;
         const top = within(s, (side < 0 ? Track.lo(s) : Track.hi(s)) + side * (met ? landEdge(s, sea)[0] : out));
@@ -1189,6 +1245,7 @@ const buildRoad = () => {
           const a = (n - 1) * 2;
           idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
         }
+        n++;
       }
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));

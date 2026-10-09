@@ -19,6 +19,23 @@ export const CONFIG = {
     gore: 50,              // m over which that lane opens at the start of the exit zone, and over which
                            // the expressway's pavement blends with the side road's at each fork
     ramp: 110,             // m at each end of a side road that is a single-lane ramp
+    apart: 12,             // m between the expressway's lanes and a side road's, at the least, once they have parted...
+    part: 120,             // ... which they do over this many m from the fork (and to the merge)
+    partEase: 25,          // m each way over which whatever moves a side road out to keep that gap is evened out
+    dropLine: {            // the lane-drop line between the through lane and an exit or merge lane:
+      length: 1.5,         // m each of its dashes is long (a lane line's are CONFIG.dashLength) ...
+      spacing: 3.5,        // ... one every this many m ...
+      width: 0.3,          // ... and this wide: short, fat and close together
+      from: 0.12,          // drawn where that much of the lane's width is open (0 .. 1)
+    },
+    nose: {                // the hatched wedge between the two roads' solid lines at a fork (and a merge):
+      reach: 90,           // m from its tip it is looked for over
+      from: 0.9,           // m apart the lines are where the first chevron stands
+      every: 4.5,          // m from one chevron to the next
+      thick: 0.9,          // m thick each chevron's arms are, along the road
+      sweep: 1.6,          // how far its arms sweep back: this many times half the wedge's width
+      inset: 0.3,          // m its arms stop short of the solid lines
+    },
     laneTaper: 60,         // m over which a side road widens or narrows by its exit's "lanes"
     shapeLead: 130,        // m at each end of a side road an exit's own shape ("out", "bends") leaves alone...
     shapeEase: 120,        // ...and m beyond that it eases in over

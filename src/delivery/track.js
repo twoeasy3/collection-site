@@ -253,6 +253,37 @@ const createTrack = () => {
         if (i) cum[i] = cum[i - 1] + Math.hypot(fine[i][0] - fine[i - 1][0], fine[i][1] - fine[i - 1][1]);
       }
     }
+    // Every side road parts from the expressway the same way, whatever the expressway does there: the near edge
+    // of its lane CONFIG.ramps.apart m or more from the expressway's lanes, that gap opening over its first
+    // CONFIG.ramps.part m and closing over its last (a fork and a merge like a real one's, with a nose between
+    // the two roads: see render/road.js). Where it would lie closer than that (an expressway that runs straight
+    // on past the exit, or bends towards it), each point is moved out, away from the expressway
+    if (shape.exitAt !== undefined) {
+      const first = Math.max(0, Math.floor((shape.exitAt - 20 + LEAD_IN) / STEP)), last = Math.min(mainXs.length - 1, Math.ceil((shape.mergeAt + 20 + LEAD_IN) / STEP));
+      const out = fine.map((p, i) => {
+        let best = Infinity, at = first;
+        for (let k = first; k <= last; k++) {
+          const d = (p[0] - mainXs[k]) ** 2 + (p[1] - mainZs[k]) ** 2;
+          if (d < best) { best = d; at = k; }
+        }
+        const rx = -Math.cos(mainHs[at]), rz = Math.sin(mainHs[at]); // (the expressway's right, there)
+        const gap = (p[0] - mainXs[at]) * rx + (p[1] - mainZs[at]) * rz - RSLOT;
+        return [Math.max(0, X.apart * smooth(Math.min(cum[i], cum[N] - cum[i]) / X.part) - gap), rx, rz];
+      });
+      if (out.some(o => o[0] > 0.05)) {
+        let off = out.map(o => o[0]);
+        const R = Math.max(2, Math.round(X.partEase * N / cum[N])); // (evened out, so it eases in and out)
+        for (let pass = 0; pass < 3; pass++) {
+          const sums = [0];
+          for (let i = 0; i <= N; i++) sums.push(sums[i] + off[i]);
+          off = off.map((_, i) => { const r = Math.min(R, i, N - i); return (sums[i + r + 1] - sums[i - r]) / (2 * r + 1); }); // (over less at each end, where it starts from nothing)
+        }
+        for (let i = 0; i <= N; i++) {
+          fine[i] = [fine[i][0] + out[i][1] * off[i], fine[i][1] + out[i][2] * off[i]];
+          if (i) cum[i] = cum[i - 1] + Math.hypot(fine[i][0] - fine[i - 1][0], fine[i][1] - fine[i - 1][1]);
+        }
+      }
+    }
     // resample at even spacing along its length
     const total = cum[N], n = Math.round(total / STEP), step = total / n;
     const xs = [], zs = [], hs = [];
