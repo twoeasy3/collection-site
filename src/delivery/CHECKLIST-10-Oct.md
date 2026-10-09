@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `e9ebe12` (main), `bb4a64b` (delivery-circuits, finished), `45369f1` (worktree-delivery-batch).
+Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-delivery-batch).
 
 ## Agent 1: port from the discarded city-levels work (`main`)
 
@@ -16,11 +16,11 @@ Last updated: after `e9ebe12` (main), `bb4a64b` (delivery-circuits, finished), `
 - [x] Six-star tier: a car earned on each special level. `37eb71c`
 - [x] Visible damage: dents on the player's car and scorched paint. `fda617c`
 - [x] A horn for each car. `e9ebe12`
-- [~] Postcards album
-- [ ] Milestones wall
+- [x] Postcards album. `e8ccc6c`
+- [~] Milestones wall
 - [-] `gimmick-road-3` and the rest of the duplicate work: discarded on the owner's word
 
-## Agent 2: real circuits (`delivery-circuits`, finished, not yet merged)
+## Agent 2: real circuits (`delivery-circuits`, finished, merged into `main` as `e358d98`)
 
 - [x] `main` merged into the branch. `a401d13`
 - [x] Headless check that all 47 levels build and every race starts; smoke test's labels know `R1..` (test not run). `b256615`
@@ -53,7 +53,7 @@ Last updated: after `e9ebe12` (main), `bb4a64b` (delivery-circuits, finished), `
 - [x] Uncommitted city-levels work stashed (`0201824`), to be dropped once agent 1's port lands
 - [x] Stale Vite server on port 5199 stopped
 - [ ] Merge `worktree-delivery-batch` into `main`
-- [~] Merge `delivery-circuits` into `main`: tried once, held back by agent 1's uncommitted album work in the same files; next try when it commits
+- [x] Merge `delivery-circuits` into `main`. `e358d98` (one conflict, the level card in `render/menu.js`, both sides kept; `delivery-levels-check.mjs` passes on the result: 47 levels build, six races start)
 - [ ] Drop the stash
 
 ## Queue: starts as agents finish (three at a time)
@@ -212,6 +212,28 @@ amphibious levels in the queue.
 
 Pick the most unique theme from what is already in the game first
 
+**Order to build in, by the owner's rule above** (furthest from anything the game has, first;
+orchestrator's ranking):
+
+1. T14 Toy room: nothing in the game changes scale or leaves the outdoors.
+2. T15 Underwater tunnel: no theme is under water or looks out through glass.
+3. T18 Moon base: the only one that changes the physics (low gravity).
+4. T13 Film studio backlot: several fake worlds in one street.
+5. T1 Venice: the first theme where the road itself is water. Amphibious.
+6. T4 Ice road: a road with no land under it, that breaks. Amphibious.
+7. T12 Theme park: rides sharing the road.
+8. T7 Volcano island: the level loses lanes for good as it goes.
+9. T11 Container port: walls and hazards that are machines.
+10. T3 Fjord. Amphibious. (Near snow and coast in look; the ferry slip is what is new.)
+11. T2 Mangrove delta. Amphibious. (Near safari's river and Mumbai's rain.)
+12. T16 Old Wild West. (Near safari's dirt road and the railway.)
+13. T9 Favela hillside. (Near Stelvio's hairpins and the hood.)
+14. T17 Rice terraces. (Near farm and the terrain themes.)
+15. T6 Desert canyon. (Near safari and Bathurst's rock.)
+16. T5 Flooded city. Amphibious. (The city theme, wet.)
+17. T10 Night market. (Near Hong Kong and Tokyo.)
+18. T8 Autumn countryside. (The farm theme in other colours.)
+
 - [ ] T1. **Venice** ★: the road is a quay between palazzi, humped bridges, striped mooring poles,
       and the canal itself for the water stretches. Gimmick: acqua alta, the square floods on a
       timer and the quay becomes water. Boat traffic: gondolas (slow), vaporetti (the bus), water
@@ -281,5 +303,6 @@ Pick the most unique theme from what is already in the game first
       far. Different from the space theme, which has no ground. Reuses: space's sky, potholes,
       the jump physics.
 
-If only a few are built: T1 to T5 go with the amphibious levels; T7, T11 and T14 bring the most
-that is new to play; T8 and T10 are the cheapest, being mostly new colours on existing scenery.
+The five starred ones go with the amphibious levels in the queue; taken in the order above that is
+Venice, ice road, fjord, mangrove delta, flooded city. T8 and T10 are the cheapest to build, being
+mostly new colours on existing scenery, which is also why they are last.
