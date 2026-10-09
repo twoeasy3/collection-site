@@ -326,5 +326,31 @@
     "turretHull": ["You found a tank turret hull!"],
     "gunTurret": ["You found a tank gun turret!"],
     "gunBarrel": ["You found a tank gun barrel!"]
+  },
+  "milestones": {
+    "packagesLanded_10": ["10 packages landed: Paper boy"],
+    "packagesLanded_100": ["100 packages landed: Postie"],
+    "packagesLanded_1000": ["1000 packages landed: Postmaster General"],
+    "copsOutrun_5": ["5 cops outrun: Lead foot"],
+    "copsOutrun_50": ["50 cops outrun: Smokey's nightmare"],
+    "copsOutrun_500": ["500 cops outrun: The Bandit"],
+    "hipposSurvived_1": ["1 hippo survived: Close shave"],
+    "hipposSurvived_10": ["10 hippos survived: River dancer"],
+    "hipposSurvived_100": ["100 hippos survived: Hippo whisperer"],
+    "levelsDelivered_1": ["1 level delivered: On the payroll"],
+    "levelsDelivered_10": ["10 levels delivered: Regular"],
+    "levelsDelivered_35": ["35 levels delivered: Employee of the month"],
+    "wrecks_1": ["1 wreck: It happens"],
+    "wrecks_25": ["25 wrecks: Insurance risk"],
+    "wrecks_250": ["250 wrecks: Crash test dummy"],
+    "busts_1": ["1 bust: A caution"],
+    "busts_25": ["25 busts: Known to police"],
+    "busts_250": ["250 busts: Most wanted"],
+    "trainsDodged_1": ["1 train dodged: Mind the gap"],
+    "trainsDodged_10": ["10 trains dodged: Level crossing"],
+    "trainsDodged_100": ["100 trains dodged: Trainspotter"],
+    "kmDriven_10": ["10 km driven: Round the block"],
+    "kmDriven_100": ["100 km driven: Road trip"],
+    "kmDriven_1000": ["1000 km driven: High mileage"]
   }
 }

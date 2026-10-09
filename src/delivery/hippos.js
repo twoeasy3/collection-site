@@ -9,6 +9,7 @@
 // This is the movement and the damage; render/hippos.js draws it.
 // ============================================================================
 import { CONFIG } from './config.js';
+import { Progress } from './progress.js';
 import { LEVEL } from './levels.js';
 import { Track } from './track.js';
 import { Player } from './player.js';
@@ -84,6 +85,8 @@ export const Hippos = {
       trample(h.s, h.lat, H.hl, H.hw);
     }
     // gone once it is well into the grass on the far side, or left behind
+    // (one across and into the grass near the player, which is still in one piece: survived, a milestone counter: see milestones.js)
+    for (const h of this.list) if (!h.counted && h.lat <= Track.lo(h.s) && Player.active && Player.health > 0 && Math.abs(h.s - Player.s) < CONFIG.milestones.hippoNear) { h.counted = true; Progress.count('hipposSurvived'); }
     this.list = this.list.filter(h => h.lat > Track.lo(h.s) - H.beyond && h.s > Player.s - CONFIG.despawnBehind);
   },
   // one surfacing in the river beside the road at s

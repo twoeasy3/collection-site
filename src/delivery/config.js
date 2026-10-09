@@ -773,6 +773,11 @@ export const CONFIG = {
   // geometry is swapped for a more crumpled one (vertices shoved `amount` of the body's size per step,
   // the same way every time); the paint darkens toward black by `scorch` at full damage
   dents: { steps: [0.25, 0.5, 0.75], amount: 0.06, scorch: 0.35 },
+  // milestones (milestones.js): the thresholds each counter in the save's stats has a title for
+  // (messages.json: milestones). A police car is outrun once it is `outrun` m behind the player (having been
+  // near enough to see it) without a bust; a hippo survived is one that crossed within hippoNear m of the player
+  milestones: { packagesLanded: [10, 100, 1000], copsOutrun: [5, 50, 500], hipposSurvived: [1, 10, 100], levelsDelivered: [1, 10, 35],
+    wrecks: [1, 25, 250], busts: [1, 25, 250], trainsDodged: [1, 10, 100], kmDriven: [10, 100, 1000], outrun: 60, hippoNear: 120 },
   // a police car on station at the edge of its stretch (see Traffic: policeOnStation) stops this many m
   // short of the edge, braking at no more than stationBrake m/s^2 to do it
   stationShort: 3,

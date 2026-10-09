@@ -24,6 +24,7 @@ import { Site } from './site.js';
 import { Hazards } from './hazards.js';
 import { Social } from './social.js';
 import { Mysteries } from './mysteries.js';
+import { Milestones } from './milestones.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -191,6 +192,7 @@ export const Game = {
     Crossings.reset();
     StopGo.reset();
     Hazards.reset();
+    Milestones.reset();
     WaterMains.reset();
     if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
@@ -362,6 +364,7 @@ export const Game = {
     if (playing) Site.update(dt);
     if (playing) Hazards.update(dt);
     if (playing) Mysteries.update(dt);
+    if (playing) Milestones.update(dt); // (the counters watched each step: see milestones.js)
     if (playing) Social.update(dt);
     Packages.update(dt);
     Pickups.update();

@@ -339,3 +339,13 @@ body.in-garage #touchControls { display: none; }
 .postcard.locked { background: #3a404b; color: #aab1bd; box-shadow: none; }
 .postcard.locked .photo { background: #2a2f38; }
 .postcard.locked .caption { font: 13px/1.4 system-ui, sans-serif; }
+/* the milestones wall: a row for each counter, its count and its plaques (lit once earned) */
+.overlay.panel .wall { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 900px; padding-bottom: 24px; }
+.overlay.panel .wall .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: stretch; background: #262c37; border-radius: 10px; padding: 10px; text-align: left; }
+.overlay.panel .wall .counter { flex: 0 0 150px; display: flex; flex-direction: column; justify-content: center; }
+.overlay.panel .wall .counter span { font-size: 26px; font-weight: 700; color: #ffd23f; }
+.overlay.panel .wall .plaques { flex: 1 1 300px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.overlay.panel .wall .plaque { display: flex; flex-direction: column; gap: 2px; justify-content: center; padding: 8px 10px; border-radius: 8px;
+  border: 2px solid #3a414e; background: #1b2029; color: #7d8594; }
+.overlay.panel .wall .plaque small { font-size: 12px; }
+.overlay.panel .wall .plaque.lit { border-color: #ffd23f; background: #4a3d12; color: #fff; }

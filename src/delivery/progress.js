@@ -35,6 +35,7 @@ const fresh = () => ({
   raceTrack: 'marina-bay', // the race screensaver's circuit: a lapped level's id, or 'all' (each in turn)
   tankPieces: 0,   // TANK RAGE pieces found so far (0-4), carried from one level to the next
   evil: false,     // the side picked on the menu
+  stats: {},       // milestone counters, by name (packagesLanded, copsOutrun, kmDriven...: see milestones.js), across every run
   levelOrder: LEVEL_ORDER, // the order of levels `unlocked` counts by
 });
 
@@ -60,6 +61,7 @@ const read = () => {
     if (!saved) return fresh();
     const data = { ...fresh(), ...saved };
     data.bestTime = { good: {}, evil: {}, ...saved.bestTime }; // (a save from before best times has none)
+    data.stats = { ...(saved.stats || {}) }; // (nor counters)
     // (the Commuter and the Darkvan were saved as 'hatch' and 'coupe')
     const RENAMED = { hatch: 'commuter', coupe: 'darkvan' };
     data.cars = [...new Set(data.cars.map(id => RENAMED[id] || id))];
@@ -76,10 +78,12 @@ const read = () => {
   }
 };
 
+const COUNT_SAVE_EVERY = 5000; // ms between saves of the milestone counters during a run (see Progress.count)
 export const Progress = {
   data: read(),
 
   save() {
+    this.countDirty = false;
     const text = JSON.stringify(this.data);
     document.cookie = COOKIE + '=' + encodeURIComponent(text) + '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
     try { localStorage.setItem(BACKUP, text); } catch { /* (no storage: the cookie alone) */ }
@@ -97,6 +101,20 @@ export const Progress = {
   },
   // the best time to spare on a level, for a side (undefined: not delivered on that side yet)
   bestTime(id, evil) { return this.data.bestTime[evil ? 'evil' : 'good'][id]; },
+  // a milestone counter (see milestones.js) bumped by n (kept to two decimal places: the save is a cookie).
+  // Saved lazily: at most once every COUNT_SAVE_EVERY ms, and flush() writes what is pending (at the end
+  // of a run). onCount, if set, hears of every bump: (key, before, after)
+  onCount: null,
+  countSaved: 0,   // ms when the counters were last saved
+  countDirty: false,
+  count(key, n = 1) {
+    const before = this.data.stats[key] || 0, after = Math.round((before + n) * 100) / 100;
+    this.data.stats[key] = after;
+    if (this.onCount) this.onCount(key, before, after);
+    const now = Date.now();
+    if (now - this.countSaved >= COUNT_SAVE_EVERY) { this.countSaved = now; this.save(); } else this.countDirty = true;
+  },
+  flush() { if (this.countDirty) this.save(); },
   // (an earned car, a 6-star one, is owned once its level's par is beaten: see earned())
   owns(carId) {
     return this.data.cars.includes(carId) || this.earnedCars.some(car => car.id === carId && this.earned(car));
