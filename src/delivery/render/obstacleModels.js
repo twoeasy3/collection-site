@@ -2,6 +2,7 @@
 // The models alone (no game state, nothing added to a scene): built here so the game and the menu's pages
 // (see ../gimmicks.js) can both use them. Each faces local +z, its feet on y = 0.
 import * as THREE from 'three';
+import { makeWorker } from './siteModels.js';
 
 const lambert = (color) => new THREE.MeshLambertMaterial({ color });
 // a model made of boxes: parts are [material, width, height, length, x, y, z]
@@ -17,6 +18,36 @@ const boxModel = (parts) => {
 
 // ---- obstacle models, one builder per kind; all face local +z -------------------------------
 export const OBSTACLE_MODELS = {
+  // a bandsman in a parade: a marcher in a red tunic and a tall hat, a drum slung in front
+  marcher: () => {
+    const g = makeWorker();
+    const red = lambert(0xc81e1e), gold = lambert(0xe6c15a), navy = lambert(0x1d2a4f);
+    g.children[2].material = red;                      // the tunic
+    for (const k of [3, 4]) g.children[k].material = red; // the arms
+    g.children[5].material = lambert(0xf2d2b8);        // (bare-headed under the hat)
+    g.children[6].material = navy;                     // the hat...
+    g.children[6].scale.set(1, 3, 1);                  // ...a tall one
+    g.children[6].position.y = 2.0;
+    const drum = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.3, 12), gold);
+    drum.rotation.x = Math.PI / 2;
+    drum.position.set(0, 1.0, 0.36);
+    g.add(drum);
+    return g;
+  },
+  // falling cargo: a wooden crate, and a loose tyre on its side
+  crate: (o) => boxModel([
+    [lambert(0xb8894a), o.hw * 2, o.height, o.hl * 2, 0, o.height / 2, 0],
+    [lambert(0x6b4a2b), o.hw * 2 + 0.04, 0.08, 0.12, 0, o.height / 2, 0],
+    [lambert(0x6b4a2b), 0.12, 0.08, o.hl * 2 + 0.04, 0, o.height / 2, 0],
+  ]),
+  tyre: (o) => {
+    const t = new THREE.Mesh(new THREE.TorusGeometry(o.hw * 0.7, o.hw * 0.3, 8, 16), lambert(0x141414));
+    t.rotation.x = Math.PI / 2;
+    t.position.y = o.hw * 0.3;
+    const g = new THREE.Group();
+    g.add(t);
+    return g;
+  },
   // a beach umbrella: a pole with a striped canopy
   umbrella: (o) => {
     const group = boxModel([[lambert(0xf4f4f4), 0.1, o.height - 0.5, 0.1, 0, (o.height - 0.5) / 2, 0]]);

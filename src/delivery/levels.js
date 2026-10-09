@@ -200,6 +200,14 @@
 //              a geyser up out of the road, and while it sprays the road round it is as slippery as ice
 //              (see watermains.js and CONFIG.waterMain); every: { min, max } s between bursts, if not CONFIG's
 //   (a herd, "herds", with stay: true never leaves the road: it turns back at the lane lines, and never rests)
+//   parades    { s, speed? }: a street parade at s: a float in every lane of the player's side, abreast, a marching
+//              band behind, all off at a crawl the player's way as the player comes near, taking the whole road
+//              (see CONFIG.parade). A bandsman knocked down in front of the police is a bust
+//   roadblocks { s, gap? }: a police roadblock: police cars across every lane of the player's side but one (gap:
+//              which; left out, any, each run). Touching one is a bust, unless the car has a radar detector; with
+//              a siren going the police pull aside and wave the player through (see CONFIG.roadblock)
+//   (a traffic kind that sheds, "cargotruck", drops crates, bales and tyres off the back as it goes, a little
+//              way ahead of the player: obstacles, sliding on and stopping. See CONFIG.cargo)
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side, out?, height? }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall). out / height: where they wait,

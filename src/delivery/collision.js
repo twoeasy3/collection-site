@@ -245,6 +245,8 @@ export const Collision = (() => {
     camera: [0.3, 0.3, 4.2], rock: [1, 1, 2], cyclist: [0.35, 0.95, 2.1],
     // the Battlefield's: a landmine in a lane (see landmines below)
     landmine: [0.75, 0.75, 0.4],
+    // a parade's bandsman (see parades below); and falling cargo, shed off a truck (see Cargo)
+    marcher: [0.35, 0.35, 2.3], crate: [0.6, 0.6, 1.1], tyre: [0.5, 0.5, 0.35],
   };
   const obstacles = [];
   const add = (kind, s, lat, extra) => {
@@ -330,6 +332,24 @@ export const Collision = (() => {
         const ride = { s0: s, row, dir, speed: p.speed || P.speed, trigger: p.trigger || P.trigger, on: false, t: Math.random() * 9 };
         add('cyclist', s, kerbLat(ride, s), { ride, face: dir < 0 ? Math.PI : 0 });
       }
+    }
+    // a parade's marching band: rows of bandsmen across the player's lanes, behind the floats (Traffic puts the
+    // floats out: see placeFixed), waiting to step off as the parade does (see CONFIG.parade)
+    (LEVEL.parades || []).forEach((p, id) => {
+      const P = CONFIG.parade, s0 = Track.place(p), [first, last] = Track.laneRange(1, s0);
+      const lo = Track.laneOffset(first, s0) - CONFIG.laneWidth / 2 + 0.6, hi = Track.laneOffset(last, s0) + CONFIG.laneWidth / 2 - 0.6;
+      const across = Math.max(2, Math.round((hi - lo) / 1.4) + 1);
+      for (let row = 0; row < P.rows; row++) {
+        for (let k = 0; k < across; k++) {
+          const s = s0 - CONFIG.vehicles.float.hl - P.gapBehind - row * P.spacing;
+          add('marcher', s, lo + (hi - lo) * k / (across - 1), { march: { id, s0: s, start: s0 - P.trigger, speed: p.speed || P.speed, on: false, t: Math.random() * 9 } });
+        }
+      }
+    });
+    // falling cargo: a pool of loose loads, out of play ("gone") until a shedding truck drops one (see Cargo)
+    if (Object.keys(LEVEL.traffic || {}).some(k => CONFIG.vehicles[k]?.sheds) || (LEVEL.trafficZones || []).some(z => Object.keys(z.traffic).some(k => CONFIG.vehicles[k]?.sheds))) {
+      const kinds = CONFIG.cargo.kinds;
+      for (let i = 0; i < CONFIG.cargo.pool; i++) add(kinds[i % kinds.length], 0, 0, { cargo: true, gone: true, slide: 0 });
     }
     for (const z of LEVEL.dropBears || []) { // (each somewhere in its stretch, anywhere across the road)
       for (let i = 0; i < (z.count || 3); i++) {
@@ -588,6 +608,18 @@ export const Collision = (() => {
             if (Math.abs(o.s - Player.s) < 40) Game.shake = Math.max(Game.shake, 0.5);
           }
         }
+      } else if (o.march) { // a bandsman: waiting until the parade steps off, then marching behind the floats
+        const m = o.march;
+        if (!m.on && Player.s > m.start) m.on = true;
+        m.t += dt;
+        if (m.on) o.s += m.speed * dt;
+        o.h = m.on ? Math.abs(Math.sin(m.t * 5)) * 0.08 : 0; // (the step)
+      } else if (o.cargo) { // a load off a truck: sliding on down the road, slowing, until it stops
+        if (o.slide > 0.1) {
+          o.s += o.slide * dt;
+          o.slide = Math.max(0, o.slide - CONFIG.cargo.drag * dt);
+          o.face += dt * o.slide * 0.3;
+        }
       } else if (o.ride) { // a cyclist: waiting until the player comes near, then riding along by the kerb
         const P = CONFIG.peloton, w = o.ride;
         if (!w.on && w.s0 - Player.s < w.trigger) w.on = true;
@@ -688,7 +720,7 @@ export const Collision = (() => {
       // (a cyclist goes up on its own, small, its wheels flying: the rest of the bunch rides on)
       FxQueue.push(o.ride ? { type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false, scale: 0.55, smoke: 0.5, tyres: true }
         : { type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false });
-      if (o.kind === 'cyclist' && Traffic.policeNear()) Player.bust('cyclist'); // (knocking a cyclist off in front of the police)
+      if ((o.kind === 'cyclist' || o.kind === 'marcher') && Traffic.policeNear()) Player.bust('cyclist'); // (knocking a cyclist, or a bandsman, down in front of the police)
     }
   };
   // a dancing portaloo, `t` s into its row's dance (every one in a row keeps time with the rest)
@@ -752,6 +784,17 @@ export const Collision = (() => {
         o.s = o.ride.s0;
         o.ride.on = false;
         o.lat = kerbLat(o.ride, o.s);
+        continue;
+      }
+      if (o.march) { // a bandsman back in his row behind the floats
+        o.s = o.march.s0;
+        o.march.on = false;
+        o.h = 0;
+        continue;
+      }
+      if (o.cargo) { // a load back on its truck, so to speak
+        o.gone = true;
+        o.slide = 0;
         continue;
       }
       if (o.migrate) { // back to where it started out in the herd

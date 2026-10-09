@@ -7,9 +7,12 @@
   "tip": 200,
   "lanes": 4,
   "speedLimit": 80,
-  "traffic": { "keitruck": 0.32, "taxi": 0.16, "commuter": 0.14, "darkvan": 0.1, "semi": 0.1, "sport": 0.08, "miata": 0.06, "police": 0.04 },
+  "traffic": { "keitruck": 0.32, "taxi": 0.16, "commuter": 0.14, "darkvan": 0.1, "semi": 0.06, "cargotruck": 0.06, "sport": 0.08, "miata": 0.06, "police": 0.04 },
   "trafficCount": 12,
   "oncomingCount": 10,
+  "roadblocks": [
+    { "s": 2150 }
+  ],
   "segments": [
     { "length": 450, "curve": 0 },
     { "length": 400, "curve": 0.0022 },

@@ -474,6 +474,10 @@ export const CONFIG = {
     rock: { damage: 25, speedKept: 0.6 },
     cyclist: { damage: 12, speedKept: 0.85, light: true },
     landmine: { damage: 0, speedKept: 1 }, // (no ordinary knock: it destroys whatever touches it outright, see Collision)
+    marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
+    // falling cargo (a shedding truck's load: see CONFIG.cargo): bales, crates and tyres
+    crate: { damage: 18, speedKept: 0.75 },
+    tyre: { damage: 8, speedKept: 0.85, light: true },
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -624,6 +628,41 @@ export const CONFIG = {
     postvan: { hw: 0.9, hl: 2.1, height: 1.85, mass: 1.2, health: 90, model: 'postvan' },
     // an auto-rickshaw (Mumbai's): small, slow, nimble and flimsy, and painted the one way (livery)
     rickshaw: { hw: 0.65, hl: 1.25, height: 1.75, mass: 0.5, health: 35, speed: 0.75, model: 'rickshaw', agility: 1.6, livery: 0xf2c418 },
+    // a parade float (a level's "parades": see CONFIG.parade): a long flatbed under a tower of colour, at a
+    // crawl, keeping its lane; never evil, never spun
+    float:   { hw: 1.3,  hl: 4.2, height: 3.4, mass: 3.5, health: 240, speed: 1, special: true, model: 'float', noSpin: true, crit: 0 },
+    // a cargo truck (an 18-wheeler with an open load) that sheds its load as it goes: see CONFIG.cargo
+    cargotruck: { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 20, max: 24 }, noSpin: true, sheds: true, special: true },
+  },
+  // a street parade (a level's "parades": { s }): floats abreast in every lane of the player's side at s,
+  // a marching band behind them, all going the player's way at a crawl, taking the whole road; set off as
+  // the player comes within `trigger` m, and never pulling over. The band's drum is heard from `heard` m
+  parade: {
+    speed: 3.5,            // m/s
+    trigger: 260,          // m short of it the parade sets off
+    rows: 3,               // rows of marchers behind the floats...
+    spacing: 2.2,          // ...this far apart
+    gapBehind: 9,          // m from the floats' tails to the first row
+    drumEvery: 0.55,       // s between beats
+    heard: 220,            // m
+  },
+  // falling cargo: a truck that sheds its load (a traffic kind with sheds: true, the cargo truck) drops a crate,
+  // a bale or a tyre off the back now and then, anywhere across its lane and a little either side, which
+  // slides on down the road a way and stops: an obstacle, the player's to hit (see Collision)
+  cargo: {
+    pool: 14,              // loads a level has to drop, all told, out of play until dropped (reused once well behind the player)
+    kinds: ['crate', 'bale', 'tyre', 'crate'],
+    every: { min: 3, max: 7 }, // s between drops, while a truck is within `near` m ahead of the player
+    near: 180,
+    drag: 6,               // m/s^2 a dropped load slows at (it comes off at the truck's speed, less a little)
+  },
+  // a police roadblock (a level's "roadblocks": { s, gap? }): police cars parked across every lane of the
+  // player's side but one (gap: that lane; left out, one at random each run). Touching one is a bust (not
+  // with a radar detector); with a siren going, the player is waved through: the cars pull aside
+  roadblock: {
+    wave: 160,             // m short of it a siren has the cars pulling aside
+    aside: 3,              // m/s they move
+    warn: 220,             // m short of it the player is warned
   },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)

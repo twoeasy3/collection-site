@@ -806,6 +806,16 @@ const createTrack = () => {
       else if (t.to - t.from < 60) problems.push('tunnel at ' + t.from + ': too short (60 m at least)');
       for (const x of exits) if (overlaps(t.from - 20, t.to + 20, x.exitAt - X.laneZone, x.mergeAt + X.laneZone)) problems.push('tunnel at ' + t.from + ': an exit\'s ramps are in it');
     }
+    for (const p of LEVEL.parades || []) {
+      if (!(p.s >= 0 && p.s <= length)) problems.push('parade at ' + p.s + ': beyond the road');
+      else if (FLOW === 'south') problems.push('parade at ' + p.s + ': there is no side going the player\'s way for it');
+    }
+    for (const r of LEVEL.roadblocks || []) {
+      const [first, last] = laneRange(1, r.s || 0);
+      if (!(r.s >= 0 && r.s <= length)) problems.push('roadblock at ' + r.s + ': beyond the road');
+      else if (last - first < 1) problems.push('roadblock at ' + r.s + ': the player\'s side needs two lanes or more, for a gap');
+      else if (r.gap !== undefined && !(Number.isInteger(r.gap) && r.gap >= first && r.gap <= last)) problems.push('roadblock at ' + r.s + ': gap is a lane on the player\'s side (' + first + ' to ' + last + ')');
+    }
     for (const m of LEVEL.waterMains || []) {
       if (!(m.s >= 0 && m.s <= length)) problems.push('water main at ' + m.s + ': beyond the road');
       else if (m.lane !== undefined && !(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road (or no lane: the centre line)');

@@ -21,6 +21,9 @@
     { "length": 300, "curve": -0.002 },
     { "length": 400, "curve": 0 }
   ],
+  "parades": [
+    { "s": 2300 }
+  ],
   "waterMains": [
     { "s": 520, "lane": 2 },
     { "s": 980, "lane": 3 },

@@ -86,6 +86,8 @@ const SAMPLES = {
   bell: null,                   // a level crossing's bell, ringing while its lights flash
   jet: null,                    // a jet screaming over (the Battlefield's airstrikes)
   waterMain: null,              // a water main bursting up through the road
+  drum: null,                   // a parade's bass drum
+  cargoDrop: ['Collide1', 'Plop Up'], // a load coming off a truck
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -302,6 +304,8 @@ Object.assign(SYNTH, {
   jet: (v) => { noise(400, 3200, 1.8, 0.5 * v, 'bandpass'); noise(3000, 300, 1.4, 0.35 * v, 'bandpass', 1.2); tone(180, 90, 2.4, 0.12 * v, 'sawtooth'); },
   // a water main bursting: a thump under the road, and the hiss and rush of the water
   waterMain: (v) => { tone(90, 40, 0.3, 0.4 * v); noise(2400, 900, 2.5, 0.35 * v, 'bandpass', 0.1); },
+  drum: (v) => { tone(110, 45, 0.22, 0.5 * v); noise(600, 200, 0.08, 0.2 * v); },
+  cargoDrop: (v) => { noise(900, 200, 0.2, 0.5 * v); tone(140, 60, 0.15, 0.3 * v, 'square'); },
 });
 
 export const Sound = {

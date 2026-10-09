@@ -243,6 +243,8 @@ export const Traffic = (() => {
     car.blockedFor = 0; car.blockedBy = null; car.clearThrow = 0;
     car.punctured = car.stationed = car.escaping = car.wrongWay = false; car.driveBy = car.stationEdge = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
     car.rivalName = car.colors = car.markColor = null; car.counted = false;
+    car.parade = car.roadblock = null; // (a float in a parade, a car in a roadblock: see placeFixed)
+    car.shedSaid = false; car.shedWait = undefined; // (a shedding truck: see shed)
     car.smoke = 0;
     car.lane = lane;
     car.lat = Track.laneOffset(lane, car.s);
@@ -379,6 +381,57 @@ export const Traffic = (() => {
       Object.assign(car, { fixed: true, parked: true, parkSide: side, viaSide: false, evil: false, defiant: false,
         baseSpeed: 0, vs: 0, lat: parkedLat(side, car.s), hazards: true });
     }
+    // a car from the pool for something the level puts out going the player's way: a spare, or one of the
+    // player's way's own
+    const spareNorth = () => cars.find(c => !c.active && c.unused) || cars.find(c => !c.active && !c.unused && c.dir > 0);
+    // ...and a street parade's floats (a level's "parades": see CONFIG.parade): one in every lane of the
+    // player's side at s, abreast, waiting to step off as the player comes near (the band behind them, and
+    // the drum: see Collision's marchers, and update)
+    (LEVEL.parades || []).forEach((p, id) => {
+      const s = Track.place(p), [first, last] = Track.laneRange(1, s), shared = { beat: 0, said: false };
+      for (let lane = first; lane <= last; lane++) {
+        const car = spareNorth();
+        if (!car) break;
+        car.dir = 1;
+        car.bound = 'north';
+        car.s = s;
+        outfit(car, 'float', lane);
+        Object.assign(car, { fixed: true, parade: { id, lead: lane === first, shared }, viaSide: false, evil: false, defiant: false, hesitant: false,
+          baseSpeed: p.speed || CONFIG.parade.speed, vs: 0, paint: id * 7 + lane, showMood: false });
+      }
+    });
+    // ...and a police roadblock's cars (a level's "roadblocks": see CONFIG.roadblock): one across every lane of
+    // the player's side at s but the gap (the roadblock's own, or one at random each run), lights going
+    for (const r of LEVEL.roadblocks || []) {
+      const s = Track.place(r), [first, last] = Track.laneRange(1, s), shared = { said: false, waved: false };
+      const gap = r.gap !== undefined ? r.gap : first + Math.floor(Math.random() * (last - first + 1));
+      for (let lane = first; lane <= last; lane++) {
+        if (lane === gap) continue;
+        const car = spareNorth();
+        if (!car) break;
+        car.dir = 1;
+        car.bound = 'north';
+        car.s = s;
+        outfit(car, 'police', lane);
+        Object.assign(car, { fixed: true, roadblock: { side: lane - first < (last - first) / 2 ? -1 : 1, shared }, viaSide: false, evil: false, defiant: false, hesitant: false,
+          baseSpeed: 0, vs: 0, yaw: Math.PI / 2, showMood: false });
+      }
+    }
+  };
+  // a shedding truck (a kind with sheds: true, see CONFIG.cargo): while it is ahead of the player and near,
+  // now and then a load off the back, anywhere across its lane and a little either side, which slides on
+  // down the road and stops: one of the level's pool of loads (see Collision), the first out of play or
+  // left well behind
+  const shed = (car, dt) => {
+    const C = CONFIG.cargo, ahead = car.s - Player.s;
+    if (ahead < 0 || ahead > C.near) return;
+    if (!car.shedSaid) { car.shedSaid = true; Message.say('events', 'cargo'); }
+    if ((car.shedWait = (car.shedWait ?? between(C.every)) - dt) > 0) return;
+    car.shedWait = between(C.every);
+    const load = Collision.obstacles.find(o => o.cargo && (o.gone || o.s < Player.s - 300));
+    if (!load) return;
+    Object.assign(load, { gone: false, s: car.s - car.hl - 1, lat: car.lat + (Math.random() - 0.5) * 2 * (car.hw + 0.6), slide: Math.max(0, Math.abs(car.vs) - 4), face: 0, h: 0 });
+    sfxAt('cargoDrop', car.s, 0.7);
   };
 
   // a racer on the grid (a level's "grid") at s, in that lane: false if the pool has no car spare.
@@ -435,7 +488,7 @@ export const Traffic = (() => {
   // how a traffic driver treats the player (see CONFIG.attitude): by its side, its mood and the
   // player's side. null: it pays the player no special attention. (Not racers, who have race rules
   // of their own; nor the police, ambulances, nor trucks and tractors, which keep to themselves)
-  const minds = (car) => Player.active && !LEVEL.battle && !car.racer && !car.procession && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
+  const minds = (car) => Player.active && !LEVEL.battle && !car.racer && !car.procession && !car.parade && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
     !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir;
   const attitude = (car) => {
     if (!minds(car)) return null;
@@ -878,7 +931,7 @@ export const Traffic = (() => {
   };
   // a horn to suit the vehicle (police cars have sirens instead), only near the player. (Nobody at war
   // or in a race honks: an army's vehicles, a race's grid)
-  const noHorn = (car) => LEVEL.battle || car.racer;
+  const noHorn = (car) => LEVEL.battle || car.racer || car.parade;
   const HORNS = { commuter: 'hornSmall', sport: 'hornSmall', darkvan: 'hornBig', van: 'hornBig', tractor: 'hornBig', bus: 'hornBus' };
   const honk = (car) => {
     if (car.kind === 'police' || noHorn(car) || car.honkWait > 0 || Math.abs(car.s - Player.s) > CONFIG.hornRange) return;
@@ -934,7 +987,7 @@ export const Traffic = (() => {
   };
 
   const think = (car) => {
-    if (car.punctured || car.stationed || car.procession) return; // (pulled over with a flat, a police car on station, or in a funeral procession)
+    if (car.punctured || car.stationed || car.procession || car.parade) return; // (pulled over with a flat, a police car on station, in a funeral procession, or a parade's float)
     if (car.kind === 'tractor' || CONFIG.vehicles[car.kind].kerb) return; // a tractor just trundles along its lane, and a truck keeps to the kerb
     if (car.pendingLane !== null) return; // (already signalling for a move)
     if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
@@ -1482,6 +1535,27 @@ export const Traffic = (() => {
         keepOnRoad(car, 0);
         continue;
       }
+      if (car.roadblock) { // a roadblock's car: parked across its lane, lights going; a siren has it pull aside
+        const R = CONFIG.roadblock, rb = car.roadblock, sh = rb.shared;
+        car.vs = car.latVel = car.yawVel = 0;
+        car.yaw = Math.PI / 2;
+        car.braking = car.hazards = false;
+        if (!sh.said && Player.active && car.s - Player.s > 0 && car.s - Player.s < R.warn) { sh.said = true; Message.say('events', 'roadblock'); }
+        if (!sh.waved && Player.siren > 0 && Player.active && car.s - Player.s > 0 && car.s - Player.s < R.wave) { sh.waved = true; Message.say('events', 'roadblockWaved'); }
+        if (sh.waved) { // over to the shoulder on its side, and clear of the lanes
+          const want = Track.shoulderOffset(rb.side, car.s) + rb.side * 1.2;
+          car.lat += Math.sign(want - car.lat) * Math.min(Math.abs(want - car.lat), R.aside * dt);
+        }
+        continue;
+      }
+      if (car.parade) { // a float: the parade's lead float keeps the band's drum going, and says the parade is coming
+        const P = CONFIG.parade, sh = car.parade.shared;
+        if (car.parade.lead && Player.active && Math.abs(car.s - Player.s) < P.heard) {
+          if ((sh.beat -= dt) <= 0) { sh.beat = P.drumEvery; sfxAt('drum', car.s, 0.8); }
+          if (!sh.said && car.s > Player.s) { sh.said = true; Message.say('events', 'parade'); }
+        }
+      }
+      if (CONFIG.vehicles[car.kind].sheds && car.dir === Player.dir && Player.active) shed(car, dt);
       // ice: a car hitting a patch may spin out (and blow up), the likelier the faster it is going
       // (not one that is parked, nor an ambulance)
       const icy = !!Track.icy(car.s, car.lat);

@@ -699,6 +699,44 @@ export const MODELS = {
     return group;
   },
 
+  // A parade float: a long low flatbed on small wheels with a skirt of bunting round it, a tower of
+  // colour on top (tiers of boxes in the paint and its friends), a banner across the front, balloons
+  // on strings swaying over it all. It rolls and the balloons bob as it goes
+  float: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.32;
+    const paint = lambert(car.color), trim = lambert(TRIM), steel = lambert(0xb8bcc4);
+    const COLOURS = [0xff6ad5, 0x27e7ff, 0xffe12b, 0x7cff3a, 0xff5a3a].map(lambert);
+    const deck = box(group, trim, w, 0.3, l, 0, 0.75, 0);                                 // the flatbed
+    for (const side of [-1, 1]) {                                                        // its skirt of bunting, in stripes
+      for (let z = -l / 2, k = 0; z < l / 2; z += 0.6, k++) box(group, COLOURS[k % COLOURS.length], 0.06, 0.55, 0.58, side * (w / 2 + 0.02), 0.5, z + 0.3);
+    }
+    const body = box(group, paint, w * 0.8, 1.0, l * 0.6, 0, 1.4, -l * 0.05);             // the tiers
+    box(group, COLOURS[0], w * 0.6, 0.8, l * 0.42, 0, 2.3, -l * 0.08);
+    box(group, COLOURS[1], w * 0.4, 0.7, l * 0.26, 0, 3.05, -l * 0.1);
+    const star = new THREE.Mesh(new THREE.OctahedronGeometry(0.4, 0), new THREE.MeshBasicMaterial({ color: 0xffe066 }));
+    star.position.set(0, 3.7, -l * 0.1);
+    group.add(star);
+    box(group, COLOURS[2], w * 0.9, 0.7, 0.08, 0, 1.5, l / 2 - 0.1);                      // the banner across the front
+    box(group, lambert(0xf2f2f2), w * 0.8, 0.14, 0.09, 0, 1.5, l / 2 - 0.09);              // (its lettering, a pale stripe)
+    const balloons = [];
+    for (let k = 0; k < 6; k++) {                                                          // balloons on strings
+      const x = (k % 3 - 1) * w * 0.3, z = (k < 3 ? 1 : -1) * l * 0.3;
+      box(group, trim, 0.02, 1.6, 0.02, x, 2.6, z);
+      const b = new THREE.Mesh(new THREE.SphereGeometry(0.32, 10, 8), COLOURS[k % COLOURS.length]);
+      b.position.set(x, 3.5, z);
+      group.add(b);
+      balloons.push({ b, x, z, k });
+    }
+    for (const side of [-1, 1]) for (const z of [l * 0.36, 0, -l * 0.36]) wheel(group, R, 0.26, side * (w / 2 - 0.1), R, z, steel);
+    group.userData = { body, animate: (t) => {
+      for (const { b, x, z, k } of balloons) b.position.set(x + Math.sin(t * 1.3 + k) * 0.25, 3.5 + Math.sin(t * 2.1 + k) * 0.12, z + Math.cos(t * 1.1 + k) * 0.2);
+      star.rotation.y = t;
+      deck.position.y = 0.75 + Math.sin(t * 5) * 0.01;
+    } };
+    return group;
+  },
+
   // A small post van: a tall panel van with a short, sloping nose, a rounded high roof, blind rear
   // sides each wearing a big envelope (its flap in the van's colour) over a pale band, twin rear
   // doors with another envelope across them, and an amber beacon on the roof that flashes as it idles
