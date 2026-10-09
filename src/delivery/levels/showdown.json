@@ -3,7 +3,6 @@
   "name": "Showdown",
   "theme": "night",
   "car": "miata",
-  "time": 200,
   "clock": { "good": 200, "evil": 190 },
   "tip": 500,
   "rival": "evil",

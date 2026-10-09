@@ -1,0 +1,61 @@
+{
+  "id": "mountain-pass",
+  "name": "Mountain Pass",
+  "theme": "snow",
+  "clock": { "good": 210, "evil": 160 },
+  "tip": 160,
+  "lanes": 2,
+  "traffic": { "wagon": 0.25, "van": 0.2, "commuter": 0.2, "semi": 0.15, "darkvan": 0.12, "police": 0.08 },
+  "trafficCount": 5,
+  "oncomingCount": 6,
+  "segments": [
+    { "length": 300, "curve": 0 },
+    { "length": 400, "curve": 0, "grade": 0.06 },
+    { "length": 56, "curve": -0.0560999, "grade": 0.04 },
+    { "length": 350, "curve": 0, "grade": 0.06 },
+    { "length": 56, "curve": 0.0560999, "grade": 0.04 },
+    { "length": 400, "curve": 0, "grade": 0.05 },
+    { "length": 400, "curve": 0 },
+    { "length": 94, "curve": 0.0167106 },
+    { "length": 400, "curve": 0, "grade": -0.06 },
+    { "length": 56, "curve": -0.0560999, "grade": -0.04 },
+    { "length": 350, "curve": 0, "grade": -0.07 },
+    { "length": 56, "curve": 0.0560999, "grade": -0.04 },
+    { "length": 400, "curve": 0, "grade": -0.05 },
+    { "length": 300, "curve": 0 }
+  ],
+  "ice": [
+    { "from": 700, "to": 760 },
+    { "from": 980, "to": 1030, "lane": 1 },
+    { "from": 1106, "to": 1166 },
+    { "from": 2456, "to": 2516 },
+    { "from": 2700, "to": 2750, "lane": 0 },
+    { "from": 2862, "to": 2922 }
+  ],
+  "rockfall": [
+    { "from": 380, "to": 650, "count": 7, "side": "left" },
+    { "from": 2560, "to": 2840, "count": 8, "side": "right" },
+    { "from": 2940, "to": 3260, "count": 6, "side": "left" }
+  ],
+  "stopGo": [
+    { "from": 1640, "to": 1720 }
+  ],
+  "fog": [
+    { "from": 1820, "to": 2300 }
+  ],
+  "targets": [
+    { "s": 1600, "side": "right" },
+    { "s": 3400, "side": "left" }
+  ],
+  "pickups": [
+    { "type": "turbo", "s": 200, "lane": 1 },
+    { "type": "armour", "s": 330, "lane": 1 },
+    { "type": "wrench", "s": 900, "lane": 1 },
+    { "type": "ghost", "s": 1300, "lane": 1 },
+    { "type": "timePlus", "s": 1500, "lane": 1 },
+    { "type": "mystery", "s": 2100, "lane": 1 },
+    { "type": "armour", "s": 2420, "lane": 1 },
+    { "type": "wrench", "s": 3000, "lane": 1 },
+    { "type": "turbo", "s": 3400, "lane": 1 }
+  ]
+}

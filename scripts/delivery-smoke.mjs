@@ -251,7 +251,7 @@ try {
   // (the clock is the same one on every level, and sitting each of theirs out was most of a run's time)
   section('the clock');
   {
-    levels.selectSpecial({ id: 'clock', name: 'clock', time: 30 / CONFIG.timeScale.good, tip: 50, traffic: {}, segments: [{ length: 3000, curve: 0 }] });
+    levels.selectSpecial({ id: 'clock', name: 'clock', clock: { good: 30, evil: 30 }, tip: 50, traffic: {}, segments: [{ length: 3000, curve: 0 }] });
     Game.evil = false;
     Game.start();
     const allowed = Game.allowed;
@@ -1063,6 +1063,27 @@ try {
     pass(cams[0], cams[0].limit * 1.3);
     check(slow === 0 && fined === C.fine && !busted1 && busted2 && radar === 0 && SpeedCameras.caught === 0,
       `speed cameras: under the limit, nothing; over it, a $${fined} fine, then a bust at the next; with a radar detector, or the camera run over, nothing`);
+    // a warning of each camera coming up, radar detector or not, once; and a speed limit sign on the shoulder on its
+    // side before it (on the right for one on the centre line), showing its limit
+    {
+      const { Message } = await load('/src/delivery/messages.js');
+      fresh(); clearRoad();
+      const cam = cams[0], warned = [];
+      setPlayer(cam.s - C.warn - 20, 20, { radar: 30 });
+      SpeedCameras.lastS = Player.s;
+      for (let i = 0; i < 120 * 4; i++) {
+        Player.speed = 20; Player.radar = 30;
+        step();
+        for (const line of Message.lines) if (/speed camera ahead/i.test(line.text || '') && !warned.includes(line.text)) warned.push(line.text);
+      }
+      const signs = Collision.obstacles.filter(o => o.kind === 'limitSign');
+      const placed = levels.LEVEL.cameras.every((c, i) => {
+        const sign = signs.find(o => Math.abs(o.s - (cams[i].s - C.signAhead)) < 0.5);
+        return sign && sign.limit === (c.limit ?? C.limit) && Math.sign(sign.lat) === (c.side === 'left' ? -1 : 1);
+      });
+      check(C.limit === 100 && warned.length === 1 && warned[0].includes(String(Math.round(cam.limit * 3.6))) && signs.length === cams.length && placed,
+        `speed cameras: limit ${C.limit} km/h unless set; "${warned[0]}" ${C.warn} m out, radar detector or not; a limit sign ${C.signAhead} m before each, on its side`);
+    }
     // the fine comes off what the run banks
     fresh(); clearRoad();
     pass(cams[0], cams[0].limit * 1.3);
@@ -1883,10 +1904,10 @@ try {
       `weaving scrubs only ${weave.lost.toFixed(2)} m/s off`);
 
     // the level checks catch a bend too tight for the road, and a road that runs into itself
-    levels.selectSpecial({ id: 'tight', name: 'tight', time: 99, tip: 1, traffic: {}, segments: [{ length: 200, curve: 0 }, { length: 20, curve: 0.15 }, { length: 200, curve: 0 }] });
+    levels.selectSpecial({ id: 'tight', name: 'tight', clock: { good: 99, evil: 99 }, tip: 1, traffic: {}, segments: [{ length: 200, curve: 0 }, { length: 20, curve: 0.15 }, { length: 200, curve: 0 }] });
     Game.start();
     const tight = T === track.Track ? [] : track.Track.problems;
-    levels.selectSpecial({ id: 'loop', name: 'loop', time: 99, tip: 1, traffic: {}, segments: [{ length: 200, curve: 0 }, { length: 252, curve: 1 / 40 }, { length: 200, curve: 0 }] });
+    levels.selectSpecial({ id: 'loop', name: 'loop', clock: { good: 99, evil: 99 }, tip: 1, traffic: {}, segments: [{ length: 200, curve: 0 }, { length: 252, curve: 1 / 40 }, { length: 200, curve: 0 }] });
     Game.start();
     const loop = track.Track.problems;
     check(tight.some(p => p.includes('too tight')) && loop.some(p => p.includes('runs into itself')) && !loop.some(p => p.includes('too tight')),

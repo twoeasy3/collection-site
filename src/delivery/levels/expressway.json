@@ -1,7 +1,7 @@
 {
   "id": "expressway",
   "name": "Expressway",
-  "time": 165,
+  "clock": { "good": 155, "evil": 120 },
   "traffic": { "darkvan": 0.47, "commuter": 0.17, "van": 0.19, "bus": 0.12, "police": 0.05 },
   "trafficCount": 11,
   "oncomingCount": 8,

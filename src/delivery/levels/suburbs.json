@@ -2,7 +2,6 @@
   "id": "suburbs",
   "name": "Suburbia",
   "theme": "suburb",
-  "time": 29,
   "clock": { "good": 35, "evil": 25 },
   "tip": 85,
   "traffic": { "suv": 0.4, "taxi": 0.3, "miata": 0.3 },

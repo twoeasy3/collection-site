@@ -34,6 +34,7 @@
   },
   "events": {
     "emergency": ["Emergency vehicle oncoming!! Give way!"],
+    "speedCameraAhead": ["Speed camera ahead! Limit ${limit} km/h."],
     "speedFine": ["SPEED CAMERA! ${speed} in a ${limit}: ${fine} fine. Next time it's a bust!"],
     "procession": ["Funeral procession ahead. Show some respect."],
     "mourners": ["You crashed into a funeral procession!! The mourners are furious!"],
@@ -75,7 +76,11 @@
     "savanna": ["The savanna - mind the elephants!"],
     "kopjes": ["The kopjes - mind the rocks!"],
     "river": ["Hippo river - Look out for hippos!!!"],
-    "plains": ["The plains - the great migration is crossing!"]
+    "plains": ["The plains - the great migration is crossing!"],
+    "headland": ["The headland - cyclists on the road!"],
+    "cliffs": ["The cliff road - one lane, and the peloton!"],
+    "causeway": ["The causeway - the tide is coming in!"],
+    "harbour": ["The harbour - nearly there!"]
   },
   "bustCount": {
     "1": ["First Offence - "],

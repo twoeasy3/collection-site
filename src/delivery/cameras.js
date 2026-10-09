@@ -25,7 +25,7 @@ export const SpeedCameras = {
     const C = CONFIG.speedCamera;
     this.list = (LEVEL.cameras || []).map((c, i) => ({
       s: Track.place(c), limit: (c.limit ?? C.limit) / 3.6,
-      obstacle: Collision.obstacles.find(o => o.camera === i), passed: false, flash: 0,
+      obstacle: Collision.obstacles.find(o => o.camera === i), passed: false, warned: false, flash: 0,
     }));
     this.caught = 0;
     this.lastS = Player.s;
@@ -36,6 +36,13 @@ export const SpeedCameras = {
     const from = this.lastS, to = Player.s;
     this.lastS = to;
     if (!Player.active || Game.state !== 'playing' || to - from > 30) return; // (not a car set down further on)
+    // a warning of one coming up, radar detector or not (CONFIG.speedCamera.warn): the limit, and how fast the car is going
+    for (const cam of this.list) {
+      if (cam.warned || cam.passed || cam.obstacle?.gone || cam.s - to > CONFIG.speedCamera.warn || cam.s < to) continue;
+      cam.warned = true;
+      const line = Message.say('events', 'speedCameraAhead');
+      if (line) line.text = line.text.replace('${limit}', Math.round(cam.limit * 3.6));
+    }
     for (const cam of this.list) {
       if (cam.passed || !(from < cam.s && to >= cam.s)) continue;
       cam.passed = true;

@@ -2,7 +2,6 @@
   "id": "rival-run",
   "name": "Rival Run",
   "theme": "farm",
-  "time": 270,
   "clock": { "good": 300, "evil": 285 },
   "tip": 300,
   "rival": "opposite",

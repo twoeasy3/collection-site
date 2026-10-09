@@ -458,6 +458,7 @@ export const CONFIG = {
     cone: { damage: 3, speedKept: 0.94, light: true },
     mine: { damage: 30, speedKept: 0.55 }, // a sea mine (Oh Mine!)
     sign: { damage: 12, speedKept: 0.8 },
+    limitSign: { damage: 8, speedKept: 0.85 }, // (a speed camera's limit sign: see CONFIG.speedCamera)
     // the beach's junk (Hurricane)
     umbrella: { damage: 15, speedKept: 0.85 },
     surfboard: { damage: 18, speedKept: 0.8 },
@@ -746,8 +747,10 @@ export const CONFIG = {
   packageDamage: 4,        // a care package barely scratches what it hits
   evilPackageDamage: 25,   // an Evil player's flaming package: real damage, and it makes enemies
   completeBank: 10000,     // $ in the bank after "Unlock everything" on the menu
-  // the clock: a level allows its `time` seconds, scaled by the side the player picked
-  timeScale: { good: 1.2, evil: 0.85 },
+  // the clock: each level has its own, for each side ("clock": { good, evil }), worked out by
+  // scripts/level-clocks.mjs from a clean run (a ghost, flat out) in the reference car: that run's time
+  // times good or evil, to the nearest `round` s
+  clock: { car: 'sport', good: 1.5, evil: 1.15, round: 5 },
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing
   packageMoodBoost: 0.5,   // mood gained by a good car that gets one
   giftOffence: 15,         // s an evil car that gets one is offended: furious, but it drives no differently
@@ -818,7 +821,9 @@ export const CONFIG = {
   // bust. Running one over (it is an obstacle) is no offence. A radar detector warns of them: it
   // keeps the car from being caught at all
   speedCamera: {
-    limit: 70,             // km/h, unless the camera has its own
+    limit: 100,            // km/h, unless the camera has its own
+    warn: 180,             // m short of a camera the player is warned of it (radar detector or not)
+    signAhead: 70,         // m short of a camera its speed limit sign stands, on the shoulder on its side
     fine: 20,              // $ the first offence costs
     flash: 0.35,           // s the flash lasts
   },

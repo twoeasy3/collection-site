@@ -679,6 +679,8 @@ const createTrack = () => {
   // ---- checking the level data ---------------------------------------------------------------
   const problems = [];
   {
+    const clock = LEVEL.clock;
+    if (!(clock && clock.good > 0 && clock.evil > 0)) problems.push('clock: { good, evil }, seconds for each side (see scripts/level-clocks.mjs)');
     const reach = FLY - X.ramp;
     const curved = (a, b) => { for (let s = a; s < b; s += STEP) if (curveAt(s) !== 0) return true; return false; };
     const overlaps = (a, b, c, d) => a < d && c < b;

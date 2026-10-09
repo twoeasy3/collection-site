@@ -4,7 +4,7 @@
   "theme": "city",
   "flow": "south",
   "lanes": 8,
-  "time": 9999,
+  "clock": { "good": 11999, "evil": 8499 },
   "tip": 0,
   "traffic": { "darkvan": 0.16, "commuter": 0.12, "van": 0.12, "bus": 0.1, "police": 0.08, "junker": 0.12, "sport": 0.14, "wagon": 0.08, "lovebus": 0.08, "lowrider": 0.12, "taxi": 0.1, "suv": 0.1, "hotrod": 0.1, "minivan": 0.1, "hearse": 0.1, "pickup": 0.1, "miata": 0.1 },
   "trafficCount": 0,

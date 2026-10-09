@@ -14,7 +14,7 @@
     { "from": 6061, "to": 6166, "side": "right", "width": 16 }
   ],
   "shoulderTimer": false,
-  "time": 300,
+  "clock": { "good": 360, "evil": 255 },
   "tip": 450,
   "traffic": {},
   "trafficCount": 0,

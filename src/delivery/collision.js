@@ -230,7 +230,7 @@ export const Collision = (() => {
     // ...and its site works': a wheelbarrow, a concrete pipe rolling across the road (see site.js)
     barrow: [0.45, 0.8, 0.8], pipe: [0.9, 1.3, 1.8],
     asteroid: [1, 1, 2], // replaced by each asteroid's own radius
-    cone: [0.42, 0.42, 1.12], sign: [1.1, 0.15, 3.0], // (cones are 1.4 times life size: easier to see on a phone)
+    cone: [0.42, 0.42, 1.12], sign: [1.1, 0.15, 3.0], limitSign: [0.5, 0.15, 3.0], // (cones are 1.4 times life size: easier to see on a phone)
     mine: [0.58, 0.58, 1.05], // a sea mine, afloat: a little bigger than a cone
     // the beach's own junk (Hurricane): a beach umbrella, a surfboard stuck upright, an ice
     // box, a lifeguard chair, and a wrecked car (which spins on the spot as it drifts)
@@ -288,6 +288,9 @@ export const Collision = (() => {
     (LEVEL.cameras || []).forEach((c, i) => {
       const s = Track.place(c);
       add('camera', s, c.side === 'centre' ? 0 : Track.shoulderOffset(c.side === 'left' ? -1 : 1, s), { camera: i });
+      // (and its speed limit sign on the shoulder on its side, a little short of it: one on the centre line, on the right)
+      const at = s - CONFIG.speedCamera.signAhead;
+      if (Track.inBounds(at)) add('limitSign', at, Track.shoulderOffset(c.side === 'left' ? -1 : 1, at), { limit: c.limit ?? CONFIG.speedCamera.limit });
     });
     // rockfall: each rock somewhere in its stretch, landing anywhere across the road, up the hillside
     // on its side until the player is near (see CONFIG.rockfall). Seeded: the same rocks every run
