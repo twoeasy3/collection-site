@@ -19,6 +19,7 @@ import { addSuperKit } from './carExtras.js';
 import { damageShare, dentModel, scorch } from './dents.js';
 import { SpeedCameras } from '../cameras.js';
 import { Hazards } from '../hazards.js';
+import { Delivery } from '../delivery.js';
 
 // Everything here that belongs to the loaded level (bridges, obstacles, pickups, targets)
 // lives in this group and is rebuilt by buildItems() each time a level is loaded.
@@ -383,7 +384,7 @@ export const syncPickups = (dt) => {
     }
   }
   // ghost: the whole car turns pale and see-through (see ghostify), flickering as it runs out
-  const ghostly = powerShown(Player.ghost);
+  const ghostly = powerShown(Player.ghost) && !Delivery.on; // (not while it sets the cargo down at the kerb: a ghost only so the traffic drives through it)
   const livery = Player.evil ? CAR.evilColor : CAR.color; // each car has a livery per side
   if (shownCar !== CAR) { // a different car (the garage's, or a level's own): take its shape
     shapeCarMesh(carMesh, CAR);
@@ -429,7 +430,7 @@ export const syncPickups = (dt) => {
   const t = performance.now() / 1000;
   // (the signs over the car don't spin: they face back down the road, at the camera following the car)
   const facing = carMesh.rotation.y + Math.PI;
-  hoverGhost.visible = powerShown(Player.ghost) && Player.active && !Game.screensaver;
+  hoverGhost.visible = powerShown(Player.ghost) && Player.active && !Game.screensaver && !Delivery.on;
   if (hoverGhost.visible) { // bobbing over the car, swaying a little
     hoverGhost.position.set(carMesh.position.x, carMesh.position.y + Player.height + 1.6 + Math.sin(t * 2.6) * 0.25, carMesh.position.z);
     hoverGhost.rotation.y = facing + Math.sin(t * 1.7) * 0.35;

@@ -1,6 +1,7 @@
 {
   "id": "safari",
   "name": "Safari",
+  "cargo": { "good": "cake", "evil": "porcupine" },
   "theme": "safari",
   "flow": "north",
   "lanes": 3,

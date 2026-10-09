@@ -13,7 +13,7 @@ site. This repo is the only copy to edit.
 
 | In this repo | What it is |
 |---|---|
-| `delivery/*.html` | The game's page and five others (power-ups, gimmicks, good and evil, police, level editor) |
+| `delivery/*.html` | The game's page and six others (power-ups, gimmicks, cargo, good and evil, police, level editor) |
 | `src/delivery/` | All game code, levels, CSS, sounds and menu pictures |
 | `scripts/delivery-smoke.mjs` | Headless test of the game logic |
 | `scripts/level-clocks.mjs` | Works out a level's clock from a clean run |
@@ -88,6 +88,17 @@ the still used for a level's menu picture and `&cine=car` the one for a car's.
   `render/hippos.js` draws them, from a `sync...` call in the frame loop in `main.js`. The
   level field that switches it on is documented at the top of `levels.js`, and its tuning is in
   `config.js`.
+- **The cargo is only a sight** (added 2026-10-10). Every delivery level carries one thing for Good and
+  one for Evil (`cargo.js`; a level's `cargo`, or by its place on the menu). It turns in a round window
+  on the right of the HUD, drawn by the game's own renderer into that patch of the canvas
+  (`render/cargo.js`: a scissor, no extra WebGL context); an Evil item's state follows the share of the
+  clock left. Its tuning is `CONFIG.consignment` (`CONFIG.cargo` is the shedding truck's load).
+- **A delivered level ends at the kerb** (`delivery.js`). `Game.finish` fixes the run exactly as
+  before and the state is `finished` at once; only the results screen waits (about 5 s, skipped by any
+  key, tap or click) while the car, driven by `Delivery.update` in place of `Player.update`, pulls in
+  and the cargo is set down. It happens only when rendering has set `Delivery.staged`, so every
+  headless script goes straight to the results. Not after a bust, a wreck-out or running out of time;
+  not on races, the Battlefield, or in the UFO and the jetboat (`CONFIG.consignment.noEnding`).
 - **Models with no game state are kept apart** (`render/*Models.js`, `render/carExtras.js`), so
   the reference pages can show them without loading the game.
 - **Everything is in track space.** A position is `(s, lat)`: metres along a road and metres
@@ -169,6 +180,11 @@ unverified unless the owner says otherwise. From the original list:
   The boat's engine note afloat has not been heard.
 - **Balance**: clocks now come from `level-clocks.mjs`, but tips, traffic mixes and pickup
   placement on most levels were not play-tested.
+- **The cargo and the delivery at the kerb** (2026-10-10): seen only in headless-browser stills
+  (the corner at 1100x650 and 520x900; the ending on Farm Lanes, Expressway, Night Drive, Singapore,
+  Tokyo and All Heck). Not seen moving, not heard (the tick as an Evil item changes state, the thump
+  as it lands), not tried on a real phone, and the kerb camera was not looked at on every level: a
+  finish inside a tunnel, on a bridge, or with something standing on the shoulder may sit badly.
 - **Performance on phones**: the heavy levels (Asteroid Run's asteroids, All Heck's cones, the
   long JSON of Oh Mine!).
 

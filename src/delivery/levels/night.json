@@ -1,6 +1,7 @@
 {
   "id": "night",
   "name": "Night Drive",
+  "cargo": { "good": "clock", "evil": "doll" },
   "theme": "night",
   "clock": { "good": 168, "evil": 119 },
   "traffic": { "lowrider": 0.35, "darkvan": 0.3, "commuter": 0.15, "van": 0.15, "police": 0.05 },

@@ -2,7 +2,7 @@
 // where the browser would only say so on loading the page): the pages bundled in memory, nothing written.
 //   node scripts/.bundle-check.mjs
 import { build } from 'esbuild';
-const pages = ['main', 'powerups', 'gimmicks', 'sides', 'police', 'editor'].map(p => 'src/delivery/' + p + '.js');
+const pages = ['main', 'powerups', 'gimmicks', 'sides', 'police', 'editor', 'cargopage'].map(p => 'src/delivery/' + p + '.js');
 const loader = { '.wav': 'empty', '.jpg': 'empty', '.png': 'empty', '.css': 'empty', '.svg': 'empty' };
 const result = await build({ entryPoints: pages, bundle: true, write: false, outdir: 'out', format: 'esm', logLevel: 'silent', loader }).catch(e => e);
 const errors = result.errors || [], warnings = (result.warnings || []).filter(w => w.id !== 'empty-glob');

@@ -39,6 +39,7 @@ import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/rac
 import { Fly, startFly, flyCamera } from './render/fly.js';
 import { Photo, syncPhoto, photoCamera, startPhoto } from './render/photo.js';
 import { syncTankCorner } from './render/tankcorner.js';
+import { syncCargo, drawCargoCorner, deliveryOn, deliveryCamera } from './render/cargo.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
 import { syncMovers } from './render/movers.js';
@@ -216,10 +217,12 @@ const frame = (now) => {
     syncTargets(dt);
     updateEffects(dt);
 
+    syncCargo(dt, now); // (the cargo set down at the kerb, at the end: after the car is placed, before the camera)
     syncPhoto();
     if (Fly.on) flyCamera(dt); // (flying round a level: see render/fly.js)
     else if (Photo.on) photoCamera(); // (photo mode, while paused: see render/photo.js)
     else if (Game.raceWatch) raceCamera(dt); // (the race screensaver's cameras)
+    else if (deliveryOn()) deliveryCamera(); // (a level delivered: round to the kerb, see render/cargo.js)
     else updateCamera(dt, prevState !== 'playing' && Game.state === 'playing');
     syncMysteries(dt); // (after the camera: the earthquake bobs it)
     syncRaceWatch(now);
@@ -271,6 +274,7 @@ const frame = (now) => {
     }
     Sound.frog(Game.paused || Game.state !== 'playing' ? 0 : Math.max(0, 1 - frogFar / CONFIG.frogHearing));
     renderer.render(scene, camera);
+    drawCargoCorner(dt, now); // (the cargo, in its corner of the HUD: over that patch of the frame)
   }
   if (Game.state === 'start') silence(); // (back on the menu)
   syncTankCorner(dt); // (it hides itself when there is no run)
