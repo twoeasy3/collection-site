@@ -214,8 +214,24 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   new. Reads the best times: nothing new saved.
   - Verified: `node --check` and `.bundle-check.mjs` only. NOT run at all, even headless (it
     imports the menu module, which needs WebGL): the panel has never been opened.
-- PAUSED for the orchestrator's merge of the circuits branch. My tracked files are clean.
-- Next: 6b (milestones wall), then `HANDOVER-batch.md`.
+- DONE `8c0d76e`: 6b (milestones wall). `milestones.js` + `render/milestones.js` from the stash;
+  eight counters in `Progress.data.stats` (`Progress.count`, saved at most every 5 s and at the end
+  of a run; km to two decimals). Count lines in `packages.js`, `hippos.js`, `bullettrain.js`. The
+  CSS, button, `#milestones` panel and import are new.
+  - Verified headless: `node scripts/.milestones-check.mjs` (new, 14 checks: titles, thresholds,
+    cops outrun, wrecks / busts, km, levels delivered, the cookie). NOT verified: the wall has never
+    been opened; hippos survived and trains dodged are counted by code no check drove.
+- DONE `8c5ead6`: after both merges, the garage's "Gold stars" filter no longer takes in the 6-star
+  cars, and they get a "6 stars" choice once one is earned (`render/garageview.js`);
+  `HANDOVER-batch.md` "Not done" rewritten, with a table of what was built.
+- After the merges (`e358d98`, `6344152`) all of these pass on `main`: `.mysteries-check`,
+  `.earned-check`, `.milestones-check`, `.dents-check`, `.balance-check`, `.bundle-check`.
+- FINISHED. Everything in the brief is ported or finished from partial; skipped only
+  `gimmick-road-3.json` and `tokyo-loop.json` (duplicates' test levels). In the stash, judged not a
+  duplicate, and NOT ported: traffic honking with per-kind horns (`horn:<kind>` in `traffic.js`); a
+  "6-star cars" hint line on the menu's car card (a line on each special level's card instead); a
+  horn line in "How to play"; `extraShare` (drawing the second mystery pool).
+- Nothing of mine has been seen or heard in a browser. The stash is untouched and can be dropped.
 
 ## Agent 2: real circuits (`.claude/worktrees/delivery-circuits`, `delivery-circuits`)
 
@@ -316,3 +332,46 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
     accumulator, the level must be rebuilt from the seed, inputs fed by step number.
   - The simple translucent ghost (30) was not built: it falls out of input replay later.
   - The `traffic.js` change resets timers when a car is dealt out; no smoke test was run on it.
+  - The sweep of the other 34 levels (40 s each): 32 replay exactly; **Grand Prix and Market Town
+    still part, at 2 s** (both have crossroads, so most likely more left-over state in the junction
+    code; `node scripts/.replay-trace.mjs market-town` will name the call). Not hunted, and not yet
+    in `REPLAY-NOTES.md`, whose "Checked levels" lists only the first nine.
+  - After the `traffic.js` change: `.traits-check`, `.hazards-check`, `.save-check` pass.
+    `.traffic-quirks-check` has one failure ("ice cream van: its tune was played near the player (0
+    bars)") and `.ufo-check` dies on an import error; neither was run before my changes, so I do not
+    know whether they are mine.
+- **MY MISTAKE, NEEDS A DECISION (agent 3 worktree only).** To compare against a clean tree I ran
+  `git stash; git stash pop` in my worktree with nothing of my own to stash. The stash list is
+  shared by every worktree, so the pop applied the city-levels stash (`0201824`) on top of my
+  branch: 15 conflicted files, 14 modified, 21 untracked, all in
+  `.claude/worktrees/delivery-batch` only.
+  - **Nothing is lost.** The stash entry is still there, same hash (the pop kept it because of the
+    conflicts). All my work was committed first: branch tip `4a66a80`. The main checkout and the
+    circuits worktree were not touched.
+  - **Not cleaned up:** the permission system refused the reset as destructive, and I did not work
+    round it. To put my worktree back, from `.claude/worktrees/delivery-batch`:
+    `git reset --hard 4a66a80`, then delete the 21 untracked files `git status` lists (each one is
+    in the stash's untracked tree, `stash@{0}^3`: checked with `comm`). Do not use `git clean` with
+    `-x`, and leave `node_modules` (a junction) alone.
+  - Until then, do not run or screenshot from that worktree: its files are a half-merged mix.
+    Merging `worktree-delivery-batch` by its commits is unaffected.
+
+## Agent 4: side roads cleanup (.claude/worktrees/delivery-circuits, delivery-side-roads)
+
+- **1. Flicker on hill side roads: done, `3a2fefe`.** Cause measured on Gimmick Road 2: the side road
+  lay up to 4 cm (18 cm at worst) under the expressway's land and up to 3 cm under its pavement at
+  the merge. Now exact alongside the expressway, its own land and banks away from it, 6% at most
+  (was 12%). Checked: levels check, `.hazards-check.mjs`, screenshots.
+- 2. Fork and merge markings: in progress.
+- 3. Decor pruning: not started.
+- 4. Fully-featured side roads: not started.
+- 5. Every theme: not started.
+
+## Agent 5: amphibious cars and levels (.claude/worktrees/delivery-city-levels, delivery-amphibious)
+
+- 1. The five cars and the garage's Amphibious section: in progress.
+- 2. Water stages in the engine: not started.
+- 3. Traffic and water, boat traffic: not started.
+- 4. Amphibious-only levels (the flag, the menu): not started.
+- 5. Five levels: not started.
+- 6. Gimmicks page cards, README, HANDOVER: not started.
