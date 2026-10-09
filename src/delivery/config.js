@@ -46,6 +46,8 @@ export const CONFIG = {
     verge: 4,              // m of land of its own along a side road's left edge on hills, and (up to) ...
     land: 130,             // ... along its right: the land beside it, at its height, with a bank down to the ground
     leftShoulder: 1,       // m; a side road's right shoulder is the normal driveable width
+    clear: 1.5,            // m of verge beside every road's pavement that another road's scenery is kept off, whatever it is...
+    clearBuilding: 2,      // ...and m more for a building
     flyoverLength: 360,
     flyoverHeight: 7,
     trafficShare: 0.45,    // share of traffic that takes a side road

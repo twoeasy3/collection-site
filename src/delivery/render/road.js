@@ -213,7 +213,7 @@ const zonesOf = () => {
     from: i ? Math.round(Track.length * i / n) : Track.start, to: i === n - 1 ? Track.end : Math.round(Track.length * (i + 1) / n) })));
 };
 const SEA = 0x2b6fa8, SAND = 0xe4d29a, SANDSTONE = 0xc9a26b;
-const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
+const buildZones = (beside, instances, add, flat, { cube, tube, cone }, sideStrip) => {
   const sphere = new THREE.SphereGeometry(0.5, 9, 6), p = {};
   const kinds = {}; // name -> [geometry, colour, list, glowing]
   const thing = (name, geometry, colour, glowing = false) => kinds[name] || (kinds[name] = [geometry, colour, [], glowing]);
@@ -422,7 +422,7 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     levelGroup.add(water);
   };
   const beach = (a, b, d0, d1) => {
-    const sand = new THREE.Mesh(buildStrip(a, b, (q) => beside(1, q, d0), (q) => beside(1, q, d1), -0.02, 8),
+    const sand = new THREE.Mesh(sideStrip(a, b, (q) => beside(1, q, d0), (q) => beside(1, q, d1), -0.02, 8),
       new THREE.MeshBasicMaterial({ color: SAND, side: THREE.DoubleSide, depthWrite: false }));
     sand.renderOrder = -1.6;
     levelGroup.add(sand);
@@ -609,10 +609,10 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
       // the river on the right, beyond a muddy bank: reeds at its edge, hippos wallowing in it, and
       // the far bank's trees; tall grass on the left
       const H = CONFIG.hippo, RIVER = 75;
-      const bankMud = new THREE.Mesh(buildStrip(a, b, (q) => beside(1, q, 0), (q) => beside(1, q, H.bank + 0.5), -0.02, 6),
+      const bankMud = new THREE.Mesh(sideStrip(a, b, (q) => beside(1, q, 0), (q) => beside(1, q, H.bank + 0.5), -0.02, 6),
         new THREE.MeshBasicMaterial({ color: 0x6b5536, side: THREE.DoubleSide, depthWrite: false }));
       bankMud.renderOrder = -1.7;
-      const river = new THREE.Mesh(buildStrip(a, b, (q) => beside(1, q, H.bank), (q) => within(q, beside(1, q, RIVER)), -0.03, 6),
+      const river = new THREE.Mesh(sideStrip(a, b, (q) => beside(1, q, H.bank), (q) => within(q, beside(1, q, RIVER)), -0.03, 6),
         new THREE.MeshBasicMaterial({ color: 0x4d7f78, side: THREE.DoubleSide, depthWrite: false }));
       river.renderOrder = -1.6;
       levelGroup.add(bankMud, river);
@@ -810,12 +810,110 @@ const buildRoad = () => {
     along(x.side0, x.sideEnd, Track.lo, Track.hi);
     if (x.flyovers) for (const from of [x.flyA0, x.flyB0]) along(from, from + CONFIG.ramps.flyoverLength, () => -LW / 2 - 0.5, () => LW / 2 + 0.5);
   }
-  // is a world point clear of every one of them (by `margin` m more)?
-  const offRoads = (x, z, margin = 0) => {
-    for (let k = 0; k < others.length; k += 3) {
-      if (Math.hypot(x - others[k], z - others[k + 1]) < others[k + 2] + margin) return false;
+  // ---- keeping scenery off the other roads ----------------------------------------------------------
+  // Every road's pavement, shoulders and all, as points 2 m apart along its middle (x, z, half its width there,
+  // which road), in a grid of squares to look them up by: each side road and flyover whole, and the expressway
+  // round each exit. Road 0 is the expressway; exit n's side road is 1 + 3n, its flyovers 2 + 3n and 3 + 3n.
+  // Everything any theme stands beside a road goes through offRoads (or what is built on it: instances,
+  // sideStrip, and the last look over the level at the end of buildRoad), so that nothing stands on, hangs
+  // over or pokes through another road or its verge, and nothing is cleared that is not in the way
+  const SQUARE = 16, VERGE = CONFIG.ramps.clear, paved = [], squares = new Map();
+  const pavedRoad = (id, from, to, lo, hi) => {
+    for (let s = from; s <= to; s += 2) {
+      Track.toWorld(s, (lo(s) + hi(s)) / 2, tmp);
+      const key = Math.floor(tmp.x / SQUARE) * 100003 + Math.floor(tmp.z / SQUARE);
+      if (!squares.has(key)) squares.set(key, []);
+      squares.get(key).push(paved.length);
+      paved.push(tmp.x, tmp.z, (hi(s) - lo(s)) / 2, id);
+    }
+  };
+  exits.forEach((x, n) => {
+    const FLY = CONFIG.ramps.flyoverLength;
+    pavedRoad(0, Math.max(Track.start, (x.flyovers ? x.landingAt : x.exitAt - ZONE) - 150), Math.min(Track.end, (x.flyovers ? x.flyoverAt : x.mergeAt + ZONE) + 150), Track.lo, Track.hi);
+    pavedRoad(1 + 3 * n, x.side0, x.sideEnd, Track.lo, Track.hi);
+    if (x.flyovers) [x.flyA0, x.flyB0].forEach((from, k) => pavedRoad(2 + 3 * n + k, from, from + FLY, () => -LW / 2 - 0.5, () => LW / 2 + 0.5));
+  });
+  // which road s is on
+  const roadOf = (s) => {
+    if (Track.isMain(s)) return 0;
+    const n = exits.findIndex(x => s >= x.side0 - 1 && s < x.side0 + 30000 - 2000);
+    return n < 0 ? 0 : 1 + 3 * n + (s < exits[n].flyA0 - 1 ? 0 : s < exits[n].flyB0 - 1 ? 1 : 2);
+  };
+  // m from a world point to the nearest pavement of any road but `own` (Infinity: none within `reach` m or so)
+  const roadGap = (x, z, own = 0, reach = 0) => {
+    let best = Infinity;
+    const n = Math.ceil((reach + 24) / SQUARE), cx = Math.floor(x / SQUARE), cz = Math.floor(z / SQUARE);
+    for (let i = cx - n; i <= cx + n; i++) {
+      for (let j = cz - n; j <= cz + n; j++) {
+        const list = squares.get(i * 100003 + j);
+        if (!list) continue;
+        for (const k of list) if (paved[k + 3] !== own) best = Math.min(best, Math.hypot(x - paved[k], z - paved[k + 1]) - paved[k + 2]);
+      }
+    }
+    return best;
+  };
+  // is a world point clear of every road but `own` (the one it stands beside: the expressway, if not said), by
+  // `margin` m (half the width of whatever stands there, say) and a verge (CONFIG.ramps.clear)?
+  const offRoads = (x, z, margin = 0, own = 0) => !paved.length || roadGap(x, z, own, margin + VERGE) > margin + VERGE;
+  // the same of a thing `across` m wide and `along` m long standing at (s, lat) on a road: every part of it
+  const spot = {};
+  const standsClear = (s, lat, across, along, pad = 0) => {
+    if (!paved.length) return true;
+    const own = roadOf(s), r = Math.hypot(across, along) / 2;
+    Track.toWorld(s, lat, spot);
+    const gap = roadGap(spot.x, spot.z, own, r + pad + VERGE);
+    if (gap > r + pad + VERGE) return true;                 // (nowhere near)
+    if (gap <= pad + VERGE || r < 1.5) return gap > Math.min(across, along) / 2 + pad + VERGE; // (its middle is on one; or it is small)
+    const nx = Math.ceil(across / 3), nz = Math.ceil(along / 3); // (a big thing: looked at every 3 m or less across it)
+    for (let i = 0; i <= nx; i++) {
+      for (let j = 0; j <= nz; j++) {
+        Track.toWorld(s + (j / nz - 0.5) * along, lat + (i / nx - 0.5) * across, spot);
+        if (!offRoads(spot.x, spot.z, pad, own)) return false;
+      }
     }
     return true;
+  };
+  // a strip beside a road (as buildStrip: ground cover, a pavement, a rail), stopping short of any other road:
+  // each row of it runs out from its edge nearer the road only as far as it is clear, and where that edge
+  // itself is on another road the strip breaks off
+  const sideStrip = (sFrom, sTo, latA, latB, y, step = 4) => {
+    if (!paved.length) return buildStrip(sFrom, sTo, latA, latB, y, step);
+    const fa = typeof latA === 'function' ? latA : () => latA, fb = typeof latB === 'function' ? latB : () => latB;
+    const pos = [], idx = [], own = roadOf(sFrom);
+    let n = 0, joined = false;
+    step = Math.min(step, 2);
+    for (let k = 0; ; k++) {
+      const s = Math.min(sFrom + k * step, sTo);
+      let a = fa(s), b = fb(s);
+      const swap = Math.abs(a) > Math.abs(b); // (a: the edge nearer the road)
+      if (swap) [a, b] = [b, a];
+      Track.toWorld(s, (a + b) / 2, spot);
+      const width = Math.abs(b - a);
+      let reach = width;
+      if (roadGap(spot.x, spot.z, own, width / 2 + VERGE) <= width / 2 + VERGE) {
+        reach = -1;
+        for (let d = 0; d <= width; d += Math.min(1, width || 1)) {
+          Track.toWorld(s, a + Math.sign(b - a) * d, spot);
+          if (!offRoads(spot.x, spot.z, 0, own)) break;
+          reach = d;
+          if (!width) break;
+        }
+      }
+      if (reach < Math.min(width, 0.2) && width) joined = false;
+      else if (reach < 0) joined = false;
+      else {
+        const far = a + Math.sign(b - a) * reach;
+        for (const lat of swap ? [far, a] : [a, far]) { Track.toWorld(s, lat, spot); pos.push(spot.x, spot.y + y, spot.z); }
+        if (joined) { const q = (n - 1) * 2; idx.push(q, q + 1, q + 2, q + 1, q + 3, q + 2); }
+        joined = true;
+        n++;
+      }
+      if (s >= sTo) break;
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setIndex(idx);
+    return geo;
   };
   // a big thing out in the scenery (a mountain): from (cx, cz) out along the way (dx, dz), the first spot
   // `far` m or more out where nothing of it (`r` m round) comes within `margin` m of any road, main or side:
@@ -1323,24 +1421,97 @@ const buildRoad = () => {
     }
     dummy.updateMatrix();
   };
-  const instances = (geometry, color, list, glowing) => {
-    // (not what would stand on another road, where a side road or a flyover leaves the expressway or comes
-    // back to it: whatever the theme, its fences, walls, posts and trees break off there)
-    if (others.length) {
-      list = list.filter(([s, lat, , , , , to]) => {
-        if (!Track.isMain(s)) return true;
-        Track.toWorld(to ? (s + to[0]) / 2 : s, to ? (lat + to[1]) / 2 : lat, tmp);
-        return offRoads(tmp.x, tmp.z);
-      });
+  // (every kind is kept until the whole level's scenery has been said, then gone through together: see
+  // placeInstances. pad: m more than the verge to keep that kind clear of another road)
+  const pending = [];
+  const instances = (geometry, color, list, glowing, pad = 0) => {
+    if (list.length) pending.push({ geometry, color, list: list.slice(), glowing, pad });
+  };
+  // is an entry clear of every other road? Its footprint from its geometry and its scale (a run of wall or
+  // rail: at both ends and the middle). Returns [x, z, m round it, clear]
+  const sizes = new Map();
+  const entryAt = (geometry, [s, lat, , sx, , sz, to], pad) => {
+    if (!sizes.has(geometry)) {
+      if (!geometry.boundingBox) geometry.computeBoundingBox();
+      const b = geometry.boundingBox;
+      sizes.set(geometry, [Math.max(-b.min.x, b.max.x) * 2, Math.max(-b.min.z, b.max.z) * 2]);
     }
-    if (!list.length) return;
-    const material = glowing ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshLambertMaterial({ color });
-    const mesh = new THREE.InstancedMesh(geometry, material, list.length);
-    list.forEach((entry, i) => {
-      placeEntry(entry);
-      mesh.setMatrixAt(i, dummy.matrix);
-    });
-    levelGroup.add(mesh);
+    const [gx, gz] = sizes.get(geometry), across = gx * Math.abs(sx);
+    if (to) {
+      const a = {}, b = {};
+      let clear = true;
+      for (const f of [0, 0.5, 1]) clear = standsClear(s + (to[0] - s) * f, lat + (to[1] - lat) * f, across, across, pad) && clear;
+      Track.toWorld(s, lat, a);
+      Track.toWorld(to[0], to[1], b);
+      return [(a.x + b.x) / 2, (a.z + b.z) / 2, Math.hypot(b.x - a.x, b.z - a.z) / 2, clear];
+    }
+    const along = gz * Math.abs(sz), clear = standsClear(s, lat, across, along, pad);
+    Track.toWorld(s, lat, tmp);
+    return [tmp.x, tmp.z, Math.max(across, along) / 2, clear];
+  };
+  // Not what would stand on another road, where a side road or a flyover leaves the expressway or comes back to
+  // it, or runs close by: whatever the theme, its fences, walls, posts, trees and buildings break off there. And
+  // what stands with something that does goes with it (a tree's crown with its trunk, a roof with its walls, a
+  // lamp with its post): anything whose middle is within the other's footprint
+  const placeInstances = () => {
+    if (paved.length) {
+      const NEAR = 12, gone = new Map(); // (those that went, by 12 m square)
+      for (const job of pending) {
+        job.at = job.list.map(entry => entryAt(job.geometry, entry, job.pad));
+        for (const [x, z, r, clear] of job.at) {
+          if (clear) continue;
+          const key = Math.floor(x / NEAR) * 100003 + Math.floor(z / NEAR);
+          if (!gone.has(key)) gone.set(key, []);
+          gone.get(key).push(x, z, r);
+        }
+      }
+      const withOne = (x, z, r) => {
+        const n = Math.ceil((r + 20) / NEAR), cx = Math.floor(x / NEAR), cz = Math.floor(z / NEAR);
+        for (let i = cx - n; i <= cx + n; i++) {
+          for (let j = cz - n; j <= cz + n; j++) {
+            const list = gone.get(i * 100003 + j);
+            if (!list) continue;
+            for (let k = 0; k < list.length; k += 3) if (Math.hypot(x - list[k], z - list[k + 1]) < Math.min(20, Math.max(r, list[k + 2])) + 0.3) return true;
+          }
+        }
+        return false;
+      };
+      if (gone.size) for (const job of pending) job.list = job.list.filter((_, i) => job.at[i][3] && !withOne(job.at[i][0], job.at[i][1], job.at[i][2]));
+    }
+    for (const { geometry, color, list, glowing } of pending) {
+      if (!list.length) continue;
+      const material = glowing ? new THREE.MeshBasicMaterial({ color }) : new THREE.MeshLambertMaterial({ color });
+      const mesh = new THREE.InstancedMesh(geometry, material, list.length);
+      list.forEach((entry, i) => {
+        placeEntry(entry);
+        mesh.setMatrixAt(i, dummy.matrix);
+      });
+      levelGroup.add(mesh);
+    }
+  };
+  // and the last look over the level: whatever a theme has stood in it by itself (a house, a sign, a crane: an
+  // object of its own, with a place) and not through instances, if it is on another road. Not what is built in
+  // the world's own terms (strips: see sideStrip), nor anything over 60 m across (a backdrop: a lake, a
+  // skyline, a mountain: those are placed with offRoads or clearOfRoads where they are made)
+  const firstLoose = levelGroup.children.length;
+  const clearLoose = () => {
+    if (!paved.length) return;
+    const box = new THREE.Box3(), size = new THREE.Vector3(), mid = new THREE.Vector3(), mirror = Track.mirrored ? -1 : 1;
+    levelGroup.updateMatrixWorld(true);
+    for (const child of levelGroup.children.slice(firstLoose)) {
+      if (child.userData.flat || child.isPoints || child.isInstancedMesh || !(child.isMesh || child.isGroup)) continue;
+      if (!child.position.x && !child.position.z) continue;
+      box.setFromObject(child);
+      if (box.isEmpty()) continue;
+      box.getSize(size); box.getCenter(mid);
+      if (size.x > 60 || size.z > 60) continue;
+      let clear = true;
+      const nx = Math.max(1, Math.ceil(size.x / 3)), nz = Math.max(1, Math.ceil(size.z / 3));
+      for (let i = 0; i <= nx && clear; i++) {
+        for (let j = 0; j <= nz && clear; j++) clear = offRoads(mirror * (mid.x + (i / nx - 0.5) * size.x), mid.z + (j / nz - 0.5) * size.z);
+      }
+      if (!clear) levelGroup.remove(child);
+    }
   };
   const cube = new THREE.BoxGeometry(1, 1, 1);
   const tube = new THREE.CylinderGeometry(0.5, 0.5, 1, 12);
@@ -1393,13 +1564,23 @@ const buildRoad = () => {
     }
     for (const x of exits) {
       for (let s = x.side0 + 20; s < x.sideEnd - 20; s += 30) {
-        piers.push([s, 0, -drop / 2 - 0.3, 2, drop - 0.6, 2]);
-        heads.push([s, 0, -0.6, Track.hi(s) - Track.lo(s) - 1, 0.8, 2.4]);
+        const mid = (Track.lo(s) + Track.hi(s)) / 2;
+        piers.push([s, mid, -drop / 2 - 0.3, 2, drop - 0.6, 2]);
+        heads.push([s, mid, -0.6, Track.hi(s) - Track.lo(s) - 1, 0.8, 2.4]);
       }
+      // (and a parapet of its own along each edge, and a deck under it: where it leaves the expressway and comes
+      // back, each road's parapet stops for the other, as all scenery does)
+      for (let s = x.side0; s < x.sideEnd; s += 4) {
+        for (const side of [-1, 1]) {
+          walls.push([s, beside(side, s, 0.2), 0.55, 0.3, 1.1, 4.02, [s + 4, beside(side, s + 4, 0.2)]]);
+          caps.push([s, beside(side, s, 0.2), 1.14, 0.42, 0.1, 4.02, [s + 4, beside(side, s + 4, 0.2)]]);
+        }
+      }
+      add(buildStrip(x.side0, x.sideEnd, (q) => Track.lo(q) - 0.2, (q) => Track.hi(q) + 0.2, -0.9, 6), new THREE.MeshLambertMaterial({ color: 0x6e7177, side: THREE.DoubleSide }));
     }
     // (the deck's underside: a slab under the whole road, so from below it isn't a sheet of nothing)
     add(buildStrip(Track.start, Track.end, (q) => Track.lo(q) - 0.2, (q) => Track.hi(q) + 0.2, -0.9, 6), new THREE.MeshLambertMaterial({ color: 0x6e7177, side: THREE.DoubleSide }));
-    for (const side of [-1, 1]) add(buildStrip(Track.start, Track.end, (q) => beside(side, q, -0.05), (q) => beside(side, q, 0.2), -0.45, 6), new THREE.MeshLambertMaterial({ color: 0x80848a, side: THREE.DoubleSide }));
+    for (const side of [-1, 1]) add(sideStrip(Track.start, Track.end, (q) => beside(side, q, -0.05), (q) => beside(side, q, 0.2), -0.45, 6), new THREE.MeshLambertMaterial({ color: 0x80848a, side: THREE.DoubleSide }));
     instances(cube, 0x9ea2a8, walls);
     instances(cube, 0xb8bcc2, caps);
     instances(cube, 0x4a4f57, posts);
@@ -1439,8 +1620,9 @@ const buildRoad = () => {
     instances(cube, 0xdedede, walls);
     instances(cube, 0x4a4f57, posts);
     // (the catch fence: a see-through mesh)
-    const fence = new THREE.InstancedMesh(cube, new THREE.MeshBasicMaterial({ color: 0x9aa4ae, transparent: true, opacity: 0.3, depthWrite: false }), fences.length);
-    fences.forEach((entry, i) => {
+    const mesh = fences.filter(entry => entryAt(cube, entry, 0)[3]); // (none of it across another road)
+    const fence = new THREE.InstancedMesh(cube, new THREE.MeshBasicMaterial({ color: 0x9aa4ae, transparent: true, opacity: 0.3, depthWrite: false }), mesh.length);
+    mesh.forEach((entry, i) => {
       placeEntry(entry);
       fence.setMatrixAt(i, dummy.matrix);
     });
@@ -1499,56 +1681,29 @@ const buildRoad = () => {
 
   if (theme.scenery === 'city') {
     // ---- roadside poles and blocks (instanced), so speed is readable -----------------------------
-    // nothing is put where it would stand on another road, at a junction, or in a river
-    // (an exit with no flyovers: only the ramps themselves need to be kept clear)
-    const junction = (s) => exits.some(x => x.flyovers
-      ? (s > x.landingAt - 60 && s < x.exitAt + 120) || (s > x.mergeAt - 120 && s < x.flyoverAt + 60)
-      : (s > x.exitAt - 20 && s < x.exitAt + 120) || (s > x.mergeAt - 120 && s < x.mergeAt + 20));
+    // along the expressway and every side road alike, end to end: what would stand on another road, at a fork
+    // or a merge, under a flyover or where two roads run close, is taken out with the rest (see placeInstances);
+    // and nothing is put in a river
     const nearBridge = (s) => (LEVEL.bridges || []).some(b => s > b.from - 30 && s < b.to + 30);
-    const poleSpots = [], blockSpots = [];
-    for (let s = Track.start; s < Track.end; s += CONFIG.poleSpacing) {
-      if (Track.onBridge(s) || junction(s)) continue;
-      poleSpots.push([s, Track.lo(s) - 1.5], [s, Track.hi(s) + 1.5]);
-    }
-    for (let s = Track.start; s < Track.end; s += CONFIG.buildingSpacing) {
-      if (!junction(s) && !nearBridge(s)) blockSpots.push([s, -1, true], [s, 1, true]);
-    }
-    for (const x of exits) {
-      for (let s = x.side0 + 130; s < x.sideEnd - 130; s += CONFIG.poleSpacing) {
-        poleSpots.push([s, Track.lo(s) - 1.5], [s, Track.hi(s) + 1.5]);
+    const poles = [], blocks = [];
+    const roads = [[Track.start, Track.end], ...exits.map(x => [x.side0, x.sideEnd])];
+    for (const [from, to] of roads) {
+      for (let s = from; s < to; s += CONFIG.poleSpacing) {
+        if (Track.onBridge(s)) continue;
+        poles.push([s, Track.lo(s) - 1.5, 2.5, 1, 1, 1], [s, Track.hi(s) + 1.5, 2.5, 1, 1, 1]);
       }
-      for (let s = x.side0 + 140; s < x.sideEnd - 140; s += CONFIG.buildingSpacing) {
-        blockSpots.push([s, -1, false], [s, 1, false]);
+      for (let s0 = from; s0 < to - 10; s0 += CONFIG.buildingSpacing) {
+        if (nearBridge(s0)) continue;
+        for (const side of [-1, 1]) {
+          const s = s0 + Math.random() * 10;
+          const w = 6 + Math.random() * 10, h = 5 + Math.random() * 22, d = 6 + Math.random() * 12;
+          const far = 8 + w / 2 + Math.random() * 30;
+          blocks.push([s, side < 0 ? Track.lo(s) - far : Track.hi(s) + far, h / 2, w, h, d]);
+        }
       }
     }
-    const poles = new THREE.InstancedMesh(new THREE.BoxGeometry(0.3, 5, 0.3),
-      new THREE.MeshLambertMaterial({ color: 0xd9d9d9 }), poleSpots.length);
-    poleSpots.forEach(([s, lat], i) => {
-      dummy.rotation.y = Track.toWorld(s, lat, tmp);
-      dummy.position.set(tmp.x, tmp.y + 2.5, tmp.z);
-      dummy.scale.set(1, 1, 1);
-      dummy.updateMatrix();
-      poles.setMatrixAt(i, dummy.matrix);
-    });
-    levelGroup.add(poles);
-
-    const blocks = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1),
-      new THREE.MeshLambertMaterial({ color: 0x8b93a1 }), blockSpots.length);
-    blockSpots.forEach(([s0, side, onMain], i) => {
-      const s = s0 + Math.random() * 10;
-      const w = 6 + Math.random() * 10, h = 5 + Math.random() * 22, d = 6 + Math.random() * 12;
-      const far = 8 + w / 2 + Math.random() * 30;
-      const lat = side < 0 ? Track.lo(s) - far : Track.hi(s) + far;
-      dummy.rotation.y = Track.toWorld(s, lat, tmp);
-      // skip any that would land on, or right beside, the other road
-      const clash = onMain ? Track.sideDistance(tmp.x, tmp.z) < 24 : Track.mainDistance(tmp.x, tmp.z) < 30;
-      dummy.position.set(tmp.x, tmp.y + h / 2, tmp.z);
-      if (clash) dummy.scale.setScalar(0); // (gone entirely: flattening it alone left its roof hanging in the air)
-      else dummy.scale.set(w, h, d);
-      dummy.updateMatrix();
-      blocks.setMatrixAt(i, dummy.matrix);
-    });
-    levelGroup.add(blocks);
+    instances(new THREE.BoxGeometry(0.3, 5, 0.3), 0xd9d9d9, poles);
+    instances(cube, 0x8b93a1, blocks, false, CONFIG.ramps.clearBuilding);
   } else if (theme.scenery === 'farm') {
     // ---- farm: fenced fields of crops, trees, barns, silos and hay stacks -------------------------
     // fields: strips of different crops running alongside the road, drawn just after the ground
@@ -1556,14 +1711,14 @@ const buildRoad = () => {
     for (const side of [-1, 1]) {
       for (let s = Track.start, k = side > 0 ? 0 : 2; s < Track.end; s += 140, k++) {
         const field = new THREE.Mesh(
-          buildStrip(s, Math.min(Track.end, s + 132), (q) => beside(side, q, 4), (q) => beside(side, q, 110), -0.03, 8),
+          sideStrip(s, Math.min(Track.end, s + 132), (q) => beside(side, q, 4), (q) => beside(side, q, 110), -0.03, 8),
           new THREE.MeshBasicMaterial({ color: crops[k % crops.length], side: THREE.DoubleSide, depthWrite: false }));
         field.renderOrder = -1;
         levelGroup.add(field);
       }
       // a two-rail fence along the roadside: it also makes speed readable
       for (const y of [0.5, 1.0]) {
-        add(buildStrip(Track.start, Track.end, (q) => beside(side, q, 1.32), (q) => beside(side, q, 1.48), y), flat(0x8a6a45));
+        add(sideStrip(Track.start, Track.end, (q) => beside(side, q, 1.32), (q) => beside(side, q, 1.48), y), flat(0x8a6a45));
       }
     }
     const posts = [], trunks = [], crowns = [], barns = [], roofs = [], silos = [], caps = [], stacks = [];
@@ -1601,7 +1756,7 @@ const buildRoad = () => {
   } else if (theme.scenery === 'beach') {
     // ---- beach: the sea along the right with a line of surf, palms, umbrellas and huts ---------
     for (const [a, b, color, order] of [[30, 600, 0x2f6f9f, -1], [28, 32, 0xd8e6ea, -0.9]]) {
-      const water = new THREE.Mesh(buildStrip(Track.start, Track.end, (q) => beside(1, q, a), (q) => beside(1, q, b), -0.03, 8),
+      const water = new THREE.Mesh(sideStrip(Track.start, Track.end, (q) => beside(1, q, a), (q) => beside(1, q, b), -0.03, 8),
         new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, depthWrite: false }));
       water.renderOrder = order;
       levelGroup.add(water);
@@ -1638,7 +1793,7 @@ const buildRoad = () => {
     // with a door and windows facing the road, a driveway and a mailbox; here and there a little
     // park of trees instead. Trees in the gardens, and street lamps along the pavement.
     for (const side of [-1, 1]) {
-      add(buildStrip(Track.start, Track.end, (q) => beside(side, q, 0.4), (q) => beside(side, q, 2.4), 0.03), flat(0xcfd0cb));
+      add(sideStrip(Track.start, Track.end, (q) => beside(side, q, 0.4), (q) => beside(side, q, 2.4), 0.03), flat(0xcfd0cb));
     }
     // (run down, theme.rundown: drab walls, boarded windows, gaps in the fences, dead trees, bare dirt,
     // burnt-out houses, wrecks on the lawns, rubbish and graffiti)
@@ -1674,7 +1829,7 @@ const buildRoad = () => {
     };
     const FENCE = 2.8; // m off the pavement edge to the fence (and LOT m along the road per lot: see gunfire.js)
     // (nothing goes where it would stand on a side road)
-    const clear = (s, lat) => !exits.length || (Track.toWorld(s, lat, tmp), Track.sideDistance(tmp.x, tmp.z) > 24);
+    const clear = (s, lat) => standsClear(s, lat, 20, LOT, CONFIG.ramps.clearBuilding); // (a lot: its house and garden)
     for (const side of [-1, 1]) {
       for (let s = Track.start + (side > 0 ? 0 : LOT / 2), lot = 0; s < Track.end - LOT; s += LOT, lot++) {
         const mid = s + LOT / 2;
@@ -1833,7 +1988,7 @@ const buildRoad = () => {
     // the lake under each bridge, out to either side, and the jet (a plume of spray) on the left
     for (const b of LEVEL.bridges || []) {
       for (const side of [-1, 1]) {
-        const lake = new THREE.Mesh(buildStrip(b.from - 20, b.to + 20, (q) => beside(side, q, 2), (q) => beside(side, q, 500), -0.02, 8),
+        const lake = new THREE.Mesh(sideStrip(b.from - 20, b.to + 20, (q) => beside(side, q, 2), (q) => beside(side, q, 500), -0.02, 8),
           new THREE.MeshBasicMaterial({ color: 0x4f86a8, side: THREE.DoubleSide, depthWrite: false }));
         lake.renderOrder = -1;
         levelGroup.add(lake);
@@ -1913,7 +2068,7 @@ const buildRoad = () => {
       for (const side of [-1, 1]) {
         let from = Track.start;
         for (const [a, b] of [...breaks, [Track.end, Track.end]]) {
-          if (a > from) add(buildStrip(from, a, (q) => beside(side, q, 0.4), (q) => beside(side, q, 3), 0.03), flat(0xc9c7c0));
+          if (a > from) add(sideStrip(from, a, (q) => beside(side, q, 0.4), (q) => beside(side, q, 3), 0.03), flat(0xc9c7c0));
           from = b;
         }
       }
@@ -2262,7 +2417,7 @@ const buildRoad = () => {
     const leaf = new THREE.IcosahedronGeometry(0.5, 1);
     [0x3f7f36, 0x4f8f3f, 0x6a9a44].forEach((color, i) => instances(leaf, color, greens[i]));
   } else if (theme.scenery === 'zones') {
-    buildZones(beside, instances, add, flat, { cube, tube, cone });
+    buildZones(beside, instances, add, flat, { cube, tube, cone }, sideStrip);
   } else if (theme.scenery === 'construction') {
     // ---- construction: orange barrier fencing along both sides, and beyond it the site: tower
     // cranes, the steel frames of buildings going up, site huts, heaps of gravel, stacks of pipes,
@@ -2400,9 +2555,15 @@ const buildRoad = () => {
         const pos = [], idx = [], rows = Math.ceil((to - from) / 10);
         for (let r = 0; r <= rows; r++) {
           const s = Math.min(to, from + r * 10);
+          // (no hill where another road runs through where it would stand: it is level ground there)
+          let open = 1;
+          for (let d = floorTo; open && d <= across[across.length - 1]; d += 4) {
+            Track.toWorld(s, beside(q.sg, s, d), tmp);
+            if (!offRoads(tmp.x, tmp.z, 6)) open = 0;
+          }
           across.forEach((d, c) => {
             Track.toWorld(s, beside(q.sg, s, d), tmp);
-            pos.push(tmp.x, tmp.y - 0.05 + top * along(s) * rise(d), tmp.z);
+            pos.push(tmp.x, tmp.y - 0.05 + top * along(s) * rise(d) * open, tmp.z);
             if (r && c) {
               const a = (r - 1) * across.length + c - 1, b = a + 1, e = r * across.length + c - 1, f = e + 1;
               idx.push(a, e, b, b, e, f);
@@ -2712,7 +2873,7 @@ const buildRoad = () => {
     }
     // barbed wire on posts along both sides
     for (let s = Track.start; s < Track.end; s += 5) for (const side of [-1, 1]) posts.push([s, beside(side, s, 1.6), 0.55, 0.12, 1.1, 0.12]);
-    for (const side of [-1, 1]) for (const y of [0.45, 0.85]) add(buildStrip(Track.start, Track.end, (q) => beside(side, q, 1.55), (q) => beside(side, q, 1.65), y), flat(0x6d6a63));
+    for (const side of [-1, 1]) for (const y of [0.45, 0.85]) add(sideStrip(Track.start, Track.end, (q) => beside(side, q, 1.55), (q) => beside(side, q, 1.65), y), flat(0x6d6a63));
     instances(tube, 0x5a4e36, rims);
     instances(tube, 0x2e2618, craters);
     instances(cube, 0xb8a676, bags);
@@ -2728,7 +2889,7 @@ const buildRoad = () => {
         const near = 12 + (k % 3) * 9, far = near + 30 + (k % 2) * 25, to = Math.min(Track.end, s + 120);
         // (a brighter core down the middle of each river, drawn after it)
         for (const [a, b, color, order] of [[near, far, 0xff4a12, -1], [near + 6, far - 8, 0xffb52e, -0.9]]) {
-          const lava = new THREE.Mesh(buildStrip(s, to, (q) => beside(side, q, a), (q) => beside(side, q, b), -0.03, 8), glow(color));
+          const lava = new THREE.Mesh(sideStrip(s, to, (q) => beside(side, q, a), (q) => beside(side, q, b), -0.03, 8), glow(color));
           lava.renderOrder = order;
           levelGroup.add(lava);
         }
@@ -2811,16 +2972,16 @@ const buildRoad = () => {
     // red taxis' worth of light everywhere. (The Star Ferry and the trams: render/movers.js)
     const SEA = theme.sea || 14;
     const water = new THREE.MeshBasicMaterial({ color: 0x0f2238, side: THREE.DoubleSide });
-    add(buildStrip(Track.start, Track.end, (q) => beside(1, q, SEA), (q) => beside(1, q, SEA + 520), -0.03, 8), water);
+    add(sideStrip(Track.start, Track.end, (q) => beside(1, q, SEA), (q) => beside(1, q, SEA + 520), -0.03, 8), water);
     // (ripples: a few long pale streaks on the water, the city's lights in it)
     const sheen = new THREE.MeshBasicMaterial({ color: 0x24405c, side: THREE.DoubleSide });
     for (let s = Track.start; s < Track.end; s += 26) {
       const out = SEA + 10 + Math.random() * 300, len = 6 + Math.random() * 14;
-      add(buildStrip(s, s + len, (q) => beside(1, q, out), (q) => beside(1, q, out + 0.6), -0.02, 4), sheen);
+      add(sideStrip(s, s + len, (q) => beside(1, q, out), (q) => beside(1, q, out + 0.6), -0.02, 4), sheen);
     }
-    add(buildStrip(Track.start, Track.end, (q) => beside(1, q, 0.4), (q) => beside(1, q, SEA - 0.4), 0.03), flat(0x8c8a84)); // the promenade
-    add(buildStrip(Track.start, Track.end, (q) => beside(1, q, SEA - 1), (q) => beside(1, q, SEA), 0.6, 4), flat(0x6f6d68));     // its sea wall
-    add(buildStrip(Track.start, Track.end, (q) => beside(-1, q, 0.4), (q) => beside(-1, q, 3.2), 0.03), flat(0x8c8a84));         // and a pavement on the left
+    add(sideStrip(Track.start, Track.end, (q) => beside(1, q, 0.4), (q) => beside(1, q, SEA - 0.4), 0.03), flat(0x8c8a84)); // the promenade
+    add(sideStrip(Track.start, Track.end, (q) => beside(1, q, SEA - 1), (q) => beside(1, q, SEA), 0.6, 4), flat(0x6f6d68));     // its sea wall
+    add(sideStrip(Track.start, Track.end, (q) => beside(-1, q, 0.4), (q) => beside(-1, q, 3.2), 0.03), flat(0x8c8a84));         // and a pavement on the left
     const rails = [], railPosts = [], towers = [], windows = [], crowns = [], signs = [[], [], [], []], signPosts = [], arms = [], farTowers = [], farWindows = [], lampPosts = [], lampHeads = [];
     const NEON = [0xff2d95, 0x27e7ff, 0xffe12b, 0x7cff3a];
     for (let s = Track.start; s < Track.end; s += 2.5) {
@@ -2939,7 +3100,7 @@ const buildRoad = () => {
     // ---- mumbai in the monsoon: low buildings in washed-out colours crowded up to the road, painted
     // hoardings on tall frames, palms bending in the rain, awnings over the pavement, water lying in
     // every low spot of the road, and the rain
-    for (const side of [-1, 1]) add(buildStrip(Track.start, Track.end, (q) => beside(side, q, 0.3), (q) => beside(side, q, 2.6), 0.03), flat(0x7f7b70));
+    for (const side of [-1, 1]) add(sideStrip(Track.start, Track.end, (q) => beside(side, q, 0.3), (q) => beside(side, q, 2.6), 0.03), flat(0x7f7b70));
     const WASH = [0xd9a066, 0x8fb0c9, 0xc9c48a, 0xd98c8c, 0xa6c48f, 0xe0d2b8, 0x9b8fc4];
     const walls = WASH.map(() => []), roofs = [], windows = [], awnings = [], hoardings = [], frames = [], trunks = [], fronds = [], stains = [], tanks = [];
     const p = {};
@@ -2997,5 +3158,7 @@ const buildRoad = () => {
   if (theme.snow && theme.scenery !== 'alpine') snowfall();
   if (theme.rain) rainfall();
   if (theme.elevated && theme.scenery !== 'tokyo') elevatedRoad(theme.elevated);
+  placeInstances();
+  clearLoose();
 };
 Game.onLoad.push(buildRoad);
