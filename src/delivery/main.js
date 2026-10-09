@@ -4,7 +4,7 @@ import './style.css';
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
-import { LEVEL, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
+import { LEVEL, LEVELS, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
 import { THEMES } from './themes.js';
 import { Progress } from './progress.js';
 import './render/demo.js'; // (?demo: before the menu)
@@ -57,7 +57,7 @@ import './horn.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
 import { Social } from './social.js';
-import { CAR, lendCar, superOf } from './cars.js';
+import { CAR, lendCar, superOf, ownedAmphibious } from './cars.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
 // ?test (or ?hidden=testbed) starts the hidden test track straight away (?test&evil: as Evil).
@@ -72,6 +72,14 @@ if (params.get('garage') !== null) {
   Garage.open();
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
+}
+// ?pick=41 shows the menu with that level picked, open or not (for a look at its card: nothing starts; the levels
+// are all open for this visit); with &start, Start Game is pressed too (an amphibious level with no amphibious car)
+if (params.get('pick')) {
+  Progress.data.unlocked = Math.max(Progress.data.unlocked, LEVELS.length);
+  selectLevel(Number(params.get('pick')) - 1);
+  window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
+  if (params.get('start') !== null) Game.start();
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
@@ -105,6 +113,8 @@ if (params.get('racewatch') !== null) {
     Progress.data.cars.push(params.get('car').replace(/^super-/, ''));
     Progress.data.car = params.get('car').replace(/^super-/, '');
   }
+  // (an amphibious level straight from the address, with no amphibious car owned: one for this visit, as ?car gives)
+  if (LEVEL.amphibious && !ownedAmphibious()) Progress.data.cars.push(CONFIG.clock.amphibious);
   Game.start();
   if (params.get('car')?.startsWith('super-') && superOf(CAR)) Player.takeCar(() => lendCar(superOf(CAR)));
   if (params.get('at')) Player.s = Number(params.get('at'));

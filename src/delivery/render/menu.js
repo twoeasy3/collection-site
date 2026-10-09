@@ -3,7 +3,7 @@
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
-import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, earnedFor } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, earnedFor, amphibiousCars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { Garage, withStars } from './garage.js';
@@ -83,6 +83,8 @@ const startScreen = document.getElementById('startScreen');
 const tabBtns = { delivery: document.getElementById('tabDelivery'), race: document.getElementById('tabRaces') };
 for (const [name, button] of Object.entries(tabBtns)) button.addEventListener('click', () => { tab = name; shownGroup = null; draw(); });
 const shopBox = document.getElementById('shop');
+// the amphibious car to point a player with none at: the cheapest
+const cheapestAmphibious = () => amphibiousCars().sort((a, b) => a.price - b.price)[0];
 
 const draw = () => {
   bank.textContent = 'Bank ' + money(Progress.data.money);
@@ -108,7 +110,7 @@ const draw = () => {
     const onlyGood = level.battle || level.alwaysGood, prize = earnedFor(level.id);
     // (and on the card once made: its best times' medals, and the level's gimmicks. See render/levelcards.js)
     return decorateLevelCard(card(label(level) + '. ' + level.name, open ? [
-      'Tip ' + money(level.tip),
+      'Tip ' + money(level.tip) + (level.amphibious ? '  |  Amphibious cars only' : ''),
       onlyGood ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
         : 'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
       onlyGood ? (good === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good))
@@ -119,7 +121,7 @@ const draw = () => {
     ] : ['Locked', 'Deliver level ' + label(list[first + k - 1]) + ' on time to open it'], {
       current: level === LEVEL,
       disabled: !open,
-      onPick: () => { selectLevel(i); useLevelCar(level.car); shownGroup = null; draw(); }, // (the groups follow the level picked)
+      onPick: () => { selectLevel(i); useLevelCar(level.car, level.amphibious); shownGroup = null; draw(); }, // (the groups follow the level picked; an amphibious level puts the player in their amphibious car)
       image: LEVEL_SHOTS[level.id],
     }), level, open);
   }));
@@ -132,7 +134,12 @@ const draw = () => {
   shopBox.replaceChildren(card(withStars(CAR), [
     'Top speed ' + Math.round(CAR.maxSpeed * 3.6) + ' km/h',
     'Acceleration ' + CAR.accel + '  |  Health ' + CAR.health,
-    LEVEL.car ? 'You must use this vehicle on this level. The garage car returns on other levels.' : 'Open the garage to change or buy cars',
+    LEVEL.car ? 'You must use this vehicle on this level. The garage car returns on other levels.'
+      : !LEVEL.amphibious ? 'Open the garage to change or buy cars'
+      // (an amphibious level: the player's amphibious car, picked for them if another car is in use; or, with none
+      // owned, which one to get: the cheapest, and where it is. Start Game opens the garage at it: see onRefused)
+      : CAR.amphibious ? 'An amphibious level: you drive your ' + CAR.name + '. Others are in the garage’s Amphibious section'
+        : 'This level needs an amphibious car. Get the ' + cheapestAmphibious().name + ' (' + money(cheapestAmphibious().price) + ') in the garage’s Amphibious section',
   ], { current: true, onPick: () => Garage.open(), image: CAR_SHOTS[CAR.id + (Game.evil && !LEVEL.battle && !LEVEL.alwaysGood ? '-evil' : '-good')] }));
   // the side picked, and what it means
   sideBtn.className = 'side-btn ' + (Game.evil ? 'evil' : 'good');
@@ -142,8 +149,16 @@ const draw = () => {
     : 'More time. Care packages increase your social standing and gains you benefits.';
 };
 draw();
-// a car picked in the garage shows on its card (unless the level has a vehicle of its own)
-window.addEventListener('carchange', () => { useLevelCar(LEVEL.car); draw(); });
+// a car picked in the garage shows on its card (unless the level has a vehicle of its own; and on an amphibious
+// level only if it is an amphibious one: otherwise the player's amphibious car stays)
+window.addEventListener('carchange', () => { useLevelCar(LEVEL.car, LEVEL.amphibious); draw(); });
+// Start Game on an amphibious level with no amphibious car owned (see Game.start): nothing starts, and the
+// garage opens at the one to get, to look at and buy (still a menu: no level is built, nothing reloads)
+Game.onRefused.push(() => {
+  draw();
+  Garage.open();
+  Garage.look(cheapestAmphibious().id);
+});
 
 // sound on / off: this button, or the M key at any time
 const muteBtn = document.getElementById('muteBtn');
@@ -171,7 +186,7 @@ const raceClassBtn = document.getElementById('raceClassBtn');
 const showRaceClass = () => {
   const kind = RACE_CLASSES[Progress.data.raceClass] ? Progress.data.raceClass : 'f1';
   setRaceClass(kind);
-  useLevelCar(LEVEL.car); // (a race level picked: its car is the class's)
+  useLevelCar(LEVEL.car, LEVEL.amphibious); // (a race level picked: its car is the class's)
   raceClassBtn.textContent = 'Race cars: ' + RACE_CLASSES[kind];
 };
 // the race screensaver's circuit: one of the lapped levels, or each of them in turn
