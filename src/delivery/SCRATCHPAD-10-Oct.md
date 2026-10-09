@@ -1,0 +1,226 @@
+# Delivery Racer: scratchpad, 10-Oct (2026-10-10)
+
+One orchestrator and three agents. Each agent keeps its own section below up to date as it goes
+(what is done with its commit, what is in progress, what is blocked or skipped and why, what was and
+was not verified). Edit only your own section. This one file, in the main checkout, is shared by all
+three; the orchestrator commits it.
+
+Standing rules: never push (`main` deploys the site); never run the smoke test; never delete a
+worktree directory (their `node_modules` are junctions).
+
+## Where things stood this morning
+
+- `main` at `c0d9c81` has everything from `delivery-ideas` and `worktree-delivery-batch`, plus the
+  tunnel clearance fix and the speed-camera proximity UI.
+- `delivery-circuits` had two unmerged commits: the Races tab and scaffolding for Monza, Spa and
+  Albert Park (stub circuits only). See `CIRCUITS-HANDOVER.md` on that branch.
+- `delivery-city-levels` had about 1,400 changed lines and 26 new files uncommitted, no scratchpad:
+  a second implementation of the batch brief. The owner said to discard the duplicate work. It is
+  stashed (`0201824963add3d9587820db114f3d6b5f500528`); the features `main` lacks are being ported
+  from it (agent 1), and the stash is dropped once that lands.
+- Left on the lists: checklist 28, 29, 30, 31, 35, 36, 38, 49, 50, 51, 52; from the batch handover:
+  mystery effects, Super cars, 6-star tier, visible damage, horn per car, postcards, milestones,
+  Gimmicks cards, level clocks and menu pictures for the five themed levels.
+
+## Everything found on the lists
+
+Gathered from `SCRATCHPAD.md`, `CHECKLIST.md`, `HANDOVER.md`, `HANDOVER-batch.md` (all on `main`),
+`CIRCUITS-HANDOVER.md` (on `delivery-circuits`) and the uncommitted work in `delivery-city-levels`.
+"Owner" is who has it today; a dash means nobody. Status here is as of this morning: the agents'
+sections below say how far each has got.
+
+### Already on `main` (done before today)
+
+| Item | What | Commit |
+|---|---|---|
+| 12-23 | Eleven gimmicks on Gimmick Road 2: drawbridge, wide load, school crossing, trolleys, burst water main, balloon landing, road-train jackknife, marathon, average-speed cameras, toll plazas, stampede, side-road gimmicks | `2f5e3cd` |
+| 26 | Five traffic kinds with quirks (ice cream van, bin lorry, learner, boy racer, caravan) | `052fc72` |
+| 27 | Four car traits (taken off the checklist by the owner while it was being built; it is in) | `052fc72` |
+| 33 | Photo mode | `daaa40d` |
+| 39 | Gimmicks page cards: wrong-way drivers, quarries and blasts, pelotons, boulders | `6b73230` |
+| 40, 41 | Blue Star balance pass; `NEXT_TIER_CAPS` for a six-star tier | `daaa40d` |
+| 42, 46 | Side roads follow hills; hill behind the quarry face | `18ab667` |
+| 43, 44, 45 | Favicon link; `?ghost`; wrong-way driver warning, horn and lights | `6b73230` |
+| 47 | Tour de Coast's clock re-run | `052fc72` |
+| 48 | `scripts/shots.mjs` | `2f5e3cd` |
+| batch 1 | Themes and levels 27-31: Hong Kong Harbour, Tokyo Expressway, Mumbai Monsoon, Stelvio Pass, Christmas Eve; traffic kinds keitruck, postvan, rickshaw, float, cargotruck, icecream | `d6215e7` |
+| batch 2 | Tunnels, burst water mains, herds that stay | `d6215e7` |
+| batch 3 | Parades, roadblocks, falling cargo | `0bfae1e` |
+| batch 4 | Ice-cream stops, reversible lanes, convoys, rubbernecking; a basic player horn | `faef78f`, `f874f36` |
+| since | Tunnel clearance 8.5 m and camera 5.5 m; Tokyo tunnel signs and fog; speed-camera proximity UI and 3D locator | `d291330`, `c0d9c81` |
+
+### Not done as of this morning
+
+| Item | What | From | Owner |
+|---|---|---|---|
+| mystery | Mystery effects: earthquake, rewind, giant, swap sides, magnet, blackout, traffic freeze, "souped up" | batch handover; partly written in the city-levels stash | Agent 1 |
+| super | Super version of every car but the Lowrider (livery, body kit, engine sound fallback) | batch handover; stash | Agent 1 |
+| 6-star | Six-star tier, a car earned per special level | batch handover; stash (`EARNED_CARS`) | Agent 1 |
+| damage | Visible damage (dents) | batch handover; stash (`render/dents.js`, never wired in) | Agent 1 |
+| horns | A horn per car | batch handover; stash (`HORNS` in `render/audio.js`) | Agent 1 |
+| postcards | Postcards album (level shots on delivery) | batch handover; stash (`render/album.js`, no CSS) | Agent 1 |
+| milestones | Milestones wall | batch handover; stash (no CSS, not imported) | Agent 1 |
+| race tab | Races on a tab of their own on the start screen (applied on the branch, never opened in a browser) | circuits handover | Agent 2 |
+| osm tool | `scripts/circuit-from-osm.mjs`: OSM loop, 4 m segments, SRTM grades, run-off from barriers and polygons | circuits handover | Agent 2 |
+| circuits | Monza, Spa-Francorchamps, Albert Park, with accurate run-off, elevation and landmarks | circuits handover | Agent 2 |
+| smoke labels | `delivery-smoke.mjs` line ~739 expects `S1..` labels; needs the `R` labels | circuits handover | Agent 2 |
+| 52 | Save data: measure the cookie against 4 KB, local storage first, round times, export / import a save code | checklist | Agent 3 |
+| 38 | Level select: best times and medals on thumbnails, gimmick preview | checklist | Agent 3 |
+| 35 | Sort and filter the garage | checklist | Agent 3 |
+| 36 | Car comparison card | checklist | Agent 3 |
+| cards | Gimmicks page cards for tunnels, water mains, parades, roadblocks, falling cargo, ice-cream stops, reversible lanes, convoys, rubbernecking | batch handover | Agent 3 |
+| 30 | Time trial with ghost replay (if time allows) | checklist | Agent 3 |
+| toll | A toll's fee shows as a fine on the results screen | scratchpad, rough edges | Agent 3 |
+| 28 | Liveries: unlockable paint jobs earned for Evil and Good clears | checklist | - |
+| 29 | Daily challenge with a leaderboard (needs a server) | checklist | - |
+| 31 | Endless mode | checklist | - |
+| 49 | Speed up the full smoke test with parallel workers | checklist | - |
+| 50 | Lint and format setup, CI running the quick suite on PRs | checklist | - |
+| 51 | Performance: instance more scenery, shorter draw distance on phones | checklist | - |
+| clocks | Level clocks for the five themed levels were set by hand: `level-clocks.mjs hong-kong tokyo mumbai stelvio christmas --write` | batch handover | - |
+| pictures | Menu pictures `levelshots/<id>.jpg` for the five themed levels | batch handover | - |
+| more circuits | Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka (trimmed from the request by the owner) | circuits handover | - |
+| amphibious | The amphibious models (toybota, nissank, herald, dampervan, transporter) have no car or level | handover | - |
+| site link | Nothing on the site links to `/delivery/`; the owner has not said where | handover | - |
+| editor | The level editor knows none of the new level fields | scratchpad, rough edges | - |
+| real levels | The Gimmick Road 2 gimmicks are in no real level | scratchpad, rough edges | - |
+| obstacles | Traffic drives through the moving obstacles; not confirmed that traffic waits at a school crossing | scratchpad, rough edges | - |
+| 12% | A side road on a hill has a short stretch as steep as 12% | scratchpad, rough edges | - |
+| stale notes | `cars.js` still says 20 bays; `cameras.js` points to a `render/cameras.js` that does not exist | handover | - |
+
+### Discarded on the owner's word
+
+The duplicate half of the city-levels work: its own versions of the five themed levels (and
+`tokyo-loop`), tunnels, convoys, ice-cream stops, reversible lanes, rubbernecking, trams, the
+roadshow / parades, and `gimmick-road-3`, which only exercises those.
+
+### Never verified (carried over from the old notes)
+
+- The smoke test has not been run against anything since `74925ab`.
+- Not seen or tried: trolleys, runners, water main and gantries up close; the new traffic models; the
+  Gimmicks cards; garage perk text; photo mode's drag, zoom and save; any sound; anything played by
+  hand; `shots.mjs --levels` and `--cars`.
+- Nothing from the batch branch was seen in a browser before it was merged.
+- From 2026-10-04 and still open: audio listen-through, car animations, touch controls on a real
+  device, balance on most levels, performance on phones.
+
+## Orchestrator
+
+- Assigned: agent 1 the port (on `main`), agent 2 the circuits (`delivery-circuits`), agent 3 the
+  checklist's menu and save items (`worktree-delivery-batch`).
+- Not assigned this round: 28 (liveries: would collide with the Super liveries), 29 (needs a server
+  leaderboard), 31, 49, 50, 51; level clocks and menu pictures for the five themed levels.
+- To do when agents report: merge both branches into `main`, resolve overlaps (`render/menu.js`,
+  `progress.js`, `cars.js`), drop the stash.
+- A Vite dev server from an earlier session is still listening on port 5199; left alone.
+- **Queued, asked for by the owner mid-morning: side roads cleanup.** Goes to a fourth agent as soon
+  as one of the three finishes (the owner's cap is three at once). The request:
+  1. Side roads are too restrictive: make them fully-featured roads. Known limits today (top of
+     `levels.js`, `track.js`): hills cannot be combined with an exit that has flyovers; exits cannot
+     be combined with `"flow": "south"`; a one-way level's exits cannot have flyovers; gimmicks reach
+     a side road only through `{ road: 'side', exit: n }` on some kinds; a 12% stretch where the
+     expressway bends away.
+  2. Decor beside the main road must prune correctly where a side road runs (`render/road.js`: the
+     `junction(s)` windows near line 1358 and the `Track.sideDistance(...) > 24` test near 1531 are
+     coarse, and not every theme's scenery goes through them).
+  3. The road markings at the fork and at the merge look nothing like real ones: investigate
+     (`render/road.js` from about line 835: edge line, the dashes over `ZONE`, chevrons) and redraw
+     them as a real diverge and merge (taper, gore with chevrons, dashed lane-drop line, solid edge
+     lines carried round onto the side road).
+  4. Check and fix all of it in every theme. Levels with exits: back-roads, big-business,
+     expressway, farm, gimmick-road-2, market-town, mystery-meadows, quarry-run, ring-road, ufo.
+- **Owner, later in the morning: remove toll plazas (21) and average-speed cameras (20)**: "terribly
+  unfun mechanics". Given to agent 3 in place of its toll-line fix; the ordinary speed cameras and
+  the proximity UI of `c0d9c81` stay.
+- **Queued, second in line after the side roads: amphibious cars and levels.** The request:
+  1. Each of the five amphibious models (`toybota`, `nissank`, `herald`, `dampervan`, `transporter`
+     in `render/models.js`, no car yet) becomes a garage car, one at each star level (1 to 5).
+  2. An amphibious section in the garage.
+  3. Five interesting, fully gimmicked amphibious levels, each in a different theme, playable only
+     in an amphibious car.
+  4. On those levels the road turns into a water stage for stretches, or the other way round.
+     Traffic that is not amphibious stops at the water's edge; amphibious traffic drives in and
+     out; on the water there is boat traffic, treated as road traffic is.
+  Things to settle while building: how the garage's sections sit with agent 3's sort and filter and
+  agent 1's six-star tier; where the five levels go in `LEVELS` (`INSERTED_AT` in `progress.js` if
+  among the others); what `Oh Mine!`'s jetboat and `tide.js` already give for water.
+- **Owner, added to the side roads cleanup:** fix the polygons flickering on side roads on hills
+  (most likely the side road's pavement lying in the same plane as the hill's ground or the
+  expressway's verge where they overlap: check heights, `polygonOffset` and `renderOrder`, since
+  `18ab667` made a side road follow the land).
+- **Owner, on the ghost replay (30):** investigate a full 1:1 replay system for both traffic and
+  race levels. Given to agent 3 as an investigation with a write-up, in place of the simple ghost.
+- **Queued, third in line: the cargo.** The request:
+  1. Models for the package being delivered: five "normal" things (not as dull as a plain box) for
+     Good, five odd things for Evil.
+  2. The Evil ones are animated and have three states, for example a porcupine: normal, balled up,
+     rabid / angry. The state follows how much time is left.
+  3. The item is shown in a corner of the screen, visual only.
+  4. A new ending: on completing a level the car stops, the camera pans to the side of the road,
+     the cargo is delivered to the kerbside, and then the results screen comes up.
+  Models go in a state-free file (`render/cargoModels.js`) so a reference page can show them; which
+  item a level carries is level or config data, fixed per level.
+
+## Agent 1: port from the city-levels stash (main checkout, `main`)
+
+- Read the stash in full. Non-duplicates found: `mysteries.js` + `render/mysteries.js`, Super cars,
+  `EARNED_CARS`, `render/dents.js` (written but never wired in), a `HORNS` table per car in
+  `render/audio.js`, `render/album.js`, `milestones.js` + `render/milestones.js` (neither panel has
+  any CSS in the stash, nor is either imported by `main.js`: to be finished).
+- Skipping `levels/gimmick-road-3.json`: it only exercises the stash's duplicate gimmicks (its own
+  `parades` / `roadblocks` / `cargoTrucks` / `iceCreamVans` / `reversibles` fields, which `main`
+  spells differently), none of the features being ported.
+- In progress: 1 (mystery effects) and 2 (Super cars). No commits yet.
+
+## Agent 2: real circuits (`.claude/worktrees/delivery-circuits`, `delivery-circuits`)
+
+- Done: `main` merged into `delivery-circuits` (`a401d13`). One conflict, `levels.js` imports: both
+  kept; main's five themed levels stay in `MAIN_LEVELS`, the circuits stay last in `LEVELS`.
+  `node --check` passes on levels, progress, game, themes, config, render/road, render/menu.
+- Done (`b256615`): `scripts/delivery-levels-check.mjs`, a headless check: all 47 levels build with no
+  `Track.problems`, labels are 1.. / S1.. / R1.. (R1 Marina Bay .. R6 Albert Park), every race starts
+  and is driven. Passes. The smoke test's label assertion edited for `R` labels (not run).
+- Done (`a21b6fc`): `scripts/circuit-from-osm.mjs` + `scripts/circuits/monza.json`; Monza built from
+  OSM relation 284565: 5800 m (real 5793), closes 0.03 m / 0 rad, SRTM heights 14 m range, 105
+  run-off stretches measured per side every 4 m (barriers, tree line, buildings, gravel traps, pit
+  lane, old banking), 30 stands from mapped grandstands. `track.js` changed: run-off on a lapped
+  level no longer eases to nothing at the start line (stretch from 0 / to lap end).
+- In progress: Spa, then Albert Park, then landmarks in `render/circuits/<id>.js`.
+- Not verified: nothing seen in a browser yet (headless logic only).
+
+## Agent 3: checklist menu and save items (`.claude/worktrees/delivery-batch`, `worktree-delivery-batch`)
+
+- Read the handover, checklist, README, `progress.js`, `render/menu.js`, `render/garage.js`,
+  `game.js`. No commits yet.
+- Plan, to keep the merge easy: new UI goes in new files (`render/savecode.js`,
+  `render/levelcards.js`, `render/garageview.js`, `render/compare.js`, `ghost.js` +
+  `render/ghost.js`, `menus.css`); the shared files get a line or two each.
+- Done, `5e53e1a`: **52 save data.** Measured first: a full save's cookie (40 levels x both sides,
+  33 cars) was 4013 of 4096 bytes; now 2931 (best times to 0.1 s, bank to the cent). Local storage
+  is read first, the cookie only if it has nothing. Export save / Import save on the menu
+  (`render/savecode.js`, a panel with a textarea; code about 2,600 characters, tidied on the way
+  in). Verified: `node scripts/.save-check.mjs` (sizes, round trip, bad codes refused), both panels
+  in a screenshot. Not verified: clicking Copy / Load, the menu refreshing after an import.
+  Merge notes: `progress.js` has `read()` split into `read()` + `restore(saved)` and new
+  `saved()`, `exportCode()`, `importCode()`; a new field in `fresh()` needs nothing else. The more
+  levels and cars the other branches add, the bigger the cookie: re-run the check after merging.
+- Done, `5e53e1a`: **38 level select.** Medals and best times on the pictures, gimmick chips under
+  the words (`levelinfo.js`, `render/levelcards.js`, `menus.css`; `CONFIG.medals`). `render/menu.js`
+  has one import and the level `card(...)` wrapped in `decorateLevelCard(card(...), level, open)`.
+  Seen in a screenshot with `?demo` (a made-up save, never written: `render/demo.js`). The old
+  "Best to spare" line is left in and now duplicates the picture's.
+- Done, `865d59f`: **35 garage sort and filter** (`render/garageview.js`: Sort and Show buttons on
+  the garage bar, the lot rebuilt each press, nothing saved) and **36 comparison card**
+  (`render/compare.js`: car in use against the one tapped). `render/garage.js` has two imports, the
+  `sorted` line in `buildLot`, one line in `refresh`, a `mountGarageView(...)` block and
+  `Garage.look(id)` for checks (`?garage&look=rally`, `&sort=speed&show=owned`). Seen in two
+  screenshots; no button clicked, the card not seen in its final corner, nothing seen on a phone.
+- Done, `62c2bdb`: **toll plazas and average-speed cameras removed** (owner's request; replaces
+  the old item 7). Out of `hazards.js`, `cameras.js` (kept: it is the ordinary cameras' file),
+  `render/hazards.js`, `render/obstacleModels.js` (`tollBooth`), `collision.js`, `config.js`
+  (`toll`, `averageSpeed`, `obstacleKinds.tollBooth`), `track.js` validation, `levels.js` docs,
+  `messages.json` (five event lines and the `toll` bust), `gimmick-road-2.json`, two Gimmicks cards,
+  and `scripts/.hazards-check.mjs`, which still passes (run with node). Checklist 20 and 21 marked
+  `[-]` removed. `Game.fines` stays: the ordinary cameras use it. Nothing from `c0d9c81` touched.
+  Not verified: Gimmick Road 2 and the Gimmicks page not opened since.
+- In progress: Gimmicks page cards (nine), then 30 (ghost replay) if time remains.
