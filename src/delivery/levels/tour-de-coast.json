@@ -4,7 +4,7 @@
   "theme": "coast",
   "clock": { "good": 215, "evil": 165 },
   "tip": 190,
-  "traffic": { "wagon": 0.25, "lovebus": 0.2, "pickup": 0.15, "commuter": 0.15, "van": 0.1, "darkvan": 0.08, "police": 0.07 },
+  "traffic": { "wagon": 0.25, "lovebus": 0.2, "pickup": 0.15, "commuter": 0.15, "van": 0.1, "darkvan": 0.08, "police": 0.03 },
   "trafficCount": 8,
   "oncomingCount": 7,
   "segments": [

@@ -962,11 +962,14 @@ export const Traffic = (() => {
     // (into the player's lane, in its way: only with room enough ahead of the player for its speed, see roomToBlock)
     if ((att === 'smug' || att === 'rage' || att === 'vigilante') && Player.active && car.dir > 0 && roomToBlock(car, Player) && mayBlock(car)) {
       const dir = Math.sign(playerLane - car.lane);
-      if (dir && tryMove(car, dir, true) && (car.pendingLane ?? car.lane) === playerLane) car.blockedPlayer = true; // (in the player's way: that was its block)
+      if (dir && tryMove(car, dir, true)) car.blockedPlayer = true; // (its move at the player: that was its block, whether or not the player is still there)
     } else if ((att === 'friendly' || att === 'wingman') && inRange && playerLane === car.lane) aside();
     else if (att === 'wary' && near && playerLane === car.lane) aside();
     else if (att === 'sulky' && inRange) { /* it holds its lane */ } else if (!car.racer && Math.random() < CONFIG.laneChangeChance) { // (a racer picks its lane to race: see seekTow, and the overtakes in update)
-      tryMove(car, Math.random() < 0.5 ? 1 : -1);
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      // (one out to block the player that has had its go, with no grudge, never wanders back into its way)
+      const blocker = (att === 'smug' || att === 'rage' || att === 'vigilante') && !mayBlock(car) && ahead > 0 && ahead < CONFIG.attitudeRange + 70;
+      if (!(blocker && Math.sign(playerLane - car.lane) === dir)) tryMove(car, dir);
     }
   };
 

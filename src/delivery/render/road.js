@@ -751,6 +751,17 @@ const buildRoad = () => {
     }
     return true;
   };
+  // a big thing out in the scenery (a mountain): from (cx, cz) out along the way (dx, dz), the first spot
+  // `far` m or more out where nothing of it (`r` m round) comes within `margin` m of any road, main or side:
+  // so no road ever runs into one, however the level winds (see the alpine peaks)
+  const clearOfRoads = (cx, cz, dx, dz, far, r, margin) => {
+    const half = Math.max(...[0, Track.length / 2, Track.length].map(s => Math.max(Track.hi(s), -Track.lo(s))));
+    for (let k = 0; k < 200; k++, far += 25) {
+      const x = cx + dx * far, z = cz + dz * far;
+      if (Track.mainDistance(x, z) > r + half + margin && offRoads(x, z, r + margin)) return { x, z };
+    }
+    return { x: cx + dx * far, z: cz + dz * far };
+  };
   // painted markings lie a couple of centimetres above the road; this keeps them on top of it
   for (const mat of [lineMat, centreMat]) {
     mat.polygonOffset = true;
@@ -2282,7 +2293,8 @@ const buildRoad = () => {
       const a = k / 16 * Math.PI * 2 + Math.random() * 0.2, far = 700 + Math.random() * 250;
       const r = 180 + Math.random() * 140, h = 260 + Math.random() * 220;
       const peak = new THREE.Mesh(new THREE.ConeGeometry(r, h, 7), rock);
-      peak.position.set(middle.x + Math.sin(a) * far, h / 2 - 20, middle.z + Math.cos(a) * far);
+      const at = clearOfRoads(middle.x, middle.z, Math.sin(a), Math.cos(a), far, r, 40); // (pushed out clear of every road)
+      peak.position.set(at.x, h / 2 - 20, at.z);
       const cap = new THREE.Mesh(new THREE.ConeGeometry(r * 0.42, h * 0.42, 7), white);
       cap.position.set(peak.position.x, h - 20 - h * 0.21 + 1, peak.position.z);
       peak.material.fog = cap.material.fog = true;

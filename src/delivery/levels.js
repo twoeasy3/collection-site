@@ -87,6 +87,9 @@
 //   traffic    which vehicles turn up as traffic and how often, relative to each other:
 //              { "darkvan": 0.44, "van": 0.18, "police": 0.1 }. The kinds are those in
 //              CONFIG.vehicles. An empty list ({}) means no traffic at all.
+//              Keep the police light (a share of about 0.03 to 0.04): the levels from Speed Trap Alley on do.
+//              For a stretch with no police at all (and a buffer either side, so none can see into it), give
+//              the police only in trafficZones round it: a police car stays on station at a zone's edge
 //   trafficCount, oncomingCount  how many vehicles are about at once, each way (defaults in
 //              CONFIG; together no more than CONFIG.trafficPool)
 //   drivers    { evil, happy, angry }: the share of drivers that are evil, and the chance a
@@ -170,8 +173,10 @@
 //              short of there, it comes crashing down across that road (only a sight)
 //   parkedPlanes  { s, d, turn }: airliners parked d m off the road on the left, turned a little
 //   cameras    { s, side, limit }: a speed camera on its pole, on a shoulder (side 'left' | 'right') or
-//              on the centre line ('centre'); limit in km/h (default CONFIG.speedCamera.limit). Passing
-//              it faster is a fine the first time in a run, a bust after; run over, it's no offence
+//              on the centre line ('centre'); limit in km/h (default the level's speedLimit, or else
+//              CONFIG.speedCamera.limit). Passing it faster is a fine the first time in a run (by how far
+//              over: CONFIG.speedCamera.fines), a bust after; run over, it's no offence
+//   speedLimit km/h: the limit at the level's speed cameras, where a camera doesn't say
 //   processions  { every: { min, max } }: now and then a funeral procession, a hearse and its cars,
 //              slow, nose to tail (see CONFIG.procession)
 //   crossings  { s, trigger, every }: a level crossing: lights, booms, and a short fast train across

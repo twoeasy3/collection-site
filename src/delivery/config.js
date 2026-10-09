@@ -569,7 +569,7 @@ export const CONFIG = {
   // crit / spin: its own odds of a critical hit / of spinning out, as a multiple of the usual (default 1; 0 = never)
   vehicles: {
     // (a vintage delivery van, in the one livery: livery is its paint, whatever the driver)
-    van:     { hw: 1.1,  hl: 2.7, height: 2.3, mass: 1.8, health: 90,  speed: 0.95, model: 'deliveryvan', livery: 0x1e5b3f },
+    van:     { hw: 1.1,  hl: 2.7, height: 2.3, mass: 1.8, health: 90,  speed: 0.95, special: true, model: 'deliveryvan', livery: 0x1e5b3f }, // (special: never evil, as a bus)
     bus:     { hw: 1.3,  hl: 5.5, height: 3.1, mass: 4,   health: 180, speed: 0.8, special: true, model: 'citybus' },
     tractor: { hw: 1.2,  hl: 2.0, height: 2.4, mass: 2.5, health: 150, speed: 1, special: true },
     police:  { hw: 0.95, hl: 2.1, height: 1.4, mass: 1.2, health: 80,  speed: 1.1, special: true, model: 'police' },
@@ -829,10 +829,11 @@ export const CONFIG = {
   // bust. Running one over (it is an obstacle) is no offence. A radar detector warns of them: it
   // keeps the car from being caught at all
   speedCamera: {
-    limit: 100,            // km/h, unless the camera has its own
+    limit: 100,            // km/h, unless the level ("speedLimit") or the camera ("limit") says otherwise
     warn: 180,             // m short of a camera the player is warned of it (radar detector or not)
     signAhead: 70,         // m short of a camera its speed limit sign stands, on the shoulder on its side
-    fine: 20,              // $ the first offence costs
+    // $ the first offence costs, by how far over the limit (km/h) the car was: the last step it reached
+    fines: [{ over: 0, fine: 20 }, { over: 10, fine: 50 }, { over: 20, fine: 80 }, { over: 30, fine: 120 }],
     flash: 0.35,           // s the flash lasts
   },
   // a funeral procession (a level's "processions": see Traffic.startProcession): a hearse and its

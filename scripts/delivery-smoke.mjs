@@ -453,8 +453,8 @@ try {
     let count = 0;
     for (let r = 0; r < 60; r++) {
       Game.start();
-      // (not what turns up in a stretch with a list of its own, a level's "trafficZones": the Hood's police)
-      const own = (c) => !(levels.LEVEL.trafficZones || []).some(z => c.s >= z.from && c.s < z.to);
+      // (not a kind a stretch with a list of its own, a level's "trafficZones", sets there: the Hood's police)
+      const own = (c) => !(levels.LEVEL.trafficZones || []).some(z => c.s >= z.from && c.s < z.to && c.kind in z.traffic);
       for (const c of Traffic.cars) if (c.active && !c.fixed && own(c)) { seen[c.kind] = (seen[c.kind] || 0) + 1; count++; }
     }
     const total = kinds.reduce((sum, k) => sum + want[k], 0);
@@ -463,7 +463,7 @@ try {
       const share = want[k] / total;
       return Math.abs((seen[k] || 0) / count - share) < 0.03 + 3 * Math.sqrt(share * (1 - share) / Math.max(1, count));
     });
-    const extra = Object.keys(seen).filter(k => !kinds.includes(k));
+    const extra = Object.keys(seen).filter(k => !kinds.includes(k) && !(levels.LEVEL.trafficZones || []).some(z => k in z.traffic));
     check(kinds.length ? close && !extra.length : count === 0, kinds.length
       ? `${levels.LEVEL.name}: ${kinds.map(k => k + ' ' + ((seen[k] || 0) / count * 100).toFixed(0) + '%').join(', ')} (as listed)`
       : `${levels.LEVEL.name}: an empty list, so no traffic`);
@@ -1062,8 +1062,12 @@ try {
     fresh(); clearRoad();
     cams[0].obstacle.gone = true;
     pass(cams[0], cams[0].limit * 1.3);
-    check(slow === 0 && fined === C.fine && !busted1 && busted2 && radar === 0 && SpeedCameras.caught === 0,
+    const owed = SpeedCameras.fineFor(cams[0].limit * 0.3 * 3.6); // (30% over its limit)
+    check(slow === 0 && fined === owed && !busted1 && busted2 && radar === 0 && SpeedCameras.caught === 0,
       `speed cameras: under the limit, nothing; over it, a $${fined} fine, then a bust at the next; with a radar detector, or the camera run over, nothing`);
+    // the fine goes by how far over the limit: stepped (CONFIG.speedCamera.fines)
+    const steps = [5, 15, 25, 45].map(over => SpeedCameras.fineFor(over));
+    check(steps.join() === '20,50,80,120', `speed camera fines by how far over: 5 km/h $${steps[0]}, 15 $${steps[1]}, 25 $${steps[2]}, 45 $${steps[3]}`);
     // a warning of each camera coming up, radar detector or not, once; and a speed limit sign on the shoulder on its
     // side before it (on the right for one on the centre line), showing its limit
     {
@@ -1088,7 +1092,7 @@ try {
     // the fine comes off what the run banks
     fresh(); clearRoad();
     pass(cams[0], cams[0].limit * 1.3);
-    check(Game.fines === C.fine, `a fine of $${Game.fines} is taken off the tip and cash banked on delivery`);
+    check(Game.fines === SpeedCameras.fineFor(cams[0].limit * 0.3 * 3.6), `a fine of $${Game.fines} is taken off the tip and cash banked on delivery`);
 
     // a level crossing: set off as the player comes near; traffic waits at the booms; the train wrecks what is on the line
     fresh(); clearRoad();
@@ -2531,6 +2535,75 @@ try {
     Game.toMenu();
   }
 
+  section('rockfall comes from uphill');
+  {
+    // on every level with rockfall: where the road runs beside another stretch of itself (a switchback), the rocks
+    // come down from the side of the higher one, never off the lower one, where they would hang in the air
+    const wrong = [];
+    for (const level of levels.LEVELS.filter(l => l.rockfall)) {
+      levels.selectLevel(levels.LEVELS.indexOf(level));
+      Game.start();
+      const T = track.Track, p = {}, q = {}, w = {};
+      // (the rise to the nearest other stretch of road 25 m off that side, if there is one within 30 m of the point)
+      const rise = (s, side) => {
+        T.toWorld(s, 0, p);
+        T.toWorld(s, (side < 0 ? T.lo(s) : T.hi(s)) + side * 25, q);
+        let best = 30, y = null;
+        for (let t = 0; t < T.length; t += 2) {
+          if (Math.abs(t - s) < 60) continue;
+          T.toWorld(t, 0, w);
+          const d = Math.hypot(w.x - q.x, w.z - q.z);
+          if (d < best) { best = d; y = w.y - p.y; }
+        }
+        return y;
+      };
+      for (const r of level.rockfall) {
+        const side = r.side === 'left' ? -1 : 1;
+        for (const s of [r.from, (r.from + r.to) / 2, r.to]) {
+          const up = rise(s, side), other = rise(s, -side);
+          if ((up !== null && up < -5) || (other !== null && other > 10 && (up === null || up < other))) wrong.push(`${level.id} at ${s}`);
+        }
+      }
+    }
+    check(wrong.length === 0, `rockfall comes down from the uphill side of the road` + (wrong.length ? `: not at ${wrong.join(', ')}` : ''));
+  }
+
+  section('Mountain Pass: no police at the stop / go works; vans never evil');
+  {
+    // the works and 300 m either side are kept clear of police: they only come in zones round it, and one
+    // reaching a zone's edge stays there, on station. A ghost drives the whole level, the clock held
+    const level = levels.LEVELS.find(l => l.id === 'mountain-pass'), [z] = level.stopGo;
+    levels.selectLevel(levels.LEVELS.indexOf(level));
+    cars.selectCar('commuter');
+    Game.evil = false;
+    Game.start();
+    let inside = 0, police = 0, vans = 0, evilVans = 0;
+    const seen = new Set();
+    for (let i = 0; i < 120 * 400 && Game.state === 'playing'; i++) {
+      Object.assign(Player, { ghost: 99, health: Player.maxHealth });
+      Game.busts = 0; Game.time = 0;
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      for (const c of Traffic.cars) {
+        if (!c.active) { seen.delete(c); continue; }
+        if (c.kind === 'police') {
+          if (!seen.has(c)) police++;
+          if (c.s > z.from - 300 && c.s < z.to + 300) inside++;
+        }
+        if (c.kind === 'van' && !seen.has(c)) { vans++; if (c.evil) evilVans++; }
+        seen.add(c);
+      }
+    }
+    // (and vans, anywhere: a level with plenty of them)
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'big-business'));
+    for (let k = 0; k < 6; k++) {
+      Game.start();
+      for (const c of Traffic.cars) if (c.active && c.kind === 'van') { vans++; if (c.evil) evilVans++; }
+    }
+    check(Game.outcome !== undefined && police > 0 && inside === 0 && vans > 5 && evilVans === 0,
+      `no police within 300 m of Mountain Pass's stop / go works (${police} police cars about over the run); ${vans} vans, none of them evil`);
+  }
+
   section('grudges, chasing and blocking');
   {
     // Back Roads (two-way): one evil car about, nothing else, the player held still at 600 m in its own lane
@@ -2607,11 +2680,15 @@ try {
       }
       return moved;
     };
-    const shadow = { calm: follows(0), grudge: follows(CONFIG.grudgeTime) };
+    // (the calm one with a lane change on a whim at every turn: it never wanders back into the player's way either)
+    CONFIG.laneChangeChance = 1;
+    const calm = follows(0);
+    CONFIG.laneChangeChance = 0;
+    const shadow = { calm, grudge: follows(CONFIG.grudgeTime) };
     const cases = { slowNear: blocks(room(10) + 3, 10), fastNear: blocks(room(10) + 3, 30), fastFar: blocks(room(30) + 3, 30), tooFar: blocks(room(30) + B.window + 15, 30) };
     CONFIG.laneChangeChance = chance;
     check(shadow.calm === false && shadow.grudge === true,
-      `shadowing: a driver with no grudge blocks the player once and stays put when it moves over again; one holding a grudge follows it over [${JSON.stringify(shadow)}]`);
+      `shadowing: a driver with no grudge blocks the player once and never moves back into its way (even changing lanes at every turn); one holding a grudge follows it over [${JSON.stringify(shadow)}]`);
     check(cases.slowNear && !cases.fastNear && cases.fastFar && !cases.tooFar,
       `blocking: a smug driver ${room(10).toFixed(0)}+ m ahead moves into the player's lane at 36 km/h, but not that close at 108 km/h; ` +
       `there it waits for ${room(30).toFixed(0)}+ m, and from ${(room(30) + B.window).toFixed(0)}+ m it doesn't bother [${JSON.stringify(cases)}]`);
