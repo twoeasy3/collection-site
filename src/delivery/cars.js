@@ -64,6 +64,15 @@ export const CARS = [
     maxSpeed: 31, accel: 13, crossing: 0.35, health: 80, hw: 0.85, hl: 1.9, height: 1.1 },
   { id: 'lowrider', tier: 2, name: 'Lowrider', price: 220, color: 0xb026ff, evilColor: 0x2fd6c6, fixedLivery: true, model: 'lowrider',
     maxSpeed: 27, accel: 9, crossing: 0.15, health: 120, hw: 1.0, hl: 2.5, height: 1.1 },
+  // ---- tier 2, Blue Stars
+  { id: 'hothatch', tier: 2, blue: true, name: 'Hot Hatch', price: 420, color: 0xf2f2f2, evilColor: 0xf2c418, fixedLivery: true, model: 'hothatch',
+    maxSpeed: 32, accel: 14, agility: 1.3, crossing: 0.4, health: 105, hw: 0.86, hl: 2.0, height: 1.42 },
+  { id: 'ute', tier: 2, blue: true, name: 'Ute', price: 440, color: 0x1f4f9a, evilColor: 0x8fd13a, fixedLivery: true, model: 'ute',
+    maxSpeed: 31.5, accel: 11, crossing: 0.8, health: 175, mass: 1.3, hw: 0.95, hl: 2.45, height: 1.45 },
+  { id: 'buggy', tier: 2, blue: true, name: 'Beach Buggy', price: 460, color: 0x1fb5c9, evilColor: 0x7a2fb8, fixedLivery: true, model: 'buggy',
+    maxSpeed: 31.5, accel: 13, agility: 1.35, crossing: 0.95, health: 100, hw: 0.85, hl: 1.75, height: 1.3 },
+  { id: 'liftedtruck', tier: 2, blue: true, name: 'Lifted Truck', price: 490, color: 0x1d5bbf, evilColor: 0xc9a66b, fixedLivery: true, model: 'liftedtruck',
+    maxSpeed: 30.5, accel: 10, crossing: 0.95, health: 190, mass: 1.6, hw: 1.12, hl: 2.75, height: 2.65 },
   // ---- tier 3
   { id: 'hearse', tier: 3, name: 'Hearse', price: 260, color: 0x151515, evilColor: 0xf2f2f2, fixedLivery: true, model: 'hearse',
     maxSpeed: 33, accel: 10, crossing: 0.4, health: 170, hw: 1.0, hl: 2.8, height: 1.65 },

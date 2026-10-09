@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
 globalThis.window = { addEventListener() {} };
 // every level unlocked and every car owned, so each can be loaded and tested
-const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['commuter', 'junker', 'darkvan', 'lowrider', 'wagon', 'sport', 'lovebus', 'taxi', 'suv', 'hotrod', 'minivan', 'hearse', 'miata', 'pickup', 'muscle', 'fullsize', 'evsaloon', 'postvan', 'keitruck', 'mini', 'tank'] }));
+const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['commuter', 'junker', 'darkvan', 'lowrider', 'wagon', 'sport', 'lovebus', 'taxi', 'suv', 'hotrod', 'minivan', 'hearse', 'miata', 'pickup', 'muscle', 'fullsize', 'evsaloon', 'postvan', 'keitruck', 'mini', 'hothatch', 'ute', 'buggy', 'liftedtruck', 'tank'] }));
 globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: 'delivery_racer_progress=' + allOpen };
 
 // the game's dice are loaded, so a run is the same every time: a check that fails, fails again, and can be
