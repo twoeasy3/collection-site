@@ -337,9 +337,12 @@ does, or what the run is for. None is built.
 3. Variants of delivering fast, or to several places: they play exactly as a regular level does.
 4. Another moving thing on the road that explodes when hit.
 
-So a gimmick should be answered at speed, by steering, lane choice, timing or the choice of car.
-Two of the kept ones would be built to keep clear of rule 1: G3 roundabout as flowing into a gap at
-speed (no stop line), and G18 fuel as a drive-through pump lane or a pickup, not a stop.
+What decides it is counterplay, in the owner's words: "Roundabout and Fuel has counterplay - you can
+risk it or not. Red lights, missing the ferry etc has zero counterplay." So stopping is not the
+fault in itself: a stop the player can choose to risk skipping (dive into the gap on the roundabout,
+run past the pump and hope the tank lasts) is a decision; a stop the game simply imposes (a red
+light, a ferry that has gone) is not. Every gimmick should give the player a gamble to take or
+leave.
 
 ### The road itself changes
 
