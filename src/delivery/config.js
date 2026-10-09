@@ -19,11 +19,34 @@ export const CONFIG = {
     gore: 50,              // m over which that lane opens at the start of the exit zone, and over which
                            // the expressway's pavement blends with the side road's at each fork
     ramp: 110,             // m at each end of a side road that is a single-lane ramp
+    apart: 14,             // m between the expressway's lanes and a side road's, at the least, once they have parted...
+    part: 120,             // ... which they do over this many m from the fork (and to the merge)
+    partEase: 25,          // m each way over which whatever moves a side road out to keep that gap is evened out
+    dropLine: {            // the lane-drop line between the through lane and an exit or merge lane:
+      length: 1.5,         // m each of its dashes is long (a lane line's are CONFIG.dashLength) ...
+      spacing: 3.5,        // ... one every this many m ...
+      width: 0.3,          // ... and this wide: short, fat and close together
+      from: 0.12,          // drawn where that much of the lane's width is open (0 .. 1)
+    },
+    nose: {                // the hatched wedge between the two roads' solid lines at a fork (and a merge):
+      reach: 90,           // m from its tip it is looked for over
+      from: 0.9,           // m apart the lines are where the first chevron stands
+      every: 4.5,          // m from one chevron to the next
+      thick: 0.9,          // m thick each chevron's arms are, along the road
+      sweep: 1.6,          // how far its arms sweep back: this many times half the wedge's width
+      inset: 0.3,          // m its arms stop short of the solid lines
+    },
     laneTaper: 60,         // m over which a side road widens or narrows by its exit's "lanes"
     shapeLead: 130,        // m at each end of a side road an exit's own shape ("out", "bends") leaves alone...
     shapeEase: 120,        // ...and m beyond that it eases in over
     tightest: 35,          // m: the tightest a side road's bend may be (its radius)
-    leftShoulder: 1,       // m; a side road's right shoulder is the normal driveable width
+    gradeEase: 30,         // m over which a side road's slope is evened out, where it has left the expressway (on hills)
+    level: 30,             // m out from the expressway's pavement within which a side road is exactly as high as it
+    steepest: 0.06,        // the steepest a side road climbs or falls where it has left the expressway (rise per metre)
+    verge: 4,              // m of land of its own along a side road's left edge on hills, and (up to) ...
+    land: 130,             // ... along its right: the land beside it, at its height, with a bank down to the ground
+    clear: 1.5,            // m of verge beside every road's pavement that another road's scenery is kept off, whatever it is...
+    clearBuilding: 2,      // ...and m more for a building
     flyoverLength: 360,
     flyoverHeight: 7,
     trafficShare: 0.45,    // share of traffic that takes a side road
@@ -1225,11 +1248,22 @@ export const CONFIG = {
   balloon: { notice: 7, height: 40, descend: 5, sit: 7, rise: 3, hl: 2.2, stopLine: 8, damage: 25, speedKept: 0.4 },
   // a drawbridge ("drawbridges": { s }): set off `notice` s before the player would get there: bells for
   // `warn` s (the booms come down), then its two leaves lift over `raise` s, stand open until `open` s
-  // after they began, and come down over `close` s. Open, there is a `gap` m gap: at jumpSpeed m/s or
-  // more the car jumps it (up to jumpHeight m, landDamage on landing); slower, it drops in and is
+  // after they began, and come down over `close` s. Open, there is a gap between the lips: fast enough,
+  // the car goes up the leaf and jumps it; slower, it stops short on the leaf or drops in and is
   // wrecked. Traffic waits `stopLine` m short. Again every `every` s with the player within `again` m
-  drawbridge: { notice: 6, warn: 2.5, raise: 2, open: 9, close: 2, gap: 16, jumpSpeed: 22, jumpHeight: 3.2, landDamage: 8,
-    stopLine: 16, every: { min: 16, max: 26 }, again: 320 },
+  // (its deck: two leaves `leaf` m long, hinged `leaf` m either side of s and meeting there when down;
+  // right up they stand at `angle` rad, each lip leaf * sin(angle) up and drawn back leaf * (1 - cos(angle))
+  // from the middle: that is the gap. The car follows the leaf under it, height and pitch: `gravity`
+  // m/s^2 (the game's, not the world's) pulls it back down the slope, so too slow it stops short and
+  // rolls back at rollBack m/s; off the lip it flies an arc under the same gravity, and comes down on the
+  // far leaf or the road beyond (never thrown up faster than `launch` m/s), with landDamage if it lands harder than landSoft m/s into the surface;
+  // short of the far lip by more than lipGrace m it goes into the river, `depth` m down. A gap narrower
+  // than `step` m is driven over. The booms stand `boom` m out, traffic waits `stopLine` m out. A board
+  // `sign` m short gives the speed that clears it hands off (Hazards.bridgeJumpSpeed: every car's top
+  // speed is more), so it can always be taken at speed)
+  drawbridge: { notice: 6, warn: 2.5, raise: 2, open: 9, close: 2, leaf: 15, angle: 0.5, gravity: 20, rollBack: 5,
+    landDamage: 8, landSoft: 7, lipGrace: 1, depth: 1.6, step: 0.6, launch: 12, boom: 19, sign: 150,
+    stopLine: 22, every: { min: 16, max: 26 }, again: 320 },
   // a wide load ("wideLoads": { s, lanes: [a, b] }): a load two lanes wide crawling along at `speed`,
   // setting off as the player comes within `trigger` m, its escort `behind` m behind it. The escort
   // watches for `watch` s (its beacons flashing), then looks away for `rest` s: getting past the load's

@@ -106,8 +106,42 @@ try {
   // ---- drawbridge (s 4700)
   start(4400, 3, 40);
   let highest = 0;
-  g.run(15, () => { quiet(); highest = Math.max(highest, P.air); return P.s > 4760; });
+  g.run(15, () => { quiet(); highest = Math.max(highest, P.air); return P.s > 4820; });
   check(G.wrecks === 0 && highest > 1 && said('jumped'), 'drawbridge: at speed the car jumps the gap (' + highest.toFixed(1) + ' m up)');
+  // (its deck, and the car on it: held open, the car hands off at the speed its board asks for)
+  {
+    const D = g.CONFIG.drawbridge, c = () => Hazards.bridges[0], need = Math.ceil(Hazards.bridgeJumpSpeed() * 3.6 / 5) * 5 / 3.6;
+    const hold = () => { quiet(); Object.assign(c(), { state: 'open', t: D.raise + 1, started: true }); };
+    start(4600, 3, need);
+    hold();
+    const lipY = D.leaf * Math.sin(D.angle), gap = Hazards.bridgeGap(c());
+    const up = Hazards.deck(c(), 4700 - D.leaf / 2), down = Hazards.deck(c(), 4700 + D.leaf / 2);
+    check(Math.abs(up.slope - Math.tan(D.angle)) < 1e-6 && Math.abs(down.slope + Math.tan(D.angle)) < 1e-6 && Math.abs(up.y - down.y) < 1e-6 && Hazards.deck(c(), 4700) === null &&
+      Hazards.deck(c(), 4700 - D.leaf - 1) === undefined && Hazards.surface(4700).y < 0 && Hazards.surface(4600).y === 0,
+      'drawbridge: its deck is two leaves at ' + (D.angle * 180 / Math.PI).toFixed(0) + ' degrees, lips ' + lipY.toFixed(1) + ' m up, ' + gap.toFixed(1) + ' m apart');
+    let onLeaf = 0, off = 0, flew = false, top = 0, landedPitch = null, wasJump = false;
+    g.drive(0, 0);
+    g.run(15, () => {
+      hold();
+      const deck = Hazards.deck(c(), P.s);
+      if (!Hazards.jump && deck && deck.slope > 0) { onLeaf++; off = Math.max(off, Math.abs(P.air - deck.y), Math.abs(P.pitch - D.angle)); }
+      if (Hazards.jump) { flew = true; top = Math.max(top, P.air); }
+      if (wasJump && !Hazards.jump) landedPitch = P.pitch;
+      wasJump = !!Hazards.jump;
+      return P.s > 4760 || G.wrecks > 0;
+    });
+    check(onLeaf > 10 && off < 1e-3, 'drawbridge: up the leaf the car is on its surface, pitched to its angle (' + onLeaf + ' steps, off by ' + off.toFixed(4) + ')');
+    check(flew && top > lipY && G.wrecks === 0 && P.s > 4760, 'drawbridge: at the speed on its board, ' + Math.round(need * 3.6) + ' km/h, hands off, it crests the lip, flies (' + top.toFixed(1) + ' m up) and is over');
+    check(landedPitch !== null && landedPitch <= 0, 'drawbridge: it lands pitched to what it lands on (' + (landedPitch ?? NaN).toFixed(2) + ' rad)');
+    start(4640, 3, 10);
+    hold();
+    g.drive(1, 0);
+    let high = 0;
+    g.run(10, () => { hold(); if (P.s < 4684) P.speed = Math.min(P.speed, 10); high = Math.max(high, P.air); return G.wrecks > 0; });
+    check(G.wrecks === 0 && high > 0.5 && high < lipY - 1 && P.s <= 4700 - D.leaf && P.speed < 2, 'drawbridge: far too slow, it stops short on the leaf (' + high.toFixed(1) + ' m up) and rolls back to its foot');
+    for (const car of g.cars.CARS) if (!(car.maxSpeed >= need)) check(false, 'drawbridge: ' + car.id + ' cannot reach the speed that clears it');
+    check(g.cars.CARS.every(car => car.tank || car.maxSpeed >= need), 'drawbridge: the top speed of every garage car clears it');
+  }
   start(4400, 3, 18);
   g.run(25, () => { quiet(); P.speed = Math.min(P.speed, 18); return P.s > 4760 || G.wrecks > 0; });
   check(G.wrecks === 1 && said('Into the river'), 'drawbridge: too slow, the car drops into the gap and is wrecked');

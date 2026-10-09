@@ -72,6 +72,7 @@ export const tmp2 = new THREE.Vector3();
 
 // ---- chase camera ----------------------------------------------------------
 let camLat = 0;
+let camAir = 0; // (m the camera is up with the car off the road: see updateCamera)
 // points the camera, placed in the game's own terms, at the target. On a left-hand level the scene
 // is drawn mirrored (scale x -1, see road.js), so the camera goes to the mirror image of its place
 export const aim = (target) => {
@@ -144,8 +145,11 @@ export const updateCamera = (dt, snap) => {
   const shake = CONFIG.hitShake * Game.shake;
   camera.position.set(tmp.x + (Math.random() - 0.5) * shake,
     tmp.y + camHeight + (Math.random() - 0.5) * shake, tmp.z);
+  // (up with the car on a drawbridge's leaf and through its jump: the camera most of the way, the aim less)
+  camAir += (Player.air - camAir) * (snap || !(dt > 0) ? 1 : damp(6, dt)); // (a first frame's dt can be less than nothing)
+  camera.position.y += camAir * 0.85;
   Track.toWorld(Player.s + cam.camLookAhead, camLat, tmp2);
-  tmp2.y += 1; // (so the camera looks up a climb and down a descent)
+  tmp2.y += 1 + camAir * 0.5; // (so the camera looks up a climb and down a descent)
   aim(tmp2);
 
   const speedT = Math.min(1.3, Player.speed / CONFIG.camFovFullSpeed);

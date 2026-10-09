@@ -677,13 +677,13 @@ const GROUPS = [
       return { model: g, tick: (t) => { b.position.y = Math.max(0, Math.sin(t * 0.7)) * 5; } };
     } },
     { name: 'Drawbridges', color: 0x2e6c8f, has: (l) => l.drawbridges?.length, rules: [
-      `Bells and booms for ${H.bridge.warn} s, then the two leaves lift and stand open, leaving a ${H.bridge.gap} m gap over the river, for about ${H.bridge.open} s in all. Traffic waits.`,
-      `At ${kmh(H.bridge.jumpSpeed)} or more you <strong>jump it</strong> (${H.bridge.landDamage} damage on landing). Any slower and you drop into the river: wrecked. Or hold the brake and wait for it to come down.`,
+      `Bells and booms for ${H.bridge.warn} s, then the two ${H.bridge.leaf} m leaves lift to ${Math.round(H.bridge.angle * 180 / Math.PI)}° and stand open, their lips ${(2 * H.bridge.leaf * (1 - Math.cos(H.bridge.angle))).toFixed(1)} m apart over the river, for about ${H.bridge.open} s in all. Traffic waits.`,
+      `You never have to: the car drives up the leaf, and the speed you reach its foot with decides the rest. The board on the way in gives the speed that <strong>jumps it</strong> (every car's top speed is more); a hard landing costs ${H.bridge.landDamage} damage. A little short and you drop into the river: wrecked. Far too slow and you stop on the leaf and roll back to wait.`,
     ], build: () => {
       const g = group(mesh(new THREE.PlaneGeometry(26, 8).rotateX(-Math.PI / 2), lambert(0x2e6c8f), 0, -0.2, 0));
       g.add(box(9, 0.3, 5, lambert(0x3b3e44), 0, -0.05, 6.5), box(9, 0.3, 5, lambert(0x3b3e44), 0, -0.05, -6.5));
       const leaves = [-1, 1].map((d) => { const pivot = new THREE.Group(), leaf = box(9, 0.3, 4, lambert(0x4b4f57), 0, 0, -d * 2); pivot.position.set(0, 0, d * 4); pivot.add(leaf); g.add(pivot); return { pivot, d }; });
-      return { model: g, tick: (t) => { const open = Math.max(0, Math.sin(t * 0.8)); leaves.forEach(({ pivot, d }) => { pivot.rotation.x = d * open * 1.15; }); } };
+      return { model: g, tick: (t) => { const open = Math.max(0, Math.sin(t * 0.8)); leaves.forEach(({ pivot, d }) => { pivot.rotation.x = d * open * H.bridge.angle; }); } };
     } },
     { name: 'Wide loads', color: 0xffd23f, has: (l) => l.wideLoads?.length, rules: [
       `Half a house on a low loader, two lanes wide, crawling along at ${kmh(H.load.speed)} with an escort car ${H.load.behind} m behind it.`,

@@ -174,10 +174,14 @@ unverified unless the owner says otherwise. From the original list:
 
 Known limits:
 
-- Hills (segment `grade`) cannot be combined with exits; the grades are ignored and the
-  level reports a problem. Bridges must be on level road.
-- Exits cannot be combined with `"flow": "south"`, and a one-way level's exits cannot have
-  flyovers.
+- Bridges must be on level road. (Hills and exits can be combined, flyovers and all: a side
+  road follows the land, no steeper than `CONFIG.ramps.steepest` away from the expressway.)
+- A one-way level's exits cannot have flyovers. On a `"flow": "south"` level only the player
+  takes an exit.
+- Not everything a level places can go on a side road (`road: 'side'`): the top of `levels.js`
+  lists what can and what cannot, and the level reports the ones that cannot.
+- Only the city theme and an elevated road (Tokyo) dress a side road's own roadside (poles and
+  blocks; parapets and piers). Other themes keep their scenery off a side road but put none along it.
 - Level crossings and stop / go roadworks must be on straight road.
 - Water stages must be on level road, clear of exits, junctions, splits and tunnels, and only on an
   amphibious level. Ambulances, funeral processions and convoys know nothing of the water: do not put

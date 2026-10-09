@@ -75,6 +75,7 @@ for (let i = 0; i < MAIN_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Ma
 }
 for (let i = 0; i < RACE_LEVELS.length; i += 5) TABS.race.groups.push([i, Math.min(RACE_LEVELS.length, i + 5)]);
 let tab = isRace(LEVEL) ? 'race' : 'delivery'; // (the tab shown: the one with the level picked, to begin with)
+if (new URLSearchParams(location.search).get('tab') === 'races') tab = 'race'; // (?tab=races: the menu opens on the races, for a check)
 const groupOf = (k) => Math.max(0, TABS[tab].groups.findIndex(([a, b]) => k >= a && k < b));
 let shownGroup = null; // (null: the group with the level picked)
 // a race is always open; a delivery level once the one before it has been delivered

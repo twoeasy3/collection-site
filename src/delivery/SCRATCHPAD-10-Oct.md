@@ -214,8 +214,24 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   new. Reads the best times: nothing new saved.
   - Verified: `node --check` and `.bundle-check.mjs` only. NOT run at all, even headless (it
     imports the menu module, which needs WebGL): the panel has never been opened.
-- PAUSED for the orchestrator's merge of the circuits branch. My tracked files are clean.
-- Next: 6b (milestones wall), then `HANDOVER-batch.md`.
+- DONE `8c0d76e`: 6b (milestones wall). `milestones.js` + `render/milestones.js` from the stash;
+  eight counters in `Progress.data.stats` (`Progress.count`, saved at most every 5 s and at the end
+  of a run; km to two decimals). Count lines in `packages.js`, `hippos.js`, `bullettrain.js`. The
+  CSS, button, `#milestones` panel and import are new.
+  - Verified headless: `node scripts/.milestones-check.mjs` (new, 14 checks: titles, thresholds,
+    cops outrun, wrecks / busts, km, levels delivered, the cookie). NOT verified: the wall has never
+    been opened; hippos survived and trains dodged are counted by code no check drove.
+- DONE `8c5ead6`: after both merges, the garage's "Gold stars" filter no longer takes in the 6-star
+  cars, and they get a "6 stars" choice once one is earned (`render/garageview.js`);
+  `HANDOVER-batch.md` "Not done" rewritten, with a table of what was built.
+- After the merges (`e358d98`, `6344152`) all of these pass on `main`: `.mysteries-check`,
+  `.earned-check`, `.milestones-check`, `.dents-check`, `.balance-check`, `.bundle-check`.
+- FINISHED. Everything in the brief is ported or finished from partial; skipped only
+  `gimmick-road-3.json` and `tokyo-loop.json` (duplicates' test levels). In the stash, judged not a
+  duplicate, and NOT ported: traffic honking with per-kind horns (`horn:<kind>` in `traffic.js`); a
+  "6-star cars" hint line on the menu's car card (a line on each special level's card instead); a
+  horn line in "How to play"; `extraShare` (drawing the second mystery pool).
+- Nothing of mine has been seen or heard in a browser. The stash is untouched and can be dropped.
 
 ## Agent 2: real circuits (`.claude/worktrees/delivery-circuits`, `delivery-circuits`)
 
@@ -316,3 +332,95 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
     accumulator, the level must be rebuilt from the seed, inputs fed by step number.
   - The simple translucent ghost (30) was not built: it falls out of input replay later.
   - The `traffic.js` change resets timers when a car is dealt out; no smoke test was run on it.
+  - The sweep of the other 34 levels (40 s each): 32 replay exactly; **Grand Prix and Market Town
+    still part, at 2 s** (both have crossroads, so most likely more left-over state in the junction
+    code; `node scripts/.replay-trace.mjs market-town` will name the call). Not hunted, and not yet
+    in `REPLAY-NOTES.md`, whose "Checked levels" lists only the first nine.
+  - After the `traffic.js` change: `.traits-check`, `.hazards-check`, `.save-check` pass.
+    `.traffic-quirks-check` has one failure ("ice cream van: its tune was played near the player (0
+    bars)") and `.ufo-check` dies on an import error; neither was run before my changes, so I do not
+    know whether they are mine.
+- **MY MISTAKE, NEEDS A DECISION (agent 3 worktree only).** To compare against a clean tree I ran
+  `git stash; git stash pop` in my worktree with nothing of my own to stash. The stash list is
+  shared by every worktree, so the pop applied the city-levels stash (`0201824`) on top of my
+  branch: 15 conflicted files, 14 modified, 21 untracked, all in
+  `.claude/worktrees/delivery-batch` only.
+  - **Nothing is lost.** The stash entry is still there, same hash (the pop kept it because of the
+    conflicts). All my work was committed first: branch tip `4a66a80`. The main checkout and the
+    circuits worktree were not touched.
+  - **Not cleaned up:** the permission system refused the reset as destructive, and I did not work
+    round it. To put my worktree back, from `.claude/worktrees/delivery-batch`:
+    `git reset --hard 4a66a80`, then delete the 21 untracked files `git status` lists (each one is
+    in the stash's untracked tree, `stash@{0}^3`: checked with `comm`). Do not use `git clean` with
+    `-x`, and leave `node_modules` (a junction) alone.
+  - Until then, do not run or screenshot from that worktree: its files are a half-merged mix.
+    Merging `worktree-delivery-batch` by its commits is unaffected.
+
+## Agent 4: side roads cleanup (.claude/worktrees/delivery-circuits, delivery-side-roads)
+
+- **1. Flicker on hill side roads: done, `3a2fefe`.** Cause measured on Gimmick Road 2: the side road
+  lay up to 4 cm (18 cm at worst) under the expressway's land and up to 3 cm under its pavement at
+  the merge. Now exact alongside the expressway, its own land and banks away from it, 6% at most
+  (was 12%). Checked: levels check, `.hazards-check.mjs`, screenshots.
+- **2. Fork and merge markings: done, `249424f`.** Lane-drop line, nose with chevrons, solid lines
+  meeting at its tip; every side road now parts from the expressway by a set gap (`ramps.apart`,
+  `ramps.part`), which moves side roads a little on Ring Road, Gimmick Road 2, Market Town and
+  Quarry Run. Seen in screenshots on five levels; left-hand driving not yet looked at.
+- **3. Decor pruning: done, `7ae100d`.** One test (`offRoads` in `render/road.js`: real distance to
+  every other road's pavement, a verge, the thing's footprint) behind `instances`, `sideStrip`
+  and a last sweep of loose objects. Seen in screenshots on Expressway, Big Business, Ring Road,
+  Market Town, Quarry Run. Not routed: backdrops over 60 m across and meshes built in world
+  terms that are not strips (zone crags, cliff faces).
+- **4. Fully-featured side roads: done as far as it goes, `c01a8ee`.** Lifted: hills with flyovers,
+  exits on a `flow: south` level, pickups / obstacles in any open side lane and on its shoulders,
+  tractors, landmines, rockfall, drop bears, pelotons, migration on a side road, a full left
+  shoulder, ruts on dirt. Left (documented in `levels.js`, reported as the level loads): flyovers on
+  a one-way level, and ice, mud, fog, stopGo, parked, roadblocks, iceCreamStops, reversible,
+  wreckage, machinery, siteWorks, parades, hippos, elephants, quarries, tunnels, bridges on a side
+  road. Checked headless (a built level driven down its side road with each kind on it), one
+  screenshot of hills with flyovers; not play-tested.
+- **5. Every theme: looked at, nothing further to commit.** Ring Road's first fork and merge shot
+  from above in 25 of the 28 themes (`?theme=`; not spa or albert-park; monza shot but not looked
+  at), and mirrored (`"drive": "left"`, temporary edit, restored). About a third of the images were
+  opened: farm, beach, safari, singapore, coast, construction, snow, hood, tokyo, hell, space,
+  airport, mumbai, left-hand. In those, line colours follow the theme and no scenery is on a side
+  road. Shots: scratchpad `shots-side-roads/` (before, part1-4, themes, left).
+  Farm, Mystery Meadows and UFO have no exits on this branch.
+- Branch tip `c01a8ee`, four commits on `delivery-side-roads`, not pushed. Smoke test not run.
+
+## Agent 5: amphibious cars and levels (.claude/worktrees/delivery-city-levels, delivery-amphibious)
+
+- **1. The five cars and the garage's Amphibious section: done, `43e77e2`.** Sailing Herald (1 star,
+  $60), Float Van (2, $180), Toybota (3, $310), Dampervan (4, $470), Nissank (5, $750): `amphibious:
+  true` in `CARS`, each a little under its tier's best on the road. Sea-green stars. In the garage
+  from the start (my decision), parked after the tiers in columns of their own on a blue slipway
+  under an AMPHIBIOUS sign; `Show: Amphibious` on the bar; the comparison card shows the perk.
+  Checked: levels check, `.save-check` (3168 bytes with the five cars), `.balance-check`, three
+  garage screenshots looked at. No menu pictures (`carshots/`) for them yet.
+- **The owner's rules for gimmicks (relayed mid-task), and how the water is built to them:** the player
+  never has to stop or wait (slipways are taken at speed: a splash, a lower top speed and softer
+  steering, no halt); traffic that cannot cross queues on its own SHOULDER, so every lane stays open
+  to thread at speed; boats are things to out-steer (their wakes shove the car sideways, a stage can
+  have a current, channels narrow, barges are slow and wide), never a wall to wait behind. No ferry
+  timetable, no drawbridge, stop / go, level crossing, school crossing or roadblock on these levels.
+  Each level's fit is noted under step 5.
+- **2 and 3. Water stages, traffic and boats: done, `e459b4c`** (one commit: the drawing imports the
+  boat models). `water: [{ from, to, current? }]` in a level; `Track.water(s)` (0 dry .. 1); logic
+  `water.js`, drawing `render/water.js`, boats `render/boatModels.js` (dinghy, barge, ferry, pedalo),
+  tuning `CONFIG.water`. The road is not dug out: the water stands 0.32 m over it and what floats is
+  sat down into it. Afloat: 74% top speed, softer steering and brakes, bow wave, wake, bobbing, a
+  boat's engine note. Traffic that can't float pulls onto ITS OWN SHOULDER from 170 m out and stops
+  13 m short of the slipway nose to tail (at most 6 a side; no more of them turn up for that edge
+  until the queue is passed): every lane stays open. Amphibious kinds (the five cars' ids) drive in
+  and out. Boats turn up on the water only and tie up at the bank short of the far slipway (they do
+  not turn back: a boat's direction never changes in this engine). A boat's wake shoves the car off
+  its line; a stage can have a sideways current.
+  - Checked with `node scripts/.water-check.mjs` (new): the car never drops under 19 m/s, no land
+    vehicle in the water, no boat out of it, queue wholly on the shoulder, amphibious traffic in and
+    out, a level refused without an amphibious car, old saves keep their place. Screenshots looked at.
+  - Not handled: ambulances, processions and convoys ignore the water (not used on these levels).
+  - Screenshots: `&ff` over about 15 s leaves the camera off the road on ANY level (seen on level 2
+    as well); not mine, not fixed. Shorter `&ff`, or `&cine`, is fine.
+- 4. Amphibious-only levels: `Game.start` refuses (done in `e459b4c`); the menu's words in progress.
+- 5. Five levels: not started.
+- 6. Gimmicks page cards, README, HANDOVER: not started.

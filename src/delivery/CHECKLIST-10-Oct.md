@@ -7,9 +7,9 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-delivery-batch).
+Last updated: after `a22cab5` (main). Agents 1 to 4 are finished and merged; agents 5, 6 and 7 are running.
 
-## Agent 1: port from the discarded city-levels work (`main`)
+## Agent 1: port from the discarded city-levels work (`main`, finished)
 
 - [x] Eight new mystery effects: earthquake, rewind, giant, swap sides, magnet, blackout, traffic freeze, souped up. `e05ed11`
 - [x] Super cars (livery, body kit), lent by "souped up" or `?car=super-<id>`. `e05ed11`
@@ -17,7 +17,10 @@ Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-deliv
 - [x] Visible damage: dents on the player's car and scorched paint. `fda617c`
 - [x] A horn for each car. `e9ebe12`
 - [x] Postcards album. `e8ccc6c`
-- [~] Milestones wall
+- [x] Milestones wall. `8c0d76e`
+- [x] Garage filter put right after the merges (earned cars out of "Gold stars", a "6 stars" choice once one is earned); `HANDOVER-batch.md` brought up to date. `8c5ead6`
+- [ ] Never run, even headless: the album and the milestones wall (they need WebGL). Try `?album&unlock` and `?milestones&unlock`
+- [ ] Never seen: the Super body kit on each model, dents, blackout, the giant, the garage with 6-star cars; no horn heard
 - [-] `gimmick-road-3` and the rest of the duplicate work: discarded on the owner's word
 
 ## Agent 2: real circuits (`delivery-circuits`, finished, merged into `main` as `e358d98`)
@@ -37,7 +40,7 @@ Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-deliv
 - [ ] A whole lap of any circuit watched
 - [ ] Races tab opened and checked by eye (needs a browser)
 
-## Agent 3: menus, save data, removals (`worktree-delivery-batch`, not yet merged)
+## Agent 3: menus, save data, removals (`worktree-delivery-batch`, finished, merged into `main` as `6344152`)
 
 - [x] 52. Save data: cookie measured (4013 of 4096 bytes, now 2931), local storage first, export / import a save code. `5e53e1a`
 - [x] 38. Level select: medals, best times, gimmick chips. `5e53e1a`
@@ -45,32 +48,47 @@ Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-deliv
 - [x] 36. Car comparison card. `865d59f`
 - [x] Toll plazas and average-speed cameras removed (owner's request). `62c2bdb`
 - [x] Gimmicks page: eight "City streets" cards. `45369f1`
-- [~] 30. Full 1:1 replay for delivery and race levels: investigation and write-up
+- [x] 30. Full 1:1 replay: investigated, written up in `REPLAY-NOTES.md`. Recommends recording inputs and a seed at a fixed step (1 to 2 KB a minute). `4a66a80`
+- [x] First step built: `scripts/.replay-check.mjs`; 41 of 43 levels replay exactly from a seed. A `traffic.js` timer bug that broke it is fixed. `3731c60`
+- [ ] Grand Prix and Market Town still part after 2 s (both have crossroads): not hunted
+- [ ] Replay in the browser: a seeded generator for logic alone, a fixed step in `main.js`, recording and playing inputs: not started
+- [ ] **That worktree is left in a mess** (see the Orchestrator section)
 
 ## Orchestrator
 
 - [x] Scratchpads read, worktrees compared with `main`, the lists gathered. `9c0befb`
 - [x] Uncommitted city-levels work stashed (`0201824`), to be dropped once agent 1's port lands
 - [x] Stale Vite server on port 5199 stopped
-- [ ] Merge `worktree-delivery-batch` into `main`
+- [x] Merge `worktree-delivery-batch` into `main`. `6344152` (four conflicts, both sides kept; the levels, save, hazards, milestones and mysteries checks all pass on the result; the save cookie is 3086 of 4096 bytes)
+- [x] Tide: a wave's crest no longer jumps the last metres as it breaks (it was drawn 4 m out to sea, then at the water's edge). `8c515fd`. Not seen in a browser
+- [x] "No way to reach the circuits": checked in a screenshot of `main`: the Races tab on the start screen lists R1 to R6, Monza, Spa and Albert Park among them. `?tab=races` opens the menu there. `6fc7b94`. Monza, Spa and Albert Park have no menu pictures yet
+- [ ] **Owner to decide:** the worktree `.claude/worktrees/delivery-batch` has the stash applied on top of it by accident (agent 3 ran `git stash pop`): 15 conflicted files, 21 untracked. Nothing is lost (its branch is merged; the stash is intact). Cleaning it needs `git reset --hard 4a66a80` there and deleting the 21 untracked files; the agent was refused that and so the orchestrator has not done it either
 - [x] Merge `delivery-circuits` into `main`. `e358d98` (one conflict, the level card in `render/menu.js`, both sides kept; `delivery-levels-check.mjs` passes on the result: 47 levels build, six races start)
-- [ ] Drop the stash
+- [ ] Drop the stash (the port has landed; held until the worktree above is cleaned)
 
-## Queue: starts as agents finish (three at a time)
+## Running and queued (three at a time)
 
-1. Side roads cleanup: **started**, agent 4, branch `delivery-side-roads` (in the circuits worktree)
-   - [ ] Fully-featured roads: lift the limits (hills with flyovers, `flow: south`, one-way flyovers, gimmicks on side roads)
-   - [ ] Decor beside the main road prunes correctly
-   - [ ] Fork and merge markings redrawn like real ones
-   - [ ] Polygons flickering on side roads on hills
-   - [ ] All of it checked in every theme
-2. Amphibious cars and levels
+1. Side roads cleanup: **finished**, agent 4, merged into `main` as `a22cab5` (no conflicts; levels, hazards and save checks pass)
+   - [x] Polygons flickering on side roads on hills: the side road sat up to 4 cm (18 cm at worst) below the expressway's ground; now exactly level with it, slope capped at 6%. `3a2fefe`. Checked by numbers and stills, not by watching it move
+   - [x] Fork and merge markings: lane-drop dashes, a nose where the solid lines meet, chevrons in the wedge, edge lines carried onto the side road. Side roads now part from the expressway by 14 m. `249424f`
+   - [x] Decor beside the main road prunes by real distance to every other road, in every theme. `7ae100d`
+   - [x] More allowed: hills with flyovers, exits on an all-oncoming level, pickups and obstacles in any side-road lane, six more gimmick kinds, a full left shoulder. `c01a8ee`
+   - [~] Every theme: shot in 25 of 28, about a third of the pictures opened. Not looked at: singaporeNight, canberra, suburb, battlefield, bathurst, panorama, montreal, sea, night, hongkong, christmas, monza
+   - [ ] Still not allowed: flyovers on a one-way level; 17 gimmick kinds on a side road (ice, mud, fog, roadblocks, tunnels and others: now reported when the level loads)
+   - [ ] Scenery along a side road's own roadside in themes other than the city
+2. Amphibious cars and levels: **started**, agent 5, branch `delivery-amphibious` (in the city-levels worktree)
    - [ ] Five amphibious cars, one per star level 1 to 5
    - [ ] Amphibious section in the garage
    - [ ] Water stages: road to water and back; ordinary traffic stops at the edge, amphibious traffic drives through
    - [ ] Boat traffic on the water
    - [ ] Five gimmicked levels in different themes, amphibious cars only
-3. The cargo
+3. Gimmick fixes and circuit run-off: **started**, agent 6, on `main`
+   - [x] Drawbridge: the car climbs the raised leaf at its angle and crests it. `1f18343`. Not yet seen by the orchestrator
+   - [ ] Wide loads are passable
+   - [ ] Burst water mains: water that does not look square
+   - [ ] Run-off edges on Monza and Spa smoothed (the measured widths are noisy)
+   - [ ] Sand traps as part of a shoulder, slowing cars far more
+4. The cargo: **started**, agent 7, branch `delivery-cargo` (in the circuits worktree)
    - [ ] Five normal things to deliver
    - [ ] Five odd things for Evil, animated, three states each
    - [ ] Shown in a corner of the screen; Evil's state follows the time left
@@ -215,6 +233,8 @@ Pick the most unique theme from what is already in the game first
 **Order to build in, by the owner's rule above** (furthest from anything the game has, first;
 orchestrator's ranking):
 
+Build the theme first, then the level. Make sure the theme is reusable
+
 1. T14 Toy room: nothing in the game changes scale or leaves the outdoors.
 2. T15 Underwater tunnel: no theme is under water or looks out through glass.
 3. T18 Moon base: the only one that changes the physics (low gravity).
@@ -306,3 +326,225 @@ orchestrator's ranking):
 The five starred ones go with the amphibious levels in the queue; taken in the order above that is
 Venice, ice road, fjord, mangrove delta, flooded city. T8 and T10 are the cheapest to build, being
 mostly new colours on existing scenery, which is also why they are last.
+
+## New gimmicks (ideas, not assigned)
+
+Thought up by the orchestrator on 10-Oct at the owner's request, with the owner's rule: **not another
+moving thing on the road that explodes when hit.** Each one below changes a rule of the game for a
+stretch: what the road is, what the player can see or know, how the car answers, what the traffic
+does, or what the run is for. None is built.
+
+**The owner's rules for a gimmick** (10-Oct, after cutting this list from 36 to 11). Not wanted:
+
+1. Having to stop the car, or wait.
+2. No counterplay: do as told or get busted.
+3. Variants of delivering fast, or to several places: they play exactly as a regular level does.
+4. Another moving thing on the road that explodes when hit.
+
+What decides it is counterplay, in the owner's words: "Roundabout and Fuel has counterplay - you can
+risk it or not. Red lights, missing the ferry etc has zero counterplay." So stopping is not the
+fault in itself: a stop the player can choose to risk skipping (dive into the gap on the roundabout,
+run past the pump and hope the tank lasts) is a decision; a stop the game simply imposes (a red
+light, a ferry that has gone) is not. Every gimmick should give the player a gamble to take or
+leave.
+
+### The road itself changes
+
+- [ ] G3. **Roundabout**: the road goes round an island; traffic already on it has the way. Pick
+      a gap or wait. The exit taken can be the short way or the long way round.
+- [ ] G4. **Fork with a choice**: the road splits into two real routes that rejoin: a short one
+      full of traffic and a long clear one, or a dirt cut-through. Signed ahead.
+
+### What the player can see or know
+
+- [ ] G10. **Whiteout or sandstorm with marker posts**: nothing visible but a line of reflector
+      posts and the tail-lights ahead. Follow a truck through or go by the posts.
+- [ ] G11. **Power cut**: the street lights, traffic lights and signs go dark over a district;
+      junctions become free-for-alls and only headlights show the road.
+
+### How the car answers
+
+- [ ] G16. **Crosswind**: a steady push sideways on an exposed stretch (a viaduct, a dam), with
+      gusts announced by a windsock. Tall cars are pushed more; passing a truck gives shelter,
+      then a shove as you clear it.
+- [ ] G18. **Fuel**: a long level where the tank will not make it. Petrol stations are on the
+      shoulder: pull in and stop (time lost) or run dry and coast.
+- [ ] G20. **Fragile cargo**: on this level the package breaks with bumps, kerbs and hard
+      braking, not only with crashes. A meter in the corner; the tip scales with what is left.
+      Goes with the cargo models in the queue.
+- [ ] G22. **Tow**: the car starts the level towing something (a caravan, a boat on a trailer,
+      a broken-down friend). It swings wide in bends and takes two lanes to change lane.
+
+### What the traffic does
+
+- [ ] G24. **Zip merge**: two queues merge into one. Take turns and it flows; push in and the
+      drivers behind get angry, close the gap, and the social standing drops.
+- [ ] G25. **Rush hour wave**: stop-start traffic with waves of braking moving backwards through
+      it. Reading the wave and arriving as it opens is faster than racing to the back of it.
+- [ ] G26. **School run**: every car on a stretch is trying to stop at the same kerb. They
+      double-park, pull out without looking and reverse.
+
+### Second batch (10-Oct, after the owner's cut): each built on a gimmick the game already has
+
+Written to the counterplay rule: every one is a gamble the player can take or leave, and each
+says what the gamble is. All are things that happen on real roads, as the eleven kept ones are.
+
+- [ ] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
+      car flies: no steering in the air, and it lands on whatever is over the top. _Gamble:_ lift
+      and see, or fly blind and gain seconds. _Builds on:_ the drawbridge's jump, hills.
+- [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
+      in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
+      slow and it lands in it. _Gamble:_ the jump or the slow way round. _Builds on:_ drawbridge
+      jump, rubbernecking queues, convoys.
+- [ ] H3. **Tram lane**: the median's rails are an empty lane, and a tram is coming along them
+      somewhere. Fast and clear, slippery in the rain, and the tram does not swerve. _Gamble:_
+      how long to stay on the rails. _Builds on:_ the railway median, Hong Kong's trams, ice.
+- [ ] H4. **Low bridge**: a height limit ahead, signed, with the tall-vehicle route going the
+      long way round. A low car goes straight under; a van or the bus must take the detour, or
+      lose its roof rack, lights and some health trying. _Gamble:_ made in the garage, and again
+      at the sign. _Builds on:_ side roads, tunnels, car heights already in `cars.js`.
+- [ ] H5. **Ford**: the road dips through a river, with the bridge a little further round. Depth
+      posts show how deep it is today (it varies down the level). A car that wades well goes
+      through; one that does not is slowed to a crawl or stalls. _Gamble:_ read the posts and
+      know the car. _Builds on:_ the tide's wading (`crossing` in `cars.js`), side roads.
+- [ ] H6. **Flooded underpass**: the same, in town in the rain: the main road dips under a
+      railway and fills, and the slip road goes up and over. The water rises through the run.
+      _Gamble:_ early on it is passable by anything; later only by some. _Builds on:_ tunnels,
+      Mumbai's rain, burst water mains.
+- [ ] H7. **Hairpin cut**: a rough track straight down the hill between two legs of a hairpin.
+      It saves the whole bend, shakes the car, costs health, and rejoins across the traffic.
+      _Gamble:_ seconds against damage and a blind rejoin. _Builds on:_ Stelvio's hairpins, mud,
+      side roads.
+- [ ] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
+      certain speed the car skims the tops and it goes smooth. _Gamble:_ commit to the speed
+      before the bend, or crawl. _Builds on:_ potholes, mud, the safari's dirt road.
+- [ ] H9. **Ruts**: tractors have left deep ruts in the mud. In a rut the car runs straight and
+      fast; changing lane means climbing out, with a jolt and a wobble. _Gamble:_ pick the rut
+      early and live with it. _Builds on:_ mud, tractors.
+- [ ] H10. **Black ice in the shade**: ice lies only where a building, a cutting or the trees
+      shade the road, so it can be read from the shadows before reaching it. _Gamble:_ brake
+      before the shadow, or stay in the sunny lane with the traffic. _Builds on:_ ice, the
+      scenery already casting the shade.
+- [ ] H11. **Truck spray**: in rain every lorry drags a cloud of spray: nothing can be seen
+      behind one. _Gamble:_ hang back and see, or overtake blind. _Builds on:_ rain, fog.
+- [ ] H12. **Low sun**: one stretch runs straight into the sun and the screen washes out,
+      except in the shadow of a lorry, a bridge or a row of trees. _Gamble:_ tuck in behind
+      something slow to see, or run in the glare. _Builds on:_ fog, tunnels' light change.
+- [ ] H13. **Dust trail**: on dirt every car throws a plume that drifts with the wind.
+      Following in it is blind; driving a lane upwind of it is clear. _Gamble:_ the clear lane
+      may be the oncoming one. _Builds on:_ fog, crosswind (G16), the safari.
+- [ ] H14. **Rockfall gallery**: the road forks into a covered gallery, narrow with no
+      shoulder and a queue in it, and the open road under the loose face. _Gamble:_ slow and
+      safe, or fast under the rocks. _Builds on:_ rockfall, tunnels, the fork (G4).
+- [ ] H15. **Thin ice shortcut**: the road goes round the lake; tyre tracks go straight across
+      it. Light cars cross; heavy ones crack it, and a crack that catches the car is a cold
+      swim. Amphibious cars do not care. _Gamble:_ the car's weight against the distance saved.
+      _Builds on:_ ice, `mass` in `cars.js`, the water stages being built, theme T4.
+- [ ] H16. **Fresh tarmac**: a coned-off lane of new tar beside the roadworks queue. It is
+      empty and it is sticky: the longer the car stays on it the slower it gets, and the tyres
+      stay slow for a while after. _Gamble:_ short hops along it. _Builds on:_ stop / go
+      roadworks, mud, narrows.
+- [ ] H17. **Climbing lane**: a hill with a short extra lane for overtaking the lorries, and a
+      sign counting down to where it ends. _Gamble:_ one more lorry before the lane runs out.
+      _Builds on:_ narrows, convoys, hills.
+- [ ] H18. **Single track with passing places**: one lane for both ways, with a marked bay
+      every so often. Meeting someone between bays, somebody goes onto the verge. _Gamble:_ duck
+      into this bay or run for the next. _Builds on:_ narrows, quiet zones, the shoulder timer.
+- [ ] H19. **Speed cushions**: a suburban street of humps with gaps between them. Straddle a
+      gap on exactly the right line and the car does not feel it; clip one at speed and it
+      jumps and takes a knock. _Gamble:_ precision at speed against slowing. _Builds on:_
+      potholes, the jump.
+- [ ] H20. **Blast window**: the quarry's siren goes and the road under the face is about to
+      be showered; the haul road round the back is longer and rough. _Gamble:_ sprint under
+      before it goes, or take the haul road. _Builds on:_ quarry blasts, side roads.
+
+The orchestrator's pick of these: H1 crest jumps and H2 the ramp (the jump is already in the
+engine and is the most fun thing the drawbridge does), H4 low bridge and H5 ford (they make the
+choice of car matter on the road, which little does today), H8 washboard (it rewards going
+faster, which nothing else does).
+
+### Third batch (10-Oct): other characters on the road
+
+Not obstacles: road users with something of their own going on, that the player can use, help,
+hinder or keep clear of. Each is a random or timed event, as ambulances, funeral processions and
+convoys already are (a level's `every: { min, max }`), so any level can have them.
+
+- [ ] P1. **Police pursuit** (the owner's idea): a chase already under way comes through the
+      level: a getaway car weaving through the traffic flat out, and behind it a pursuit car that
+      is **a model of its own, seen only in this event** (a low, wide interceptor with a light bar
+      and push bar, unlike the patrol cars), its siren heard coming before it is seen. The
+      helicopter joins with its searchlight.
+      - *What they do:* the getaway car takes any gap, the shoulder and the oncoming side; the
+        interceptor follows its line and tries to get alongside to turn it. Traffic pulls aside
+        for the siren, so a clear channel opens behind the two of them and closes again.
+      - *A Good player's gamble:* get in the getaway car's way. Hold a lane it wants, box it in
+        against traffic or the kerb, and the interceptor gets its chance: social standing, a
+        cash reward, and a bust wiped. Getting it wrong means being hit by one or both.
+      - *An Evil player's gamble:* run interference for the criminal: block the interceptor, or
+        tuck into the channel behind the chase and ride it through the traffic. The getaway
+        driver throws a bag of cash out for the help; the police add the player to the chase.
+      - *Or keep out of it:* move over and let it go by, at the cost of nothing.
+      - *How it ends:* caught (the two of them stopped on the shoulder further up, lights going,
+        a thing to rubberneck at), crashed (wreckage ahead), or away. Which one depends on what
+        happened, and on the player if the player took part.
+      - *Builds on:* emergencies, the police and their sight, the helicopter, wrong-way drivers'
+        warning and horn, rubbernecking, wreckage, cash pickups.
+      - *To settle when built:* whether the interceptor can also be earned as a car; one
+        interceptor or two; whether it can happen on race levels (suggest not).
+- [ ] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
+      a man with a bag stands on the shoulder with his thumb out, as a passenger pickup does.
+      *Gamble:* carry him for a large payout and have every police car on the level after the
+      car until he is dropped; or drive him straight to the next patrol car for standing.
+      *Builds on:* the passenger pickup, P1.
+- [ ] P3. **Street racers**: two tuned cars line up beside the player at speed, flash their
+      lights, and go: a race through the traffic to a marked point a kilometre on. *Gamble:*
+      take it up (cash for winning, and the police take an interest in all three) or let them
+      go. They race each other whether or not the player joins. *Builds on:* the boy racer,
+      rivals.
+- [ ] P4. **Cash van**: an armoured van with a back door not properly shut, shedding banknotes
+      into its lane (cash pickups) and a guard car beside it that leans on anything that gets
+      close. *Gamble:* sit in its wake collecting, slowly, with the guard car to deal with, or
+      get on with the delivery. *Builds on:* cash pickups, falling cargo, convoys.
+- [ ] P5. **Snowplough and gritter**: on snow and ice levels a plough works along one lane. The
+      lane behind it is clear and gritted: full grip. The lane beside it gets the snow it
+      throws: blind and slippery. *Gamble:* follow it in comfort at its speed, or go through the
+      plume to get past. *Builds on:* ice, snow, fog.
+- [ ] P6. **Leaking tanker**: a tanker dribbling its load (oil, milk, molasses) leaves a slick
+      trail down its lane for a long way behind it, and the trail tells the player it is ahead
+      before it is seen. *Gamble:* the trail's lane is the empty one. *Builds on:* burst water
+      mains' slicks, falling cargo.
+- [ ] P7. **Mobile mechanic**: a breakdown truck with its crane out. Hold station close behind
+      it for a few seconds and its mechanic leans out and mends the car on the move. *Gamble:*
+      seconds spent at its speed, nose to its tail, against health. *Builds on:* the wrench
+      pickup, the wide load's escort distance.
+- [ ] P8. **Stowaway on a transporter**: a car transporter with an empty top deck and its ramp
+      down. Drive up onto it and ride: past a speed camera, a roadblock or a police stretch
+      unseen, at the lorry's speed. Drive off the front when ready. *Gamble:* slow and hidden
+      against fast and seen. *Builds on:* the ramp (H2), police sight, cameras, roadblocks.
+- [ ] P9. **The sleepy lorry**: at night one lorry is drifting across the lanes and back on a
+      slow rhythm, its driver nodding. The horn wakes him and he holds his lane for a while.
+      *Gamble:* time the pass on the drift, or spend a moment on the horn first. *Builds on:* the
+      player's horn (which does little today), the caravan's sway, the night themes.
+- [ ] P10. **Unmarked police car**: one ordinary-looking car in the traffic is police, with a
+      tell (twin aerials, plain steel wheels, a driver in a cap). Passing it over the limit, or
+      doing anything Evil in its sight, starts a chase. *Gamble:* the player who spots the tell
+      slows for that one car and no other. *Builds on:* police, cameras' limit, the radar
+      detector (which could ping it).
+- [ ] P11. **Motorbike couriers**: bikes filtering between the lanes from behind, faster than
+      the traffic. Changing lane across one knocks it off (standing lost, a knock). They are
+      also the only thing moving in a jam, and they show where the gaps are. *Gamble:* fewer
+      lane changes, or look first. *Builds on:* the rickshaw's agility, pelotons.
+- [ ] P12. **Wedding convoy**: a line of cars in ribbons, horns going, throwing confetti that
+      hangs in the air and hides the road just behind them. Cutting through the convoy costs
+      standing; a care package thrown to the lead car earns a good deal of it. *Gamble:* the
+      long way round a slow, wide convoy or straight through its confetti. *Builds on:* funeral
+      processions, convoys, care packages.
+- [ ] P13. **Combine harvester**: on a farm road at harvest a combine fills the road and half
+      the shoulders, throwing chaff out of the back. Its driver pulls onto the field at each
+      gateway to let the queue by, if there is a queue: with no one behind the player, he does
+      not. *Gamble:* through the stubble field beside it (rough, slow, unpoliced) or wait for a
+      gateway. *Builds on:* tractors, wide load, mud.
+
+The orchestrator's view: P1 is the best of these by some way, because both sides have something
+to do with it and it ends differently each time; P2 follows from it almost for free. P7 and P8
+are the freshest: other road users as something to use, not to avoid. P9 gives the horn a job.
