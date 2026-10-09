@@ -24,7 +24,8 @@
 //   elevation   false = flat; or { every: m between heights asked for (40), smooth: m (40), scale: 1 }
 //   runoff      { max: m (60), minWidth: m (2), gap: m (40: anything wider for less than this is shut), within: m (4)
 //               and share (0.35): how far widths may differ and still be one stretch; barriers: [extra barrier
-//               values], ignoreWays: [ids] }
+//               values], ignoreWays: [ids]; street: true = a street circuit, whose walls (put up for the race, and
+//               on no map) stand at the road's edge: only a mapped gravel trap or apron is run-off }
 //   pit         { way: id } the pit lane (if not the relation's pit_lane member): where the pits are drawn
 //   stands      extra grandstands, as the level's own "stands" (those mapped are found by themselves)
 //   landmarks   [{ kind, lat, lon, r?, rot? }] a point, or [{ kind, ways: [ids] }] the ways' lines, or
@@ -196,7 +197,19 @@ const headingAt = (i) => { const lap = Math.floor(i / E); return heading[i - lap
 const RMIN = CFG.minRadius ?? 9.5, CMAX = 1 / RMIN;
 let curves = [];
 for (let i = 0; i < NSEG; i++) curves.push(-(headingAt(Math.round((i + 1) * PER)) - headingAt(Math.round(i * PER))) / 4);
+// (a bend tighter than the road can turn is held to what it can, and the turning it loses goes to the segments
+// either side of it, so the corner still turns as far, only a little wider)
 const clamped = curves.map(c => Math.abs(c) > CMAX);
+for (let pass = 0; pass < 200 && curves.some(c => Math.abs(c) > CMAX + 1e-12); pass++) {
+  const next = [...curves];
+  for (let i = 0; i < NSEG; i++) {
+    const over = curves[i] - Math.max(-CMAX, Math.min(CMAX, curves[i]));
+    if (!over) continue;
+    next[i] -= over; next[(i + 1) % NSEG] += over / 2; next[(i - 1 + NSEG) % NSEG] += over / 2;
+  }
+  curves = next;
+}
+for (let i = 0; i < NSEG; i++) if (Math.abs(curves[i]) >= CMAX - 1e-9) clamped[i] = true;
 curves = curves.map(c => Math.max(-CMAX, Math.min(CMAX, c)));
 // (a straight: 40 m or more of next to no curve is one segment of its mean curve)
 const straight = new Array(NSEG).fill(false);
@@ -423,7 +436,10 @@ for (const side of ['left', 'right']) {
       if (from > reach + 4) break;
       if (to > reach) { if (kind !== 'grass') { paved = Math.max(paved, to); any = true; } reach = to; }
     }
-    if (any && paved < limit - 10) { limit = paved; by = 'the trap\'s far edge'; }
+    if (RO.street) { // (a street circuit: its walls stand at the road's edge, but for where a gravel trap or an apron is mapped)
+      if (any) { if (paved < limit) { limit = paved; by = 'the trap\'s far edge'; } }
+      else { limit = EDGE; by = 'the wall at the road\'s edge'; }
+    } else if (any && paved < limit - 10) { limit = paved; by = 'the trap\'s far edge'; }
     else if (limit === Infinity && soft.length && reach > EDGE + 3) { limit = reach; by = 'the grass\'s far edge'; }
     if (limit > REACH) { limit = null; by = 'nothing mapped'; }
     measured[side].push({ limit, by });
