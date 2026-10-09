@@ -55,7 +55,7 @@
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
 //   theme      'city' (default), 'bathurst' (Mount Panorama: a mountain), 'panorama' (the same, as a road through the bush), 'montreal' (Circuit Gilles-Villeneuve's island: its landmarks 'river', 'basin',
-//              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'hell' or 'space': the look of the ground, sky and roadside.
+//              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'flooded' (the city under flood water, in the rain), 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo', 'f1')
@@ -320,6 +320,10 @@ import monza from './levels/monza.json';
 import spa from './levels/spa.json';
 import albertPark from './levels/albert-park.json';
 import slipway from './levels/slipway.json';
+import harbour from './levels/harbour.json';
+import flood from './levels/flood.json';
+import ford from './levels/ford.json';
+import fjord from './levels/fjord.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
@@ -330,7 +334,7 @@ export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathur
 // ...and the amphibious levels (A1, A2...: each "amphibious", with water stages, driven only in an amphibious
 // car), after the special ones: they unlock in order like the rest, the first by delivering the last special level
 // (the ids are short: each is in a full save's cookie twice. See progress.js)
-export const AMPHIBIOUS_LEVELS = [slipway];
+export const AMPHIBIOUS_LEVELS = [slipway, harbour, flood, ford, fjord];
 // ...and the circuits built from the real ones (render/circuits/): races only, on the menu's Races tab. They come
 // last in LEVELS, after every delivery level (races are always open, so saved progress, which counts the
 // delivery levels open by position, only has to know the amphibious levels went in ahead of them: see progress.js)

@@ -327,13 +327,15 @@ export const CONFIG = {
     sunkSpeed: 0.2,        // share of its top speed a car that doesn't float keeps in the channel...
     sunkDamage: 30,        // ...and the health a second it costs it
     trafficPace: 0.7,      // share of its cruising speed an amphibious traffic car keeps afloat
-    // the queue of traffic that can't cross, on its own shoulder: it starts pulling over `from` m short of the
-    // slipway and stops `edge` m short of it, each car `gap` m behind the last; and once `most` are waiting
-    // there, no more that can't cross turn up on that side of the water until the queue is gone by
-    queue: { from: 170, edge: 13, gap: 2.2, most: 6 },
-    // a boat coming to the end of its water ties up at the bank (its shoulder): it starts over `from` m
-    // short of the slipway's foot and stops `edge` m short of it; `most` as for the queue
-    moor: { from: 130, edge: 6, gap: 3, most: 4 },
+    // the queue of traffic that can't cross, on its own shoulder: each car starts pulling over `from` m short of
+    // its place in it; the first stops `edge` m short of the slipway, each of the rest `gap` m behind the one
+    // before. Once `most` are waiting there, no more that can't cross turn up on that side of the water until
+    // the queue is gone by; and none turns up within `clear` m of where the queue starts (reach: m back from
+    // there a queue is looked for: longer than any queue gets)
+    queue: { from: 170, edge: 13, gap: 2.2, most: 6, clear: 60, reach: 120 },
+    // a boat coming to the end of its water ties up at the bank (the channel's shoulder), the same way: `edge` m
+    // short of the slipway's foot
+    moor: { from: 130, edge: 6, gap: 3, most: 12, clear: 130, reach: 260 },
     // a boat's wake (a traffic vehicle with "boat", under way faster than `from` m/s): for `length` m astern of it
     // and `width` m either side of its line, it shoves a car afloat away from that line, by up to `shove` m/s^2
     // close astern (fading with distance): something to steer against, or round, never a wall

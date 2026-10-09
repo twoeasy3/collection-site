@@ -104,7 +104,7 @@ export const Water = {
     } else if (this.at(s, C.queue.edge)) return false;
     const edge = this.edgeFor(cls, s, dir);
     if (!edge) return true;
-    return (edge.line - s) * dir > 60 && (this.queues[edge.key] || 0) < edge.rule.most;
+    return (edge.line - s) * dir > edge.rule.clear && (this.queues[edge.key] || 0) < edge.rule.most;
   },
   // Once a step, before the traffic drives (see Traffic.update): which vehicles are coming up to water they
   // can't go on over, and where each is to stop. car.waterWait: the s it stops at (it makes for its shoulder
@@ -120,18 +120,22 @@ export const Water = {
       const cls = classOf(car.kind);
       if (cls === 'amphibious') continue;
       const edge = this.edgeFor(cls, car.s, car.dir);
-      if (!edge || (edge.line - car.s) * car.dir > edge.rule.from) continue;
+      if (!edge || (edge.line - car.s) * car.dir > edge.rule.from + edge.rule.reach) continue;
       (lines[edge.key] = lines[edge.key] || { edge, cars: [] }).cars.push(car);
     }
-    for (const { edge, cars: waiting } of Object.values(lines)) {
-      const dir = waiting[0].dir;
-      waiting.sort((a, b) => (edge.line - a.s) * dir - (edge.line - b.s) * dir);
-      let at = edge.line;
-      for (const car of waiting) {
-        car.waterWait = at - dir * car.hl;
-        at = car.waterWait - dir * (car.hl + edge.rule.gap);
+    for (const { edge, cars: coming } of Object.values(lines)) {
+      const dir = coming[0].dir;
+      coming.sort((a, b) => (edge.line - a.s) * dir - (edge.line - b.s) * dir);
+      let at = edge.line, waiting = 0;
+      for (const car of coming) {
+        const stop = at - dir * car.hl;
+        at = stop - dir * (car.hl + edge.rule.gap);
+        // (it makes for the side `from` m short of its own place in the queue, however long the queue has grown)
+        if ((stop - car.s) * dir > edge.rule.from) continue;
+        car.waterWait = stop;
+        waiting++;
       }
-      this.queues[edge.key] = waiting.length;
+      this.queues[edge.key] = waiting;
     }
   },
   // how fast a traffic car may go, coming up to where it is to wait (Infinity: it isn't)

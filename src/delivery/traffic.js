@@ -2323,7 +2323,7 @@ export const Traffic = (() => {
 
         // spring back to the lane centre
         // (alongside its rival it steers straight at it, but never over into the oncoming lanes after it)
-        const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
+        const beside = rival && car.waterWait == null && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2; // (not one waiting at the water's edge: it stays in its queue)
         const ownSide = (lat) => {
           const [first, last] = Track.laneRange(car.dir, car.s), a = Track.laneOffset(first, car.s), b = Track.laneOffset(last, car.s);
           return clamp(lat, Math.min(a, b), Math.max(a, b));

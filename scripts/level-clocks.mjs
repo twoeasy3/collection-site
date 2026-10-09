@@ -27,6 +27,15 @@ try {
   const cars = await load('/src/delivery/cars.js');
   const { CONFIG } = await load('/src/delivery/config.js');
   Object.defineProperty(Input, 'throttle', { get: () => 1, configurable: true });
+  // (on a level with water stages the run holds its lane, as a driver does against a current: left to drift it
+  // lands on the shoulder and is busted, which is no clean run)
+  const track = await load('/src/delivery/track.js');
+  let holdLane = false;
+  Object.defineProperty(Input, 'steer', { configurable: true, get: () => {
+    if (!holdLane) return 0;
+    const T = track.Track, [first] = T.laneRange(1, Player.s);
+    return Math.max(-1, Math.min(1, (T.laneOffset(first, Player.s) - Player.lat) * 0.6)) * (T.mirrored ? -1 : 1);
+  } });
   const C = CONFIG.clock, round = (t) => Math.max(C.round, Math.round(t / C.round) * C.round);
   const all = [...levels.LEVELS, ...Object.values(levels.HIDDEN_LEVELS)];
   for (const id of IDS) {
@@ -36,6 +45,7 @@ try {
     else levels.selectSpecial(level);
     cars.selectCar(level.amphibious ? C.amphibious : C.car); // (an amphibious level is timed in the amphibious reference car)
     Game.evil = false;
+    holdLane = !!level.water;
     Game.start();
     let t = 0;
     while (Game.state === 'playing' && t < 900) {

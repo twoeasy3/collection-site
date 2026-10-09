@@ -7,6 +7,11 @@
 // ============================================================================
 export const THEMES = {
   city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city' },
+  // flooded: the city after the river broke its banks: the city's own scenery standing in brown flood water (the
+  // ground is the water's colour), under a low sky, in the rain (rain: true). Made for water stages (a level's
+  // "water": see water.js), whose channels are the avenues under water and whose dry stretches the rises between
+  flooded: { sky: 0x8a949c, ground: 0x5d7f86, road: 0x34373c, scenery: 'city', rain: true,
+    light: { sky: 0xd8dde4, ground: 0x4a5a5e, ambient: 1.1, sun: 0xe8ecf2, sunlight: 0.6 } },
   farm: { sky: 0xc4e6f5, ground: 0x8fb556, road: 0x57514a, scenery: 'farm' },
   // beach: sand, a stormy sky, the sea along the right, palms and beach huts
   beach: { sky: 0x7e8d9e, ground: 0xdccb95, road: 0x45484e, scenery: 'beach' },

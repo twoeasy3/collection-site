@@ -60,7 +60,7 @@ for (const level of AMPHIBIOUS_LEVELS.filter(l => !named.length || named.include
         (cls === 'boat' ? tally.moored : tally.queued).add(car.kind + '@' + Math.round(car.waterWait));
         // (how far into the lanes a waiting vehicle reaches: it should be out on the shoulder)
         const into = car.dir > 0 ? Track.laneHi(car.s) - (car.lat - car.hw) : (car.lat + car.hw) - Track.laneLo(car.s);
-        worstQueueLane = Math.max(worstQueueLane, into);
+        if (into > worstQueueLane) { worstQueueLane = into; tally.worst = car.kind + ' at ' + Math.round(car.s) + ' m, lat ' + car.lat.toFixed(1) + ' (lanes to ' + Track.laneHi(car.s).toFixed(1) + ', road to ' + Track.hi(car.s).toFixed(1) + '), dir ' + car.dir + ', t ' + t.toFixed(0) + ', player at ' + Math.round(Player.s); }
       }
     }
   }
@@ -71,7 +71,7 @@ for (const level of AMPHIBIOUS_LEVELS.filter(l => !named.length || named.include
   check(tally.boatOnLand === 0, 'no boat was ever out of the water (' + tally.boatOnLand + ' boat-steps; ' + tally.seen.boat + ' seen)');
   console.log('        queued at the water: ' + tally.queued.size + ' (' + [...tally.queued].slice(0, 6).join(', ') + '); boats tied up: ' + tally.moored.size);
   if (tally.seen.land) check(tally.queued.size > 0, 'traffic that can\'t float stopped and waited at the water\'s edge');
-  check(worstQueueLane < 1.2, 'the waiting traffic keeps out of the lanes (reaching ' + worstQueueLane.toFixed(2) + ' m into the kerb lane at most)');
+  check(worstQueueLane < 1.2, 'the waiting traffic keeps out of the lanes (reaching ' + worstQueueLane.toFixed(2) + ' m into the kerb lane at most' + (tally.worst ? ': ' + tally.worst : '') + ')');
   if (tally.seen.amphibious) check(tally.crossedIn.size > 0 || tally.crossedOut.size > 0, 'amphibious traffic drove into the water (' + tally.crossedIn.size + ') and out of it (' + tally.crossedOut.size + ')');
 }
 
