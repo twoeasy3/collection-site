@@ -1,6 +1,7 @@
 {
   "id": "hong-kong",
   "name": "Hong Kong Harbour",
+  "cargo": { "good": "goldfish", "evil": "tentacle" },
   "theme": "hongkong",
   "drive": "left",
   "clock": { "good": 200, "evil": 150 },

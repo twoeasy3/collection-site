@@ -1,6 +1,7 @@
 {
   "id": "farm",
   "name": "Farm Lanes",
+  "cargo": { "good": "cactus", "evil": "bees" },
   "theme": "farm",
   "clock": { "good": 234, "evil": 166 },
   "traffic": { "darkvan": 0.42, "commuter": 0.19, "van": 0.33, "bus": 0.03, "police": 0.03 },

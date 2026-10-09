@@ -1,6 +1,7 @@
 {
   "id": "christmas",
   "name": "Christmas Eve",
+  "cargo": { "good": "cake", "evil": "doll" },
   "theme": "christmas",
   "clock": { "good": 180, "evil": 135 },
   "tip": 175,

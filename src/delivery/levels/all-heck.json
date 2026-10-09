@@ -1,6 +1,7 @@
 {
   "id": "all-heck",
   "name": "All Heck",
+  "cargo": { "good": "clock", "evil": "doll" },
   "theme": "hell",
   "car": "hearse",
   "alwaysGood": true,

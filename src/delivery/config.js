@@ -1225,8 +1225,9 @@ export const CONFIG = {
   // (and all through the tip countdown). corner: the picture of it in the HUD: `fov` degrees, turning at
   // `spin` rad/s, and `pulse` s of a flash round it as its state changes.
   // ending: a level delivered (on time or late), the car pulls in and sets it down before the results:
-  //   park     s to brake to a stop at the kerb (`inset` m in from the road's edge, no more than `reach` m on),
-  //   unload   s for the cargo to come out and be set down, `beside` m out from the car's side,
+  //   park     s to brake to a stop at the kerb, `least` to `reach` m on from the line,
+  //   unload   s for the cargo to come out and be set down, `inset` m in from the road's edge on the car's own
+  //            side, the car stopped with its side `beside` m from it,
   //   moment   s of its own there (the furious one misbehaves), then `beat` s more before the results;
   //   skipAfter  s before a key, tap or click skips it (so the key held over the line doesn't);
   //   pan      { from, to }: when (s) the camera leaves the chase view and when it has come round to the kerb;
@@ -1237,7 +1238,7 @@ export const CONFIG = {
   consignment: {
     agitated: 0.5, furious: 0.2,
     corner: { fov: 30, spin: 0.5, pulse: 0.7 },
-    ending: { park: 1.7, unload: 1.1, moment: 1.6, beat: 0.5, skipAfter: 0.35, inset: 0.5, reach: 60, beside: 1.9,
+    ending: { park: 1.7, unload: 1.1, moment: 1.6, beat: 0.5, skipAfter: 0.35, least: 8, reach: 60, inset: 0.8, beside: 1.3,
       pan: { from: 0.25, to: 2.1 }, camera: { ahead: 6.5, out: 4.2, up: 2.3, fov: 46 }, scale: 1.5 },
     noEnding: ['ufo', 'jetboat'],
   },

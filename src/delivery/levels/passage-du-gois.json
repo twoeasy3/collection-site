@@ -1,6 +1,7 @@
 {
   "id": "passage-du-gois",
   "name": "Passage du Gois",
+  "cargo": { "good": "goldfish", "evil": "tentacle" },
   "theme": "coast",
   "clock": { "good": 348, "evil": 247 },
   "tip": 200,

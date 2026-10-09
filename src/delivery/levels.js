@@ -77,6 +77,10 @@
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo', 'f1')
 //   alwaysGood true = the player is Good on it, whatever the side picked on the menu (as on the Battlefield)
+//   cargo      { good, evil }: what the player is delivering, for each side (the ids of cargo.js: good 'pizza' |
+//              'cake' | 'goldfish' | 'cactus' | 'clock'; evil 'parcel' | 'porcupine' | 'bees' | 'doll' | 'tentacle').
+//              Only a sight: it rides in a corner of the HUD and is set down at the kerb at the end. Left out (or
+//              either side of it), the level's place on the menu picks one. Races and the Battlefield carry nothing
 //   grid       { count, kind, gap, pace: { min, max }, from }: a race. `count` cars of that kind on a
 //              grid, two by two, `gap` m apart, ahead of the player, all the player's way, half of them
 //              evil, each at its own share (pace) of the player's car's top speed; they race on,

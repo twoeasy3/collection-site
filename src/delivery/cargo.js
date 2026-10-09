@@ -39,9 +39,9 @@ export const cargoFor = (level, evil) => {
   if (named) return named;
   let n = LEVELS.indexOf(level);
   if (n < 0) n = [...String(level.id || '')].reduce((sum, c) => sum + c.charCodeAt(0), 0);
-  return list[(n + (evil ? 2 : 0)) % list.length]; // (the two sides out of step, so the pairs vary down the menu)
+  return list[(n + (evil ? 2 + Math.floor(n / list.length) : 0)) % list.length]; // (the two sides drift out of step, so the pairs vary down the menu)
 };
-// a level's "cargo" checked: the problems with it, as text (track.js reports them with the level's others)
+// a level's "cargo" checked: the problems with it, as text (scripts/.cargo-check.mjs goes through every level's)
 export const cargoProblems = (level) => {
   const problems = [];
   for (const side of ['good', 'evil']) {

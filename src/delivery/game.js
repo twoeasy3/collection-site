@@ -30,6 +30,7 @@ import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
 import { Packages } from './packages.js';
 import { Pickups, Targets } from './pickups.js';
+import { Delivery } from './delivery.js';
 
 // ============================================================================
 // GAME STATE
@@ -180,6 +181,7 @@ export const Game = {
     this.inTunnel = false; // in a tunnel (see update)
     this.lap = 0;     // laps done, on a lapped level ("laps")
     Message.clear();
+    Delivery.reset();
     UfoStrike.reset();
     BulletTrain.reset();
     Tide.reset();
@@ -241,7 +243,9 @@ export const Game = {
       '  |  Bank $' + Progress.data.money.toFixed(2);
     if (prize && !hadPrize && Progress.earned(prize)) resultNote.textContent += '  |  You earned the ' + prize.name + '!'; // (its par beaten on every side: it is in the garage)
     resultScreen.classList[outcome === 'delivered' ? 'remove' : 'add']('failed');
-    resultScreen.classList.remove('hidden');
+    // (a level delivered: first the cargo is set down at the kerb, and then the results, already fixed above: see delivery.js)
+    const show = () => resultScreen.classList.remove('hidden');
+    if (!Delivery.begin(outcome, this.remaining, this.allowed, show)) show();
     for (const hook of this.onFinish) hook();
   },
   // the clock keeps running while the helicopter brings a new car: that's the penalty
@@ -317,7 +321,8 @@ export const Game = {
     // after the finish the car rolls to a stop past the line
     // (on a left-hand level, shown mirrored, steering left on screen is steering right in the game's own terms)
     const steer = playing ? Input.steer * (Track.mirrored ? -1 : 1) : 0;
-    if (Player.active) Player.update(dt, playing ? Input.throttle : 0, steer, !playing);
+    if (Delivery.active) Delivery.update(dt); // (the delivery at the kerb: the car pulls in by itself)
+    else if (Player.active) Player.update(dt, playing ? Input.throttle : 0, steer, !playing);
     else if (playing || this.over) this.updateRespawn(dt);
     // a police car that sees you on the shoulder busts you on the spot
     if (playing && Player.active && !Player.busted && Player.shield <= 0 &&
@@ -415,7 +420,7 @@ export const formatTime = (t) => {
 
 const playing = () => Game.state === 'playing';
 Input.on('throw', () => playing() && !Game.paused && !Game.screensaver && Packages.throwOne());
-Input.on('confirm', () => !playing() && !Game.inMenu && Game.start());
+Input.on('confirm', () => Delivery.active ? Delivery.skip() : !playing() && !Game.inMenu && Game.start()); // (Enter during the delivery at the kerb skips it)
 Input.on('pause', () => Game.togglePause());
 
 const startScreen = document.getElementById('startScreen');
