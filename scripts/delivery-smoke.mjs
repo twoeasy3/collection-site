@@ -735,11 +735,14 @@ try {
   {
     const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
     // (the first of them in the order they have always been in: saved progress counts unlocked levels by position)
-    const special = levels.LEVELS.length - main;
-    check(levels.LEVELS.slice(main).map(l => l.id).join().startsWith('all-heck,ufo,marina-bay,oh-mine,montreal') && levels.levelLabel(main - 1) === String(main) &&
-      special === levels.SPECIAL_LEVELS.length && levels.LEVELS.slice(main).every((l, k) => levels.levelLabel(main + k) === 'S' + (k + 1)) &&
-      levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main),
-      `the special levels come last, as S1 to S${special}: ${labels.slice(main - 1).join(', ')}`);
+    // (after the main levels: the special ones, then the real circuits. Each tab numbers its own: the deliveries
+    // among them S1.., the races, the lapped levels, R1..)
+    const rest = levels.LEVELS.slice(main), special = rest.filter(l => !levels.isRace(l)), races = rest.filter(levels.isRace);
+    check(rest.map(l => l.id).join().startsWith('all-heck,ufo,marina-bay,oh-mine,montreal') && levels.levelLabel(main - 1) === String(main) &&
+      rest.length === levels.SPECIAL_LEVELS.length + levels.CIRCUIT_LEVELS.length &&
+      rest.every((l, k) => levels.levelLabel(main + k) === (levels.isRace(l) ? 'R' + (races.indexOf(l) + 1) : 'S' + (special.indexOf(l) + 1))) &&
+      levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main && !levels.isRace(l)),
+      `the special levels and the circuits come last, as S1 to S${special.length} and R1 to R${races.length}: ${labels.slice(main - 1).join(', ')}`);
   }
 
   section('hesitation, signals and lights');
