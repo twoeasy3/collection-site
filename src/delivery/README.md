@@ -33,11 +33,12 @@ Enter to confirm. On a phone or tablet the on-screen controls come on by themsel
 | `delivery/index.html` | The game: start screen, garage, HUD |
 | `delivery/powerups.html` | Every pickup, its model and what it does |
 | `delivery/gimmicks.html` | Everything the levels throw at the player, and where |
+| `delivery/cargo.html` | What is being delivered: the ten items, the Evil ones in their three states, and which levels carry what |
 | `delivery/sides.html` | Good and Evil: what the side changes, how drivers take you |
 | `delivery/police.html` | What gets the player busted and what it costs |
 | `delivery/editor.html` | The level editor |
 
-The four reference pages read their numbers from `config.js` and their wording from
+The five reference pages read their numbers from `config.js` and their wording from
 `messages.json`, so they stay true as those change. A new page needs an entry in the client
 `input` in `vite.config.js`.
 
@@ -65,6 +66,8 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `?screensaver` | The traffic screensaver |
 | `?racewatch` | The race screensaver; `&camcheck` logs a check of its cameras |
 | `&touch` | Shows the on-screen controls on a desktop |
+| `&cargostate=2` | An Evil run's cargo in that state (0 calm, 1 agitated, 2 furious) whatever the clock says |
+| `&deliver=3.5` | Stops the delivery at the kerb that many seconds in, for a picture (with `&at=` just short of the finish and `&ff=14`) |
 
 ## Where things are
 
@@ -92,6 +95,8 @@ The core:
 | `pickups.js` | Pickups and TANK RAGE targets |
 | `social.js` | A good player's standing with the public |
 | `game.js` | Game state, countdown clock, tip, results |
+| `cargo.js` | What each level's player is delivering, for each side (a level's `cargo`), and an Evil item's state by the clock |
+| `delivery.js` | The ending of a delivered level: the car pulls in and the cargo is set down at the kerb, then the results |
 | `main.js` | Entry point, address-bar shortcuts and the frame loop |
 
 One file per gimmick, each the logic for a level field of the same name:
@@ -120,8 +125,9 @@ Rendering and the rest:
 | `render/*Models.js`, `render/carExtras.js` | Models with no game state, shared with the reference pages |
 | `render/<gimmick>.js` | Draws the gimmick of the same name |
 | `render/audio.js` | Sound: the WAVs in `sounds/`, with synthesised stand-ins |
+| `render/cargoModels.js`, `render/cargo.js` | The cargo's models; and the cargo drawn, in its corner of the HUD and at the kerb |
 | `render/hud.js`, `render/menu.js`, `render/garage.js`, `render/touch.js` | HUD, start screen, garage, on-screen controls |
-| `editor.js`, `powerups.js`, `gimmicks.js`, `sides.js`, `police.js` | The other pages' scripts |
+| `editor.js`, `powerups.js`, `gimmicks.js`, `sides.js`, `police.js`, `cargopage.js` | The other pages' scripts |
 | `sounds/`, `levelshots/`, `carshots/` | WAVs, and the menu's pictures of levels and cars |
 | `scripts/delivery-smoke.mjs` | The headless test |
 | `scripts/level-clocks.mjs` | Works out a level's clock from a clean run |
@@ -166,6 +172,10 @@ Levels unlock in menu order, each by delivering the one before.
   `carshots/<id>-evil.jpg`, taken with `?cine=car`. A vehicle that belongs to a level goes in
   `LEVEL_CARS`; one that should stay out of the garage goes in `SECRET_CARS`, with its own way
   in (the City Bus: type B U S on the start screen, or `?autostart&car=bus`).
+- **A thing to deliver:** a model in `render/cargoModels.js` (a group about a metre tall with
+  `userData.animate(t)`; an Evil one built with `stated`, which gives it `setState(0 | 1 | 2)`), its id
+  and name in `CARGO` in `cargo.js`, and a level's `"cargo": { "good": id, "evil": id }` to carry it.
+  `node scripts/.cargo-check.mjs` lists what every level carries and checks the ending.
 - **A sound:** drop a WAV in `sounds/` and name it in `SAMPLES` in `render/audio.js`. Game logic
   asks for it with `sfx()` or `sfxAt()` from `physics.js`.
 - **A message:** add its wording to `messages.json`.
