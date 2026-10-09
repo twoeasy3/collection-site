@@ -392,6 +392,8 @@ export const CONFIG = {
     flight: 1.6,           // s it takes to fly in and land
     blast: 3,              // m beyond it, along the road, that its landing (or an airliner sliding) also wrecks
     lookout: 140,          // m ahead traffic sees its lane blocked, and pulls over
+    towAfter: 0.6,         // s after it lands that a Tow Truck can clear it (see CARS: trait 'tow')...
+    towKept: 0.35,         // ...keeping this share of its speed as it does
     approach: 420,         // m out an airliner comes in from, beyond where it touches down...
     approachHeight: 55,    // ...this high...
     approachTime: 3,       // ...taking this long to touch down...
@@ -627,6 +629,16 @@ export const CONFIG = {
     // brake lights or indicators, and never spins out or takes a critical hit): a cruiser as the player's jetboat, and a fishing trawler, big and slow
     boat:    { hw: 1.0, hl: 2.7, height: 1.6, mass: 1.2, health: 90, model: 'jetboat', speed: 1, boat: true, noWheels: true, crit: 0, spin: 0 },
     trawler: { hw: 1.5, hl: 4.6, height: 3.2, mass: 3.5, health: 200, model: 'trawler', speed: 0.6, boat: true, noWheels: true, crit: 0, spin: 0 },
+    // traffic with quirks of its own (see Traffic: quirks). jingle: an ice cream van's tune, heard near it (every
+    // jingle s); stops: a bin lorry pulls up where it is every every s, for 	ime s, hazards on; learner: it
+    // hesitates all the time (as CONFIG.hesitation: dabs of the brakes, drifting about its lane); tailgates: a boy
+    // racer sits on the player's bumper, as a sulky driver does; sway: m a caravan swings about behind its car
+    icecream: { hw: 1.05, hl: 2.6, height: 2.4, mass: 1.6, health: 80, speed: 0.6, special: true, model: 'icecream', livery: 0xff9ec4, jingle: 2.6 },
+    binlorry: { hw: 1.25, hl: 4.2, height: 3.2, mass: 4, health: 200, speed: 0.75, special: true, model: 'binlorry', livery: 0x2f8a4a, noSpin: true,
+      stops: { every: { min: 7, max: 13 }, time: { min: 2.5, max: 4.5 } } },
+    learner: { hw: 0.85, hl: 1.9, height: 1.45, mass: 0.8, health: 45, speed: 0.6, special: true, model: 'learner', livery: 0xf4f4f4, learner: true },
+    boyracer: { hw: 0.9, hl: 1.95, height: 1.15, mass: 0.8, health: 45, speed: 1.35, model: 'boyracer', tailgates: true },
+    caravan: { hw: 1.1, hl: 5.2, height: 2.6, mass: 2.2, health: 110, speed: 0.75, special: true, model: 'caravan', sway: 0.45 },
     // a drive-by car (The Hood): only ever evil (evilOnly), out for trouble: see CONFIG.driveBy
     driveby: { hw: 1.0, hl: 2.65, height: 1.45, mass: 1.5, health: 120, model: 'driveby', speed: 1.1, evilOnly: true },
   },

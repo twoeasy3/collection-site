@@ -143,7 +143,8 @@ const action = document.getElementById('garageAction');
 const startScreen = document.getElementById('startScreen');
 const money = (amount) => '$' + amount.toFixed(2);
 const stats = (car) => 'Top speed ' + Math.round(car.maxSpeed * 3.6) + ' km/h  |  Acceleration ' +
-  car.accel + '  |  Health ' + car.health + '  |  Crossing ' + Math.round((car.crossing ?? CONFIG.railCrossing.usual) * 100) + '%';
+  car.accel + '  |  Health ' + car.health + '  |  Crossing ' + Math.round((car.crossing ?? CONFIG.railCrossing.usual) * 100) + '%' +
+    (car.perk ? '  |  ' + car.perk : ''); // (a perk of its own: see CARS' trait)
 
 let hovered = null; // the parked car mesh under the pointer
 const raycaster = new THREE.Raycaster();

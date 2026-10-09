@@ -306,7 +306,10 @@ export const Traffic = (() => {
     car.pendingLane = null; // the lane it is signalling for, until it moves over (see signalTo)
     car.pendingForced = false; // ...because its lane ends or it is taking a ramp
     car.signalTime = 0;     // s of signalling left before it moves over
-    car.hesitant = false;   // hesitating (see CONFIG.hesitation)...
+    car.hesitant = !!type.learner; // hesitating (see CONFIG.hesitation; a learner driver, all the time)...
+    car.binWait = type.stops ? between(type.stops.every) * Math.random() : 0; // a bin lorry: s to its next stop...
+    car.binStop = 0;        // ...and s left of the one it is making
+    car.jingleWait = Math.random() * 2; // an ice cream van: s to the next bar of its tune
     car.tap = 0;            // ...s left of a touch of the brakes...
     car.tapWait = 0;        // ...s to the next
     car.wander = Math.random() * 6; // (where it is in its drift about the lane)
@@ -2006,7 +2009,7 @@ export const Traffic = (() => {
         if (car.racer && LEVEL.grid?.rival) { rivalObstacles(car, dt); rivalPickups(car); }
         // held up behind a slow player: mood sours; angry evil drivers don't brake for you (they ram
         // you), angry good ones sit right on your bumper; an evil racer gives you a nudge
-        const gap = Player.s - car.s, tailgater = att === 'sulky' || att === 'vigilante';
+        const gap = Player.s - car.s, tailgater = att === 'sulky' || att === 'vigilante' || !!CONFIG.vehicles[car.kind].tailgates; // (or a boy racer)
         const passingPlayer = car.passing === Player && car.attack > 0 && gap > Player.hl + car.hl + 1 + Math.max(0, Math.abs(car.vs) - Player.speed) * 0.5;
         if (Player.active && Player.shield <= 0 && Player.ghost <= 0 && car.dir > 0 && gap > 0 && gap < Player.hl + car.hl + (tailgater ? CONFIG.attitude.tailgate : 8) && !passingPlayer &&
             Math.abs(Player.lat - car.lat) < Player.hw + car.hw && Player.speed < car.baseSpeed) {
@@ -2022,6 +2025,14 @@ export const Traffic = (() => {
         target = Math.min(target, giveWay(car), car.onIce || LEVEL.understeer ? Infinity : cornerSpeed(car.s, weightOf(car)));
         const hold = Math.min(Crossings.holdFor(car), StopGo.holdFor(car), Hazards.holdFor(car)); // (waiting at a level crossing, or a STOP; or one of Hazards')
         const cyclists = passPeloton(car); // (giving cyclists room, or waiting behind them for it)
+        // quirks of its kind (see CONFIG.vehicles): a bin lorry pulling up where it is, every so often
+        const quirk = CONFIG.vehicles[car.kind];
+        if (quirk.stops && !car.pulledOver) {
+          if (car.binStop > 0) { car.binStop -= dt; target = 0; }
+          else if ((car.binWait -= dt) <= 0) { car.binWait = between(quirk.stops.every); car.binStop = between(quirk.stops.time); }
+        }
+        // (and an ice cream van's tune, near the player)
+        if (quirk.jingle && Math.abs(car.s - Player.s) < CONFIG.hornRange * 2 && (car.jingleWait -= dt) <= 0) { car.jingleWait = quirk.jingle; sfxAt('jingle', car.s, 0.8); }
         target = Math.min(target, hold, cyclists.hold);
         if (Player.mystery === 'sundayDrivers' && !car.racer && !car.emergency) target *= CONFIG.mystery.sundayPace; // (Sunday Drivers, a mystery: pottering along)
         if (car.racer) target = Math.min(target, racingLine(car) * ceding);
@@ -2062,8 +2073,9 @@ export const Traffic = (() => {
         // pulled over onto the shoulder puts its hazards on
         const settled = Math.abs(aimLat - car.lat) < 0.3;
         if (settled && car.pendingLane === null) car.signal = 0;
-        car.hazards = (car.pulledOver || car.punctured) && (car.hazards || settled);
-        const drift = car.hesitant && !beside && !car.pulledOver ? Math.sin(car.wander += dt * 1.3) * H.wander : 0;
+        car.hazards = ((car.pulledOver || car.punctured) && (car.hazards || settled)) || car.binStop > 0; // (or a bin lorry at a stop)
+        const drift = car.hesitant && !beside && !car.pulledOver ? Math.sin(car.wander += dt * 1.3) * H.wander
+          : quirk.sway && !car.pulledOver ? Math.sin(car.wander += dt * 1.7) * quirk.sway * Math.min(1, Math.abs(car.vs) / 12) : 0; // (a caravan, swaying)
         // (and nothing is ever steered into a median: not even after a rival who has gone in there)
         let aim = aimLat + drift + (beside ? 0 : car.squeeze * CONFIG.race.bully.squeeze); // (an evil racer leaning on a good one)
         if (Track.medianHalf) aim = car.dir > 0 ? Math.max(aim, Track.medianHalf + car.hw) : Math.min(aim, -Track.medianHalf - car.hw);

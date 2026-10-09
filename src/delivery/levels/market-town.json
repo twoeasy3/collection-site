@@ -13,7 +13,10 @@
     "bus": 0.1,
     "tractor": 0.04,
     "lovebus": 0.08,
-    "police": 0.03
+    "police": 0.03,
+    "binlorry": 0.04,
+    "learner": 0.04,
+    "icecream": 0.03
   },
   "trafficCount": 7,
   "oncomingCount": 6,

@@ -193,8 +193,10 @@ export const Collision = (() => {
       const damage = impact * CONFIG.damagePerSpeed;
       // (a rival courier takes little of it, and dishes out more: see CONFIG.rival.ram)
       const hit = (v, share) => v === courier ? share * R.share / 0.5 : courier ? share * R.damage : share;
-      hurt(a, damage * hit(a, shareA) * 2);
-      hurt(b, damage * hit(b, shareB) * 2);
+      // (a Mini slips through the gap: a scrape down another car's side costs it nothing: CARS' trait 'slim')
+      const slips = (v) => v.isPlayer && scraped && CAR.trait === 'slim' && v.tank <= 0;
+      if (!slips(a)) hurt(a, damage * hit(a, shareA) * 2);
+      if (!slips(b)) hurt(b, damage * hit(b, shareB) * 2);
       if (a.isPlayer || b.isPlayer) Traffic.arrest(a.isPlayer ? b : a); // (under the player's siren)
       if (a.isPlayer) b.grudge = CONFIG.grudgeTime;
       if (b.isPlayer) a.grudge = CONFIG.grudgeTime;
@@ -681,6 +683,11 @@ export const Collision = (() => {
       }
       // any touch blows the obstacle up: the car is damaged and loses speed, but drives on
       o.gone = true;
+      if (o.kind === 'rock' && CAR.trait === 'rocks') { // (the 6x6 ignores rockfall: the rock is smashed aside, at no cost)
+        Game.shake = Math.max(Game.shake, 0.3);
+        FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false, scale: 0.6, smoke: 0.4 });
+        continue;
+      }
       const cost = CONFIG.obstacleKinds[o.kind];
       if (Player.tank <= 0) { // a tank just flattens it
         // (a bigger rock hurts more, up to a limit)

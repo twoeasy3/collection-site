@@ -346,7 +346,7 @@ export const Player = {
     // (but not on ice, nor where cars understeer, nor with no brakes: there they slide wide instead)
     if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility));
     // in mud, slowed just as on a railway track (see CONFIG.mud)
-    const mud = Track.muddy(this.s);
+    const mud = Track.muddy(this.s) && CAR.trait !== 'mud'; // (the Rally Car ignores mud)
     if (mud) {
       top *= R.slowest + (1 - R.slowest) * crossing;
       if (crossing < 1) Game.shake = Math.max(Game.shake, 0.12 * (1 - crossing));
@@ -457,7 +457,7 @@ export const Player = {
     // (a car sliding wide in a bend, on a level where cars understeer or with no brakes, has lost its grip, as on ice)
     const push = understeer(this), sliding = !this.onIce && push !== 0;
     const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce || sliding ? CONFIG.ice.steerGrip : 1) *
-      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) ? CONFIG.mud.steerGrip : 1);
+      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) && CAR.trait !== 'mud' ? CONFIG.mud.steerGrip : 1);
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
     // a wave rushing in shoves a car in the water towards the centre line
     if (this.wading > CONFIG.tide.wet && !this.busted && Tide.rushing(this.s)) this.latVel -= CONFIG.tide.shove * dt;

@@ -198,7 +198,8 @@ export const syncWreckage = (now) => {
   Wreckage.list.forEach((e, i) => {
     const { mesh, marker, spin } = pieces[i] || {};
     if (!mesh) return;
-    mesh.visible = e.t >= 0 || e.kind === 'blast'; // (a building that blows stands there from the start)
+    mesh.visible = (e.t >= 0 || e.kind === 'blast') && !e.cleared; // (a building that blows stands there from the start; cleared by a Tow Truck, it is gone)
+    if (e.cleared) { marker.visible = false; return; }
     const coming = e.slide ? !e.landed || e.sliding : !e.landed;
     marker.visible = e.t >= 0 && coming && Math.floor(now / 120) % 2 === 0; // (flashing where it will come down)
     if (e.kind === 'blast') { // the building: standing beside the road; then blown out, slumped into a burning ruin

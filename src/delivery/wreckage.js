@@ -26,6 +26,7 @@ import { Traffic } from './traffic.js';
 import { FxQueue, sfx, sfxAt } from './physics.js';
 import { Game } from './game.js';
 import { Message } from './messages.js';
+import { CAR } from './cars.js';
 
 export const Wreckage = {
   tower: null, // the level's control tower: { at, trigger, t (s since it went; -1 = standing), down }
@@ -71,11 +72,11 @@ export const Wreckage = {
   // is the lane blocked (or about to be) at s? (nothing new turns up there, and the helicopter sets no car down there)
   blocked(lane, s) {
     const lat = Track.laneOffset(lane, s);
-    return this.list.some(e => e.t >= 0 && e.kind !== 'blast' && s > e.s0 - 20 && s < e.s1 + 20 && lat > e.lat0 - 0.5 && lat < e.lat1 + 0.5);
+    return this.list.some(e => e.t >= 0 && !e.cleared && e.kind !== 'blast' && s > e.s0 - 20 && s < e.s1 + 20 && lat > e.lat0 - 0.5 && lat < e.lat1 + 0.5);
   },
   // is a car's lane blocked somewhere ahead of it (by wreckage that has been set off)?
   ahead(car) {
-    return this.list.some(e => e.t >= 0 && e.kind !== 'blast' && (e.s0 - car.s) * car.dir > 0 && (e.s0 - car.s) * car.dir < CONFIG.wreckage.lookout &&
+    return this.list.some(e => e.t >= 0 && !e.cleared && e.kind !== 'blast' && (e.s0 - car.s) * car.dir > 0 && (e.s0 - car.s) * car.dir < CONFIG.wreckage.lookout &&
       car.lat + car.hw > e.lat0 && car.lat - car.hw < e.lat1);
   },
 
@@ -104,6 +105,7 @@ export const Wreckage = {
       }
     }
     for (const e of this.list) {
+      if (e.cleared) continue; // (dragged out of the way by a Tow Truck)
       if (e.t < 0) {
         // (a blast: when the player, keeping on at this pace, would be just short of its box as it blows)
         const reach = e.kind === 'blast'
@@ -158,6 +160,15 @@ export const Wreckage = {
         if (car.active && !car.junction && car.health > 0 && this.covers(e, car, margin)) car.health = 0; // (it blows up: Collision.check)
       }
       if (!Player.active || Player.shield > 0 || Player.health <= 0 || !this.covers(e, Player, margin)) continue;
+      // (the Tow Truck clears a wreck: once it has come to rest, driving into it drags it out of the lanes)
+      if (CAR.trait === 'tow' && Player.ghost <= 0 && e.kind !== 'blast' && !e.sliding && e.t > W.flight + W.towAfter) {
+        e.cleared = true;
+        Player.speed *= W.towKept;
+        Game.shake = Math.max(Game.shake, 0.6);
+        sfx('crash', 0.8);
+        Message.say('events', 'towed');
+        continue;
+      }
       if (Player.ghost > 0) Player.ghost = Math.max(Player.ghost, 0.2); // (a ghost comes through, kept one until it is clear)
       else Player.health = 0;
     }

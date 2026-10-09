@@ -40,6 +40,7 @@
     "mourners": ["You crashed into a funeral procession!! The mourners are furious!"],
     "crossing": ["Level crossing! The lights are flashing!"],
     "fog": ["Fog bank ahead!"],
+    "towed": ["Wreck cleared! That's what a tow truck is for."],
     "schoolCrossing": ["School crossing! Stop for the lollipop!"],
     "waterMain": ["Burst water main! It's slippery while it sprays."],
     "balloon": ["A hot-air balloon is coming down on the road!"],

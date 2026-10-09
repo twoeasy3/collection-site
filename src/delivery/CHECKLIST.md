@@ -20,7 +20,7 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 
 ## Vehicles
 
-- [ ] 26. More traffic types: ice cream van, bin lorry, learner driver, boy racer, caravan towers
+- [x] 26. More traffic types: ice cream van (jingle), bin lorry (stops often), learner driver (slow, dabs the brakes), boy racer (tailgates), caravan (sways). Checked headless (`scripts/.traffic-quirks-check.mjs`); in the traffic of Suburbs, Market Town, Singapore II, Outback Express and Sydney to Kiama, and Gimmick Road 2. The models were only glimpsed, and the jingle not heard.
 - [ ] 28. Liveries: unlockable paint jobs per car, earned for Evil and Good clears
 
 ## Modes and systems
@@ -46,7 +46,7 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 - [x] 44. Thumbnail shooting: a `?ghost` test parameter. The car is a ghost all run and cannot be busted. Checked headless (`scripts/delivery-probe.mjs` uses it).
 - [x] 45. Wrong-way drivers: a horn, flashing lights and a warning. Warning and horn checked headless on Quarry Run and Ring Road; the flashing headlights and hazards were not seen.
 - [ ] 46. Grade under the quarry rock face
-- [ ] 47. Re-run the level clocks (Quarry Run, Tour de Coast)
+- [x] 47. Re-run the level clocks (Quarry Run, Tour de Coast). Quarry Run's was already right (215 / 165); Tour de Coast's is now 210 / 160 (was 215 / 165).
 - [x] 48. Unify the screenshot scripts into `scripts/shots.mjs`: named shots, `--levels` and `--cars`. Named shots used and working; `--levels` and `--cars` were not run.
 
 ## Technical
@@ -55,16 +55,3 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 - [ ] 50. Lint and format setup, plus a CI workflow running the quick suite on PRs
 - [ ] 51. Performance: instance more scenery, lower the draw distance on phones
 - [ ] 52. Save data: export and import a save code. Also to check: the progress cookie may be near the 4 KB cap with every level and car saved (not measured); consider making local storage the main store
-
-## Added on 2026-10-09 (second list)
-
-- [ ] 53. An amphibious level: road, water, road, using the five amphibious models; normal cars take the long way round
-- [ ] 54. A sound board page and a model viewer page, in the style of the power-ups page
-- [ ] 55. Cargo that matters: fragile (loses tip with every knock), hot (loses tip with time), heavy (dulls acceleration)
-- [ ] 56. Mailboxes: a package into a roadside box for bonus cash as Good; flatten it as Evil
-- [ ] 57. Pass and play: two players take turns on the same seeded run and compare
-- [ ] 58. Rival season table: a standing for the rival couriers across levels
-- [ ] 59. Results breakdown: where the time went (crashes, busts, stuck behind a tractor); for races and the screensaver too
-- [ ] 60. Hazard strip: a thin bar showing what is coming up in the next kilometre
-- [ ] 61. A taught first level: throwing, the shoulder timer and the sides
-- [ ] 62. Shareable editor levels: the level packed into the link

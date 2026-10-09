@@ -13,6 +13,7 @@ import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
 import { LEVEL_CARS } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
+import './render/trafficModels.js';
 import { OBSTACLE_MODELS } from './render/obstacleModels.js';
 import { makeElephant } from './render/elephantModel.js';
 import { makeHippo } from './render/hippoModel.js';
@@ -418,6 +419,15 @@ const GROUPS = [
       const amber = [-1, 1].map(side => box(0.2, 0.16, 0.1, glow(0xffa21a), 2.2 + side * (v.hw - 0.08), 0.7, -3 + v.hl + 0.12));
       g.add(wrong, right, ...lamps, ...amber);
       return { model: g, tick: (t) => { const on = Math.floor(t * 7) % 2 === 0, blink = Math.floor(t * 3) % 2 === 0; lamps.forEach(l => { l.visible = on; }); amber.forEach(a => { a.visible = blink; }); } };
+    } },
+    { name: 'Traffic with quirks', color: 0xff9ec4, has: (l) => ['icecream', 'binlorry', 'learner', 'boyracer', 'caravan'].some(k => l.traffic?.[k] || l.trafficZones?.some(z => z.traffic[k])), rules: [
+      `The ice cream van potters along at ${pct(CONFIG.vehicles.icecream.speed)} of the traffic's pace, playing its tune. The bin lorry pulls up where it is every ${range(CONFIG.vehicles.binlorry.stops.every, ' s')}, for ${range(CONFIG.vehicles.binlorry.stops.time, ' s')}, hazards on.`,
+      `The learner is slow, dabs the brakes for no reason and drifts about its lane. The caravan sways up to ${CONFIG.vehicles.caravan.sway} m behind its car.`,
+      `The boy racer is ${pct(CONFIG.vehicles.boyracer.speed - 1)} faster than the traffic and sits on your bumper until it finds a way by. None of the others is ever evil.`,
+    ], build: () => {
+      const g = road(13, 30), kinds = ['icecream', 'binlorry', 'learner', 'boyracer', 'caravan'], colors = [0xff9ec4, 0x2f8a4a, 0xf4f4f4, 0x7a1fa8, 0x4fc3f7];
+      const models = kinds.map((kind, k) => { const m = vehicle(kind, colors[k]); m.position.set((k % 2 ? 2.6 : -2.6), 0, 11 - k * 5.5); g.add(m); return m; });
+      return { model: g, tick: (t) => models.forEach(m => m.userData.animate(t)) };
     } },
     { name: 'Tractors', color: 0x2e8b3d, has: (l) => l.tractors?.length, rules: [
       `Slow farm traffic at ${CONFIG.tractorSpeed} m/s. Each waits where it is until you come near, then sets off.`,

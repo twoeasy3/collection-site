@@ -6,6 +6,7 @@ import { Player } from '../player.js';
 import { Traffic } from '../traffic.js';
 import { scene, tmp } from './scene.js';
 import { MODELS, AMBULANCE_BOX } from './models.js';
+import './trafficModels.js'; // (more of them, added to MODELS)
 import { makeCrashDummy } from './pickupModels.js';
 import { makeTractorModel, makeUfo } from './carExtras.js';
 

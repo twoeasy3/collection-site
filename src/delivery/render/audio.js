@@ -84,6 +84,7 @@ const SAMPLES = {
   camera: null,                 // a speed camera catching the player (a shutter's click and whine)
   bell: null,                   // a level crossing's bell, ringing while its lights flash
   jet: null,                    // a jet screaming over (the Battlefield's airstrikes)
+  jingle: null,                 // a bar of an ice cream van's tune (synthesised)
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -286,6 +287,7 @@ Object.assign(SYNTH, {
   waveCrash: (v) => { noise(2600, 300, 1.6, 0.6 * v); noise(700, 150, 1.4, 0.4 * v, 'lowpass', 0.1); },
   camera: (v) => { noise(6000, 3000, 0.04, 0.4 * v, 'bandpass'); tone(2400, 4200, 0.25, 0.08 * v, 'sine', 0.03); },
   bell: (v) => { tone(1350, 1350, 0.18, 0.12 * v, 'triangle'); tone(2700, 2700, 0.12, 0.05 * v, 'sine'); },
+  jingle: (v) => [1047, 880, 698, 880, 1047, 1047, 1047].forEach((f, i) => tone(f, f, 0.2, 0.09 * v, 'triangle', i * 0.22)), // (a music box)
   jet: (v) => { noise(400, 3200, 1.8, 0.5 * v, 'bandpass'); noise(3000, 300, 1.4, 0.35 * v, 'bandpass', 1.2); tone(180, 90, 2.4, 0.12 * v, 'sawtooth'); },
 });
 

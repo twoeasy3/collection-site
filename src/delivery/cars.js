@@ -17,6 +17,10 @@
 //   tank       true = it is a tank: in TANK RAGE from the start of every level
 //   corner     true = parked in the far corner bay of the garage
 //   tier       which tier of the garage it is in (1-5): its star rating, shown with its name
+//   trait      a perk of its own, by name: 'slim' (the Mini: a scrape down another car's side costs it nothing: see
+//              Collision), 'mud' (the Rally Car: mud neither slows it nor dulls its steering: see Player), 'tow' (the
+//              Tow Truck: it clears landed wreckage out of the lanes: see Wreckage), 'rocks' (the 6x6: a fallen rock
+//              is smashed aside at no cost: see Collision). perk: the words for it, shown in the garage
 //   blue       true = a Blue Star car (the second season): better than a car of its tier with gold
 //              stars, but not as good as one a tier up; priced like a car two tiers up
 //   mass       how heavy it is in a shove (default 1): heavier knocks others aside and is knocked less
@@ -54,7 +58,8 @@ export const CARS = [
   { id: 'keitruck', tier: 1, blue: true, name: 'Kei Truck', price: 290, color: 0xf2f2ee, evilColor: 0x6cb4d8, fixedLivery: true, model: 'keitruck',
     maxSpeed: 24.5, accel: 10, agility: 1.3, crossing: 0.75, health: 120, hw: 0.74, hl: 1.7, height: 1.75 },
   { id: 'mini', tier: 1, blue: true, name: 'Mini', price: 320, color: 0xc0212b, evilColor: 0xe8731c, fixedLivery: true, model: 'mini',
-    maxSpeed: 25.5, accel: 12, agility: 1.4, crossing: 0.4, health: 95, hw: 0.74, hl: 1.5, height: 1.35 },
+    maxSpeed: 25.5, accel: 12, agility: 1.4, crossing: 0.4, health: 95, hw: 0.74, hl: 1.5, height: 1.35,
+    trait: 'slim', perk: 'Slips through gaps: scraping down the side of another car costs it nothing' },
   // ---- tier 2
   { id: 'lovebus', tier: 2, name: 'Love Bus', price: 130, color: 0x3fae4a, evilColor: 0xd8262b, fixedLivery: true, model: 'lovebus',
     maxSpeed: 24, accel: 7, crossing: 0.55, health: 165, hw: 1.0, hl: 2.3, height: 2.1 },
@@ -86,9 +91,11 @@ export const CARS = [
   { id: 'sleeper', tier: 3, blue: true, name: 'Sleeper Wagon', price: 680, color: 0x5a1f2a, evilColor: 0xc9c3b4, fixedLivery: true, model: 'sleeper',
     maxSpeed: 38.5, accel: 15, crossing: 0.6, health: 180, hw: 0.92, hl: 2.5, height: 1.45 },
   { id: 'rally', tier: 3, blue: true, name: 'Rally Car', price: 720, color: 0x1d3f9e, evilColor: 0xe24a8c, fixedLivery: true, model: 'rally',
-    maxSpeed: 39, accel: 16, agility: 1.35, crossing: 0.95, health: 130, hw: 0.9, hl: 2.2, height: 1.45 },
+    maxSpeed: 39, accel: 16, agility: 1.35, crossing: 0.95, health: 130, hw: 0.9, hl: 2.2, height: 1.45,
+    trait: 'mud', perk: 'Ignores mud: no slower in it, and it steers as well as ever' },
   { id: 'towtruck', tier: 3, blue: true, name: 'Tow Truck', price: 750, color: 0xeeeeee, evilColor: 0x2a6fb8, fixedLivery: true, model: 'towtruck',
-    maxSpeed: 36, accel: 10, crossing: 0.8, health: 220, mass: 2.0, hw: 1.05, hl: 2.85, height: 2.1 },
+    maxSpeed: 36, accel: 10, crossing: 0.8, health: 220, mass: 2.0, hw: 1.05, hl: 2.85, height: 2.1,
+    trait: 'tow', perk: 'Clears a wreck: it drags fallen wreckage out of the lanes instead of being wrecked by it' },
   { id: 'rotary', tier: 3, blue: true, name: 'Rotary Coupe', price: 780, color: 0xf2c218, evilColor: 0x1f8a5c, fixedLivery: true, model: 'rotary',
     maxSpeed: 40, accel: 17, agility: 1.45, crossing: 0.3, health: 120, hw: 0.88, hl: 2.15, height: 1.2 },
   // ---- tier 4
@@ -115,7 +122,8 @@ export const CARS = [
   { id: 'classicgt', tier: 5, blue: true, name: 'Classic GT', price: 1250, color: 0x1f4d36, evilColor: 0xb0121c, fixedLivery: true, model: 'classicgt',
     maxSpeed: 48, accel: 18, agility: 1.4, crossing: 0.35, health: 190, hw: 0.9, hl: 2.3, height: 1.25 },
   { id: 'sixbysix', tier: 5, blue: true, name: '6x6', price: 1350, color: 0xe2dccc, evilColor: 0x4b5320, fixedLivery: true, model: 'sixbysix',
-    maxSpeed: 46.5, accel: 13, crossing: 1, health: 420, mass: 2.4, hw: 1.15, hl: 3.0, height: 2.45 },
+    maxSpeed: 46.5, accel: 13, crossing: 1, health: 420, mass: 2.4, hw: 1.15, hl: 3.0, height: 2.45,
+    trait: 'rocks', perk: 'Ignores rockfall: it smashes fallen rocks aside without a scratch' },
   { id: 'tank', name: 'Tank', price: 5000, color: 0x4b5a2a, evilColor: 0x2a2d33, tank: true, corner: true,
     maxSpeed: 46, accel: 8, crossing: 1, health: 100, hw: 1.25, hl: 2.3, height: 1.9 }, // (TANK RAGE's top speed: CONFIG.tankMaxSpeed)
 ];
