@@ -2128,14 +2128,18 @@ const buildRoad = () => {
     const Q = CONFIG.quarry;
     Object.assign(kinds, { qFloor: [], benchA: [], benchB: [], stone: [], crusher: [], hopper: [], haul: [], haulCab: [], tyre: [] });
     for (const q of quarries) {
-      for (let s = q.from; s < q.to; s += 10) kinds.qFloor.push([s + 5, beside(q.sg, s + 5, (Q.floorFrom + Q.floorTo) / 2), 0.03, Q.floorTo - Q.floorFrom, 0.06, 10.4]);
+      const floorTo = q.floor ?? Q.floorTo; // (a quarry whose face comes close in to the road has only a ledge of a floor)
+      for (let s = q.from; s < q.to; s += 10) kinds.qFloor.push([s + 5, beside(q.sg, s + 5, (Q.floorFrom + floorTo) / 2), 0.03, floorTo - Q.floorFrom, 0.06, 10.4]);
       for (let k = 0; k < Q.benches; k++) {
-        const d = Q.floorTo + k * Q.benchDepth + Q.benchDepth / 2;
-        for (let s = q.from + k * 8; s < q.to - k * 8; s += 6) {
+        const d = floorTo + k * Q.benchDepth + Q.benchDepth / 2;
+        // (each bench set back a little at the quarry's ends; not where another stretch of the same quarry runs on)
+        const joinsBefore = quarries.some(o => o !== q && o.sg === q.sg && o.to === q.from), joinsAfter = quarries.some(o => o !== q && o.sg === q.sg && o.from === q.to);
+        for (let s = q.from + (joinsBefore ? 0 : k * 8); s < q.to - (joinsAfter ? 0 : k * 8); s += 6) {
           const h = (k + 1) * Q.benchHeight + Math.random() * 0.8;
           (k % 2 ? kinds.benchB : kinds.benchA).push([s + 3, beside(q.sg, s + 3, d), h / 2, Q.benchDepth + 0.2, h, 6.3]);
         }
       }
+      if (floorTo - Q.floorFrom < 25) continue; // (no room on the floor for the works)
       for (let s = q.from + 30; s < q.to - 20; s += 55 + Math.random() * 30) { // heaps of crushed stone
         const h = 4 + Math.random() * 4;
         kinds.stone.push([s, beside(q.sg, s, Q.floorFrom + 8 + Math.random() * (Q.floorTo - Q.floorFrom - 16)), h / 2, h * 2.4, h, h * 2.4]);

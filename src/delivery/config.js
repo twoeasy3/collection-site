@@ -625,6 +625,11 @@ export const CONFIG = {
   lowriderHearing: 90,     // m from a lowrider in traffic within which its music is heard (the same way)
   policeSightRange: 45,    // m along the road within which a police car witnesses what you do
   copGlowMargin: 12,       // m further out than that the screen's edges start flashing red and blue: a warning
+  // a wrong-way driver (an oncoming car off a side road with no flyover, carrying on down the
+  // expressway's right-hand lane: see Track.transfer): cars coming at it look look m ahead, and
+  // lookTime s at their closing speed, to move over a lane or stop stopShort m off it; it keeps to its
+  // lane, swerving over (into a lane clear `room` m round it) only within swerve m of something in it
+  wrongWay: { look: 30, lookTime: 2, stopShort: 6, swerve: 40, room: 10 },
   // a police car on station at the edge of its stretch (see Traffic: policeOnStation) stops this many m
   // short of the edge, braking at no more than stationBrake m/s^2 to do it
   stationShort: 3,

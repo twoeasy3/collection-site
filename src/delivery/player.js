@@ -488,7 +488,7 @@ export const Player = {
 
     // the shoulder is only tolerated briefly; back in the lanes the allowance refills
     // (an inflatable passenger makes the shoulder legal)
-    // (a level can switch the timer off altogether: "shoulderTimer": false)
+    // (a level can switch the timer off altogether: "shoulderTimer": false; or only in its mud: "mud")
     // (and nor does a car pulled over with a flat tyre, or just after changing it)
     if (this.puncture) {
       if (this.speed < 0.3) this.fixing += dt; // (stopped, the tyre is being changed: the work so far is kept, if it moves off before it's done)
@@ -500,7 +500,7 @@ export const Player = {
       }
     }
     this.tyreGrace = Math.max(0, (this.tyreGrace || 0) - dt);
-    this.onShoulder = LEVEL.shoulderTimer !== false && Track.onShoulder(this.lat, this.s) &&
+    this.onShoulder = LEVEL.shoulderTimer !== false && !(LEVEL.shoulderTimer === 'mud' && Track.muddy(this.s)) && Track.onShoulder(this.lat, this.s) &&
       this.passenger <= 0 && this.tank <= 0 && !this.puncture && !(this.tyreGrace > 0);
     if (this.onShoulder) {
       // (mercy: with a bullet train about, the shoulder may be the only way out of its path)

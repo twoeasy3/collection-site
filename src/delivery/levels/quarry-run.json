@@ -8,7 +8,7 @@
   },
   "tip": 210,
   "lanes": 2,
-  "shoulderTimer": false,
+  "shoulderTimer": "mud",
   "traffic": {
     "semi": 0.22,
     "pickup": 0.28,
@@ -61,6 +61,17 @@
   "quarries": [
     {
       "from": 1550,
+      "to": 1680,
+      "side": "left"
+    },
+    {
+      "from": 1680,
+      "to": 1970,
+      "side": "left",
+      "floor": 16
+    },
+    {
+      "from": 1970,
       "to": 2100,
       "side": "left"
     },
@@ -71,6 +82,17 @@
     },
     {
       "from": 3500,
+      "to": 3630,
+      "side": "left"
+    },
+    {
+      "from": 3630,
+      "to": 3920,
+      "side": "left",
+      "floor": 16
+    },
+    {
+      "from": 3920,
       "to": 4050,
       "side": "left"
     }
@@ -90,13 +112,17 @@
       "from": 1700,
       "to": 1950,
       "count": 7,
-      "side": "left"
+      "side": "left",
+      "out": 34,
+      "height": 12
     },
     {
       "from": 3650,
       "to": 3900,
       "count": 7,
-      "side": "left"
+      "side": "left",
+      "out": 34,
+      "height": 12
     }
   ],
   "wreckage": [
