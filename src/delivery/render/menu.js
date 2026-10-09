@@ -14,7 +14,7 @@ const money = (amount) => '$' + amount.toFixed(2);
 
 // a card is a button with a title and a few lines of small print
 // each level's still for its card, by level id (taken with ?cine: see main.js)
-const LEVEL_SHOTS = Object.fromEntries(Object.entries(
+export const LEVEL_SHOTS = Object.fromEntries(Object.entries( // (the postcard album uses them too: render/album.js)
   import.meta.glob('../levelshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
 

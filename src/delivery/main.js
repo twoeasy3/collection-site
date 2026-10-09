@@ -48,6 +48,7 @@ import { Mysteries } from './mysteries.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
 import './render/touch.js';
+import './render/album.js';
 import './horn.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
