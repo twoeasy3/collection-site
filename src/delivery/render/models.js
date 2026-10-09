@@ -618,6 +618,139 @@ export const MODELS = {
     return group;
   },
 
+  // A Japanese kei truck: a tiny cab-over with a flat, near-upright face, a long, low flatbed
+  // with fold-down sides behind it, and little wheels right at the corners. It bobs as it idles
+  keitruck: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.27;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), steel = lambert(0xc4c8ce);
+    const body = new THREE.Group(); group.add(body);
+    const cab = box(body, paint, w, 1.1, l * 0.36, 0, 1.0, l * 0.32);              // the cab, right over the front wheels
+    box(body, glass, w * 0.86, 0.5, 0.04, 0, 1.28, l / 2 + 0.01);                   // its upright windscreen, flush in the face
+    for (const side of [-1, 1]) box(body, glass, 0.04, 0.42, l * 0.24, side * (w / 2 + 0.005), 1.3, l * 0.31); // door glass
+    box(body, paint, w * 1.02, 0.06, l * 0.37, 0, 1.57, l * 0.32);                 // the roof's lip
+    box(body, trim, w * 0.9, 0.6, 0.06, 0, 1.14, l * 0.14);                        // the cab's back panel
+    box(body, trim, w * 0.94, 0.12, l * 0.66, 0, 0.5, -l * 0.17);                  // the flatbed's floor
+    for (const side of [-1, 1]) box(body, paint, 0.05, 0.3, l * 0.64, side * (w / 2 - 0.03), 0.71, -l * 0.17); // its drop sides
+    box(body, paint, w * 0.94, 0.3, 0.05, 0, 0.71, -l / 2 + 0.03);                  // and tailgate
+    box(body, trim, 0.06, 0.5, 0.06, -w * 0.3, 1.0, l * 0.14 - 0.06);               // the headboard's rail
+    box(body, trim, 0.06, 0.5, 0.06, w * 0.3, 1.0, l * 0.14 - 0.06);
+    box(body, trim, w * 0.62, 0.06, 0.06, 0, 1.24, l * 0.14 - 0.06);
+    for (const side of [-1, 1]) {
+      box(body, LAMP, w * 0.2, 0.14, 0.06, side * w * 0.33, 0.66, l / 2 + 0.01);   // headlamps low in the face
+      box(body, TAIL, 0.1, 0.16, 0.06, side * w * 0.4, 0.66, -l / 2 - 0.01);
+      box(body, trim, 0.1, 0.08, 0.1, side * (w / 2 + 0.05), 1.18, l * 0.44);       // mirrors
+      wheel(group, R, 0.2, side * (w / 2 - 0.06), R, l * 0.36, steel);
+      wheel(group, R, 0.2, side * (w / 2 - 0.06), R, -l * 0.3, steel);
+    }
+    box(body, trim, w + 0.02, 0.14, 0.1, 0, 0.42, l / 2 + 0.03);                    // bumper
+    group.userData = { body: cab, animate: (t) => { body.position.y = Math.abs(Math.sin(t * 9)) * 0.015; } };
+    return group;
+  },
+
+  // A small post van: a tall panel van with a short, sloping nose, a rounded high roof, blind rear
+  // sides each wearing a big envelope (its flap in the van's colour) over a pale band, twin rear
+  // doors with another envelope across them, and an amber beacon on the roof that flashes as it idles
+  postvan: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.31;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), band = lambert(0xf2efe6);
+    const front = l * 0.14, scuttle = l * 0.23;                                      // (where the roof ends, and the windscreen's foot)
+    const body = box(group, paint, w, 1.32, front + l / 2, 0, 1.0, (front - l / 2) / 2); // the tall load box, up to the windscreen
+    box(group, paint, w, 0.52, l / 2 - front, 0, 0.6, (front + l / 2) / 2);           // the nose
+    prism(group, paint, w * 0.98, [[l * 0.5, 0.86], [l * 0.36, 1.0], [front, 1.0], [front, 0.86]]); // sloping bonnet
+    const rise = 1.66 - 1.0, run = scuttle - front;
+    screen(group, glass, w * 0.9, 0.05, Math.hypot(rise, run), 0, 1.33, (front + scuttle) / 2, Math.atan2(rise, run)); // the raked windscreen
+    for (const side of [-1, 1]) {
+      box(group, glass, 0.04, 0.4, l * 0.16, side * (w / 2 + 0.005), 1.32, l * 0.05); // cab door glass only
+      box(group, band, 0.03, 0.16, l * 0.9, side * (w / 2 + 0.01), 0.86, 0);         // the pale band down each side
+      box(group, LAMP, w * 0.26, 0.14, 0.06, side * w * 0.3, 0.8, l / 2 + 0.01);     // headlamps
+      box(group, TAIL, 0.1, 0.4, 0.06, side * w * 0.42, 1.2, -l / 2 - 0.01);        // tall tail lamps
+      box(group, trim, 0.12, 0.14, 0.1, side * (w / 2 + 0.06), 1.16, l * 0.2);       // mirrors
+      wheel(group, R, 0.24, side * (w / 2 - 0.05), R, l * 0.33, lambert(0x9da2a8));
+      wheel(group, R, 0.24, side * (w / 2 - 0.05), R, -l * 0.32, lambert(0x9da2a8));
+    }
+    box(group, trim, 0.03, 0.5, 0.04, 0, 0.72, -l / 2 - 0.01);                       // the split in the rear doors, under their envelope
+    box(group, trim, w * 0.5, 0.12, 0.05, 0, 0.6, l / 2 + 0.01);                     // grille
+    box(group, trim, w + 0.04, 0.18, 0.12, 0, 0.36, l / 2 + 0.03);                    // bumpers
+    box(group, trim, w + 0.04, 0.18, 0.12, 0, 0.36, -l / 2 - 0.03);
+    const hump = new THREE.Shape();                                                   // a raised, rounded high roof, side on
+    hump.moveTo(front - 0.05, 1.6);
+    hump.quadraticCurveTo(front - 0.1, 1.86, front - 0.5, 1.88);
+    hump.lineTo(-l * 0.44, 1.88);
+    hump.quadraticCurveTo(-l * 0.49, 1.88, -l * 0.49, 1.6);
+    hump.lineTo(front - 0.05, 1.6);
+    curved(group, paint, w * 0.94, hump, 0.06);
+    for (const side of [-1, 1]) {                                                       // an envelope on each flank:
+      const x = side * (w / 2 + 0.015), z0 = -l * 0.2, top = 1.5, half = 0.4, drop = 0.24;
+      box(group, band, 0.02, 0.5, half * 2, x, top - 0.25, z0);                          // the envelope,
+      for (const dir of [-1, 1]) {                                                       // and its flap, in the van's colour
+        const flap = box(group, paint, 0.03, 0.05, Math.hypot(half, drop), x, top - drop / 2, z0 + dir * half / 2);
+        flap.rotation.x = dir * -Math.atan2(drop, half);
+      }
+    }
+    {                                                                                   // and a third across the rear doors
+      const z = -l / 2 - 0.015, top = 1.5, half = 0.4, drop = 0.24;
+      box(group, band, half * 2, 0.5, 0.02, 0, top - 0.25, z);
+      for (const dir of [-1, 1]) {
+        const flap = box(group, paint, Math.hypot(half, drop), 0.05, 0.03, dir * half / 2, top - drop / 2, z);
+        flap.rotation.z = dir * Math.atan2(drop, half);
+      }
+    }
+    const beacon = new THREE.MeshBasicMaterial({ color: 0xffa31a });                  // an amber beacon on the roof
+    const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.18, 12), beacon);
+    lamp.position.set(0, 2.0, front - 0.6);
+    group.add(lamp);
+    box(group, trim, 0.34, 0.05, 0.34, 0, 1.9, front - 0.6);                             // on its base
+    group.userData = { body, animate: (t) => { beacon.color.setHex((t * 2.5) % 1 < 0.5 ? 0xffa31a : 0x7a4a10); } };
+    return group;
+  },
+
+  // A retro Mini: tiny, upright and round-shouldered, its body one curved side profile with a
+  // contrasting roof floating over a glasshouse all round, big round headlamps either side of a
+  // chrome grille, chrome bumpers, twin bonnet stripes, spot lamps, and little wheels right at the
+  // corners. Good is red with a white roof; Evil seventies orange with a black one. It sits still
+  mini: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, L = car.hl, R = 0.26;
+    const paint = lambert(car.color), glass = lambert(GLASS), chrome = lambert(CHROME), trim = lambert(TRIM);
+    const roofPaint = lambert(0xf4f2ec), stripe = lambert(0xf4f2ec);
+    const shell = new THREE.Shape();                                                  // the body, side on:
+    shell.moveTo(-L * 0.94, 0.24);
+    shell.lineTo(L * 0.92, 0.24);
+    shell.quadraticCurveTo(L, 0.24, L, 0.4);                                          // the front's lower lip
+    shell.quadraticCurveTo(L * 1.01, 0.74, L * 0.88, 0.8);                            // the round nose
+    shell.quadraticCurveTo(L * 0.6, 0.86, L * 0.4, 0.86);                             // the short bonnet
+    shell.lineTo(-L * 0.9, 0.86);                                                     // the waist
+    shell.quadraticCurveTo(-L * 1.0, 0.84, -L, 0.6);                                  // the round tail
+    shell.quadraticCurveTo(-L * 1.0, 0.26, -L * 0.94, 0.24);
+    const body = curved(group, paint, w - 0.06, shell, 0.06);
+    prism(group, glass, w * 0.86, [[L * 0.4, 0.85], [L * 0.2, 1.24], [-L * 0.8, 1.24], [-L * 0.88, 0.85]]); // the glasshouse
+    box(group, roofPaint, w * 0.9, 0.07, L * 1.12, 0, 1.28, -L * 0.3);  // the roof, in the other colour
+    for (const x of [-0.16, 0.16]) box(group, stripe, 0.12, 0.02, L * 0.5, x, 0.875, L * 0.66); // bonnet stripes
+    for (const side of [-1, 1]) {
+      disc(group, LAMP, 0.13, 0.06, side * w * 0.31, 0.64, L + 0.02);               // big round headlamps
+      disc(group, chrome, 0.155, 0.04, side * w * 0.31, 0.64, L + 0.005);           // in chrome rims
+      disc(group, LAMP, 0.08, 0.05, side * w * 0.14, 0.42, L + 0.1);                // spot lamps on the bumper
+      box(group, TAIL, 0.08, 0.2, 0.05, side * w * 0.4, 0.6, -L - 0.02);            // upright tail lamps
+      box(group, chrome, 0.08, 0.06, 0.08, side * (w / 2 + 0.03), 0.98, L * 0.38);   // little round-ish mirrors
+      wheel(group, R, 0.2, side * (w / 2 - 0.06), R, L * 0.74, lambert(0xd0d3d8));
+      wheel(group, R, 0.2, side * (w / 2 - 0.06), R, -L * 0.74, lambert(0xd0d3d8));
+    }
+    box(group, chrome, w * 0.34, 0.24, 0.04, 0, 0.6, L + 0.03);                       // the chrome grille
+    for (let i = 0; i < 4; i++) box(group, trim, w * 0.32, 0.02, 0.03, 0, 0.51 + i * 0.06, L + 0.05);
+    box(group, chrome, w + 0.04, 0.07, 0.08, 0, 0.32, L + 0.06);                      // thin chrome bumpers
+    box(group, chrome, w + 0.04, 0.07, 0.08, 0, 0.32, -L - 0.06);
+    const roofs = { good: 0xf4f2ec, evil: 0x161616 };
+    group.userData = {
+      body,
+      animate: () => {},
+      livery: (evil) => roofPaint.color.setHex(evil ? roofs.evil : roofs.good),
+    };
+    group.userData.livery(false);
+    return group;
+  },
+
   // The Darkvan: a full-size panel van with lifted suspension (the A-Team's, more or less):
   // big off-road tyres, a bull bar, a roof spoiler and a short nose. In its Evil livery it is
   // the A-Team's own: black over grey with the red stripe and red wheels; in its Good one,

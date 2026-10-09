@@ -1,10 +1,10 @@
 // ---- garage: the car shop, a 3D parking lot with a garage behind it ---------------------
-// Every car in CARS is parked in a bay. Tap any car, owned or not, to see its stats; the button under them
+// Every car in CARS is parked in a bay (the Blue Star ones once they are open: see garageCars). Tap any car, owned or not, to see its stats; the button under them
 // uses it, or buys it (hovering shows the price). The Good / Evil toggle swaps every car to its
 // other livery: buying a car buys both.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CARS, CAR, SECRET_CARS, selectCar, stars } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, selectCar, stars, starColour, blueStarsOpen, garageCars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { renderer } from './scene.js';
@@ -18,10 +18,18 @@ import { MODELS } from './models.js';
 // screen's height, so on a phone held upright each car is big, and a few columns show at a time
 const ROWS = 3, BAY_W = 3.9, BAY_D = 6.6;
 const ROW_Z = [7.6, 0.6, -6.4];      // centre lines of the rows, front to back (the back row under the roof)
-const order = [...CARS].sort((a, b) => (a.tier || 99) - (b.tier || 99) || a.price - b.price);
-const COLS = Math.ceil(order.length / ROWS);
+// a car's name and its stars, in their colour (gold or blue), as nodes to put in a line of text
+export const withStars = (car) => {
+  if (!car.tier) return [car.name];
+  const span = document.createElement('span');
+  span.textContent = stars(car);
+  span.style.color = starColour(car);
+  return [car.name + ' ', span];
+};
+const rank = (car) => (car.tier || 99) + (car.blue ? 0.5 : 0); // (a tier's Blue Star cars park after its gold ones)
+// (the lot is built for the cars on show: it grows when the Blue Star cars arrive. See buildLot)
+let order = [], COLS = 0, LOT_W = 0, parked = [], built = null;
 const colX = (col) => col * BAY_W;
-const LOT_W = COLS * BAY_W;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x2b3342);
@@ -31,10 +39,12 @@ lamp.position.set(12, 30, 18);
 scene.add(lamp);
 const camera = new THREE.PerspectiveCamera(42, 1, 0.5, 300);
 
+const lot = new THREE.Group(); // everything built for the cars on show (the lot, the building, the cars)
+scene.add(lot);
 const box = (material, w, h, d, x, y, z) => {
   const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
   mesh.position.set(x, y, z);
-  scene.add(mesh);
+  lot.add(mesh);
   return mesh;
 };
 const lambert = (color) => new THREE.MeshLambertMaterial({ color });
@@ -55,8 +65,13 @@ const label = (text, w, h, size, colour = '#ffd23f', ground = '#20242c') => {
   return map;
 };
 
-// ---- the lot and the building ---------------------------------------------------------------
-{
+// ---- the lot and the building, and the cars parked in it: built afresh when the cars on show change ----
+const buildLot = () => {
+  built = blueStarsOpen();
+  lot.clear();
+  order = garageCars().sort((a, b) => rank(a) - rank(b) || a.price - b.price);
+  COLS = Math.ceil(order.length / ROWS);
+  LOT_W = COLS * BAY_W;
   const mid = (LOT_W - BAY_W) / 2, left = -BAY_W / 2, right = LOT_W - BAY_W / 2;
   box(lambert(0x5b6068), LOT_W + 80, 0.2, 60, mid, -0.1, 2);                    // tarmac
   box(lambert(0x747a84), LOT_W + 3, 0.04, BAY_D + 1.5, mid, 0.02, ROW_Z[2]);    // garage floor
@@ -77,17 +92,18 @@ const label = (text, w, h, size, colour = '#ffd23f', ground = '#20242c') => {
   for (let x = mid - Math.floor(COLS / 8) * 8 * BAY_W / 2; x <= right; x += 8 * BAY_W) { // (one every eight bays)
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.25), new THREE.MeshBasicMaterial({ map: garageSign }));
     sign.position.set(x, H + 1.9, frontZ + 0.8);
-    scene.add(sign);
+    lot.add(sign);
   }
-}
+  parked = order.map(parkCar);
+};
 
-// ---- the cars, parked column by column --------------------------------------------------------
-const parked = order.map((car, i) => {
+// ---- a car, parked in its bay: column by column --------------------------------------------------
+const parkCar = (car, i) => {
   const mesh = car.tank ? makeTankMesh(car.color) : car.model ? MODELS[car.model](car) : makeCarMesh(car.color);
   if (!car.tank && !car.model) shapeCarMesh(mesh, car);
   mesh.position.set(colX(Math.floor(i / ROWS)), 0, ROW_Z[i % ROWS]);
   mesh.userData.car = car;
-  scene.add(mesh); // (moves it out of the game's scene, where makeCarMesh put it)
+  lot.add(mesh); // (moves it out of the game's scene, where makeCarMesh put it)
   // a "for sale" marker floating over cars that aren't owned yet
   const tag = new THREE.Mesh(new THREE.OctahedronGeometry(0.45), new THREE.MeshBasicMaterial({ color: 0xffd23f }));
   tag.position.y = car.height + 1.5;
@@ -95,13 +111,13 @@ const parked = order.map((car, i) => {
   mesh.userData.tag = tag;
   // its stars, painted on the tarmac at the front of its bay
   if (car.tier) {
-    const plate = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.8), new THREE.MeshBasicMaterial({ map: label(stars(car), 256, 84, 60, '#ffd23f', '#3f444c') }));
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.8), new THREE.MeshBasicMaterial({ map: label(stars(car), 256, 84, 60, starColour(car), '#3f444c') }));
     plate.rotation.x = -Math.PI / 2;
     plate.position.set(mesh.position.x, 0.06, mesh.position.z + BAY_D / 2 - 0.55);
-    scene.add(plate);
+    lot.add(plate);
   }
   return mesh;
-});
+};
 // a glowing ring under the car in use, and a white one under the car being looked at (tapped: its stats shown,
 // to use or buy it from the button below them)
 const ringOf = (color) => {
@@ -145,7 +161,7 @@ const refresh = () => {
   bank.textContent = 'Bank ' + money(Progress.data.money);
   liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
   const shown = looking || inUse, owned = Progress.owns(shown.id);
-  info.textContent = shown.name + (shown.tier ? ' ' + stars(shown) : '') + '  -  ' + stats(shown);
+  info.replaceChildren(...withStars(shown), '  -  ' + stats(shown));
   // the button under the stats: what can be done with the car shown
   action.textContent = shown === inUse ? 'In use' : owned ? 'Use this car' : Progress.data.money >= shown.price ? 'Buy for ' + money(shown.price) : 'Need ' + money(shown.price);
   action.disabled = shown === inUse || (!owned && Progress.data.money < shown.price);
@@ -242,6 +258,7 @@ export const Garage = {
   evil: false, // which livery is on show
 
   open() {
+    if (built !== blueStarsOpen()) buildLot(); // (first time in, or the Blue Star cars have just arrived)
     this.isOpen = true;
     carAtOpen = CAR;
     Game.inMenu = true; // Enter must not start a run from here
@@ -293,10 +310,10 @@ export const Garage = {
 
     if (hovered) {
       const car = hovered.userData.car, owned = Progress.owns(car.id);
-      tip.textContent = car.name + (car.tier ? ' ' + stars(car) : '') + '  -  ' + (
+      tip.replaceChildren(...withStars(car), '  -  ' + (
         car.id === Progress.data.car ? 'in use'
           : owned ? 'owned, click for its stats'
-            : money(car.price) + ', click for its stats');
+            : money(car.price) + ', click for its stats'));
       anchor.set(hovered.position.x, car.height + 2.6, hovered.position.z).project(camera);
       tip.style.left = (anchor.x + 1) / 2 * canvas.clientWidth + 'px';
       tip.style.top = (1 - anchor.y) / 2 * canvas.clientHeight + 'px';

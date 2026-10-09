@@ -8,7 +8,7 @@ import { createServer } from 'vite';
 const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
 globalThis.window = { addEventListener() {} };
 // every level unlocked and every car owned, so each can be loaded and tested
-const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['commuter', 'junker', 'darkvan', 'lowrider', 'wagon', 'sport', 'lovebus', 'taxi', 'suv', 'hotrod', 'minivan', 'hearse', 'miata', 'pickup', 'muscle', 'fullsize', 'evsaloon', 'tank'] }));
+const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['commuter', 'junker', 'darkvan', 'lowrider', 'wagon', 'sport', 'lovebus', 'taxi', 'suv', 'hotrod', 'minivan', 'hearse', 'miata', 'pickup', 'muscle', 'fullsize', 'evsaloon', 'postvan', 'keitruck', 'mini', 'tank'] }));
 globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: 'delivery_racer_progress=' + allOpen };
 
 // the game's dice are loaded, so a run is the same every time: a check that fails, fails again, and can be
@@ -2782,6 +2782,17 @@ try {
   check(!cars.CARS.some(car => car.id === 'bus') && cars.CAR === cars.SECRET_CARS.bus && Player.hl === 5.5 && Player.maxHealth === 220,
     `the secret City Bus: not in the garage, but in use once owned (hitbox ${Player.hl * 2} m long, health ${Player.maxHealth})`);
   cars.selectCar('commuter');
+  // the Blue Star cars: kept out of the garage until level CONFIG.blueStarsAfter is delivered (opening the next)
+  {
+    const blue = cars.CARS.filter(car => car.blue), saved = Progress.data.unlocked;
+    Progress.data.unlocked = CONFIG.blueStarsAfter;
+    const shut = cars.garageCars();
+    Progress.data.unlocked = CONFIG.blueStarsAfter + 1;
+    const open = cars.garageCars();
+    Progress.data.unlocked = saved;
+    check(blue.length > 0 && !shut.some(car => car.blue) && blue.every(car => open.includes(car)) && open.length === cars.CARS.length,
+      `the ${blue.length} Blue Star cars: out of the garage until level ${CONFIG.blueStarsAfter} is delivered (${shut.length} cars), then in it (${open.length})`);
+  }
   // a complete savegame: every level open and delivered, every car bought, a full bank
   Progress.reset();
   Progress.complete({ levels: levels.LEVELS.length, cars: cars.CARS.map(car => car.id), money: CONFIG.completeBank });

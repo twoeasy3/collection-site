@@ -17,15 +17,24 @@
 //   tank       true = it is a tank: in TANK RAGE from the start of every level
 //   corner     true = parked in the far corner bay of the garage
 //   tier       which tier of the garage it is in (1-5): its star rating, shown with its name
+//   blue       true = a Blue Star car (the second season): better than a car of its tier with gold
+//              stars, but not as good as one a tier up; priced like a car two tiers up
 //   mass       how heavy it is in a shove (default 1): heavier knocks others aside and is knocked less
 //   shotBack   (optional) how much further back the studio camera (?cine=car) stands for its picture, for
 //              a vehicle whose wings reach past its hit box
 // ============================================================================
 import { Progress } from './progress.js';
+import { CONFIG } from './config.js';
 
 // a car's star rating, by its tier (none for a car out of the tiers)
 export const TIERS = 5;
 export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only the stars it has: no empty ones)
+export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff' };
+export const starColour = (car) => car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
+// the Blue Star cars are in the garage once level CONFIG.blueStarsAfter is delivered (which opens the next)
+export const blueStarsOpen = () => Progress.data.unlocked > CONFIG.blueStarsAfter;
+// the cars the garage shows now
+export const garageCars = () => CARS.filter(car => !car.blue || blueStarsOpen());
 
 export const CARS = [
   // In tiers, cheapest first: each tier a little faster and a little tougher than the one
@@ -39,6 +48,13 @@ export const CARS = [
     maxSpeed: 22, accel: 8, crossing: 0.7, health: 100, hw: 1.0, hl: 2.5, height: 1.95 },
   { id: 'darkvan', tier: 1, name: 'Darkvan', price: 80, color: 0x9be37a, evilColor: 0x161616, fixedLivery: true, model: 'darkvan',
     maxSpeed: 21, accel: 7, crossing: 0.65, health: 150, hw: 1.05, hl: 2.45, height: 2.4 },
+  // ---- tier 1, Blue Stars
+  { id: 'postvan', tier: 1, blue: true, name: 'Post Van', price: 270, color: 0xd8262b, evilColor: 0xe0a81c, fixedLivery: true, model: 'postvan',
+    maxSpeed: 24.5, accel: 9, crossing: 0.65, health: 160, hw: 0.9, hl: 2.1, height: 1.85 },
+  { id: 'keitruck', tier: 1, blue: true, name: 'Kei Truck', price: 290, color: 0xf2f2ee, evilColor: 0x6cb4d8, fixedLivery: true, model: 'keitruck',
+    maxSpeed: 24.5, accel: 10, agility: 1.3, crossing: 0.75, health: 120, hw: 0.74, hl: 1.7, height: 1.75 },
+  { id: 'mini', tier: 1, blue: true, name: 'Mini', price: 320, color: 0xc0212b, evilColor: 0xe8731c, fixedLivery: true, model: 'mini',
+    maxSpeed: 25.5, accel: 12, agility: 1.4, crossing: 0.4, health: 95, hw: 0.74, hl: 1.5, height: 1.35 },
   // ---- tier 2
   { id: 'lovebus', tier: 2, name: 'Love Bus', price: 130, color: 0x3fae4a, evilColor: 0xd8262b, fixedLivery: true, model: 'lovebus',
     maxSpeed: 24, accel: 7, crossing: 0.55, health: 165, hw: 1.0, hl: 2.3, height: 2.1 },

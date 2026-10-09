@@ -756,6 +756,9 @@ export const CONFIG = {
   packageDamage: 4,        // a care package barely scratches what it hits
   evilPackageDamage: 25,   // an Evil player's flaming package: real damage, and it makes enemies
   completeBank: 10000,     // $ in the bank after "Unlock everything" on the menu
+  // the Blue Star cars (the garage's second season) stay out of the garage, lot and all, until this
+  // numbered level has been delivered
+  blueStarsAfter: 20,
   // the clock: each level has its own, for each side ("clock": { good, evil }), worked out by
   // scripts/level-clocks.mjs from a clean run (a ghost, flat out) in the reference car: that run's time
   // times good or evil, to the nearest `round` s, less `timePlus` s for each time plus on the level (the time
