@@ -1220,6 +1220,28 @@ export const CONFIG = {
   // aim: m above the road it looks at
   photo: { start: { yaw: 2.5, pitch: 0.32, far: 13 }, near: 4, far: 70, low: 0.03, high: 1.45, turn: 0.006, step: 1.15, aim: 1, fov: 45 },
 
+  // the cargo (cargo.js: what the player is delivering; only a sight) and the delivery at the kerb (delivery.js).
+  // An Evil item is agitated with `agitated` of the clock left or less, and furious with `furious` or less
+  // (and all through the tip countdown). corner: the picture of it in the HUD: `fov` degrees, turning at
+  // `spin` rad/s, and `pulse` s of a flash round it as its state changes.
+  // ending: a level delivered (on time or late), the car pulls in and sets it down before the results:
+  //   park     s to brake to a stop at the kerb (`inset` m in from the road's edge, no more than `reach` m on),
+  //   unload   s for the cargo to come out and be set down, `beside` m out from the car's side,
+  //   moment   s of its own there (the furious one misbehaves), then `beat` s more before the results;
+  //   skipAfter  s before a key, tap or click skips it (so the key held over the line doesn't);
+  //   pan      { from, to }: when (s) the camera leaves the chase view and when it has come round to the kerb;
+  //   camera   where it ends up, from the car: m `ahead`, m `out` beyond the cargo, m `up`, and its `fov`;
+  //   scale    the cargo's size at the kerb (the models are about a metre tall).
+  // noEnding: the vehicles that set nothing down (no kerb in space or at sea)
+  // (CONFIG.cargo is something else: the load a truck sheds)
+  consignment: {
+    agitated: 0.5, furious: 0.2,
+    corner: { fov: 30, spin: 0.5, pulse: 0.7 },
+    ending: { park: 1.7, unload: 1.1, moment: 1.6, beat: 0.5, skipAfter: 0.35, inset: 0.5, reach: 60, beside: 1.9,
+      pan: { from: 0.25, to: 2.1 }, camera: { ahead: 6.5, out: 4.2, up: 2.3, fov: 46 }, scale: 1.5 },
+    noEnding: ['ufo', 'jetboat'],
+  },
+
   // scenery
   poleSpacing: 25,
   buildingSpacing: 30,
