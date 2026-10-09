@@ -421,6 +421,57 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   - Not handled: ambulances, processions and convoys ignore the water (not used on these levels).
   - Screenshots: `&ff` over about 15 s leaves the camera off the road on ANY level (seen on level 2
     as well); not mine, not fixed. Shorter `&ff`, or `&cine`, is fine.
-- 4. Amphibious-only levels: `Game.start` refuses (done in `e459b4c`); the menu's words in progress.
-- 5. Five levels: not started.
-- 6. Gimmicks page cards, README, HANDOVER: not started.
+- **4. Amphibious-only levels: done, `e459b4c` and `0ea67a1`.** A level's `amphibious: true`.
+  `Game.start` refuses without an amphibious car owned and opens the garage at the cheapest one (no
+  reload); with one owned the level is driven in it whatever car is in use (the best owned, unless
+  the car in use is amphibious: no memory of the last one picked). The card says "Amphibious cars
+  only"; the car card says which car, or which to get. Car Swap only lends amphibious cars there.
+  New address hooks for checks: `?pick=41[&start]`, `gimmicks.html?group=vehicles&from=6`.
+- **5. Five levels: done, `75f5769` (+ `3bf3f0e`).** `AMPHIBIOUS_LEVELS` in `levels.js`, labelled A1
+  to A5, a menu group of their own, after S9 and before the circuits. `INSERTED_AT` got one entry of
+  a new kind, `{ cap: 41 }`: an old save that counted past the circuits is held at "A1 open".
+  Clocks from `level-clocks.mjs` (timed in the Float Van, holding its lane). How each fits the
+  owner's rules (no stopping, counterplay, not a plain level, no new exploding mover):
+  - A1 Slipway Beach (beach): a short dip then a long reach with a gentle current; pedal boats,
+    dinghies, a barge; a balloon to steer round on the sand. Nothing to wait for.
+  - A2 Harbour Lights (hongkong, left-hand): two long reaches with opposite currents and an island
+    between, the second narrowing to a lane each way among barges and ferries (slipped round on the
+    bank strip, which is open water), a tunnel, a last dip. Its fog bank was taken out (white at night).
+  - A3 High Water (new theme `flooded`: city scenery, rain, flood-coloured ground): one way, starts
+    and ends afloat; dry rises with burst mains, potholes, trolleys and a spilled load (a lane left).
+  - A4 Hippo Ford (safari): five fords, one long against a current, a narrowed channel; elephants and
+    hippos on the dry stretches (existing gimmicks, dodged, not waited for), mud.
+  - A5 Fjord Crossing (snow): ice, rockfall, fog and a tunnel over the pass, then 1150 m of fjord
+    with a current and a narrows among ferries; ends afloat.
+  - None has a drawbridge, stop / go, level crossing, school crossing, roadblock, toll or camera.
+    Police are only in A2's traffic (3%), as in the base game.
+- **6. Gimmicks page, docs, pictures: done, `3e9af79`.** Cards "Water stages" and "Boats" (Vehicles
+  group); README and HANDOVER updated (the "models with no car" note is gone); `carshots/` and
+  `levelshots/` JPGs for the five cars and levels; themes can give the water its colours (`channel`).
+- **Checks at the end:** `delivery-levels-check` all good (48 levels), `.water-check` all passed,
+  `.save-check` 3382 of 4096 bytes (48 levels, 38 cars), `.balance-check`, `.hazards-check`,
+  `.traits-check` pass. Smoke test NOT run. Nobody has played a level by hand.
+- **For the owner to overrule:** section open from the start; prices 60 / 180 / 310 / 470 / 750;
+  sea-green stars; boats tie up instead of turning back; the queue is on the shoulder (so it never
+  gets in the player's way at all); levels numbered A1 to A5 rather than S10 to S14; water speed 74%.
+- **Touched files the side-roads agent also has:** `track.js` (a `water` block beside `muddy`, a
+  validation block, two names in the returned object) and `traffic.js` (an import, `mix` / `pickKind`
+  take a direction, one guard in `placeAt`, `Water.marshal` at the top of `update`, `Water.holdFor` in
+  the hold line, a pace line by the mud, two conditions in the lane aim). `render/road.js` and
+  `hazards.js` untouched.
+- Screenshots: `scratchpad/shots-amphibious/` (26 PNGs).
+
+## Agent 7: cargo and the delivery ending (.claude/worktrees/delivery-circuits, delivery-cargo)
+
+- 1. Models: DONE `9b2aebb`. `render/cargoModels.js` (state-free): Good pizza, cake, goldfish, cactus, clock;
+  Evil parcel, porcupine, bees, doll, tentacle, each `setState(0|1|2)` easing over 0.5 s. Seen on the new
+  page `delivery/cargo.html` (`cargopage.js`), all ten, Evil in three states.
+- 2. Which level carries what: DONE `8255e1f`. `cargo.js` (table, `cargoFor`, `cargoState`), level field
+  `cargo: { good, evil }` (documented in `levels.js`), set by hand on 8 levels, the rest by place on the menu.
+  Tuning is `CONFIG.consignment` (NOT `CONFIG.cargo`: that name is the shedding truck's load already).
+- 4 (logic). DONE `8255e1f`: `delivery.js`, a timed state after `Game.finish` (state is 'finished' and the
+  results fixed at the line; only the results screen waits). Off unless rendering sets `Delivery.staged`,
+  so headless runs are as before. `node scripts/.cargo-check.mjs`: all good.
+- 3. Corner display: in progress.
+- 4 (drawing), 5 (docs): not started.
+- Not run: the smoke test (by instruction).

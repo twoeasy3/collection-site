@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `a22cab5` (main). Agents 1 to 4 are finished and merged; agents 5, 6 and 7 are running.
+Last updated: after `2f30028` (main). Agents 1 to 5 are finished and merged; agents 6 and 7 are running; one slot is free.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -76,15 +76,21 @@ Last updated: after `a22cab5` (main). Agents 1 to 4 are finished and merged; age
    - [~] Every theme: shot in 25 of 28, about a third of the pictures opened. Not looked at: singaporeNight, canberra, suburb, battlefield, bathurst, panorama, montreal, sea, night, hongkong, christmas, monza
    - [ ] Still not allowed: flyovers on a one-way level; 17 gimmick kinds on a side road (ice, mud, fog, roadblocks, tunnels and others: now reported when the level loads)
    - [ ] Scenery along a side road's own roadside in themes other than the city
-2. Amphibious cars and levels: **started**, agent 5, branch `delivery-amphibious` (in the city-levels worktree)
-   - [ ] Five amphibious cars, one per star level 1 to 5
-   - [ ] Amphibious section in the garage
-   - [ ] Water stages: road to water and back; ordinary traffic stops at the edge, amphibious traffic drives through
-   - [ ] Boat traffic on the water
-   - [ ] Five gimmicked levels in different themes, amphibious cars only
+2. Amphibious cars and levels: **finished**, agent 5, merged into `main` as `2f30028` (no conflicts into main; levels, water, save, mysteries, earned and bundle checks pass; the save cookie is 3382 of 4096 bytes)
+   - [x] Five amphibious cars, one per star level: Sailing Herald, Float Van, Toybota, Dampervan, Nissank. `43e77e2`
+   - [x] Amphibious section in the garage, open from the start, with a Show: Amphibious filter. `43e77e2`
+   - [x] Water stages (`water: [{ from, to, current? }]`): driven into at speed, 74% top speed afloat; traffic that cannot float queues on the shoulder, leaving every lane open; amphibious traffic drives through. `e459b4c`
+   - [x] Boat traffic: dinghy, barge, ferry, pedal boat; their wakes push the car sideways. `e459b4c`
+   - [x] Amphibious-only levels: refused without an amphibious car (the garage opens at the cheapest). `0ea67a1`
+   - [x] Five levels, A1 to A5: Slipway Beach, Harbour Lights, High Water (a new `flooded` theme), Hippo Ford, Fjord Crossing. `75f5769`, `3bf3f0e`
+   - [x] Gimmicks cards, menu pictures, README and HANDOVER. `3e9af79`
+   - [x] Super liveries for the five (they were missing and failed the mysteries check after the merge). `d0c4ec1`
+   - [ ] Never played by hand: afloat handling, wakes and currents, prices, clocks
+   - [ ] The slipway is faked (water 0.32 m over a flat road); boats tie up at the far bank and do not turn back
+   - [ ] For the owner to overrule: section open from the start, A1-A5 numbering, prices, sea-green stars, 74% afloat
 3. Gimmick fixes and circuit run-off: **started**, agent 6, on `main`
    - [x] Drawbridge: the car climbs the raised leaf at its angle and crests it. `1f18343`. Not yet seen by the orchestrator
-   - [ ] Wide loads are passable
+   - [x] Wide loads are passable: the load swings side to side and an arrow board shows the side to pass on, at speed; a mistake is a knock, never a bust. `f673318`. Not yet seen by the orchestrator
    - [ ] Burst water mains: water that does not look square
    - [ ] Run-off edges on Monza and Spa smoothed (the measured widths are noisy)
    - [ ] Sand traps as part of a shoulder, slowing cars far more
