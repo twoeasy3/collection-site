@@ -198,8 +198,19 @@ const gift = (e) => {
 };
 
 // smoke from every damaged vehicle; call before the syncs that add particles of their own
+// a car in a gravel trap (see Track.gravelAt) throws stones up behind its wheels, and a haze of dust
+const emitGravel = (v, dt) => {
+  const speed = Math.abs(v.vs ?? v.speed ?? 0), G = CONFIG.gravel;
+  if (speed < G.sprayFrom || Math.random() > dt * 60 * Math.min(1, speed / 20)) return;
+  const h = Track.toWorld(v.s - v.dir * v.hl * 0.7, v.lat, tmp), fx = Math.sin(h) * v.dir, fz = Math.cos(h) * v.dir;
+  for (let n = 0; n < 2; n++) {
+    Particles.emit(tmp.x + rnd(v.hw), tmp.y + 0.15, tmp.z + rnd(v.hw), -fx * speed * 0.25 + rnd(3), 2 + Math.random() * 4, -fz * speed * 0.25 + rnd(3),
+      0.5 + Math.random() * 0.4, 0.09 + Math.random() * 0.1, 0.4, 20, Math.random() < 0.5 ? 0xd9c48f : 0xa8946a, tmp.y);
+  }
+  if (Math.random() < 0.5) Smoke.emit(tmp.x + rnd(0.6), tmp.y + 0.4, tmp.z + rnd(0.6), rnd(1), 1 + Math.random(), rnd(1), 0.8, 0.6 + Math.random() * 0.5, 1.5, 0, 0xcdbb92);
+};
 export const emitVehicleSmoke = (dt) => {
-  for (const v of Collision.bodies) if (v.active && !v.junction) emitSmoke(v, dt);
+  for (const v of Collision.bodies) if (v.active && !v.junction) { emitSmoke(v, dt); if (v.inGravel) emitGravel(v, dt); }
 };
 
 // plays the effects the game logic queued this frame, then advances every particle and tyre

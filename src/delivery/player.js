@@ -359,6 +359,19 @@ export const Player = {
     // in a bend, a lower top speed: the sharper, and the heavier and less agile the car, the lower
     // (but not on ice, nor where cars understeer, nor with no brakes: there they slide wide instead)
     if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility));
+    // in a gravel trap (see CONFIG.gravel): a far lower top speed, little drive, and a drag that grows with the
+    // speed; stopped in it, the car is beached for a while, then crawls out
+    const GR = CONFIG.gravel, gravel = this.inGravel = this.active && this.ghost <= 0 && this.tank <= 0 && !CAR.noWheels && Track.gravelAt(this.s, this.lat);
+    this.beached = Math.max(0, (this.beached || 0) - dt);
+    if (gravel) {
+      top = Math.min(top * GR.top, GR.most);
+      this.speed = Math.max(0, this.speed - (GR.drag + GR.dragPerSpeed * this.speed) * dt);
+      if (this.beached > 0) { this.speed = 0; this.brakeLight = false; return; }
+      if (this.speed < GR.beachBelow && !this.dugOut) { this.beached = GR.beachTime; this.dugOut = true; this.speed = 0; Message.say('events', 'beached'); sfx('gravel', 1); return; }
+      if (this.dugOut) this.speed = Math.max(this.speed, GR.crawl); // (dug out: it crawls on, out of the bed)
+      if ((this.gravelSound = (this.gravelSound || 0) - dt) <= 0 && this.speed > GR.sprayFrom) { this.gravelSound = GR.soundEvery; sfx('gravel', Math.min(1, this.speed / 25)); }
+      Game.shake = Math.max(Game.shake, 0.25 * Math.min(1, this.speed / 20));
+    } else this.dugOut = false;
     // in mud, slowed just as on a railway track (see CONFIG.mud)
     const mud = Track.muddy(this.s) && CAR.trait !== 'mud'; // (the Rally Car ignores mud)
     if (mud) {
@@ -485,7 +498,7 @@ export const Player = {
     // (a car sliding wide in a bend, on a level where cars understeer or with no brakes, has lost its grip, as on ice)
     const push = understeer(this), sliding = !this.onIce && push !== 0;
     const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce || sliding ? CONFIG.ice.steerGrip : 1) *
-      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) && CAR.trait !== 'mud' ? CONFIG.mud.steerGrip : 1) * seaGrip; // (and afloat, its steering takes slowly)
+      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) && CAR.trait !== 'mud' ? CONFIG.mud.steerGrip : 1) * (this.inGravel ? CONFIG.gravel.steerGrip : 1) * seaGrip; // (and afloat, its steering takes slowly)
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
     // afloat, a current carries the car sideways and a boat's wake shoves it off the boat's line (see Water.push)
     if (this.afloat && !this.busted) this.latVel += Water.push(this) * dt;

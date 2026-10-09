@@ -21,7 +21,8 @@ accurately**. Also: move all race stuff to a separate tab on the start screen.
 | Closes within | 0.03 m, 0 rad | 0.03 m, 0 rad | 0.002 m, 0 rad |
 | Level's lap drifts from the map's by at most | 9.6 m | 5.1 m | 10.7 m |
 | Heights | SRTM 178-198 m; the level climbs 14.1 m, steepest 1.8% (real: about 13 m) | SRTM 363-469 m; climbs 102 m, steepest 13% (real: 102 m) | flat (see below) |
-| Run-off stretches | 105 | 95 | 0 (see below) |
+| Run-off stretches | 230 tapers (was 105 steps) | 190 tapers (was 95 steps) | 0 (see below) |
+| Gravel traps from the map | 109 pieces, 2076 m of the lap's two sides | 172 pieces, 3352 m | none mapped |
 | What set the limit (left / right side) | tree line 58 / 61%, barriers 18 / 11%, old track and pit lane 7 / 17%, buildings 6 / 8%, gravel trap's far edge 5 / 1%, nothing mapped 5 / 2% | mapped barriers 95 / 88%, other track 3 / 9%, pit lane 0 / 2% | none: nothing is mapped |
 | Stands from the map | 30 (2 the pits) | 7 (2 the pits) | 3 (2 the pits) |
 | Laps, clock (good / evil) | 3, 365 / 280 s | 2, 300 / 230 s | 3, 335 / 260 s |
@@ -40,11 +41,16 @@ Things to know about those numbers:
 - **Monza's limit is the tree line for most of the lap**, because few of its guard rails are mapped: the
   real rails stand a few metres inside the trees, so widths on its straights are a little generous.
   Monza's heights are SRTM smoothed over 150 m for the same reason (the canopy shows in SRTM).
-- Run-off is drawn as asphalt whatever it really is (the engine has one shoulder surface): gravel
-  traps are the right width but the wrong colour.
-- Monza's and Spa's stretches are many and short because the widths really vary; coarser merging is
-  `runoff.within` / `runoff.share` / `runoff.gap` in the config (25-30 a side is possible, about 0.4 m
-  worse on average).
+- **Gravel is drawn and slows cars (2026-10-10).** A level's `gravel` (see `levels.js`,
+  `Track.gravelAt`, `CONFIG.gravel`): the tool writes it where the map has `natural=sand` or
+  `surface=gravel / sand` beside the track, as 20 m pieces whose near and far edges run straight
+  between measured points. Not checked against aerial pictures: Monza's long left bed at 1004-1624
+  in particular is whatever OSM has there.
+- **The wall line is smooth (2026-10-10).** The measured widths are narrowed to a line that changes
+  by at most 1 m per m, smoothed on the narrow side (never beyond what was measured) and written as
+  tapers (`{ from, to, side, width, end }`) that join at the same width: no steps. That costs width:
+  the level's run-off is narrower than measured by 2.1-2.6 m on average at Monza and 0.9-1.2 m at
+  Spa (the old stepped version: 1.5 and 1.3). `runoff.smooth` / `taper` / `fit` / `over` in the config.
 
 ## How run-off works in this engine
 
@@ -76,8 +82,8 @@ by Newton's method on the engine's own sum -> SRTM heights every 40 m from opent
 as a grade per 20 m -> at every 4 m on each side a ray out from the centre line: the nearest of a
 mapped barrier, a building, the tree line or water, the pit lane, another track, the lap itself (half
 the gap), or failing those the far edge of a mapped gravel trap / apron -> a median of five, gaps
-under 40 m shut, the inside of a bend held to what the bend allows -> merged into stretches, those
-that change nothing dropped -> grandstands (`building=grandstand`, `leisure=bleachers`) and the pit
+under 40 m shut, the inside of a bend held to what the bend allows -> narrowed to a gradual line, smoothed and
+simplified into tapers; the mapped gravel's edges along the same rays as the level's `gravel` -> grandstands (`building=grandstand`, `leisure=bleachers`) and the pit
 lane as the level's `stands` -> the config's landmarks put into the level's world coordinates by
 where they are from the nearest part of the lap -> the level file (what it already has is kept, but
 for `segments`, `runoff`, `stands`, `landmarks`, `pickups` and the config's `level` fields).
@@ -116,5 +122,5 @@ for `segments`, `runoff`, `stands`, `landmarks`, `pickups` and the config's `lev
 3. Menu pictures `levelshots/<id>.jpg` for the three (`node scripts/shots.mjs shots
    --levels=monza,spa,albert-park` gives PNGs; Spa's came out blocked by something right in front
    of the camera, not looked into, so that one needs another spot).
-4. Gravel drawn as gravel (the tool knows which stretches are traps; the engine has no surface for it).
+4. Look at each gravel bed against an aerial picture; Albert Park's traps from another source.
 5. More circuits: write a config, `--ways` to find the relation, run the tool.

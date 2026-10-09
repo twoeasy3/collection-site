@@ -34,7 +34,7 @@
 //               [{ kind, ways: [ids] }] the ways' lines, or
 //               [{ kind, area: way or relation id }] an outline: each put into the level's own coordinates
 //   level       fields of the level file to set (laps, name, theme, tip, ...)
-// What the level already has is kept, but for segments, runoff, stands, landmarks, pickups and "level"'s fields.
+// What the level already has is kept, but for segments, runoff, gravel, stands, landmarks, pickups and "level"'s fields.
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 
 const here = (path) => new URL(path, import.meta.url);
@@ -434,6 +434,8 @@ for (const side of ['left', 'right']) {
     // of 4 m does not break them): where the last of them ends is as far as the run-off goes, if nothing
     // mapped stops a car sooner, or only something a long way beyond
     soft = soft.filter(v => v[1] > EDGE - 1).sort((a, b) => a[0] - b[0]);
+    // (the mapped gravel the ray goes through first, for the level's "gravel": [near, far] m from the centre line)
+    const bed = soft.find(v => v[2] === 'trap' && v[1] - Math.max(v[0], EDGE - 1) > 1.5);
     let reach = EDGE + 3, paved = 0, any = false;
     for (const [from, to, kind] of soft) {
       if (from > reach + 4) break;
@@ -445,7 +447,7 @@ for (const side of ['left', 'right']) {
     } else if (any && paved < limit - 10) { limit = paved; by = 'the trap\'s far edge'; }
     else if (limit === Infinity && soft.length && reach > EDGE + 3) { limit = reach; by = 'the grass\'s far edge'; }
     if (limit > REACH) { limit = null; by = 'nothing mapped'; }
-    measured[side].push({ limit, by });
+    measured[side].push({ limit, by, bed: bed && Math.max(bed[0], EDGE - 1) < (limit ?? Infinity) ? [Math.max(bed[0], EDGE - 1), Math.min(bed[1], limit ?? Infinity)] : null });
     sourceCount[side][by] = (sourceCount[side][by] || 0) + 1;
   }
 }
@@ -546,6 +548,45 @@ for (const side of ['left', 'right']) {
   }
 }
 runoff.sort((a, b) => a.from - b.from);
+// The level's gravel traps (its "gravel": see levels.js and Track.gravelBand): where the map has gravel or sand
+// beside the track (TRAP, above: natural=sand, surface=gravel / sand and the like), the bed's near and far edges
+// as measured along each ray, in runs of 20 m or more (a gap of 8 m or less does not break one), smoothed over
+// 16 m and written as straight pieces 20 m long, each { from, to, side, inner, outer, innerEnd, outerEnd } in m
+// outside the level's outer lane edge (LANE_EDGE from the centre line). The engine stops it at the wall anyway
+const LANE_EDGE = 3.5, gravel = [];
+for (const side of ['left', 'right']) {
+  const beds = measured[side].map(m => m.bed), at = (i) => beds[((i % NSEG) + NSEG) % NSEG];
+  for (let i = 0; i < NSEG; i++) { // (short gaps bridged, from the beds either side)
+    if (beds[i]) continue;
+    let a = 0, b = 0;
+    for (let k = 1; k <= 2 && !a; k++) if (at(i - k)) a = k;
+    for (let k = 1; k <= 2 && !b; k++) if (at(i + k)) b = k;
+    if (a && b && a + b <= 3) beds[i] = [0, 1].map(n => (at(i - a)[n] * b + at(i + b)[n] * a) / (a + b));
+  }
+  let i = Math.max(0, beds.findIndex(b => !b));
+  const stop = i + NSEG;
+  while (i < stop) {
+    if (!at(i)) { i++; continue; }
+    let j = i;
+    while (j < stop && at(j)) j++;
+    if (j - i >= 5) {
+      const edge = (n, k) => { // (edge k of the bed at sample n, smoothed within the run)
+        let sum = 0, count = 0;
+        for (let d = -2; d <= 2; d++) if (n + d >= i && n + d < j) { sum += at(n + d)[k]; count++; }
+        return Math.max(0, Math.round((sum / count - LANE_EDGE) * 2) / 2);
+      };
+      for (let a = i; a < j - 1; a += 5) {
+        const b = Math.min(j - 1, a + 5), inner = Math.max(0.5, edge(a, 0)), innerEnd = Math.max(0.5, edge(b, 0)), outer = edge(a, 1), outerEnd = edge(b, 1);
+        if (outer - inner < 1 && outerEnd - innerEnd < 1) continue;
+        const piece = (from, to) => gravel.push({ from, to, side, inner, outer: Math.max(outer, inner + 0.5), innerEnd, outerEnd: Math.max(outerEnd, innerEnd + 0.5) });
+        const from = (a % NSEG) * 4, to = from + (b - a) * 4;
+        if (to <= LENGTH) piece(from, to); // (a piece across the line is left out: 20 m of gravel at most)
+      }
+    }
+    i = j;
+  }
+}
+gravel.sort((a, b) => a.from - b.from);
 const fit = {};
 for (const side of ['left', 'right']) {
   let err = 0, worst = 0;
@@ -657,6 +698,7 @@ for (const f of features) kinds[f.kind] = (kinds[f.kind] || 0) + 1;
 console.log('  beside the track on the map: ' + Object.entries(kinds).map(([k, n]) => n + ' ' + k).join(', '));
 for (const side of ['left', 'right']) {
   console.log(`  ${side}: limit set by ` + Object.entries(sourceCount[side]).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${(n / NSEG * 100).toFixed(0)}%`).join(', '));
+  { const mine = gravel.filter(g => g.side === side); console.log(`    gravel mapped along ${mine.reduce((sum, g) => sum + g.to - g.from, 0)} m (${mine.length} pieces)` + (mine.length ? ': ' + mine.reduce((runs, g) => { const last = runs[runs.length - 1]; if (last && last[1] === g.from) last[1] = g.to; else runs.push([g.from, g.to]); return runs; }, []).map(r => r.join('-')).join(', ') : '')); }
   console.log(`    run-off over ${fit[side].with} m of the lap, widest ${fit[side].widest.toFixed(1)} m; ${runoff.filter(r => r.side === side).length} stretches, ` +
     `off what was measured by ${fit[side].mean.toFixed(2)} m on average, ${fit[side].worst.toFixed(1)} m at worst; never wider than measured by more than ${fit[side].over.toFixed(2)} m; ` +
     `the wall line turns in or out by ${fit[side].steepest.toFixed(2)} m per m at its steepest`);
@@ -684,6 +726,11 @@ console.log(`  ${stands.length} stands (${stands.filter(s => s.pits).length} the
     const line = [];
     for (let i = 0; i <= NSEG; i++) line.push(P(pt(i % NSEG, HALF + shoulderOf(runoff, side, (i % NSEG) * 4))));
     out.push(`<polyline points="${line.join(' ')}" fill="none" stroke="#f08c00" stroke-width="1"/>`);
+    // (and the level's gravel: each piece's four corners, in brown)
+    for (const g of gravel.filter(g => g.side === side)) {
+      const a = Math.round(g.from / 4) % NSEG, b = Math.round(g.to / 4) % NSEG;
+      out.push(`<polygon points="${[pt(a, LANE_EDGE + g.inner), pt(a, LANE_EDGE + g.outer), pt(b, LANE_EDGE + g.outerEnd), pt(b, LANE_EDGE + g.innerEnd)].map(P).join(' ')}" fill="#8a5a2b" opacity="0.55"/>`);
+    }
   }
   for (let i = 0; i < NSEG; i += 50) out.push(`<text x="${P(MAPL[i]).replace(',', '" y="')}" font-size="9" fill="#fff" text-anchor="middle">${i * 4}</text>`);
   out.push('</svg>');
@@ -707,9 +754,9 @@ const level = {
   id: ID, name: old.name || CFG.name || ID, theme: old.theme || ID, car: 'f1', flow: 'north', lanes: 2, shoulder: 2.5,
   shoulderTimer: false, clock: old.clock || { good: 300, evil: 210 }, tip: old.tip || 400, traffic: {}, trafficCount: 0, oncomingCount: 0, laps: old.laps || 3,
   grid: old.grid || { count: 39, kind: 'f1', gap: 7, pace: { min: 0.96, max: 1.02 } }, noPackages: true, understeer: true, wallDamage: true, nudge: true,
-  ...Object.fromEntries(Object.entries(old).filter(([k]) => !['segments', 'runoff', 'stands', 'landmarks', 'pickups'].includes(k))),
+  ...Object.fromEntries(Object.entries(old).filter(([k]) => !['segments', 'runoff', 'gravel', 'stands', 'landmarks', 'pickups'].includes(k))),
   ...(CFG.level || {}),
-  runoff, stands, landmarks, pickups, segments,
+  runoff, ...(gravel.length ? { gravel } : {}), stands, landmarks, pickups, segments,
 };
 const one = (v) => JSON.stringify(v).replace(/([{,])"/g, '$1 "').replace(/":/g, '": ').replace(/}/g, ' }').replace(/{ {2}/g, '{ ').replace(/\[ "/g, '["').replace(/,(\S)/g, ', $1').replace(/{ +}/g, '{}');
 const text = '{\n' + Object.entries(level).map(([k, v]) =>

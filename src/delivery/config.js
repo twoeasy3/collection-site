@@ -429,6 +429,24 @@ export const CONFIG = {
   // mud (a level's "mud": stretches where the road gives way to mud): a car in it is slowed as on a
   // railway track (see railCrossing: by how well it crosses), and steers with less grip
   mud: { steerGrip: 0.7, trafficPace: 0.6 },
+  // a gravel trap (a level's "gravel": part of a shoulder or run-off, see Track.gravelAt): a car in it is
+  // slowed far harder than on plain run-off
+  gravel: {
+    inner: 1.5,            // m of asphalt between the lane's edge and the gravel, where a trap doesn't say
+    wall: 0.6,             // m short of the wall the bed stops
+    drag: 9,               // m/s^2 it takes off a car, whatever its speed...
+    dragPerSpeed: 0.55,    // ...and this much more per m/s it is doing (at 40 m/s: 31 m/s^2)
+    top: 0.35,             // the share of its top speed it can hold...
+    most: 12,              // ...and never more than this, m/s, however fast the car
+    steerGrip: 0.35,       // the share of its steering it keeps
+    beachBelow: 2,         // m/s: slower than this in the gravel, it is beached...
+    beachTime: 1.6,        // ...and sits there this long before it can dig itself out
+    crawl: 4,              // m/s it is given as it digs out
+    trafficPace: 0.3,      // the share of its speed a traffic or race car keeps in it
+    trafficOut: 5,         // m/s sideways a race car steers back out of it at
+    sprayFrom: 4,          // m/s above which the wheels throw stones
+    soundEvery: 0.22,      // s between the crunches, at speed
+  },
   // construction machinery (a level's "machinery": see machinery.js), trundling across the road and back
   machinery: {
     speed: 2.6,            // m/s it trundles at

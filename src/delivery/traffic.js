@@ -2305,6 +2305,11 @@ export const Traffic = (() => {
         if (car.racer) target = Math.min(target, racingLine(car) * ceding);
         if (car.racer && !Track.loop && Track.finished(car.s)) { car.done = true; target = 0; } // (a rival courier, delivered: it pulls up past the line)
         if (Track.muddy(car.s)) target *= CONFIG.mud.trafficPace; // (in mud)
+        car.inGravel = Track.gravels.length > 0 && Track.gravelAt(car.s, car.lat); // (in a gravel trap: slowed hard; see CONFIG.gravel)
+        if (car.inGravel) { // (and it steers back out, towards the road)
+          target *= CONFIG.gravel.trafficPace;
+          car.lat -= Math.sign(car.lat - (Track.laneLo(car.s) + Track.laneHi(car.s)) / 2) * CONFIG.gravel.trafficOut * dt;
+        }
         target *= Water.pace(car); // (an amphibious car afloat on a water stage)
         // wading through the tide's water: slowed, the more so in deep water
         if (depth > CONFIG.tide.wet) target *= depth >= CONFIG.tide.deep ? CONFIG.tide.trafficPace : 0.8;

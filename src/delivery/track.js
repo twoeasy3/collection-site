@@ -525,6 +525,28 @@ const createTrack = () => {
     }
     return most;
   };
+  // gravel traps (a level's "gravel": { from, to, side, inner?, outer?, innerEnd?, outerEnd? }): part of that side's
+  // shoulder and run-off is a bed of gravel, from `inner` m outside the outer lane's edge (CONFIG.gravel.inner if
+  // not given: a strip of asphalt comes first) out to `outer` m, or to the wall if that is nearer or none is
+  // given. With innerEnd / outerEnd the edges run in a straight line from one to the other along the stretch.
+  // gravelBand(g, s): its two edges at s as [near, far] m outside the lane's edge, or null where there is no room
+  // for any; gravelAt(s, lat): is that spot in a trap? (See Player and Traffic for what it does to a car)
+  const gravels = (LEVEL.gravel || []).map(g => ({ ...g, sign: g.side === 'left' ? -1 : 1 }));
+  const gravelBand = (g, s) => {
+    const u = (s - g.from) / (g.to - g.from), inner = g.inner ?? CONFIG.gravel.inner, outer = g.outer ?? Infinity;
+    const wall = (g.sign < 0 ? laneLo(s) - lo(s) : hi(s) - laneHi(s)) - CONFIG.gravel.wall;
+    const near = inner + ((g.innerEnd ?? inner) - inner) * u, far = Math.min(wall, outer + ((g.outerEnd ?? outer) - outer) * u);
+    return far - near > 0.5 ? [near, far] : null;
+  };
+  const gravelAt = (s, lat) => {
+    if (!gravels.length || !isMain(s)) return false;
+    for (const g of gravels) {
+      if (s < g.from || s > g.to) continue;
+      const band = gravelBand(g, s), d = g.sign < 0 ? laneLo(s) - lat : lat - laneHi(s);
+      if (band && d >= band[0] && d <= band[1]) return true;
+    }
+    return false;
+  };
   // is s in the mud? (a level's "mud": stretches of the main road where it gives way to mud)
   const mud = LEVEL.mud || [];
   const muddy = (s) => isMain(s) && mud.some(m => s >= m.from && s <= m.to);
@@ -879,6 +901,11 @@ const createTrack = () => {
     for (const r of runoffs) {
       if (!(r.from < r.to) || r.from < 0 || r.to > length || !(r.end === undefined ? r.width > 0 : r.width >= 0 && r.end >= 0 && r.width + r.end > 0) || (r.side !== 'left' && r.side !== 'right')) problems.push('runoff at ' + r.from + ': from before to, on the road, a width, side left or right');
     }
+    for (const g of gravels) {
+      if (!(g.from < g.to) || g.from < 0 || g.to > length || (g.side !== 'left' && g.side !== 'right')) problems.push('gravel at ' + g.from + ': from before to, on the road, side left or right');
+      else if ([g.inner, g.outer, g.innerEnd, g.outerEnd].some(v => v !== undefined && !(v >= 0)) || (g.outer ?? Infinity) <= (g.inner ?? CONFIG.gravel.inner) || (g.outerEnd ?? g.outer ?? Infinity) <= (g.innerEnd ?? g.inner ?? CONFIG.gravel.inner)) problems.push('gravel at ' + g.from + ': inner and outer are m outside the lane\'s edge, outer the greater');
+      else if (g.road === 'side') problems.push('gravel at ' + g.from + ': there is none on a side road (only on the expressway)');
+    }
     for (const m of mud) {
       if (!(m.from < m.to) || m.from < 0 || m.to > length) problems.push('mud at ' + m.from + '-' + m.to + ': from before to, on the road');
     }
@@ -1146,7 +1173,7 @@ const createTrack = () => {
     apart, laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset, flyHeight,
-    lanesOn, edge, extraLane, onBridge, icy, sprays, slicks, muddy, water, waters, foggy, tunnel, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
+    lanesOn, edge, extraLane, onBridge, icy, sprays, slicks, muddy, gravels, gravelBand, gravelAt, water, waters, foggy, tunnel, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

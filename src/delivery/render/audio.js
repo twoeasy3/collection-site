@@ -336,6 +336,7 @@ Object.assign(SYNTH, {
   // a water main bursting: a thump under the road, and the hiss and rush of the water
   waterMain: (v) => { tone(90, 40, 0.3, 0.4 * v); noise(2400, 900, 2.5, 0.35 * v, 'bandpass', 0.1); },
   drum: (v) => { tone(110, 45, 0.22, 0.5 * v); noise(600, 200, 0.08, 0.2 * v); },
+  gravel: (v) => { noise(3200, 1400, 0.2, 0.3 * v, 'bandpass'); noise(900, 400, 0.16, 0.22 * v, 'lowpass', 0.03); }, // (stones under the car, in a gravel trap)
   jingle: (v) => [659, 587, 523, 587, 659, 659, 659].forEach((f, i) => tone(f, f, 0.28, 0.14 * v, 'triangle', i * 0.22)), // (a nursery tune's first phrase)
   cargoDrop: (v) => { noise(900, 200, 0.2, 0.5 * v); tone(140, 60, 0.15, 0.3 * v, 'square'); },
 });

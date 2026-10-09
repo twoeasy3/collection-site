@@ -1081,6 +1081,19 @@ const buildRoad = () => {
       }
     }
   }
+  // gravel traps (a level's "gravel": see Track.gravelBand): a bed of pale, sand-coloured gravel on the shoulder
+  // and run-off, a darker lip along each edge of it so that it reads against the asphalt and the grass, and
+  // rake lines along it
+  for (const g of Track.gravels) {
+    const at = (s, k) => { // (its near edge, k 0, to its far one, k 1; no width where there is no room for it)
+      const band = Track.gravelBand(g, s), d = band ? band[0] + (band[1] - band[0]) * k : (g.inner ?? CONFIG.gravel.inner);
+      return g.sign < 0 ? Track.laneLo(s) - d : Track.laneHi(s) + d;
+    };
+    const mat = (color, offset) => { const m = flat(color); m.polygonOffset = true; m.polygonOffsetFactor = m.polygonOffsetUnits = offset; return m; };
+    add(buildStrip(g.from, g.to, (s) => at(s, 0), (s) => at(s, 1), 0.012, 2), mat(0xd9c48f, -2));
+    for (const k of [0.2, 0.4, 0.6, 0.8]) add(buildStrip(g.from, g.to, (s) => at(s, k) - 0.06, (s) => at(s, k) + 0.06, 0.014, 2), mat(0xcbb47d, -3));
+    for (const k of [0, 1]) add(buildStrip(g.from, g.to, (s) => at(s, k) - (Track.gravelBand(g, s) ? 0.18 : 0), (s) => at(s, k) + (Track.gravelBand(g, s) ? 0.18 : 0), 0.016, 2), mat(0x9c8757, -4));
+  }
   // mud: where the road gives way to it, a sheet of churned brown right across, its ruts and puddles
   // darker, and a ragged edge where the road begins again
   for (const m of LEVEL.mud || []) {

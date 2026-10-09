@@ -106,6 +106,13 @@
 //              at `to` instead, with no easing: one tapering trap is one stretch, and stretches laid end to
 //              end, each starting at the width the last ended at, make a smooth wall line (what
 //              scripts/circuit-from-osm.mjs writes)
+//   gravel     { from, to, side, inner?, outer?, innerEnd?, outerEnd? }: a gravel trap: over that stretch, that side's
+//              shoulder and run-off is a bed of gravel from `inner` m outside the outer lane's edge (if not given,
+//              CONFIG.gravel.inner: a strip of asphalt comes first) out to `outer` m, or to the wall where that is
+//              nearer or no outer is given. innerEnd / outerEnd: the edges at `to`, if not the same (they run
+//              straight between). A car in it is slowed hard, the harder the faster, steers poorly, and is beached
+//              for a moment if it stops (CONFIG.gravel); race and traffic cars are slowed too. Usually with a
+//              "runoff" of the same stretch: without one there is only the shoulder to put it in
 //   stands     { from, to, side, pits }: grandstands along that stretch (pits: the pit garages instead)
 //   laps       the number of laps of a race round a circuit: the road must come back round to where it
 //              starts, facing the same way (a closed loop, checked as the level loads)
