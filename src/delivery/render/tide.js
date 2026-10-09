@@ -17,6 +17,8 @@ import { scene, tmp } from './scene.js';
 const STEP = 2;                       // m between rows of the water's sheet
 const DEPTH = 0.3;                    // m the water stands over the road at full depth (to look at)
 const BEHIND = 60, AHEAD = 560;       // m either side of the player kept up to date (the fog hides the rest)
+const CREST_FROM = 59;                // m out from the water's edge that a wave's crest is when it is warned of
+const CREST_CLIMB = 4;                // m beyond the pavement over which a crest comes up from the sea onto the road
 const SHALLOW = new THREE.Color(0x86bccb), DEEP = new THREE.Color(0x2e6c8f);
 const CREST = new THREE.Color(0xf2fafd), SWELL = new THREE.Color(0x4f8fb3);
 const sheet = (opacity, offset) => new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity, depthWrite: false,
@@ -112,10 +114,15 @@ export const syncTide = (now) => {
     if (!mesh.visible) return;
     for (let r = 0; r < CREST_ROWS; r++) {
       const s = w.s0 + (w.s1 - w.s0) * r / (CREST_ROWS - 1), k = Tide.stretch(w, s);
-      const out = w.t < 0 ? 4 + 55 * (-w.t / warning) : 0; // (m out beyond the road's edge)
-      const lat = w.t < 0 ? Track.hi(s) + out + (1 - k) * 25 : Tide.edge(s) + 0.2;
-      const height = (w.t < 0 ? 2.2 : 1.4 * (1 - w.t / rise)) * k;
-      const up = w.t < 0 && out > 1 ? -0.05 - tmpY(s) : DEPTH * 0.5; // (out at sea, from the water's surface)
+      // (one motion from out at sea to as far in as it gets: it rolls in to the water's edge as it stands, and is
+      // there, no higher and no further out, the moment it breaks and the edge takes it on in. Its ends hang back
+      // out at sea, and come up level with its middle over the last of the warning)
+      const far = Math.max(0, -w.t / warning);         // 1 when it is warned of .. 0 as it breaks
+      const edge = Tide.edge(s) + 0.2, lat = edge + CREST_FROM * far + (1 - k) * 25 * Math.min(1, far * 3);
+      const height = (w.t < 0 ? 1.4 + 0.8 * Math.min(1, far * 3) : 1.4 * (1 - w.t / rise)) * k;
+      // (out at sea it stands on the sea; it climbs onto the road over the last few metres before the pavement)
+      const beyond = Math.min(1, Math.max(0, (lat - Track.hi(s)) / CREST_CLIMB));
+      const up = DEPTH * 0.5 + (-0.05 - tmpY(s) - DEPTH * 0.5) * beyond;
       put(mesh, r * 3, s, lat, up, CREST);
       put(mesh, r * 3 + 1, s, lat + 1.5, up + height, CREST);
       put(mesh, r * 3 + 2, s, lat + 8, up, SWELL);
