@@ -34,26 +34,36 @@ const fresh = () => ({
   levelOrder: LEVEL_ORDER, // the order of levels `unlocked` counts by
 });
 
-// The save is the cookie, and a copy of it in local storage, BACKUP, kept with every save: should the
-// cookie go (the browser clearing it, or the page dying mid-write) or be unreadable, the copy brings it back
+// The save is kept twice with every save: in local storage (BACKUP: the main store, read first), and in the
+// cookie, which brings it back should local storage go or not be there at all. A browser drops a cookie over
+// 4096 bytes without a word, which is why local storage is the one trusted: a full save's cookie was 4013
+// bytes with 40 levels (scripts/.save-check.mjs measures it), and is about 3,000 now that times are rounded
 const BACKUP = 'delivery_racer_progress_backup';
 const savedCopies = () => {
   const copies = [];
   try {
-    const match = document.cookie.match(new RegExp('(?:^|; )' + COOKIE + '=([^;]*)'));
-    if (match) copies.push(JSON.parse(decodeURIComponent(match[1])));
-  } catch { /* (an unreadable cookie: the backup, if there is one) */ }
-  try {
     const backup = localStorage.getItem(BACKUP);
     if (backup) copies.push(JSON.parse(backup));
-  } catch { /* (no storage, or a broken backup) */ }
-  // (the further along of the two, should they differ: the more levels open, then the more banked)
-  return copies.filter(c => c && typeof c === 'object').sort((a, b) => (b.unlocked || 0) - (a.unlocked || 0) || (b.money || 0) - (a.money || 0));
+  } catch { /* (no storage, or a broken copy: the cookie, if there is one) */ }
+  try {
+    const match = document.cookie.match(new RegExp('(?:^|; )' + COOKIE + '=([^;]*)'));
+    if (match) copies.push(JSON.parse(decodeURIComponent(match[1])));
+  } catch { /* (an unreadable cookie) */ }
+  // (local storage's, if it has one that can be read; the cookie's only if not)
+  return copies.filter(c => c && typeof c === 'object' && !Array.isArray(c));
 };
 const read = () => {
   try {
     const saved = savedCopies()[0];
     if (!saved) return fresh();
+    return restore(saved);
+  } catch {
+    return fresh(); // an unreadable cookie counts as no progress
+  }
+};
+// a save as it was written (by any older version of the game), brought up to date
+const restore = (saved) => {
+  {
     const data = { ...fresh(), ...saved };
     data.bestTime = { good: {}, evil: {}, ...saved.bestTime }; // (a save from before best times has none)
     // (the Commuter and the Darkvan were saved as 'hatch' and 'coupe')
@@ -66,16 +76,67 @@ const read = () => {
     }
     data.levelOrder = LEVEL_ORDER;
     return data;
-  } catch {
-    return fresh(); // an unreadable cookie counts as no progress
   }
+};
+// The save as text. Best times are kept to 0.1 s (all the menu shows) and the bank to the cent: a run leaves
+// both with fifteen decimal places, which is what took the cookie to its cap
+const SAVE_STEP = { time: 0.1, money: 0.01 };
+const rounded = (value, step) => Math.round(value / step) / Math.round(1 / step);
+const saveText = (data) => JSON.stringify({
+  ...data,
+  money: rounded(data.money, SAVE_STEP.money),
+  bestTime: Object.fromEntries(Object.entries(data.bestTime).map(([side, times]) =>
+    [side, Object.fromEntries(Object.entries(times).map(([id, t]) => [id, rounded(t, SAVE_STEP.time)]))])),
+});
+// A save code: the save as one line of text to copy out of one browser and into another (the menu's Export
+// save and Import save: see render/savecode.js). CODE_MARK says what it is and which version of the code
+const CODE_MARK = 'DR1.';
+// a save out of a code is not trusted: only what a save can hold is kept, each thing checked for what it is
+const tidy = (saved) => {
+  const number = (v, least) => typeof v === 'number' && isFinite(v) ? Math.max(least, v) : undefined;
+  const clean = { ...saved };
+  clean.money = number(saved.money, 0) ?? 0;
+  clean.unlocked = Math.floor(number(saved.unlocked, 1) ?? 1);
+  clean.levelOrder = Math.floor(number(saved.levelOrder, 1) ?? 1);
+  clean.tankPieces = Math.floor(number(saved.tankPieces, 0) ?? 0);
+  clean.cars = [...new Set(['commuter', ...(Array.isArray(saved.cars) ? saved.cars : []).filter(id => typeof id === 'string')])];
+  clean.car = typeof saved.car === 'string' ? saved.car : 'commuter';
+  clean.bestTime = {};
+  for (const side of ['good', 'evil']) {
+    const times = saved.bestTime && typeof saved.bestTime === 'object' ? saved.bestTime[side] : null;
+    clean.bestTime[side] = Object.fromEntries(Object.entries(times && typeof times === 'object' ? times : {})
+      .filter(([, t]) => typeof t === 'number' && isFinite(t)));
+  }
+  return clean;
 };
 
 export const Progress = {
   data: read(),
 
+  // the save as it is written (see saveText)
+  saved() { return saveText(this.data); },
+  // the save as a code, to take to another browser
+  exportCode() {
+    return CODE_MARK + btoa(String.fromCharCode(...new TextEncoder().encode(this.saved())));
+  },
+  // ...and a code brought in, in place of the progress here. False: not a save code (nothing is changed)
+  importCode(code) {
+    try {
+      const text = String(code).replace(/\s+/g, '');
+      if (!text.startsWith(CODE_MARK)) return false;
+      const bytes = Uint8Array.from(atob(text.slice(CODE_MARK.length)), c => c.charCodeAt(0));
+      const saved = JSON.parse(new TextDecoder().decode(bytes));
+      if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return false;
+      if (typeof saved.unlocked !== 'number' || !Array.isArray(saved.cars)) return false; // (some other JSON)
+      this.data = restore(tidy(saved));
+      this.save();
+      return true;
+    } catch {
+      return false; // (not base64, or not JSON)
+    }
+  },
   save() {
-    const text = JSON.stringify(this.data);
+    const text = this.saved();
     document.cookie = COOKIE + '=' + encodeURIComponent(text) + '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
     try { localStorage.setItem(BACKUP, text); } catch { /* (no storage: the cookie alone) */ }
   },

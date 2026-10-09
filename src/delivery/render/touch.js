@@ -23,6 +23,7 @@ button.addEventListener('click', () => {
 });
 window.addEventListener('touchstart', () => { if (!auto) { auto = true; apply(); } }, { passive: true });
 document.getElementById('resetBtn').addEventListener('click', apply); // (a reset forgets the choice)
+window.addEventListener('progresschange', apply); // (a save brought in has a choice of its own: see render/savecode.js)
 apply();
 
 // Each pad is a pair of buttons worked by one thumb: whichever half the thumb is on is held,

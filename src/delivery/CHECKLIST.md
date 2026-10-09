@@ -34,7 +34,7 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 
 - [ ] 35. Sort and filter the garage
 - [ ] 36. Car comparison card
-- [ ] 38. Level select: best times and medals on the thumbnails, and a gimmick preview
+- [x] 38. Level select: each side's best time and its medal across the foot of the level's picture, and the level's gimmicks named under the words (`levelinfo.js`, `render/levelcards.js`). Bronze is any delivery on time; silver and gold are 45% and 85% of the time to spare a clean run in the reference car leaves (`CONFIG.medals`), my numbers, for the owner to overrule. Seen in a screenshot with a made-up save (`?demo`, which saves nothing). The "Best to spare" line under the picture now says the same thing twice: left in, as `render/menu.js` was being edited on other branches. Not seen on a phone.
 - [x] 39. Gimmicks page: wrong-way drivers, quarries and blasts, two-way pelotons, boulders. Three new cards, and the peloton card now shows a bunch each way. Syntax-checked only: the page was not opened.
 
 ## Fixes and balance
@@ -54,4 +54,4 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 - [ ] 49. Speed up the full smoke test: levels in parallel workers
 - [ ] 50. Lint and format setup, plus a CI workflow running the quick suite on PRs
 - [ ] 51. Performance: instance more scenery, lower the draw distance on phones
-- [ ] 52. Save data: export and import a save code. Also to check: the progress cookie may be near the 4 KB cap with every level and car saved (not measured); consider making local storage the main store
+- [x] 52. Save data. Measured first (`scripts/.save-check.mjs`): a full save's cookie (40 levels on both sides, 33 cars) was 4013 bytes of the 4096 allowed, so three more levels would have lost it. Now local storage is read first and the cookie only if it has nothing; best times are saved to 0.1 s and the bank to the cent, which brings the same save's cookie to 2931 bytes; and the menu has Export save and Import save (`render/savecode.js`), a code of about 2,600 characters that is checked and tidied on the way in. Checked headless: sizes, a code out and back, five bad codes refused. Both panels seen in a screenshot (`?savepanel`, `?savepanel=import`); the Copy and Load buttons were not clicked, and the menu's refresh after an import was not seen.

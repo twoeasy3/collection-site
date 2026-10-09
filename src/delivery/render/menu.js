@@ -9,6 +9,7 @@ import { Game, formatTime, clockFor } from '../game.js';
 import { Garage, withStars } from './garage.js';
 import { Sound } from './audio.js';
 import { Input } from '../input.js';
+import { decorateLevelCard } from './levelcards.js';
 
 const money = (amount) => '$' + amount.toFixed(2);
 
@@ -89,7 +90,8 @@ const draw = () => {
     const good = Progress.bestTime(level.id, false), evil = Progress.bestTime(level.id, true);
     const spare = (t) => t === undefined ? '-' : formatTime(t);
     const onlyGood = level.battle || level.alwaysGood;
-    return card(levelLabel(i) + '. ' + level.name, open ? [
+    // (and on the card once made: its best times' medals, and the level's gimmicks. See render/levelcards.js)
+    return decorateLevelCard(card(levelLabel(i) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
       onlyGood ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
         : 'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
@@ -100,7 +102,7 @@ const draw = () => {
       disabled: !open,
       onPick: () => { selectLevel(i); useLevelCar(level.car); shownGroup = null; draw(); }, // (the groups follow the level picked)
       image: LEVEL_SHOTS[level.id],
-    });
+    }), level, open);
   }));
   // (where the levels are a row to swipe along, the one picked is brought to the middle)
   if (levelBox.scrollWidth > levelBox.clientWidth) {
@@ -211,6 +213,20 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   window.dispatchEvent(new Event('carchange')); // (the car in use may have been one that was bought)
   showAutoGas(); // (a reset forgets the choice)
   showRaceClass();
+  draw();
+});
+
+// a save brought in by its code (render/savecode.js): everything the menu shows is the new save's
+window.addEventListener('progresschange', () => {
+  Game.evil = !!Progress.data.evil;
+  selectLevel(Math.min(Math.max(0, LEVEL_INDEX), Progress.data.unlocked - 1)); // (never left on a level it has not opened)
+  shownGroup = null;
+  selectCar(Progress.data.car);
+  window.dispatchEvent(new Event('carchange'));
+  Sound.toggleMute(); toggleMute(); // (twice, so as it was saved: this sets the volume by it, and the button's words)
+  showAutoGas();
+  showRaceClass();
+  showRaceTrack();
   draw();
 });
 

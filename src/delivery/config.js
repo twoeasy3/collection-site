@@ -893,6 +893,10 @@ export const CONFIG = {
   // it gives back)
   clock: { car: 'sport', good: 1.5, evil: 1.15, round: 5, timePlus: 5 },
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing
+  // medals on the menu's level cards (levelinfo.js): a delivery on time is a bronze; silver and gold are for
+  // this share of the time to spare a clean run in the reference car leaves (1 = as good as that run).
+  // gimmicks: how many of a level's gimmicks its card names before "+ n more"
+  medals: { silver: 0.45, gold: 0.85, gimmicks: 5 },
   packageMoodBoost: 0.5,   // mood gained by a good car that gets one
   giftOffence: 15,         // s an evil car that gets one is offended: furious, but it drives no differently
                            // (no road rage), and all its throws are at the player; and after that...

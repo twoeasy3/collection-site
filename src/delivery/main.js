@@ -7,6 +7,7 @@ import { Track } from './track.js';
 import { LEVEL, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
 import { THEMES } from './themes.js';
 import { Progress } from './progress.js';
+import './render/demo.js'; // (?demo: before the menu)
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Game } from './game.js';
@@ -46,6 +47,7 @@ import { syncReversible } from './render/reversible.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
 import './render/touch.js';
+import './render/savecode.js';
 import './horn.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
