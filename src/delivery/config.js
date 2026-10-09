@@ -1029,9 +1029,12 @@ export const CONFIG = {
   tunnel: {
     edge: 40,              // m over which the dark closes in at a portal, and opens out again
     near: 10,              // m the fog starts at, inside (the usual: 120)...
-    far: 110,              // ...and where it is solid (the usual: 520)
+    far: 140,              // ...and where it is solid (the usual: 520)
     color: 0x0c0c10,       // the dark of it
-    height: 5.6,           // m from the road to the ceiling
+    height: 8.5,           // m from the road to the ceiling (raised from 5.6)
+    camHeight: 5.5,        // m camera height inside the tunnel (lowered so player views inside)
+    camBack: 12,           // m behind the car inside the tunnel
+    camEase: 35,           // m over which camera dips before portal and rises after
     lampEvery: 12,         // m between the ceiling lamps
     echo: 0.45,            // how much of the engine comes back off the walls, well inside (0 = none)
   },
