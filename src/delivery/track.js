@@ -787,7 +787,7 @@ const createTrack = () => {
     }
     for (const p of LEVEL.pelotons || []) {
       if (!(p.s >= 0 && p.s <= length) || !(p.count > 0)) problems.push('peloton at ' + p.s + ': on the road, with a count');
-      else if (FLOW === 'south') problems.push('peloton at ' + p.s + ': it rides the player\'s way');
+      else if (p.dir === -1 ? FLOW === 'north' : FLOW === 'south') problems.push('peloton at ' + p.s + ': there is no ' + (p.dir === -1 ? 'oncoming side' : 'side the player\'s way') + ' for it to ride');
     }
     for (const e of LEVEL.wreckage || []) {
       const name = 'wreckage at ' + e.at;

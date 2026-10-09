@@ -1150,7 +1150,8 @@ export const Traffic = (() => {
   };
 
   // ---- cyclists (a level's "pelotons": see CONFIG.peloton) ----------------------------------------
-  // A good driver coming up behind a peloton in its lane gives it room: it eases out past it, over
+  // A good driver coming up behind a peloton riding its way in its lane (either way: cars coming the
+  // other way pass one riding towards the player just the same) gives it room: it eases out past it, over
   // towards the centre line, as far as clears the cyclists with room to spare. If anything else is in
   // the way of that (a car coming the other way too wide to pass, a car alongside), it hangs back behind
   // the bunch at its pace until there is room. Once out past them it carries on by. (An evil one
@@ -1159,30 +1160,33 @@ export const Traffic = (() => {
   const NONE = { hold: Infinity, lat: null };
   const passPeloton = (car) => {
     const P = CONFIG.peloton;
-    if (car.evil || car.dir < 0 || car.racer || car.emergency || car.toad || car.junction || car.pulledOver || car.shoulderRun) return NONE;
-    const own = Track.laneOffset(car.lane, car.s);
-    // the cyclists ahead of it (or alongside) that are in its way
+    if (car.evil || car.racer || car.emergency || car.toad || car.junction || car.pulledOver || car.shoulderRun) return NONE;
+    // (all measured its way, d: ahead is along its travel, and "out" is towards the centre line: lower
+    // lat for a car going the player's way, higher for one coming the other way)
+    const d = car.dir < 0 ? -1 : 1, own = Track.laneOffset(car.lane, car.s);
+    // the cyclists ahead of it (or alongside), riding its way, that are in its way
     let inner = Infinity, back = Infinity, front = -Infinity, pace = 0;
     for (const o of Collision.obstacles) {
-      if (!o.ride || o.gone) continue;
-      const ahead = o.s - car.s;
+      if (!o.ride || o.gone || o.ride.dir !== d) continue;
+      const ahead = (o.s - car.s) * d;
       if (ahead < -(car.hl + o.hl + P.passRoom) || ahead > P.lookout) continue;
       if (Math.abs(o.lat - (car.passingPack ?? own)) > car.hw + o.hw + P.room + 1) continue;
-      inner = Math.min(inner, o.lat - o.hw);
-      back = Math.min(back, o.s - o.hl);
-      front = Math.max(front, o.s + o.hl);
+      inner = Math.min(inner, d * o.lat - o.hw);                                        // (its nearest edge to the centre, d-wise)
+      back = Math.min(back, ahead - o.hl);
+      front = Math.max(front, ahead + o.hl);
       pace = o.ride.on ? o.ride.speed : 0;
     }
     if (inner === Infinity) { car.passingPack = null; return NONE; }
-    const lat = Math.max(Track.lo(car.s) + car.hw, inner - P.room - car.hw); // (clear of them by `room`)
-    if (lat > own - 0.05 && car.passingPack == null) return NONE; // (there is room in its own lane already)
+    const far = d > 0 ? Track.lo(car.s) + car.hw : -(Track.hi(car.s) - car.hw);      // (the furthest out it can go, d-wise)
+    const lat = d * Math.max(far, inner - P.room - car.hw);                           // (clear of them by `room`)
+    if (d * (lat - own) > -0.05 && car.passingPack == null) return NONE;              // (there is room in its own lane already)
     // committed (alongside them already): carry on by
     if (car.passingPack != null) return { hold: Infinity, lat: car.passingPack };
     // room to go out there? Nothing within reach whose sides would meet it as it passes
-    const reach = front - car.s + P.passRoom;
+    const reach = front + P.passRoom;
     const blocked = (o) => {
       if (o === car || !o.active || o.junction) return false;
-      const ds = o.s - car.s;
+      const ds = (o.s - car.s) * d;
       // (one coming the other way: all the way to where it would meet it, as it closes)
       const span = o.dir !== car.dir ? reach + (Math.abs(o.vs) + Math.abs(car.vs)) * reach / Math.max(5, Math.abs(car.vs) - pace) : reach;
       if (ds < -(o.hl + car.hl + 3) || ds > span) return false;
@@ -1193,7 +1197,7 @@ export const Traffic = (() => {
       return { hold: Infinity, lat };
     }
     // no room: hang back behind the bunch, at its pace
-    const gap = back - car.s - car.hl - P.room - 1;
+    const gap = back - car.hl - P.room - 1;
     return { hold: Math.max(0, pace + Math.max(0, gap) * 0.6), lat: null };
   };
 

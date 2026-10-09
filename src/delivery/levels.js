@@ -192,8 +192,10 @@
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall)
-//   pelotons   { s, count, speed, trigger }: cyclists two abreast by the kerb on the player's side,
-//              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton)
+//   pelotons   { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
+//              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
+//              dir -1: on the far side instead, riding towards the player (the bunch strung out behind
+//              them, past s)
 //   battle     true = the Battlefield: two armies at war down the road (see CONFIG.battle). Its traffic
 //              going the player's way is the player's side, green (good, whatever the player's side
 //              on the menu); coming the other way, the enemy's, red (evil). Best with "flow": "mixed"

@@ -953,8 +953,9 @@ export const CONFIG = {
     // walk across the fields there: never nearer the road than `out` m beyond its edge, nor further than out + spread
     airstrike: { every: { min: 8, max: 16 }, height: 32, speed: 95, bombs: { min: 5, max: 8 }, out: 14, spread: 45, from: 160, to: 520 },
   },
-  // a cyclist peloton (a level's "pelotons": { s, count, speed, trigger }): cyclists riding two abreast
-  // along the kerb of the player's side, setting off as the player comes within trigger m. Obstacles:
+  // a cyclist peloton (a level's "pelotons": { s, count, speed, trigger, dir }): cyclists riding two abreast
+  // along the kerb of the player's side (or, dir -1, the far side, towards the player), setting off as the
+  // player comes within trigger m. Obstacles:
   // only the player can hit them, and knocking one off with a police car watching is a bust
   peloton: {
     speed: 9,              // m/s
