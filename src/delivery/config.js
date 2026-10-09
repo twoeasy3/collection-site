@@ -633,6 +633,48 @@ export const CONFIG = {
     float:   { hw: 1.3,  hl: 4.2, height: 3.4, mass: 3.5, health: 240, speed: 1, special: true, model: 'float', noSpin: true, crit: 0 },
     // a cargo truck (an 18-wheeler with an open load) that sheds its load as it goes: see CONFIG.cargo
     cargotruck: { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 20, max: 24 }, noSpin: true, sheds: true, special: true },
+    // an ice-cream van (a level's "iceCreamStops": see CONFIG.iceCream), pink, in the one livery; never evil
+    icecream: { hw: 1.0, hl: 2.4, height: 2.3, mass: 1.6, health: 120, speed: 0.9, special: true, model: 'deliveryvan', livery: 0xf7b6d2 },
+  },
+  // an ice-cream van's stop (a level's "iceCreamStops": { s, lane, wait? }): the van stopped in its lane, its
+  // jingle going, and the traffic behind it in a residential street brakes to a halt and waits, nobody
+  // pulling out round it; `wait` s after the player comes within `trigger` m, it drives off
+  iceCream: {
+    wait: 14,              // s it stays, once the player is near (a stop can set its own: "wait")
+    trigger: 220,          // m short of it the player's coming sets its clock going
+    queue: 140,            // m behind it that traffic going its way queues, making no lane changes
+    jingleEvery: 2.6,      // s between the jingle's phrases...
+    heard: 200,            // ...heard from this far
+  },
+  // a reversible lane (a level's "reversible": { from, to, lane, flipAt? }): a lane on the player's side,
+  // under overhead signs along its stretch, that flips to oncoming as the player comes within flipAt m of
+  // it: the signs go from a green arrow to a red cross, the traffic in it moves out, and oncoming cars
+  // come down it the wrong way
+  reversible: {
+    flipAt: 170,           // m short of the stretch it flips (a stretch can set its own: "flipAt")
+    every: { min: 2.5, max: 5 }, // s between oncoming cars down it, while the player is on the stretch
+    ahead: { min: 180, max: 280 }, // m ahead of the player each one appears
+    signEvery: 150,        // m between the overhead signs
+  },
+  // convoys (a level's "convoys": { every: { min, max }, size?, kind? }): three or four vehicles nose to tail
+  // in one lane, moving as one; a follower closes the gap to the one ahead, and shuts it in the player's
+  // face when the player tries to merge in
+  convoy: {
+    size: 4,
+    gap: 3.5,              // m nose to tail they keep
+    close: 1.6,            // how hard a follower closes a gap (m/s of speed per m of gap)
+    shut: 5,               // m/s a follower puts on to shut a gap the player is aiming for
+  },
+  // rubberneckers: traffic slows to look at a wreck, so the jam comes after the crash; and some evil drivers
+  // lose patience with a jam, and go up the shoulder, and are arrested for it if the police see
+  rubberneck: {
+    linger: 25,            // s a wreck is worth a look
+    range: 70,             // m short of it they slow
+    pace: 0.35,            // share of their speed they slow to
+    slowBelow: 0.4,        // share of its speed an evil driver counts as a jam...
+    patience: 3.5,         // ...for this many s before it takes to the shoulder
+    policeSight: 90,       // m a police car sees a shoulder-runner from
+    longest: 12,           // s at most up the shoulder
   },
   // a street parade (a level's "parades": { s }): floats abreast in every lane of the player's side at s,
   // a marching band behind them, all going the player's way at a crawl, taking the whole road; set off as

@@ -13,6 +13,10 @@
   "roadblocks": [
     { "s": 2150 }
   ],
+  "reversible": [
+    { "from": 2500, "to": 2950, "lane": 2 }
+  ],
+  "convoys": { "every": { "min": 18, "max": 32 }, "size": 4, "kind": "keitruck" },
   "segments": [
     { "length": 450, "curve": 0 },
     { "length": 400, "curve": 0.0022 },

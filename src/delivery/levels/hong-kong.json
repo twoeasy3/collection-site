@@ -24,6 +24,7 @@
   "tunnels": [
     { "from": 1450, "to": 1850 }
   ],
+  "convoys": { "every": { "min": 20, "max": 35 }, "size": 3, "kind": "taxi" },
   "tide": { "from": 2300, "to": 2900, "start": 0.4, "end": 1.4, "waves": { "every": { "min": 9, "max": 16 }, "reach": { "min": 0.8, "max": 1.6 } },
     "washUp": { "types": { "wrench": 1, "cash10": 1 }, "count": { "min": 0, "max": 2 } } },
   "cameras": [

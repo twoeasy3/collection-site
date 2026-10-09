@@ -87,6 +87,7 @@ const SAMPLES = {
   jet: null,                    // a jet screaming over (the Battlefield's airstrikes)
   waterMain: null,              // a water main bursting up through the road
   drum: null,                   // a parade's bass drum
+  jingle: null,                 // an ice-cream van's chimes
   cargoDrop: ['Collide1', 'Plop Up'], // a load coming off a truck
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
@@ -305,6 +306,7 @@ Object.assign(SYNTH, {
   // a water main bursting: a thump under the road, and the hiss and rush of the water
   waterMain: (v) => { tone(90, 40, 0.3, 0.4 * v); noise(2400, 900, 2.5, 0.35 * v, 'bandpass', 0.1); },
   drum: (v) => { tone(110, 45, 0.22, 0.5 * v); noise(600, 200, 0.08, 0.2 * v); },
+  jingle: (v) => [659, 587, 523, 587, 659, 659, 659].forEach((f, i) => tone(f, f, 0.28, 0.14 * v, 'triangle', i * 0.22)), // (a nursery tune's first phrase)
   cargoDrop: (v) => { noise(900, 200, 0.2, 0.5 * v); tone(140, 60, 0.15, 0.3 * v, 'square'); },
 });
 

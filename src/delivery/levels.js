@@ -208,6 +208,16 @@
 //              a siren going the police pull aside and wave the player through (see CONFIG.roadblock)
 //   (a traffic kind that sheds, "cargotruck", drops crates, bales and tyres off the back as it goes, a little
 //              way ahead of the player: obstacles, sliding on and stopping. See CONFIG.cargo)
+//   iceCreamStops { s, lane, wait? }: an ice-cream van stopped in that lane, its jingle going; the traffic behind it
+//              queues, nobody pulling out round it, until it drives off, `wait` s after the player comes near
+//              (see CONFIG.iceCream)
+//   reversible { from, to, lane, flipAt? }: a reversible lane on the player's side (a two-way road): as the player
+//              comes within flipAt m its overhead signs go from a green arrow to a red cross and it is oncoming
+//              from then on: the traffic in it moves out, and cars come down it the wrong way (see CONFIG.reversible)
+//   convoys    { every: { min, max }, size?, kind? }: now and then a convoy, `size` vehicles of a kind nose to tail
+//              in one lane, moving as one and shutting their gaps in the player's face (see CONFIG.convoy)
+//   (everywhere: the traffic slows to look at a wreck for a while after, so the jam comes after the crash, and an
+//              evil driver stuck in it may go up the shoulder, to be arrested if the police see: CONFIG.rubberneck)
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side, out?, height? }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall). out / height: where they wait,

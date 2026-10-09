@@ -816,6 +816,18 @@ const createTrack = () => {
       else if (last - first < 1) problems.push('roadblock at ' + r.s + ': the player\'s side needs two lanes or more, for a gap');
       else if (r.gap !== undefined && !(Number.isInteger(r.gap) && r.gap >= first && r.gap <= last)) problems.push('roadblock at ' + r.s + ': gap is a lane on the player\'s side (' + first + ' to ' + last + ')');
     }
+    for (const st of LEVEL.iceCreamStops || []) {
+      const [first, last] = laneRange(1, st.s || 0);
+      if (!(st.s >= 0 && st.s <= length)) problems.push('ice-cream stop at ' + st.s + ': beyond the road');
+      else if (!(Number.isInteger(st.lane) && st.lane >= first && st.lane <= last)) problems.push('ice-cream stop at ' + st.s + ': lane is one on the player\'s side (' + first + ' to ' + last + ')');
+    }
+    for (const r of LEVEL.reversible || []) {
+      const [first, last] = laneRange(1, r.from || 0);
+      if (!(r.from < r.to) || r.from < 50 || r.to > length) problems.push('reversible lane at ' + r.from + '-' + r.to + ': from before to, on the road, clear of the start');
+      else if (!(Number.isInteger(r.lane) && r.lane >= first && r.lane <= last) || last - first < 1) problems.push('reversible lane at ' + r.from + ': lane is one of two or more on the player\'s side (' + first + ' to ' + last + ')');
+      else if (ONE_WAY) problems.push('reversible lane at ' + r.from + ': only on a two-way road');
+    }
+    if (LEVEL.convoys && !(LEVEL.convoys.every && LEVEL.convoys.every.min > 0 && LEVEL.convoys.every.max >= LEVEL.convoys.every.min)) problems.push('convoys: every { min, max } s');
     for (const m of LEVEL.waterMains || []) {
       if (!(m.s >= 0 && m.s <= length)) problems.push('water main at ' + m.s + ': beyond the road');
       else if (m.lane !== undefined && !(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road (or no lane: the centre line)');

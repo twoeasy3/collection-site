@@ -21,6 +21,10 @@
     { "length": 350, "curve": 0 }
   ],
   "storm": { "from": -100, "to": 3300, "count": 9, "seed": 25 },
+  "iceCreamStops": [
+    { "s": 1150, "lane": 3 },
+    { "s": 2450, "lane": 2, "wait": 10 }
+  ],
   "ice": [
     { "from": 600, "to": 650 },
     { "from": 1400, "to": 1440, "lane": 2 },
