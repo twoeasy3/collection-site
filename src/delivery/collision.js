@@ -306,7 +306,8 @@ export const Collision = (() => {
         const s = Track.place({ s: z.from + (z.to - z.from) * (i + rockRand()) / (z.count || 5) });
         const r = R.size.min + rockRand() * (R.size.max - R.size.min);
         const lat = Track.lo(s) + r + rockRand() * (Track.hi(s) - Track.lo(s) - 2 * r);
-        add('rock', s, lat, { r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, side, land: lat, nearAt: R.near.min + rockRand() * (R.near.max - R.near.min) });
+        add('rock', s, lat, { r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, side, land: lat, nearAt: R.near.min + rockRand() * (R.near.max - R.near.min),
+          up: z.height ?? R.height, out: z.out ?? R.out }); // (where it waits: the level's, or the hillside's)
       }
     }
     // landmines: scattered down the lanes over their stretch, in the middle of a lane, each with its light
@@ -577,7 +578,7 @@ export const Collision = (() => {
         if (o.fall) {
           o.fall += 9.8 * dt;
           o.h = Math.max(0, o.h - o.fall * dt);
-          const R = CONFIG.rockfall, u = 1 - o.h / R.height, edge = o.side < 0 ? Track.lo(o.s) - R.out : Track.hi(o.s) + R.out;
+          const u = 1 - o.h / o.up, edge = o.side < 0 ? Track.lo(o.s) - o.out : Track.hi(o.s) + o.out;
           o.lat = edge + (o.land - edge) * Math.min(1, u * 1.25);
           o.spin = (o.spin || 0) + dt * 6;
           if (o.h === 0) {
@@ -738,11 +739,11 @@ export const Collision = (() => {
         o.near = CONFIG.dropBear.near.min + Math.random() * (CONFIG.dropBear.near.max - CONFIG.dropBear.near.min);
         continue;
       }
-      if (o.kind === 'rock') { // back up the hillside
-        o.h = CONFIG.rockfall.height;
+      if (o.kind === 'rock') { // back up the hillside (or wherever its stretch has it wait)
+        o.h = o.up;
         o.fall = 0;
         o.spin = 0;
-        o.lat = o.side < 0 ? Track.lo(o.s) - CONFIG.rockfall.out : Track.hi(o.s) + CONFIG.rockfall.out;
+        o.lat = o.side < 0 ? Track.lo(o.s) - o.out : Track.hi(o.s) + o.out;
         continue;
       }
       if (o.ride) { // a cyclist back where its peloton waits

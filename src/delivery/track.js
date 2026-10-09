@@ -548,7 +548,14 @@ const createTrack = () => {
         v.lat += RSLOT - LW / 2;
         lane = LANES; // arrives in the merge lane
       } else if (kind === SIDE_ROAD && v.dir < 0 && !x.flyovers && v.s <= x.side0 + X.ramp) {
-        if (!v.isPlayer) v.s = -LEAD_IN - 1000; // (no flyover to take: where its lane ends, it is gone, off the road: see inBounds)
+        // (no flyover to take: where its lane meets the expressway, a car carries straight on into the
+        // expressway's right-hand lane, the wrong way down it: see Traffic, wrong-way drivers)
+        if (!v.isPlayer) {
+          v.s = x.exitAt + (v.s - x.side0);
+          v.lat += RSLOT - LW / 2 - LW;
+          v.wrongWay = true;
+          lane = LANES - 1;
+        }
       } else if (kind === SIDE_ROAD && v.dir < 0 && v.s <= x.side0 + X.ramp) {
         v.s = x.flyA0 + FLY + (v.s - x.side0 - X.ramp);
         v.lat += LW / 2;

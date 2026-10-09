@@ -241,7 +241,7 @@ export const Traffic = (() => {
     car.maxHealth = car.health = type.health;
     car.unspinnable = car.courier = false; // (only a rival courier: see addRacer)
     car.blockedFor = 0; car.blockedBy = null; car.clearThrow = 0;
-    car.punctured = car.stationed = car.escaping = false; car.driveBy = car.stationEdge = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
+    car.punctured = car.stationed = car.escaping = car.wrongWay = false; car.driveBy = car.stationEdge = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
     car.rivalName = car.colors = car.markColor = null; car.counted = false;
     car.smoke = 0;
     car.lane = lane;
@@ -1714,7 +1714,7 @@ export const Traffic = (() => {
         }
 
         car.think -= dt;
-        if (car.think <= 0) {
+        if (car.think <= 0 && !car.wrongWay) { // (a wrong-way driver makes no plans: it keeps on down its lane)
           car.think = 1 + Math.random() * 2;
           think(car);
         }
@@ -1847,6 +1847,29 @@ export const Traffic = (() => {
             target = Math.min(target, Math.abs(o.vs) * (car.racer && gap > o.hl + car.hl + 3 ? 0.99 : 0.9));
             held = o;
           }
+        }
+        // a car coming at it in its lane, the wrong way (off a side road: see Track.transfer): looking well
+        // ahead, as they close fast, it moves over a lane if it can, and stops if it can't. The wrong-way
+        // driver itself keeps to its lane, swerving over only for one stopped or slowing in front of it
+        if (!LEVEL.battle && Track.isMain(car.s)) {
+          const W = CONFIG.wrongWay;
+          let head = null, near = Infinity;
+          for (const o of [...cars, Player]) {
+            if (o === car || !o.active || o.junction || (o.isPlayer && Player.ghost > 0)) continue;
+            const odir = o.isPlayer ? 1 : o.dir;
+            if (odir === car.dir || !(car.wrongWay || o.wrongWay)) continue;
+            const gap = (o.s - car.s) * car.dir, closing = Math.abs(car.vs) + Math.abs(o.isPlayer ? Player.speed : o.vs);
+            if (gap > 0 && gap < W.look + closing * W.lookTime && gap < near && Math.abs(o.lat - car.lat) < o.hw + car.hw + 0.3) { near = gap; head = o; }
+          }
+          if (head) {
+            const tries = car.wrongWay ? [car.dir > 0 ? 1 : -1, car.dir > 0 ? -1 : 1] : [1, -1]; // (the wrong-way one: over towards the middle first)
+            const first = 0, last = Track.laneCount - 1;
+            const free = tries.map(d => car.lane + d).find(l => l >= first && l <= last && Track.openLane(l, car.s) === l &&
+              (car.wrongWay ? laneClear(car, l, W.room) : canMove(car, l, false)));
+            if (free !== undefined && (!car.wrongWay || near < W.swerve)) { car.lane = free; car.pendingLane = null; }
+            else if (!car.wrongWay || near < W.swerve) target = Math.min(target, Math.max(0, (near - W.stopShort) * 0.5)); // (no way round: stopping)
+          }
+          if (car.wrongWay) car.pendingLane = null;
         }
         // one alongside on the attack, with a bend coming: it is given the corner (see CONFIG.race.cede)
         let ceding = 1;

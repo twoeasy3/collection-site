@@ -26,7 +26,7 @@
 //              shoulder, one every `every` metres. kind: 'cone' | 'sign' (or any obstacle
 //              kind); side: 'left' | 'right' | 'both' (default). Exit and merge lanes are left clear.
 //   shoulderTimer  false = no danger timer: the shoulders can be driven on freely, and
-//              police cars don't bust for it either
+//              police cars don't bust for it either; 'mud' = the same, but only in the level's mud
 //   helicopter false = the rescue and police helicopters are not drawn (they still act)
 //   narrows    stretches where each side of the expressway drops to `lanesPerSide` lanes; with side: 'left' or
 //              'right', only that side does (the level's "lanes" are the most each way ever has: a way that
@@ -169,9 +169,10 @@
 //              it goes by the player's pace (see CONFIG.wreckage.blastWarn), not a trigger: with
 //              "ahead" (s), that much sooner, out of the player's reach unless the player speeds up.
 //              rock: true makes a blast a quarry's: a crag of the rock face blasted out, rock and dust, not a building
-//   quarries   { from, to, side }: (the construction theme) a quarry beside the road over that stretch, on that
+//   quarries   { from, to, side, floor? }: (the construction theme) a quarry beside the road over that stretch, on that
 //              side ('left' | 'right'): its floor, its rock face cut back in benches, crusher, heaps and trucks
-//              (only scenery; see CONFIG.quarry). A blast with rock: true (see wreckage) blows its face out
+//              (only scenery; see CONFIG.quarry). floor: m off the road its face starts, if not CONFIG.quarry.floorTo
+//              (a face close in has no room on its floor for the works). A blast with rock: true (see wreckage) blows its face out
 //   runway     { from, width }: from there on the road is a runway, `width` m of concrete beyond each
 //              edge, with a runway's markings in place of lanes (the airport's look)
 //   tower      { at, trigger, distance, stub }: the control tower, beside the old road carrying
@@ -194,8 +195,9 @@
 //              longer), if not CONFIG.stopGo's. On straight road
 //   fog        { from, to }: a fog bank: the fog closes right in, and the police see less (see CONFIG.fog)
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
-//   rockfall   { from, to, count, side }: rocks tumbling down onto the road from that side as the player
-//              comes near: obstacles, which only the player hits (see CONFIG.rockfall)
+//   rockfall   { from, to, count, side, out?, height? }: rocks tumbling down onto the road from that side as the player
+//              comes near: obstacles, which only the player hits (see CONFIG.rockfall). out / height: where they wait,
+//              m off the road's edge and m up, if not CONFIG.rockfall's (the hillside's): on a quarry's bench, say
 //   pelotons   { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind
