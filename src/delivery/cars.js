@@ -82,6 +82,15 @@ export const CARS = [
     maxSpeed: 34, accel: 11, crossing: 0.95, health: 215, hw: 1.05, hl: 2.6, height: 2.1 },
   { id: 'hotrod', tier: 3, name: 'Hot Rod', price: 360, color: 0x6a2bb3, evilColor: 0x4b5320, fixedLivery: true, model: 'hotrod',
     maxSpeed: 38, accel: 15, crossing: 0.4, health: 110, hw: 0.9, hl: 2.1, height: 1.2 },
+  // ---- tier 3, Blue Stars
+  { id: 'sleeper', tier: 3, blue: true, name: 'Sleeper Wagon', price: 680, color: 0x5a1f2a, evilColor: 0xc9c3b4, fixedLivery: true, model: 'sleeper',
+    maxSpeed: 38.5, accel: 15, crossing: 0.6, health: 180, hw: 0.92, hl: 2.5, height: 1.45 },
+  { id: 'rally', tier: 3, blue: true, name: 'Rally Car', price: 720, color: 0x1d3f9e, evilColor: 0xe24a8c, fixedLivery: true, model: 'rally',
+    maxSpeed: 39, accel: 16, agility: 1.35, crossing: 0.95, health: 130, hw: 0.9, hl: 2.2, height: 1.45 },
+  { id: 'towtruck', tier: 3, blue: true, name: 'Tow Truck', price: 750, color: 0xeeeeee, evilColor: 0x2a6fb8, fixedLivery: true, model: 'towtruck',
+    maxSpeed: 36, accel: 10, crossing: 0.8, health: 220, mass: 2.0, hw: 1.05, hl: 2.85, height: 2.1 },
+  { id: 'rotary', tier: 3, blue: true, name: 'Rotary Coupe', price: 780, color: 0xf2c218, evilColor: 0x1f8a5c, fixedLivery: true, model: 'rotary',
+    maxSpeed: 40, accel: 17, agility: 1.45, crossing: 0.3, health: 120, hw: 0.88, hl: 2.15, height: 1.2 },
   // ---- tier 4
   { id: 'taxi', tier: 4, name: 'Taxi', price: 400, color: 0xffc81a, evilColor: 0x6b7a2e, fixedLivery: true, model: 'taxi',
     maxSpeed: 38, accel: 12, crossing: 0.6, health: 210, hw: 1.0, hl: 2.55, height: 1.6 },
