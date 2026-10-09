@@ -1077,27 +1077,115 @@ const buildRoad = () => {
     // (and none under a bridge, where there is the water to see, far below)
     const stretches = offBridges(zones ? zones.map((z, i) => [i ? z.from : Track.start, i === zones.length - 1 ? Track.end : zones[i + 1].from, z.ground ?? theme.ground, z.sea])
       : [[Track.start, Track.end, theme.ground, undefined]]);
-    for (const [from, to, colour, sea] of stretches) {
-      const land = new THREE.Mesh(buildStrip(from, to, (s) => within(s, Track.lo(s) - LAND), (s) => within(s, Track.hi(s) + (sea ?? LAND)), -0.04, 6), flat(colour));
+    // A side road has land of its own, at its own height (below): the expressway's stops short of it, and meets
+    // it at its height. So no land ever lies in the plane of a side road's pavement, or comes up through it
+    // (which it did, flickering, wherever the side road was a few centimetres off the expressway's height).
+    // sides: every side road, as points along its middle: x, z, half its width, its height
+    const sides = [], ray = {};
+    for (const x of exits) {
+      for (let s = x.side0; s <= x.sideEnd; s += 3) {
+        Track.toWorld(s, (Track.lo(s) + Track.hi(s)) / 2, ray);
+        sides.push(ray.x, ray.z, (Track.hi(s) - Track.lo(s)) / 2, ray.y);
+      }
+    }
+    // the right-hand edge of the expressway's land at s: [m out from the pavement, its height or null (the road's)]
+    const edges = new Map();
+    const landEdge = (s, sea) => {
+      if (edges.has(s)) return edges.get(s);
+      let edge = [sea ?? LAND, null];
+      if (exits.some(x => s > x.exitAt - 40 && s < x.mergeAt + 40)) {
+        search: for (let d = 0; d < edge[0]; d += 2) {
+          Track.toWorld(s, within(s, Track.hi(s) + d), ray);
+          for (let k = 0; k < sides.length; k += 4) {
+            if (Math.hypot(ray.x - sides[k], ray.z - sides[k + 1]) < sides[k + 2] + 2.5) { edge = [d, sides[k + 3]]; break search; }
+          }
+        }
+      }
+      edges.set(s, edge);
+      return edge;
+    };
+    const landMesh = (pos, idx, colour) => {
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setIndex(idx);
+      const land = new THREE.Mesh(geo, flat(colour));
       land.material.polygonOffset = true;
       land.material.polygonOffsetFactor = 2;
       land.material.polygonOffsetUnits = 2;
       land.renderOrder = -1.5;
       levelGroup.add(land);
+    };
+    for (const [from, to, colour, sea] of stretches) {
+      const pos = [], idx = [];
+      for (let s = from, n = 0; ; s = Math.min(to, s + 6), n++) {
+        const [out, y] = landEdge(s, sea);
+        // (level right across the road, from the far edge of the land on the left to the pavement's on the right)
+        Track.toWorld(s, within(s, Track.lo(s) - LAND), tmp);
+        pos.push(tmp.x, tmp.y - 0.04, tmp.z);
+        Track.toWorld(s, Track.hi(s), tmp);
+        pos.push(tmp.x, tmp.y - 0.04, tmp.z);
+        Track.toWorld(s, within(s, Track.hi(s) + out), tmp);
+        pos.push(tmp.x, y === null ? tmp.y - 0.04 : y - 0.2, tmp.z); // (meeting a side road: just under its own land)
+        if (n > 0) { const a = (n - 1) * 3; idx.push(a, a + 1, a + 3, a + 1, a + 4, a + 3, a + 1, a + 2, a + 4, a + 2, a + 5, a + 4); }
+        if (s >= to) break;
+      }
+      landMesh(pos, idx, colour);
+    }
+    // each side road's own land: a narrow verge on its left, where the expressway's land comes to meet it, and on
+    // its right land as wide as the expressway's (short of the expressway itself, should it turn that way), with
+    // a bank down to the ground along both
+    for (const x of exits) {
+      const R = CONFIG.ramps, zone = Track.zoneAt(x.exitAt), colour = zone && zone.ground !== undefined ? zone.ground : theme.ground;
+      const mainHalf = Math.max(Track.hi(x.exitAt), -Track.lo(x.exitAt)) + 4;
+      const rows = [];
+      for (let s = x.side0; ; s = Math.min(x.sideEnd, s + 4)) {
+        let out = 0;
+        for (; out < R.land; out += 3) {
+          Track.toWorld(s, within(s, Track.hi(s) + out + 3), ray);
+          if (Track.mainDistance(ray.x, ray.z) < mainHalf) break;
+        }
+        rows.push([s, within(s, Track.lo(s) - R.verge), within(s, Track.hi(s) + out)]);
+        if (s >= x.sideEnd) break;
+      }
+      const pos = [], idx = [];
+      rows.forEach(([s, a, b], n) => {
+        Track.toWorld(s, a, tmp); pos.push(tmp.x, tmp.y - 0.04, tmp.z);
+        Track.toWorld(s, b, tmp); pos.push(tmp.x, tmp.y - 0.04, tmp.z);
+        if (n > 0) { const k = (n - 1) * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+      });
+      landMesh(pos, idx, colour);
+      for (const side of [-1, 1]) {
+        const bank = [], at = [];
+        rows.forEach(([s, a, b], n) => {
+          const top = side < 0 ? a : b;
+          Track.toWorld(s, top, tmp);
+          bank.push(tmp.x, tmp.y - 0.04, tmp.z);
+          Track.toWorld(s, within(s, top + side * (2 + tmp.y * 2.5)), tmp);
+          bank.push(tmp.x, -0.04, tmp.z);
+          if (n > 0) { const k = (n - 1) * 2; at.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+        });
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(bank, 3));
+        geo.setIndex(at);
+        levelGroup.add(new THREE.Mesh(geo, flat(new THREE.Color(colour).multiplyScalar(0.8))));
+      }
     }
     for (const [from, to, colour, sea] of stretches) for (const side of [-1, 1]) {
       const bank = flat(new THREE.Color(colour).multiplyScalar(0.8));
       const out = side > 0 && sea !== undefined ? sea : LAND; // (by the sea, a short drop to the water's edge)
       const pos = [], idx = [];
       let n = 0;
+      let met = true; // (no bank where the land meets a side road's)
       for (let s = from; s <= to; s += 6, n++) {
-        const top = within(s, (side < 0 ? Track.lo(s) : Track.hi(s)) + side * out);
+        const before = met;
+        met = side > 0 && landEdge(s, sea)[1] !== null;
+        const top = within(s, (side < 0 ? Track.lo(s) : Track.hi(s)) + side * (met ? landEdge(s, sea)[0] : out));
         Track.toWorld(s, top, tmp);
         const drop = tmp.y; // the further it has to fall, the further out the foot of the slope
         pos.push(tmp.x, tmp.y - 0.04, tmp.z);
         Track.toWorld(s, within(s, top + side * (out === LAND ? 2 + drop * 2.5 : 1 + drop * 0.6)), tmp);
         pos.push(tmp.x, -0.04, tmp.z);
-        if (n > 0) {
+        if (n > 0 && !met && !before) {
           const a = (n - 1) * 2;
           idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2);
         }

@@ -175,18 +175,52 @@ const createTrack = () => {
     }
     return points;
   };
-  const sideHeights = (xs, zs, e) => {
+  const sideHeights = (xs, zs, e, step) => {
     const first = Math.max(0, Math.floor((e.exitAt + LEAD_IN) / STEP)), last = Math.min(mainXs.length - 1, Math.ceil((e.mergeAt + LEAD_IN) / STEP));
-    let ys = xs.map((x, k) => {
+    // (the land's height under each point: the expressway's where the point is square to it, between its samples
+    // and not the nearest one's own, which on a slope is centimetres out: enough to put one road's pavement
+    // through the other's where they lie together at a fork. And how far the point is from its centre line)
+    const away = [];
+    const land = xs.map((x, k) => {
       let best = Infinity, at = first;
       for (let i = first; i <= last; i++) {
         const d = (x - mainXs[i]) ** 2 + (zs[k] - mainZs[i]) ** 2;
         if (d < best) { best = d; at = i; }
       }
-      return mainYs[at];
+      let y = mainYs[at];
+      for (const [a, b] of [[at - 1, at], [at, at + 1]]) {
+        if (a < 0 || b >= mainXs.length) continue;
+        const ex = mainXs[b] - mainXs[a], ez = mainZs[b] - mainZs[a];
+        const t = Math.max(0, Math.min(1, ((x - mainXs[a]) * ex + (zs[k] - mainZs[a]) * ez) / (ex * ex + ez * ez)));
+        const d = (x - mainXs[a] - ex * t) ** 2 + (zs[k] - mainZs[a] - ez * t) ** 2;
+        if (d <= best) { best = d; y = mainYs[a] + (mainYs[b] - mainYs[a]) * t; }
+      }
+      away.push(Math.sqrt(best));
+      return y;
     });
-    for (let pass = 0; pass < 80; pass++) ys = ys.map((y, k) => k === 0 || k === ys.length - 1 ? y : (ys[k - 1] + 2 * y + ys[k + 1]) / 4);
-    return ys;
+    // Away from the expressway it has a slope of its own: the land's, evened out (over CONFIG.ramps.gradeEase m:
+    // where the expressway bends away from it, the nearest point of the expressway races along its hill, and the
+    // land with it, far too steeply for a road). Alongside the expressway (within CONFIG.ramps.level m of its
+    // pavement) it is exactly as high as it, so the two pavements, and the land between, lie in one plane
+    let ys = land;
+    const sigma = X.gradeEase / STEP, passes = Math.round(2 * sigma * sigma);
+    for (let pass = 0; pass < passes; pass++) ys = ys.map((y, k) => k === 0 || k === ys.length - 1 ? y : (ys[k - 1] + 2 * y + ys[k + 1]) / 4);
+    // (and no steeper than CONFIG.ramps.steepest anywhere out there: whatever a step rises over that is shared out
+    // between its two ends, over and over, until the climb is spread along the road)
+    const free = away.map(d => d > RSLOT + LW + X.level), most = X.steepest * step;
+    for (let pass = 0; pass < 4000; pass++) {
+      let over = false;
+      for (let k = 0; k < ys.length - 1; k++) {
+        const rise = ys[k + 1] - ys[k], excess = Math.abs(rise) - most;
+        if (excess <= 1e-4 || !(free[k] || free[k + 1])) continue;
+        const share = Math.sign(rise) * excess / (free[k] && free[k + 1] ? 2 : 1);
+        if (free[k]) ys[k] += share;
+        if (free[k + 1]) ys[k + 1] -= share;
+        over = true;
+      }
+      if (!over) break;
+    }
+    return ys.map((y, k) => land[k] + (y - land[k]) * smooth((away[k] - RSLOT - LW) / X.level));
   };
   const buildSide = (pG, hG, pE, hE, shape) => {
     // its own segments first, laid out from the exit just as the expressway's are from the start line; then
@@ -235,7 +269,7 @@ const createTrack = () => {
     }
     // on hilly ground it follows the land: each point as high as the expressway is at its nearest point (so it
     // leaves and rejoins it level with it), smoothed a little
-    const ys = hilly ? sideHeights(xs, zs, shape) : null;
+    const ys = hilly ? sideHeights(xs, zs, shape, step) : null;
     return { path: makePath(xs, zs, hs, 0, step, ys), length: total, xs, zs, ys: ys || xs.map(() => 0), step };
   };
 

@@ -23,6 +23,11 @@ export const CONFIG = {
     shapeLead: 130,        // m at each end of a side road an exit's own shape ("out", "bends") leaves alone...
     shapeEase: 120,        // ...and m beyond that it eases in over
     tightest: 35,          // m: the tightest a side road's bend may be (its radius)
+    gradeEase: 30,         // m over which a side road's slope is evened out, where it has left the expressway (on hills)
+    level: 30,             // m out from the expressway's pavement within which a side road is exactly as high as it
+    steepest: 0.06,        // the steepest a side road climbs or falls where it has left the expressway (rise per metre)
+    verge: 4,              // m of land of its own along a side road's left edge on hills, and (up to) ...
+    land: 130,             // ... along its right: the land beside it, at its height, with a bank down to the ground
     leftShoulder: 1,       // m; a side road's right shoulder is the normal driveable width
     flyoverLength: 360,
     flyoverHeight: 7,
