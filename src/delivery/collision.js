@@ -250,9 +250,9 @@ export const Collision = (() => {
     // the Battlefield's: a landmine in a lane (see landmines below)
     landmine: [0.75, 0.75, 0.4],
     // Gimmick Road 2's (see hazards.js, which adds and moves them): a shopping trolley, a marathon runner, a
-    // water station's table, the marathon's pace car, a wide load and its escort, a toll plaza's end booth
+    // water station's table, the marathon's pace car, a wide load and its escort
     trolley: [0.45, 0.6, 1.1], runner: [0.3, 0.3, 1.8], waterTable: [0.9, 0.5, 1.0], paceCar: [0.9, 2.0, 1.6],
-    wideLoad: [3.2, 6.5, 3.6], escort: [0.95, 2.2, 1.7], tollBooth: [0.7, 1.6, 2.8],
+    wideLoad: [3.2, 6.5, 3.6], escort: [0.95, 2.2, 1.7],
     // a parade's bandsman (see parades below); and falling cargo, shed off a truck (see Cargo)
     marcher: [0.35, 0.35, 2.3], crate: [0.6, 0.6, 1.1], tyre: [0.5, 0.5, 0.35],
   };

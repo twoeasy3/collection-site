@@ -1,7 +1,7 @@
 # Delivery Racer: ideas checklist
 
 Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly done (see the note),
-`[ ]` not started. Each done item says what was and was not verified.
+`[ ]` not started, `[-]` built and then taken out. Each done item says what was and was not verified.
 
 ## New gimmicks
 
@@ -13,8 +13,8 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 - [x] 17. Hot-air balloon landing: blocks the road, then takes off again. Logic checked headless (`scripts/.hazards-check.mjs`); seen in a screenshot on Gimmick Road 2 (`?hidden=gimmick-road-2`); not played by hand, and in no real level yet.
 - [x] 18. Road-train jackknife: a scripted trailer swing across the lanes (wreckage of kind `roadtrain`). Logic checked headless (`scripts/.hazards-check.mjs`); seen in a screenshot on Gimmick Road 2 (`?hidden=gimmick-road-2`); not played by hand, and in no real level yet.
 - [x] 19. Marathon: runners and a water station in one lane, plus a pace car. Logic checked headless (`scripts/.hazards-check.mjs`) on Gimmick Road 2 (`?hidden=gimmick-road-2`); its drawing was not looked at closely; not played by hand, and in no real level yet.
-- [x] 20. Average-speed cameras: timed between two gantries. Logic checked headless (`scripts/.hazards-check.mjs`) on Gimmick Road 2 (`?hidden=gimmick-road-2`); its drawing was not looked at closely; not played by hand, and in no real level yet.
-- [x] 21. Toll plazas: pay to pass, or ram the barrier and risk a bust. Logic checked headless (`scripts/.hazards-check.mjs`); seen in a screenshot on Gimmick Road 2 (`?hidden=gimmick-road-2`); not played by hand, and in no real level yet.
+- [-] 20. Average-speed cameras: timed between two gantries. **Removed on 2026-10-10 at the owner's request** ("terribly unfun"): logic, gantries, tuning, messages, level field, Gimmicks card and its checks all taken out. The ordinary speed cameras stay.
+- [-] 21. Toll plazas: pay to pass, or ram the barrier and risk a bust. **Removed on 2026-10-10 at the owner's request** ("terribly unfun"): logic, plaza and booths, tuning, messages, level field, Gimmicks card and its checks all taken out. `scripts/.hazards-check.mjs` still passes without them; Gimmick Road 2 is bare from 2300 to 3200 m where the two stood.
 - [x] 22. Animal stampede on side roads: cows or kangaroos charging down a side road at the player (`stampedes`). Logic checked headless (`scripts/.hazards-check.mjs`) on Gimmick Road 2 (`?hidden=gimmick-road-2`); its drawing was not looked at closely; not played by hand, and in no real level yet. Read as a stampede on the side road, not animals spilling out of it onto the expressway.
 - [x] 23. Side-road gimmicks: potholes, crossings and cameras on side roads (`road: 'side'`), and all of the new ones. Logic checked headless (`scripts/.hazards-check.mjs`) on Gimmick Road 2 (`?hidden=gimmick-road-2`); its drawing was not looked at closely; not played by hand, and in no real level yet.
 

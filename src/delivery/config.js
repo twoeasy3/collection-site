@@ -487,7 +487,6 @@ export const CONFIG = {
     paceCar: { damage: 30, speedKept: 0.5 },
     wideLoad: { damage: 40, speedKept: 0.35 },
     escort: { damage: 30, speedKept: 0.5 },
-    tollBooth: { damage: 35, speedKept: 0.4 },
     marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
     // falling cargo (a shedding truck's load: see CONFIG.cargo): bales, crates and tyres
     crate: { damage: 18, speedKept: 0.75 },
@@ -1154,14 +1153,6 @@ export const CONFIG = {
   // setting off as the player comes within `trigger` m, a pace car `lead` m ahead of them, and (water: s)
   // a water station's tables standing in that lane. Knock a runner down with the police watching: a bust
   marathon: { speed: 4.2, trigger: 300, spacing: 3.2, lead: 14, wobble: 0.12 },
-  // average-speed cameras ("averageCameras": { from, to, limit }): timed between two gantries, and
-  // caught (as by a speed camera: a fine first, then a bust) if the average is over the limit (km/h)
-  averageSpeed: { limit: 90 },
-  // a toll plaza ("tolls": { s, fee? }): a boom across each lane going the player's way. Come up to it
-  // at paySpeed m/s or slower, within `reach` m, and the fee is paid (off what the run banks) and the
-  // boom lifts over `lift` s. Go through it down: a knock (boomDamage, boomKept), and a bust if the
-  // police are near, or bustChance of the time anyway. Traffic rolls through at `slow` m/s
-  toll: { fee: 15, paySpeed: 9, reach: 26, lift: 0.5, boomDamage: 10, boomKept: 0.75, bustChance: 0.5, slow: 8, zone: 45 },
   // a stampede ("stampedes": { from, to, count, kind, road?, exit? }): animals waiting along that
   // stretch (a side road's, usually), which come charging down the road at the player once it is
   // within `trigger` m of the stretch, each at its own `speed`, weaving `weave` m

@@ -1,12 +1,12 @@
 // ============================================================================
 // HAZARDS - Gimmick Road 2's gimmicks (see levels.js and CONFIG, each under its own name): school
 // crossings, burst water mains, hot-air balloons, drawbridges, wide loads with an escort, shopping
-// trolleys, marathons, toll plazas and stampedes. Each is a list in the level, barebones: what it
+// trolleys, marathons and stampedes. Each is a list in the level, barebones: what it
 // does is here, render/hazards.js draws it (the things that can be run into are obstacles, drawn
 // as obstacles: see Collision, which this adds them to, and render/obstacleModels.js).
 // As with every obstacle, traffic drives straight through the moving ones (trolleys, runners, a wide
-// load, a stampede); it does wait at a school crossing, a balloon, a drawbridge and a toll.
-// (Average-speed cameras are cameras.js's; a road train jackknifing is wreckage.js's.)
+// load, a stampede); it does wait at a school crossing, a balloon and a drawbridge.
+// (A road train jackknifing is wreckage.js's.)
 // ============================================================================
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
@@ -46,7 +46,6 @@ export const Hazards = {
   loads: [],     // { s0, lat(s), load, escort (obstacles), on, t, passed, done }
   trolleys: [],  // obstacles, each with cart: { lat0, vel0, vel }
   marathons: [], // { s0, lane, on, members: obstacles with run: { s0, off } }
-  tolls: [],     // { s, fee, paid, rammed, lift }
   stampedes: [], // { from, to, on, animals: obstacles with charge: { s0, lat0, speed, phase } }
   jump: null,    // the player jumping a drawbridge: { from, to }
   lastS: 0,
@@ -89,11 +88,6 @@ export const Hazards = {
       const load = put('wideLoad', s0, lat(s0)), back = s0 - load.hl - CONFIG.wideLoad.behind;
       return { s0, lat, load, escort: put('escort', back, lat(back)), on: false, t: 0, passed: false, done: false };
     });
-    this.tolls = (LEVEL.tolls || []).map((t) => {
-      const s = Track.place(t);
-      for (const side of [-1, 1]) put('tollBooth', s, Track.shoulderOffset(side, s)); // (no way round by a shoulder)
-      return { s, fee: t.fee ?? CONFIG.toll.fee, paid: false, rammed: false, lift: 0 };
-    });
     this.stampedes = (LEVEL.stampedes || []).map((z) => {
       const from = Track.place({ s: z.from, road: z.road, exit: z.exit }), to = from + (z.to - z.from), animals = [];
       for (let i = 0; i < (z.count || 8); i++) {
@@ -130,7 +124,6 @@ export const Hazards = {
       m.on = false;
       for (const o of m.members) { o.s = o.run.s0; o.lat = Track.laneOffset(m.lane, o.s) + o.run.off; o.run.t = 0; }
     }
-    for (const t of this.tolls) Object.assign(t, { paid: false, rammed: false, lift: 0 });
     for (const z of this.stampedes) {
       z.on = false;
       for (const o of z.animals) { o.s = o.charge.s0; o.lat = o.charge.lat0; o.h = 0; }
@@ -162,10 +155,10 @@ export const Hazards = {
   },
 
   // how fast a traffic car may go, for the ones it waits at: a school crossing's STOP, a balloon on
-  // (or nearly on) its lane, a drawbridge not down, and (going the player's way) the roll through a toll
+  // (or nearly on) its lane, and a drawbridge not down
   holdFor(car) {
     let most = Infinity;
-    const S = CONFIG.schoolCrossing, B = CONFIG.balloon, D = CONFIG.drawbridge, T = CONFIG.toll;
+    const S = CONFIG.schoolCrossing, B = CONFIG.balloon, D = CONFIG.drawbridge;
     for (const c of this.schools) if (c.state === 'stop') most = Math.min(most, stopAt(car, c.s - car.dir * (S.stopLine + car.hl)));
     for (const b of this.balloons) {
       if ((b.state === 'sit' || (b.state === 'descend' && b.t > B.descend * 0.4)) && car.lat + car.hw > b.lat0 && car.lat - car.hw < b.lat1) {
@@ -173,7 +166,6 @@ export const Hazards = {
       }
     }
     for (const c of this.bridges) if (c.state !== 'idle') most = Math.min(most, stopAt(car, c.s - car.dir * (D.stopLine + car.hl)));
-    if (car.dir > 0) for (const t of this.tolls) if (car.s > t.s - T.zone && car.s < t.s + 4) most = Math.min(most, T.slow);
     return most;
   },
 
@@ -312,28 +304,6 @@ export const Hazards = {
         o.s += R.speed * dt;
         o.lat = Track.laneOffset(m.lane, o.s) + o.run.off + Math.sin(o.run.t * 2.1 + o.run.k) * R.wobble;
         if (o.s > Track.length - 20) o.gone = true;
-      }
-    }
-
-    // ---- toll plazas
-    const P = CONFIG.toll;
-    for (const t of this.tolls) {
-      const ahead = t.s - Player.s;
-      if (!t.paid && !t.rammed && Player.active && ahead > 0 && ahead < P.reach && Player.speed <= P.paySpeed) {
-        t.paid = true;
-        Game.fines += t.fee;
-        sfx('cash5');
-        const line = Message.say('events', 'tollPaid');
-        if (line) line.text = line.text.replace('${fee}', '$' + t.fee);
-      }
-      if (t.paid) t.lift = Math.min(1, t.lift + dt / P.lift);
-      if (!t.paid && !t.rammed && live && crossed(t.s, from)) {
-        t.rammed = true;
-        if (Player.ghost <= 0 && Player.tank <= 0 && Player.lat > 0) { hurt(Player, P.boomDamage); Player.speed *= P.boomKept; }
-        Game.shake = Math.max(Game.shake, 0.5);
-        sfx('crash', 0.8);
-        Message.say('events', 'tollRam');
-        if (Traffic.policeNear() || Math.random() < P.bustChance) Player.bust('toll');
       }
     }
 

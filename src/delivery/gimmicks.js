@@ -64,7 +64,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 // { name, has: (level) => bool (the levels it is in), rules: [...], build: () => { model, tick?(t, dt) },
 //   spin: false (the model doesn't turn on its stand), color (its card's glow) }
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
-const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, toll: CONFIG.toll, herd: CONFIG.stampede }; // (Gimmick Road 2's)
+const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -682,28 +682,6 @@ const GROUPS = [
       for (let k = 0; k < 6; k++) { const r = ob('runner'); r.position.set(1.4 + (k % 2) * 1.2, 0, -5 + Math.floor(k / 2) * 2.6); g.add(r); runners.push(r); }
       const pace = ob('paceCar', { hw: 0.9, hl: 2.0, height: 1.6 }); pace.position.set(2, 0, 5); g.add(pace);
       return { model: g, tick: (t) => runners.forEach((r, k) => r.userData.animate(t + k * 0.4)) };
-    } },
-    { name: 'Average-speed cameras', color: 0x2f5fd8, has: (l) => l.averageCameras?.length, rules: [
-      'Two gantries: you are timed from the first to the second, so slowing down for a camera does not fool them.',
-      'Over the limit on average and you are caught at the second, as by a speed camera: a fine the first time in a run, a <strong>bust</strong> every time after. A radar detector keeps you safe.',
-    ], build: () => {
-      const g = road(9, 12);
-      for (const x of [-5, 5]) g.add(box(0.4, 6.4, 0.4, lambert(0x8a9096), x, 3.2, 0));
-      g.add(box(10.4, 0.5, 0.5, lambert(0x8a9096), 0, 6.4, 0), box(0.7, 0.6, 0.9, lambert(0xf2c21c), 1.2, 5.85, 0), box(0.7, 0.6, 0.9, lambert(0xf2c21c), 3.4, 5.85, 0));
-      return { model: g };
-    } },
-    { name: 'Toll plazas', color: 0x1f6b3a, has: (l) => l.tolls?.length, rules: [
-      `A boom across each lane going your way. Come up to it at ${kmh(H.toll.paySpeed)} or slower and the toll ($${H.toll.fee} unless it says otherwise) comes off what you bank, and the boom lifts.`,
-      `Go through it down: a knock (${H.toll.boomDamage} damage), and a <strong>bust</strong> if the police are near, or ${pct(H.toll.bustChance)} of the time anyway. Booths block the shoulders.`,
-    ], build: () => {
-      const g = road(9, 12);
-      g.add(box(11, 0.5, 6, lambert(0x1f6b3a), 0, 5.2, 0));
-      for (const x of [-5, 5]) g.add(box(0.5, 5, 0.5, lambert(0x8a9096), x, 2.5, 0));
-      const arm = new THREE.Group();
-      for (let k = 0; k < 3; k++) arm.add(box(1, 0.14, 0.14, lambert(k % 2 ? 0xf4f4f4 : 0xd8262b), k + 0.5, 0, 0));
-      arm.position.set(0.3, 1.1, 0);
-      g.add(arm, box(0.3, 1.3, 0.3, lambert(0xffd23f), 0.3, 0.65, 0));
-      return { model: g, tick: (t) => { arm.rotation.z = Math.max(0, Math.sin(t)) * 1.45; } };
     } },
     { name: 'Stampedes', color: 0xc08a50, has: (l) => l.stampedes?.length, rules: [
       `Usually on a side road: cows or kangaroos waiting along a stretch, which come charging down the road at you once you are within ${H.herd.trigger} m, at ${range(H.herd.speed, ' m/s')}, weaving.`,
