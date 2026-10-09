@@ -348,7 +348,8 @@ export const Traffic = (() => {
   const placeFixed = () => {
     for (const t of LEVEL.tractors || []) {
       const s = Track.place(t);
-      const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1
+      const dir = t.road === 'side' ? (t.lane === 0 && Track.sideOncoming(s) ? -1 : 1) // (a side road's lane 0, where it is oncoming)
+        : Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1
         : t.lane < Track.leftLanes ? -1 : 1; // (the left side of a two-way road is oncoming)
       const car = cars.find(c => !c.active && !c.unused && c.dir === dir);
       if (!car) continue;

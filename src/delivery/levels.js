@@ -4,7 +4,8 @@
 //   segments   the expressway's shape: length (m), curve (radians per metre, + = right; a hairpin
 //              is a bend turning pi radians, no tighter than the road is wide) and,
 //              optionally, grade (rise per metre: 0.03 is a 3% climb, negative goes downhill).
-//              Hills can't be combined with an exit that has flyovers (a side road without them follows the land), and bridges must be on level road.
+//              A side road follows the land (exactly as high as the expressway where it runs beside it; away from it, a
+//              slope of its own, no steeper than CONFIG.ramps.steepest) and a flyover stands on it. Bridges must be on level road.
 //   drive      'right' (default) or 'left': the side the traffic keeps to. Everything else in the
 //              level is written as if driving on the right (lanes, exits, turns, sides), and a
 //              left-hand level is shown as its mirror image: a "right" turn is seen as a left one
@@ -20,8 +21,9 @@
 //   flow       'north' = every vehicle goes the player's way, 'south' = every vehicle comes
 //              the other way; either way the traffic uses all the lanes. 'mixed' = both ways, and
 //              every lane open to either (the Battlefield: oncoming traffic in every lane). Left out, the left
-//              half of the road is oncoming. A one-way level's exits can't have flyovers
-//              (see exits). Exits can't be combined with 'south'.
+//              half of the road is oncoming. A one-way level's exits can't have flyovers (a flyover brings
+//              oncoming traffic over from the expressway's oncoming side, and a one-way road has none). On a
+//              'south' level only the player takes an exit: its side road has traffic of its own only with oncoming: true.
 //   shoulderRows  { kind, from, to, every, side } a row of obstacles standing on the
 //              shoulder, one every `every` metres. kind: 'cone' | 'sign' (or any obstacle
 //              kind); side: 'left' | 'right' | 'both' (default). Exit and merge lanes are left clear.
@@ -38,7 +40,19 @@
 //   exits      side roads: an exit lane opens beside the right-hand lane before `exitAt`,
 //              where the side road forks off; it comes back as a merge lane at `mergeAt`.
 //              The side road's shape is worked out from those two points, so it always
-//              joins up; the expressway has to swing away in between.
+//              joins up; the expressway has to swing away in between. Whatever the expressway does, the
+//              side road parts from it as a real one does: CONFIG.ramps.apart m or more from its lanes,
+//              that gap opening over ramps.part m from the fork and closing over as many to the merge
+//              (the fork's and the merge's markings, nose and chevrons: see render/road.js).
+//              Its shoulders are as wide as the level's, and the theme's scenery keeps off it.
+//              Whatever a level puts at a place can be on a side road: { ..., road: 'side', exit: n } (n: which
+//              exit, 0 if not said), its s (or from and to) then m along the side road. Pickups and obstacles
+//              (lane: any of its lanes open there, 0 to 3, or 'left' / 'right', its shoulders), targets,
+//              tractors, herds, frogs, dropBears, landmines, rockfall, pelotons, migration, cameras,
+//              crossings, potholes, and the hazards of hazards.js (schoolCrossings, drawbridges, waterMains,
+//              balloons, wideLoads, marathons, trolleys, stampedes). Not (the level reports it): ice, mud, fog,
+//              stopGo, parked, roadblocks, iceCreamStops, reversible, wreckage, machinery, siteWorks, parades,
+//              hippos, elephants, quarries, tunnels and bridges, which are made for the expressway's lanes.
 //              An exit can shape its side road (see track.js): out: m its middle is pushed out, away from
 //              the expressway; bends: { count, size }: that many bends in a row, each `size` m off its line.
 //              Or segments: [{ length, curve }], as the level's own, from the exit on: the side road follows
@@ -52,6 +66,9 @@
 //              one end and is gone at the other, unless the exit has flyovers: true (a two-way level only):
 //              a flyover at each end carries it over from the expressway and back, and the expressway then
 //              has to be straight for 250 m before the exit and after the merge (room for them).
+//              Limits the level reports: the merge at least 2 ramps and 100 m after the exit; bends no tighter than
+//              CONFIG.ramps.tightest; 9 km long at most; 1 to 4 lanes, only lane 0 ever oncoming; no bridge,
+//              narrowing or tunnel over its ramps; no exit on a level with a tide.
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
 //   theme      'city' (default), 'bathurst' (Mount Panorama: a mountain), 'panorama' (the same, as a road through the bush), 'montreal' (Circuit Gilles-Villeneuve's island: its landmarks 'river', 'basin',

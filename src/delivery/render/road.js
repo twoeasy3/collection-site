@@ -1041,6 +1041,14 @@ const buildRoad = () => {
   }
   if (theme.unmarked && !theme.water) {
     const rut = flat(new THREE.Color(theme.road).multiplyScalar(0.8).getHex());
+    for (const x of exits) { // (each side road's lanes: as many as it ever has, each where it is open)
+      for (let lane = 0; lane < Math.max(2, ...x.lanes.map(l => l.count)); lane++) {
+        for (const side of [-1, 1]) {
+          const at = (s) => Track.laneOffset(Track.openLane(lane, s), s) + side * 0.85;
+          add(buildStrip(x.side0, x.sideEnd, (s) => at(s) - 0.22, (s) => at(s) + 0.22, 0.015), rut);
+        }
+      }
+    }
     for (let lane = 0; lane < Track.laneCount; lane++) {
       for (const side of [-1, 1]) {
         const at = (s) => Track.laneOffset(Track.openLane(lane, s), s) + side * 0.85;
@@ -1181,8 +1189,9 @@ const buildRoad = () => {
     const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), steel, pillars.length);
     pillars.forEach((s, i) => {
       dummy.rotation.y = Track.toWorld(s, 0, tmp);
-      dummy.position.set(tmp.x, tmp.y / 2, tmp.z);
-      dummy.scale.set(1.2, tmp.y, 1.2);
+      const tall = Track.flyHeight(s); // (from the land under it, which on a hill is not at 0)
+      dummy.position.set(tmp.x, tmp.y - tall / 2, tmp.z);
+      dummy.scale.set(1.2, tall, 1.2);
       dummy.updateMatrix();
       mesh.setMatrixAt(i, dummy.matrix);
     });

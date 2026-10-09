@@ -99,9 +99,9 @@ const createTrack = () => {
   const gradeAt = (s) => s < 0 || s >= length ? 0 : GRADES[Math.floor(s)];
   const rawGrades = mainXs.map((_, i) => gradeAt(-LEAD_IN + i * STEP));
   const hasGrades = rawGrades.some(g => g !== 0);
-  // (hills and flyovers can't be combined: a flyover assumes level ground. A side road without them follows
-  // the land: it is as high as the expressway beside it, all the way: see sideHeights)
-  const hilly = hasGrades && !(LEVEL.exits || []).some(e => e.flyovers);
+  // (a side road follows the land: it is as high as the expressway beside it, and has a slope of its own away
+  // from it: see sideHeights. A flyover stands on the land under it: see flyWorld)
+  const hilly = hasGrades;
   const mainGrades = rawGrades.map((_, i) => {
     if (!hilly) return 0;
     let sum = 0;
@@ -124,7 +124,14 @@ const createTrack = () => {
       const x = exitOf(s), i = Math.max(0, Math.min(x.ys.length - 2, Math.floor((s - x.side0) / x.step)));
       return (x.ys[i + 1] - x.ys[i]) / x.step;
     }
-    if (!hilly || !isMain(s)) return 0;
+    if (hilly && !isMain(s)) { // (a flyover's: that of the land under it, a metre either side; its own hump is not counted, as on the level)
+      const p = {};
+      toWorld(s + 1, 0, p);
+      const y = p.y - flyHeight(s + 1);
+      toWorld(s - 1, 0, p);
+      return (y - (p.y - flyHeight(s - 1))) / 2;
+    }
+    if (!hilly) return 0;
     return mainGrades[Math.max(0, Math.min(mainGrades.length - 1, Math.floor((s + LEAD_IN) / STEP)))];
   };
   const mainWorld = makePath(mainXs, mainZs, mainHs, -LEAD_IN, STEP, hilly ? mainYs : null);
@@ -340,9 +347,18 @@ const createTrack = () => {
     const h = x.path(b ? x.length - a : a, flyLat(tc) - RSLOT, out) - Math.atan(slope);
     out.x -= Math.cos(h) * lat;
     out.z += Math.sin(h) * lat;
-    out.y = flyY(tc);
+    // (it stands on the land: the side road's height where it runs along the side road, which out.y is; and
+    // the expressway's where it is laid out along the expressway, beyond the side road's end)
+    if (hilly && a < 0) out.y = mainHeight(b ? x.mergeAt - a : x.exitAt + a);
+    out.y += flyY(tc);
     return h;
   };
+  const mainHeight = (s) => {
+    const f = Math.max(0, Math.min(mainYs.length - 1.001, (s + LEAD_IN) / STEP)), i = Math.floor(f);
+    return mainYs[i] + (mainYs[i + 1] - mainYs[i]) * (f - i);
+  };
+  // how high a flyover's deck is above the land at s (for its pillars)
+  const flyHeight = (s) => flyY(Math.max(0, Math.min(1, flyT(exitOf(s), s, kindOf(s) === FLY_B))));
   // where a support pillar can stand: under a raised part that isn't over the expressway
   const flyPillar = (s) => {
     const t = flyT(exitOf(s), s, kindOf(s) === FLY_B);
@@ -463,7 +479,7 @@ const createTrack = () => {
     if (kind === MAIN) return -mainOuter(s, -1);
     if (kind !== SIDE_ROAD) return -LW / 2;
     const w = sideLeft(s);
-    return -w * LW - 0.3 - w * (X.leftShoulder - 0.3);
+    return -w * LW - 0.3 - w * (SH - 0.3); // (a shoulder as wide as the expressway's, where its lane 0 is; a kerb's width on its ramps)
   };
   const hi = (s) => {
     const kind = kindOf(s);
@@ -656,7 +672,7 @@ const createTrack = () => {
         if (!v.isPlayer) {
           v.s = x.exitAt + (v.s - x.side0);
           v.lat += RSLOT - LW / 2 - LW;
-          v.wrongWay = true;
+          v.wrongWay = FLOW !== 'south'; // (where everything comes the other way, it is only joining the rest)
           lane = LANES - 1;
         }
       } else if (kind === SIDE_ROAD && v.dir < 0 && v.s <= x.side0 + X.ramp) {
@@ -840,7 +856,7 @@ const createTrack = () => {
       else if (p.lane !== undefined && !(Number.isInteger(p.lane) && p.lane >= 0 && p.lane < LANES)) problems.push('ice at ' + p.from + ': no lane ' + p.lane);
     }
     for (const z of [...(LEVEL.migration || []), ...(LEVEL.elephants || [])]) {
-      if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.kinds ? 'migration' : 'elephants') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
+      if (!(z.from < z.to) || !(z.kinds ? exits[z.exit || 0] || z.road !== 'side' : true) || z.from < 0 || z.to > (z.kinds && z.road === 'side' && exits[z.exit || 0] ? exits[z.exit || 0].length : length)) problems.push((z.kinds ? 'migration' : 'elephants') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
     }
     if (LOOP) {
       const a = {}, b = {};
@@ -870,7 +886,13 @@ const createTrack = () => {
     }
     // the hidden gimmicks level's (see levels.js)
     const straight = (from, to) => { for (let s = from; s <= to; s += 5) if (curveAt(s)) return false; return true; };
-    // (cameras, crossings, potholes and Hazards' can be on a side road: { road: 'side', exit }, s then m along it)
+    // (whatever is put at a place can be on a side road: { road: 'side', exit: n }, s (or from, to) then m along it.
+    // See levels.js for the kinds that can: those that can't say so here)
+    for (const [name, list] of [['ice', LEVEL.ice], ['stop / go', LEVEL.stopGo], ['parked car', LEVEL.parked], ['roadblock', LEVEL.roadblocks], ['ice-cream stop', LEVEL.iceCreamStops],
+      ['reversible lane', LEVEL.reversible], ['wreckage', LEVEL.wreckage], ['machinery', LEVEL.machinery], ['site works', LEVEL.siteWorks], ['parade', LEVEL.parades], ['hippos', LEVEL.hippos],
+      ['elephants', LEVEL.elephants], ['fog', (LEVEL.fog || []).filter(z => !z.count)], ['mud', LEVEL.mud], ['quarry', LEVEL.quarries], ['tunnel', LEVEL.tunnels], ['bridge', LEVEL.bridges]]) {
+      for (const item of list || []) if (item.road === 'side') problems.push(name + ' at ' + (item.s ?? item.from ?? item.at) + ': there are none on a side road (only on the expressway)');
+    }
     const onRoad = (item, s = item.s) => item.road === 'side' ? !!exits[item.exit || 0] && s >= 0 && s <= exits[item.exit || 0].length : s >= 0 && s <= length;
     const laneOn = (item, lane) => Number.isInteger(lane) && lane >= 0 && lane < (item.road === 'side' ? 4 : LANES);
     const where = (item) => item.road === 'side' ? ' (side road)' : '';
@@ -890,7 +912,7 @@ const createTrack = () => {
       else if (!straight(z.from - R, z.to + R)) problems.push('stop / go at ' + z.from + ': the road must run straight through it');
     }
     for (const z of [...(LEVEL.fog || []), ...(LEVEL.rockfall || [])]) {
-      if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.count ? 'rockfall' : 'fog') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
+      if (!(z.from < z.to) || !(z.count ? onRoad(z, z.from) && onRoad(z, z.to) : z.from >= 0 && z.to <= length)) problems.push((z.count ? 'rockfall' : 'fog') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
       else if (z.count && z.side !== 'left' && z.side !== 'right') problems.push('rockfall at ' + z.from + ': side is left or right');
     }
     for (const t of tunnels) {
@@ -925,7 +947,7 @@ const createTrack = () => {
       else if (m.lane !== undefined && !(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road (or no lane: the centre line)');
     }
     for (const z of LEVEL.landmines || []) {
-      if (!(z.from < z.to) || z.from < 0 || z.to > length || !(z.count > 0)) problems.push('landmines at ' + z.from + '-' + z.to + ': from before to, on the road, with a count');
+      if (!(z.from < z.to) || !onRoad(z, z.from) || !onRoad(z, z.to) || !(z.count > 0)) problems.push('landmines at ' + z.from + '-' + z.to + where(z) + ': from before to, on the road, with a count');
     }
     for (const q of LEVEL.quarries || []) {
       if (!(q.from < q.to) || q.from < 0 || q.to > length || (q.side !== 'left' && q.side !== 'right')) problems.push('quarry at ' + q.from + ': from before to, on the road, on the left or right');
@@ -934,7 +956,7 @@ const createTrack = () => {
       if (!onRoad(h) || !laneOn(h, h.lane)) problems.push('pothole at ' + h.s + where(h) + ': in a lane on the road');
     }
     for (const p of LEVEL.pelotons || []) {
-      if (!(p.s >= 0 && p.s <= length) || !(p.count > 0)) problems.push('peloton at ' + p.s + ': on the road, with a count');
+      if (!onRoad(p) || !(p.count > 0)) problems.push('peloton at ' + p.s + where(p) + ': on the road, with a count');
       else if (p.dir === -1 ? FLOW === 'north' : FLOW === 'south') problems.push('peloton at ' + p.s + ': there is no ' + (p.dir === -1 ? 'oncoming side' : 'side the player\'s way') + ' for it to ride');
     }
     // Gimmick Road 2's (see hazards.js, and cameras.js for the average-speed cameras)
@@ -1046,8 +1068,6 @@ const createTrack = () => {
         for (const x of exits) if (x.flyovers && overlaps(z.from, z.to, x.landingAt - 20, x.flyoverAt + 20)) problems.push(name + ': an exit with flyovers is in it');
       }
     }
-    if (FLOW === 'south' && exits.length) problems.push('exits need northbound traffic: a "flow": "south" level cannot have them');
-    if (hasGrades && !hilly) problems.push('hills (segment grades) and an exit with flyovers cannot be combined: the grades are ignored');
     for (const b of bridges) {
       let sloped = false;
       for (let s = b.from; s <= b.to; s += STEP) if (Math.abs(grade(s)) > 0.002) sloped = true;
@@ -1061,8 +1081,9 @@ const createTrack = () => {
           const x = exits[item.exit || 0];
           if (!x) { problems.push(name + ': no such exit'); continue; }
           if (item.s < 0 || item.s > x.length) problems.push(name + ': beyond the side road (' + Math.round(x.length) + ' m long)');
-          else if (item.lane !== 0 && item.lane !== 1) problems.push(name + ': side road lanes are 0 and 1');
-          else if (item.lane === 0 && (item.s < X.ramp || item.s > x.length - X.ramp)) problems.push(name + ': no oncoming lane on the ramps');
+          else if (item.lane === 'left' || item.lane === 'right') { /* (on its shoulder) */ }
+          else if (!(Number.isInteger(item.lane) && item.lane >= 0 && item.lane <= 3)) problems.push(name + ': side road lanes are 0 to 3 (or left, right: its shoulders)');
+          else if (openLane(item.lane, x.side0 + item.s) !== item.lane) problems.push(name + ': the side road has no lane ' + item.lane + ' there (see its exit\'s "lanes"; only lane 1 on its ramps)');
         } else if (item.s < 0 || item.s > length) {
           problems.push(name + ': beyond the expressway');
         } else if (item.lane < 0 || item.lane >= LANES) {
@@ -1096,7 +1117,7 @@ const createTrack = () => {
     length, start: -LEAD_IN, end: length + LEAD_OUT, loop: LOOP, problems,
     apart, laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
-    laneOffset, openLane, nearestLane, laneRange, assistOffset,
+    laneOffset, openLane, nearestLane, laneRange, assistOffset, flyHeight,
     lanesOn, edge, extraLane, onBridge, icy, sprays, slicks, muddy, foggy, tunnel, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
     flyPillar, sideDistance, mainDistance, exits,
   };

@@ -19,7 +19,7 @@ export const CONFIG = {
     gore: 50,              // m over which that lane opens at the start of the exit zone, and over which
                            // the expressway's pavement blends with the side road's at each fork
     ramp: 110,             // m at each end of a side road that is a single-lane ramp
-    apart: 12,             // m between the expressway's lanes and a side road's, at the least, once they have parted...
+    apart: 14,             // m between the expressway's lanes and a side road's, at the least, once they have parted...
     part: 120,             // ... which they do over this many m from the fork (and to the merge)
     partEase: 25,          // m each way over which whatever moves a side road out to keep that gap is evened out
     dropLine: {            // the lane-drop line between the through lane and an exit or merge lane:
@@ -45,7 +45,6 @@ export const CONFIG = {
     steepest: 0.06,        // the steepest a side road climbs or falls where it has left the expressway (rise per metre)
     verge: 4,              // m of land of its own along a side road's left edge on hills, and (up to) ...
     land: 130,             // ... along its right: the land beside it, at its height, with a bank down to the ground
-    leftShoulder: 1,       // m; a side road's right shoulder is the normal driveable width
     clear: 1.5,            // m of verge beside every road's pavement that another road's scenery is kept off, whatever it is...
     clearBuilding: 2,      // ...and m more for a building
     flyoverLength: 360,

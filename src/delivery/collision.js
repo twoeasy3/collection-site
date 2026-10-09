@@ -315,7 +315,7 @@ export const Collision = (() => {
     for (const z of LEVEL.rockfall || []) {
       const R = CONFIG.rockfall, side = z.side === 'left' ? -1 : 1;
       for (let i = 0; i < (z.count || 5); i++) {
-        const s = Track.place({ s: z.from + (z.to - z.from) * (i + rockRand()) / (z.count || 5) });
+        const s = Track.place({ s: z.from + (z.to - z.from) * (i + rockRand()) / (z.count || 5), road: z.road, exit: z.exit });
         const r = R.size.min + rockRand() * (R.size.max - R.size.min);
         const lat = Track.lo(s) + r + rockRand() * (Track.hi(s) - Track.lo(s) - 2 * r);
         add('rock', s, lat, { r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, side, land: lat, nearAt: R.near.min + rockRand() * (R.near.max - R.near.min),
@@ -328,7 +328,7 @@ export const Collision = (() => {
     const mineRand = () => ((mineSeed = (mineSeed * 1103515245 + 12345) % 2147483648) / 2147483648);
     for (const z of LEVEL.landmines || []) {
       for (let i = 0; i < z.count; i++) {
-        const s = Track.place({ s: z.from + (z.to - z.from) * (i + mineRand()) / z.count });
+        const s = Track.place({ s: z.from + (z.to - z.from) * (i + mineRand()) / z.count, road: z.road, exit: z.exit });
         const [first, last] = Track.laneRange(1, s), lane = first + Math.floor(mineRand() * (last - first + 1));
         add('landmine', s, Track.laneOffset(lane, s), { phase: mineRand(), buried: true, rise: 0 }); // (see CONFIG.battle.mineRise)
       }
@@ -363,7 +363,7 @@ export const Collision = (() => {
     }
     for (const z of LEVEL.dropBears || []) { // (each somewhere in its stretch, anywhere across the road)
       for (let i = 0; i < (z.count || 3); i++) {
-        const s = Track.place({ s: z.from + Math.random() * (z.to - z.from) });
+        const s = Track.place({ s: z.from + Math.random() * (z.to - z.from), road: z.road, exit: z.exit });
         const o = { s, hw: 0.6, hl: 0.6, height: 1, kind: 'dropBear' };
         add('dropBear', s, anywhereAcross(o, s), { h: CONFIG.dropBear.height, fall: 0, near: 0 });
       }
@@ -402,7 +402,7 @@ export const Collision = (() => {
       for (let i = 0; i < z.count; i++) {
         let r = Math.random() * total, kind = kinds[0][0];
         for (const [k, share] of kinds) if ((r -= share) < 0) { kind = k; break; }
-        const s = Track.place({ s: z.from + Math.random() * (z.to - z.from) }), M = CONFIG.migration;
+        const s = Track.place({ s: z.from + Math.random() * (z.to - z.from), road: z.road, exit: z.exit }), M = CONFIG.migration;
         const lat0 = Track.lo(s) - M.beyond + Math.random() * (Track.hi(s) - Track.lo(s) + 2 * M.beyond);
         add(kind, s, lat0, { yaw: Math.PI / 2, migrate: z.dir || 1, lat0, speed: M.speed.min + Math.random() * (M.speed.max - M.speed.min), hop: Math.random() * 9 });
       }
