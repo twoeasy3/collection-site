@@ -1167,11 +1167,22 @@ export const CONFIG = {
   balloon: { notice: 7, height: 40, descend: 5, sit: 7, rise: 3, hl: 2.2, stopLine: 8, damage: 25, speedKept: 0.4 },
   // a drawbridge ("drawbridges": { s }): set off `notice` s before the player would get there: bells for
   // `warn` s (the booms come down), then its two leaves lift over `raise` s, stand open until `open` s
-  // after they began, and come down over `close` s. Open, there is a `gap` m gap: at jumpSpeed m/s or
-  // more the car jumps it (up to jumpHeight m, landDamage on landing); slower, it drops in and is
+  // after they began, and come down over `close` s. Open, there is a gap between the lips: fast enough,
+  // the car goes up the leaf and jumps it; slower, it stops short on the leaf or drops in and is
   // wrecked. Traffic waits `stopLine` m short. Again every `every` s with the player within `again` m
-  drawbridge: { notice: 6, warn: 2.5, raise: 2, open: 9, close: 2, gap: 16, jumpSpeed: 22, jumpHeight: 3.2, landDamage: 8,
-    stopLine: 16, every: { min: 16, max: 26 }, again: 320 },
+  // (its deck: two leaves `leaf` m long, hinged `leaf` m either side of s and meeting there when down;
+  // right up they stand at `angle` rad, each lip leaf * sin(angle) up and drawn back leaf * (1 - cos(angle))
+  // from the middle: that is the gap. The car follows the leaf under it, height and pitch: `gravity`
+  // m/s^2 (the game's, not the world's) pulls it back down the slope, so too slow it stops short and
+  // rolls back at rollBack m/s; off the lip it flies an arc under the same gravity, and comes down on the
+  // far leaf or the road beyond (never thrown up faster than `launch` m/s), with landDamage if it lands harder than landSoft m/s into the surface;
+  // short of the far lip by more than lipGrace m it goes into the river, `depth` m down. A gap narrower
+  // than `step` m is driven over. The booms stand `boom` m out, traffic waits `stopLine` m out. A board
+  // `sign` m short gives the speed that clears it hands off (Hazards.bridgeJumpSpeed: every car's top
+  // speed is more), so it can always be taken at speed)
+  drawbridge: { notice: 6, warn: 2.5, raise: 2, open: 9, close: 2, leaf: 15, angle: 0.5, gravity: 20, rollBack: 5,
+    landDamage: 8, landSoft: 7, lipGrace: 1, depth: 1.6, step: 0.6, launch: 12, boom: 19, sign: 150,
+    stopLine: 22, every: { min: 16, max: 26 }, again: 320 },
   // a wide load ("wideLoads": { s, lanes: [a, b] }): a load two lanes wide crawling along at `speed`,
   // setting off as the player comes within `trigger` m, its escort `behind` m behind it. The escort
   // watches for `watch` s (its beacons flashing), then looks away for `rest` s: getting past the load's

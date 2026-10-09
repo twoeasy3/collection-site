@@ -164,9 +164,11 @@ const frame = (now) => {
     // then bring the scene up to date with it
     const heading = Track.toWorld(Player.s, Player.lat, tmp);
     carMesh.position.copy(tmp);
-    carMesh.position.y += Player.air + Mysteries.heave(Player.s); // (jumping a drawbridge; riding an earthquake's wave)
+    carMesh.position.y += Player.air + Mysteries.heave(Player.s); // (on a drawbridge's leaf, or jumping it; riding an earthquake's wave)
+    carMesh.rotation.order = 'YXZ'; // (heading first, then the pitch about the car's own axle line)
     carMesh.rotation.y = heading - Player.yaw; // swerving right turns the nose toward +lat
-    carMesh.rotation.x = -Math.atan(Track.grade(Player.s)); // nose up on a climb
+    carMesh.rotation.x = -Math.atan(Track.grade(Player.s)) - Player.pitch; // nose up on a climb (and up a drawbridge's leaf)
+    if (Player.pitch) carMesh.position.y += Math.abs(Math.sin(Player.pitch)) * 0.25; // (so its low end doesn't sink into the slope)
     syncHelicopter(dt, now); // (decides whether the car is shown: blinking under a shield, dangling from the helicopter)
     // The screensaver has no player car: the mesh, and everything attached to it (the garage
     // models, the tank, the UFO, the passenger), is hidden. This comes after the helicopter,

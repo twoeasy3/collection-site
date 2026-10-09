@@ -49,7 +49,8 @@ export const Player = {
   mystery: '',         // the mystery effect running (see startMystery), '' = none...
   mysteryTime: 0,      // ...and s of it left
   nextMystery: '',     // the effect the next mystery will be, if not left to chance (?mystery= in the URL)
-  air: 0,              // m the car is off the road (jumping a drawbridge: see Hazards)
+  air: 0,              // m the car is above the road (on a drawbridge's raised leaf, or jumping its gap: see Hazards)
+  pitch: 0,            // ...and rad its nose is up by (the leaf's slope; in the air, the way it is flying)
   testGhost: false,    // a ghost for the whole run, whatever happens (?ghost in the URL: screenshots and tests)
   tank: 0,             // 1 once TANK RAGE has started; it lasts for the rest of the level
   danger: CONFIG.dangerTime, // s of shoulder driving left before the police come (see Social.dangerTime)

@@ -227,7 +227,8 @@
 //   schoolCrossings { s }: a lollipop person stops the traffic for the children; running it is a bust
 //   waterMains { s, lane, length? }: a burst main: that stretch of the lane is as slippery as ice while it sprays
 //   balloons   { s, lanes: [first, last] }: a hot-air balloon comes down on those lanes, sits, and lifts off again
-//   drawbridges { s }: bells, booms, and a gap to jump at speed or wait at. On straight road
+//   drawbridges { s }: bells, booms, and two leaves that lift: the car goes up the near one and jumps the gap if it
+//              came fast enough (a board gives the speed), or stops short, or drops in. On straight road
 //   wideLoads  { s, lanes: [n, n + 1] }: a load two lanes wide crawling along; passing it while its escort watches is a bust
 //   trolleys   { from, to, count }: shopping trolleys rolling across the road with its camber
 //   marathons  { s, lane, count, water? }: runners in one lane behind a pace car; water: where its water station stands

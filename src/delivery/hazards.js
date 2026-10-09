@@ -47,7 +47,7 @@ export const Hazards = {
   trolleys: [],  // obstacles, each with cart: { lat0, vel0, vel }
   marathons: [], // { s0, lane, on, members: obstacles with run: { s0, off } }
   stampedes: [], // { from, to, on, animals: obstacles with charge: { s0, lat0, speed, phase } }
-  jump: null,    // the player jumping a drawbridge: { from, to }
+  jump: null,    // the player in the air off a drawbridge's leaf: { bridge, vy (m/s up), vx (along the road), over (been over the gap), sunk (into the far leaf's end) }
   lastS: 0,
 
   // adds this level's obstacles to Collision's as it loads a level (Game.load attaches it, once)
@@ -113,7 +113,7 @@ export const Hazards = {
       const s = place(b), LW = CONFIG.laneWidth;
       return { s, lat0: Track.laneOffset(b.lanes[0], s) - LW / 2, lat1: Track.laneOffset(b.lanes[1], s) + LW / 2, state: 'idle', t: 0, hit: false };
     });
-    this.bridges = (LEVEL.drawbridges || []).map(c => ({ s: place(c), state: 'idle', t: 0, next: 0, started: false, bell: 0 }));
+    this.bridges = (LEVEL.drawbridges || []).map(c => ({ s: place(c), state: 'idle', t: 0, next: 0, started: false, bell: 0, rolled: false, climb: null }));
     for (const w of this.loads) {
       Object.assign(w, { on: false, t: 0, passed: false, done: false });
       w.load.s = w.s0; w.load.lat = w.lat(w.s0);
@@ -129,7 +129,7 @@ export const Hazards = {
       for (const o of z.animals) { o.s = o.charge.s0; o.lat = o.charge.lat0; o.h = 0; }
     }
     this.jump = null;
-    Player.air = 0;
+    Player.air = Player.pitch = 0;
     this.lastS = Player.s;
   },
 
@@ -148,6 +148,103 @@ export const Hazards = {
     return c.state === 'open' ? clamp01(c.t / D.raise) : c.state === 'close' ? 1 - clamp01(c.t / D.close) : 0;
   },
   bridgeBooms: (c) => c.state === 'idle' ? 0 : c.state === 'warn' ? clamp01(c.t / 1.2) : 1,
+  // the angle its leaves stand at (rad); and the gap between their lips (m)
+  bridgeAngle(c) { return this.bridgeOpen(c) * CONFIG.drawbridge.angle; },
+  bridgeGap(c) { return 2 * CONFIG.drawbridge.leaf * (1 - Math.cos(this.bridgeAngle(c))); },
+  // the speed (m/s) that, hands off at the foot of a leaf right up, takes the car up it and over the gap
+  bridgeJumpSpeed() {
+    const D = CONFIG.drawbridge, gap = 2 * D.leaf * (1 - Math.cos(D.angle));
+    return Math.sqrt(2 * D.gravity * Math.sin(D.angle) * D.leaf + gap * D.gravity / Math.sin(2 * D.angle));
+  },
+  // a drawbridge's deck under s: { y: m above the road, slope: its rise per m along the road (+ a climb,
+  // the player's way) }; null over the gap between the lips; undefined off the bridge. (Each leaf is a
+  // straight line from its hinge, leaf m from the middle, up to its lip: what render/hazards.js draws)
+  deck(c, s) {
+    const D = CONFIG.drawbridge, d = s - c.s, a = this.bridgeAngle(c);
+    if (Math.abs(d) >= D.leaf) return undefined;
+    if (a <= 0) return { y: 0, slope: 0 };
+    const out = D.leaf - Math.abs(d), reach = D.leaf * Math.cos(a); // (m from the hinge; and as far as the lip reaches)
+    if (out <= reach) return { y: out * Math.tan(a), slope: -Math.sign(d) * Math.tan(a) };
+    return this.bridgeGap(c) < D.step ? { y: D.leaf * Math.sin(a), slope: 0 } : null; // (a crack: driven over)
+  },
+  // the road's surface at s, drawbridges and all: { y, slope } (y -depth over an open gap: the river)
+  surface(s) {
+    for (const c of this.bridges) {
+      const deck = this.deck(c, s);
+      if (deck !== undefined) return deck || { y: -CONFIG.drawbridge.depth, slope: 0 };
+    }
+    return { y: 0, slope: 0 };
+  },
+  // the player on a drawbridge's deck: up the near leaf (slowed by the climb), off its lip and through the
+  // air, and down onto the far leaf, the road beyond or into the river. Sets Player.air and Player.pitch
+  ride(c, dt, live, was) {
+    const D = CONFIG.drawbridge, P = Player, J = this.jump;
+    if (J) {
+      if (J.bridge !== c) return;
+      if (!J.sunk) { P.s -= (P.speed - J.vx) * dt; P.speed = J.vx; } // (in the air there is nothing to push against, or brake on)
+      J.vy -= D.gravity * dt;
+      P.air += J.vy * dt;
+      P.pitch = Math.atan2(J.vy, Math.max(P.speed, 6));
+      const d = P.s - c.s, lip = D.leaf * Math.sin(this.bridgeAngle(c));
+      let deck = this.deck(c, P.s);
+      if (d > 0) J.over = true;
+      // (short of the far lip: into the end of the leaf, and down. A ghost, a tank or a car just set down skims over)
+      if (!J.sunk && deck && d > 0 && deck.slope < 0 && P.air < deck.y - D.lipGrace && D.leaf - d > D.leaf * Math.cos(this.bridgeAngle(c)) - 2) {
+        if (live) { J.sunk = true; P.speed = 0; sfx('crash', 0.8); Game.shake = 1; } else P.air = deck.y;
+      }
+      if (J.sunk) { deck = null; P.speed = 0; }
+      if (deck === null && !live && P.air < lip) { P.air = lip; J.vy = Math.max(J.vy, 0); }
+      if (deck === null) { // over the gap: down to the water
+        if (P.air > -D.depth) return;
+        P.air = -D.depth;
+        P.pitch = 0;
+        this.jump = null;
+        if (P.health > 0) { P.health = 0; Message.say('events', 'drawbridgeFall'); } // (into the water: wrecked, see Collision.check)
+        return;
+      }
+      const ground = deck || { y: 0, slope: 0 };
+      if (P.air > ground.y) return;
+      // down: hard, if it came down into the surface faster than landSoft
+      const into = P.speed * ground.slope - J.vy;
+      if (live && into > D.landSoft && P.tank <= 0) hurt(P, D.landDamage);
+      Game.shake = Math.max(Game.shake, Math.min(1, into / 14));
+      sfx('drop');
+      if (J.over) Message.say('events', 'drawbridgeJump');
+      this.jump = null;
+      P.air = ground.y;
+      P.pitch = Math.atan(ground.slope);
+      return;
+    }
+    const deck = this.deck(c, P.s), foot = c.s - D.leaf;
+    if (this.bridgeAngle(c) < 0.05) c.rolled = false;
+    if (!deck || !(deck.slope > 0)) c.climb = null;
+    else if (c.rolled && P.s <= foot && P.s > foot - 4) P.speed = 0; // (rolled back to the foot of it: held there until it is down)
+    if (deck === undefined || !P.active) return;
+    if (deck === null) { // off the end of a leaf: into the air, the way it was going
+      this.jump = { bridge: c, vy: Math.min(D.launch, Math.max(0, P.speed * Math.sin(was.pitch))), over: false, sunk: false };
+      P.speed *= Math.cos(was.pitch);
+      this.jump.vx = P.speed;
+      P.air = was.air;
+      P.pitch = was.pitch;
+      if (P.speed > 8) sfx('turbo', 0.5);
+      return;
+    }
+    P.air = deck.y;
+    P.pitch = Math.atan(deck.slope);
+    if (!deck.slope) return;
+    // on a raised leaf: the climb takes its speed (and the far leaf's slope gives some back); it covers less road
+    // (up it, the engine adds nothing: the speed it came to the foot with is what it has)
+    const sin = Math.sin(P.pitch), before = sin > 0 && c.climb !== null ? Math.min(P.speed, c.climb) : P.speed;
+    P.speed = Math.max(0, before - D.gravity * sin * dt);
+    c.climb = sin > 0 ? P.speed : null;
+    P.s -= before * (1 - Math.cos(P.pitch)) * dt;
+    P.air = (this.deck(c, P.s) || deck).y;
+    if (sin > 0.05 && (c.rolled || P.speed < 1)) { // (stopped short: it rolls back down, and no engine will take it up from there)
+      c.rolled = true;
+      P.speed = 0;
+      P.s = Math.max(foot - 0.05, P.s - D.rollBack * dt);
+    }
+  },
   // is a wide load's escort watching just now?
   watching(w) {
     const W = CONFIG.wideLoad;
@@ -165,7 +262,11 @@ export const Hazards = {
         most = Math.min(most, stopAt(car, b.s - car.dir * (B.stopLine + car.hl)));
       }
     }
-    for (const c of this.bridges) if (c.state !== 'idle') most = Math.min(most, stopAt(car, c.s - car.dir * (D.stopLine + car.hl)));
+    // (a car already past the line when the bells start drives on over, while the leaves are still down)
+    for (const c of this.bridges) {
+      const line = c.s - car.dir * (D.stopLine + car.hl);
+      if (c.state !== 'idle' && ((line - car.s) * car.dir > -1 || c.state !== 'warn')) most = Math.min(most, stopAt(car, line));
+    }
     return most;
   },
 
@@ -234,30 +335,16 @@ export const Hazards = {
       else if (c.state === 'open' && c.t >= D.open) Object.assign(c, { state: 'close', t: 0 });
       else if (c.state === 'close' && c.t >= D.close) Object.assign(c, { state: 'idle', t: 0, next: between(D.every) });
       if (c.state !== 'idle' && (c.bell -= dt) <= 0) { c.bell = 0.5; if (Math.abs(ahead) < 300) sfxAt('bell', c.s, 1); }
-      const open = this.bridgeOpen(c), lo = c.s - D.gap / 2, hi = c.s + D.gap / 2;
-      if (open > 0.5) { // (traffic caught on it as it opens goes in)
-        for (const car of Traffic.cars) if (car.active && !car.junction && car.health > 0 && car.s > lo && car.s < hi) car.health = 0;
-      }
-      // the player reaching the gap: over it at speed (or as a ghost), or into it
-      if (open > 0.15 && live && Player.health > 0 && !this.jump && crossed(lo, from)) {
-        if (Player.ghost > 0 || Player.speed >= D.jumpSpeed || Player.tank > 0) {
-          this.jump = { from: lo, to: hi + (Player.speed - D.jumpSpeed) * 0.3 };
-          sfx('turbo', 0.5);
-        } else {
-          Player.health = 0; // (into the water: wrecked, see Collision.check)
-          Message.say('events', 'drawbridgeFall');
-        }
+      const open = this.bridgeOpen(c);
+      if (open > 0.3) { // (traffic caught on it as it opens goes in)
+        for (const car of Traffic.cars) if (car.active && !car.junction && car.health > 0 && Math.abs(car.s - c.s) < D.leaf) car.health = 0;
       }
     }
-    if (this.jump) {
-      const u = (Player.s - this.jump.from) / (this.jump.to - this.jump.from);
-      if (!Player.active || u >= 1) {
-        if (Player.active && Player.ghost <= 0 && Player.tank <= 0) hurt(Player, D.landDamage);
-        if (Player.active) { Game.shake = Math.max(Game.shake, 0.7); sfx('drop'); Message.say('events', 'drawbridgeJump'); }
-        this.jump = null;
-        Player.air = 0;
-      } else Player.air = D.jumpHeight * 4 * u * (1 - u);
-    }
+    // the player on a deck (or in the air off one): see ride
+    const was = { air: Player.air, pitch: Player.pitch }; // (what it was on, last step: the way it leaves a lip)
+    if (!this.jump) Player.air = Player.pitch = 0;
+    else if (!Player.active) this.jump = null;
+    for (const c of this.bridges) this.ride(c, dt, live && Player.ghost <= 0 && Player.tank <= 0, was);
 
     // ---- wide loads
     const W = CONFIG.wideLoad;
