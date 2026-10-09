@@ -95,6 +95,17 @@ const outboard = (parent, x, y, z, dir = 1) => {
   for (let k = 0; k < 3; k++) box(prop, lambert(0xc9a227), 0.05, 0.3, 0.03, 0, 0, 0).rotation.z = k * Math.PI * 2 / 3;
   return prop;
 };
+// a boat's hull seen from above (plan: [x, z] points round it, x across the car and z along it), stood up
+// `height` m from y: an extrusion of that outline, straight-sided
+const hull = (parent, material, plan, y, height) => {
+  const shape = new THREE.Shape(plan.map(([x, z]) => new THREE.Vector2(x, -z))); // (the shape's y is -z: see rotateX)
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: height, bevelEnabled: false });
+  geo.rotateX(-Math.PI / 2);
+  const mesh = new THREE.Mesh(geo, material);
+  mesh.position.y = y;
+  parent.add(mesh);
+  return mesh;
+};
 const CHROME_MAT = () => lambert(CHROME);
 export const MODELS = {
   // A Formula 1 car: a long, low nose and monocoque in the livery, sidepods, the engine cover with
@@ -1295,7 +1306,8 @@ export const MODELS = {
   },
 
   // Hammond's Dampervan: a split-window camper (a VW Type 2), two-tone with its white top and big V on
-  // the nose, gone to sea: curtains at the windows, a propeller and rudder under the back
+  // the nose, gone to sea in a boat hull built round it, its bow well out in front: curtains at the
+  // windows, a propeller and rudder under the back
   dampervan: (car) => {
     const group = new THREE.Group();
     const w = car.hw * 2, l = car.hl * 2, R = 0.33;
@@ -1317,14 +1329,27 @@ export const MODELS = {
       wheel(group, R, 0.24, side * (w / 2 - 0.05), R, -l * 0.32, lambert(0xf2efe6));
     }
     disc(group, lambert(0xd8d8d8), 0.14, 0.04, 0, 1.5, l / 2 + 0.02);                   // the badge, over the V
+    // the boat hull it sits in: wider than the van, its bow coming to a point well out in front, red
+    // antifouling below white topsides, a rubbing strake round the sheer, bow lights and a bow rail
+    const hw = w / 2 + 0.2, stern = -l / 2 - 0.15, shoulder = l / 2 - 0.1, bow = l / 2 + 1.1;
+    const plan = (inset) => [[-hw + inset, stern + inset], [hw - inset, stern + inset], [hw - inset, shoulder], [0, bow - inset * 2], [-hw + inset, shoulder]];
+    hull(group, lambert(0xb3261e), plan(0.06), 0.2, 0.22);                             // the antifouling
+    hull(group, lambert(0xf4f2ec), plan(0), 0.42, 0.34);                               // the topsides
+    hull(group, trim, plan(-0.03), 0.76, 0.06);                                        // the rubbing strake
+    hull(group, lambert(0x5a3a22), [[-hw + 0.05, shoulder + 0.05], [hw - 0.05, shoulder + 0.05], [0, bow - 0.1]], 0.8, 0.03); // the foredeck
+    disc(group, new THREE.MeshBasicMaterial({ color: 0xff2a1a }), 0.06, 0.06, -0.42, 0.68, l / 2 + 0.6); // bow lights: port,
+    disc(group, new THREE.MeshBasicMaterial({ color: 0x2aff5a }), 0.06, 0.06, 0.42, 0.68, l / 2 + 0.6); // starboard
+    for (const side of [-1, 1]) box(group, lambert(CHROME), 0.04, 0.32, 0.04, side * 0.3, 0.98, l / 2 + 0.5); // the bow rail
+    box(group, lambert(CHROME), 0.64, 0.04, 0.04, 0, 1.14, l / 2 + 0.5);
+    box(group, lambert(CHROME), 0.04, 0.04, 0.5, 0, 1.14, l / 2 + 0.75);
     box(group, lambert(CHROME), w + 0.04, 0.1, 0.1, 0, 0.42, l / 2 + 0.04);            // bumpers
     box(group, lambert(CHROME), w + 0.04, 0.1, 0.1, 0, 0.42, -l / 2 - 0.04);
-    box(group, trim, 0.06, 0.5, 0.06, 0, 0.32, -l / 2 + 0.2);                          // the propeller's shaft,
+    box(group, trim, 0.06, 0.06, 0.5, 0, 0.2, -l / 2 - 0.02);                           // the propeller's shaft,
     const prop = new THREE.Group();                                                     // and its propeller
-    prop.position.set(0, 0.2, -l / 2 - 0.1);
+    prop.position.set(0, 0.2, -l / 2 - 0.22);
     group.add(prop);
     for (let k = 0; k < 3; k++) box(prop, lambert(0xc9a227), 0.05, 0.34, 0.03, 0, 0, 0).rotation.z = k * Math.PI * 2 / 3;
-    box(group, trim, 0.05, 0.5, 0.36, 0, 0.3, -l / 2 - 0.3);                           // the rudder
+    box(group, trim, 0.05, 0.5, 0.36, 0, 0.3, -l / 2 - 0.5);                           // the rudder
     group.userData = { body, animate: (t) => { prop.rotation.z = t * 18; } };
     return group;
   },
