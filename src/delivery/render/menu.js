@@ -2,7 +2,7 @@
 // The start screen is only a menu. Picking a level just marks it; the level is built when
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
-import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, setRaceClass, RACE_CLASSES } from '../levels.js';
+import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
 import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, earnedFor } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
@@ -62,34 +62,46 @@ const pickSide = (evil) => {
 };
 sideBtn.addEventListener('click', () => pickSide(!Game.evil));
 const levelBox = document.getElementById('levels'), groupBox = document.getElementById('levelGroups');
-// the levels in groups: the main ones five at a time, and then the special ones five at a time. A button for
-// each group; below them, the levels of the group shown (to begin with, the one with the level picked)
-const GROUPS = [];
-for (let i = 0; i < MAIN_LEVELS.length; i += 5) GROUPS.push([i, Math.min(MAIN_LEVELS.length, i + 5)]);
-for (let i = MAIN_LEVELS.length; i < LEVELS.length; i += 5) GROUPS.push([i, Math.min(LEVELS.length, i + 5)]);
-const groupOf = (i) => Math.max(0, GROUPS.findIndex(([a, b]) => i >= a && i < b));
+// Two tabs: the deliveries, and the races (the circuits: see RACE_LEVELS). On each, the levels in groups: the
+// main delivery levels five at a time, then the special ones five at a time; the races five at a time. A button
+// for each group; below them, the levels of the group shown (to begin with, the one with the level picked)
+const TABS = { delivery: { list: DELIVERY_LEVELS, groups: [] }, race: { list: RACE_LEVELS, groups: [] } };
+for (let i = 0; i < MAIN_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(MAIN_LEVELS.length, i + 5)]);
+for (let i = MAIN_LEVELS.length; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
+for (let i = 0; i < RACE_LEVELS.length; i += 5) TABS.race.groups.push([i, Math.min(RACE_LEVELS.length, i + 5)]);
+let tab = isRace(LEVEL) ? 'race' : 'delivery'; // (the tab shown: the one with the level picked, to begin with)
+const groupOf = (k) => Math.max(0, TABS[tab].groups.findIndex(([a, b]) => k >= a && k < b));
 let shownGroup = null; // (null: the group with the level picked)
+// a race is always open; a delivery level once the one before it has been delivered
+const isOpen = (level) => isRace(level) || LEVELS.indexOf(level) < Progress.data.unlocked;
+const startScreen = document.getElementById('startScreen');
+const tabBtns = { delivery: document.getElementById('tabDelivery'), race: document.getElementById('tabRaces') };
+for (const [name, button] of Object.entries(tabBtns)) button.addEventListener('click', () => { tab = name; shownGroup = null; draw(); });
 const shopBox = document.getElementById('shop');
 
 const draw = () => {
   bank.textContent = 'Bank ' + money(Progress.data.money);
 
-  const shown = shownGroup ?? groupOf(LEVEL_INDEX), [first, last] = GROUPS[shown];
+  for (const [name, button] of Object.entries(tabBtns)) button.classList.toggle('current', name === tab);
+  startScreen.classList.toggle('races', tab === 'race');
+  const { list, groups: GROUPS } = TABS[tab], picked = list.indexOf(LEVEL); // (-1: the level picked is on the other tab)
+  const shown = shownGroup ?? groupOf(picked), [first, last] = GROUPS[shown];
+  const label = (level) => levelLabel(LEVELS.indexOf(level));
   groupBox.replaceChildren(...GROUPS.map(([a, b], g) => {
     const button = document.createElement('button');
-    button.className = 'level' + (g === shown ? ' current' : '') + (a >= Progress.data.unlocked ? ' locked' : '');
-    button.textContent = levelLabel(a) + (b - a > 1 ? '–' + levelLabel(b - 1) : '');
-    button.title = a >= Progress.data.unlocked ? 'Not open yet' : '';
+    button.className = 'level' + (g === shown ? ' current' : '') + (isOpen(list[a]) ? '' : ' locked');
+    button.textContent = label(list[a]) + (b - a > 1 ? '–' + label(list[b - 1]) : '');
+    button.title = isOpen(list[a]) ? '' : 'Not open yet';
     button.addEventListener('click', () => { shownGroup = g; draw(); });
     return button;
   }));
-  levelBox.replaceChildren(...LEVELS.slice(first, last).map((level, k) => {
-    const i = first + k, open = i < Progress.data.unlocked;
+  levelBox.replaceChildren(...list.slice(first, last).map((level, k) => {
+    const i = LEVELS.indexOf(level), open = isOpen(level);
     // (the most time to spare delivering it, on each side)
     const good = Progress.bestTime(level.id, false), evil = Progress.bestTime(level.id, true);
     const spare = (t) => t === undefined ? '-' : formatTime(t);
     const onlyGood = level.battle || level.alwaysGood, prize = earnedFor(level.id);
-    return card(levelLabel(i) + '. ' + level.name, open ? [
+    return card(label(level) + '. ' + level.name, open ? [
       'Tip ' + money(level.tip),
       onlyGood ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
         : 'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
@@ -98,8 +110,8 @@ const draw = () => {
       // (a special level's 6-star car, and the time to spare that earns it: see cars.js EARNED_CARS)
       ...(prize ? ['6-star car: ' + prize.name + (Progress.earned(prize) ? ' (earned)'
         : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare')] : []),
-    ] : ['Locked', 'Deliver level ' + levelLabel(i - 1) + ' on time to open it'], {
-      current: i === LEVEL_INDEX,
+    ] : ['Locked', 'Deliver level ' + label(list[first + k - 1]) + ' on time to open it'], {
+      current: level === LEVEL,
       disabled: !open,
       onPick: () => { selectLevel(i); useLevelCar(level.car); shownGroup = null; draw(); }, // (the groups follow the level picked)
       image: LEVEL_SHOTS[level.id],
@@ -232,6 +244,7 @@ next.addEventListener('click', () => Game.nextLevel());
 // when a run ends: the bank and the unlocked levels may have changed, and "Next level"
 // is only offered if there is one
 Game.onFinish.push(() => {
-  next.style.display = LEVEL_INDEX + 1 < LEVELS.length ? '' : 'none';
+  next.style.display = LEVEL_INDEX >= 0 && nextOnTab(LEVEL) ? '' : 'none';
+  tab = isRace(LEVEL) ? 'race' : 'delivery'; // (the menu comes back on the tab of the level just run)
   draw();
 });

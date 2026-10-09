@@ -59,6 +59,13 @@ export const THEMES = {
   // sea: open water everywhere, the way through it the same water, unmarked (water: no ruts either),
   // its edges blocked by breakwaters of rock and lines of marker buoys, islands off in the distance
   sea: { sky: 0x9fd2f0, ground: 0x1d7a96, road: 0x1d7a96, scenery: 'sea', unmarked: true, water: true },
+  // the real circuits with a look of their own (scenery 'circuit': render/circuits/<circuit>.js draws each)
+  // monza: the Autodromo Nazionale in its royal park: all but flat (its few metres of rise and fall are the land's: terrain), among tall trees, the old banking off in the woods
+  monza: { sky: 0xa8d0ee, ground: 0x6f9a4e, road: 0x45474c, scenery: 'circuit', circuit: 'monza', terrain: { gentle: 0x6f9a4e, steep: 0x5d8343, rough: 0.12, flat: 14, rise: 80 } },
+  // spa: Spa-Francorchamps in the Ardennes: the land climbs and falls with the circuit (terrain), pine forest all round
+  spa: { sky: 0xb4c9d8, ground: 0x5f8a44, road: 0x4a4c50, scenery: 'circuit', circuit: 'spa', terrain: { gentle: 0x5f8a44, steep: 0x4e6e3a, rough: 0.3, flat: 12, rise: 60 } },
+  // albert-park: Melbourne's Albert Park: a lap of the lake, parkland and the city's towers beyond
+  'albert-park': { sky: 0xb7d6f0, ground: 0x7aa851, road: 0x44474d, scenery: 'circuit', circuit: 'albert-park' },
   space: { sky: 0x05060d, ground: null, road: null, scenery: 'space', line: 0x7fe8ff, centre: 0xff62d6 },
   // night: the city after dark. The road and the ground are lit surfaces (lit: true), dark but
   // for a faint blue moon and the player's headlights; other cars show their own lamps.

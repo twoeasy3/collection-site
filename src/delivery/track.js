@@ -332,13 +332,16 @@ const createTrack = () => {
     return false;
   };
   // a side's shoulder at s: SH, but wider where the level has run-off ("runoff": { from, to, side, width }),
-  // eased in and out over runoffEase m at each end
+  // eased in and out over runoffEase m at each end (but not at the line of a lapped level: a stretch from 0, or to
+  // the lap's end, is at its full width there, so run-off can carry on across the line)
   const runoffs = LEVEL.runoff || [];
   const shoulderOn = (side, s) => {
     let w = SH;
     for (const r of runoffs) {
       if ((r.side === 'left' ? -1 : 1) !== side) continue;
-      const E = CONFIG.runoffEase, k = smooth((s - r.from) / E) * (1 - smooth((s - (r.to - E)) / E));
+      if (s < r.from || s > r.to) continue;
+      const E = CONFIG.runoffEase;
+      const k = (LOOP && r.from <= 0 ? 1 : smooth((s - r.from) / E)) * (LOOP && r.to >= length ? 1 : 1 - smooth((s - (r.to - E)) / E));
       if (k > 0) w = Math.max(w, SH + r.width * k);
     }
     return w;

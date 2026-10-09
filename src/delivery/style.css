@@ -181,6 +181,10 @@ body.touch-controls .throw { display: block; }
 .overlay button.card strong { font-size: 16px; }
 .overlay button.card.current { border-color: #ffd23f; background: #fff; }
 .overlay button.card:disabled { opacity: .5; cursor: default; }
+/* the menu's tabs (Deliveries, Races), and the race controls, which only the Races tab shows */
+#tabs { margin-top: 6px; }
+.overlay #tabs button.level { font-size: 17px; padding: 9px 22px; text-transform: uppercase; letter-spacing: .06em; }
+#startScreen:not(.races) #raceMenu { display: none; }
 /* the level groups (1–5, 6–10... S1–S5): a row of buttons above the group's levels */
 .groups { display: flex; flex-wrap: wrap; justify-content: center; gap: 0; }
 .overlay .groups button.level { margin: 0 4px 4px; }

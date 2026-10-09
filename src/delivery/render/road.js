@@ -8,6 +8,7 @@ import { Player } from '../player.js';
 import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
 import { setHeadlights } from './headlights.js';
 import { THEMES } from '../themes.js';
+import { CIRCUITS } from './circuits/index.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -2630,6 +2631,15 @@ const buildRoad = () => {
     instances(buoy, 0xf2f2f2, white);
     instances(rock, 0x7a776f, isles);
     instances(rock, 0x5f8a4a, tops);
+  } else if (theme.scenery === 'circuit') {
+    // ---- a real circuit with a look of its own (theme.circuit: render/circuits/<id>.js): the circuit's
+    // trackside (walls, catch fences, kerbs; light pylons when the theme is lit), its grandstands and
+    // pits, and then whatever the circuit draws for itself: its landmarks and the land round it
+    circuitTrackside(!!theme.lit);
+    grandstands(!!theme.night);
+    const draw = CIRCUITS[theme.circuit];
+    if (draw) draw({ THREE, levelGroup, Track, LEVEL, CONFIG, theme, tmp, add, flat, buildStrip, instances, placeEntry, dummy, cube, tube, beside, terrainAt, offRoads, clearOfRoads, inJunction });
+    else console.warn('no circuit scenery called "' + theme.circuit + '"');
   } else if (theme.scenery === 'space') {
     // ---- space: stars all round, which travel with the camera so they never get nearer -----
     const points = [];

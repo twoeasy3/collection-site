@@ -307,6 +307,9 @@ import tokyo from './levels/tokyo.json';
 import mumbai from './levels/mumbai.json';
 import stelvio from './levels/stelvio.json';
 import christmas from './levels/christmas.json';
+import monza from './levels/monza.json';
+import spa from './levels/spa.json';
+import albertPark from './levels/albert-park.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
@@ -314,9 +317,25 @@ import christmas from './levels/christmas.json';
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue,
   speedTrapAlley, mountainPass, outbackExpress, tourDeCoast, ringRoad, marketTown, quarryRun, hongKong, tokyo, mumbai, stelvio, christmas];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown, battlefield];
-export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
-// a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones
-export const levelLabel = (index) => index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (index - MAIN_LEVELS.length + 1);
+// ...and the circuits built from the real ones (render/circuits/): races only, on the menu's Races tab. They come
+// last in LEVELS, after the special levels, so saved progress (which counts by position) is undisturbed
+export const CIRCUIT_LEVELS = [monza, spa, albertPark];
+export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...CIRCUIT_LEVELS];
+// The menu has two tabs: deliveries, and races. A race is any lapped level (its "laps"), wherever it sits in
+// LEVELS (Marina Bay, Montreal and Mount Panorama are among the special levels); races are always open, and
+// never lock the delivery level after them (see Progress and the menu)
+export const isRace = (level) => !!level.laps;
+export const RACE_LEVELS = LEVELS.filter(isRace);
+export const DELIVERY_LEVELS = LEVELS.filter(l => !isRace(l));
+// the level after this one on its own tab (the next delivery, or the next race), or null at the end
+export const nextOnTab = (level) => { const list = isRace(level) ? RACE_LEVELS : DELIVERY_LEVELS, k = list.indexOf(level); return k >= 0 && k + 1 < list.length ? list[k + 1] : null; };
+// a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special
+// delivery levels, 'R1'... for the races (each tab numbers its own)
+export const levelLabel = (index) => {
+  const level = LEVELS[index];
+  if (isRace(level)) return 'R' + (RACE_LEVELS.indexOf(level) + 1);
+  return index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (DELIVERY_LEVELS.indexOf(level) - MAIN_LEVELS.length + 1);
+};
 // the screensaver's level: not on the menu, driven round and round with no player car
 export const SCREENSAVER_LEVEL = chaos;
 // hidden levels, by id: never on the menu, only played from the address (?hidden=testbed, or ?test
