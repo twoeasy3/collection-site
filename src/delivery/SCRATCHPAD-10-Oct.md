@@ -366,7 +366,12 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   meeting at its tip; every side road now parts from the expressway by a set gap (`ramps.apart`,
   `ramps.part`), which moves side roads a little on Ring Road, Gimmick Road 2, Market Town and
   Quarry Run. Seen in screenshots on five levels; left-hand driving not yet looked at.
-- 3. Decor pruning: in progress.
+- **3. Decor pruning: done, `7ae100d`.** One test (`offRoads` in `render/road.js`: real distance to
+  every other road's pavement, a verge, the thing's footprint) behind `instances`, `sideStrip`
+  and a last sweep of loose objects. Seen in screenshots on Expressway, Big Business, Ring Road,
+  Market Town, Quarry Run. Not routed: backdrops over 60 m across and meshes built in world
+  terms that are not strips (zone crags, cliff faces).
+- 4. Fully-featured side roads: in progress.
 - 4. Fully-featured side roads: not started.
 - 5. Every theme: not started.
 

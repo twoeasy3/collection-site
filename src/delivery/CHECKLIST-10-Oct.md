@@ -231,6 +231,8 @@ Pick the most unique theme from what is already in the game first
 **Order to build in, by the owner's rule above** (furthest from anything the game has, first;
 orchestrator's ranking):
 
+Build the theme first, then the level. Make sure the theme is reusable
+
 1. T14 Toy room: nothing in the game changes scale or leaves the outdoors.
 2. T15 Underwater tunnel: no theme is under water or looks out through glass.
 3. T18 Moon base: the only one that changes the physics (low gravity).
@@ -386,75 +388,161 @@ Written to the counterplay rule: every one is a gamble the player can take or le
 says what the gamble is. All are things that happen on real roads, as the eleven kept ones are.
 
 - [ ] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
-      car flies: no steering in the air, and it lands on whatever is over the top. *Gamble:* lift
-      and see, or fly blind and gain seconds. *Builds on:* the drawbridge's jump, hills.
+      car flies: no steering in the air, and it lands on whatever is over the top. _Gamble:_ lift
+      and see, or fly blind and gain seconds. _Builds on:_ the drawbridge's jump, hills.
 - [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
       in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
-      slow and it lands in it. *Gamble:* the jump or the slow way round. *Builds on:* drawbridge
+      slow and it lands in it. _Gamble:_ the jump or the slow way round. _Builds on:_ drawbridge
       jump, rubbernecking queues, convoys.
 - [ ] H3. **Tram lane**: the median's rails are an empty lane, and a tram is coming along them
-      somewhere. Fast and clear, slippery in the rain, and the tram does not swerve. *Gamble:*
-      how long to stay on the rails. *Builds on:* the railway median, Hong Kong's trams, ice.
+      somewhere. Fast and clear, slippery in the rain, and the tram does not swerve. _Gamble:_
+      how long to stay on the rails. _Builds on:_ the railway median, Hong Kong's trams, ice.
 - [ ] H4. **Low bridge**: a height limit ahead, signed, with the tall-vehicle route going the
       long way round. A low car goes straight under; a van or the bus must take the detour, or
-      lose its roof rack, lights and some health trying. *Gamble:* made in the garage, and again
-      at the sign. *Builds on:* side roads, tunnels, car heights already in `cars.js`.
+      lose its roof rack, lights and some health trying. _Gamble:_ made in the garage, and again
+      at the sign. _Builds on:_ side roads, tunnels, car heights already in `cars.js`.
 - [ ] H5. **Ford**: the road dips through a river, with the bridge a little further round. Depth
       posts show how deep it is today (it varies down the level). A car that wades well goes
-      through; one that does not is slowed to a crawl or stalls. *Gamble:* read the posts and
-      know the car. *Builds on:* the tide's wading (`crossing` in `cars.js`), side roads.
+      through; one that does not is slowed to a crawl or stalls. _Gamble:_ read the posts and
+      know the car. _Builds on:_ the tide's wading (`crossing` in `cars.js`), side roads.
 - [ ] H6. **Flooded underpass**: the same, in town in the rain: the main road dips under a
       railway and fills, and the slip road goes up and over. The water rises through the run.
-      *Gamble:* early on it is passable by anything; later only by some. *Builds on:* tunnels,
+      _Gamble:_ early on it is passable by anything; later only by some. _Builds on:_ tunnels,
       Mumbai's rain, burst water mains.
 - [ ] H7. **Hairpin cut**: a rough track straight down the hill between two legs of a hairpin.
       It saves the whole bend, shakes the car, costs health, and rejoins across the traffic.
-      *Gamble:* seconds against damage and a blind rejoin. *Builds on:* Stelvio's hairpins, mud,
+      _Gamble:_ seconds against damage and a blind rejoin. _Builds on:_ Stelvio's hairpins, mud,
       side roads.
 - [ ] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
-      certain speed the car skims the tops and it goes smooth. *Gamble:* commit to the speed
-      before the bend, or crawl. *Builds on:* potholes, mud, the safari's dirt road.
+      certain speed the car skims the tops and it goes smooth. _Gamble:_ commit to the speed
+      before the bend, or crawl. _Builds on:_ potholes, mud, the safari's dirt road.
 - [ ] H9. **Ruts**: tractors have left deep ruts in the mud. In a rut the car runs straight and
-      fast; changing lane means climbing out, with a jolt and a wobble. *Gamble:* pick the rut
-      early and live with it. *Builds on:* mud, tractors.
+      fast; changing lane means climbing out, with a jolt and a wobble. _Gamble:_ pick the rut
+      early and live with it. _Builds on:_ mud, tractors.
 - [ ] H10. **Black ice in the shade**: ice lies only where a building, a cutting or the trees
-      shade the road, so it can be read from the shadows before reaching it. *Gamble:* brake
-      before the shadow, or stay in the sunny lane with the traffic. *Builds on:* ice, the
+      shade the road, so it can be read from the shadows before reaching it. _Gamble:_ brake
+      before the shadow, or stay in the sunny lane with the traffic. _Builds on:_ ice, the
       scenery already casting the shade.
 - [ ] H11. **Truck spray**: in rain every lorry drags a cloud of spray: nothing can be seen
-      behind one. *Gamble:* hang back and see, or overtake blind. *Builds on:* rain, fog.
+      behind one. _Gamble:_ hang back and see, or overtake blind. _Builds on:_ rain, fog.
 - [ ] H12. **Low sun**: one stretch runs straight into the sun and the screen washes out,
-      except in the shadow of a lorry, a bridge or a row of trees. *Gamble:* tuck in behind
-      something slow to see, or run in the glare. *Builds on:* fog, tunnels' light change.
+      except in the shadow of a lorry, a bridge or a row of trees. _Gamble:_ tuck in behind
+      something slow to see, or run in the glare. _Builds on:_ fog, tunnels' light change.
 - [ ] H13. **Dust trail**: on dirt every car throws a plume that drifts with the wind.
-      Following in it is blind; driving a lane upwind of it is clear. *Gamble:* the clear lane
-      may be the oncoming one. *Builds on:* fog, crosswind (G16), the safari.
+      Following in it is blind; driving a lane upwind of it is clear. _Gamble:_ the clear lane
+      may be the oncoming one. _Builds on:_ fog, crosswind (G16), the safari.
 - [ ] H14. **Rockfall gallery**: the road forks into a covered gallery, narrow with no
-      shoulder and a queue in it, and the open road under the loose face. *Gamble:* slow and
-      safe, or fast under the rocks. *Builds on:* rockfall, tunnels, the fork (G4).
+      shoulder and a queue in it, and the open road under the loose face. _Gamble:_ slow and
+      safe, or fast under the rocks. _Builds on:_ rockfall, tunnels, the fork (G4).
 - [ ] H15. **Thin ice shortcut**: the road goes round the lake; tyre tracks go straight across
       it. Light cars cross; heavy ones crack it, and a crack that catches the car is a cold
-      swim. Amphibious cars do not care. *Gamble:* the car's weight against the distance saved.
-      *Builds on:* ice, `mass` in `cars.js`, the water stages being built, theme T4.
+      swim. Amphibious cars do not care. _Gamble:_ the car's weight against the distance saved.
+      _Builds on:_ ice, `mass` in `cars.js`, the water stages being built, theme T4.
 - [ ] H16. **Fresh tarmac**: a coned-off lane of new tar beside the roadworks queue. It is
       empty and it is sticky: the longer the car stays on it the slower it gets, and the tyres
-      stay slow for a while after. *Gamble:* short hops along it. *Builds on:* stop / go
+      stay slow for a while after. _Gamble:_ short hops along it. _Builds on:_ stop / go
       roadworks, mud, narrows.
 - [ ] H17. **Climbing lane**: a hill with a short extra lane for overtaking the lorries, and a
-      sign counting down to where it ends. *Gamble:* one more lorry before the lane runs out.
-      *Builds on:* narrows, convoys, hills.
+      sign counting down to where it ends. _Gamble:_ one more lorry before the lane runs out.
+      _Builds on:_ narrows, convoys, hills.
 - [ ] H18. **Single track with passing places**: one lane for both ways, with a marked bay
-      every so often. Meeting someone between bays, somebody goes onto the verge. *Gamble:* duck
-      into this bay or run for the next. *Builds on:* narrows, quiet zones, the shoulder timer.
+      every so often. Meeting someone between bays, somebody goes onto the verge. _Gamble:_ duck
+      into this bay or run for the next. _Builds on:_ narrows, quiet zones, the shoulder timer.
 - [ ] H19. **Speed cushions**: a suburban street of humps with gaps between them. Straddle a
       gap on exactly the right line and the car does not feel it; clip one at speed and it
-      jumps and takes a knock. *Gamble:* precision at speed against slowing. *Builds on:*
+      jumps and takes a knock. _Gamble:_ precision at speed against slowing. _Builds on:_
       potholes, the jump.
 - [ ] H20. **Blast window**: the quarry's siren goes and the road under the face is about to
-      be showered; the haul road round the back is longer and rough. *Gamble:* sprint under
-      before it goes, or take the haul road. *Builds on:* quarry blasts, side roads.
+      be showered; the haul road round the back is longer and rough. _Gamble:_ sprint under
+      before it goes, or take the haul road. _Builds on:_ quarry blasts, side roads.
 
 The orchestrator's pick of these: H1 crest jumps and H2 the ramp (the jump is already in the
 engine and is the most fun thing the drawbridge does), H4 low bridge and H5 ford (they make the
 choice of car matter on the road, which little does today), H8 washboard (it rewards going
 faster, which nothing else does).
+
+### Third batch (10-Oct): other characters on the road
+
+Not obstacles: road users with something of their own going on, that the player can use, help,
+hinder or keep clear of. Each is a random or timed event, as ambulances, funeral processions and
+convoys already are (a level's `every: { min, max }`), so any level can have them.
+
+- [ ] P1. **Police pursuit** (the owner's idea): a chase already under way comes through the
+      level: a getaway car weaving through the traffic flat out, and behind it a pursuit car that
+      is **a model of its own, seen only in this event** (a low, wide interceptor with a light bar
+      and push bar, unlike the patrol cars), its siren heard coming before it is seen. The
+      helicopter joins with its searchlight.
+      - *What they do:* the getaway car takes any gap, the shoulder and the oncoming side; the
+        interceptor follows its line and tries to get alongside to turn it. Traffic pulls aside
+        for the siren, so a clear channel opens behind the two of them and closes again.
+      - *A Good player's gamble:* get in the getaway car's way. Hold a lane it wants, box it in
+        against traffic or the kerb, and the interceptor gets its chance: social standing, a
+        cash reward, and a bust wiped. Getting it wrong means being hit by one or both.
+      - *An Evil player's gamble:* run interference for the criminal: block the interceptor, or
+        tuck into the channel behind the chase and ride it through the traffic. The getaway
+        driver throws a bag of cash out for the help; the police add the player to the chase.
+      - *Or keep out of it:* move over and let it go by, at the cost of nothing.
+      - *How it ends:* caught (the two of them stopped on the shoulder further up, lights going,
+        a thing to rubberneck at), crashed (wreckage ahead), or away. Which one depends on what
+        happened, and on the player if the player took part.
+      - *Builds on:* emergencies, the police and their sight, the helicopter, wrong-way drivers'
+        warning and horn, rubbernecking, wreckage, cash pickups.
+      - *To settle when built:* whether the interceptor can also be earned as a car; one
+        interceptor or two; whether it can happen on race levels (suggest not).
+- [ ] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
+      a man with a bag stands on the shoulder with his thumb out, as a passenger pickup does.
+      *Gamble:* carry him for a large payout and have every police car on the level after the
+      car until he is dropped; or drive him straight to the next patrol car for standing.
+      *Builds on:* the passenger pickup, P1.
+- [ ] P3. **Street racers**: two tuned cars line up beside the player at speed, flash their
+      lights, and go: a race through the traffic to a marked point a kilometre on. *Gamble:*
+      take it up (cash for winning, and the police take an interest in all three) or let them
+      go. They race each other whether or not the player joins. *Builds on:* the boy racer,
+      rivals.
+- [ ] P4. **Cash van**: an armoured van with a back door not properly shut, shedding banknotes
+      into its lane (cash pickups) and a guard car beside it that leans on anything that gets
+      close. *Gamble:* sit in its wake collecting, slowly, with the guard car to deal with, or
+      get on with the delivery. *Builds on:* cash pickups, falling cargo, convoys.
+- [ ] P5. **Snowplough and gritter**: on snow and ice levels a plough works along one lane. The
+      lane behind it is clear and gritted: full grip. The lane beside it gets the snow it
+      throws: blind and slippery. *Gamble:* follow it in comfort at its speed, or go through the
+      plume to get past. *Builds on:* ice, snow, fog.
+- [ ] P6. **Leaking tanker**: a tanker dribbling its load (oil, milk, molasses) leaves a slick
+      trail down its lane for a long way behind it, and the trail tells the player it is ahead
+      before it is seen. *Gamble:* the trail's lane is the empty one. *Builds on:* burst water
+      mains' slicks, falling cargo.
+- [ ] P7. **Mobile mechanic**: a breakdown truck with its crane out. Hold station close behind
+      it for a few seconds and its mechanic leans out and mends the car on the move. *Gamble:*
+      seconds spent at its speed, nose to its tail, against health. *Builds on:* the wrench
+      pickup, the wide load's escort distance.
+- [ ] P8. **Stowaway on a transporter**: a car transporter with an empty top deck and its ramp
+      down. Drive up onto it and ride: past a speed camera, a roadblock or a police stretch
+      unseen, at the lorry's speed. Drive off the front when ready. *Gamble:* slow and hidden
+      against fast and seen. *Builds on:* the ramp (H2), police sight, cameras, roadblocks.
+- [ ] P9. **The sleepy lorry**: at night one lorry is drifting across the lanes and back on a
+      slow rhythm, its driver nodding. The horn wakes him and he holds his lane for a while.
+      *Gamble:* time the pass on the drift, or spend a moment on the horn first. *Builds on:* the
+      player's horn (which does little today), the caravan's sway, the night themes.
+- [ ] P10. **Unmarked police car**: one ordinary-looking car in the traffic is police, with a
+      tell (twin aerials, plain steel wheels, a driver in a cap). Passing it over the limit, or
+      doing anything Evil in its sight, starts a chase. *Gamble:* the player who spots the tell
+      slows for that one car and no other. *Builds on:* police, cameras' limit, the radar
+      detector (which could ping it).
+- [ ] P11. **Motorbike couriers**: bikes filtering between the lanes from behind, faster than
+      the traffic. Changing lane across one knocks it off (standing lost, a knock). They are
+      also the only thing moving in a jam, and they show where the gaps are. *Gamble:* fewer
+      lane changes, or look first. *Builds on:* the rickshaw's agility, pelotons.
+- [ ] P12. **Wedding convoy**: a line of cars in ribbons, horns going, throwing confetti that
+      hangs in the air and hides the road just behind them. Cutting through the convoy costs
+      standing; a care package thrown to the lead car earns a good deal of it. *Gamble:* the
+      long way round a slow, wide convoy or straight through its confetti. *Builds on:* funeral
+      processions, convoys, care packages.
+- [ ] P13. **Combine harvester**: on a farm road at harvest a combine fills the road and half
+      the shoulders, throwing chaff out of the back. Its driver pulls onto the field at each
+      gateway to let the queue by, if there is a queue: with no one behind the player, he does
+      not. *Gamble:* through the stubble field beside it (rough, slow, unpoliced) or wait for a
+      gateway. *Builds on:* tractors, wide load, mud.
+
+The orchestrator's view: P1 is the best of these by some way, because both sides have something
+to do with it and it ends differently each time; P2 follows from it almost for free. P7 and P8
+are the freshest: other road users as something to use, not to avoid. P9 gives the horn a job.
