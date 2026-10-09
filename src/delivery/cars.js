@@ -32,6 +32,13 @@ import { CONFIG } from './config.js';
 
 // a car's star rating, by its tier (none for a car out of the tiers)
 export const TIERS = 5;
+// The Blue Star rule: a Blue Star car's top speed, acceleration and health are each strictly below the best of
+// the gold tier above its own (so it never outdoes a car a tier up at what that tier does best). The top tier
+// has none above it yet, so its Blue Stars are held under this: the room kept for a six-star gold tier, which
+// would top out here. The Classic GT (48 m/s) is the fastest car in the garage, and stays so until then: a
+// six-star tier would run from 49 to 52 m/s, still well short of the level cars (the UFO's 58, a GT racer's 62).
+// scripts/.balance-check.mjs checks every Blue Star against it.
+export const NEXT_TIER_CAPS = { maxSpeed: 52, accel: 24, health: 450 };
 export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only the stars it has: no empty ones)
 export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff' };
 export const starColour = (car) => car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
@@ -89,15 +96,15 @@ export const CARS = [
     maxSpeed: 38, accel: 15, crossing: 0.4, health: 110, hw: 0.9, hl: 2.1, height: 1.2 },
   // ---- tier 3, Blue Stars
   { id: 'sleeper', tier: 3, blue: true, name: 'Sleeper Wagon', price: 680, color: 0x5a1f2a, evilColor: 0xc9c3b4, fixedLivery: true, model: 'sleeper',
-    maxSpeed: 38.5, accel: 15, crossing: 0.6, health: 180, hw: 0.92, hl: 2.5, height: 1.45 },
+    maxSpeed: 38.5, accel: 14, crossing: 0.6, health: 180, hw: 0.92, hl: 2.5, height: 1.45 },
   { id: 'rally', tier: 3, blue: true, name: 'Rally Car', price: 720, color: 0x1d3f9e, evilColor: 0xe24a8c, fixedLivery: true, model: 'rally',
-    maxSpeed: 39, accel: 16, agility: 1.35, crossing: 0.95, health: 130, hw: 0.9, hl: 2.2, height: 1.45,
+    maxSpeed: 39, accel: 14.5, agility: 1.35, crossing: 0.95, health: 130, hw: 0.9, hl: 2.2, height: 1.45,
     trait: 'mud', perk: 'Ignores mud: no slower in it, and it steers as well as ever' },
   { id: 'towtruck', tier: 3, blue: true, name: 'Tow Truck', price: 750, color: 0xeeeeee, evilColor: 0x2a6fb8, fixedLivery: true, model: 'towtruck',
     maxSpeed: 36, accel: 10, crossing: 0.8, health: 220, mass: 2.0, hw: 1.05, hl: 2.85, height: 2.1,
     trait: 'tow', perk: 'Clears a wreck: it drags fallen wreckage out of the lanes instead of being wrecked by it' },
   { id: 'rotary', tier: 3, blue: true, name: 'Rotary Coupe', price: 780, color: 0xf2c218, evilColor: 0x1f8a5c, fixedLivery: true, model: 'rotary',
-    maxSpeed: 40, accel: 17, agility: 1.45, crossing: 0.3, health: 120, hw: 0.88, hl: 2.15, height: 1.2 },
+    maxSpeed: 40, accel: 14.8, agility: 1.45, crossing: 0.3, health: 120, hw: 0.88, hl: 2.15, height: 1.2 },
   // ---- tier 4
   { id: 'taxi', tier: 4, name: 'Taxi', price: 400, color: 0xffc81a, evilColor: 0x6b7a2e, fixedLivery: true, model: 'taxi',
     maxSpeed: 38, accel: 12, crossing: 0.6, health: 210, hw: 1.0, hl: 2.55, height: 1.6 },

@@ -1050,6 +1050,12 @@ export const CONFIG = {
   // (gone `past` m behind the player, or `run` m down the road from where they waited)
   stampede: { trigger: 240, speed: { min: 9, max: 14 }, weave: 0.8, past: 70, run: 400 },
 
+  // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it
+  // and start.pitch up (rad); it comes no nearer than `near` nor goes further than `far`, between `low` and `high`
+  // (rad) over the car; turn: rad a pixel of dragging; step: how much a notch of the wheel moves it in or out;
+  // aim: m above the road it looks at
+  photo: { start: { yaw: 2.5, pitch: 0.32, far: 13 }, near: 4, far: 70, low: 0.03, high: 1.45, turn: 0.006, step: 1.15, aim: 1, fov: 45 },
+
   // scenery
   poleSpacing: 25,
   buildingSpacing: 30,
