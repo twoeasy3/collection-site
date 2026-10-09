@@ -1237,8 +1237,10 @@ const buildRoad = () => {
     }
     for (let s = Track.start + 15, k = 0; s < Track.end; s += 30, k++) {
       const side = k % 2 ? 1 : -1;
-      posts.push([s, beside(side, s, 0.1), 4.5, 0.18, 7, 0.18]);
-      lamps.push([s, beside(side, s, -0.8), 7.9, 1.8, 0.2, 0.5]);
+      if (Track.tunnel(s) === 0 && !(LEVEL.tunnels || []).some(t => s >= t.from - 10 && s <= t.to + 10)) {
+        posts.push([s, beside(side, s, 0.1), 4.5, 0.18, 7, 0.18]);
+        lamps.push([s, beside(side, s, -0.8), 7.9, 1.8, 0.2, 0.5]);
+      }
       // (a pier under the middle of the road, from the ground up to its underside; a head spreading under the deck)
       piers.push([s, 0, -drop / 2 - 0.3, 2.4, drop - 0.6, 2.4]);
       heads.push([s, 0, -0.6, Track.hi(s) - Track.lo(s) - 1, 0.8, 2.8]);
@@ -2744,6 +2746,7 @@ const buildRoad = () => {
     // overhead gantries: a beam across the whole road on two posts, green boards hung from it over the lanes
     for (let s = Track.start + 120; s < Track.end - 60; s += 260) {
       if (inJunction(s)) continue;
+      if (Track.tunnel(s) > 0 || (LEVEL.tunnels || []).some(t => s >= t.from - 20 && s <= t.to + 20)) continue;
       const lo = Track.lo(s) - 0.6, hi = Track.hi(s) + 0.6;
       gantryPosts.push([s, lo, 3.5, 0.5, 7, 0.5], [s, hi, 3.5, 0.5, 7, 0.5]);
       gantryBeams.push([s, (lo + hi) / 2, 6.9, hi - lo + 0.5, 0.5, 0.5]);

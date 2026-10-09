@@ -14,7 +14,7 @@ import { Crossings } from '../crossing.js';
 import { StopGo } from '../stopgo.js';
 import { Site } from '../site.js';
 import { SpeedCameras } from '../cameras.js';
-import { scene, tmp, tmp2 } from './scene.js';
+import { scene, camera, tmp, tmp2 } from './scene.js';
 import { buildStrip } from './road.js';
 import { makeCarriage } from './trainModel.js';
 import { makeWorker } from './siteModels.js';
@@ -55,7 +55,23 @@ const LAMP_ON = 0xff2a1a, LAMP_OFF = 0x3a1210;
 
 const group = new THREE.Group();
 scene.add(group);
-let crossings = [], signs = [];
+let crossings = [], signs = [], cameraMarkers = [];
+
+// downward-pointing 3D locator arrow over upcoming speed cameras
+const makeCameraMarker = () => {
+  const g = new THREE.Group();
+  const glow = new THREE.MeshBasicMaterial({ color: 0xffd23f });
+  const head = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.85, 4), glow);
+  head.rotation.x = Math.PI;
+  head.position.y = 0.42;
+  const shaft = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.65, 0.24), glow);
+  shaft.position.y = 1.15;
+  g.add(head, shaft);
+  g.visible = false;
+  g.userData.glow = glow;
+  group.add(g);
+  return g;
+};
 
 // a crossing's post at a stop line: a crossbuck over two lamps on a black board. Its lamps: [left, right]
 const crossingPost = (s, lat, face) => {
@@ -97,6 +113,7 @@ Game.onLoad.push(() => {
   group.clear();
   crossings = [];
   signs = [];
+  cameraMarkers = (LEVEL.cameras || []).map(() => makeCameraMarker());
   const C = CONFIG.crossing;
   for (const c of LEVEL.crossings || []) {
     const s = Track.place(c);
@@ -239,6 +256,33 @@ export const syncRoadside = (dt) => {
       scene.fog.far = USUAL.far + (F.far - USUAL.far) * fogged;
       scene.background.copy(usualColor).lerp(fogColor, fogged);
       scene.fog.color.copy(scene.background);
+    }
+  }
+  // 3D locator arrow over upcoming speed cameras (see CONFIG.speedCamera)
+  const warnDist = CONFIG.speedCamera?.warn || 180;
+  for (let i = 0; i < cameraMarkers.length; i++) {
+    const marker = cameraMarkers[i];
+    const cam = SpeedCameras.list[i];
+    if (!cam || cam.passed || cam.obstacle?.gone || Game.state !== 'playing' || !Player.active) {
+      marker.visible = false;
+      continue;
+    }
+    const gap = cam.s - Player.s;
+    if (gap > 0 && gap <= warnDist) {
+      marker.visible = true;
+      const camLat = cam.obstacle ? cam.obstacle.lat : 0;
+      Track.toWorld(cam.s, camLat, tmp);
+      const nowMs = t * 1000;
+      const bob = Math.sin(nowMs / 200 + i) * 0.2;
+      marker.position.set(tmp.x, tmp.y + 4.9 + bob, tmp.z);
+      marker.rotation.y = nowMs / 500 + i;
+      const sx = scene.scale.x < 0 ? -tmp.x : tmp.x;
+      const far = Math.hypot(sx - camera.position.x, tmp.y - camera.position.y, tmp.z - camera.position.z);
+      marker.scale.setScalar(Math.max(1, far / 45));
+      const speeding = Player.speed > cam.limit;
+      marker.userData.glow.color.setHex(speeding ? (Math.floor(nowMs / 200) % 2 ? 0xff2222 : 0xff7777) : 0xffd23f);
+    } else {
+      marker.visible = false;
     }
   }
   syncFlash();

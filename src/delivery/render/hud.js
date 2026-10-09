@@ -6,11 +6,17 @@ import { Packages } from '../packages.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { Message } from '../messages.js';
 import { Traffic } from '../traffic.js';
+import { SpeedCameras } from '../cameras.js';
 
 // ---- HUD -------------------------------------------------------------------
 import { Social } from '../social.js';
 const hudTimer = document.getElementById('timer');
 const hudProblems = document.getElementById('levelProblems');
+const hudCamAlert = document.getElementById('camAlert');
+const hudCamLimit = document.getElementById('camLimit');
+const hudCamDist = document.getElementById('camDist');
+const hudCamStatus = document.getElementById('camStatus');
+const hudCamArrow = document.getElementById('camArrow');
 Game.onLoad.push(() => {
   hudProblems.textContent = Track.problems.length ? 'Level data problems: ' + Track.problems.join(' | ') : '';
 });
@@ -60,6 +66,68 @@ const syncBehind = (raced) => {
   }
   hudBehind.style.display = shown ? 'block' : 'none';
 };
+// upcoming speed camera proximity warning (see CONFIG.speedCamera)
+const syncCamAlert = () => {
+  if (!hudCamAlert) return;
+  if (Game.state !== 'playing' || !Player.active || Game.screensaver || Game.paused) {
+    hudCamAlert.classList.add('hidden');
+    return;
+  }
+  const warnDist = CONFIG.speedCamera?.warn || 180;
+  let targetCam = null;
+  let minGap = Infinity;
+  for (let i = 0; i < SpeedCameras.list.length; i++) {
+    const cam = SpeedCameras.list[i];
+    if (cam.passed || cam.obstacle?.gone) continue;
+    const gap = cam.s - Player.s;
+    if (gap > 0 && gap <= warnDist && gap < minGap) {
+      minGap = gap;
+      targetCam = cam;
+    }
+  }
+
+  if (!targetCam) {
+    hudCamAlert.classList.add('hidden');
+    return;
+  }
+
+  hudCamAlert.classList.remove('hidden');
+
+  const gap = minGap;
+  const distM = Math.max(0, Math.round(gap));
+  if (hudCamDist) hudCamDist.textContent = `${distM} m`;
+
+  const limitKmh = Math.round(targetCam.limit * 3.6);
+  if (hudCamLimit) hudCamLimit.textContent = limitKmh;
+
+  const playerKmh = Math.round(Player.speed * 3.6);
+  const over = playerKmh - limitKmh;
+
+  if (hudCamStatus) {
+    if (Player.tank > 0) {
+      hudCamStatus.textContent = 'RAM IT!';
+      hudCamAlert.className = 'active tank';
+    } else if (Player.radar > 0) {
+      hudCamStatus.textContent = 'RADAR JAMMED';
+      hudCamAlert.className = 'active radar';
+    } else if (over > 0) {
+      hudCamStatus.textContent = `SLOW DOWN (+${over})`;
+      hudCamAlert.className = 'active speeding';
+    } else {
+      hudCamStatus.textContent = 'SPEED OK';
+      hudCamAlert.className = 'active safe';
+    }
+  }
+
+  const camLat = targetCam.obstacle ? targetCam.obstacle.lat : 0;
+  const across = (camLat - Player.lat) * (Track.mirrored ? -1 : 1);
+  const turn = Math.atan2(across, Math.max(gap, 4));
+
+  const slide = Math.max(-120, Math.min(120, across * 14));
+  hudCamAlert.style.transform = `translateX(calc(-50% + ${slide.toFixed(1)}px))`;
+
+  if (hudCamArrow) hudCamArrow.style.transform = `rotate(${turn.toFixed(3)}rad)`;
+};
 const hudDangerFill = document.getElementById('dangerFill');
 const hudFade = document.getElementById('fade');
 const runButtons = document.getElementById('runButtons');
@@ -71,6 +139,7 @@ const kmh = (ms) => Math.round(ms * 3.6);
 Game.onFinish.push(() => {
   runButtons.style.display = 'none';
   hudFade.style.opacity = 0;
+  if (hudCamAlert) hudCamAlert.classList.add('hidden');
 });
 export const updateHud = () => {
   // the clock counts down; below zero is the tip countdown, with the tip draining away
@@ -131,6 +200,7 @@ export const updateHud = () => {
       (LEVEL.grid.rival ? rivalLine() : '')
     : 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
   syncBehind(raced);
+  syncCamAlert();
   // a police car near enough to see what the player does (on the shoulder, a bust on the spot; not
   // on a level without the shoulder rule, nor for a tank, which nobody busts)
   const watchable = Game.state === 'playing' && Player.active && !Game.screensaver && LEVEL.shoulderTimer !== false && Player.tank <= 0;

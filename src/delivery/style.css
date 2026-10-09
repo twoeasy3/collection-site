@@ -240,6 +240,52 @@ body.cinematic #copGlow, body.in-garage #copGlow { display: none; }
 /* a speed camera catching the player: the screen flashes white (see render/roadside.js) */
 #cameraFlash { position: fixed; inset: 0; pointer-events: none; background: #fff; opacity: 0; }
 body.cinematic #cameraFlash, body.in-garage #cameraFlash { display: none; }
+/* speed camera warning HUD when approaching a camera */
+#camAlert { display: flex; align-items: center; gap: 10px; position: fixed; left: 50%;
+  top: calc(max(12px, env(safe-area-inset-top)) + 70px); transform: translateX(-50%);
+  background: rgba(14, 18, 26, 0.88); border: 2px solid rgba(255, 210, 63, 0.6);
+  border-radius: 12px; padding: 6px 14px; color: #fff; font-family: system-ui, -apple-system, sans-serif;
+  pointer-events: none; z-index: 5; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 0 12px rgba(255, 210, 63, 0.15);
+  transition: border-color 0.2s, box-shadow 0.2s; white-space: nowrap; }
+#camAlert.hidden { display: none !important; }
+body.photo #camAlert, body.cinematic #camAlert, body.screensaver #camAlert, body.in-garage #camAlert { display: none !important; }
+#camAlert .cam-disc { width: 36px; height: 36px; border-radius: 50%; background: #fff;
+  border: 4px solid #e10600; display: flex; align-items: center; justify-content: center;
+  box-sizing: border-box; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4); flex-shrink: 0; }
+#camAlert .cam-disc #camLimit { color: #111; font-size: 16px; font-weight: 900; line-height: 1; }
+#camAlert .cam-body { display: flex; flex-direction: column; gap: 2px; }
+#camAlert .cam-header { display: flex; align-items: center; gap: 8px; }
+#camAlert .cam-title { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; opacity: 0.8; text-transform: uppercase; }
+#camAlert .cam-status { font-size: 11px; font-weight: 800; letter-spacing: 0.05em; padding: 1px 6px; border-radius: 4px; text-transform: uppercase; }
+#camAlert .cam-detail { display: flex; align-items: center; gap: 8px; }
+#camAlert .cam-arrow-wrap { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; }
+#camAlert .cam-arrow { width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent;
+  border-bottom: 14px solid #ffd23f; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+  transform-origin: 50% 60%; transition: transform 0.05s linear; }
+#camAlert .cam-dist { font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em; color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+#camAlert.speeding { border-color: #ff3b30; box-shadow: 0 4px 18px rgba(255, 59, 48, 0.4), inset 0 0 14px rgba(255, 59, 48, 0.2);
+  animation: camPulse 0.5s ease-in-out infinite alternate; }
+#camAlert.speeding .cam-status { background: #ff3b30; color: #fff; animation: camBlink .5s steps(1) infinite alternate; }
+#camAlert.speeding .cam-arrow { border-bottom-color: #ff3b30; }
+#camAlert.safe { border-color: #34c759; box-shadow: 0 4px 14px rgba(52, 199, 89, 0.3), inset 0 0 10px rgba(52, 199, 89, 0.15); }
+#camAlert.safe .cam-status { background: rgba(52, 199, 89, 0.25); color: #34c759; }
+#camAlert.safe .cam-arrow { border-bottom-color: #34c759; }
+#camAlert.radar { border-color: #27e7ff; box-shadow: 0 4px 14px rgba(39, 231, 255, 0.3), inset 0 0 10px rgba(39, 231, 255, 0.15); }
+#camAlert.radar .cam-status { background: rgba(39, 231, 255, 0.25); color: #27e7ff; }
+#camAlert.radar .cam-arrow { border-bottom-color: #27e7ff; }
+#camAlert.tank { border-color: #ff9500; box-shadow: 0 4px 14px rgba(255, 149, 0, 0.4), inset 0 0 10px rgba(255, 149, 0, 0.2); }
+#camAlert.tank .cam-status { background: #ff9500; color: #000; }
+#camAlert.tank .cam-arrow { border-bottom-color: #ff9500; }
+@keyframes camPulse { 0% { border-color: #ff3b30; box-shadow: 0 4px 18px rgba(255, 59, 48, 0.35); }
+  100% { border-color: #ff736a; box-shadow: 0 4px 24px rgba(255, 59, 48, 0.7); } }
+@keyframes camBlink { 50% { opacity: 0.6; } }
+@media (max-width: 500px) {
+  #camAlert { top: calc(max(12px, env(safe-area-inset-top)) + 60px); padding: 4px 10px; gap: 8px; }
+  #camAlert .cam-disc { width: 30px; height: 30px; border-width: 3px; }
+  #camAlert .cam-disc #camLimit { font-size: 13px; }
+  #camAlert .cam-dist { font-size: 13px; }
+}
 /* who is coming up behind (a race, or a rival courier): an arrow at the foot of the screen, pointing back at them */
 #behind { display: none; position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%);
   text-align: center; pointer-events: none; z-index: 4; font-size: 13px; font-weight: 700; color: #fff; text-shadow: 0 1px 2px #000; }
