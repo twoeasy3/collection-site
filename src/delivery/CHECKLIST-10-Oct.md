@@ -330,30 +330,23 @@ moving thing on the road that explodes when hit.** Each one below changes a rule
 stretch: what the road is, what the player can see or know, how the car answers, what the traffic
 does, or what the run is for. None is built.
 
+**The owner's rules for a gimmick** (10-Oct, after cutting this list from 36 to 11). Not wanted:
+
+1. Having to stop the car, or wait.
+2. No counterplay: do as told or get busted.
+3. Variants of delivering fast, or to several places: they play exactly as a regular level does.
+4. Another moving thing on the road that explodes when hit.
+
+So a gimmick should be answered at speed, by steering, lane choice, timing or the choice of car.
+Two of the kept ones would be built to keep clear of rule 1: G3 roundabout as flowing into a gap at
+speed (no stop line), and G18 fuel as a drive-through pump lane or a pickup, not a stop.
+
 ### The road itself changes
 
-- [ ] G1. **Contraflow**: for a stretch the player's side is closed and the run goes down a lane
-      of the oncoming side between cones, with oncoming traffic an arm's length away. No hitting
-      anything: just no room.
-- [ ] G2. **Traffic lights at a crossroads**: green, amber, red on a fixed cycle. Running a red is
-      a bust if police see, and cross traffic really comes through. Good drivers stop; evil ones
-      jump it.
 - [ ] G3. **Roundabout**: the road goes round an island; traffic already on it has the way. Pick
       a gap or wait. The exit taken can be the short way or the long way round.
 - [ ] G4. **Fork with a choice**: the road splits into two real routes that rejoin: a short one
       full of traffic and a long clear one, or a dirt cut-through. Signed ahead.
-- [ ] G5. **Ferry**: the road ends at a ramp. The ferry leaves on a timetable shown on the
-      approach: make it and ride (the clock runs, the car rests and mends a little), miss it and
-      wait for the next.
-- [ ] G6. **Moving road**: a stretch of road that itself moves, forward in some lanes and
-      backward in others (an airport travelator, a car-wash conveyor). Lane choice is speed.
-- [ ] G7. **Banked wall**: a bend banked so steeply that the outer lanes can only be held above
-      a certain speed; too slow and the car slides down across the lanes.
-- [ ] G8. **Weak bridge**: a weight limit. Heavy cars and too many vehicles at once make it sag
-      and shed planks; the player chooses to wait for traffic to clear or take the ford beside it.
-- [ ] G9. **Paid express lane**: a lane that is fast and empty but costs tip money for every
-      second in it. Evil players can use it free and risk a bust. (Unlike the toll plaza that was
-      removed, nothing stops the car: it is a choice made at speed.)
 
 ### What the player can see or know
 
@@ -361,35 +354,19 @@ does, or what the run is for. None is built.
       posts and the tail-lights ahead. Follow a truck through or go by the posts.
 - [ ] G11. **Power cut**: the street lights, traffic lights and signs go dark over a district;
       junctions become free-for-alls and only headlights show the road.
-- [ ] G12. **Wrong signs**: someone has turned the signs round. The diversion arrows on a stretch
-      lie some of the time; a level-wide tell (a paint colour, a sticker) marks the honest ones.
-- [ ] G13. **Sat-nav says**: a voice gives lane advice before each hazard, and is confidently
-      wrong now and then. A radar-detector pickup makes it honest.
-- [ ] G14. **Mirror stretch**: under a low sun on wet road, the road ahead shows reflections of
-      traffic that is not there alongside traffic that is.
-- [ ] G15. **Pilot vehicle**: a pilot car leads a queue through roadworks at a set speed; pass it
-      and you are in the works with no road.
 
 ### How the car answers
 
 - [ ] G16. **Crosswind**: a steady push sideways on an exposed stretch (a viaduct, a dam), with
       gusts announced by a windsock. Tall cars are pushed more; passing a truck gives shelter,
       then a shove as you clear it.
-- [ ] G17. **Slipstream**: sit close behind a fast vehicle and gain speed above the car's top
-      speed; pull out and it fades. A reason to follow traffic, not only dodge it.
 - [ ] G18. **Fuel**: a long level where the tank will not make it. Petrol stations are on the
       shoulder: pull in and stop (time lost) or run dry and coast.
-- [ ] G19. **Overheating climb**: on a long hill, flat-out for too long boils the engine; ease
-      off or pull into a lay-by. Old cars suffer more.
 - [ ] G20. **Fragile cargo**: on this level the package breaks with bumps, kerbs and hard
       braking, not only with crashes. A meter in the corner; the tip scales with what is left.
       Goes with the cargo models in the queue.
-- [ ] G21. **Live cargo**: the Evil cargo fights back: it yanks the steering, sounds the horn,
-      or opens a door at intervals, worse as the clock runs down. Also goes with the cargo work.
 - [ ] G22. **Tow**: the car starts the level towing something (a caravan, a boat on a trailer,
       a broken-down friend). It swings wide in bends and takes two lanes to change lane.
-- [ ] G23. **Magnet crane**: a scrapyard crane's magnet sweeps over the road; a car under it is
-      lifted, carried and set down a few lanes over, or on the other carriageway.
 
 ### What the traffic does
 
@@ -399,34 +376,3 @@ does, or what the run is for. None is built.
       it. Reading the wave and arriving as it opens is faster than racing to the back of it.
 - [ ] G26. **School run**: every car on a stretch is trying to stop at the same kerb. They
       double-park, pull out without looking and reverse.
-- [ ] G27. **Road rage**: one driver the player has cut up follows for the rest of the level,
-      tailgating, blocking overtakes and brake-testing. An apology (the horn, a care package)
-      calls it off.
-- [ ] G28. **Follow that car**: the drop moves. The customer is in a taxi somewhere ahead; the
-      level ends when the player draws alongside and holds station for three seconds.
-- [ ] G29. **Blue lights behind**: an ambulance needs to come through the player's lane.
-      Clearing a path earns standing; Evil players can tuck in behind it and ride its wake
-      through the traffic.
-- [ ] G30. **Herd mentality**: traffic copies the car in front. Change lane in front of a queue
-      and the queue follows, so the player can open a lane, or close one, on purpose.
-
-### What the run is for
-
-- [ ] G31. **Several drops**: three packages for three kerbs along the way. Each needs the car
-      slowed and in the right lane at the right door; miss one and it is a smaller tip.
-- [ ] G32. **Hot food**: the tip is best inside a short window marked on the clock. Too early is
-      as bad as too late.
-- [ ] G33. **Witnesses**: on an Evil run, pedestrians with phones film what the car does in a
-      marked stretch. Behave there and nothing happens; do not, and the busts count double.
-- [ ] G34. **Forecast**: the weather changes on a timetable the level shows at the start (dry,
-      then rain at 1:00, then dry). Grip and the traffic's caution change with it, so the player
-      plans where to be when.
-- [ ] G35. **Night shift**: the same road three times in one run, at dusk, at night and at
-      dawn, with the traffic thinning and the police thickening each time.
-- [ ] G36. **Rival's sabotage**: with a rival courier on the level, whoever is in front can
-      leave something for the other: a closed gate, a changed light, a diversion sign.
-
-**Which to build first** (orchestrator's view): G17 slipstream, G16 crosswind and G2 traffic
-lights are small and change every level they touch. G31 several drops and G20 fragile cargo
-change what a run is, and fit the cargo work already in the queue. G4 fork with a choice needs the
-side roads cleanup to land first. G5 ferry fits the amphibious levels.

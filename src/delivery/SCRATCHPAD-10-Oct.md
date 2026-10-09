@@ -362,15 +362,31 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   lay up to 4 cm (18 cm at worst) under the expressway's land and up to 3 cm under its pavement at
   the merge. Now exact alongside the expressway, its own land and banks away from it, 6% at most
   (was 12%). Checked: levels check, `.hazards-check.mjs`, screenshots.
-- 2. Fork and merge markings: in progress.
-- 3. Decor pruning: not started.
+- **2. Fork and merge markings: done, `249424f`.** Lane-drop line, nose with chevrons, solid lines
+  meeting at its tip; every side road now parts from the expressway by a set gap (`ramps.apart`,
+  `ramps.part`), which moves side roads a little on Ring Road, Gimmick Road 2, Market Town and
+  Quarry Run. Seen in screenshots on five levels; left-hand driving not yet looked at.
+- 3. Decor pruning: in progress.
 - 4. Fully-featured side roads: not started.
 - 5. Every theme: not started.
 
 ## Agent 5: amphibious cars and levels (.claude/worktrees/delivery-city-levels, delivery-amphibious)
 
-- 1. The five cars and the garage's Amphibious section: in progress.
-- 2. Water stages in the engine: not started.
+- **1. The five cars and the garage's Amphibious section: done, `43e77e2`.** Sailing Herald (1 star,
+  $60), Float Van (2, $180), Toybota (3, $310), Dampervan (4, $470), Nissank (5, $750): `amphibious:
+  true` in `CARS`, each a little under its tier's best on the road. Sea-green stars. In the garage
+  from the start (my decision), parked after the tiers in columns of their own on a blue slipway
+  under an AMPHIBIOUS sign; `Show: Amphibious` on the bar; the comparison card shows the perk.
+  Checked: levels check, `.save-check` (3168 bytes with the five cars), `.balance-check`, three
+  garage screenshots looked at. No menu pictures (`carshots/`) for them yet.
+- **The owner's rules for gimmicks (relayed mid-task), and how the water is built to them:** the player
+  never has to stop or wait (slipways are taken at speed: a splash, a lower top speed and softer
+  steering, no halt); traffic that cannot cross queues on its own SHOULDER, so every lane stays open
+  to thread at speed; boats are things to out-steer (their wakes shove the car sideways, a stage can
+  have a current, channels narrow, barges are slow and wide), never a wall to wait behind. No ferry
+  timetable, no drawbridge, stop / go, level crossing, school crossing or roadblock on these levels.
+  Each level's fit is noted under step 5.
+- 2. Water stages in the engine: in progress.
 - 3. Traffic and water, boat traffic: not started.
 - 4. Amphibious-only levels (the flag, the menu): not started.
 - 5. Five levels: not started.
