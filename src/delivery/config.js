@@ -530,6 +530,8 @@ export const CONFIG = {
   spawnMin: 480,           // spawn window ahead of the player, metres (inside the fog)
   spawnMax: 640,
   despawnBehind: 80,
+  quietCull: 250,          // m from the player beyond which a car going into a quiet stretch may be taken off (unseen)
+  quietRetry: 3,           // s a car kept from turning up near a quiet stretch waits before it tries again (see quietZones)
   trafficLaneChangeRate: 2.5, // 1/s
   laneChangeChance: 0.3,   // per decision (every 1-3 s) for a random lane change
   signalTime: 1.5,         // s a calm (happy or neutral), good driver signals before changing lane;

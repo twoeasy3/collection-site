@@ -970,6 +970,7 @@ try {
     const used = Traffic.cars.filter(c => !c.unused).length, ways = (dir) => running().filter(c => c.dir === dir).length;
     const north = ways(1), south = ways(-1);
     pick('rushHour');
+    step(60); // (half a second: one with no room to turn up just then is in play, and turns up the moment there is)
     const rushNorth = ways(1), rushSouth = ways(-1), spare = Traffic.cars.filter(c => !c.active && c.unused).length;
     Player.endMystery();
     const usedAfter = Traffic.cars.filter(c => !c.unused).length;
@@ -2602,6 +2603,38 @@ try {
     }
     check(Game.outcome !== undefined && police > 0 && inside === 0 && vans > 5 && evilVans === 0,
       `no police within 300 m of Mountain Pass's stop / go works (${police} police cars about over the run); ${vans} vans, none of them evil`);
+  }
+
+  section('quiet zones: less traffic on the narrow cliff road');
+  {
+    // Tour de Coast's cliff road (one lane each way, no shoulder): driven through by a ghost with
+    // its quiet zone, and again without it; the cars about on the bridge stretch while the player is on it, counted
+    const level = levels.LEVELS.find(l => l.id === 'tour-de-coast'), zone = level.quietZones[0], zones = level.quietZones;
+    const onBridge = (quiet) => {
+      level.quietZones = quiet ? zones : [];
+      levels.selectLevel(levels.LEVELS.indexOf(level));
+      cars.selectCar('commuter');
+      Game.evil = false;
+      Game.start();
+      Object.assign(Player, { s: zone.from - 900, speed: 25 });
+      let total = 0, samples = 0;
+      for (let i = 0; i < 120 * 70 && Player.s < zone.to; i++) {
+        Object.assign(Player, { ghost: 99, health: Player.maxHealth });
+        Game.busts = 0; Game.time = 0;
+        Game.update(1 / 120);
+        FxQueue.length = 0;
+        if (Player.s > zone.from && i % 30 === 0) {
+          total += Traffic.cars.filter(c => c.active && c.s > zone.from && c.s < zone.to).length;
+          samples++;
+        }
+      }
+      return total / Math.max(1, samples);
+    };
+    let quiet = 0, busy = 0;
+    for (let k = 0; k < 6; k++) { quiet += onBridge(true); busy += onBridge(false); }
+    level.quietZones = zones;
+    check(quiet < busy * 0.75,
+      `quiet zones: on Tour de Coast's cliff road ${(quiet / 6).toFixed(1)} cars about on average, against ${(busy / 6).toFixed(1)} without its quiet zone (density ${zone.density})`);
   }
 
   section('grudges, chasing and blocking');

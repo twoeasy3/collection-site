@@ -126,6 +126,8 @@
 //   zones      { id, from, to, scenery, ground, sky, sea }: stretches of the level with a look of their
 //              own (on a level whose theme is 'zones': see render/road.js). The player is welcomed into
 //              each (messages.json: zones, by id). (Their traffic: see trafficZones)
+//   quietZones [{ from, to, density }]: stretches with less traffic (a narrow bridge with no shoulder): only
+//              `density` (0-1) of the cars that would turn up there do; the rest turn up elsewhere
 //   trafficZones [{ from, to, traffic: { kind: weight } }]: stretches where the traffic turning up is
 //              different: each sets the weights of the kinds it names over the level's "traffic" (0 takes
 //              a kind away), a later one over an earlier. With police only in such stretches, a police
