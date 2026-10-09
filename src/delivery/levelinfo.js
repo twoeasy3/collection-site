@@ -25,6 +25,10 @@ export const medalNeeds = (level, evil, medal) => {
 // they are listed on a card: the ones that make a level what it is first
 const some = (list) => Array.isArray(list) ? list.length > 0 : !!list;
 const GIMMICKS = [
+  ['Amphibious cars only', (l) => l.amphibious],
+  ['Water stages', (l) => some(l.water)],
+  ['Boats', (l) => some(l.water) && Object.keys(l.traffic || {}).some(kind => CONFIG.vehicles[kind]?.boat)],
+  ['Currents', (l) => (l.water || []).some(w => w.current)],
   ['Race', (l) => l.laps],
   ['Rival couriers', (l) => l.rival],
   ['Battle', (l) => l.battle],

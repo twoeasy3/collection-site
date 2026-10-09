@@ -23,6 +23,11 @@
 //              is smashed aside at no cost: see Collision). perk: the words for it, shown in the garage
 //   blue       true = a Blue Star car (the second season): better than a car of its tier with gold
 //              stars, but not as good as one a tier up; priced like a car two tiers up
+//   amphibious true = it floats: it drives down a slipway into a water stage (a level's "water") and on across
+//              it as a boat, slower and softer to steer (see CONFIG.water and water.js). The amphibious cars are a
+//              section of the garage of their own (see amphibiousCars and the garage), with sea-green stars, one at
+//              each star level, open from the start; an amphibious level (its "amphibious") is only driven in one
+//   draft      m of an amphibious car that is under the water when it is afloat (default CONFIG.water.draft)
 //   mass       how heavy it is in a shove (default 1): heavier knocks others aside and is knocked less
 //   shotBack   (optional) how much further back the studio camera (?cine=car) stands for its picture, for
 //              a vehicle whose wings reach past its hit box
@@ -41,12 +46,23 @@ export const TIERS = 5;
 export const NEXT_TIER_CAPS = { maxSpeed: 52, accel: 24, health: 450 };
 export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only the stars it has: no empty ones)
 // (a 6-star car, earned rather than bought, has magenta stars: see EARNED_CARS)
-export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff', earned: '#ff5fd2' };
-export const starColour = (car) => car.earned ? STAR_COLOURS.earned : car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
+// (and an amphibious car's are sea green: a section of the garage of its own, see amphibiousCars)
+export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff', earned: '#ff5fd2', amphibious: '#35d6b4' };
+export const starColour = (car) => car.earned ? STAR_COLOURS.earned : car.amphibious ? STAR_COLOURS.amphibious : car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
 // the Blue Star cars are in the garage once level CONFIG.blueStarsAfter is delivered (which opens the next)
 export const blueStarsOpen = () => Progress.data.unlocked > CONFIG.blueStarsAfter;
 // the cars the garage shows now (an earned car only once it is earned: see EARNED_CARS)
 export const garageCars = () => [...CARS.filter(car => !car.blue || blueStarsOpen()), ...EARNED_CARS.filter(car => Progress.earned(car))];
+// The amphibious cars (a car's "amphibious"): the garage's Amphibious section, there from the start, so an
+// amphibious level can be played as soon as it is open (the cheapest costs about a level's tip)
+const AMPHIBIOUS_PERK = 'Amphibious: it drives into the water and floats across';
+export const amphibiousCars = () => CARS.filter(car => car.amphibious);
+// the amphibious car to drive an amphibious level in: the one in use if it is one, or else the best the
+// player owns (the highest tier); null: the player owns none
+export const ownedAmphibious = () => {
+  const owned = amphibiousCars().filter(car => Progress.owns(car.id));
+  return owned.find(car => car.id === Progress.data.car) || owned.sort((a, b) => b.tier - a.tier)[0] || null;
+};
 
 export const CARS = [
   // In tiers, cheapest first: each tier a little faster and a little tougher than the one
@@ -132,6 +148,25 @@ export const CARS = [
   { id: 'sixbysix', tier: 5, blue: true, name: '6x6', price: 1350, color: 0xe2dccc, evilColor: 0x4b5320, fixedLivery: true, model: 'sixbysix',
     maxSpeed: 46.5, accel: 13, crossing: 1, health: 420, mass: 2.4, hw: 1.15, hl: 3.0, height: 2.45,
     trait: 'rocks', perk: 'Ignores rockfall: it smashes fallen rocks aside without a scratch' },
+  // ---- the amphibious cars: one at each star level, each with its tier's stats and price (a little under its
+  // tier's best on the road: what it gives up for floating), and the only cars an amphibious level is driven in.
+  // In the garage from the start, in a section of their own (see the garage). Their perk is the water
+  // (the ids are short: each is in a full save's cookie. See progress.js)
+  // (May's Herald: a little sixties convertible under sail. Light, slow, and it turns on a sixpence)
+  { id: 'herald', tier: 1, amphibious: true, name: 'Sailing Herald', price: 60, color: 0xd9c9a8, evilColor: 0x5a1f2a, fixedLivery: true, model: 'herald',
+    maxSpeed: 23, accel: 9, agility: 1.2, crossing: 0.5, health: 90, hw: 0.8, hl: 1.95, height: 1.0, draft: 0.5, shotBack: 1.5, perk: AMPHIBIOUS_PERK },
+  // (the Transporter: a square-nosed van lashed between two yellow floats. Wide, steady, tough for its tier)
+  { id: 'floatvan', tier: 2, amphibious: true, name: 'Float Van', price: 180, color: 0x2f7fc4, evilColor: 0x7a2a2a, fixedLivery: true, model: 'transporter',
+    maxSpeed: 26, accel: 8, crossing: 0.6, health: 160, mass: 1.3, hw: 1.3, hl: 2.3, height: 2.0, draft: 0.85, perk: AMPHIBIOUS_PERK },
+  // (the Toybota: a pickup with an outboard where its tailgate was. The all-rounder)
+  { id: 'toybota', tier: 3, amphibious: true, name: 'Toybota', price: 310, color: 0xc8322b, evilColor: 0x23262b, fixedLivery: true, model: 'toybota',
+    maxSpeed: 34, accel: 11, crossing: 0.9, health: 190, hw: 1.0, hl: 2.5, height: 1.6, perk: AMPHIBIOUS_PERK },
+  // (the Dampervan: a high-top camper built into a boat's hull. Slow off the line, and very hard to sink)
+  { id: 'dampervan', tier: 4, amphibious: true, name: 'Dampervan', price: 470, color: 0x1f4d36, evilColor: 0x4a2a5e, fixedLivery: true, model: 'dampervan',
+    maxSpeed: 37, accel: 10, crossing: 0.7, health: 290, mass: 1.6, hw: 1.0, hl: 2.3, height: 2.7, draft: 0.72, perk: AMPHIBIOUS_PERK },
+  // (the Nissank: a pickup on two great pontoons with twin outboards. The quick one, and heavy with it)
+  { id: 'nissank', tier: 5, amphibious: true, name: 'Nissank', price: 750, color: 0x2a55b8, evilColor: 0xb8881f, fixedLivery: true, model: 'nissank',
+    maxSpeed: 44, accel: 14, crossing: 0.9, health: 310, mass: 2, hw: 1.35, hl: 2.6, height: 1.7, draft: 0.85, perk: AMPHIBIOUS_PERK },
   { id: 'tank', name: 'Tank', price: 5000, color: 0x4b5a2a, evilColor: 0x2a2d33, tank: true, corner: true,
     maxSpeed: 46, accel: 8, crossing: 1, health: 100, hw: 1.25, hl: 2.3, height: 1.9 }, // (TANK RAGE's top speed: CONFIG.tankMaxSpeed)
 ];
@@ -212,8 +247,11 @@ export let CAR = find();
 
 // A level with a vehicle of its own puts the player in that; any other level gives back
 // the car picked in the garage. Called when a level is picked and when a run starts.
-export const useLevelCar = (id) => {
+// (amphibious: the level is an amphibious one, its "amphibious": the car in use if it floats, or else the best
+// amphibious car the player owns. With none owned the car in use stays, and Game.start won't start the level)
+export const useLevelCar = (id, amphibious) => {
   CAR = (id && (LEVEL_CARS[id] || CARS.find(c => c.id === id))) || find(); // (a special vehicle, or one of the garage's)
+  if (amphibious && !id && !CAR.amphibious) CAR = ownedAmphibious() || CAR;
   lent = null;
 };
 
@@ -275,6 +313,12 @@ export const SUPER_LIVERIES = {
   superlowrider: { good: [0x1a3cff, 0xf0c030], evil: [0x5a0a2a, 0xd8d8d8] },            // blue with gold / wine with chrome
   classicgt: { good: [0x1f4d36, 0xd8b040], evil: [0xb0121c, 0xf4f4f4] },                // racing green with gold / red with white
   sixbysix: { good: [0xe2dccc, 0x151515], evil: [0x4b5320, 0xf08a2a] },                 // sand with black / olive with orange
+  // (the amphibious cars: boat colours)
+  herald: { good: [0xf4f1e6, 0x1d4f9c], evil: [0x1a2a3a, 0xe8c040] },                   // sail white with navy / midnight with brass
+  floatvan: { good: [0xf2862a, 0xf4f4f4], evil: [0x2a2d33, 0x22c8d8] },                 // lifeboat orange with white / gunmetal with teal
+  toybota: { good: [0xd8262b, 0xf4f4f4], evil: [0x151515, 0xd8262b] },                  // rescue red with white / black with red
+  dampervan: { good: [0x22a8a0, 0xf4e8c8], evil: [0x5a1f6a, 0xb6ff3a] },                // sea green with cream / plum with lime
+  nissank: { good: [0x1d5bbf, 0xf2c418], evil: [0x8a1030, 0xd0d4da] },                  // powerboat blue with yellow / wine with silver
 };
 // a colour's metallic version (lighter, more saturated) and its deep version, for a car with no entry
 const shade = (hex, lift, sat) => {

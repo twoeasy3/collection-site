@@ -72,7 +72,7 @@
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
 //   theme      'city' (default), 'bathurst' (Mount Panorama: a mountain), 'panorama' (the same, as a road through the bush), 'montreal' (Circuit Gilles-Villeneuve's island: its landmarks 'river', 'basin',
-//              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'hell' or 'space': the look of the ground, sky and roadside.
+//              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'flooded' (the city under flood water, in the rain), 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo', 'f1')
@@ -158,6 +158,17 @@
 //              drains right out, leaving the road bare a while. washUp: { types: { type: share },
 //              count: { min, max } }: pickups each wave leaves in the water. On a two-way road
 //              with no exits. See tide.js and CONFIG.tide
+//   water      [{ from, to, current? }]: water stages: over each stretch the road IS water: the pavement runs down a
+//              slipway into a channel as wide as the road and back up one at the far end, the lanes carrying on as
+//              lanes, marked by buoys. A car that floats drives in at speed and goes on as a boat (slower, softer
+//              to steer: nothing stops it); traffic that can't float waits in a queue on its own shoulder short of
+//              the water, every lane left open; amphibious traffic (a vehicle's "amphibious") drives in and out;
+//              boats (a vehicle's "boat") are only ever on the water, and tie up at its bank at the end of it.
+//              current: m/s^2 the water carries a car afloat sideways (+ = to the right). from below 0 or to beyond
+//              the finish: a level that starts, or ends, afloat. On level road, clear of exits, junctions, splits
+//              and tunnels, each 78 m long at least, and only on an amphibious level. See water.js, CONFIG.water
+//   amphibious true = an amphibious level: it can only be started in an amphibious car (a car's "amphibious": the
+//              garage's Amphibious section), whichever of them the player owns and picks; the menu says so
 //   frogs      { from, to }        a stretch of road that a large frog roams all over
 //   mud        { from, to }        a stretch where the road gives way to mud: a car is slowed in it as
 //                                  on a railway track, by how well it crosses (see CONFIG.mud)
@@ -327,6 +338,11 @@ import christmas from './levels/christmas.json';
 import monza from './levels/monza.json';
 import spa from './levels/spa.json';
 import albertPark from './levels/albert-park.json';
+import slipway from './levels/slipway.json';
+import harbour from './levels/harbour.json';
+import flood from './levels/flood.json';
+import ford from './levels/ford.json';
+import fjord from './levels/fjord.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
@@ -334,10 +350,15 @@ import albertPark from './levels/albert-park.json';
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue,
   speedTrapAlley, mountainPass, outbackExpress, tourDeCoast, ringRoad, marketTown, quarryRun, hongKong, tokyo, mumbai, stelvio, christmas];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown, battlefield];
+// ...and the amphibious levels (A1, A2...: each "amphibious", with water stages, driven only in an amphibious
+// car), after the special ones: they unlock in order like the rest, the first by delivering the last special level
+// (the ids are short: each is in a full save's cookie twice. See progress.js)
+export const AMPHIBIOUS_LEVELS = [slipway, harbour, flood, ford, fjord];
 // ...and the circuits built from the real ones (render/circuits/): races only, on the menu's Races tab. They come
-// last in LEVELS, after the special levels, so saved progress (which counts by position) is undisturbed
+// last in LEVELS, after every delivery level (races are always open, so saved progress, which counts the
+// delivery levels open by position, only has to know the amphibious levels went in ahead of them: see progress.js)
 export const CIRCUIT_LEVELS = [monza, spa, albertPark];
-export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...CIRCUIT_LEVELS];
+export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...AMPHIBIOUS_LEVELS, ...CIRCUIT_LEVELS];
 // The menu has two tabs: deliveries, and races. A race is any lapped level (its "laps"), wherever it sits in
 // LEVELS (Marina Bay, Montreal and Mount Panorama are among the special levels); races are always open, and
 // never lock the delivery level after them (see Progress and the menu)
@@ -347,10 +368,11 @@ export const DELIVERY_LEVELS = LEVELS.filter(l => !isRace(l));
 // the level after this one on its own tab (the next delivery, or the next race), or null at the end
 export const nextOnTab = (level) => { const list = isRace(level) ? RACE_LEVELS : DELIVERY_LEVELS, k = list.indexOf(level); return k >= 0 && k + 1 < list.length ? list[k + 1] : null; };
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special
-// delivery levels, 'R1'... for the races (each tab numbers its own)
+// delivery levels, 'A1'... for the amphibious ones, 'R1'... for the races (each tab numbers its own)
 export const levelLabel = (index) => {
   const level = LEVELS[index];
   if (isRace(level)) return 'R' + (RACE_LEVELS.indexOf(level) + 1);
+  if (AMPHIBIOUS_LEVELS.includes(level)) return 'A' + (AMPHIBIOUS_LEVELS.indexOf(level) + 1);
   return index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (DELIVERY_LEVELS.indexOf(level) - MAIN_LEVELS.length + 1);
 };
 // the screensaver's level: not on the menu, driven round and round with no player car

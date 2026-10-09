@@ -4,9 +4,16 @@
 // and the editor both read the one list. Any theme can go on any level (?theme=snow in the address tries one
 // on the level picked): what a theme's scenery makes of something a level may have of its own (a runway,
 // zones, landmarks, grandstands) it does without where the level has none.
+// channel: { shallow, deep, glint }: the colours of the water of a water stage (a level's "water": see
+// render/water.js) in this theme, if not CONFIG.water.colours: a harbour at night, a muddy river, a fjord, a flood.
 // ============================================================================
 export const THEMES = {
   city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city' },
+  // flooded: the city after the river broke its banks: the city's own scenery standing in brown flood water (the
+  // ground is the water's colour), under a low sky, in the rain (rain: true). Made for water stages (a level's
+  // "water": see water.js), whose channels are the avenues under water and whose dry stretches the rises between
+  flooded: { sky: 0x8a949c, ground: 0x5d7f86, road: 0x34373c, scenery: 'city', rain: true, channel: { shallow: 0x86a3a6, deep: 0x4f7780, glint: 0x6c949b },
+    light: { sky: 0xd8dde4, ground: 0x4a5a5e, ambient: 1.1, sun: 0xe8ecf2, sunlight: 0.6 } },
   farm: { sky: 0xc4e6f5, ground: 0x8fb556, road: 0x57514a, scenery: 'farm' },
   // beach: sand, a stormy sky, the sea along the right, palms and beach huts
   beach: { sky: 0x7e8d9e, ground: 0xdccb95, road: 0x45484e, scenery: 'beach' },
@@ -25,7 +32,7 @@ export const THEMES = {
     zones: [{ scenery: 'bush', ground: 0x7d8a52, sky: 0xb3d0e2 }, { scenery: 'wollongong', ground: 0x6f9a52, sky: 0x9ccbea, sea: 8 },
       { scenery: 'kiama', ground: 0x7fb35a, sky: 0xa9d4f2, sea: 8 }] },
   // safari: a level in zones on a dirt road: no markings, only the ruts worn into it
-  safari: { sky: 0xc6dcea, ground: 0xc2a85a, road: 0xa47a4c, scenery: 'zones', unmarked: true,
+  safari: { sky: 0xc6dcea, ground: 0xc2a85a, road: 0xa47a4c, scenery: 'zones', unmarked: true, channel: { shallow: 0xa9a878, deep: 0x5f8274, glint: 0x7c9a86 },
     zones: [{ scenery: 'savanna', ground: 0xc2a85a, sky: 0xc6dcea }, { scenery: 'kopjes', ground: 0xb59a62, sky: 0xcbd9e2 },
       { scenery: 'plains', ground: 0xb8a35e, sky: 0xd2e0e8 }] },
   // construction: a road being built: bare earth all round, a hazy sky, the road giving way to mud
@@ -33,7 +40,7 @@ export const THEMES = {
   // airport: an airport going up in flames: a smoky orange sky, dry grass between concrete aprons, the runway
   airport: { sky: 0xc98e62, ground: 0x8c8f62, road: 0x45484d, scenery: 'airport' },
   // snow: an alpine pass in winter. terrain: true = the land is a mountainside (see buildTerrain)
-  snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true },
+  snow: { sky: 0xd3dfe9, ground: 0xf0f4f7, road: 0x4f535a, scenery: 'alpine', terrain: true, channel: { shallow: 0x9fc4d0, deep: 0x24566f, glint: 0x3a7391 } },
   // canberra: the bush capital: dry grass, gum trees and concrete, a grassy median
   canberra: { sky: 0xb9d8ee, ground: 0xa3ad66, road: 0x4a4c50, scenery: 'canberra', median: 0x7f9a4f },
   // hood: the same suburb gone to seed (rundown: see the suburb scenery): dead grass and bare dirt, drab
@@ -75,7 +82,7 @@ export const THEMES = {
   // a wall of lit towers along the left and across the water, neon signs hung out over the road, junks
   // and the Star Ferry crossing the harbour (ferry: true), and double-decker trams up and down the median
   // (trams: true, on a level with a "median")
-  hongkong: { sky: 0x0b1024, ground: 0x2a2d33, road: 0x3e4148, scenery: 'hongkong', lit: true, headlights: true, night: true, sea: 14, ferry: true, trams: true,
+  hongkong: { sky: 0x0b1024, ground: 0x2a2d33, road: 0x3e4148, scenery: 'hongkong', lit: true, headlights: true, night: true, sea: 14, ferry: true, trams: true, channel: { shallow: 0x2f5a68, deep: 0x12303f, glint: 0x1f4c5c },
     light: { sky: 0x9fb0ff, ground: 0x2a2436, ambient: 0.75, sun: 0xffe0c0, sunlight: 0.45 } },
   // tokyo: the Shuto Expressway at night, elevated the whole way (elevated: the road stands on piers, a
   // parapet along each edge, the city far below), green overhead signs, the towers of the city all round

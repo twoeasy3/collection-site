@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial, nextOnTab } from './levels.js';
 import { Progress } from './progress.js';
-import { useLevelCar, returnCar, earnedFor } from './cars.js';
+import { useLevelCar, returnCar, earnedFor, ownedAmphibious } from './cars.js';
 import { Input } from './input.js';
 import { clamp } from './util.js';
 import { Track, buildTrack } from './track.js';
@@ -57,6 +57,9 @@ export const Game = {
   loaded: null, // the level whose roads and contents are currently built
   onLoad: [],   // called after a level is loaded (rendering builds its scenery here)
   onFinish: [], // called when a run ends (the menu refreshes its cards)
+  onRefused: [], // called when a run is not started: an amphibious level, and no amphibious car owned (the menu says so)
+  // can a run on the level picked be started? Not an amphibious level (its "amphibious") without an amphibious car
+  get canStart() { return !LEVEL.amphibious || !!LEVEL.car || !!ownedAmphibious(); },
 
   // how far through the run the player is, 0 .. 1 (on a lapped level, all its laps)
   get progress() { return LEVEL.laps ? (this.lap + Track.progress(Player.s)) / LEVEL.laps : Track.progress(Player.s); },
@@ -87,7 +90,7 @@ export const Game = {
       this.raceWatch = false;
       document.body.classList.remove('racewatch');
       selectLevel(this.menuLevel);
-      useLevelCar(LEVEL.car);
+      useLevelCar(LEVEL.car, LEVEL.amphibious);
     }
     document.body.classList.remove('screensaver');
     resultScreen.classList.add('hidden');
@@ -136,6 +139,13 @@ export const Game = {
     this.start();
   },
   start() {
+    // an amphibious level is only driven in an amphibious car: with none owned, back to the menu, which says
+    // which one to get (render/menu.js). With one owned it is driven in that, whatever car is in use
+    if (!this.canStart) {
+      if (this.state !== 'start') this.toMenu();
+      for (const hook of this.onRefused) hook();
+      return;
+    }
     // a rival courier (?rival: an experiment): on a delivery level (not a circuit), a race of one
     // other car, the player's own kind, from the start line to the drop. 'evil', 'good', or
     // 'opposite' (the other side to the player's)
@@ -148,7 +158,7 @@ export const Game = {
     this.rivalsIn = 0;          // rivals over the line before the player
     this.rivalAhead = new Map(); // for each, whether it was ahead of the player when last looked
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
-    useLevelCar(LEVEL.car); // a UFO on the space level, otherwise the garage's car
+    useLevelCar(LEVEL.car, LEVEL.amphibious); // a UFO on the space level, otherwise the garage's car (on an amphibious level, the player's amphibious one)
     Player.evil = this.evil && !LEVEL.battle && !LEVEL.alwaysGood; // (on the Battlefield the player is in the green army, the good one, whatever the side on the menu; a level can say so too)
     Mysteries.reset(); // (before the player: a side swap or a giant left from the last run is not undone over this one)
     Social.reset(); // (before the player: its shoulder allowance goes by it)

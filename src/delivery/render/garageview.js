@@ -21,7 +21,8 @@ const SHOWS = [
   { id: 'owned', name: 'Owned', has: (car) => Progress.owns(car.id) },
   { id: 'sale', name: 'For sale', has: (car) => !Progress.owns(car.id) },
   { id: 'afford', name: 'Can afford', has: (car) => !Progress.owns(car.id) && Progress.data.money >= car.price },
-  { id: 'gold', name: 'Gold stars', has: (car) => !!car.tier && !car.blue && !car.earned, when: blueStarsOpen },
+  { id: 'amphibious', name: 'Amphibious', has: (car) => !!car.amphibious },
+  { id: 'gold', name: 'Gold stars', has: (car) => !!car.tier && !car.blue && !car.amphibious && !car.earned, when: blueStarsOpen },
   { id: 'blue', name: 'Blue stars', has: (car) => !!car.blue, when: blueStarsOpen },
   // (the 6-star cars, each earned on a special level: offered once there is one. See cars.js EARNED_CARS)
   { id: 'earned', name: '6 stars', has: (car) => !!car.earned, when: () => EARNED_CARS.some(car => Progress.earned(car)) },
