@@ -97,7 +97,11 @@
 //              (each on the level's "rival" side), with names, cars and colour schemes of their own
 //   shoulder   m of shoulder each side of the road, if not CONFIG.shoulder (a street circuit's walls close by)
 //   runoff     { from, to, side, width }: the shoulder on that side `width` m wider over that stretch (run-off
-//              on the outside of a corner, where a circuit has it), easing in and out
+//              on the outside of a corner, where a circuit has it), easing in and out. With an "end" as well
+//              ({ from, to, side, width, end }) it tapers in a straight line from `width` m at `from` to `end` m
+//              at `to` instead, with no easing: one tapering trap is one stretch, and stretches laid end to
+//              end, each starting at the width the last ended at, make a smooth wall line (what
+//              scripts/circuit-from-osm.mjs writes)
 //   stands     { from, to, side, pits }: grandstands along that stretch (pits: the pit garages instead)
 //   laps       the number of laps of a race round a circuit: the road must come back round to where it
 //              starts, facing the same way (a closed loop, checked as the level loads)

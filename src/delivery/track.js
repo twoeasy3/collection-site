@@ -421,6 +421,9 @@ const createTrack = () => {
     for (const r of runoffs) {
       if ((r.side === 'left' ? -1 : 1) !== side) continue;
       if (s < r.from || s > r.to) continue;
+      // (one with an "end" tapers in a straight line from `width` at `from` to `end` at `to`, with no easing: stretches
+      // end to end, each beginning at the width the last ended at, make one smooth wall line)
+      if (r.end !== undefined) { w = Math.max(w, SH + r.width + (r.end - r.width) * (s - r.from) / (r.to - r.from)); continue; }
       const E = CONFIG.runoffEase;
       const k = (LOOP && r.from <= 0 ? 1 : smooth((s - r.from) / E)) * (LOOP && r.to >= length ? 1 : 1 - smooth((s - (r.to - E)) / E));
       if (k > 0) w = Math.max(w, SH + r.width * k);
@@ -874,7 +877,7 @@ const createTrack = () => {
       if (Math.hypot(a.x - b.x, a.z - b.z) > 1 || turned > 0.01) problems.push('laps: the road must come back round to where it starts, facing the same way (it ends ' + Math.hypot(a.x - b.x, a.z - b.z).toFixed(1) + ' m off)');
     }
     for (const r of runoffs) {
-      if (!(r.from < r.to) || r.from < 0 || r.to > length || !(r.width > 0) || (r.side !== 'left' && r.side !== 'right')) problems.push('runoff at ' + r.from + ': from before to, on the road, a width, side left or right');
+      if (!(r.from < r.to) || r.from < 0 || r.to > length || !(r.end === undefined ? r.width > 0 : r.width >= 0 && r.end >= 0 && r.width + r.end > 0) || (r.side !== 'left' && r.side !== 'right')) problems.push('runoff at ' + r.from + ': from before to, on the road, a width, side left or right');
     }
     for (const m of mud) {
       if (!(m.from < m.to) || m.from < 0 || m.to > length) problems.push('mud at ' + m.from + '-' + m.to + ': from before to, on the road');

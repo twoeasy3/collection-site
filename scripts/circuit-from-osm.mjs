@@ -22,8 +22,10 @@
 //   realLength  m, the published lap, to report against
 //   smooth      m, how far the heading is smoothed (default 4); minRadius m (default 9.5: the road's limit is 9)
 //   elevation   false = flat; or { every: m between heights asked for (40), smooth: m (40), scale: 1 }
-//   runoff      { max: m (60), minWidth: m (2), gap: m (40: anything wider for less than this is shut), within: m (4)
-//               and share (0.35): how far widths may differ and still be one stretch; barriers: [extra barrier
+//   runoff      { max: m (60), minWidth: m (2), gap: m (40: anything wider for less than this is shut), smooth: m (12:
+//               how far either way the measured widths are smoothed), over: m (0.75: the most the level's wall may
+//               stand beyond what was measured), taper: m per m (1: the fastest the width may change), fit: m (1.5: how closely the tapers keep to the smoothed line: more
+//               gives fewer, longer stretches); barriers: [extra barrier
 //               values], ignoreWays: [ids]; street: true = a street circuit, whose walls (put up for the race, and
 //               on no map) stand at the road's edge: only a mapped gravel trap or apron is run-off }
 //   pit         { way: id } the pit lane (if not the relation's pit_lane member): where the pits are drawn
@@ -469,49 +471,87 @@ for (const side of ['left', 'right']) {
   const shut = med.map((_, i) => near(med, i, Math.min));
   for (let i = 0; i < NSEG; i++) widths[side].push(near(shut, i, Math.max));
 }
-// merged into stretches: runs of much the same width (within 2 m, or a fifth), each a stretch reaching 12 m
-// past its run each end, so that track.js's 25 m ease is half way at the run's ends
+// The level's run-off, from those widths: a wall line that changes gradually. The widths measured every 4 m
+// are noisy (a ray catches a tree, a wall end, a gap), and written out as they are they made a stepped,
+// ragged wall. So, on each side:
+//   1. (a median of five has dropped single stray samples already;) anything under minWidth is none;
+//   2. held to change by no more than `taper` m per m (RO.taper, 1: a wall turning away at 45 degrees), by narrowing: the widest line that is
+//      nowhere beyond what was measured and nowhere steeper;
+//   3. smoothed, on the narrow side: the narrowest within `smooth` m either way (RO.smooth, 12), then a weighted
+//      mean reaching no further than that, so the wall is never beyond where the barrier was measured;
+//   4. simplified into as few straight tapers as keep within `fit` m (RO.fit, 1.5) of the smoothed line
+//      (Douglas-Peucker), a vertex added wherever a taper would be more than `over` m (RO.over, 0.75) wider than measured;
+//   5. each taper one stretch { from, to, side, width, end } (see track.js shoulderOn): they join end to end
+//      at the same width, so the wall has no steps at all, only gentle changes of angle.
 const smooth01 = (x) => { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); };
 const EASE = 25;
-const shoulderOf = (stretches, side, s) => { let w = 0; for (const r of stretches) { if (r.side !== side) continue; if (s < r.from || s > r.to) continue; const k = (r.from <= 0 ? 1 : smooth01((s - r.from) / EASE)) * (r.to >= LENGTH ? 1 : 1 - smooth01((s - (r.to - EASE)) / EASE)); if (k > 0) w = Math.max(w, r.width * k); } return w; };
-const runoff = [];
-for (const side of ['left', 'right']) {
-  const w = widths[side], W = (i) => w[i % NSEG];
-  // (begun where there is none, if anywhere, so that no run is cut in two by the line; a run that does cross
-  // the line is two stretches of one width, which track.js does not ease at the line)
-  let i = Math.max(0, w.findIndex(v => v < RO.minWidth));
-  const stop = i + NSEG;
-  while (i < stop) {
-    if (W(i) < RO.minWidth) { i++; continue; }
-    let j = i, sum = 0, lo = W(i), hi = W(i);
-    while (j < stop && W(j) >= RO.minWidth) {
-      const nlo = Math.min(lo, W(j)), nhi = Math.max(hi, W(j));
-      if (nhi - nlo > Math.max(RO.within, RO.share * nhi)) break;
-      lo = nlo; hi = nhi; sum += W(j); j++;
-    }
-    const width = Math.round(sum / (j - i) * 2) / 2;
-    let from = i * 4 - 12, to = j * 4 + 12;
-    if (to - from < 2 * EASE) { const mid = (from + to) / 2; from = mid - EASE; to = mid + EASE; }
-    from = Math.round(from); to = Math.round(to);
-    if (from < 0) runoff.push({ from: from + LENGTH, to: LENGTH, side, width }, { from: 0, to, side, width });
-    else if (to > LENGTH) { if (from < LENGTH) runoff.push({ from, to: LENGTH, side, width }, { from: 0, to: to - LENGTH, side, width }); else runoff.push({ from: from - LENGTH, to: to - LENGTH, side, width }); }
-    else runoff.push({ from, to, side, width });
-    i = j;
+const shoulderOf = (stretches, side, s) => {
+  let w = 0;
+  for (const r of stretches) {
+    if (r.side !== side) continue;
+    if (s < r.from || s > r.to) continue;
+    if (r.end !== undefined) { w = Math.max(w, r.width + (r.end - r.width) * (s - r.from) / (r.to - r.from)); continue; }
+    const k = (r.from <= 0 ? 1 : smooth01((s - r.from) / EASE)) * (r.to >= LENGTH ? 1 : 1 - smooth01((s - (r.to - EASE)) / EASE));
+    if (k > 0) w = Math.max(w, r.width * k);
   }
-}
-// (a stretch that makes less than a metre's difference anywhere, the others being there, is left out)
-for (const r of [...runoff].sort((a, b) => a.width - b.width)) {
-  const rest = runoff.filter(x => x !== r);
-  let matters = false;
-  for (let s = r.from; s <= r.to && !matters; s += 2) matters = shoulderOf(runoff, r.side, s) - shoulderOf(rest, r.side, s) >= 1;
-  if (!matters) runoff.splice(runoff.indexOf(r), 1);
+  return w;
+};
+const SM = { smooth: 12, over: 0.75, fit: 1.5, taper: 1, ...RO };
+const runoff = [], smoothed = { left: [], right: [] };
+for (const side of ['left', 'right']) {
+  const at = (list, i) => list[((i % NSEG) + NSEG) % NSEG];
+  // (widths has had its median of five already: single stray samples are gone)
+  const measuredW = widths[side].map(v => v < RO.minWidth ? 0 : v);
+  // (then no part of it may change faster than `taper` m per m: each sample is held down by its neighbours'
+  // widths plus what the taper allows over the distance between them. The widest line that is nowhere beyond
+  // what was measured and nowhere steeper than that)
+  const env = measuredW.slice();
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 1; i < 2 * NSEG; i++) env[i % NSEG] = Math.min(env[i % NSEG], at(env, i - 1) + SM.taper * 4);
+    for (let i = 2 * NSEG - 1; i >= 0; i--) env[i % NSEG] = Math.min(env[i % NSEG], at(env, i + 1) + SM.taper * 4);
+  }
+  // (the narrowest within `smooth` m either way; then a weighted mean, twice, reaching no further than that
+  // in all: a mean of values none of which is wider than what was measured here cannot be wider either)
+  const R = Math.max(2, Math.round(SM.smooth / 4)), r = Math.floor(R / 2);
+  let w = env.map((_, i) => { let v = Infinity; for (let k = -R; k <= R; k++) v = Math.min(v, at(env, i + k)); return v; });
+  for (let pass = 0; pass < 2; pass++) {
+    w = w.map((_, i) => {
+      let sum = 0, weight = 0;
+      for (let k = -r; k <= r; k++) { const g = 1 - Math.abs(k) / (r + 1); sum += at(w, i + k) * g; weight += g; }
+      return sum / weight;
+    });
+  }
+  w = w.map((v, i) => env[i] === 0 || v < 0.4 ? 0 : v);
+  smoothed[side] = w;
+  // simplified: the vertices kept, round the lap from sample 0 back to it (sample NSEG is sample 0 again)
+  const keep = new Set([0, NSEG]), W = (i) => at(w, i);
+  for (let i = 0; i < NSEG; i++) if ((W(i) === 0) !== (W(i + 1) === 0)) keep.add(W(i) === 0 ? i : i + 1); // (where it begins and ends: exactly there)
+  const split = (i, j) => {
+    let worst = 0, k = -1;
+    for (let n = i + 1; n < j; n++) {
+      const line = W(i) + (W(j) - W(i)) * (n - i) / (j - i), d = Math.max(Math.abs(line - W(n)) - SM.fit, line - at(env, n) - SM.over, W(n) === 0 && line > 0 ? 1 : 0);
+      if (d > worst) { worst = d; k = n; }
+    }
+    if (k < 0) return;
+    keep.add(k);
+    split(i, k);
+    split(k, j);
+  };
+  { const first = [...keep].sort((x, y) => x - y); for (let n = 0; n + 1 < first.length; n++) split(first[n], first[n + 1]); }
+  const vertices = [...keep].sort((x, y) => x - y);
+  for (let n = 0; n + 1 < vertices.length; n++) {
+    const i = vertices[n], j = vertices[n + 1], width = Math.round(W(i) * 10) / 10, end = Math.round(W(j) * 10) / 10;
+    if (width === 0 && end === 0) continue;
+    runoff.push({ from: i * 4, to: Math.min(LENGTH, j * 4), side, width, end });
+  }
 }
 runoff.sort((a, b) => a.from - b.from);
 const fit = {};
 for (const side of ['left', 'right']) {
   let err = 0, worst = 0;
-  for (let i = 0; i < NSEG; i++) { const d = Math.abs(shoulderOf(runoff, side, i * 4) - widths[side][i]); err += d; worst = Math.max(worst, d); }
-  fit[side] = { mean: err / NSEG, worst, widest: Math.max(...widths[side]), with: widths[side].filter(v => v >= RO.minWidth).length * 4 };
+  let over = 0, steepest = 0;
+  for (let i = 0; i < NSEG; i++) { const now = shoulderOf(runoff, side, i * 4), d = Math.abs(now - widths[side][i]); err += d; worst = Math.max(worst, d); over = Math.max(over, now - Math.max(widths[side][i], widths[side][(i + 1) % NSEG], widths[side][(i + NSEG - 1) % NSEG])); steepest = Math.max(steepest, Math.abs(shoulderOf(runoff, side, ((i + 1) % NSEG) * 4) - now) / 4); }
+  fit[side] = { over, steepest, mean: err / NSEG, worst, widest: Math.max(...widths[side]), with: widths[side].filter(v => v >= RO.minWidth).length * 4 };
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -618,7 +658,8 @@ console.log('  beside the track on the map: ' + Object.entries(kinds).map(([k, n
 for (const side of ['left', 'right']) {
   console.log(`  ${side}: limit set by ` + Object.entries(sourceCount[side]).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k} ${(n / NSEG * 100).toFixed(0)}%`).join(', '));
   console.log(`    run-off over ${fit[side].with} m of the lap, widest ${fit[side].widest.toFixed(1)} m; ${runoff.filter(r => r.side === side).length} stretches, ` +
-    `off what was measured by ${fit[side].mean.toFixed(2)} m on average, ${fit[side].worst.toFixed(1)} m at worst`);
+    `off what was measured by ${fit[side].mean.toFixed(2)} m on average, ${fit[side].worst.toFixed(1)} m at worst; never wider than measured by more than ${fit[side].over.toFixed(2)} m; ` +
+    `the wall line turns in or out by ${fit[side].steepest.toFixed(2)} m per m at its steepest`);
 }
 console.log(`  ${stands.length} stands (${stands.filter(s => s.pits).length} the pits), ${landmarks.length} landmarks`);
 
