@@ -170,7 +170,35 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
 - Skipping `levels/gimmick-road-3.json`: it only exercises the stash's duplicate gimmicks (its own
   `parades` / `roadblocks` / `cargoTrucks` / `iceCreamVans` / `reversibles` fields, which `main`
   spells differently), none of the features being ported.
-- In progress: 1 (mystery effects) and 2 (Super cars). No commits yet.
+- DONE `e05ed11`: 1 (mystery effects) and 2 (Super cars), one commit as they share files.
+  - The eight effects are in `CONFIG.mystery.effects` (drawn like the rest, as the batch handover
+    planned; the stash drew them from the second pool at a 0.35 weight, which would also have
+    started drawing sundayDrivers / rushHour / carSwap / moodSwing). An effect that does not suit
+    the level or car becomes `CONFIG.mystery.fallback` (invincible): swap sides on the Battlefield
+    or an `alwaysGood` level, rewind in a race or on laps, souped up in a car with no Super version.
+  - Added beyond the stash: a side swap is undone before the results are recorded; rewind only puts
+    back traffic cars that are still the same car; Hazards do not fire across a freeze; cards on the
+    power-ups page; good / bad lists in `social.js`.
+  - Verified headless: `node scripts/.mysteries-check.mjs` (new; 47 checks, passed 4 runs in a
+    row), `node scripts/.bundle-check.mjs` (new: every import of all six pages resolves),
+    `.balance-check.mjs` passes, `delivery-probe.mjs suburbs tokyo` clean, `node --check` on all.
+  - NOT verified: anything on screen. The body kit (it ray-casts onto each model), the blackout,
+    the quake's bob, the giant's size, the rewind's flash, pulled pickups' meshes. Known rough
+    edge: the rooftop passenger sits too high on a giant car.
+  - Found on `main`, not mine, left alone: duplicate keys in `config.js` (`icecream`, `hornRange`,
+    `hornWait`, `passByRange`, `passByChance`: the later one wins) and `jingle` in `render/audio.js`.
+- DONE `37eb71c`: 3 (6-star earned tier). `EARNED_CARS`, nine cars, one per special level, earned
+  by the level's par on each side (read from the best times: nothing new in the save).
+  - Changed from the stash: kept OUT of `CARS` (in it they would have changed racers' top speeds
+    through `GARAGE_TOP` in `traffic.js`, been handed out by Car Swap and "Unlock everything", and
+    broken a smoke-test count); a level vehicle's earned car has its own id (`earned-f1`) and a
+    `base`; stats clamped to `NEXT_TIER_CAPS` (the stash had the UFO at 58 m/s and the F1 at 75).
+  - For the merge: `render/menu.js` gained one import (`earnedFor`) and one line on the level card;
+    `progress.js` gained `owns` / `earnedCars` / `earned`; nothing added to the cookie.
+  - Verified headless: `node scripts/.earned-check.mjs` (new, 21 checks), `.balance-check.mjs`,
+    `.bundle-check.mjs`. NOT verified: the garage bays, star colour, the Saucer parked in the lot;
+    the pars are not play-tested.
+- In progress: 4 (dents). Then 5 horns, 6 album and milestones.
 
 ## Agent 2: real circuits (`.claude/worktrees/delivery-circuits`, `delivery-circuits`)
 
@@ -185,7 +213,17 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   run-off stretches measured per side every 4 m (barriers, tree line, buildings, gravel traps, pit
   lane, old banking), 30 stands from mapped grandstands. `track.js` changed: run-off on a lapped
   level no longer eases to nothing at the start line (stretch from 0 / to lap end).
-- In progress: Spa, then Albert Park, then landmarks in `render/circuits/<id>.js`.
+- Done (`e75d82d`): Spa from OSM relation 284560: 7004 m (real 7004), closes 0.03 m, SRTM 363-469 m,
+  the level climbs 102 m (steepest 13%), 95 run-off stretches, limit set by mapped barriers on 95% /
+  88% of the lap (left / right), gravel is `natural=shingle` there. Clocks written for Monza and Spa.
+- Done (`b111bd7`): Albert Park from OSM relation 280443: 5312 m (real 5278, +0.64%: the relation
+  follows public-road centre lines), closes 0.002 m, 4.6 m of height, lake outline as a landmark.
+  **No run-off**: OSM maps neither its race walls nor its gravel traps, so the tool's `street` mode
+  puts the wall at the road's edge all round (0 stretches) rather than invent any. Clock written.
+- To rebuild any: `node scripts/circuit-from-osm.mjs <id>` (config `scripts/circuits/<id>.json`, maps
+  and heights cached in `scripts/circuits/cache/`, a picture in `scripts/circuits/out/<id>.svg`).
+- In progress: landmarks in `render/circuits/{monza,spa,albert-park}.js` (still empty stubs), then a
+  browser screenshot via `scripts/shots.mjs`, then `CIRCUITS-HANDOVER.md`.
 - Not verified: nothing seen in a browser yet (headless logic only).
 
 ## Agent 3: checklist menu and save items (`.claude/worktrees/delivery-batch`, `worktree-delivery-batch`)
@@ -223,4 +261,12 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   and `scripts/.hazards-check.mjs`, which still passes (run with node). Checklist 20 and 21 marked
   `[-]` removed. `Game.fines` stays: the ordinary cameras use it. Nothing from `c0d9c81` touched.
   Not verified: Gimmick Road 2 and the Gimmicks page not opened since.
-- In progress: Gimmicks page cards (nine), then 30 (ghost replay) if time remains.
+- Done, `45369f1`: **Gimmicks page cards**, a new "City streets" group of eight: tunnels, parades,
+  police roadblocks, falling cargo, ice-cream stops, reversible lanes, convoys, rubbernecking (burst
+  water mains already had a card; toll and average-speed cards are gone). `node --check` passes and
+  the page opens with the group listed (screenshot of its top). Not verified: the eight models were
+  not looked at (the page's one window-sized canvas does not come out in a tall screenshot).
+  Found, not mine, not fixed: the bullet train's card logs `THREE.Object3D.add: object not an
+  instance of THREE.Object3D. undefined` (it was there before the cards went in).
+- In progress: **replay investigation** (replaces 30's simple ghost). Findings go into
+  `src/delivery/REPLAY-NOTES.md` on `worktree-delivery-batch` as each is reached.
