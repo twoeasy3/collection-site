@@ -161,7 +161,7 @@ const silence = () => {
 let last = performance.now();
 let prevState = Game.state;
 const frame = (now) => {
-  const dt = Math.min(0.05, (now - last) / 1000) || 0.001;
+  const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) || 0.001; // (never less than nothing: a first frame's `now` can be before `last`, after ?ff)
   last = now;
 
   if (Garage.isOpen) {

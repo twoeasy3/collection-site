@@ -1164,7 +1164,8 @@ export const CONFIG = {
     drain: 3,              // s after a burst the road stays slippery
     warn: 150,             // m short of one spraying ahead that the player is warned
     height: 9,             // m the geyser throws its water
-    on: 5, off: 4, length: 28,
+    spread: 1.4,           // s the puddle takes to spread out, as a burst begins (the look of it only)
+    on: 5, off: 4, length: 28, dry: 1.6, // (Gimmick Road 2's, see Hazards: s on and off, m of lane, and s its puddles take to shrink away)
   },
   // rockfall (a level's "rockfall": { from, to, count, side }): rocks tumbling down from that side
   // onto the road as the player comes near. Obstacles: only the player can hit them

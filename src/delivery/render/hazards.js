@@ -16,6 +16,7 @@ import { scene, tmp } from './scene.js';
 import { buildStrip } from './road.js';
 import { Particles, rnd } from './effects.js';
 import { makeWorker } from './siteModels.js';
+import { makePuddle, makeFountain } from './watermains.js';
 
 const lambert = (color, extra) => new THREE.MeshLambertMaterial({ color, ...extra });
 const glow = (color) => new THREE.MeshBasicMaterial({ color });
@@ -123,14 +124,21 @@ Game.onLoad.push(() => {
   mains = (LEVEL.waterMains || []).map((m) => {
     const from = Track.place(m), to = from + (m.length ?? CONFIG.waterMain.length);
     const lat = (s) => Track.laneOffset(m.lane, s);
-    const wet = new THREE.Mesh(buildStrip(from, to, (s) => lat(s) - LW / 2 + 0.1, (s) => lat(s) + LW / 2 - 0.1, 0.035, 2),
-      flat(0x6fb6d8, -4, { transparent: true, opacity: 0.55 }));
-    group.add(wet);
+    // (the wet lane: a run of pools down it, each its own shape, overlapping, the ones further from the main
+    // filling later and drying sooner. The pictures fade out well inside their edges, so they are cut wide)
+    const pools = [];
+    for (let k = 0, s = from + 2; s < to - 1; k++, s += 4.6) {
+      const length = Math.min(9 + (k % 3) * 1.5, (to - s) * 2 + 4), pool = makePuddle(LW * (1.3 + (k % 2) * 0.12), length, 31 + k * 13 + Math.round(from));
+      const spot = at(s, lat(s) + ((k * 7) % 3 - 1) * 0.12);
+      spot.add(pool);
+      pools.push(pool);
+    }
     const cover = at(from + 1.5, lat(from + 1.5));
     add(cover, new THREE.CylinderGeometry(0.55, 0.55, 0.08, 12), lambert(0x3a3b3f), 0, 0.04, 0);
     add(cover, box(0.9, 0.06, 0.5), lambert(0x55575c), 0.5, 0.12, 0.3).rotation.z = 0.5;
-    const jet = add(cover, new THREE.CylinderGeometry(0.25, 0.45, 5, 10), new THREE.MeshBasicMaterial({ color: 0xcfeaf7, transparent: true, opacity: 0.6 }), 0, 2.5, 0);
-    return { from, lat: lat(from + 1.5), wet, jet };
+    const jet = makeFountain(5.5);
+    cover.add(jet);
+    return { from, lat: lat(from + 1.5), pools, jet, x: cover.position.x, y: cover.position.y, z: cover.position.z };
   });
   // ---- hot-air balloons
   balloons = (LEVEL.balloons || []).map((b) => {
@@ -248,11 +256,9 @@ export const syncHazards = (now) => {
   Hazards.mains.forEach((m, k) => {
     const mesh = mains[k];
     if (!mesh) return;
-    mesh.wet.visible = mesh.jet.visible = m.on;
-    if (!m.on || !near(m.from)) return;
-    mesh.jet.scale.set(1 + Math.sin(t * 23) * 0.15, 1 + Math.sin(t * 17) * 0.08, 1 + Math.cos(t * 19) * 0.15);
-    Track.toWorld(m.from + 1.5, mesh.lat, tmp);
-    for (let i = 0; i < 3; i++) Particles.emit(tmp.x + rnd(0.3), tmp.y + 4.5, tmp.z + rnd(0.3), rnd(4), 2 + Math.random() * 4, rnd(4), 1.1, 0.18 + Math.random() * 0.15, 0, 16, 0xcfeaf7, tmp.y);
+    const spread = Hazards.mainSpread(m), close = near(m.from);
+    mesh.pools.forEach((pool, k) => pool.userData.set(Math.max(0, Math.min(1, spread * (1 + k * 0.22) - k * 0.22)), t + k));
+    mesh.jet.userData.set(m.on ? Math.min(1, m.t / 0.5) : Math.max(0, 1 - m.t / 0.4), t, mesh.x, mesh.y, mesh.z, Game.paused || !close);
   });
   Hazards.balloons.forEach((b, k) => {
     const mesh = balloons[k];

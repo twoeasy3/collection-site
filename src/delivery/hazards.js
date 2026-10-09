@@ -156,6 +156,9 @@ export const Hazards = {
     return c.state === 'open' ? clamp01(c.t / D.raise) : c.state === 'close' ? 1 - clamp01(c.t / D.close) : 0;
   },
   bridgeBooms: (c) => c.state === 'idle' ? 0 : c.state === 'warn' ? clamp01(c.t / 1.2) : 1,
+  // how far a burst main's water has spread along its lane (0 .. 1), for the drawing: out as it starts to
+  // spray, shrinking away over `dry` s once it stops (the lane is only slippery while it sprays)
+  mainSpread: (m) => m.on ? clamp01(0.15 + m.t / CONFIG.waterMain.spread) : clamp01(1 - m.t / CONFIG.waterMain.dry),
   // the angle its leaves stand at (rad); and the gap between their lips (m)
   bridgeAngle(c) { return this.bridgeOpen(c) * CONFIG.drawbridge.angle; },
   bridgeGap(c) { return 2 * CONFIG.drawbridge.leaf * (1 - Math.cos(this.bridgeAngle(c))); },

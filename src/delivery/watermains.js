@@ -27,6 +27,12 @@ export const WaterMains = {
     });
     Track.slicks.length = 0;
   },
+  // how far the water has spread on the road (0 .. 1), for the drawing: out over `spread` s as the main
+  // starts to spray, and back in as it drains
+  spread(m) {
+    const W = CONFIG.waterMain;
+    return m.on ? Math.min(1, 0.2 + (W.spray - m.wait) / W.spread) : Math.sqrt(Math.max(0, m.wet / W.drain));
+  },
   // how much of the geyser is up at the main (0 .. 1), for the drawing
   jet(m) { return m.on ? Math.min(1, m.wait / 0.6, (CONFIG.waterMain.spray - m.wait) / 0.4 + 1) : 0; },
 
