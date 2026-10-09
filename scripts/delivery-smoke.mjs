@@ -134,6 +134,7 @@ try {
       const o = Collision.obstacles.find(x => x.kind === kind && (kind !== 'asteroid' || (Collision.atRoadLevel(x) && !x.bob)));
       for (const other of Collision.obstacles) if (other !== o) other.gone = true; // (herds can stand two deep)
       if (kind === 'dropBear') o.h = 0; // (down from its tree)
+      if (kind === 'rock') Object.assign(o, { h: 0, lat: o.land }); // (come down the hillside, onto the road)
       if (kind === 'landmine') o.buried = false; // (up out of the dirt, as it is once the player is near)
       o.gone = false; // (a pipe waits on its stack, out of play, until it rolls)
       Player.s = o.s - 1; Player.lat = o.lat; // overlapping it Player.speed = 20; Player.launching = false;

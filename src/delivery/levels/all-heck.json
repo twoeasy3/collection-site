@@ -6,7 +6,7 @@
   "alwaysGood": true,
   "flow": "south",
   "lanes": 8,
-  "clock": { "good": 125, "evil": 95 },
+  "clock": { "good": 156, "evil": 111 },
   "tip": 120,
   "traffic": { "junker": 0.24, "wagon": 0.15, "sport": 0.15, "lovebus": 0.12, "darkvan": 0.12, "van": 0.1, "bus": 0.06, "police": 0.06 },
   "segments": [

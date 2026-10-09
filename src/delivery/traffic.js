@@ -83,8 +83,9 @@ export const Traffic = (() => {
     return kinds[0][0];
   };
   // is a police car close enough to see what the player is doing?
-  const policeNear = () => cars.some(c => c.active && !c.junction && c.kind === 'police' && !c.toad && c.stun <= 0 &&
-    Math.abs(c.s - Player.s) < Social.policeSight * (1 - (1 - CONFIG.fog.policeSight) * Track.foggy(Player.s)) && // (as far as the player's standing lets it, and less in fog)
+  // (margin: m further out than the police see, for a warning of them: see the HUD's glow)
+  const policeNear = (margin = 0) => cars.some(c => c.active && !c.junction && c.kind === 'police' && !c.toad && c.stun <= 0 &&
+    Math.abs(c.s - Player.s) < Social.policeSight * (1 - (1 - CONFIG.fog.policeSight) * Track.foggy(Player.s)) + margin && // (as far as the player's standing lets it, and less in fog)
     Math.abs(c.lat - Player.lat) < 25);
 
   const MOOD_START = { happy: 0.7, neutral: 0, angry: -0.7 };

@@ -1,14 +1,15 @@
-// Works out each delivery level's clock (its "clock": { good, evil }) from a clean run in the reference
-// car (CONFIG.clock): a ghost, flat out, from the start line to the drop, nothing in its way. The clock is
-// that run's time times CONFIG.clock.good or .evil. A level driven in a car of its own (its "car") is timed
-// in that. Races (laps), hidden levels and levels whose clocks are set by hand (in KEEP) are left as they are.
-//   node scripts/level-clocks.mjs          prints each level's clean run and clock
-//   node scripts/level-clocks.mjs --write  and writes the clocks into the level files
+// Works out a level's clock (its "clock": { good, evil }) from a clean run in the reference car
+// (CONFIG.clock): a ghost, flat out, from the start line to the drop, nothing in its way. The clock is that
+// run's time times CONFIG.clock.good or .evil, less CONFIG.clock.timePlus s for each time plus on the level.
+// A level driven in a car of its own (its "car") is timed in that. Only the levels named are timed.
+//   node scripts/level-clocks.mjs mountain-pass tour-de-coast          prints their clean runs and clocks
+//   node scripts/level-clocks.mjs mountain-pass tour-de-coast --write  and writes the clocks into their files
 import { createServer } from 'vite';
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const KEEP = ['suburbs', 'rival-run', 'showdown']; // (clocks tuned by hand: Suburbia runs on time pickups, the rival stages on the rival)
 const WRITE = process.argv.includes('--write');
+const IDS = process.argv.slice(2).filter(a => !a.startsWith('--'));
+if (!IDS.length) { console.log('Name the levels to time: node scripts/level-clocks.mjs <id> ... [--write]'); process.exit(1); }
 
 const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
 globalThis.window = { addEventListener() {} };
@@ -27,26 +28,12 @@ try {
   const { CONFIG } = await load('/src/delivery/config.js');
   Object.defineProperty(Input, 'throttle', { get: () => 1, configurable: true });
   const C = CONFIG.clock, round = (t) => Math.max(C.round, Math.round(t / C.round) * C.round);
-  const hidden = Object.values(levels.HIDDEN_LEVELS);
-  // the clock into the level's file, in place of its "time" (or its old clock)
-  const save = (level, clock, note) => {
-    if (note) console.log(`${level.id.padEnd(20)} ${note}: ${JSON.stringify(clock)}`);
-    if (!WRITE) return;
-    const path = new URL(`../src/delivery/levels/${level.id}.json`, import.meta.url);
-    const text = readFileSync(path, 'utf8'), line = `"clock": { "good": ${clock.good}, "evil": ${clock.evil} }`;
-    const next = /"clock": \{[^}]*\}/.test(text) ? text.replace(/"clock": \{[^}]*\}/, line) : text.replace(/"time": [\d.]+/, line);
-    writeFileSync(path, next.replace(/\n\s*"time": [\d.]+,/, ''));
-  };
-  for (const level of [...levels.LEVELS, ...hidden]) {
-    if (KEEP.includes(level.id)) { console.log(`${level.id.padEnd(20)} kept: ${JSON.stringify(level.clock)}`); continue; }
-    // (a race is against the grid: its clock is only a backstop, kept as it was)
-    // (nor is a hidden level's: they are for trying things out, not against the clock)
-    if (level.laps || hidden.includes(level)) {
-      save(level, level.clock || { good: Math.round(level.time * 1.2), evil: Math.round(level.time * 0.85) }, level.laps ? 'race, kept' : 'hidden, kept');
-      continue;
-    }
-    if (hidden.includes(level)) levels.selectSpecial(level);
-    else levels.selectLevel(levels.LEVELS.indexOf(level));
+  const all = [...levels.LEVELS, ...Object.values(levels.HIDDEN_LEVELS)];
+  for (const id of IDS) {
+    const level = all.find(l => l.id === id);
+    if (!level) { console.log(`${id}: no such level`); continue; }
+    if (levels.LEVELS.includes(level)) levels.selectLevel(levels.LEVELS.indexOf(level));
+    else levels.selectSpecial(level);
     cars.selectCar(C.car);
     Game.evil = false;
     Game.start();
@@ -59,11 +46,15 @@ try {
       FxQueue.length = 0;
       t += 1 / 60;
     }
-    if (Game.outcome !== 'delivered') { console.log(`${level.id.padEnd(20)} NOT DELIVERED (${Game.outcome || 'still driving'})`); continue; }
-    const clock = { good: round(t * C.good), evil: round(t * C.evil) };
-    console.log(`${level.id.padEnd(20)} clean run ${t.toFixed(1)} s in the ${level.car || C.car}: good ${clock.good} s, evil ${clock.evil} s` +
-      `  (was ${JSON.stringify(level.clock || { good: Math.round(level.time * 1.2), evil: Math.round(level.time * 0.85) })})`);
-    save(level, clock);
+    if (Game.outcome !== 'delivered') { console.log(`${id}: NOT DELIVERED (${Game.outcome || 'still driving'})`); continue; }
+    const pluses = (level.pickups || []).filter(p => p.type === 'timePlus').length, back = pluses * C.timePlus;
+    const clock = { good: round(t * C.good) - back, evil: round(t * C.evil) - back };
+    console.log(`${id}: clean run ${t.toFixed(1)} s in the ${level.car || C.car}, ${pluses} time plus${pluses === 1 ? '' : 'es'}: ` +
+      `good ${clock.good} s, evil ${clock.evil} s (was ${JSON.stringify(level.clock)})`);
+    if (!WRITE) continue;
+    const path = new URL(`../src/delivery/levels/${id}.json`, import.meta.url);
+    const text = readFileSync(path, 'utf8'), line = `"clock": { "good": ${clock.good}, "evil": ${clock.evil} }`;
+    writeFileSync(path, /"clock": \{[^}]*\}/.test(text) ? text.replace(/"clock": \{[^}]*\}/, line) : text.replace(/"time": [\d.]+/, line));
   }
 } finally {
   await server.close();

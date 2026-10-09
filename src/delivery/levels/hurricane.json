@@ -3,7 +3,7 @@
   "name": "Hurricane",
   "theme": "beach",
   "flow": "north",
-  "clock": { "good": 205, "evil": 160 },
+  "clock": { "good": 282, "evil": 200 },
   "tip": 130,
   "traffic": {"darkvan": 0.4, "commuter": 0.2, "van": 0.2, "wagon": 0.1, "police": 0.1},
   "trafficCount": 7,

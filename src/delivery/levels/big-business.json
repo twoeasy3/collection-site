@@ -3,7 +3,7 @@
   "name": "Big Business",
   "theme": "city",
   "flow": "north",
-  "clock": { "good": 190, "evil": 145 },
+  "clock": { "good": 216, "evil": 153 },
   "tip": 90,
   "traffic": { "darkvan": 0.18, "commuter": 0.08, "van": 0.1, "bus": 0.06, "police": 0.08, "junker": 0.1, "sport": 0.16, "wagon": 0.13, "lovebus": 0.11 },
   "segments": [

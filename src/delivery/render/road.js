@@ -2236,7 +2236,8 @@ const buildRoad = () => {
     for (let s = Track.start; s < Track.end; s += 4) {
       for (const side of [-1, 1]) {
         posts.push([s, beside(side, s, 0.5), 0.4, 0.12, 0.8, 0.12]);
-        rails.push([s + 2, beside(side, s + 2, 0.45), 0.65, 0.08, 0.3, 4.05]);
+        // (each rail a run from one post to the next, tipped to the slope, as the circuits' walls: no steps on a hill)
+        rails.push([s, beside(side, s, 0.45), 0.65, 0.08, 0.3, 4.02, [s + 4, beside(side, s + 4, 0.45)]]);
         if (Math.random() < 0.6) banks.push([s + Math.random() * 4, beside(side, s, -0.1), 0.1, 1.2 + Math.random(), 0.7, 2 + Math.random() * 2]);
       }
     }

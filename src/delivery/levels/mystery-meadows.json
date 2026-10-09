@@ -2,7 +2,7 @@
   "id": "mystery-meadows",
   "name": "Mystery Meadows",
   "theme": "farm",
-  "clock": { "good": 145, "evil": 115 },
+  "clock": { "good": 234, "evil": 166 },
   "traffic": { "lowrider": 0.35, "darkvan": 0.25, "commuter": 0.12, "van": 0.22, "bus": 0.03, "police": 0.03 },
   "trafficCount": 16,
   "oncomingCount": 13,

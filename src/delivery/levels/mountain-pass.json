@@ -2,7 +2,7 @@
   "id": "mountain-pass",
   "name": "Mountain Pass",
   "theme": "snow",
-  "clock": { "good": 210, "evil": 160 },
+  "clock": { "good": 205, "evil": 160 },
   "tip": 160,
   "lanes": 2,
   "traffic": { "wagon": 0.25, "van": 0.2, "commuter": 0.2, "semi": 0.15, "darkvan": 0.12, "police": 0.08 },

@@ -618,6 +618,7 @@ export const CONFIG = {
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
   lowriderHearing: 90,     // m from a lowrider in traffic within which its music is heard (the same way)
   policeSightRange: 45,    // m along the road within which a police car witnesses what you do
+  copGlowMargin: 12,       // m further out than that the screen's edges start flashing red and blue: a warning
   // A good player's social standing (see social.js), in points out of 100: gift points for each gift
   // that lands on a good driver (copGift on a police car), decay lost a second. With it, from none to
   // full: the police see policeSight.empty to policeSight.full times as far; the share of evil
@@ -749,8 +750,9 @@ export const CONFIG = {
   completeBank: 10000,     // $ in the bank after "Unlock everything" on the menu
   // the clock: each level has its own, for each side ("clock": { good, evil }), worked out by
   // scripts/level-clocks.mjs from a clean run (a ghost, flat out) in the reference car: that run's time
-  // times good or evil, to the nearest `round` s
-  clock: { car: 'sport', good: 1.5, evil: 1.15, round: 5 },
+  // times good or evil, to the nearest `round` s, less `timePlus` s for each time plus on the level (the time
+  // it gives back)
+  clock: { car: 'sport', good: 1.5, evil: 1.15, round: 5, timePlus: 5 },
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing
   packageMoodBoost: 0.5,   // mood gained by a good car that gets one
   giftOffence: 15,         // s an evil car that gets one is offended: furious, but it drives no differently

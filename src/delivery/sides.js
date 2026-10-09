@@ -32,7 +32,7 @@ document.getElementById('page').innerHTML = `
   <p>Picked on the menu, before a run. It sets your clock, what your packages do, and how the road treats you.</p>
   <div class="pair">
     <article class="card good">
-      <h3>${HALO}Good<span class="tag">${C.clock.good}x a clean run</span></h3>
+      <h3>${HALO}Good<span class="tag">more time</span></h3>
       <p class="says">${says('reactions', 'goodOnGood')}</p>
       <ul>
         <li>Your packages are <strong>care packages</strong>: ${C.packageDamage} damage, and a good driver cheers up (${signed(C.packageMoodBoost)} mood).</li>
@@ -41,7 +41,7 @@ document.getElementById('page').innerHTML = `
       </ul>
     </article>
     <article class="card evil">
-      <h3>${HORNS}Evil<span class="tag">${C.clock.evil}x a clean run</span></h3>
+      <h3>${HORNS}Evil<span class="tag">less time</span></h3>
       <p class="says">${says('reactions', 'evilOnGood')}</p>
       <ul>
         <li>Your packages are <strong>flaming</strong>: ${C.evilPackageDamage} damage, they can spin a car out, and its driver holds a grudge.</li>

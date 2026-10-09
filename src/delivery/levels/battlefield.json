@@ -1,7 +1,7 @@
 {
   "id": "battlefield",
   "name": "Battlefield",
-  "clock": { "good": 215, "evil": 165 },
+  "clock": { "good": 312, "evil": 221 },
   "tip": 80,
   "lanes": 6,
   "flow": "mixed",

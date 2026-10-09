@@ -2,7 +2,7 @@
   "id": "tour-de-coast",
   "name": "Tour de Coast",
   "theme": "coast",
-  "clock": { "good": 225, "evil": 175 },
+  "clock": { "good": 215, "evil": 165 },
   "tip": 190,
   "traffic": { "wagon": 0.25, "lovebus": 0.2, "pickup": 0.15, "commuter": 0.15, "van": 0.1, "darkvan": 0.08, "police": 0.07 },
   "trafficCount": 8,

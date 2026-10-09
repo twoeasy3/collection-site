@@ -2,7 +2,7 @@
   "id": "speed-trap-alley",
   "name": "Speed Trap Alley",
   "theme": "suburb",
-  "clock": { "good": 265, "evil": 205 },
+  "clock": { "good": 250, "evil": 190 },
   "tip": 150,
   "traffic": { "suv": 0.3, "taxi": 0.25, "miata": 0.2, "minivan": 0.15, "police": 0.1 },
   "trafficCount": 9,

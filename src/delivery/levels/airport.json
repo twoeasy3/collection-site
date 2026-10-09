@@ -5,7 +5,7 @@
   "flow": "north",
   "lanes": 4,
   "shoulderTimer": false,
-  "clock": { "good": 180, "evil": 140 },
+  "clock": { "good": 210, "evil": 149 },
   "tip": 260,
   "traffic": { "darkvan": 0.3, "taxi": 0.2, "van": 0.15, "bus": 0.15, "commuter": 0.2 },
   "trafficCount": 14,
