@@ -15,6 +15,7 @@ import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
 import { TURBO_COLOR, PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 import { OBSTACLE_MODELS } from './obstacleModels.js';
+import { addSuperKit } from './carExtras.js';
 import { SpeedCameras } from '../cameras.js';
 import { Hazards } from '../hazards.js';
 
@@ -29,6 +30,7 @@ const playerModels = {};
 const playerModel = (car) => {
   if (!playerModels[car.id]) {
     const model = MODELS[car.model](car);
+    if (car.super) addSuperKit(model, car); // (a Super car: its base car's model with the body kit on)
     model.userData.body.material.transparent = true; // (so it can go see-through as a ghost)
     carMesh.add(model);
     playerModels[car.id] = model;
@@ -326,7 +328,7 @@ export const syncPickups = (dt) => {
     mesh.userData.gem.rotation.y += dt * 3;
     mesh.userData.gem.userData.livery?.(Player.evil); // (one that looks different by the player's side)
     if (mesh.visible) mesh.userData.gem.userData.animate?.(performance.now() / 1000 + i); // (and one that moves)
-    if (p.washed && !p.taken) { // (washed up by the tide: wherever it was left, bobbing)
+    if ((p.washed || p.pulled) && !p.taken) { // (washed up by the tide, or pulled by a magnet: wherever it is now, bobbing)
       mesh.rotation.y = Track.toWorld(p.s, p.lat, tmp);
       mesh.position.copy(tmp);
       mesh.userData.gem.position.y = 1.7 + 0.25 * Math.sin(performance.now() * 0.004 + i);

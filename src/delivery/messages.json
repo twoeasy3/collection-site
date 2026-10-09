@@ -29,7 +29,15 @@
       "sundayDrivers": ["Sunday drivers! Everyone's out for a gentle cruise."],
       "rushHour": ["RUSH HOUR!! The roads are packed!"],
       "carSwap": ["Car swap! Take this one for a spin."],
-      "moodSwing": ["Mood swing! Good is evil and evil is good!"]
+      "moodSwing": ["Mood swing! Good is evil and evil is good!"],
+      "earthquake": ["EARTHQUAKE!! Hold on to something!"],
+      "rewind": ["Rewind! Ten seconds ago..."],
+      "giant": ["GIANT! Mind the traffic. Or don't."],
+      "swapSides": ["Swap sides! You're ${side} for a while..."],
+      "magnet": ["Magnet! The pickups are coming to you."],
+      "blackout": ["Blackout! Headlights only..."],
+      "trafficFreeze": ["TRAFFIC FREEZE! Everything but you stands still."],
+      "soupedUp": ["Your car has been souped up!"]
     }
   },
   "events": {

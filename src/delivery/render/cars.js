@@ -4,6 +4,7 @@ import { CAR, CARS } from '../cars.js';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Traffic } from '../traffic.js';
+import { Mysteries } from '../mysteries.js';
 import { scene, tmp } from './scene.js';
 import { MODELS, AMBULANCE_BOX } from './models.js';
 import './trafficModels.js'; // (more of them, added to MODELS)
@@ -267,6 +268,7 @@ export const syncTraffic = () => {
     } else {
       mesh.rotation.y = Track.toWorld(car.s, car.lat, tmp) - car.yaw + (car.dir < 0 ? Math.PI : 0); // (a spin-out's turn is in yaw too)
       mesh.position.copy(tmp);
+      mesh.position.y += Mysteries.heave(car.s); // (riding an earthquake's wave: 0 without one)
       mesh.rotation.x = car.spin > 0 ? 0 : -Math.atan(Track.grade(car.s)) * car.dir; // tilt with the slope
     }
     shapeCarMesh(mesh, car);

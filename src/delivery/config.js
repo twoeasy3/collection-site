@@ -81,7 +81,27 @@ export const CONFIG = {
   // the mystery pickup: one of these effects at random (see Player.startMystery); the wording
   // is in messages.json, under powerups.mystery
   mystery: {
-    effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo', 'bulletTrain'],
+    // (the last eight are the second batch: see mysteries.js, and below)
+    effects: ['rickety', 'toad', 'angel', 'jerk', 'invincible', 'noBrakes', 'insuranceUp', 'insuranceDown', 'ufo', 'bulletTrain',
+      'soupedUp', 'earthquake', 'rewind', 'giant', 'swapSides', 'magnet', 'blackout', 'trafficFreeze'],
+    //   soupedUp       the player's car is swapped for its Super version (cars.js superOf) for soupedUp.time s
+    //   earthquake     the road ripples: everything bobs, and every car is bounced into the lane beside it
+    //   rewind         ten seconds back, clock and all (over at once)
+    //   giant          the car twice its size, crushing any traffic it touches
+    //   swapSides      Good turns Evil, or Evil Good, for a while
+    //   magnet         pickups ahead drift toward the car
+    //   blackout       every light off but the headlights
+    //   trafficFreeze  everything but the player stops dead
+    // (one with a `time` of its own lasts that long instead of `time` below. One that doesn't suit the level or
+    // the car, a Super version of a car that has none, say, is `fallback` instead)
+    fallback: 'invincible',
+    soupedUp: { time: 15 },
+    earthquake: { time: 10, every: 3, amp: 0.35, wavelength: 24, speed: 9, shake: 0.35, kick: 3 }, // s; s between bounces; m the road heaves; m of the wave; rad/s; camera shake kept up; m/s a bounced car is shoved
+    rewind: { seconds: 10, every: 0.5, flash: 0.6 }, // s back; s between snapshots; s the screen flashes
+    giant: { time: 12, scale: 2, step: 6 },  // s; times the car's size; m between footsteps
+    magnet: { range: 120, speed: 25 },      // m ahead a pickup is drawn from; m/s it comes at
+    blackout: { fog: [3, 42], light: { sky: 0x1a1a28, ground: 0x000000, ambient: 0.3, sun: 0x000000, sunlight: 0 } }, // m the fog starts and ends at; the light left (see render/scene.js applyLight)
+    trafficFreeze: { time: 8 },
     // a second pool, not drawn for now: only ?mystery= in the address picks one of these
     //   sundayDrivers  every driver potters along at sundayPace of its speed (not an ambulance, nor a racer)
     //   rushHour       rushHour times the traffic, each way, as far as the pool allows; the extra cars
@@ -102,6 +122,9 @@ export const CONFIG = {
     // before a bend, never a way to stop (far less than lifting off)
     noBrakes: { coast: 3, scrub: 0.3, steerScrub: 0.5 },
   },
+  // A Super car (cars.js superOf: the "souped up" mystery, ?car=super-<id>): what it adds to its base car,
+  // about two tiers' worth (in CARS a tier adds on average 5.5 m/s, 2 m/s^2 and a fifth more health)
+  superCar: { maxSpeed: 10, accel: 4, health: 1.3, agility: 0.15, crossing: 0.1 }, // (health: times; crossing: added, up to 1)
   // UFO AIR STRIKE (a mystery): the saucer's visit, and the burn that follows it
   // Emergency vehicles (a level's "emergencies"): now and then an ambulance comes through with its
   // siren going, either way. One going the player's way sets off behind the player, with a

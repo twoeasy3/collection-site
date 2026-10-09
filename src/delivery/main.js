@@ -43,6 +43,8 @@ import { syncMovers } from './render/movers.js';
 import { syncTunnel } from './render/tunnel.js';
 import { syncWaterMains } from './render/watermains.js';
 import { syncReversible } from './render/reversible.js';
+import { syncMysteries } from './render/mysteries.js';
+import { Mysteries } from './mysteries.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
 import './render/touch.js';
@@ -50,7 +52,7 @@ import './horn.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
 import { Social } from './social.js';
-import { CAR } from './cars.js';
+import { CAR, lendCar, superOf } from './cars.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
 // ?test (or ?hidden=testbed) starts the hidden test track straight away (?test&evil: as Evil).
@@ -93,11 +95,12 @@ if (params.get('racewatch') !== null) {
   else selectLevel((Number(params.get('level')) || 1) - 1);
   // ?theme=snow: the level in that theme, whatever its own (a copy of it: nothing of the run is saved)
   if (params.get('theme') && THEMES[params.get('theme')]) selectSpecial({ ...LEVEL, theme: params.get('theme') });
-  if (params.get('car')) { // ?car=lowrider: drive that car for this visit, owned or not (nothing is saved)
-    Progress.data.cars.push(params.get('car'));
-    Progress.data.car = params.get('car');
+  if (params.get('car')) { // ?car=lowrider: drive that car for this visit, owned or not (nothing is saved); ?car=super-sport: its Super version (cars.js superOf)
+    Progress.data.cars.push(params.get('car').replace(/^super-/, ''));
+    Progress.data.car = params.get('car').replace(/^super-/, '');
   }
   Game.start();
+  if (params.get('car')?.startsWith('super-') && superOf(CAR)) Player.takeCar(() => lendCar(superOf(CAR)));
   if (params.get('at')) Player.s = Number(params.get('at'));
   if (params.get('fly') !== null) startFly();
   const photo = params.get('photo') !== null; // ?photo: paused, in photo mode, once ?ff has run (a check of render/photo.js)
@@ -156,7 +159,7 @@ const frame = (now) => {
     // then bring the scene up to date with it
     const heading = Track.toWorld(Player.s, Player.lat, tmp);
     carMesh.position.copy(tmp);
-    carMesh.position.y += Player.air; // (jumping a drawbridge)
+    carMesh.position.y += Player.air + Mysteries.heave(Player.s); // (jumping a drawbridge; riding an earthquake's wave)
     carMesh.rotation.y = heading - Player.yaw; // swerving right turns the nose toward +lat
     carMesh.rotation.x = -Math.atan(Track.grade(Player.s)); // nose up on a climb
     syncHelicopter(dt, now); // (decides whether the car is shown: blinking under a shield, dangling from the helicopter)
@@ -199,6 +202,7 @@ const frame = (now) => {
     else if (Photo.on) photoCamera(); // (photo mode, while paused: see render/photo.js)
     else if (Game.raceWatch) raceCamera(dt); // (the race screensaver's cameras)
     else updateCamera(dt, prevState !== 'playing' && Game.state === 'playing');
+    syncMysteries(dt); // (after the camera: the earthquake bobs it)
     syncRaceWatch(now);
     syncEmotes(dt, now);
     updateHud();
@@ -208,7 +212,7 @@ const frame = (now) => {
     // (in the race screensaver: the watched car, and the rest of the field, as the camera hears them)
     const heard = Game.raceWatch && Game.state === 'playing' && !Game.paused ? raceAudio(dt) : null;
     if (heard) Sound.engine(heard.speed, CAR.id, CAR.maxSpeed, heard.gain, heard.pitch);
-    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.id,
+    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher)
       Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
     Sound.pack(heard ? heard.pack : 0);
     // the siren, louder the nearer the nearest police car or ambulance (the screensaver's too), and a radar

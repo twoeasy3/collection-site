@@ -23,6 +23,7 @@ import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
 import { Hazards } from './hazards.js';
 import { Social } from './social.js';
+import { Mysteries } from './mysteries.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Collision } from './collision.js';
@@ -147,6 +148,7 @@ export const Game = {
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
     useLevelCar(LEVEL.car); // a UFO on the space level, otherwise the garage's car
     Player.evil = this.evil && !LEVEL.battle && !LEVEL.alwaysGood; // (on the Battlefield the player is in the green army, the good one, whatever the side on the menu; a level can say so too)
+    Mysteries.reset(); // (before the player: a side swap or a giant left from the last run is not undone over this one)
     Social.reset(); // (before the player: its shoulder allowance goes by it)
     Player.reset();
     Wreckage.reset(); // (before the traffic is dealt out: none goes where wreckage lies)
@@ -208,6 +210,7 @@ export const Game = {
   },
   finish(outcome) {
     this.state = 'finished';
+    if (Player.mystery === 'swapSides') Player.endMystery(); // (back on its own side: the results and the best time are that side's)
     returnCar(); // (a car lent by Car Swap goes back: the results are the player's own car's)
     this.settleTank(outcome === 'delivered' || outcome === 'late');
     this.outcome = outcome;
@@ -355,6 +358,7 @@ export const Game = {
     if (playing) Gunfire.update(dt);
     if (playing) Site.update(dt);
     if (playing) Hazards.update(dt);
+    if (playing) Mysteries.update(dt);
     if (playing) Social.update(dt);
     Packages.update(dt);
     Pickups.update();

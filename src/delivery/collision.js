@@ -44,6 +44,13 @@ export const Collision = (() => {
     (Game.screensaver && Math.abs(a.s - Player.s) < CONFIG.screensaver.soundRange);
 
   const resolve = (a, b) => {
+    if (Player.giant && (a.isPlayer || b.isPlayer)) { // GIANT (a mystery): whatever the car touches is crushed, and it feels nothing (see mysteries.js)
+      const other = a.isPlayer ? b : a;
+      other.health = 0; other.hitBy = Player; other.hitAt = Game.time;
+      Game.shake = Math.max(Game.shake, 0.6);
+      sfx('heavy');
+      return;
+    }
     // TOAD RAGE: a toad bursts on touching anything, and the player's car takes it like a
     // frog in the road (never a head-on, nor a bust)
     if (a.toad || b.toad) {
@@ -567,6 +574,7 @@ export const Collision = (() => {
     o.lat = lat;
   };
   const updateObstacles = (dt) => {
+    if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: nothing moves but the player; see mysteries.js)
     for (const o of obstacles) {
       if (o.gone || o.hazard) continue; // (a hazard's is moved by Hazards)
       if (o.kind === 'landmine') { // (buried until the player is near, then popping up out of the dirt)

@@ -178,6 +178,7 @@ export const Hazards = {
   },
 
   update(dt) {
+    if (Traffic.frozen) { this.lastS = Player.s; return; } // (TRAFFIC FREEZE, a mystery: every hazard stands still, and none is set off; see mysteries.js)
     const from = this.lastS;
     this.lastS = Player.s;
     const live = Player.active && Player.shield <= 0, solid = live && Player.ghost <= 0;

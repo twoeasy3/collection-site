@@ -1578,6 +1578,7 @@ export const Traffic = (() => {
   };
 
   const update = (dt) => {
+    if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: every car stands where it is, solid; see mysteries.js)
     // now and then an emergency vehicle, either way (one at a time; if there is no room for it
     // just now, it tries again a second later)
     if (LEVEL.emergencies && !cars.some(c => c.active && c.emergency) && (nextEmergency -= dt) <= 0) {
@@ -2371,5 +2372,6 @@ export const Traffic = (() => {
   };
 
   return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, startProcession, mourn, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer,
-    noteWreck, hornedAt, get reversibles() { return reversibles; } };
+    noteWreck, hornedAt, get reversibles() { return reversibles; },
+    frozen: false }; // (TRAFFIC FREEZE: set by Mysteries; update, Collision.updateObstacles and Hazards.update stand still while it is)
 })();
