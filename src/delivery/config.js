@@ -619,6 +619,11 @@ export const CONFIG = {
     trawler: { hw: 1.5, hl: 4.6, height: 3.2, mass: 3.5, health: 200, model: 'trawler', speed: 0.6, boat: true, noWheels: true, crit: 0, spin: 0 },
     // a drive-by car (The Hood): only ever evil (evilOnly), out for trouble: see CONFIG.driveBy
     driveby: { hw: 1.0, hl: 2.65, height: 1.45, mass: 1.5, health: 120, model: 'driveby', speed: 1.1, evilOnly: true },
+    // the kei truck (Tokyo's traffic) and the post van (Christmas Eve's): the garage's, so each cruises near its own top speed
+    keitruck: { hw: 0.74, hl: 1.7, height: 1.75, mass: 0.9, health: 60, model: 'keitruck' },
+    postvan: { hw: 0.9, hl: 2.1, height: 1.85, mass: 1.2, health: 90, model: 'postvan' },
+    // an auto-rickshaw (Mumbai's): small, slow, nimble and flimsy, and painted the one way (livery)
+    rickshaw: { hw: 0.65, hl: 1.25, height: 1.75, mass: 0.5, health: 35, speed: 0.75, model: 'rickshaw', agility: 1.6, livery: 0xf2c418 },
   },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
@@ -907,6 +912,28 @@ export const CONFIG = {
     edge: 60,              // m it thickens over, at each end
     policeSight: 0.4,      // share of their usual sight the police have in it
     color: 0xc4c9ce,
+  },
+  // a tunnel (a level's "tunnels": { from, to }): the road goes under cover: the sky and the ground gone, the
+  // fog closed in to the tunnel's lamps, the player's headlights on, the engine echoing off the walls
+  tunnel: {
+    edge: 40,              // m over which the dark closes in at a portal, and opens out again
+    near: 10,              // m the fog starts at, inside (the usual: 120)...
+    far: 110,              // ...and where it is solid (the usual: 520)
+    color: 0x0c0c10,       // the dark of it
+    height: 5.6,           // m from the road to the ceiling
+    lampEvery: 12,         // m between the ceiling lamps
+    echo: 0.45,            // how much of the engine comes back off the walls, well inside (0 = none)
+  },
+  // a burst water main (a level's "waterMains": { s, lane?, every? }): a geyser out of the road, now and
+  // then, and while it sprays the road round it is as slippery as ice; a few seconds after it stops, dry
+  waterMain: {
+    spray: 5,              // s each burst lasts
+    every: { min: 6, max: 11 }, // s between bursts (a main can set its own: "every")
+    radius: 8,             // m along the road either way the water reaches...
+    half: 4.5,             // ...and m across, either side of the main
+    drain: 3,              // s after a burst the road stays slippery
+    warn: 150,             // m short of one spraying ahead that the player is warned
+    height: 9,             // m the geyser throws its water
   },
   // rockfall (a level's "rockfall": { from, to, count, side }): rocks tumbling down from that side
   // onto the road as the player comes near. Obstacles: only the player can hit them

@@ -37,6 +37,9 @@ import { Fly, startFly, flyCamera } from './render/fly.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
+import { syncMovers } from './render/movers.js';
+import { syncTunnel } from './render/tunnel.js';
+import { syncWaterMains } from './render/watermains.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
 import './render/touch.js';
@@ -169,9 +172,12 @@ const frame = (now) => {
     syncGunfire();
     syncSite();
     syncRoadside(dt);
+    syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
+    syncWaterMains(dt);
     syncBattle(dt);
     syncZones(dt);
     syncStorm(dt);
+    syncMovers(dt);
     emitVehicleSmoke(dt);
     syncPackages(dt);
     syncPickups(dt);

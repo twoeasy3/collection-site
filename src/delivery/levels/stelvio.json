@@ -1,0 +1,80 @@
+{
+  "id": "stelvio",
+  "name": "Stelvio Pass",
+  "theme": "snow",
+  "clock": { "good": 300, "evil": 230 },
+  "tip": 220,
+  "lanes": 2,
+  "traffic": { "wagon": 0.25, "commuter": 0.25, "van": 0.2, "darkvan": 0.15, "suv": 0.15 },
+  "trafficZones": [
+    { "from": 0, "to": 1500, "traffic": { "police": 0.03 } },
+    { "from": 3200, "to": 4300, "traffic": { "police": 0.03 } }
+  ],
+  "trafficCount": 5,
+  "oncomingCount": 6,
+  "segments": [
+    { "length": 260, "curve": 0 },
+    { "length": 220, "curve": 0, "grade": 0.07 },
+    { "length": 56, "curve": -0.0560999, "grade": 0.04 },
+    { "length": 200, "curve": 0, "grade": 0.07 },
+    { "length": 56, "curve": 0.0560999, "grade": 0.04 },
+    { "length": 220, "curve": 0, "grade": 0.07 },
+    { "length": 56, "curve": -0.0560999, "grade": 0.04 },
+    { "length": 180, "curve": 0, "grade": 0.07 },
+    { "length": 56, "curve": 0.0560999, "grade": 0.04 },
+    { "length": 240, "curve": 0, "grade": 0.07 },
+    { "length": 56, "curve": -0.0560999, "grade": 0.04 },
+    { "length": 200, "curve": 0, "grade": 0.07 },
+    { "length": 56, "curve": 0.0560999, "grade": 0.04 },
+    { "length": 260, "curve": 0, "grade": 0.05 },
+    { "length": 300, "curve": 0.004 },
+    { "length": 220, "curve": 0, "grade": -0.07 },
+    { "length": 56, "curve": -0.0560999, "grade": -0.04 },
+    { "length": 200, "curve": 0, "grade": -0.07 },
+    { "length": 56, "curve": 0.0560999, "grade": -0.04 },
+    { "length": 220, "curve": 0, "grade": -0.07 },
+    { "length": 56, "curve": -0.0560999, "grade": -0.04 },
+    { "length": 180, "curve": 0, "grade": -0.07 },
+    { "length": 56, "curve": 0.0560999, "grade": -0.04 },
+    { "length": 240, "curve": 0, "grade": -0.07 },
+    { "length": 56, "curve": -0.0560999, "grade": -0.04 },
+    { "length": 220, "curve": 0, "grade": -0.06 },
+    { "length": 260, "curve": 0 }
+  ],
+  "ice": [
+    { "from": 560, "to": 600 },
+    { "from": 1130, "to": 1170, "lane": 1 },
+    { "from": 1700, "to": 1740 },
+    { "from": 2900, "to": 2940 },
+    { "from": 3480, "to": 3520, "lane": 0 },
+    { "from": 3760, "to": 3800 }
+  ],
+  "rockfall": [
+    { "from": 300, "to": 480, "count": 5, "side": "left", "height": 32, "out": 18 },
+    { "from": 580, "to": 760, "count": 5, "side": "right", "height": 32, "out": 18 },
+    { "from": 1180, "to": 1340, "count": 6, "side": "left", "height": 32, "out": 18 },
+    { "from": 1740, "to": 1960, "count": 6, "side": "right", "height": 32, "out": 18 },
+    { "from": 2940, "to": 3120, "count": 5, "side": "left", "height": 32, "out": 18 },
+    { "from": 3540, "to": 3700, "count": 6, "side": "right", "height": 32, "out": 18 }
+  ],
+  "fog": [
+    { "from": 2000, "to": 2500 }
+  ],
+  "targets": [
+    { "s": 1000, "side": "right" },
+    { "s": 2450, "side": "left" },
+    { "s": 3900, "side": "right" }
+  ],
+  "pickups": [
+    { "type": "turbo", "s": 180, "lane": 1 },
+    { "type": "armour", "s": 520, "lane": 1 },
+    { "type": "wrench", "s": 1000, "lane": 1 },
+    { "type": "ghost", "s": 1500, "lane": 1 },
+    { "type": "timePlus", "s": 1900, "lane": 1 },
+    { "type": "mystery", "s": 2300, "lane": 1 },
+    { "type": "wrench", "s": 2800, "lane": 1 },
+    { "type": "armour", "s": 3300, "lane": 1 },
+    { "type": "timePlus", "s": 3650, "lane": 1 },
+    { "type": "turbo", "s": 4000, "lane": 1 }
+  ]
+}

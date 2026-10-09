@@ -194,6 +194,12 @@
 //              each way gets the GO; clear: s between, for the last through to clear (a long works wants
 //              longer), if not CONFIG.stopGo's. On straight road
 //   fog        { from, to }: a fog bank: the fog closes right in, and the police see less (see CONFIG.fog)
+//   tunnels    { from, to }: a tunnel: the road under cover, dark but for its lamps, the player's headlights on
+//              and the engine echoing (see CONFIG.tunnel and render/tunnel.js). Clear of any exit's ramps
+//   waterMains { s, lane?, every? }: a burst water main in that lane (no lane: the centre line): now and then
+//              a geyser up out of the road, and while it sprays the road round it is as slippery as ice
+//              (see watermains.js and CONFIG.waterMain); every: { min, max } s between bursts, if not CONFIG's
+//   (a herd, "herds", with stay: true never leaves the road: it turns back at the lane lines, and never rests)
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side, out?, height? }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall). out / height: where they wait,
@@ -264,12 +270,17 @@ import tourDeCoast from './levels/tour-de-coast.json';
 import ringRoad from './levels/ring-road.json';
 import marketTown from './levels/market-town.json';
 import quarryRun from './levels/quarry-run.json';
+import hongKong from './levels/hong-kong.json';
+import tokyo from './levels/tokyo.json';
+import mumbai from './levels/mumbai.json';
+import stelvio from './levels/stelvio.json';
+import christmas from './levels/christmas.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue,
-  speedTrapAlley, mountainPass, outbackExpress, tourDeCoast, ringRoad, marketTown, quarryRun];
+  speedTrapAlley, mountainPass, outbackExpress, tourDeCoast, ringRoad, marketTown, quarryRun, hongKong, tokyo, mumbai, stelvio, christmas];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown, battlefield];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

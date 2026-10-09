@@ -672,6 +672,33 @@ export const MODELS = {
     return group;
   },
 
+  // An auto-rickshaw (Mumbai's traffic): a three-wheeler, black below and a yellow canopy above, open
+  // sides, a single wheel under its snub nose and two at the back, a little windscreen, a meter on the
+  // dash. It waddles as it goes (the whole body rocking on its one front wheel)
+  rickshaw: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.22;
+    const black = lambert(0x1c1c1e), yellow = lambert(car.color), glass = lambert(GLASS), steel = lambert(0xb8bcc4);
+    const body = new THREE.Group(); group.add(body);
+    const tub = box(body, black, w, 0.55, l * 0.72, 0, 0.55, -l * 0.08);                 // the tub
+    box(body, black, w * 0.7, 0.5, l * 0.3, 0, 0.6, l * 0.35);                           // the nose
+    box(body, yellow, w * 1.04, 0.08, l * 0.8, 0, 1.6, -l * 0.06);                        // the canopy
+    box(body, yellow, w * 1.04, 0.06, l * 0.3, 0, 1.56, -l * 0.42).rotation.x = 0.5;      // its back, hanging down
+    screen(body, glass, w * 0.7, 0.04, 0.55, 0, 1.3, l * 0.3, 0.25);                     // windscreen
+    for (const side of [-1, 1]) {
+      box(body, black, 0.06, 0.8, 0.06, side * (w / 2 - 0.05), 1.2, -l * 0.42);          // the rear pillars
+      box(body, black, 0.06, 0.8, 0.06, side * (w * 0.35), 1.2, l * 0.22);               // the front pillars
+      box(body, LAMP, 0.1, 0.12, 0.05, side * w * 0.2, 0.75, l / 2 + 0.01);
+      box(body, TAIL, 0.14, 0.12, 0.05, side * w * 0.38, 0.7, -l / 2 - 0.01);
+      wheel(group, R, 0.14, side * (w / 2 - 0.08), R, -l * 0.3, steel);
+    }
+    wheel(group, R, 0.14, 0, R, l * 0.38, steel);                                          // the one at the front
+    box(body, lambert(0x3a3a40), w * 0.5, 0.35, 0.3, 0, 0.95, l * 0.05);                   // the driver's seat
+    box(body, lambert(0xd8c8a0), w * 0.8, 0.3, 0.4, 0, 0.85, -l * 0.25);                   // the passengers' bench
+    group.userData = { body: tub, animate: (t) => { body.rotation.z = Math.sin(t * 6) * 0.03; body.position.y = Math.abs(Math.sin(t * 6)) * 0.02; } };
+    return group;
+  },
+
   // A small post van: a tall panel van with a short, sloping nose, a rounded high roof, blind rear
   // sides each wearing a big envelope (its flap in the van's colour) over a pale band, twin rear
   // doors with another envelope across them, and an amber beacon on the roof that flashes as it idles

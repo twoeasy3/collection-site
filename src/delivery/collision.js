@@ -379,7 +379,8 @@ export const Collision = (() => {
     }
     for (const z of LEVEL.herds || []) {
       // a cow walks across the road, so its hitbox lies across it too
-      for (let i = 0; i < (z.count || 3); i++) add(z.kind || 'cow', 0, 0, { ...stretch(z), yaw: Math.PI / 2, dir: 1, rest: 0 });
+      // (stay: true, a herd that never leaves the road: it turns back at the lane lines, and never rests)
+      for (let i = 0; i < (z.count || 3); i++) add(z.kind || 'cow', 0, 0, { ...stretch(z), yaw: Math.PI / 2, dir: 1, rest: 0, stay: !!z.stay });
     }
     // (seeded, so every drifter moves the same way every run)
     let driftSeed = 2654435761;
@@ -603,11 +604,12 @@ export const Collision = (() => {
           o.h = CONFIG.kangarooHop * Math.abs(Math.sin(o.hop * Math.PI));
         }
         o.face = o.dir * Math.PI / 2;
-        const lo = Track.lo(o.s) + o.hl, hi = Track.hi(o.s) - o.hl;
+        // (a herd that stays on the road turns back at the lane lines, and doesn't stand about)
+        const lo = (o.stay ? Track.laneLo(o.s) : Track.lo(o.s)) + o.hl, hi = (o.stay ? Track.laneHi(o.s) : Track.hi(o.s)) - o.hl;
         if (o.lat > hi || o.lat < lo) { // reached the far side: stand, then head back
           o.lat = clamp(o.lat, lo, hi);
           o.dir = -o.dir;
-          o.rest = CONFIG.cowRestMin + Math.random() * (CONFIG.cowRestMax - CONFIG.cowRestMin);
+          o.rest = o.stay ? 0 : CONFIG.cowRestMin + Math.random() * (CONFIG.cowRestMax - CONFIG.cowRestMin);
         }
       } else if (o.dance) {
         danceTo(o, (o.time = (o.time || 0) + dt));
