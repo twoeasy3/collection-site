@@ -65,6 +65,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 //   spin: false (the model doesn't turn on its stand), color (its card's glow) }
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
+const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -707,6 +708,101 @@ const GROUPS = [
       'Speed cameras, level crossings, potholes and the rest can stand on a side road too, so the way round has troubles of its own.',
     ], build: () => { const g = road(5, 12), cam = ob('camera', { height: 4.2 }); cam.position.set(3.2, 0, 0); cam.rotation.y = Math.PI; g.add(cam); return { model: g }; } },
   ] },
+  { name: 'City streets', cards: [
+    { name: 'Tunnels', color: 0x4a4f5c, has: (l) => l.tunnels?.length, rules: [
+      `The road goes under cover: no sky, the dark closing in over ${T.edge} m at each portal, and nothing to see by but the ceiling lamps (one every ${T.lampEvery} m) and your own headlights, which come on by themselves.`,
+      `You see about ${T.far} m ahead inside, a good deal less than outside. The camera drops in close behind the car, and the engine echoes off the walls.`,
+      'Nothing else changes: the traffic, the police and the shoulders are as outside.',
+    ], build: () => {
+      const g = road(9, 14), wall = lambert(0x3a3d46), lamps = [];
+      for (const x of [-5.6, 5.6]) g.add(box(1.2, 6, 9, wall, x, 3, -2.5));
+      g.add(box(12.4, 1.2, 9, wall, 0, 6.6, -2.5), box(12.4, 0.5, 0.4, lambert(0xffd23f), 0, 5.8, 2.1));
+      g.add(box(10, 5.9, 0.2, glow(0x0c0c10), 0, 3, -6.9)); // (the dark at the far end)
+      for (let z = 1; z > -7; z -= 2.5) { const lamp = box(1.4, 0.12, 0.5, glow(0xfff1c2), 0, 5.9, z); lamps.push(lamp); g.add(lamp); }
+      return { model: g, tick: (t) => lamps.forEach((lamp, k) => { lamp.material.color.setHex(Math.floor(t * 3 + k) % 4 ? 0xfff1c2 : 0xb8a878); }) };
+    } },
+    { name: 'Parades', color: 0xe0407a, has: (l) => l.parades?.length, rules: [
+      `A float in every lane of your side, abreast, with ${PA.rows} rows of a marching band behind: the whole road, at ${kmh(PA.speed)}. It sets off as you come within ${PA.trigger} m and never pulls over; you hear the drum from ${PA.heard} m.`,
+      `The floats are traffic, and heavy. A bandsman is an obstacle (${CONFIG.obstacleKinds.marcher.damage} damage), and knocking one down with the police near is a <strong>bust</strong>.`,
+      'The way past is the oncoming side, or a side road if there is one.',
+    ], build: () => {
+      const g = road(11, 20), floats = [-2.6, 2.6].map((x, k) => { const f = vehicle('float', k ? 0x4fc3f7 : 0xe0407a); f.position.set(x, 0, 4); return f; });
+      const band = [];
+      for (let row = 0; row < 3; row++) for (let k = 0; k < 4; k++) { const m = ob('marcher'); m.position.set(-3.6 + k * 2.4, 0, -3.5 - row * 2.2); band.push(m); }
+      g.add(...floats, ...band);
+      return { model: g, tick: (t) => { floats.forEach(f => f.userData.animate?.(t)); band.forEach((m, k) => { m.position.y = Math.abs(Math.sin(t * 5.7 + (k % 2) * Math.PI)) * 0.12; }); } };
+    } },
+    { name: 'Police roadblocks', color: 0x2f5fd8, has: (l) => l.roadblocks?.length, rules: [
+      `Police cars parked across every lane of your side but one. You are warned ${RB.warn} m out: find the gap (a level can fix which lane it is; otherwise it moves from run to run).`,
+      'Touching one of them is a <strong>bust</strong>, unless you carry a radar detector.',
+      `With a siren going they take you for one of their own: from ${RB.wave} m out the cars pull aside and wave you through.`,
+    ], build: () => {
+      const g = road(13, 12), cars = [-4.5, -1.5, 4.5].map((x) => { const c = vehicle('police', 0xffffff); c.position.set(x, 0, 0); c.rotation.y = Math.PI / 2; return c; });
+      const lights = cars.flatMap((c) => [box(0.5, 0.2, 0.3, glow(0xff2a2a), c.position.x, CONFIG.vehicles.police.height + 0.15, -0.3), box(0.5, 0.2, 0.3, glow(0x2a6bff), c.position.x, CONFIG.vehicles.police.height + 0.15, 0.3)]);
+      g.add(...cars, ...lights);
+      return { model: g, tick: (t) => { const on = Math.floor(t * 6) % 2 === 0; lights.forEach((l, k) => { l.visible = (k % 2 === 0) === on; }); } };
+    } },
+    { name: 'Falling cargo', color: 0xb9834a, has: (l) => l.traffic?.cargotruck || l.trafficZones?.some(z => z.traffic.cargotruck), rules: [
+      `A cargo truck sheds its load: while one is within ${CG.near} m ahead of you, a crate, a bale or a tyre comes off the back every ${range(CG.every, ' s')}, in its lane or a little either side.`,
+      `Each slides on down the road and stops where it lies: an obstacle, yours to hit (a crate: ${CONFIG.obstacleKinds.crate.damage} damage). The traffic drives through them.`,
+      'Do not sit behind it. Get past, and nothing more falls.',
+    ], build: () => {
+      const g = road(9, 30), truck = vehicle('cargotruck', 0x2f6f9f);
+      truck.position.set(2.2, 0, 6);
+      const loads = ['crate', 'tyre', 'bale'].map((kind, k) => { const o = ob(kind, { hw: 0.6, hl: 0.6, height: 1.1 }); o.position.set(2.2 + (k - 1) * 1.3, 0, -6 - k * 3.2); o.rotation.y = k * 0.7; return o; });
+      g.add(truck, ...loads);
+      return { model: g, tick: (t) => truck.userData.animate?.(t) };
+    } },
+    { name: 'Ice-cream stops', color: 0xf7b6d2, has: (l) => l.iceCreamStops?.length, rules: [
+      `An ice-cream van stopped in a lane, its jingle going (heard from ${IS.heard} m). The traffic behind it queues for ${IS.queue} m, nobody pulling out round it.`,
+      `It drives off ${IS.wait} s after you come within ${IS.trigger} m (a stop can set its own wait), and the queue follows.`,
+      'Wait in the queue, or go round the lot of them by another lane.',
+    ], build: () => {
+      const g = road(9, 24), van = vehicle('icecream', 0xf7b6d2);
+      van.position.set(2.2, 0, 8);
+      const queue = [0x4fc3f7, 0xf2c21c, 0x9be37a].map((color, k) => { const c = painted(vehicle('commuter', 0xffffff), color); c.position.set(2.2, 0, 2 - k * 4.6); return c; });
+      g.add(van, ...queue);
+      return { model: g, tick: (t) => van.userData.animate?.(t) };
+    } },
+    { name: 'Reversible lanes', color: 0x2e9b3d, has: (l) => l.reversible?.length, rules: [
+      `A lane on your side under overhead signs, one every ${RL.signEvery} m. As you come within ${RL.flipAt} m of the stretch they go from a green arrow to a red cross, and the lane is oncoming from then on.`,
+      `The traffic in it moves out, and a car comes down it the wrong way every ${range(RL.every, ' s')} while you are on the stretch. Meeting one is a head-on.`,
+      'Under a red cross, be in another lane.',
+    ], build: () => {
+      const g = road(9, 14), post = lambert(0x8a9096);
+      for (const x of [-5, 5]) g.add(box(0.4, 6.2, 0.4, post, x, 3.1, 0));
+      g.add(box(10.4, 0.5, 0.5, post, 0, 6.2, 0));
+      const arrow = sign('↓', '#12351c', '#35e06a', 1.6, 1.6), cross = sign('✕', '#3a1212', '#ff3b2f', 1.6, 1.6), open = sign('↓', '#12351c', '#35e06a', 1.6, 1.6);
+      for (const [s, x] of [[arrow, -0.1], [cross, -0.1], [open, 4.3]]) { s.children[0].visible = false; s.position.set(x, 1.6, 0.3); g.add(s); }
+      const car = painted(vehicle('commuter', 0xffffff), 0x24242b);
+      car.position.set(-0.1, 0, -3); car.rotation.y = Math.PI;
+      g.add(car);
+      return { model: g, spin: false, tick: (t) => { const flipped = t % 6 > 2.5; arrow.visible = !flipped; cross.visible = car.visible = flipped; car.position.z = -6 + ((t % 6) - 2.5) * 2.4; } };
+    } },
+    { name: 'Convoys', color: 0x6b7343, has: (l) => l.convoys, rules: [
+      `Now and then a convoy: ${CV.size} vehicles of a kind (a level can say how many, and what), nose to tail ${CV.gap} m apart in one lane, moving as one.`,
+      'Aim for a gap between two of them and the one behind speeds up and shuts it in your face.',
+      'Pass the whole of it, or stay behind the whole of it.',
+    ], build: () => {
+      const g = road(9, 30), trucks = [0, 1, 2, 3].map((k) => { const v = vehicle('van', 0x6b7343); v.position.set(2.2, 0, 10.5 - k * 7); return v; });
+      g.add(...trucks);
+      return { model: g, tick: (t) => trucks.forEach((v, k) => { v.userData.animate?.(t); v.position.z = 10.5 - k * 7 + Math.sin(t * 1.3 + k) * 0.25; }) };
+    } },
+    { name: 'Rubbernecking', color: 0xff8a1a, everywhere: true, has: () => false, rules: [
+      `For ${RN.linger} s after a wreck, the traffic coming up to it slows to ${pct(RN.pace)} of its speed from ${RN.range} m out, to have a look: the jam comes after the crash, yours included.`,
+      `An evil driver stuck below ${pct(RN.slowBelow)} of its speed for ${RN.patience} s loses patience and goes up the shoulder, for ${RN.longest} s at most.`,
+      `A police car within ${RN.policeSight} m that sees it arrests it. The same goes for you on the shoulder, as ever.`,
+    ], build: () => {
+      const g = road(11, 26), wreck = painted(vehicle('commuter', 0xffffff), 0x2a2a2e);
+      wreck.position.set(-2.6, 0, 9); wreck.rotation.set(0, 0.9, 0.12);
+      const smoke = [0, 1, 2].map((k) => mesh(new THREE.SphereGeometry(0.5 + k * 0.25, 8, 6), lambert(0x55585e, { transparent: true, opacity: 0.55 }), -2.6, 1.6 + k * 0.9, 9));
+      const queue = [0x4fc3f7, 0xf2c21c, 0xd8262b, 0x9be37a].map((color, k) => { const c = painted(vehicle('commuter', 0xffffff), color); c.position.set(k % 2 ? 2.6 : 0, 0, 3 - Math.floor(k / 2) * 5 - (k % 2) * 2); return c; });
+      const jumper = painted(vehicle('commuter', 0xffffff), 0x151515);
+      jumper.position.set(5.2, 0, -2);
+      g.add(wreck, ...smoke, ...queue, jumper);
+      return { model: g, tick: (t) => { smoke.forEach((s, k) => { s.position.y = 1.6 + ((t * 0.8 + k * 0.9) % 2.7); s.material.opacity = 0.55 * (1 - ((t * 0.8 + k * 0.9) % 2.7) / 2.7); }); jumper.position.z = -8 + (t * 3) % 16; } };
+    } },
+  ] },
 ];
 
 // ---- the page: the groups (a row of buttons to jump to each), then the cards -------------------------
@@ -732,7 +828,7 @@ for (const g of GROUPS) {
       <div class="body">
         <h2>${card.name}</h2>
         <ul>${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>
-        <p class="levels">${levels.length ? 'In ' + levels.join(', ') : 'Not in any level yet'}</p>
+        <p class="levels">${card.everywhere ? 'On every level' : levels.length ? 'In ' + levels.join(', ') : 'Not in any level yet'}</p>
       </div>`;
     cardBox.append(el);
     views.push(makeView(el.querySelector('.view'), card));
