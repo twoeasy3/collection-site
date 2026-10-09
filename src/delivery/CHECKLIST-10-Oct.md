@@ -379,3 +379,82 @@ leave.
       it. Reading the wave and arriving as it opens is faster than racing to the back of it.
 - [ ] G26. **School run**: every car on a stretch is trying to stop at the same kerb. They
       double-park, pull out without looking and reverse.
+
+### Second batch (10-Oct, after the owner's cut): each built on a gimmick the game already has
+
+Written to the counterplay rule: every one is a gamble the player can take or leave, and each
+says what the gamble is. All are things that happen on real roads, as the eleven kept ones are.
+
+- [ ] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
+      car flies: no steering in the air, and it lands on whatever is over the top. *Gamble:* lift
+      and see, or fly blind and gain seconds. *Builds on:* the drawbridge's jump, hills.
+- [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
+      in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
+      slow and it lands in it. *Gamble:* the jump or the slow way round. *Builds on:* drawbridge
+      jump, rubbernecking queues, convoys.
+- [ ] H3. **Tram lane**: the median's rails are an empty lane, and a tram is coming along them
+      somewhere. Fast and clear, slippery in the rain, and the tram does not swerve. *Gamble:*
+      how long to stay on the rails. *Builds on:* the railway median, Hong Kong's trams, ice.
+- [ ] H4. **Low bridge**: a height limit ahead, signed, with the tall-vehicle route going the
+      long way round. A low car goes straight under; a van or the bus must take the detour, or
+      lose its roof rack, lights and some health trying. *Gamble:* made in the garage, and again
+      at the sign. *Builds on:* side roads, tunnels, car heights already in `cars.js`.
+- [ ] H5. **Ford**: the road dips through a river, with the bridge a little further round. Depth
+      posts show how deep it is today (it varies down the level). A car that wades well goes
+      through; one that does not is slowed to a crawl or stalls. *Gamble:* read the posts and
+      know the car. *Builds on:* the tide's wading (`crossing` in `cars.js`), side roads.
+- [ ] H6. **Flooded underpass**: the same, in town in the rain: the main road dips under a
+      railway and fills, and the slip road goes up and over. The water rises through the run.
+      *Gamble:* early on it is passable by anything; later only by some. *Builds on:* tunnels,
+      Mumbai's rain, burst water mains.
+- [ ] H7. **Hairpin cut**: a rough track straight down the hill between two legs of a hairpin.
+      It saves the whole bend, shakes the car, costs health, and rejoins across the traffic.
+      *Gamble:* seconds against damage and a blind rejoin. *Builds on:* Stelvio's hairpins, mud,
+      side roads.
+- [ ] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
+      certain speed the car skims the tops and it goes smooth. *Gamble:* commit to the speed
+      before the bend, or crawl. *Builds on:* potholes, mud, the safari's dirt road.
+- [ ] H9. **Ruts**: tractors have left deep ruts in the mud. In a rut the car runs straight and
+      fast; changing lane means climbing out, with a jolt and a wobble. *Gamble:* pick the rut
+      early and live with it. *Builds on:* mud, tractors.
+- [ ] H10. **Black ice in the shade**: ice lies only where a building, a cutting or the trees
+      shade the road, so it can be read from the shadows before reaching it. *Gamble:* brake
+      before the shadow, or stay in the sunny lane with the traffic. *Builds on:* ice, the
+      scenery already casting the shade.
+- [ ] H11. **Truck spray**: in rain every lorry drags a cloud of spray: nothing can be seen
+      behind one. *Gamble:* hang back and see, or overtake blind. *Builds on:* rain, fog.
+- [ ] H12. **Low sun**: one stretch runs straight into the sun and the screen washes out,
+      except in the shadow of a lorry, a bridge or a row of trees. *Gamble:* tuck in behind
+      something slow to see, or run in the glare. *Builds on:* fog, tunnels' light change.
+- [ ] H13. **Dust trail**: on dirt every car throws a plume that drifts with the wind.
+      Following in it is blind; driving a lane upwind of it is clear. *Gamble:* the clear lane
+      may be the oncoming one. *Builds on:* fog, crosswind (G16), the safari.
+- [ ] H14. **Rockfall gallery**: the road forks into a covered gallery, narrow with no
+      shoulder and a queue in it, and the open road under the loose face. *Gamble:* slow and
+      safe, or fast under the rocks. *Builds on:* rockfall, tunnels, the fork (G4).
+- [ ] H15. **Thin ice shortcut**: the road goes round the lake; tyre tracks go straight across
+      it. Light cars cross; heavy ones crack it, and a crack that catches the car is a cold
+      swim. Amphibious cars do not care. *Gamble:* the car's weight against the distance saved.
+      *Builds on:* ice, `mass` in `cars.js`, the water stages being built, theme T4.
+- [ ] H16. **Fresh tarmac**: a coned-off lane of new tar beside the roadworks queue. It is
+      empty and it is sticky: the longer the car stays on it the slower it gets, and the tyres
+      stay slow for a while after. *Gamble:* short hops along it. *Builds on:* stop / go
+      roadworks, mud, narrows.
+- [ ] H17. **Climbing lane**: a hill with a short extra lane for overtaking the lorries, and a
+      sign counting down to where it ends. *Gamble:* one more lorry before the lane runs out.
+      *Builds on:* narrows, convoys, hills.
+- [ ] H18. **Single track with passing places**: one lane for both ways, with a marked bay
+      every so often. Meeting someone between bays, somebody goes onto the verge. *Gamble:* duck
+      into this bay or run for the next. *Builds on:* narrows, quiet zones, the shoulder timer.
+- [ ] H19. **Speed cushions**: a suburban street of humps with gaps between them. Straddle a
+      gap on exactly the right line and the car does not feel it; clip one at speed and it
+      jumps and takes a knock. *Gamble:* precision at speed against slowing. *Builds on:*
+      potholes, the jump.
+- [ ] H20. **Blast window**: the quarry's siren goes and the road under the face is about to
+      be showered; the haul road round the back is longer and rough. *Gamble:* sprint under
+      before it goes, or take the haul road. *Builds on:* quarry blasts, side roads.
+
+The orchestrator's pick of these: H1 crest jumps and H2 the ramp (the jump is already in the
+engine and is the most fun thing the drawbridge does), H4 low bridge and H5 ford (they make the
+choice of car matter on the road, which little does today), H8 washboard (it rewards going
+faster, which nothing else does).
