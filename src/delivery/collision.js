@@ -245,8 +245,13 @@ export const Collision = (() => {
     camera: [0.3, 0.3, 4.2], rock: [1, 1, 2], cyclist: [0.35, 0.95, 2.1],
     // the Battlefield's: a landmine in a lane (see landmines below)
     landmine: [0.75, 0.75, 0.4],
+    // Gimmick Road 2's (see hazards.js, which adds and moves them): a shopping trolley, a marathon runner, a
+    // water station's table, the marathon's pace car, a wide load and its escort, a toll plaza's end booth
+    trolley: [0.45, 0.6, 1.1], runner: [0.3, 0.3, 1.8], waterTable: [0.9, 0.5, 1.0], paceCar: [0.9, 2.0, 1.6],
+    wideLoad: [3.2, 6.5, 3.6], escort: [0.95, 2.2, 1.7], tollBooth: [0.7, 1.6, 2.8],
   };
   const obstacles = [];
+  const loaders = []; // (others adding obstacles of their own as a level loads: each is called with add)
   const add = (kind, s, lat, extra) => {
     const [hw, hl, height] = SIZE[kind];
     // h = height off the ground (frogs), face = which way the model points, in track space
@@ -258,6 +263,7 @@ export const Collision = (() => {
   };
   const loadLevel = () => {
     obstacles.length = 0;
+    for (const load of loaders) load(add);
     for (const o of LEVEL.obstacles || []) {
       const s = Track.place(o), lat = Track.laneOffset(o.lane, s), D = CONFIG.drifters;
       add(o.kind || 'barrier', s, lat, o.drift === 'dart' ? { drift: 'dart', time: 0, homeS: s, homeLat: lat, along: D.dartAlong, across: D.dartAcross } : undefined);
@@ -537,7 +543,7 @@ export const Collision = (() => {
   };
   const updateObstacles = (dt) => {
     for (const o of obstacles) {
-      if (o.gone) continue;
+      if (o.gone || o.hazard) continue; // (a hazard's is moved by Hazards)
       if (o.kind === 'landmine') { // (buried until the player is near, then popping up out of the dirt)
         const R = CONFIG.battle.mineRise;
         if (o.buried && (o.s - Player.s) * Player.dir < R.ahead) o.buried = false;
@@ -686,7 +692,7 @@ export const Collision = (() => {
       // (a cyclist goes up on its own, small, its wheels flying: the rest of the bunch rides on)
       FxQueue.push(o.ride ? { type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false, scale: 0.55, smoke: 0.5, tyres: true }
         : { type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false });
-      if (o.kind === 'cyclist' && Traffic.policeNear()) Player.bust('cyclist'); // (knocking a cyclist off in front of the police)
+      if ((o.kind === 'cyclist' || o.kind === 'runner') && Traffic.policeNear()) Player.bust(o.kind); // (knocking a cyclist off, or a runner down, in front of the police)
     }
   };
   // a dancing portaloo, `t` s into its row's dance (every one in a row keeps time with the rest)
@@ -770,7 +776,7 @@ export const Collision = (() => {
         else driftTo(o);
         continue;
       }
-      if (o.from === undefined) continue; // barriers and bales stay where they were put
+      if (o.from === undefined || o.hazard) continue; // barriers and bales stay where they were put (a hazard's: see Hazards.reset)
       o.s = o.from + Math.random() * (o.to - o.from);
       o.dir = Math.random() < 0.5 ? 1 : -1;
       o.h = 0;
@@ -823,5 +829,5 @@ export const Collision = (() => {
     }
   };
 
-  return { get bodies() { return getBodies(); }, obstacles, loadLevel, resetObstacles, updateObstacles, atRoadLevel, check, overlap };
+  return { get bodies() { return getBodies(); }, obstacles, loaders, loadLevel, resetObstacles, updateObstacles, atRoadLevel, check, overlap };
 })();

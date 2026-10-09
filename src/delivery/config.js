@@ -405,6 +405,8 @@ export const CONFIG = {
     towerFall: 2.6,        // s the control tower takes to come down...
     towerScale: 1.6,       // ...a tower this many times the usual size (some 85 m tall)
     kinds: {               // m each kind covers along the road (it covers its lanes across)
+      // (roadtrain: a road train jackknifing: its trailers swing across its lanes, no fire: see render/wreckage.js)
+      roadtrain: { depth: 9 },
       tanker: { depth: 3.5 }, containers: { depth: 5 }, boulders: { depth: 6 }, hangar: { depth: 5 }, plane: { depth: 7 }, airliner: { depth: 34 }, blast: { depth: 18 },
     },
   },
@@ -474,6 +476,14 @@ export const CONFIG = {
     rock: { damage: 25, speedKept: 0.6 },
     cyclist: { damage: 12, speedKept: 0.85, light: true },
     landmine: { damage: 0, speedKept: 1 }, // (no ordinary knock: it destroys whatever touches it outright, see Collision)
+    // Gimmick Road 2's (see hazards.js)
+    trolley: { damage: 8, speedKept: 0.88, light: true },
+    runner: { damage: 10, speedKept: 0.88, light: true },
+    waterTable: { damage: 6, speedKept: 0.9, light: true },
+    paceCar: { damage: 30, speedKept: 0.5 },
+    wideLoad: { damage: 40, speedKept: 0.35 },
+    escort: { damage: 30, speedKept: 0.5 },
+    tollBooth: { damage: 35, speedKept: 0.4 },
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -979,6 +989,52 @@ export const CONFIG = {
     // (looking lookout m ahead for them); otherwise it waits behind them. Done once passRoom m past them
     room: 0.5, lookout: 45, passRoom: 4,
   },
+  // ---- Gimmick Road 2's (hazards.js; each a list in the level of the same name) ----
+  // a school crossing ("schoolCrossings": { s }): as the player comes within `notice` s of it, a lollipop
+  // person steps out and holds up a STOP for `hold` s while the children cross. Traffic waits at the
+  // line; the player driving over it meanwhile is busted. Then every `every` s, with the player within `again` m
+  schoolCrossing: { notice: 4.5, hold: 6, stopLine: 5, every: { min: 14, max: 22 }, again: 260, children: 5 },
+  // a burst water main ("waterMains": { s, lane, length? }): it sprays for `on` s, then stops for `off`;
+  // while it sprays, its `length` m of that lane is as slippery as ice (CONFIG.ice). Warned of `warn` m out
+  waterMain: { on: 5, off: 4, length: 28, warn: 160 },
+  // a hot-air balloon ("balloons": { s, lanes: [first, last] }): set off `notice` s before the player
+  // would get there, it comes down from `height` m over `descend` s, sits on its lanes for `sit` s, and
+  // lifts off again over `rise` s. On the ground its basket is solid (damage, speedKept: once a landing);
+  // traffic in its lanes waits `stopLine` m short of it
+  balloon: { notice: 7, height: 40, descend: 5, sit: 7, rise: 3, hl: 2.2, stopLine: 8, damage: 25, speedKept: 0.4 },
+  // a drawbridge ("drawbridges": { s }): set off `notice` s before the player would get there: bells for
+  // `warn` s (the booms come down), then its two leaves lift over `raise` s, stand open until `open` s
+  // after they began, and come down over `close` s. Open, there is a `gap` m gap: at jumpSpeed m/s or
+  // more the car jumps it (up to jumpHeight m, landDamage on landing); slower, it drops in and is
+  // wrecked. Traffic waits `stopLine` m short. Again every `every` s with the player within `again` m
+  drawbridge: { notice: 6, warn: 2.5, raise: 2, open: 9, close: 2, gap: 16, jumpSpeed: 22, jumpHeight: 3.2, landDamage: 8,
+    stopLine: 16, every: { min: 16, max: 26 }, again: 320 },
+  // a wide load ("wideLoads": { s, lanes: [a, b] }): a load two lanes wide crawling along at `speed`,
+  // setting off as the player comes within `trigger` m, its escort `behind` m behind it. The escort
+  // watches for `watch` s (its beacons flashing), then looks away for `rest` s: getting past the load's
+  // nose while it watches, within `sight` m of it, is a bust
+  wideLoad: { speed: 9, trigger: 280, behind: 16, watch: 5, rest: 4, sight: 90 },
+  // shopping trolleys ("trolleys": { from, to, count }): rolling across the road with its camber: down
+  // from the crown on the straight (accel m/s^2), to the inside of a bend (up to `bend` times that),
+  // bouncing back off the kerb with `bounce` of their speed (or a shove of `kick` m/s if they have stopped)
+  trolley: { accel: 1.6, bend: 3, bounce: 0.85, kick: 2.2, top: 6 },
+  // a marathon ("marathons": { s, lane, count, water? }): runners two abreast in one lane at `speed`,
+  // setting off as the player comes within `trigger` m, a pace car `lead` m ahead of them, and (water: s)
+  // a water station's tables standing in that lane. Knock a runner down with the police watching: a bust
+  marathon: { speed: 4.2, trigger: 300, spacing: 3.2, lead: 14, wobble: 0.12 },
+  // average-speed cameras ("averageCameras": { from, to, limit }): timed between two gantries, and
+  // caught (as by a speed camera: a fine first, then a bust) if the average is over the limit (km/h)
+  averageSpeed: { limit: 90 },
+  // a toll plaza ("tolls": { s, fee? }): a boom across each lane going the player's way. Come up to it
+  // at paySpeed m/s or slower, within `reach` m, and the fee is paid (off what the run banks) and the
+  // boom lifts over `lift` s. Go through it down: a knock (boomDamage, boomKept), and a bust if the
+  // police are near, or bustChance of the time anyway. Traffic rolls through at `slow` m/s
+  toll: { fee: 15, paySpeed: 9, reach: 26, lift: 0.5, boomDamage: 10, boomKept: 0.75, bustChance: 0.5, slow: 8, zone: 45 },
+  // a stampede ("stampedes": { from, to, count, kind, road?, exit? }): animals waiting along that
+  // stretch (a side road's, usually), which come charging down the road at the player once it is
+  // within `trigger` m of the stretch, each at its own `speed`, weaving `weave` m
+  // (gone `past` m behind the player, or `run` m down the road from where they waited)
+  stampede: { trigger: 240, speed: { min: 9, max: 14 }, weave: 0.8, past: 70, run: 400 },
 
   // scenery
   poleSpacing: 25,

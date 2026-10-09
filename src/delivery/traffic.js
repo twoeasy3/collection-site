@@ -16,6 +16,7 @@ import { Pickups } from './pickups.js';
 import { Gunfire } from './gunfire.js';
 import { Crossings } from './crossing.js';
 import { StopGo } from './stopgo.js';
+import { Hazards } from './hazards.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -2019,7 +2020,7 @@ export const Traffic = (() => {
         // (on ice, and on a level where cars understeer, they don't slow for a bend: they slide wide instead;
         // though a racer, knowing the track, slows for the bends ahead as much as lets it slide a little)
         target = Math.min(target, giveWay(car), car.onIce || LEVEL.understeer ? Infinity : cornerSpeed(car.s, weightOf(car)));
-        const hold = Math.min(Crossings.holdFor(car), StopGo.holdFor(car)); // (waiting at a level crossing, or a STOP)
+        const hold = Math.min(Crossings.holdFor(car), StopGo.holdFor(car), Hazards.holdFor(car)); // (waiting at a level crossing, or a STOP; or one of Hazards')
         const cyclists = passPeloton(car); // (giving cyclists room, or waiting behind them for it)
         target = Math.min(target, hold, cyclists.hold);
         if (Player.mystery === 'sundayDrivers' && !car.racer && !car.emergency) target *= CONFIG.mystery.sundayPace; // (Sunday Drivers, a mystery: pottering along)

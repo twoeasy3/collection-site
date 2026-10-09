@@ -395,7 +395,10 @@ const createTrack = () => {
   const onShoulder = (lat, s) => lat > laneHi(s) || lat < laneLo(s);
   // the level's ice patch at (s, lat), if any: on the expressway, over one lane or (with no lane) all of them
   const ice = LEVEL.ice || [];
+  // (and the patches that come and go, anywhere: a burst water main's, while it sprays: see Hazards)
+  const sprays = [];
   const icy = (s, lat) => {
+    for (const p of sprays) if (p.on && s >= p.from && s <= p.to && Math.abs(lat - laneOffset(p.lane, s)) <= LW / 2) return p;
     if (!isMain(s)) return null;
     for (const p of ice) {
       if (s < p.from || s > p.to) continue;
@@ -767,14 +770,18 @@ const createTrack = () => {
     }
     // the hidden gimmicks level's (see levels.js)
     const straight = (from, to) => { for (let s = from; s <= to; s += 5) if (curveAt(s)) return false; return true; };
+    // (cameras, crossings, potholes and Hazards' can be on a side road: { road: 'side', exit }, s then m along it)
+    const onRoad = (item, s = item.s) => item.road === 'side' ? !!exits[item.exit || 0] && s >= 0 && s <= exits[item.exit || 0].length : s >= 0 && s <= length;
+    const laneOn = (item, lane) => Number.isInteger(lane) && lane >= 0 && lane < (item.road === 'side' ? 4 : LANES);
+    const where = (item) => item.road === 'side' ? ' (side road)' : '';
     for (const c of LEVEL.cameras || []) {
-      if (!(c.s >= 0 && c.s <= length)) problems.push('camera at ' + c.s + ': beyond the road');
+      if (!onRoad(c)) problems.push('camera at ' + c.s + where(c) + ': beyond the road');
       else if (!['left', 'right', 'centre'].includes(c.side)) problems.push('camera at ' + c.s + ': side is left, right or centre');
     }
     for (const c of LEVEL.crossings || []) {
       const R = CONFIG.crossing.stopLine + 10;
-      if (!(c.s - R >= 0 && c.s + R <= length)) problems.push('level crossing at ' + c.s + ': beyond the road');
-      else if (!straight(c.s - R, c.s + R)) problems.push('level crossing at ' + c.s + ': the road must run straight through it');
+      if (!onRoad(c, c.s - R) || !onRoad(c, c.s + R)) problems.push('level crossing at ' + c.s + where(c) + ': beyond the road');
+      else if (c.road !== 'side' && !straight(c.s - R, c.s + R)) problems.push('level crossing at ' + c.s + ': the road must run straight through it');
     }
     for (const z of LEVEL.stopGo || []) {
       const R = CONFIG.stopGo.stopLine + 10;
@@ -793,11 +800,38 @@ const createTrack = () => {
       if (!(q.from < q.to) || q.from < 0 || q.to > length || (q.side !== 'left' && q.side !== 'right')) problems.push('quarry at ' + q.from + ': from before to, on the road, on the left or right');
     }
     for (const h of LEVEL.potholes || []) {
-      if (!(h.s >= 0 && h.s <= length) || !(Number.isInteger(h.lane) && h.lane >= 0 && h.lane < LANES)) problems.push('pothole at ' + h.s + ': in a lane on the road');
+      if (!onRoad(h) || !laneOn(h, h.lane)) problems.push('pothole at ' + h.s + where(h) + ': in a lane on the road');
     }
     for (const p of LEVEL.pelotons || []) {
       if (!(p.s >= 0 && p.s <= length) || !(p.count > 0)) problems.push('peloton at ' + p.s + ': on the road, with a count');
       else if (p.dir === -1 ? FLOW === 'north' : FLOW === 'south') problems.push('peloton at ' + p.s + ': there is no ' + (p.dir === -1 ? 'oncoming side' : 'side the player\'s way') + ' for it to ride');
+    }
+    // Gimmick Road 2's (see hazards.js, and cameras.js for the average-speed cameras)
+    for (const [name, list, R] of [['school crossing', LEVEL.schoolCrossings, CONFIG.schoolCrossing.stopLine + 10], ['drawbridge', LEVEL.drawbridges, CONFIG.drawbridge.stopLine + 10], ['toll', LEVEL.tolls, 30]]) {
+      for (const c of list || []) {
+        if (!onRoad(c, c.s - R) || !onRoad(c, c.s + R)) problems.push(name + ' at ' + c.s + where(c) + ': beyond the road');
+        else if (c.road !== 'side' && !straight(c.s - R, c.s + R)) problems.push(name + ' at ' + c.s + ': the road must run straight through it');
+      }
+    }
+    for (const m of LEVEL.waterMains || []) {
+      if (!onRoad(m) || !onRoad(m, m.s + (m.length ?? CONFIG.waterMain.length)) || !laneOn(m, m.lane)) problems.push('water main at ' + m.s + where(m) + ': in a lane on the road');
+    }
+    for (const [name, list] of [['balloon', LEVEL.balloons], ['wide load', LEVEL.wideLoads]]) {
+      for (const b of list || []) {
+        if (!onRoad(b)) problems.push(name + ' at ' + b.s + where(b) + ': beyond the road');
+        else if (!(b.lanes && b.lanes[0] <= b.lanes[1] && laneOn(b, b.lanes[0]) && laneOn(b, b.lanes[1]))) problems.push(name + ' at ' + b.s + ': lanes [first, last] on the road');
+        else if (name === 'wide load' && b.lanes[1] !== b.lanes[0] + 1) problems.push(name + ' at ' + b.s + ': it is two lanes wide: lanes [n, n + 1]');
+      }
+    }
+    for (const m of LEVEL.marathons || []) {
+      if (!onRoad(m) || !laneOn(m, m.lane) || !(m.count > 0)) problems.push('marathon at ' + m.s + where(m) + ': in a lane on the road, with a count');
+      else if (m.water !== undefined && !onRoad(m, m.water)) problems.push('marathon at ' + m.s + ': its water station is beyond the road');
+    }
+    for (const [name, list] of [['trolleys', LEVEL.trolleys], ['stampede', LEVEL.stampedes], ['average-speed cameras', LEVEL.averageCameras]]) {
+      for (const z of list || []) {
+        if (!(z.from < z.to) || !onRoad(z, z.from) || !onRoad(z, z.to)) problems.push(name + ' at ' + z.from + where(z) + ': from before to, on the road');
+        else if (name === 'stampede' && z.kind !== undefined && z.kind !== 'cow' && z.kind !== 'kangaroo') problems.push(name + ' at ' + z.from + ': kind is cow or kangaroo');
+      }
     }
     for (const e of LEVEL.wreckage || []) {
       const name = 'wreckage at ' + e.at;
@@ -932,7 +966,7 @@ const createTrack = () => {
     apart, laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesOn, edge, extraLane, onBridge, icy, muddy, foggy, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
+    lanesOn, edge, extraLane, onBridge, icy, sprays, muddy, foggy, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

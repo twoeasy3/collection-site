@@ -31,6 +31,7 @@ import { syncMachinery } from './render/machinery.js';
 import { syncGunfire } from './render/gunfire.js';
 import { syncSite } from './render/site.js';
 import { syncRoadside } from './render/roadside.js';
+import { syncHazards } from './render/hazards.js';
 import { syncBattle } from './render/battle.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
@@ -147,6 +148,7 @@ const frame = (now) => {
     // then bring the scene up to date with it
     const heading = Track.toWorld(Player.s, Player.lat, tmp);
     carMesh.position.copy(tmp);
+    carMesh.position.y += Player.air; // (jumping a drawbridge)
     carMesh.rotation.y = heading - Player.yaw; // swerving right turns the nose toward +lat
     carMesh.rotation.x = -Math.atan(Track.grade(Player.s)); // nose up on a climb
     syncHelicopter(dt, now); // (decides whether the car is shown: blinking under a shield, dangling from the helicopter)
@@ -170,6 +172,7 @@ const frame = (now) => {
     syncGunfire();
     syncSite();
     syncRoadside(dt);
+    syncHazards(now);
     syncBattle(dt);
     syncZones(dt);
     syncStorm(dt);

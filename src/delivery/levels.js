@@ -198,6 +198,19 @@
 //   rockfall   { from, to, count, side, out?, height? }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall). out / height: where they wait,
 //              m off the road's edge and m up, if not CONFIG.rockfall's (the hillside's): on a quarry's bench, say
+//   (Gimmick Road 2's: see hazards.js and CONFIG, each under its own name. Any can be on a side road, as cameras,
+//   crossings and potholes can: { road: 'side', exit: n }, s then m along that side road)
+//   schoolCrossings { s }: a lollipop person stops the traffic for the children; running it is a bust
+//   waterMains { s, lane, length? }: a burst main: that stretch of the lane is as slippery as ice while it sprays
+//   balloons   { s, lanes: [first, last] }: a hot-air balloon comes down on those lanes, sits, and lifts off again
+//   drawbridges { s }: bells, booms, and a gap to jump at speed or wait at. On straight road
+//   wideLoads  { s, lanes: [n, n + 1] }: a load two lanes wide crawling along; passing it while its escort watches is a bust
+//   trolleys   { from, to, count }: shopping trolleys rolling across the road with its camber
+//   marathons  { s, lane, count, water? }: runners in one lane behind a pace car; water: where its water station stands
+//   averageCameras { from, to, limit? }: two gantries; over the limit (km/h) on average between them is an offence
+//   tolls      { s, fee? }: a toll plaza: slow down to pay, or ram its boom and risk a bust
+//   stampedes  { from, to, count, kind: 'cow' | 'kangaroo' }: animals charging down the road at the player
+//   (and wreckage of kind 'roadtrain': a road train jackknifing across its lanes)
 //   pelotons   { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind
@@ -264,6 +277,7 @@ import tourDeCoast from './levels/tour-de-coast.json';
 import ringRoad from './levels/ring-road.json';
 import marketTown from './levels/market-town.json';
 import quarryRun from './levels/quarry-run.json';
+import gimmickRoad2 from './levels/gimmick-road-2.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
@@ -284,7 +298,10 @@ export const SCREENSAVER_LEVEL = chaos;
 // (?hidden=gimmick-road) tries out the newest gimmicks, each on a stretch of its own: speed cameras,
 // potholes, a trench, a level crossing, stop / go roadworks, a fog bank, rockfall, a cyclist
 // peloton, and funeral processions
-export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix, 'gimmick-road': gimmickRoad };
+// Gimmick Road 2 (?hidden=gimmick-road-2): the next batch, the same way (see hazards.js): burst water mains, a school
+// crossing, shopping trolleys, a marathon, a toll plaza, average-speed cameras, a hot-air balloon, a wide load, a
+// drawbridge and a road train jackknifing; and on its side road a camera, potholes, a level crossing and a stampede
+export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix, 'gimmick-road': gimmickRoad, 'gimmick-road-2': gimmickRoad2 };
 // the class every race is run in: 'f1', 'gt' (GT road cars) or 'lmp' (Le Mans prototypes): the player's car
 // and the grid (the menu's Race cars button; ?gt or ?lmp for that class whatever it says)
 export const RACE_CLASSES = { f1: 'F1', gt: 'GT', lmp: 'LMP' };

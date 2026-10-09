@@ -537,3 +537,130 @@ OBSTACLE_MODELS.landmine = () => {
   group.scale.setScalar(1.4); // (bigger than life, so it is seen in time)
   return group;
 };
+
+// ---- Gimmick Road 2's (see ../hazards.js) ---------------------------------------------------------
+// a shopping trolley: a wire basket on four little wheels, a red handle, a bag or two in it
+OBSTACLE_MODELS.trolley = () => {
+  const wire = lambert(0xc4c9ce), group = boxModel([
+    [wire, 0.8, 0.06, 1.1, 0, 0.42, 0],                                   // the basket's floor,
+    [wire, 0.06, 0.5, 1.1, -0.4, 0.68, 0], [wire, 0.06, 0.5, 1.1, 0.4, 0.68, 0], // its sides,
+    [wire, 0.8, 0.5, 0.06, 0, 0.68, 0.55], [wire, 0.8, 0.4, 0.06, 0, 0.72, -0.55], // its ends
+    [lambert(0xd8262b), 0.9, 0.07, 0.07, 0, 1.05, -0.62],                 // the handle
+    [lambert(0x8a9096), 0.06, 0.36, 0.06, -0.36, 0.22, 0.45], [lambert(0x8a9096), 0.06, 0.36, 0.06, 0.36, 0.22, 0.45],
+    [lambert(0x8a9096), 0.06, 0.36, 0.06, -0.36, 0.22, -0.45], [lambert(0x8a9096), 0.06, 0.36, 0.06, 0.36, 0.22, -0.45],
+    [lambert(0xb07a3a), 0.4, 0.45, 0.4, -0.12, 0.72, 0.15], [lambert(0x39a04a), 0.3, 0.3, 0.3, 0.18, 0.62, -0.2], // shopping
+  ]);
+  for (const x of [-0.36, 0.36]) for (const z of [-0.45, 0.45]) {
+    const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.06, 8).rotateZ(Math.PI / 2), lambert(0x1b1d22));
+    wheel.position.set(x, 0.08, z);
+    group.add(wheel);
+  }
+  group.scale.setScalar(1.25); // (bigger than life: easier to see)
+  return group;
+};
+// a marathon runner: singlet and shorts, a race number, arms and legs swinging. userData.animate(t) runs
+OBSTACLE_MODELS.runner = () => {
+  const vests = [0xff4f8b, 0x2f7de1, 0xffd23f, 0x39d353, 0xff7a1a, 0xb026ff];
+  const vest = lambert(vests[Math.floor(Math.random() * vests.length)]), skin = lambert([0xf2c09a, 0xc68a5c, 0x8a5a3a][Math.floor(Math.random() * 3)]);
+  const group = new THREE.Group(), body = new THREE.Group();
+  const part = (parent, w, hgt, d, material, x, y, z) => {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, hgt, d), material);
+    mesh.position.set(x, y, z);
+    parent.add(mesh);
+    return mesh;
+  };
+  group.add(body);
+  part(body, 0.42, 0.55, 0.26, vest, 0, 1.25, 0);
+  part(body, 0.26, 0.2, 0.02, lambert(0xf4f4f4), 0, 1.28, 0.14);          // the race number
+  part(body, 0.44, 0.22, 0.28, lambert(0x1b1d22), 0, 0.88, 0);            // shorts
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), skin);
+  head.position.set(0, 1.72, 0.02);
+  body.add(head);
+  const limb = (x, y, length, material) => { // (hung from its top, so it swings from the shoulder or the hip)
+    const pivot = new THREE.Group();
+    pivot.position.set(x, y, 0);
+    part(pivot, 0.12, length, 0.12, material, 0, -length / 2, 0);
+    body.add(pivot);
+    return pivot;
+  };
+  const arms = [limb(-0.28, 1.5, 0.55, skin), limb(0.28, 1.5, 0.55, skin)];
+  const legs = [limb(-0.11, 0.8, 0.8, skin), limb(0.11, 0.8, 0.8, skin)];
+  group.userData.animate = (t) => {
+    const swing = Math.sin(t * 9);
+    legs[0].rotation.x = swing * 0.8; legs[1].rotation.x = -swing * 0.8;
+    arms[0].rotation.x = -swing * 0.9; arms[1].rotation.x = swing * 0.9;
+    body.position.y = Math.abs(Math.cos(t * 9)) * 0.08;
+  };
+  group.scale.setScalar(1.15);
+  return group;
+};
+// a water station's table: a trestle table under a blue cloth, rows of paper cups, a big water bottle
+OBSTACLE_MODELS.waterTable = () => {
+  const parts = [[lambert(0x2f7de1), 1.8, 0.08, 0.9, 0, 0.8, 0], [lambert(0x2f7de1), 1.8, 0.4, 0.04, 0, 0.6, 0.45], [lambert(0x2f7de1), 1.8, 0.4, 0.04, 0, 0.6, -0.45]];
+  for (const x of [-0.8, 0.8]) for (const z of [-0.35, 0.35]) parts.push([lambert(0x8a9096), 0.06, 0.8, 0.06, x, 0.4, z]);
+  for (let k = 0; k < 10; k++) parts.push([lambert(0xf4f4f4), 0.1, 0.14, 0.1, -0.7 + (k % 5) * 0.28, 0.91, k < 5 ? -0.2 : 0.1]);
+  parts.push([lambert(0x7fd4f2), 0.3, 0.5, 0.3, 0.68, 1.09, 0.25]);
+  return boxModel(parts);
+};
+// the marathon's pace car: a small white car with a big clock on its roof and amber lamps
+OBSTACLE_MODELS.paceCar = (o) => {
+  const w = o.hw * 2, l = o.hl * 2, white = lambert(0xf4f4f4), dark = lambert(0x1b1d22);
+  const group = boxModel([
+    [white, w, 0.7, l, 0, 0.65, 0], [dark, w * 0.86, 0.55, l * 0.5, 0, 1.25, -l * 0.05], [white, w * 0.88, 0.06, l * 0.48, 0, 1.55, -l * 0.05],
+    [dark, w * 0.9, 0.6, 0.12, 0, 1.95, -l * 0.05],                               // the clock's board
+    [new THREE.MeshBasicMaterial({ color: 0xffb020 }), w * 0.7, 0.3, 0.14, 0, 1.95, -l * 0.05], // its digits, glowing
+    [new THREE.MeshBasicMaterial({ color: 0xffa21a }), 0.25, 0.16, 0.25, -w * 0.3, 1.66, -l * 0.3], [new THREE.MeshBasicMaterial({ color: 0xffa21a }), 0.25, 0.16, 0.25, w * 0.3, 1.66, -l * 0.3],
+    [new THREE.MeshBasicMaterial({ color: 0xff2a2a }), w * 0.22, 0.16, 0.06, -w * 0.32, 0.75, -l / 2 - 0.02], [new THREE.MeshBasicMaterial({ color: 0xff2a2a }), w * 0.22, 0.16, 0.06, w * 0.32, 0.75, -l / 2 - 0.02],
+  ]);
+  for (const x of [-1, 1]) for (const z of [-1, 1]) { const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.26, 12).rotateZ(Math.PI / 2), dark); wheel.position.set(x * (o.hw - 0.1), 0.33, z * l * 0.31); group.add(wheel); }
+  return group;
+};
+// a wide load: a low loader, two lanes wide, carrying half a house, red and white boards at each
+// end and an amber lamp at each corner
+OBSTACLE_MODELS.wideLoad = (o) => {
+  const w = o.hw * 2, l = o.hl * 2, steel = lambert(0x3a3d44), dark = lambert(0x1b1d22);
+  const parts = [
+    [steel, w * 0.5, 0.4, l * 0.96, 0, 0.8, 0],                                  // the trailer's bed
+    [lambert(0xc0392b), 2.5, 2.3, 2.6, 0, 1.75, l / 2 - 1.4],                    // the tractor's cab
+    [dark, 2.3, 0.8, 0.1, 0, 2.3, l / 2 - 0.08],                                 // (its windscreen)
+    [lambert(0xe8dcc4), w * 0.96, 2.2, l * 0.62, 0, 2.1, -l * 0.12],             // the house: its walls,
+    [lambert(0x7a4a3a), w * 1.0, 0.25, l * 0.66, 0, 3.3, -l * 0.12],             // its roof's eaves,
+    [lambert(0x8a5646), w * 0.6, 0.4, l * 0.66, 0, 3.55, -l * 0.12],             // and ridge
+    [lambert(0x9fd0e8), 1.2, 1.0, 0.06, -w * 0.25, 2.2, -l * 0.43 - 0.02], [lambert(0x9fd0e8), 1.2, 1.0, 0.06, w * 0.25, 2.2, -l * 0.43 - 0.02],
+    [lambert(0xffd23f), w * 0.9, 0.5, 0.08, 0, 1.1, -l / 2 - 0.02],              // "OVERSIZE", at the back
+  ];
+  for (let k = 0; k < 6; k++) parts.push([lambert(k % 2 ? 0xf4f4f4 : 0xd8262b), w / 6, 0.3, 0.1, -w / 2 + w / 12 + k * w / 6, 0.55, -l / 2 - 0.04]);
+  for (const x of [-1, 1]) for (let k = 0; k < 4; k++) parts.push([dark, 0.5, 0.9, 0.9, x * w * 0.2, 0.45, -l * 0.42 + k * 1.1]);
+  for (const x of [-1, 1]) parts.push([dark, 0.5, 1.0, 1.0, x * 1.1, 0.5, l / 2 - 1.2]);
+  const group = boxModel(parts), amber = new THREE.MeshBasicMaterial({ color: 0xffa21a });
+  for (const x of [-1, 1]) for (const z of [-1, 1]) {
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), amber);
+    lamp.position.set(x * w * 0.48, 3.5, -l * 0.12 + z * l * 0.31);
+    group.add(lamp);
+  }
+  return group;
+};
+// its escort: a white pilot car, a yellow WIDE LOAD board across its roof, two amber beacons.
+// userData.beacons: their material (lit while it watches: see render/hazards.js)
+OBSTACLE_MODELS.escort = (o) => {
+  const w = o.hw * 2, l = o.hl * 2, white = lambert(0xf4f4f4), dark = lambert(0x1b1d22);
+  const beacons = new THREE.MeshBasicMaterial({ color: 0x4a3a1a });
+  const group = boxModel([
+    [white, w, 0.75, l, 0, 0.68, 0], [dark, w * 0.86, 0.55, l * 0.5, 0, 1.32, -l * 0.05], [white, w * 0.88, 0.06, l * 0.48, 0, 1.62, -l * 0.05],
+    [lambert(0xffd23f), w * 1.05, 0.45, 0.1, 0, 1.95, -l * 0.1],                  // the board
+    [dark, w * 0.8, 0.12, 0.12, 0, 1.95, -l * 0.1 + 0.02],                       // (its lettering, a dark bar)
+    [beacons, 0.26, 0.22, 0.26, -w * 0.32, 2.3, -l * 0.1], [beacons, 0.26, 0.22, 0.26, w * 0.32, 2.3, -l * 0.1],
+    [lambert(0xff7a1a), w * 1.01, 0.18, l * 1.01, 0, 0.7, 0],                    // an orange stripe round it
+  ]);
+  for (const x of [-1, 1]) for (const z of [-1, 1]) { const wheel = new THREE.Mesh(new THREE.CylinderGeometry(0.33, 0.33, 0.26, 12).rotateZ(Math.PI / 2), dark); wheel.position.set(x * (o.hw - 0.1), 0.33, z * l * 0.31); group.add(wheel); }
+  group.userData.beacons = beacons;
+  return group;
+};
+// a toll plaza's end booth: a cabin on a concrete island, striped at its nose
+OBSTACLE_MODELS.tollBooth = (o) => boxModel([
+  [lambert(0xb9bcc0), o.hw * 2, 0.35, o.hl * 2 + 2, 0, 0.17, 0],
+  [lambert(0xe8e4dc), o.hw * 1.7, 2.0, o.hl * 1.3, 0, 1.35, 0],
+  [lambert(0x2f3e4a), o.hw * 1.74, 0.8, o.hl * 1.0, 0, 1.7, 0],
+  [lambert(0x1f6b3a), o.hw * 2.2, 0.2, o.hl * 1.8, 0, 2.45, 0],
+  [lambert(0xffd23f), o.hw * 1.6, 0.6, 0.3, 0, 0.6, -o.hl - 0.8], [lambert(0x1b1d22), o.hw * 0.5, 0.6, 0.32, 0, 0.6, -o.hl - 0.8],
+]);

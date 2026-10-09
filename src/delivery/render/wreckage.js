@@ -79,6 +79,25 @@ const MODELS = {
     for (let k = 0; k < 6; k++) add(g, box(0.25, 0.25, 0.25), lambert(0xd8342a), -6.5, 2 + k * 1.6, rnd(9)); // the charges' red tags
     return g;
   },
+  // a road train jackknifed across its lanes: the prime mover at the right of them, its two trailers swung round
+  // behind it, right across. userData.swing(u): 0 = running straight, 1 = folded up across the road
+  roadtrain: (w, d) => {
+    const g = new THREE.Group(), red = lambert(0xb3261e), tilt = lambert(0xd8dadc), dark = lambert(0x23252a);
+    const L = Math.max(5, w * 0.62); // (each trailer's length)
+    add(g, box(2.4, 2.8, 3.2), red, -w / 2 + 1.3, 1.7, d / 2 - 1.6);   // the prime mover (local +x is to the left)
+    add(g, box(2.2, 0.9, 0.1), dark, -w / 2 + 1.3, 2.3, d / 2 + 0.02);
+    const hitch = (parent, x, z) => { const p = new THREE.Group(); p.position.set(x, 0, z); parent.add(p); return p; };
+    const trailer = (pivot, colour) => {
+      add(pivot, box(2.5, 2.9, L), colour, 0, 2.05, -L / 2 - 0.3);
+      add(pivot, box(2.3, 0.5, L * 0.9), dark, 0, 0.55, -L / 2 - 0.3);
+      for (const z of [-L * 0.75, -L * 0.9]) add(pivot, box(2.6, 0.9, 0.9), dark, 0, 0.45, z);
+    };
+    const first = hitch(g, -w / 2 + 1.3, d / 2 - 3.2), second = hitch(first, 0, -L - 0.6);
+    trailer(first, tilt);
+    trailer(second, lambert(0x2f6fa8));
+    g.userData.swing = (u) => { const e = u * u * (3 - 2 * u); first.rotation.y = -e * 1.25; second.rotation.y = e * 1.9; };
+    return g;
+  },
   // (boulders flung out of a quarry face by its blasting: a heap of them, right across their lanes)
   boulders: (w, d) => {
     const g = new THREE.Group(), tones = [0x5f5a52, 0x6f6a62, 0x4f4b45, 0x7a7266]; // (darker than the dust they raise)
@@ -255,6 +274,16 @@ export const syncWreckage = (now) => {
     }
     const heading = Track.toWorld(e.at, mlat, target);
     const u = Math.min(1, e.t / W.flight), src = Wreckage.source(e);
+    if (e.kind === 'roadtrain') { // (no flying in: it is there, braking, its trailers swinging round across the lanes)
+      mesh.position.copy(target);
+      mesh.rotation.set(0, heading, 0);
+      mesh.userData.swing(u);
+      if (u < 1 && Math.abs(e.at - Player.s) < 300) { // (tyre smoke as they go)
+        Track.toWorld(e.at + rnd(e.depth / 2), e.lat0 + Math.random() * (e.lat1 - e.lat0), tmp);
+        Smoke.emit(tmp.x, tmp.y + 0.3, tmp.z, rnd(2), 1 + Math.random() * 2, rnd(2), 1.5, 1 + Math.random(), 2, 0, 0xd8d8d8);
+      }
+      return;
+    }
     Track.toWorld(src.s, src.lat, from);
     const sky = e.from === 'sky', y0 = sky ? 70 : 6, arc = sky ? 0 : 18;
     mesh.position.lerpVectors(from, target, u * u * (sky ? 1 : 0.4) + u * (sky ? 0 : 0.6)); // (falling faster as it comes; an airliner diving)

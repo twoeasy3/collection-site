@@ -56,12 +56,14 @@ const sign = (text, bg, fg = '#fff', w = 3.2, h = 1.4) => {
 // where the levels are: every level (on the menu) that has it, by its number and name; and the test
 // level, Gimmick Road (off the menu: ?hidden=gimmick-road), where the newest are tried out first
 const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null),
-  has(HIDDEN_LEVELS['gimmick-road']) ? '<span>Test</span> Gimmick Road (?hidden=gimmick-road)' : null].filter(Boolean);
+  has(HIDDEN_LEVELS['gimmick-road']) ? '<span>Test</span> Gimmick Road (?hidden=gimmick-road)' : null,
+  has(HIDDEN_LEVELS['gimmick-road-2']) ? '<span>Test</span> Gimmick Road 2 (?hidden=gimmick-road-2)' : null].filter(Boolean);
 
 // ---- every gimmick, by group ---------------------------------------------------------------------
 // { name, has: (level) => bool (the levels it is in), rules: [...], build: () => { model, tick?(t, dt) },
 //   spin: false (the model doesn't turn on its stand), color (its card's glow) }
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
+const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, toll: CONFIG.toll, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -599,6 +601,123 @@ const GROUPS = [
       for (let k = 0; k < 4; k++) { const c = ob('cyclist'); c.position.set(-1.6 - (k % 2) * 1.0, 0, -3 + Math.floor(k / 2) * 3); c.rotation.y = Math.PI; g.add(c); riders.push(c); }
       return { model: g, tick: (t) => riders.forEach((c, k) => c.userData.animate(t + k * 0.7)) };
     } },
+  ] },
+  { name: 'Gimmick Road 2', cards: [
+    { name: 'School crossings', color: 0xf2c21c, has: (l) => l.schoolCrossings?.length, rules: [
+      `About ${H.school.notice} s before you get there, the lollipop person's sign turns to STOP and the children cross: ${H.school.hold} s in all. Traffic waits at the line.`,
+      'Drive over the crossing while the STOP is up and it is a <strong>bust</strong>. Hold the brake and wait; it comes round again every so often while you are near.',
+    ], build: () => {
+      const g = road(9, 12);
+      for (let x = -4; x < 4; x += 1.4) g.add(box(0.7, 0.02, 4, glow(0xf4f4f4), x + 0.35, 0.02, 0));
+      const worker = makeWorker();
+      worker.position.set(5.2, 0, 2.5);
+      const face = mesh(new THREE.CircleGeometry(0.62, 20), glow(0xd8262b), 0.35, 3.05, 0.24);
+      worker.add(box(0.06, 2.2, 0.06, lambert(0xf4f4f4), 0.35, 1.7, 0.2), face);
+      const kids = [0xff4f8b, 0x2f7de1, 0xffd23f, 0x39d353].map((color, k) => { const kid = group(box(0.34, 0.5, 0.24, lambert(color), 0, 0.75, 0), box(0.3, 0.5, 0.2, lambert(0x2b2f38), 0, 0.25, 0), mesh(new THREE.SphereGeometry(0.17, 10, 8), lambert(0xf2c09a), 0, 1.17, 0)); kid.position.z = (k - 1.5) * 0.7; g.add(kid); return kid; });
+      g.add(worker);
+      return { model: g, spin: false, tick: (t) => { const u = (t * 0.25) % 1; kids.forEach((kid) => { kid.position.x = 4.5 - u * 9; }); face.material.color.setHex(u < 0.85 ? 0xd8262b : 0xf2c21c); } };
+    } },
+    { name: 'Burst water mains', color: 0x6fb6d8, has: (l) => l.waterMains?.length, rules: [
+      `A main has burst under one lane: it sprays for ${H.main.on} s, then stops for ${H.main.off} s. You are warned ${H.main.warn} m out.`,
+      `While it sprays, ${H.main.length} m of that lane is as slippery as ice: brakes at ${pct(IC.brakeGrip)}, steering at ${pct(IC.steerGrip)}. Between sprays the lane is dry.`,
+    ], build: () => {
+      const g = road(9, 12);
+      const wet = mesh(new THREE.PlaneGeometry(4.2, 9).rotateX(-Math.PI / 2), lambert(0x6fb6d8, { transparent: true, opacity: 0.6 }), 2.2, 0.03, -1);
+      const jet = mesh(new THREE.CylinderGeometry(0.25, 0.45, 5, 10), new THREE.MeshBasicMaterial({ color: 0xcfeaf7, transparent: true, opacity: 0.6 }), 2.2, 2.5, 3.5);
+      g.add(wet, jet, mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.08, 12), lambert(0x3a3b3f), 2.2, 0.04, 3.5));
+      return { model: g, tick: (t) => { const on = t % 6 < 3.5; wet.visible = jet.visible = on; jet.scale.set(1 + Math.sin(t * 23) * 0.15, 1, 1 + Math.cos(t * 19) * 0.15); } };
+    } },
+    { name: 'Hot-air balloons', color: 0xd8262b, has: (l) => l.balloons?.length, rules: [
+      `A balloon comes down on the road about as you arrive: ${H.balloon.descend} s coming down (its landing spot flashes red), ${H.balloon.sit} s sat there, then up and away.`,
+      `On the ground its basket is solid: ${H.balloon.damage} damage, and you keep ${pct(H.balloon.speedKept)} of your speed. Traffic in its lanes waits for it. Wait too, or go round.`,
+    ], build: () => {
+      const b = new THREE.Group(), stripes = [0xd8262b, 0xffd23f, 0x2f7de1, 0xf4f4f4];
+      for (let k = 0; k < 8; k++) { const gore = mesh(new THREE.SphereGeometry(3.5, 6, 12, k * Math.PI / 4, Math.PI / 4), lambert(stripes[k % 4]), 0, 6.6, 0); gore.scale.y = 1.15; b.add(gore); }
+      b.add(mesh(new THREE.CylinderGeometry(1.2, 0.6, 1.5, 12, 1, true), lambert(0xd8262b, { side: THREE.DoubleSide }), 0, 2.5, 0), box(1.6, 0.9, 1.4, lambert(0x9a6a3a), 0, 0.45, 0));
+      const g = road(9, 10);
+      g.add(b);
+      return { model: g, tick: (t) => { b.position.y = Math.max(0, Math.sin(t * 0.7)) * 5; } };
+    } },
+    { name: 'Drawbridges', color: 0x2e6c8f, has: (l) => l.drawbridges?.length, rules: [
+      `Bells and booms for ${H.bridge.warn} s, then the two leaves lift and stand open, leaving a ${H.bridge.gap} m gap over the river, for about ${H.bridge.open} s in all. Traffic waits.`,
+      `At ${kmh(H.bridge.jumpSpeed)} or more you <strong>jump it</strong> (${H.bridge.landDamage} damage on landing). Any slower and you drop into the river: wrecked. Or hold the brake and wait for it to come down.`,
+    ], build: () => {
+      const g = group(mesh(new THREE.PlaneGeometry(26, 8).rotateX(-Math.PI / 2), lambert(0x2e6c8f), 0, -0.2, 0));
+      g.add(box(9, 0.3, 5, lambert(0x3b3e44), 0, -0.05, 6.5), box(9, 0.3, 5, lambert(0x3b3e44), 0, -0.05, -6.5));
+      const leaves = [-1, 1].map((d) => { const pivot = new THREE.Group(), leaf = box(9, 0.3, 4, lambert(0x4b4f57), 0, 0, -d * 2); pivot.position.set(0, 0, d * 4); pivot.add(leaf); g.add(pivot); return { pivot, d }; });
+      return { model: g, tick: (t) => { const open = Math.max(0, Math.sin(t * 0.8)); leaves.forEach(({ pivot, d }) => { pivot.rotation.x = d * open * 1.15; }); } };
+    } },
+    { name: 'Wide loads', color: 0xffd23f, has: (l) => l.wideLoads?.length, rules: [
+      `Half a house on a low loader, two lanes wide, crawling along at ${kmh(H.load.speed)} with an escort car ${H.load.behind} m behind it.`,
+      `The escort watches for ${H.load.watch} s (its amber beacons flashing), then looks away for ${H.load.rest} s. Get past the load's nose while it is watching and it is a <strong>bust</strong>. Pass while the beacons are dark.`,
+      `Running into the load costs ${CONFIG.obstacleKinds.wideLoad.damage} damage. Traffic drives through it.`,
+    ], build: () => {
+      const g = road(11, 26), load = ob('wideLoad', { hw: 3.2, hl: 6.5, height: 3.6 }), escort = ob('escort', { hw: 0.95, hl: 2.2, height: 1.7 });
+      load.position.set(1.7, 0, 5); escort.position.set(1.7, 0, -9);
+      g.add(load, escort);
+      return { model: g, tick: (t) => escort.userData.beacons.color.setHex(t % 4 < 2.2 && Math.floor(t * 5) % 2 ? 0xffb020 : 0x4a3a1a) };
+    } },
+    { name: 'Shopping trolleys', color: 0xc4c9ce, has: (l) => l.trolleys?.length, rules: [
+      'Escaped trolleys roll across the road with its camber: down from the crown to the kerbs on the straight, to the inside of a bend, bouncing back off the kerb.',
+      `Hit one: ${CONFIG.obstacleKinds.trolley.damage} damage, and you keep ${pct(CONFIG.obstacleKinds.trolley.speedKept)} of your speed.`,
+    ], build: () => {
+      const g = road(9, 10), carts = [0, 1, 2].map(k => { const cart = ob('trolley'); cart.position.z = (k - 1) * 3; cart.rotation.y = Math.PI / 2; g.add(cart); return cart; });
+      return { model: g, tick: (t) => carts.forEach((cart, k) => { cart.position.x = Math.sin(t * (0.9 + k * 0.25) + k * 2) * 3.6; }) };
+    } },
+    { name: 'Marathons', color: 0xff4f8b, has: (l) => l.marathons?.length, rules: [
+      `Runners two abreast in one lane at ${kmh(H.run.speed)}, a pace car ${H.run.lead} m ahead of them, and a water station's tables standing in the lane further on.`,
+      `Knock a runner down (${CONFIG.obstacleKinds.runner.damage} damage) with a police car watching and it is a <strong>bust</strong>. Traffic drives through them.`,
+    ], build: () => {
+      const g = road(7, 16), runners = [];
+      for (let k = 0; k < 6; k++) { const r = ob('runner'); r.position.set(1.4 + (k % 2) * 1.2, 0, -5 + Math.floor(k / 2) * 2.6); g.add(r); runners.push(r); }
+      const pace = ob('paceCar', { hw: 0.9, hl: 2.0, height: 1.6 }); pace.position.set(2, 0, 5); g.add(pace);
+      return { model: g, tick: (t) => runners.forEach((r, k) => r.userData.animate(t + k * 0.4)) };
+    } },
+    { name: 'Average-speed cameras', color: 0x2f5fd8, has: (l) => l.averageCameras?.length, rules: [
+      'Two gantries: you are timed from the first to the second, so slowing down for a camera does not fool them.',
+      'Over the limit on average and you are caught at the second, as by a speed camera: a fine the first time in a run, a <strong>bust</strong> every time after. A radar detector keeps you safe.',
+    ], build: () => {
+      const g = road(9, 12);
+      for (const x of [-5, 5]) g.add(box(0.4, 6.4, 0.4, lambert(0x8a9096), x, 3.2, 0));
+      g.add(box(10.4, 0.5, 0.5, lambert(0x8a9096), 0, 6.4, 0), box(0.7, 0.6, 0.9, lambert(0xf2c21c), 1.2, 5.85, 0), box(0.7, 0.6, 0.9, lambert(0xf2c21c), 3.4, 5.85, 0));
+      return { model: g };
+    } },
+    { name: 'Toll plazas', color: 0x1f6b3a, has: (l) => l.tolls?.length, rules: [
+      `A boom across each lane going your way. Come up to it at ${kmh(H.toll.paySpeed)} or slower and the toll ($${H.toll.fee} unless it says otherwise) comes off what you bank, and the boom lifts.`,
+      `Go through it down: a knock (${H.toll.boomDamage} damage), and a <strong>bust</strong> if the police are near, or ${pct(H.toll.bustChance)} of the time anyway. Booths block the shoulders.`,
+    ], build: () => {
+      const g = road(9, 12);
+      g.add(box(11, 0.5, 6, lambert(0x1f6b3a), 0, 5.2, 0));
+      for (const x of [-5, 5]) g.add(box(0.5, 5, 0.5, lambert(0x8a9096), x, 2.5, 0));
+      const arm = new THREE.Group();
+      for (let k = 0; k < 3; k++) arm.add(box(1, 0.14, 0.14, lambert(k % 2 ? 0xf4f4f4 : 0xd8262b), k + 0.5, 0, 0));
+      arm.position.set(0.3, 1.1, 0);
+      g.add(arm, box(0.3, 1.3, 0.3, lambert(0xffd23f), 0.3, 0.65, 0));
+      return { model: g, tick: (t) => { arm.rotation.z = Math.max(0, Math.sin(t)) * 1.45; } };
+    } },
+    { name: 'Stampedes', color: 0xc08a50, has: (l) => l.stampedes?.length, rules: [
+      `Usually on a side road: cows or kangaroos waiting along a stretch, which come charging down the road at you once you are within ${H.herd.trigger} m, at ${range(H.herd.speed, ' m/s')}, weaving.`,
+      'Each is an obstacle, as in a herd. Look for the gaps, or stay on the expressway.',
+    ], build: () => {
+      const roos = [0, 1, 2].map(k => { const r = ob('kangaroo'); r.position.set((k - 1) * 1.8, 0, k % 2 ? 1.5 : -1); return r; });
+      return { model: group(...roos), tick: (t) => roos.forEach((r, k) => { r.position.y = Math.abs(Math.sin(t * 4 + k)) * CONFIG.kangarooHop; }) };
+    } },
+    { name: 'Road-train jackknife', color: 0xb3261e, has: (l) => l.wreckage?.some(e => e.kind === 'roadtrain'), rules: [
+      'A road train ahead locks its brakes as you come up, and its trailers swing round across the lanes (they flash red first).',
+      'Whatever they sweep up is wrecked, and those lanes are blocked for good. No fire. One lane is always left open.',
+    ], build: () => {
+      const g = road(11, 14), red = lambert(0xb3261e);
+      g.add(box(2.4, 2.8, 3.2, red, 3.5, 1.7, 4));
+      const first = new THREE.Group(), second = new THREE.Group();
+      first.position.set(3.5, 0, 2.4); second.position.set(0, 0, -5.6);
+      first.add(box(2.5, 2.9, 5, lambert(0xd8dadc), 0, 2.05, -2.8), second);
+      second.add(box(2.5, 2.9, 5, lambert(0x2f6fa8), 0, 2.05, -2.8));
+      g.add(first);
+      return { model: g, spin: false, tick: (t) => { const u = Math.min(1, (t % 5) / 1.6), e = u * u * (3 - 2 * u); first.rotation.y = e * 1.25; second.rotation.y = -e * 1.9; } };
+    } },
+    { name: 'Side-road gimmicks', color: 0x2e8b4a, has: (l) => ['cameras', 'crossings', 'potholes', 'trolleys', 'stampedes', 'waterMains'].some(k => l[k]?.some(i => i.road === 'side')), rules: [
+      'Speed cameras, level crossings, potholes and the rest can stand on a side road too, so the way round has troubles of its own.',
+    ], build: () => { const g = road(5, 12), cam = ob('camera', { height: 4.2 }); cam.position.set(3.2, 0, 0); cam.rotation.y = Math.PI; g.add(cam); return { model: g }; } },
   ] },
 ];
 

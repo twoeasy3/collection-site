@@ -20,6 +20,7 @@ import { Machinery } from './machinery.js';
 import { Gunfire } from './gunfire.js';
 import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
+import { Hazards } from './hazards.js';
 import { Social } from './social.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
@@ -66,6 +67,7 @@ export const Game = {
   // (through the onLoad hooks, which the rendering modules register) the scenery.
   load() {
     buildTrack();
+    Hazards.attach(); // (its obstacles are loaded with the level's: see Collision.loaders)
     Collision.loadLevel();
     Pickups.load();
     Targets.load();
@@ -183,6 +185,7 @@ export const Game = {
     SpeedCameras.reset();
     Crossings.reset();
     StopGo.reset();
+    Hazards.reset();
     if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
     startScreen.classList.add('hidden');
@@ -343,6 +346,7 @@ export const Game = {
     if (playing) Machinery.update(dt);
     if (playing) Gunfire.update(dt);
     if (playing) Site.update(dt);
+    if (playing) Hazards.update(dt);
     if (playing) Social.update(dt);
     Packages.update(dt);
     Pickups.update();

@@ -29,6 +29,46 @@ export const SpeedCameras = {
     }));
     this.caught = 0;
     this.lastS = Player.s;
+    // average-speed cameras (a level's "averageCameras"): { from, to, limit (m/s), t (s since the first gantry; -1 = not in it), flash }
+    this.zones = (LEVEL.averageCameras || []).map(z => {
+      const from = Track.place({ s: z.from, road: z.road, exit: z.exit });
+      return { from, to: from + (z.to - z.from), limit: (z.limit ?? CONFIG.averageSpeed.limit) / 3.6, t: -1, flash: 0 };
+    });
+  },
+  zones: [],
+  // caught: the first time in a run a fine (by how far over, km/h), every time after it a bust
+  offence(over, say) {
+    sfx('camera');
+    this.caught++;
+    if (this.caught > 1) { Player.bust('speeding'); return; }
+    const fine = this.fineFor(over);
+    Game.fines += fine;
+    say(fine);
+  },
+  // timed from one gantry to the next: over the limit on average, and it is an offence at the second
+  updateZones(dt, from, to) {
+    for (const z of this.zones) {
+      z.flash = Math.max(0, z.flash - dt);
+      if (z.t >= 0) z.t += dt;
+      if (from < z.from && to >= z.from) {
+        z.t = 0;
+        const line = Message.say('events', 'averageStart');
+        if (line) line.text = line.text.replace('${limit}', Math.round(z.limit * 3.6)).replace('${length}', Math.round(z.to - z.from));
+      }
+      if (z.t < 0 || !(from < z.to && to >= z.to)) continue;
+      const average = (z.to - z.from) / Math.max(z.t, 0.01), kmh = Math.round(average * 3.6), limit = Math.round(z.limit * 3.6);
+      z.t = -1;
+      if (average <= z.limit || Player.radar > 0 || Player.tank > 0) {
+        const line = Message.say('events', 'averageOk');
+        if (line) line.text = line.text.replace('${speed}', kmh);
+        continue;
+      }
+      z.flash = CONFIG.speedCamera.flash;
+      this.offence((average - z.limit) * 3.6, (fine) => {
+        const line = Message.say('events', 'averageFine');
+        if (line) line.text = line.text.replace('${speed}', kmh).replace('${limit}', limit).replace('${fine}', '$' + fine);
+      });
+    }
   },
 
   update(dt) {
@@ -36,6 +76,7 @@ export const SpeedCameras = {
     const from = this.lastS, to = Player.s;
     this.lastS = to;
     if (!Player.active || Game.state !== 'playing' || to - from > 30) return; // (not a car set down further on)
+    this.updateZones(dt, from, to);
     // a warning of one coming up, radar detector or not (CONFIG.speedCamera.warn): the limit, and how fast the car is going
     for (const cam of this.list) {
       if (cam.warned || cam.passed || cam.obstacle?.gone || cam.s - to > CONFIG.speedCamera.warn || cam.s < to) continue;
@@ -67,5 +108,5 @@ export const SpeedCameras = {
     return fine;
   },
   // the brightest flash going just now, 0..1 (for the screen's flash)
-  get flash() { return Math.max(0, ...this.list.map(c => c.flash)) / CONFIG.speedCamera.flash; },
+  get flash() { return Math.max(0, ...this.list.map(c => c.flash), ...this.zones.map(z => z.flash)) / CONFIG.speedCamera.flash; },
 };

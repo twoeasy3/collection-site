@@ -40,6 +40,20 @@
     "mourners": ["You crashed into a funeral procession!! The mourners are furious!"],
     "crossing": ["Level crossing! The lights are flashing!"],
     "fog": ["Fog bank ahead!"],
+    "schoolCrossing": ["School crossing! Stop for the lollipop!"],
+    "waterMain": ["Burst water main! It's slippery while it sprays."],
+    "balloon": ["A hot-air balloon is coming down on the road!"],
+    "drawbridge": ["Drawbridge opening! Jump it or wait!"],
+    "drawbridgeJump": ["You jumped the bridge!"],
+    "drawbridgeFall": ["Too slow! Into the river!"],
+    "wideLoad": ["Wide load ahead. Don't pass while the escort is watching!"],
+    "jackknife": ["Road train jackknifing!! Find the open lane!"],
+    "stampede": ["STAMPEDE!! They're coming down the road at you!"],
+    "tollPaid": ["Toll paid: ${fee}."],
+    "tollRam": ["You ran the toll!!"],
+    "averageStart": ["Average speed check: ${limit} km/h for the next ${length} m."],
+    "averageOk": ["Average ${speed} km/h. Thank you for not speeding."],
+    "averageFine": ["AVERAGE SPEED CAMERA! ${speed} in a ${limit}: ${fine} fine. Next time it's a bust!"],
     "wrongWay": ["WRONG-WAY DRIVER!! Coming at you in the right-hand lane!"],
     "battle": ["BATTLEFIELD! You're with the green army. Fire with the throw button!"],
     "wave": ["WAVE INCOMING!! Get out of the water!"],
@@ -96,7 +110,11 @@
     "bump": ["You hit a cop car!!"],
     "emergency": ["Failure to give way to an emergency vehicle!!"],
     "speeding": ["Caught on camera speeding, AGAIN!!"],
-    "cyclist": ["The police saw you knock a cyclist off!!"]
+    "cyclist": ["The police saw you knock a cyclist off!!"],
+    "runner": ["The police saw you knock a runner down!!"],
+    "school": ["You ran a school crossing!!"],
+    "wideLoad": ["The escort saw you overtake a wide load!!"],
+    "toll": ["Toll evasion!!"]
   },
   "reactions": {
     "goodOnPolice": [

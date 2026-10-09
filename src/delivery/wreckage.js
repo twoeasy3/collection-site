@@ -25,6 +25,7 @@ import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { FxQueue, sfx, sfxAt } from './physics.js';
 import { Game } from './game.js';
+import { Message } from './messages.js';
 
 export const Wreckage = {
   tower: null, // the level's control tower: { at, trigger, t (s since it went; -1 = standing), down }
@@ -111,7 +112,8 @@ export const Wreckage = {
         if (Player.s < e.at - reach) continue;
         e.t = 0; // set off: up it goes, in a fireball (a building's goes later: below)
         const from = this.source(e);
-        if (e.kind !== 'blast') this.fireballs(from.s, from.s, from.lat - 3, from.lat + 3, 3);
+        if (e.kind === 'roadtrain') { sfxAt('screech', e.at, 1); Message.say('events', 'jackknife'); } // (its brakes locking: no fireball)
+        else if (e.kind !== 'blast') this.fireballs(from.s, from.s, from.lat - 3, from.lat + 3, 3);
       }
       e.t += dt;
       if (e.kind === 'blast') { // a building blowing out: whatever is in its box when it goes is wrecked
@@ -145,6 +147,7 @@ export const Wreckage = {
       if (!e.slide && e.kind !== 'blast' && !e.landed && e.t >= W.flight) { // down it comes, blowing up whatever is there
         e.landed = true;
         if (e.kind === 'boulders') sfxAt('crash', e.at, 1); // (boulders thud down: no fire)
+        else if (e.kind === 'roadtrain') sfxAt('crashHard', e.at, 1); // (a road train's trailers, swung right across: no fire either)
         else this.fireballs(e.s0, e.s1, e.lat0, e.lat1, 4);
         if (Math.abs(e.at - Player.s) < 120) Game.shake = 1;
       }
