@@ -227,6 +227,13 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
   thing('tallGrass', cone, 0xc9a548); thing('acacia', sphere, 0x5f7a32); thing('boulder', sphere, 0x8d8272); thing('kopje', sphere, 0x9a8b74);
   thing('reed', cube, 0x6f8a3a); thing('hippoBack', sphere, 0x6a5a62); thing('mound', cone, 0xa0603a); thing('spots', cube, 0xd9a441);
   thing('neck', cube, 0xd9a441); thing('zebra', cube, 0xf2f2ee); thing('stripe', cube, 0x1e1e1e);
+  thing('fallen', sphere, 0x6e5440); thing('railPost', cube, 0x8f959c); thing('seaRail', cube, 0xdfe3e6); thing('guidePost', cube, 0xf4f4f0);
+  thing('stack', new THREE.CylinderGeometry(0.34, 0.5, 1, 7), 0x8a7356); thing('foam', tube, 0xf2f6f8);
+  // (the cliffs: how high, how far down to the sea, and how far each end takes to rise out of the land)
+  const CLIFF = { height: 60, below: 22, ramp: 160 };
+  const ROCK_SHADES = [0x8c6c4a, 0x76593d, 0x9b7b57, 0x6a4f37, 0x856548, 0x7d6244];
+  // 0 at a stretch's ends, easing up to 1 over CLIFF.ramp m in from each
+  const ease = (a, b, q) => { const t = Math.max(0, Math.min(1, Math.min(q - a, b - q) / CLIFF.ramp)); return t * t * (3 - 2 * t); };
   // gum trees: pale trunks and untidy clumps of grey-green leaves
   const gums = (a, b, every, dMax, sides = [-1, 1]) => {
     for (let s = a; s < b; s += every) for (const side of sides) {
@@ -367,13 +374,42 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     geo.computeVertexNormals();
     levelGroup.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: colour, side: THREE.DoubleSide })));
   };
-  // the sea, on the right, from d0 out to the horizon, at sea level; and a beach before it
-  const sea = (a, b, d0) => {
+  // a rugged rock face along the road: its foot d0 m off that edge, climbing rise(s) m (or, below 0, falling
+  // to there: a drop to the sea), leaning `lean` m out over its height, in uneven ledges, each band a shade of
+  // the rock and each facet a little lighter or darker than the next, so it reads as rock going by. With
+  // `top`, it levels off into land that far back (a cliff never ends in the air)
+  const crag = (a, b, side, d0, rise, lean, shades, top = 0, topColour = null) => {
+    const ROWS = 6, grid = [], pos = [], col = [], c = new THREE.Color();
+    for (let s = a; s <= b + 0.001; s += 5) {
+      const q = Math.min(s, b), r = rise(q), row = [];
+      for (let k = 0; k <= ROWS; k++) {
+        const t = k / ROWS, inner = k > 0 && k < ROWS;
+        Track.toWorld(q, beside(side, q, d0 + lean * t + (inner ? (Math.random() - 0.5) * 2.4 : 0)), p);
+        row.push([p.x, p.y + r * t + (inner ? (Math.random() - 0.5) * Math.abs(r) * 0.05 : 0), p.z]);
+      }
+      if (top) { Track.toWorld(q, beside(side, q, d0 + lean + top), p); row.push([p.x, p.y + r * 0.92, p.z]); }
+      grid.push(row);
+    }
+    const cols = grid[0].length - 1;
+    for (let i = 1; i < grid.length; i++) for (let k = 0; k < cols; k++) {
+      c.setHex(top && topColour !== null && k === cols - 1 ? topColour : shades[k % shades.length]).multiplyScalar(0.86 + Math.random() * 0.28);
+      const A = grid[i - 1][k], B = grid[i - 1][k + 1], C = grid[i][k], D = grid[i][k + 1];
+      for (const v of [A, B, C, B, D, C]) { pos.push(v[0], v[1], v[2]); col.push(c.r, c.g, c.b); }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    geo.computeVertexNormals(); // (facets unshared: flat shaded, every ledge catching the light its own way)
+    levelGroup.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+  };
+  // the sea, on the right, from d0 out to the horizon, at sea level (or `drop(s)` m below it: under the
+  // cliffs); and a beach before it
+  const sea = (a, b, d0, drop = () => 0) => {
     const pos = [], idx = [];
     let n = 0;
     for (let s = a; s <= b + 0.001; s += 10, n++) {
       const q = Math.min(s, b);
-      for (const d of [d0, 2500]) { Track.toWorld(q, within(q, beside(1, q, d)), p); pos.push(p.x, -0.05, p.z); }
+      for (const d of [d0, 2500]) { Track.toWorld(q, within(q, beside(1, q, d)), p); pos.push(p.x, -0.05 - drop(q), p.z); }
       if (n) { const k = (n - 1) * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
     }
     const geo = new THREE.BufferGeometry();
@@ -408,9 +444,18 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
     const a = z.from, b = z.to;
     if (z.sea !== undefined) { // (under the cliffs, straight into the sea; elsewhere, a beach first)
       const cliffs = z.scenery === 'seacliff';
-      sea(a, b, cliffs ? -40 : z.sea + 30); // (under the cliffs, in under the bridge, to the foot of the cliff)
+      // (under the cliffs the sea lies far below the road, easing back up to sea level at the zone's ends)
+      const drop = cliffs ? (q) => CLIFF.below * ease(a, b, q) : () => 0;
+      if (!cliffs) sea(a, b, z.sea + 30);
+      else { // (from the foot of the drop; beneath a bridge, in under the road, which is out over the water there)
+        sea(a, b, z.sea + 6, drop);
+        for (const br of LEVEL.bridges || []) if (br.from < b && br.to > a) sea(Math.max(a, br.from), Math.min(b, br.to), -40, drop);
+      }
       if (!cliffs) beach(a, b, z.sea, z.sea + 32);
-      for (const [f, t] of offBridges([[a, b]])) face(f, t, 1, z.sea, z.sea + 2, -1, cliffs ? 0x7c5e40 : 0xb89c6a);
+      for (const [f, t] of offBridges([[a, b]])) {
+        if (cliffs) crag(f, t, 1, z.sea, (q) => -Math.max(1, drop(q)), 7, ROCK_SHADES); // (rock falling away to the water)
+        else face(f, t, 1, z.sea, z.sea + 2, -1, 0xb89c6a);
+      }
     }
     if (z.scenery === 'sydney') {
       // the city: towers of glass and sandstone near the Harbour Bridge, then lower down; and the
@@ -454,8 +499,26 @@ const buildZones = (beside, instances, add, flat, { cube, tube, cone }) => {
       gums(a, b, 14, 50, [1]);
       sea(a + 400, b, 650);
     } else if (z.scenery === 'seacliff') {
-      // sheer cliffs on the left, the sea on the right (the bridge itself: render/items.js)
-      face(a, b, -1, 1.5, 22, 70, 0x8c6c4a, 40);
+      // cliffs on the left, rugged and banded, rising out of the land at the zone's start and sinking back at its
+      // end; rocks fallen at their foot; the sea far below on the right, behind a guardrail, with sea stacks
+      // standing out in it, foam round their feet; and guide posts down both sides, ticking by (the Sea Cliff
+      // Bridge itself, where a level has it: render/items.js)
+      const rise = (q) => CLIFF.height * ease(a, b, q) * (0.82 + 0.12 * Math.sin(q / 41) + 0.06 * Math.sin(q / 13));
+      crag(a, b, -1, 0.8, rise, 14, ROCK_SHADES, 40, z.ground ?? 0x6b8a4e); // (grass on top)
+      for (let s = a + 4; s < b - 4; s += 9 + Math.random() * 9) {
+        const r = 0.6 + Math.random() * 1.6;
+        if (ease(a, b, s) > 0.3) putAt('fallen', [s, beside(-1, s, 0.4 + Math.random() * 1.5), r * 0.5, r * 1.6, r, r * 1.3]);
+      }
+      for (const [f, t] of offBridges([[a, b]])) for (let s = f; s + 4 <= t; s += 4) {
+        putAt('railPost', [s, beside(1, s, 0.4), 0.45, 0.14, 0.9, 0.14]);
+        putAt('seaRail', [s, beside(1, s, 0.35), 0.75, 0.08, 0.32, 4.02, [s + 4, beside(1, s + 4, 0.35)]]);
+      }
+      for (let s = a; s < b; s += 25) for (const side of [-1, 1]) putAt('guidePost', [s, beside(side, s, side < 0 ? 0.3 : 0.9), 0.6, 0.12, 1.2, 0.12]);
+      for (let s = a + 30; s < b - 30; s += 40 + Math.random() * 50) {
+        const d = 40 + Math.random() * 260, h = 9 + Math.random() * 16, w = 9 + Math.random() * 12, y = z.sea !== undefined ? -CLIFF.below * ease(a, b, s) : 0; // (on the sea, far below)
+        putAt('stack', [s, beside(1, s, d), y + h / 2 - 2, w, h, w * (0.7 + Math.random() * 0.5)]);
+        putAt('foam', [s, beside(1, s, d), y + 0.05, w * 1.3, 0.1, w * 1.3]);
+      }
     } else if (z.scenery === 'wollongong') {
       towers(a, b, 32, 22, 70, 15, 55, 'midrise', [-1]);
       pines(a, b, 45, 1, z.sea + 4, z.sea + 20);
