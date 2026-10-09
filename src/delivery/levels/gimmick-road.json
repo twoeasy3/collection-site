@@ -2,7 +2,7 @@
   "id": "gimmick-road",
   "name": "Gimmick Road",
   "car": "miata",
-  "time": 420,
+  "clock": { "good": 504, "evil": 357 },
   "tip": 50,
   "lanes": 2,
   "traffic": { "commuter": 0.25, "darkvan": 0.15, "wagon": 0.15, "van": 0.12, "taxi": 0.1, "pickup": 0.08, "police": 0.1, "minivan": 0.05 },

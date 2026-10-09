@@ -1,7 +1,7 @@
 {
   "id": "testbed",
   "name": "Test Track",
-  "time": 900,
+  "clock": { "good": 1080, "evil": 765 },
   "tip": 50,
   "traffic": {
     "darkvan": 0.2,

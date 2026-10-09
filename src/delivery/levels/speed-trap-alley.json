@@ -1,0 +1,51 @@
+{
+  "id": "speed-trap-alley",
+  "name": "Speed Trap Alley",
+  "theme": "suburb",
+  "clock": { "good": 250, "evil": 190 },
+  "tip": 150,
+  "traffic": { "suv": 0.3, "taxi": 0.25, "miata": 0.2, "minivan": 0.15, "police": 0.1 },
+  "trafficCount": 9,
+  "oncomingCount": 7,
+  "segments": [
+    { "length": 400, "curve": 0 },
+    { "length": 300, "curve": 0.003 },
+    { "length": 600, "curve": 0 },
+    { "length": 300, "curve": -0.004 },
+    { "length": 500, "curve": 0 },
+    { "length": 300, "curve": 0.003 },
+    { "length": 700, "curve": 0 },
+    { "length": 300, "curve": -0.003 },
+    { "length": 800, "curve": 0 }
+  ],
+  "cameras": [
+    { "s": 380, "side": "right" },
+    { "s": 900, "side": "centre" },
+    { "s": 1450, "side": "left" },
+    { "s": 1900, "side": "right" },
+    { "s": 2100, "side": "centre" },
+    { "s": 2750, "side": "left" },
+    { "s": 3300, "side": "right" },
+    { "s": 3850, "side": "centre" }
+  ],
+  "fog": [
+    { "from": 1750, "to": 2200 }
+  ],
+  "targets": [
+    { "s": 1200, "side": "left" },
+    { "s": 3000, "side": "right" }
+  ],
+  "pickups": [
+    { "type": "timePlus", "s": 250, "lane": 2 },
+    { "type": "radarDetector", "s": 600, "lane": 3 },
+    { "type": "turbo", "s": 1000, "lane": 2 },
+    { "type": "wrench", "s": 1300, "lane": 3 },
+    { "type": "timePlus", "s": 1600, "lane": 3 },
+    { "type": "timeMinus", "s": 1600, "lane": 2 },
+    { "type": "siren", "s": 2300, "lane": 2 },
+    { "type": "radarDetector", "s": 2600, "lane": 3 },
+    { "type": "passenger", "s": 3150, "lane": 2 },
+    { "type": "turbo", "s": 3600, "lane": 3 },
+    { "type": "timePlus", "s": 4000, "lane": 2 }
+  ]
+}

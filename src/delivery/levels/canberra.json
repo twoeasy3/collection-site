@@ -2,7 +2,7 @@
   "id": "canberra",
   "name": "Canberra",
   "theme": "canberra",
-  "time": 150,
+  "clock": { "good": 180, "evil": 128 },
   "tip": 95,
   "lanes": { "north": 1, "south": 1 },
   "median": 1,

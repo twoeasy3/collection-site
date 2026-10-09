@@ -199,8 +199,8 @@
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
 //   id         unique name, used as the level's key in saved progress
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
-//   time       seconds on the clock (before the Good / Evil scaling in CONFIG.timeScale)
-//   clock      { good, evil }: seconds on the clock for each side exactly, in place of the scaled time
+//   clock      { good, evil }: seconds on the clock for each side. Worked out from a clean run in the
+//              reference car by scripts/level-clocks.mjs (see CONFIG.clock), unless set by hand
 //   tip        the money earned for finishing before the clock reaches zero
 //              Lane 0 is the far left (oncoming). Add road: 'side' to put an item on a side
 //              road (and exit: n for the nth exit's): s from its start, lane 0 oncoming / 1 ours.
@@ -241,11 +241,16 @@ import montreal from './levels/montreal.json';
 import bathurst from './levels/bathurst.json';
 import rivalRun from './levels/rival-run.json';
 import showdown from './levels/showdown.json';
+import speedTrapAlley from './levels/speed-trap-alley.json';
+import mountainPass from './levels/mountain-pass.json';
+import outbackExpress from './levels/outback-express.json';
+import tourDeCoast from './levels/tour-de-coast.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue];
+export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue,
+  speedTrapAlley, mountainPass, outbackExpress, tourDeCoast];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown, battlefield];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

@@ -36,7 +36,6 @@ export const reveal = (on) => {
   if (on) {
     for (const o of Collision.obstacles) {
       if (o.kind === 'landmine') set(o, { buried: false, rise: 1 });
-      else if (o.kind === 'dropBear') set(o, { h: 0 });
       else if (o.kind === 'rock') set(o, { h: 0, lat: o.land });
     }
     for (const e of Wreckage.list) { // (landed, long since: an airliner where it comes to rest)

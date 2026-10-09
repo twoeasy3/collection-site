@@ -3,7 +3,7 @@
   "name": "Singapore",
   "theme": "singapore",
   "drive": "left",
-  "time": 110,
+  "clock": { "good": 132, "evil": 94 },
   "tip": 115,
   "traffic": { "taxi": 0.28, "darkvan": 0.24, "commuter": 0.14, "bus": 0.12, "van": 0.1, "sport": 0.07, "police": 0.05 },
   "trafficCount": 10,

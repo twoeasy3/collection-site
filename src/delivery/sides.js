@@ -32,7 +32,7 @@ document.getElementById('page').innerHTML = `
   <p>Picked on the menu, before a run. It sets your clock, what your packages do, and how the road treats you.</p>
   <div class="pair">
     <article class="card good">
-      <h3>${HALO}Good<span class="tag">${pct(C.timeScale.good)} time</span></h3>
+      <h3>${HALO}Good<span class="tag">more time</span></h3>
       <p class="says">${says('reactions', 'goodOnGood')}</p>
       <ul>
         <li>Your packages are <strong>care packages</strong>: ${C.packageDamage} damage, and a good driver cheers up (${signed(C.packageMoodBoost)} mood).</li>
@@ -41,7 +41,7 @@ document.getElementById('page').innerHTML = `
       </ul>
     </article>
     <article class="card evil">
-      <h3>${HORNS}Evil<span class="tag">${pct(C.timeScale.evil)} time</span></h3>
+      <h3>${HORNS}Evil<span class="tag">less time</span></h3>
       <p class="says">${says('reactions', 'evilOnGood')}</p>
       <ul>
         <li>Your packages are <strong>flaming</strong>: ${C.evilPackageDamage} damage, they can spin a car out, and its driver holds a grudge.</li>
@@ -81,7 +81,7 @@ document.getElementById('page').innerHTML = `
 
 <section>
   <h2>Moods and grudges</h2>
-  <p>Every driver has a mood, shown by the face that pops up over the car. A <strong>grudge</strong> is separate: a driver holding one throws at you instead of at other traffic.</p>
+  <p>Every driver has a mood, shown by the face that pops up over the car. A <strong>grudge</strong> is separate: a driver holding one throws at you instead of at other traffic, for ${C.grudgeTime} s after you last upset it.</p>
   ${table(['What happens', 'Mood', 'Grudge'], [
     ['Your gift lands on a good driver', signed(C.packageMoodBoost), '—'],
     ['Your gift lands on an evil driver', 'to furious', `throws at you for ${C.giftOffence} s, then now and then`],

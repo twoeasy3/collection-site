@@ -257,8 +257,46 @@ const place = (mesh) => { levelItems.add(mesh); return mesh; };
 const readable = (object) => object.traverse((mesh) => {
   if (mesh.userData.text) mesh.scale.x = Math.abs(mesh.scale.x) * (Track.mirrored ? -1 : 1);
 });
+// a drop bear's gum tree (see CONFIG.dropBear): a pale trunk beside the road on the bear's side, a limb
+// reaching out over the road to it, and clumps of grey-green leaves round the limb's end that the bear
+// hides in, only its legs and claws showing below until it drops
+const gumBark = new THREE.MeshLambertMaterial({ color: 0xd9cfbf }), gumLeaves = new THREE.MeshLambertMaterial({ color: 0x7a8f62 });
+const limbGeo = new THREE.CylinderGeometry(1, 1, 1, 7), clumpGeo = new THREE.SphereGeometry(1, 9, 7);
+const limb = (a, b, r) => { // (a branch from world point a to b, r thick)
+  const mesh = new THREE.Mesh(limbGeo, gumBark), dir = new THREE.Vector3(b.x - a.x, b.y - a.y, b.z - a.z);
+  mesh.scale.set(r, dir.length(), r);
+  mesh.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+  mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize());
+  return mesh;
+};
+const bearTree = (o) => {
+  const tree = new THREE.Group(), H = CONFIG.dropBear.height, side = o.lat < 0 ? -1 : 1;
+  const foot = {}, fork = {}, over = {};
+  Track.toWorld(o.s - 3, (side < 0 ? Track.lo(o.s) : Track.hi(o.s)) + side * 3, foot);
+  Track.toWorld(o.s - 1.5, (side < 0 ? Track.lo(o.s) : Track.hi(o.s)) + side * 1, fork);
+  Track.toWorld(o.s, o.lat, over);
+  const ground = foot.y;
+  fork.y = ground + H * 0.75;
+  over.y += H + 2;
+  // (the trunk to a fork, a limb out from there over the road to the bear, and another on up)
+  tree.add(limb({ ...foot, y: ground - 0.5 }, fork, 0.55), limb(fork, over, 0.28), limb(fork, { x: fork.x, y: ground + H + 4, z: fork.z }, 0.35));
+  const clump = (at, dx, dy, dz, r) => {
+    const leaves = new THREE.Mesh(clumpGeo, gumLeaves);
+    leaves.position.set(at.x + dx, at.y + dy, at.z + dz);
+    leaves.scale.set(r, r * 0.65, r);
+    tree.add(leaves);
+  };
+  // (round the bear: the bottom of the leaves just over its body, so its legs and claws hang out below)
+  clump(over, 0, -0.1, 0, 2.3);
+  clump(over, 1.6, 0.6, 0.8, 1.8);
+  clump(over, -1.4, 0.8, -0.9, 1.9);
+  clump({ x: fork.x, y: ground + H + 4, z: fork.z }, 0, 0, 0, 3);
+  clump({ x: (fork.x + over.x) / 2, y: (fork.y + over.y) / 2 + 1.5, z: (fork.z + over.z) / 2 }, 0, 0, 0, 2.2);
+  return tree;
+};
 const buildItems = () => {
   clearGroup(levelItems);
+  for (const o of Collision.obstacles) if (o.kind === 'dropBear') place(bearTree(o));
   for (const { from, to, style } of LEVEL.bridges || []) buildBridge(from, to, style);
   obstacleMeshes = Collision.obstacles.map((o) => {
     const mesh = place(OBSTACLE_MODELS[o.kind](o));
@@ -312,18 +350,6 @@ export const syncPickups = (dt) => {
     }
     if (o.roll && mesh.userData.roller) mesh.userData.roller.rotation.z = -o.roll.dir * (o.spun || 0); // (a pipe rolling across)
     if (o.kind === 'rock') mesh.userData.rock.rotation.x = o.spin || 0; // (tumbling down the hillside)
-    if (o.kind === 'dropBear') { // (not to be seen up in its tree: it fades in as it comes down, there by a quarter of the way)
-      mesh.visible = o.fall > 0 || o.h <= 0;
-      const opacity = Math.min(1, (1 - o.h / CONFIG.dropBear.height) * 4);
-      if (mesh.visible && mesh.userData.opacity !== opacity) {
-        mesh.userData.opacity = opacity;
-        mesh.traverse(part => {
-          if (!part.material) return;
-          if (part.material.transparent !== opacity < 1) { part.material.transparent = opacity < 1; part.material.needsUpdate = true; }
-          part.material.opacity = opacity;
-        });
-      }
-    }
     if (o.ride) mesh.userData.animate(o.ride.on ? o.ride.t : 0); // (a cyclist pedalling)
     if (o.kind === 'landmine') { // (its light flashing, each in its own time)
       const F = CONFIG.battle.mineFlash, lit = ((performance.now() / 1000 / F.period + o.phase) % 1) < F.on;

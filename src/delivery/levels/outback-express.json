@@ -1,0 +1,56 @@
+{
+  "id": "outback-express",
+  "name": "Outback Express",
+  "theme": "panorama",
+  "clock": { "good": 225, "evil": 170 },
+  "tip": 180,
+  "traffic": { "semi": 0.35, "pickup": 0.2, "wagon": 0.15, "van": 0.12, "commuter": 0.1, "police": 0.08 },
+  "trafficCount": 8,
+  "oncomingCount": 8,
+  "segments": [
+    { "length": 500, "curve": 0 },
+    { "length": 300, "curve": 0.002 },
+    { "length": 900, "curve": 0 },
+    { "length": 300, "curve": -0.0025 },
+    { "length": 1000, "curve": 0 },
+    { "length": 250, "curve": 0.003 },
+    { "length": 1000, "curve": 0 },
+    { "length": 300, "curve": -0.002 },
+    { "length": 650, "curve": 0 }
+  ],
+  "narrows": [
+    { "from": 1300, "to": 2300, "lanesPerSide": 1 }
+  ],
+  "crossings": [
+    { "s": 1200 },
+    { "s": 2500 },
+    { "s": 3750 }
+  ],
+  "herds": [
+    { "from": 300, "to": 700, "count": 5, "kind": "kangaroo" },
+    { "from": 2050, "to": 2400, "count": 6, "kind": "kangaroo" },
+    { "from": 4600, "to": 5000, "count": 5, "kind": "kangaroo" }
+  ],
+  "dropBears": [
+    { "from": 1750, "to": 1950, "count": 4 },
+    { "from": 3300, "to": 3550, "count": 4 }
+  ],
+  "fog": [
+    { "from": 3550, "to": 3950 }
+  ],
+  "targets": [
+    { "s": 1000, "side": "right" },
+    { "s": 4400, "side": "left" }
+  ],
+  "pickups": [
+    { "type": "turbo", "s": 400, "lane": 2 },
+    { "type": "timePlus", "s": 900, "lane": 3 },
+    { "type": "turbo", "s": 1050, "lane": 3 },
+    { "type": "wrench", "s": 2450, "lane": 2 },
+    { "type": "passenger", "s": 2900, "lane": 3 },
+    { "type": "ghost", "s": 3200, "lane": 2 },
+    { "type": "turbo", "s": 3600, "lane": 2 },
+    { "type": "wrench", "s": 4100, "lane": 3 },
+    { "type": "timePlus", "s": 4700, "lane": 2 }
+  ]
+}

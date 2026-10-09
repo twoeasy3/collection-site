@@ -133,9 +133,11 @@ export const updateHud = () => {
   syncBehind(raced);
   // a police car near enough to see what the player does (on the shoulder, a bust on the spot; not
   // on a level without the shoulder rule, nor for a tank, which nobody busts)
-  const watched = Game.state === 'playing' && Player.active && !Game.screensaver && LEVEL.shoulderTimer !== false && Player.tank <= 0 && Traffic.policeNear();
+  const watchable = Game.state === 'playing' && Player.active && !Game.screensaver && LEVEL.shoulderTimer !== false && Player.tank <= 0;
+  const watched = watchable && Traffic.policeNear();
   hudCopWatch.style.display = watched ? 'block' : 'none';
-  hudCopGlow.classList.toggle('on', watched); // (and the screen's edges flash red and blue)
+  // (and the screen's edges flash red and blue, from a little further out: CONFIG.copGlowMargin)
+  hudCopGlow.classList.toggle('on', watchable && Traffic.policeNear(CONFIG.copGlowMargin));
   // in a car's slipstream, and how deep in it (a race)
   // (or, just out of it, the slingshot, and how much of it is left)
   const flung = Player.slingTime > 0 && !(Player.tow > 0);

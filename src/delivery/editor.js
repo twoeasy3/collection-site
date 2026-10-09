@@ -31,7 +31,7 @@ const sources = [
   ...LEVELS.map((l, i) => [`${levelLabel(i)}. ${l.name}`, l]),
   ...Object.entries(HIDDEN_LEVELS).map(([id, l]) => [`Hidden: ${l.name} (${id})`, l]),
 ];
-const BLANK = { id: 'new-level', name: 'New Level', time: 150, tip: 50, lanes: 4,
+const BLANK = { id: 'new-level', name: 'New Level', clock: { good: 150, evil: 115 }, tip: 50, lanes: 4,
   traffic: { darkvan: 0.4, commuter: 0.2, van: 0.2, bus: 0.1, police: 0.05 },
   segments: [{ length: 600, curve: 0 }, { length: 300, curve: 0.003 }, { length: 600, curve: 0 }], pickups: [], obstacles: [], targets: [] };
 let level, selected = null, picked = null, tool = { kind: 'select' }; // (selected: an item; picked: a special feature)
@@ -372,7 +372,7 @@ const draw = () => {
 
 // ---- the panel -----------------------------------------------------------------------------------
 const status = () => {
-  const L = length(), good = (level.time || 1) * CONFIG.timeScale.good, evil = (level.time || 1) * CONFIG.timeScale.evil;
+  const L = length(), good = level.clock?.good || 1, evil = level.clock?.evil || 1;
   $('length').textContent = (L / 1000).toFixed(2) + ' km';
   $('status').textContent = `${(L / 1000).toFixed(2)} km: an average of ${(L / good * 3.6).toFixed(0)} km/h needed playing Good, ` +
     `${(L / evil * 3.6).toFixed(0)} km/h Evil. ${level.pickups.length} pickups, ${level.obstacles.length} obstacles, ${level.targets.length} targets.` +
@@ -382,7 +382,8 @@ const changed = () => { build(); survey(); status(); draw(); };
 const fields = () => {
   $('f-name').value = level.name || '';
   $('f-id').value = level.id || '';
-  $('f-time').value = level.time ?? '';
+  $('f-good').value = level.clock?.good ?? '';
+  $('f-evil').value = level.clock?.evil ?? '';
   $('f-tip').value = level.tip ?? '';
   $('f-lanes').value = laneCount();
   $('f-theme').value = level.theme || 'city';
@@ -393,7 +394,7 @@ const fields = () => {
 };
 // ---- the special features: everything the rest of the panel doesn't edit, as JSON (see levels.js
 // for what each is), applied as soon as it is valid
-const EDITED = ['id', 'name', 'time', 'tip', 'lanes', 'theme', 'car', 'flow', 'traffic', 'segments', 'pickups', 'obstacles', 'targets'];
+const EDITED = ['id', 'name', 'clock', 'tip', 'lanes', 'theme', 'car', 'flow', 'traffic', 'segments', 'pickups', 'obstacles', 'targets'];
 const extras = () => Object.fromEntries(Object.entries(level).filter(([k]) => !EDITED.includes(k)));
 const extraNote = (text, bad) => {
   $('extraNote').textContent = text;
@@ -426,7 +427,8 @@ $('tidy').addEventListener('click', () => { if (!$('extra').classList.contains('
 const field = (id, apply) => $(id).addEventListener('input', (e) => { apply(e.target.value); changed(); });
 field('f-name', (v) => { level.name = v; });
 field('f-id', (v) => { level.id = v; });
-field('f-time', (v) => { level.time = Number(v) || 0; });
+field('f-good', (v) => { level.clock = { ...level.clock, good: Number(v) || 0 }; });
+field('f-evil', (v) => { level.clock = { ...level.clock, evil: Number(v) || 0 }; });
 field('f-tip', (v) => { level.tip = Number(v) || 0; });
 field('f-lanes', (v) => { if (Number(v) >= 2) level.lanes = Math.round(Number(v)); });
 field('f-theme', (v) => { if (v === 'city') delete level.theme; else level.theme = v; });

@@ -387,6 +387,33 @@ OBSTACLE_MODELS.asteroid = (o) => {
 // ---- the hidden gimmicks level's (see ../cameras.js, CONFIG.rockfall and CONFIG.peloton) ----
 // a speed camera: a grey pole, a yellow box on top with its lens and flash looking back down the road
 // (local -z: at traffic coming up to it), and a blue sign under it. userData.lamp: the flash's material
+// a speed camera's limit sign (see CONFIG.speedCamera): a white disc, red ring, the limit in black, on a post
+OBSTACLE_MODELS.limitSign = (o) => {
+  const top = o.height, r = 0.62;
+  const group = boxModel([[lambert(0x9a9da3), 0.14, top - r, 0.14, 0, (top - r) / 2, 0]]); // the post
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#d81e1e';
+  ctx.beginPath(); ctx.arc(64, 64, 62, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(64, 64, 47, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#111111';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.font = 'bold ' + (String(o.limit).length > 2 ? 40 : 52) + 'px sans-serif';
+  ctx.fillText(String(o.limit), 64, 68);
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  const face = new THREE.Mesh(new THREE.CircleGeometry(r, 32), new THREE.MeshBasicMaterial({ map }));
+  face.rotation.y = Math.PI;
+  face.position.set(0, top - r, -0.09);
+  face.userData.text = true;
+  group.add(face);
+  const back = new THREE.Mesh(new THREE.CircleGeometry(r, 32), lambert(0x9a9da3)); // (its back, bare metal)
+  back.position.set(0, top - r, -0.07);
+  group.add(back);
+  return group;
+};
 OBSTACLE_MODELS.camera = (o) => {
   const lamp = new THREE.MeshBasicMaterial({ color: 0x555a60 });
   const group = boxModel([

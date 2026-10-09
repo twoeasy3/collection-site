@@ -7,7 +7,7 @@
   "lanes": 8,
   "shoulderTimer": false,
   "helicopter": false,
-  "time": 120,
+  "clock": { "good": 144, "evil": 102 },
   "tip": 90,
   "segments": [
     { "length": 300, "curve": 0, "grade": 0 },

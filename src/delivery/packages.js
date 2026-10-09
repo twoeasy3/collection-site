@@ -196,7 +196,7 @@ export const Packages = (() => {
     const scatter = CONFIG.enemyThrowScatter;
     // (aim: 'escort', or a particular car to throw at: a rival courier clearing its way)
     let victim = aim && typeof aim === 'object' ? aim
-      : (car.grudge || car.offended > 0 || (car.spite && Math.random() < CONFIG.giftSpite)) && aim !== 'escort' ? Player : null;
+      : (car.grudge > 0 || car.offended > 0 || (car.spite && Math.random() < CONFIG.giftSpite)) && aim !== 'escort' ? Player : null;
     if (!victim && aim === 'escort') {
       let best = CONFIG.enemyThrowCarRange;
       for (const o of Traffic.cars) {
@@ -299,7 +299,7 @@ export const Packages = (() => {
       car.health -= damage;
       car.mood = Math.max(-1, car.mood - damage * CONFIG.moodPerDamage);
       maybeSpinOut(car, damage, CONFIG.packageSpinScale);
-      car.grudge = true;
+      car.grudge = CONFIG.grudgeTime;
       car.showMood = true;
       // attacking a police car, or anyone while a police car is watching, is a bust
       // (a police car turned into a toad in TOAD RAGE is just a toad)

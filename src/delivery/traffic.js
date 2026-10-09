@@ -83,8 +83,9 @@ export const Traffic = (() => {
     return kinds[0][0];
   };
   // is a police car close enough to see what the player is doing?
-  const policeNear = () => cars.some(c => c.active && !c.junction && c.kind === 'police' && !c.toad && c.stun <= 0 &&
-    Math.abs(c.s - Player.s) < Social.policeSight * (1 - (1 - CONFIG.fog.policeSight) * Track.foggy(Player.s)) && // (as far as the player's standing lets it, and less in fog)
+  // (margin: m further out than the police see, for a warning of them: see the HUD's glow)
+  const policeNear = (margin = 0) => cars.some(c => c.active && !c.junction && c.kind === 'police' && !c.toad && c.stun <= 0 &&
+    Math.abs(c.s - Player.s) < Social.policeSight * (1 - (1 - CONFIG.fog.policeSight) * Track.foggy(Player.s)) + margin && // (as far as the player's standing lets it, and less in fog)
     Math.abs(c.lat - Player.lat) < 25);
 
   const MOOD_START = { happy: 0.7, neutral: 0, angry: -0.7 };
@@ -288,7 +289,8 @@ export const Traffic = (() => {
     car.spin = 0;       // s left of an uncontrolled spin, which ends in an explosion
     car.rival = null;   // another traffic car this one is bullying
     car.rivalTime = 0;
-    car.grudge = false; // set once the player has upset this driver
+    car.grudge = 0; // s left of its grudge against the player (see CONFIG.grudgeTime)
+    car.blockedPlayer = false; // it has moved over in front of the player once (see mayBlock)
     car.wreckedByPlayer = false; // set once one of the player's packages has doomed it (see Packages)
     car.spite = false;           // an evil driver given a gift by the player: it throws at the player now and then...
     car.offended = 0;            // ...after this many s of throwing only at the player (see CONFIG.giftOffence)
@@ -411,7 +413,7 @@ export const Traffic = (() => {
     car.unspinnable = !!G.rival; // (a rival takes some stopping: it never spins out nor takes a critical hit,
     if (G.rival) car.maxHealth = car.health = CONFIG.rival.health; // and it has a great deal of health)
     if (G.rival && evil) {
-      car.grudge = true;
+      car.grudge = Infinity; // (an evil rival courier's never wears off: it is out to beat the player)
       car.throwTimer = CONFIG.rival.firstThrow * (1 + Math.random());
     }
     return true;
@@ -449,7 +451,7 @@ export const Traffic = (() => {
   // the turf war (CONFIG.attitude.hunt): a driver starts hunting the player
   const startHunt = (car) => {
     car.hunt = CONFIG.attitude.hunt.time;
-    car.grudge = true;
+    car.grudge = CONFIG.grudgeTime;
   };
   // a car wrecked by the player: an evil player wins the respect of the evil drivers about
   const wreckedByPlayer = (wreck) => {
@@ -474,6 +476,16 @@ export const Traffic = (() => {
     for (const c of behind) c.huntRole = 'flank';
     if (behind[0]) behind[0].huntRole = 'tail';
   };
+  // is the car far enough ahead of `target` to move over in front of it, and not so far that it is no block?
+  // (CONFIG.blocking: the gap it needs grows with the target's speed)
+  const roomToBlock = (car, target) => {
+    const B = LEVEL.laps ? CONFIG.race.blocking : CONFIG.blocking, speed = target.isPlayer ? target.speed : Math.abs(target.vs); // (racing round a circuit, closer)
+    const gap = (car.s - target.s) * car.dir - car.hl - target.hl, need = Math.max(B.min, speed * B.headway);
+    return gap >= need && gap <= need + B.window;
+  };
+  // may it move over in front of the player again? Once, for any car; after that, only while it holds a
+  // grudge: shadowing the player's every lane change is for one the player has upset
+  const mayBlock = (car) => !car.blockedPlayer || car.grudge > 0;
   // could the car move over into that lane right now?
   const canMove = (car, lane, ignorePlayer) => {
     const [first, last] = Track.laneRange(car.dir, car.s);
@@ -947,9 +959,10 @@ export const Traffic = (() => {
       tryMove(car, dir) || tryMove(car, -dir);
     };
     if (att === 'turf' && car.hunt > 0) return; // (hunting: see update)
-    if ((att === 'smug' || att === 'rage' || att === 'vigilante') && inRange) { // into the player's lane, in its way
+    // (into the player's lane, in its way: only with room enough ahead of the player for its speed, see roomToBlock)
+    if ((att === 'smug' || att === 'rage' || att === 'vigilante') && Player.active && car.dir > 0 && roomToBlock(car, Player) && mayBlock(car)) {
       const dir = Math.sign(playerLane - car.lane);
-      if (dir) tryMove(car, dir, true);
+      if (dir && tryMove(car, dir, true) && (car.pendingLane ?? car.lane) === playerLane) car.blockedPlayer = true; // (in the player's way: that was its block)
     } else if ((att === 'friendly' || att === 'wingman') && inRange && playerLane === car.lane) aside();
     else if (att === 'wary' && near && playerLane === car.lane) aside();
     else if (att === 'sulky' && inRange) { /* it holds its lane */ } else if (!car.racer && Math.random() < CONFIG.laneChangeChance) { // (a racer picks its lane to race: see seekTow, and the overtakes in update)
@@ -1565,6 +1578,7 @@ export const Traffic = (() => {
         continue;
       }
 
+      if (car.grudge > 0) car.grudge = Math.max(0, car.grudge - dt); // (it wears off: CONFIG.grudgeTime)
       const emotion = emotionOf(car.mood);
       if (emotion === 'angry' && car.emotion !== 'angry') honk(car); // fed up
       car.emotion = emotion;
@@ -1606,7 +1620,7 @@ export const Traffic = (() => {
         if (Player.mystery === 'jerk' && Player.active && car.kind !== 'police' && !car.procession && !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir &&
             Math.abs(Player.s - car.s) < CONFIG.rivalryRange) {
           rival = Player;
-          car.grudge = true;
+          car.grudge = CONFIG.grudgeTime;
         }
         // a turf war (an angry evil driver, an evil player): it starts hunting the player once near,
         // and goes after it as its rival until it gives up (see CONFIG.attitude.hunt)
@@ -1734,7 +1748,7 @@ export const Traffic = (() => {
             car.lane = lane;
             target = car.baseSpeed * (gap > 0 ? 1.35 : 0.7);
           } else if (gap < -(rival.hl + car.hl)) { // (behind it: a block)
-            if (lane !== car.lane && car.blockWait <= 0 && laneClear(car, lane, 6)) {
+            if (lane !== car.lane && car.blockWait <= 0 && laneClear(car, lane, 6) && roomToBlock(car, rival)) {
               car.lane = lane;
               car.blockWait = CONFIG.race.blockEvery;
             }
@@ -1748,7 +1762,10 @@ export const Traffic = (() => {
           const H2 = CONFIG.attitude.hunt, [first, last] = Track.laneRange(car.dir, car.s);
           const playerLane = clamp(Track.nearestLane(Player.lat, Player.s), first, last);
           if (car.huntRole === 'block') { // ahead of it in its lane, slowing it, braking hard now and then
-            car.lane = playerLane;
+            if (car.lane !== playerLane && roomToBlock(car, Player) && mayBlock(car)) { // (moving over only with room, see roomToBlock; and again only with a grudge, see mayBlock)
+              car.lane = playerLane;
+              car.blockedPlayer = true;
+            }
             target = Player.speed * H2.blockPace;
             brakeCheck(car, dt);
           } else if (car.huntRole === 'flank') { // in the lane beside it, coming up alongside to lean on it
@@ -1928,7 +1945,7 @@ export const Traffic = (() => {
         if (Player.active && Player.shield <= 0 && Player.ghost <= 0 && car.dir > 0 && gap > 0 && gap < Player.hl + car.hl + (tailgater ? CONFIG.attitude.tailgate : 8) && !passingPlayer &&
             Math.abs(Player.lat - car.lat) < Player.hw + car.hw && Player.speed < car.baseSpeed) {
           car.mood = Math.max(-1, car.mood - CONFIG.moodHoldUp * dt);
-          car.grudge = true;
+          car.grudge = CONFIG.grudgeTime;
           honk(car);
           if (car.racer && car.evil) target = Math.min(target, Player.speed + CONFIG.race.nudge);
           else if (!(car.evil && car.emotion === 'angry' && !car.spite) || car.racer) target = Math.min(target, Player.speed * (tailgater ? 0.98 : 0.9));
@@ -1961,9 +1978,13 @@ export const Traffic = (() => {
         } else car.vs += (car.dir * target - car.vs) * damp(car.tap > 0 || (car.racer && car.braking) ? 3 : car.racer ? 1.2 * CONFIG.race.aiPickup : 1.2, dt);
 
         // spring back to the lane centre
-        // (alongside its rival it steers straight at it)
+        // (alongside its rival it steers straight at it, but never over into the oncoming lanes after it)
         const beside = rival && Math.abs(rival.s - car.s) < rival.hl + car.hl + 2;
-        let aimLat = beside ? rival.lat
+        const ownSide = (lat) => {
+          const [first, last] = Track.laneRange(car.dir, car.s), a = Track.laneOffset(first, car.s), b = Track.laneOffset(last, car.s);
+          return clamp(lat, Math.min(a, b), Math.max(a, b));
+        };
+        let aimLat = beside ? ownSide(rival.lat)
           : car.pulledOver || car.shoulderRun || car.punctured || car.stationed ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
           : StopGo.detour(car) ?? cyclists.lat ?? Track.laneOffset(car.lane, car.s); // (through stop / go works, coming the other way: in the lane left open)
         if (car.passing === Player && car.attack > 0 && !beside && Math.abs(Player.s - car.s) < Player.hl + car.hl + 10) {

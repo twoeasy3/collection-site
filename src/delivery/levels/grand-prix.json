@@ -6,7 +6,7 @@
   "car": "f1",
   "flow": "north",
   "shoulderTimer": false,
-  "time": 280,
+  "clock": { "good": 336, "evil": 238 },
   "tip": 300,
   "traffic": {},
   "trafficCount": 0,

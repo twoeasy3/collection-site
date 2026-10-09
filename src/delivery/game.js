@@ -384,10 +384,8 @@ export const sayRival = (key, rival, ...more) => {
   return line;
 };
 // seconds on the clock for a level, for a side: its own "clock" if it has one, or else its time scaled
-export const clockFor = (level, evil) => {
-  const side = evil ? 'evil' : 'good';
-  return level.clock ? level.clock[side] : level.time * CONFIG.timeScale[side];
-};
+// a level's clock for the side picked (its "clock": see CONFIG.clock and scripts/level-clocks.mjs)
+export const clockFor = (level, evil) => level.clock?.[evil ? 'evil' : 'good'] ?? 0;
 export const formatTime = (t) => {
   const a = Math.abs(t), m = Math.floor(a / 60), s = a - m * 60;
   return `${t < 0 ? '-' : ''}${m}:${s < 10 ? '0' : ''}${s.toFixed(1)}`;

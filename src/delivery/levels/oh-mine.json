@@ -3,7 +3,7 @@
   "name": "Oh Mine!",
   "theme": "sea",
   "car": "jetboat",
-  "time": 220,
+  "clock": { "good": 264, "evil": 187 },
   "tip": 60,
   "lanes": 8,
   "flow": "north",

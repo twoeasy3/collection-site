@@ -220,6 +220,7 @@ export const CONFIG = {
     // chases it down and rams it, as anywhere; but it never drops back for one behind it, it only
     // blocks it, moving across into its lane (at most every blockEvery s) without lifting off
     blockEvery: 0.8,
+    blocking: { min: 3, headway: 0.3, window: 20 }, // (on a circuit, racing close: the room it needs to block, as CONFIG.blocking)
     // ...and a rival ahead is rammed with a nudge, not at full tilt: it closes right up, nudge m/s
     // faster than its rival, and shoves. An evil racer that is angry races in a fury: fury.pace
     // times its top speed, fury.nerve times its nerve in the bends
@@ -458,6 +459,7 @@ export const CONFIG = {
     cone: { damage: 3, speedKept: 0.94, light: true },
     mine: { damage: 30, speedKept: 0.55 }, // a sea mine (Oh Mine!)
     sign: { damage: 12, speedKept: 0.8 },
+    limitSign: { damage: 8, speedKept: 0.85 }, // (a speed camera's limit sign: see CONFIG.speedCamera)
     // the beach's junk (Hurricane)
     umbrella: { damage: 15, speedKept: 0.85 },
     surfboard: { damage: 18, speedKept: 0.8 },
@@ -617,6 +619,7 @@ export const CONFIG = {
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
   lowriderHearing: 90,     // m from a lowrider in traffic within which its music is heard (the same way)
   policeSightRange: 45,    // m along the road within which a police car witnesses what you do
+  copGlowMargin: 12,       // m further out than that the screen's edges start flashing red and blue: a warning
   // A good player's social standing (see social.js), in points out of 100: gift points for each gift
   // that lands on a good driver (copGift on a police car), decay lost a second. With it, from none to
   // full: the police see policeSight.empty to policeSight.full times as far; the share of evil
@@ -661,6 +664,11 @@ export const CONFIG = {
   splashRadius: 4,         // m
   splashDamage: 6,
   attitudeRange: 50,       // metres behind a car at which it reacts to the player
+  grudgeTime: 7,           // s a driver the player has upset holds its grudge (throwing at the player), from the last upset
+  // a car moving over in front of another to block it (an angry or smug driver in the player's way, a hunter,
+  // a racer): only with this much room ahead of it, the more the faster the one blocked is going. The gap
+  // must be at least `min` m and `headway` s at the target's speed, and no more than `window` m beyond that
+  blocking: { min: 15, headway: 1.5, window: 40 },
   // How a traffic driver treats the player: by its side, its mood, and the player's side.
   //   good driver, good player: happy, friendly (moves aside, and eases off, letIn of its pace, to
   //     let the player in from the lane beside); angry, sulky (tailgates, within tailgate m, honks,
@@ -746,8 +754,11 @@ export const CONFIG = {
   packageDamage: 4,        // a care package barely scratches what it hits
   evilPackageDamage: 25,   // an Evil player's flaming package: real damage, and it makes enemies
   completeBank: 10000,     // $ in the bank after "Unlock everything" on the menu
-  // the clock: a level allows its `time` seconds, scaled by the side the player picked
-  timeScale: { good: 1.2, evil: 0.85 },
+  // the clock: each level has its own, for each side ("clock": { good, evil }), worked out by
+  // scripts/level-clocks.mjs from a clean run (a ghost, flat out) in the reference car: that run's time
+  // times good or evil, to the nearest `round` s, less `timePlus` s for each time plus on the level (the time
+  // it gives back)
+  clock: { car: 'sport', good: 1.5, evil: 1.15, round: 5, timePlus: 5 },
   tipCountdown: 10,        // s past zero over which the level's tip drains away to nothing
   packageMoodBoost: 0.5,   // mood gained by a good car that gets one
   giftOffence: 15,         // s an evil car that gets one is offended: furious, but it drives no differently
@@ -818,7 +829,9 @@ export const CONFIG = {
   // bust. Running one over (it is an obstacle) is no offence. A radar detector warns of them: it
   // keeps the car from being caught at all
   speedCamera: {
-    limit: 70,             // km/h, unless the camera has its own
+    limit: 100,            // km/h, unless the camera has its own
+    warn: 180,             // m short of a camera the player is warned of it (radar detector or not)
+    signAhead: 70,         // m short of a camera its speed limit sign stands, on the shoulder on its side
     fine: 20,              // $ the first offence costs
     flash: 0.35,           // s the flash lasts
   },

@@ -3,7 +3,7 @@
   "name": "Sydney to Kiama",
   "theme": "coast",
   "drive": "left",
-  "time": 400,
+  "clock": { "good": 480, "evil": 340 },
   "tip": 300,
   "traffic": { "darkvan": 0.3, "commuter": 0.15, "taxi": 0.15, "bus": 0.12, "van": 0.1, "pickup": 0.06, "sport": 0.06, "police": 0.06 },
   "trafficCount": 12,

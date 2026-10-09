@@ -1,0 +1,57 @@
+{
+  "id": "tour-de-coast",
+  "name": "Tour de Coast",
+  "theme": "coast",
+  "clock": { "good": 215, "evil": 165 },
+  "tip": 190,
+  "traffic": { "wagon": 0.25, "lovebus": 0.2, "pickup": 0.15, "commuter": 0.15, "van": 0.1, "darkvan": 0.08, "police": 0.07 },
+  "trafficCount": 8,
+  "oncomingCount": 7,
+  "segments": [
+    { "length": 400, "curve": 0 },
+    { "length": 300, "curve": 0.002 },
+    { "length": 700, "curve": 0 },
+    { "length": 300, "curve": -0.002 },
+    { "length": 600, "curve": 0 },
+    { "length": 300, "curve": 0.0015 },
+    { "length": 1000, "curve": 0 },
+    { "length": 300, "curve": -0.002 },
+    { "length": 900, "curve": 0 }
+  ],
+  "zones": [
+    { "id": "headland", "from": 0, "to": 1400, "scenery": "bush", "ground": 8227410, "sky": 11784418 },
+    { "id": "cliffs", "from": 1400, "to": 2600, "scenery": "seacliff", "ground": 7047758, "sky": 9225966, "sea": 3 },
+    { "id": "causeway", "from": 2600, "to": 3600, "scenery": "gois", "ground": 12167036, "sky": 10467532 },
+    { "id": "harbour", "from": 3600, "to": 4800, "scenery": "shellharbour", "ground": 7775318, "sky": 10670064, "sea": 8 }
+  ],
+  "narrows": [
+    { "from": 1500, "to": 2500, "lanesPerSide": 1 }
+  ],
+  "tide": {
+    "from": 2650, "to": 3550, "start": 0.6, "end": 1.6,
+    "waves": { "every": { "min": 8, "max": 12 }, "reach": { "min": 0.8, "max": 1.2 } }
+  },
+  "pelotons": [
+    { "s": 500, "count": 8 },
+    { "s": 1900, "count": 10 },
+    { "s": 4000, "count": 8 }
+  ],
+  "dropBears": [
+    { "from": 600, "to": 1200, "count": 5 }
+  ],
+  "targets": [
+    { "s": 1100, "side": "right" },
+    { "s": 4300, "side": "left" }
+  ],
+  "pickups": [
+    { "type": "passenger", "s": 300, "lane": 2 },
+    { "type": "ghost", "s": 800, "lane": 3 },
+    { "type": "turbo", "s": 1300, "lane": 2 },
+    { "type": "wrench", "s": 1450, "lane": 2 },
+    { "type": "timePlus", "s": 2550, "lane": 2 },
+    { "type": "ghost", "s": 3000, "lane": 2 },
+    { "type": "wrench", "s": 3700, "lane": 2 },
+    { "type": "turbo", "s": 4300, "lane": 3 },
+    { "type": "timePlus", "s": 4600, "lane": 2 }
+  ]
+}
