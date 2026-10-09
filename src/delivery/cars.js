@@ -154,7 +154,7 @@ export const CARS = [
   // (the ids are short: each is in a full save's cookie. See progress.js)
   // (May's Herald: a little sixties convertible under sail. Light, slow, and it turns on a sixpence)
   { id: 'herald', tier: 1, amphibious: true, name: 'Sailing Herald', price: 60, color: 0xd9c9a8, evilColor: 0x5a1f2a, fixedLivery: true, model: 'herald',
-    maxSpeed: 23, accel: 9, agility: 1.2, crossing: 0.5, health: 90, hw: 0.8, hl: 1.95, height: 1.0, draft: 0.5, perk: AMPHIBIOUS_PERK },
+    maxSpeed: 23, accel: 9, agility: 1.2, crossing: 0.5, health: 90, hw: 0.8, hl: 1.95, height: 1.0, draft: 0.5, shotBack: 1.5, perk: AMPHIBIOUS_PERK },
   // (the Transporter: a square-nosed van lashed between two yellow floats. Wide, steady, tough for its tier)
   { id: 'floatvan', tier: 2, amphibious: true, name: 'Float Van', price: 180, color: 0x2f7fc4, evilColor: 0x7a2a2a, fixedLivery: true, model: 'transporter',
     maxSpeed: 26, accel: 8, crossing: 0.6, health: 160, mass: 1.3, hw: 1.3, hl: 2.3, height: 2.0, draft: 0.85, perk: AMPHIBIOUS_PERK },

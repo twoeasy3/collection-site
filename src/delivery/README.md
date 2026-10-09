@@ -2,7 +2,7 @@
 
 A lane-based 3D delivery racer, built with three.js and Vite. Drive a parcel to the drop before
 the clock runs out, as Good or as Evil, through traffic that has moods and holds grudges. It has
-35 levels on the menu, 32 cars in the garage, circuit races, two screensavers and a level editor.
+48 levels on the menu, 37 cars in the garage (five of them amphibious), circuit races, two screensavers and a level editor.
 
 `HANDOVER.md` beside this file covers how the game is put together, how the owner likes changes
 made, and what is not verified. `CHECKLIST.md` is the working list of ideas.
@@ -65,6 +65,11 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `?screensaver` | The traffic screensaver |
 | `?racewatch` | The race screensaver; `&camcheck` logs a check of its cameras |
 | `&touch` | Shows the on-screen controls on a desktop |
+| `?pick=41` | The menu with that level picked, every level open for the visit (a look at its card); `&start` presses Start Game too |
+
+An amphibious level started from the address with no amphibious car owned is driven in the Float Van for
+that visit (or `&car=toybota`). On `gimmicks.html`, `?group=vehicles` shows that group alone, and
+`&from=6` only its cards from the sixth on.
 
 ## Where things are
 
@@ -102,6 +107,7 @@ One file per gimmick, each the logic for a level field of the same name:
 | `crossing.js` | Level crossings: lights, booms, the train |
 | `stopgo.js` | Stop / go roadworks |
 | `tide.js` | The sea coming in over a causeway |
+| `water.js` | Water stages: the road as a channel to float across, the queue at its edge, boats |
 | `hippos.js`, `elephants.js` | Animals that destroy whatever they touch |
 | `machinery.js`, `site.js` | A construction site's machines and shoulder works |
 | `wreckage.js` | Scripted destruction: tankers, airliners, quarry blasts |
@@ -117,7 +123,7 @@ Rendering and the rest:
 | `render/road.js` | Road, ground, sky and every theme's scenery |
 | `render/models.js` | The animated vehicle models |
 | `render/cars.js`, `render/items.js` | Vehicle and obstacle meshes kept in step with the logic |
-| `render/*Models.js`, `render/carExtras.js` | Models with no game state, shared with the reference pages |
+| `render/*Models.js`, `render/carExtras.js` | Models with no game state, shared with the reference pages (`boatModels.js`: the water stages' boats) |
 | `render/<gimmick>.js` | Draws the gimmick of the same name |
 | `render/audio.js` | Sound: the WAVs in `sounds/`, with synthesised stand-ins |
 | `render/hud.js`, `render/menu.js`, `render/garage.js`, `render/touch.js` | HUD, start screen, garage, on-screen controls |
@@ -138,6 +144,10 @@ Levels unlock in menu order, each by delivering the one before.
 - **Special levels (S1 to S9):** All Heck, Asteroid Run, Marina Bay, Oh Mine!, Montreal, Mount
   Panorama, Rival Run, Showdown, Battlefield. These include the circuit races and the levels
   driven in a vehicle of their own (UFO, race car, jetboat, 8x8).
+- **Amphibious levels (A1 to A5):** Slipway Beach, Harbour Lights, High Water, Hippo Ford, Fjord Crossing.
+  Each has water stages (its `water`) and is only started in an amphibious car (its `amphibious`). They
+  are `AMPHIBIOUS_LEVELS` in `levels.js`, after the special levels and before the circuits, and open
+  in order like the rest, the first by delivering S9.
 - **Hidden levels** (`?hidden=<id>`): `testbed`, `grand-prix`, `gimmick-road`. A run on one banks
   nothing.
 - **The screensaver's level** is `chaos.json` (Pile-Up Parade), which is not on the menu.
@@ -150,11 +160,21 @@ Levels unlock in menu order, each by delivering the one before.
   - Saved progress counts unlocked levels by position. A level put in among those already there
     needs its position added to `INSERTED_AT` in `progress.js`, so returning players keep what
     they had open.
-  - `node scripts/level-clocks.mjs <id> --write` works out its clock and writes it into the file.
+  - `node scripts/level-clocks.mjs <id> --write` works out its clock and writes it into the file (an
+    amphibious level is timed in `CONFIG.clock.amphibious`, the Float Van, holding its lane).
+  - An amphibious level goes at the end of `AMPHIBIOUS_LEVELS`, which needs no entry in `INSERTED_AT`
+    (the circuits after it are races, always open). `node scripts/.water-check.mjs` drives every
+    amphibious level and checks the water's rules on it. Keep ids short: the save is a cookie
+    (`node scripts/.save-check.mjs`: 3382 of 4096 bytes with 48 levels and 38 cars).
   - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`.
 - **A theme:** add it to `themes.js`; its scenery is drawn in `render/road.js`.
 - **A traffic vehicle:** add it to `vehicles` in `config.js` (give it a `model` to draw it as one
-  of the models in `render/models.js`), then list it in a level's `traffic`.
+  of the models in `render/models.js`), then list it in a level's `traffic`. On a level with water
+  stages, `amphibious: true` lets it drive into the water and out; `boat: true` keeps it on the water;
+  anything else queues on its shoulder at the water's edge.
+- **A water stage:** `"water": [{ "from": 700, "to": 1050, "current": 1.5 }]` in an amphibious level
+  (below 0 or beyond the finish to start or end afloat). Its tuning is `CONFIG.water`; a theme can
+  give the water its colours (`channel` in `themes.js`).
 - **An obstacle kind:** give it a size and behaviour in `collision.js`, a cost in `obstacleKinds`
   in `config.js`, and a model in `render/obstacleModels.js`.
 - **A gimmick:** a level field documented in `levels.js`, its logic in a file of its own here,
@@ -162,7 +182,8 @@ Levels unlock in menu order, each by delivering the one before.
   `main.js`. Add it to `gimmicks.js` so it shows on the gimmicks page.
 - **A car:** add an entry to `CARS` in `cars.js`, with a `tier` (its stars) and a `model` from
   `render/models.js`. `blue: true` makes it a Blue Star car, which the garage shows once level
-  `CONFIG.blueStarsAfter` is delivered. Its pictures are `carshots/<id>-good.jpg` and
+  `CONFIG.blueStarsAfter` is delivered. `amphibious: true` makes it an amphibious car: it floats on a
+  water stage, has sea-green stars, and parks in the garage's Amphibious section (there from the start). Its pictures are `carshots/<id>-good.jpg` and
   `carshots/<id>-evil.jpg`, taken with `?cine=car`. A vehicle that belongs to a level goes in
   `LEVEL_CARS`; one that should stay out of the garage goes in `SECRET_CARS`, with its own way
   in (the City Bus: type B U S on the start screen, or `?autostart&car=bus`).

@@ -30,7 +30,8 @@ const group = new THREE.Group();
 scene.add(group);
 let sheets = [];   // one for each stage: { mesh, from, rows, base: [colour of each point] }
 let buoys = null;
-let dim = 1;       // (a night level's water is dark)
+let dim = 1;       // (a night level's slipways and quays are dark; and its water, unless the theme says its colours)
+let tones = null;  // the water's colours on this level: { shallow, deep, glint } (THREE.Color), a theme's own ("channel") or CONFIG's
 const colour = (hex) => new THREE.Color(hex).multiplyScalar(dim);
 const mixed = new THREE.Color();
 
@@ -71,7 +72,9 @@ const buildWater = () => {
   if (!Track.waters.length) return;
   const C = W(), K = C.colours, theme = THEMES[LEVEL.theme] || THEMES.city;
   dim = theme.night ? 0.42 : theme.lit ? 0.3 : 1;
-  const shallow = colour(K.shallow), deep = colour(K.deep), slip = colour(K.slip), rib = colour(K.rib), quay = colour(K.quay), foam = colour(K.foam);
+  const own = theme.channel, tone = (name) => own ? new THREE.Color(own[name]) : colour(K[name]);
+  tones = { shallow: tone('shallow'), deep: tone('deep'), glint: tone('glint') };
+  const { shallow, deep } = tones, slip = colour(K.slip), rib = colour(K.rib), quay = colour(K.quay), foam = colour(K.foam);
   const across = (s, c) => Track.lo(s) - C.bank + (Track.hi(s) - Track.lo(s) + 2 * C.bank) * c / (COLS - 1);
   const spots = [], lanes = Track.laneCount;
   for (const w of Track.waters) {
@@ -155,9 +158,9 @@ export const syncWater = (now, dt) => {
     if (rolled) { carMesh.rotation.z = 0; rolled = false; }
     return;
   }
-  const C = W(), K = C.colours;
+  const C = W();
   // glints running along the water, near the player
-  const deep = mixed.setHex(K.deep).multiplyScalar(dim).clone(), glint = new THREE.Color(K.glint).multiplyScalar(dim), shallow = new THREE.Color(K.shallow).multiplyScalar(dim);
+  const { deep, glint, shallow } = tones;
   for (const sheet of sheets) {
     if (Player.s + AHEAD < sheet.from || Player.s - BEHIND > sheet.to) continue;
     const r0 = Math.max(0, Math.floor((Player.s - BEHIND - sheet.from) / STEP)), r1 = Math.min(sheet.rows - 1, Math.ceil((Player.s + AHEAD - sheet.from) / STEP));

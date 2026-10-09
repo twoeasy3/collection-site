@@ -27,15 +27,18 @@ site. This repo is the only copy to edit.
 
 Content now:
 
-- **35 levels on the menu:** 26 main levels and 9 special ones (S1 to S9), listed in the README.
+- **48 levels on the menu:** 31 main levels, 9 special ones (S1 to S9), 5 amphibious ones (A1 to A5)
+  and 3 circuits, listed in the README (its list of main levels stops at 26).
   Three more are hidden (`testbed`, `grand-prix`, `gimmick-road`) and one is the screensaver's.
-- **32 garage cars:** 17 gold-star cars in five tiers, 14 Blue Star cars (a second season, open
-  once level 20 is delivered), and the Tank.
+- **37 garage cars:** 17 gold-star cars in five tiers, 14 Blue Star cars (a second season, open
+  once level 20 is delivered), 5 amphibious cars, and the Tank.
 - **Vehicles that belong to levels:** UFO, F1 car, GT car, LMP prototype, jetboat and the
   Battlefield's 8x8. One secret car, the City Bus.
-- **Models with no car yet:** the amphibious cars in `render/models.js` (`toybota`, `nissank`,
-  `herald`, `dampervan`, `transporter`) are built but no entry in `cars.js`, `config.js` or any
-  level uses them.
+- **Amphibious cars and levels (added 2026-10-10):** five garage cars, one at each star level (Sailing
+  Herald, Float Van, Toybota, Dampervan, Nissank: the models `herald`, `transporter`, `toybota`,
+  `dampervan`, `nissank`), in a section of the garage of their own, open from the start; and five
+  amphibious levels, A1 to A5, with water stages and boat traffic, started only in one of those cars.
+  The same five are traffic kinds, and there are four boats (dinghy, barge, ferry, pedal boat).
 - **Modes beyond delivery:** circuit races with laps and a grid (F1, GT or LMP), rival couriers,
   the Battlefield, two screensavers.
 
@@ -120,6 +123,13 @@ the still used for a level's menu picture and `&cine=car` the one for a car's.
   add to it whenever a level goes in among the others.
 - **Sound** is WAV files in `sounds/`, loaded by `render/audio.js`, with synthesised WebAudio
   stand-ins until a file has loaded and for the few sounds that have no file.
+- **A water stage does not dig the road out.** A level's `water` stretch keeps the road's geometry:
+  `render/water.js` lays a sheet of water 0.32 m over it from bank to bank, with a slipway's concrete
+  at each end, and sits whatever floats down into it by its draft. The logic (`water.js`) only ever
+  asks `Track.water(s)`, 0 on dry road to 1 in the channel. The player is never stopped by water;
+  traffic that cannot float queues on its own shoulder, so the lanes stay open; boats tie up at the
+  bank at the end of their reach (a vehicle's direction never changes in this engine, so they do not
+  turn back).
 - **Level clocks are worked out, not guessed.** `scripts/level-clocks.mjs` times a clean run in
   the reference car and writes `clock: { good, evil }` into the level file.
 - **The level editor** (`editor.js`) hands its level to the game through local storage
@@ -153,6 +163,10 @@ unverified unless the owner says otherwise. From the original list:
 - **Animations**: the Lowrider's hop, the Junker's shudder, the Love Bus's sway, spin-outs,
   flying tyres, helicopters on slopes, speed-dependent yaw.
 - **Touch**: the on-screen buttons and the phone garage on a real device.
+- **The amphibious levels (2026-10-10)**: driven only by scripts (`.water-check.mjs`, the clocks)
+  and looked at in screenshots. Nobody has played one: how the car feels afloat, whether a wake's
+  shove and the currents are too much or too little, prices, tips and clocks are all untested by hand.
+  The boat's engine note afloat has not been heard.
 - **Balance**: clocks now come from `level-clocks.mjs`, but tips, traffic mixes and pickup
   placement on most levels were not play-tested.
 - **Performance on phones**: the heavy levels (Asteroid Run's asteroids, All Heck's cones, the
@@ -165,6 +179,13 @@ Known limits:
 - Exits cannot be combined with `"flow": "south"`, and a one-way level's exits cannot have
   flyovers.
 - Level crossings and stop / go roadworks must be on straight road.
+- Water stages must be on level road, clear of exits, junctions, splits and tunnels, and only on an
+  amphibious level. Ambulances, funeral processions and convoys know nothing of the water: do not put
+  them on a level that has it. A level's obstacles, potholes and ice patches under a water stage are
+  hidden by the water but still there: keep them on the dry stretches.
+- On an amphibious level the player drives the best amphibious car owned unless the car in use is
+  amphibious: there is no memory of which amphibious car was picked last.
+- `scripts/shots.mjs` with `&ff` over about 15 s leaves the camera off the road, on any level.
 - Traffic drives straight through most obstacles by design; only the player hits them.
 - `cars.js` still says the garage has 20 bays. The lot now scrolls and holds all 32 cars.
 - `cameras.js` points to `render/cameras.js`, which does not exist; the cameras are drawn as
@@ -173,6 +194,5 @@ Known limits:
 ## Likely next steps
 
 - The ideas in `CHECKLIST.md`.
-- Give the amphibious models cars or a level to be used in.
 - Add a link to `/delivery/` from the site, once the owner says where.
 - Decide whether to bring ESLint over for `src/delivery`.
