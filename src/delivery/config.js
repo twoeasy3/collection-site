@@ -531,8 +531,8 @@ export const CONFIG = {
     runner: { damage: 10, speedKept: 0.88, light: true },
     waterTable: { damage: 6, speedKept: 0.9, light: true },
     paceCar: { damage: 30, speedKept: 0.5 },
-    wideLoad: { damage: 40, speedKept: 0.35 },
-    escort: { damage: 30, speedKept: 0.5 },
+    wideLoad: { damage: 12, speedKept: 0.6, sideDamage: 6, sideKept: 0.85 }, // (a knock: see CONFIG.wideLoad)
+    escort: { damage: 8, speedKept: 0.6, sideDamage: 4, sideKept: 0.9 },
     marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
     // falling cargo (a shedding truck's load: see CONFIG.cargo): bales, crates and tyres
     crate: { damage: 18, speedKept: 0.75 },
@@ -1207,10 +1207,17 @@ export const CONFIG = {
     landDamage: 8, landSoft: 7, lipGrace: 1, depth: 1.6, step: 0.6, launch: 12, boom: 19, sign: 150,
     stopLine: 22, every: { min: 16, max: 26 }, again: 320 },
   // a wide load ("wideLoads": { s, lanes: [a, b] }): a load two lanes wide crawling along at `speed`,
-  // setting off as the player comes within `trigger` m, its escort `behind` m behind it. The escort
-  // watches for `watch` s (its beacons flashing), then looks away for `rest` s: getting past the load's
-  // nose while it watches, within `sight` m of it, is a bust
-  wideLoad: { speed: 9, trigger: 280, behind: 16, watch: 5, rest: 4, sight: 90 },
+  // setting off as the player comes within `trigger` m, its escort `behind` m behind it. It is passed at
+  // speed, by timing: the load swings from one side of its lanes to the other and back, `dwell` s at each
+  // end and `shift` s between, `swing` m across (or as far as `kerb` m short of the road's edge; never
+  // opening less than `gap` m). Left, the way past is on its right (out onto the shoulder: the shoulder's
+  // rules apply); right, on its left, in the lane. The arrow board on its tail points to the open side,
+  // flashing for the last `warn` s before it shuts. The escort is no policeman: it moves over at
+  // escortSteer m/s to stay in front of a car coming up within `sight` m behind it, and holds its line once
+  // that car is `commit` s from reaching it: come up on one side of it and jink late.
+  // Running into either is a knock (obstacleKinds: damage and speedKept from behind, sideDamage and
+  // sideKept alongside), not a wreck: they stay where they are, and there is no bust
+  wideLoad: { speed: 9, trigger: 280, behind: 22, dwell: 5, shift: 1.5, warn: 1.2, swing: 3.8, gap: 2.8, kerb: 0.3, escortSteer: 1.2, sight: 70, commit: 1.1 },
   // shopping trolleys ("trolleys": { from, to, count }): rolling across the road with its camber: down
   // from the crown on the straight (accel m/s^2), to the inside of a bend (up to `bend` times that),
   // bouncing back off the kerb with `bounce` of their speed (or a shove of `kick` m/s if they have stopped)

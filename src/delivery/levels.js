@@ -246,7 +246,8 @@
 //   balloons   { s, lanes: [first, last] }: a hot-air balloon comes down on those lanes, sits, and lifts off again
 //   drawbridges { s }: bells, booms, and two leaves that lift: the car goes up the near one and jumps the gap if it
 //              came fast enough (a board gives the speed), or stops short, or drops in. On straight road
-//   wideLoads  { s, lanes: [n, n + 1] }: a load two lanes wide crawling along; passing it while its escort watches is a bust
+//   wideLoads  { s, lanes: [n, n + 1] }: a load two lanes wide crawling along, swinging from side to side: pass it at speed on the side its arrow board
+//              points to (left: in the lane; right: on the shoulder). Hitting it or its escort is a knock; there is no bust
 //   trolleys   { from, to, count }: shopping trolleys rolling across the road with its camber
 //   marathons  { s, lane, count, water? }: runners in one lane behind a pace car; water: where its water station stands
 //   stampedes  { from, to, count, kind: 'cow' | 'kangaroo' }: animals charging down the road at the player

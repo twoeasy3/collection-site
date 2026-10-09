@@ -660,13 +660,14 @@ const GROUPS = [
     } },
     { name: 'Wide loads', color: 0xffd23f, has: (l) => l.wideLoads?.length, rules: [
       `Half a house on a low loader, two lanes wide, crawling along at ${kmh(H.load.speed)} with an escort car ${H.load.behind} m behind it.`,
-      `The escort watches for ${H.load.watch} s (its amber beacons flashing), then looks away for ${H.load.rest} s. Get past the load's nose while it is watching and it is a <strong>bust</strong>. Pass while the beacons are dark.`,
-      `Running into the load costs ${CONFIG.obstacleKinds.wideLoad.damage} damage. Traffic drives through it.`,
+      `<strong>Pass it at speed, on the side its arrow board points to.</strong> The load swings from one side to the other, ${H.load.dwell} s at each: over on the shoulder, the lane on its left is open; back in its lanes, the way past is on its right, on the shoulder (the shoulder's rules apply). The arrows flash for the last ${H.load.warn} s; a red cross means it is swinging over.`,
+      `The escort is no policeman: it moves over to stay in front of you, slowly. Wrong-foot it. There is no bust.`,
+      `Running into either is a knock, not a wreck: ${CONFIG.obstacleKinds.wideLoad.damage} damage into the load's tail (${CONFIG.obstacleKinds.wideLoad.sideDamage} alongside it), and they are still there. Traffic drives through it.`,
     ], build: () => {
       const g = road(11, 26), load = ob('wideLoad', { hw: 3.2, hl: 6.5, height: 3.6 }), escort = ob('escort', { hw: 0.95, hl: 2.2, height: 1.7 });
       load.position.set(1.7, 0, 5); escort.position.set(1.7, 0, -9);
       g.add(load, escort);
-      return { model: g, tick: (t) => escort.userData.beacons.color.setHex(t % 4 < 2.2 && Math.floor(t * 5) % 2 ? 0xffb020 : 0x4a3a1a) };
+      return { model: g, tick: (t) => { const right = t % 8 < 4, u = Math.min(1, (t % 4) / 1.2); load.position.x = 1.7 - 1.9 * (right ? u : 1 - u); load.userData.arrows.forEach((arrow) => { arrow.group.visible = u >= 1 && arrow.side === (right ? -1 : 1); }); load.userData.cross.visible = u < 1; escort.userData.beacons.color.setHex(Math.floor(t * 5) % 2 ? 0xffb020 : 0x4a3a1a); } };
     } },
     { name: 'Shopping trolleys', color: 0xc4c9ce, has: (l) => l.trolleys?.length, rules: [
       'Escaped trolleys roll across the road with its camber: down from the crown to the kerbs on the straight, to the inside of a bend, bouncing back off the kerb.',

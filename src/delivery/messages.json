@@ -55,7 +55,7 @@
     "drawbridge": ["Drawbridge opening! Hit the speed on the board and jump it!"],
     "drawbridgeJump": ["You jumped the bridge!"],
     "drawbridgeFall": ["Too slow! Into the river!"],
-    "wideLoad": ["Wide load ahead. Don't pass while the escort is watching!"],
+    "wideLoad": ["Wide load ahead, swinging side to side. Pass on the side its arrows point to!"],
     "jackknife": ["Road train jackknifing!! Find the open lane!"],
     "stampede": ["STAMPEDE!! They're coming down the road at you!"],
     "wrongWay": ["WRONG-WAY DRIVER!! Coming at you in the right-hand lane!"],

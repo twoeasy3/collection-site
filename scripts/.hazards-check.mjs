@@ -87,21 +87,89 @@ try {
   start(3700, 3, 30);
   g.run(6, () => { quiet(); return Hazards.loads[0].on && Hazards.loads[0].load.s > 3920; });
   check(Hazards.loads[0].on, 'wide load: it sets off as the player comes near');
-  for (const watching of [true, false]) {
-    start(3700, 3, 20);
-    g.run(40, () => {
-      quiet();
-      const w = Hazards.loads[0];
-      if (!w.on) return false;
-      const W = g.CONFIG.wideLoad;
-      w.t = watching ? 1 : W.watch + 1; // (the escort held watching, or looking away)
-      P.lat = g.track.Track.shoulderOffset(1, P.s); // (by on the shoulder)
-      P.danger = 99;
-      return w.passed || P.busted;
-    });
-    check(watching ? P.busted && P.bustReason === 'wideLoad' : Hazards.loads[0].passed && !P.busted,
-      'wide load: passing it with the escort ' + (watching ? 'watching is a bust' : 'looking away is not'));
-  }
+  // (passed at speed, by timing: a scripted driver that never brakes below 12 m/s, reads the swing, wrong-foots
+  // the escort and goes through on the open side; from every second of the load's rhythm, on Gimmick Road 2's
+  // three lanes a side and on a copy of it with two)
+  const passLoad = (label, prefer) => {
+    const W = g.CONFIG.wideLoad, T = g.track.Track, period = 2 * (W.dwell + W.shift);
+    let worst = { speed: Infinity, lost: 0, busts: 0, failed: 0, shoulder: 0, runs: 0, sides: { '-1': 0, 1: 0 } };
+    for (let phase = 0; phase < period; phase += 1.3) {
+      start(3700, T.rightLanes > 2 ? T.laneCount - 2 : T.laneCount - 1, 20);
+      const w = Hazards.loads[0], health = P.health;
+      let slowest = Infinity, onShoulder = 0, side = 0, speed = 20, phased = false;
+      g.run(60, () => {
+        quiet();
+        if (!w.on) return false;
+        if (!phased) { w.t = phase; phased = true; }
+        const { load, escort } = w, room = 2 * P.hw + 1;
+        const d = load.s - load.hl - P.s - P.hl, lane0 = g.levels.LEVEL.wideLoads[0].lanes[0];
+        // the gap either side of it, at its narrowest while the car would be alongside, were it to close on it at v
+        const look = (v) => {
+          const c = Math.max(3, v - W.speed), eta = Math.max(0, d) / c, out = eta + (Math.min(d, 0) + 2 * load.hl + 2 * P.hl + 2) / c;
+          const gaps = { '-1': Infinity, 1: Infinity }, at = {};
+          for (let t = eta; t <= out + 1e-6; t += 0.1) {
+            const s = load.s + W.speed * t, [left, right] = w.ends(s), lat = left + (right - left) * Hazards.loadSwing({ t: w.t + t });
+            const lo = T.laneOffset(lane0, s) - g.CONFIG.laneWidth / 2, hi = T.hi(s);
+            if (lat - load.hw - lo < gaps[-1]) { gaps[-1] = lat - load.hw - lo; at[-1] = (lat - load.hw + lo) / 2; }
+            if (hi - lat - load.hw < gaps[1]) { gaps[1] = hi - lat - load.hw; at[1] = (lat + load.hw + hi) / 2; }
+          }
+          return { gaps, at };
+        };
+        // (well back, it picks the fastest speed, down to 14 m/s, that brings it alongside with a side open, and
+        // that side; from 30 m out it is committed)
+        if (d > 30 || !side) {
+          side = 0;
+          for (let v = Math.ceil(g.cars.CAR.maxSpeed); v >= 14 && !side; v--) {
+            const { gaps } = look(v);
+            const pick = gaps[prefer] >= room ? prefer : gaps[-prefer] >= room ? -prefer : 0;
+            if (pick) { side = pick; speed = v; }
+          }
+        }
+        const { at } = look(Math.max(P.speed, 14));
+        let throttle = d > 30 ? (P.speed < speed - 0.4 ? 1 : P.speed > speed + 0.4 ? -1 : 0) : 1, want = P.lat;
+        if (!side) throttle = P.speed > 14 ? -1 : 0; // (neither side will be open as it gets there: ease off, never to a stop)
+        else {
+          want = at[side];
+          // (the escort: come up on the other side of it, and cut across late; and out onto the shoulder only as it comes alongside)
+          const back = escort.s - escort.hl - P.s - P.hl;
+          if (back > 0.9 * Math.max(4, P.speed - W.speed)) want = Math.max(T.laneOffset(T.laneCount - T.rightLanes, P.s) - g.CONFIG.laneWidth / 2 + P.hw, Math.min(T.laneHi(P.s) - P.hw, at[side] - side * (side > 0 ? 6 : 4)));
+          else if (side > 0 && d > 0.85 * Math.max(4, P.speed - W.speed)) want = Math.min(want, T.laneHi(P.s) - P.hw);
+          // (and by the escort itself on the side it is going, with room to spare, wherever it has got to)
+          if (back > -2 * escort.hl - 2 * P.hl && back <= 0.9 * Math.max(4, P.speed - W.speed)) want = side > 0 ? Math.max(want, escort.lat + escort.hw + P.hw + 0.5) : Math.min(want, escort.lat - escort.hw - P.hw - 0.5);
+        }
+        g.drive(throttle, Math.abs(want - P.lat) < 0.15 ? 0 : Math.sign(want - P.lat));
+        if (Math.abs(P.s - load.s) < 60) slowest = Math.min(slowest, P.speed);
+        if (P.onShoulder) onShoulder += 1 / 60;
+        return w.passed || P.busted || G.wrecks > 0;
+      });
+      worst.runs++;
+      if (process.env.DBG) console.log('DBG', label, 'phase', phase.toFixed(1), 'side', side, 'slowest', slowest.toFixed(1), 'lost', health - P.health, 'sh', onShoulder.toFixed(1), P.busted, w.passed);
+      worst.sides[side || 1]++;
+      worst.speed = Math.min(worst.speed, slowest);
+      worst.lost = Math.max(worst.lost, health - P.health);
+      worst.shoulder = Math.max(worst.shoulder, onShoulder);
+      if (P.busted) worst.busts++;
+      if (!w.passed) worst.failed++;
+    }
+    check(!worst.failed && !worst.busts && worst.lost === 0 && worst.speed >= 12,
+      'wide load, ' + label + ': passed from all ' + worst.runs + ' points of its rhythm (' + worst.sides[-1] + ' on its left, ' + worst.sides[1] + ' on its right) with no bust and no damage, never under ' +
+      (worst.speed * 3.6).toFixed(0) + ' km/h (most on the shoulder: ' + worst.shoulder.toFixed(1) + ' s; ' + worst.failed + ' not past, ' + worst.busts + ' busts, ' + worst.lost.toFixed(0) + ' health lost)');
+  };
+  passLoad('three lanes a side, in the lane first', -1);
+  passLoad('three lanes a side, the shoulder first', 1);
+  // (and run into: a knock, and it is still there)
+  start(3700, 5, 25);
+  let knocked = 0;
+  g.run(30, () => { quiet(); const w = Hazards.loads[0]; if (w.on) P.lat = w.load.lat; if (P.health < P.maxHealth) knocked++; return knocked > 30 || G.wrecks > 0; });
+  check(knocked > 0 && G.wrecks === 0 && !P.busted && !Hazards.loads[0].load.gone && !Hazards.loads[0].escort.gone && P.health > P.maxHealth * 0.6,
+    'wide load: driving into it is a knock (' + Math.round(P.maxHealth - P.health) + ' health), no wreck and no bust, and it is still there');
+  g.select({ ...level, id: 'wide-load-two-lanes', lanes: 4, exits: [], pickups: [], waterMains: [], schoolCrossings: [], trolleys: [], marathons: [], balloons: [], drawbridges: [], wreckage: [], cameras: [], potholes: [], crossings: [], stampedes: [],
+    wideLoads: [{ s: 3900, lanes: [2, 3] }] });
+  start(3700, 3, 20);
+  console.log('         (two lanes a side: ' + (g.track.Track.problems.join(' | ') || 'no problems') + ')');
+  passLoad('two lanes a side, in the lane first', -1);
+  passLoad('two lanes a side, the shoulder first', 1);
+  g.select('gimmick-road-2');
 
   // ---- drawbridge (s 4700)
   start(4400, 3, 40);

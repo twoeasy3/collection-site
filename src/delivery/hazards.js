@@ -43,7 +43,7 @@ export const Hazards = {
   mains: [],     // { from, to, lane, lat, on, t, warned }: its patch of ice is Track.sprays' (same order)
   balloons: [],  // { s, lat0, lat1, state: 'idle' | 'descend' | 'sit' | 'rise' | 'gone', t, hit }
   bridges: [],   // { s, state: 'idle' | 'warn' | 'open' | 'close', t, next, started, bell }
-  loads: [],     // { s0, lat(s), load, escort (obstacles), on, t, passed, done }
+  loads: [],     // { s0, ends(s) (the two places it swings between), load, escort (obstacles), on, t, passed, done }
   trolleys: [],  // obstacles, each with cart: { lat0, vel0, vel }
   marathons: [], // { s0, lane, on, members: obstacles with run: { s0, off } }
   stampedes: [], // { from, to, on, animals: obstacles with charge: { s0, lat0, speed, phase } }
@@ -83,10 +83,17 @@ export const Hazards = {
       return { s0, lane: m.lane, on: false, members };
     });
     this.loads = (LEVEL.wideLoads || []).map((w) => {
-      const s0 = Track.place(w), [a, b] = w.lanes;
-      const lat = (s) => (Track.laneOffset(a, s) + Track.laneOffset(b, s)) / 2;
-      const load = put('wideLoad', s0, lat(s0)), back = s0 - load.hl - CONFIG.wideLoad.behind;
-      return { s0, lat, load, escort: put('escort', back, lat(back)), on: false, t: 0, passed: false, done: false };
+      const s0 = Track.place(w), [a] = w.lanes, W = CONFIG.wideLoad;
+      const load = put('wideLoad', s0, 0, { knock: true, vs: W.speed }), back = s0 - load.hl - W.behind;
+      // the two places it swings between at s: [left, right]. Left, its left side on the left edge of lane a;
+      // right, `swing` m over, or as far as the edge of the shoulder lets it. Where that would open less than
+      // `gap` m (no shoulder to speak of), left is further left instead, over the line, so the right side still opens
+      const ends = (s) => {
+        const left = Track.laneOffset(a, s) - CONFIG.laneWidth / 2 + load.hw, right = Math.min(left + W.swing, Track.hi(s) - W.kerb - load.hw);
+        return right - left >= W.gap ? [left, right] : [Math.max(Track.lo(s) + load.hw, right - W.gap), right];
+      };
+      load.lat = ends(s0)[0];
+      return { s0, ends, lo: (s) => Track.laneOffset(a, s), load, escort: put('escort', back, load.lat, { knock: true, vs: W.speed }), on: false, t: 0, passed: false, done: false };
     });
     this.stampedes = (LEVEL.stampedes || []).map((z) => {
       const from = Track.place({ s: z.from, road: z.road, exit: z.exit }), to = from + (z.to - z.from), animals = [];
@@ -116,8 +123,9 @@ export const Hazards = {
     this.bridges = (LEVEL.drawbridges || []).map(c => ({ s: place(c), state: 'idle', t: 0, next: 0, started: false, bell: 0, rolled: false, climb: null }));
     for (const w of this.loads) {
       Object.assign(w, { on: false, t: 0, passed: false, done: false });
-      w.load.s = w.s0; w.load.lat = w.lat(w.s0);
-      w.escort.s = w.s0 - w.load.hl - CONFIG.wideLoad.behind; w.escort.lat = w.lat(w.escort.s);
+      w.load.s = w.s0; w.load.lat = w.ends(w.s0)[0];
+      w.escort.s = w.s0 - w.load.hl - CONFIG.wideLoad.behind; w.escort.lat = w.load.lat;
+      w.load.knocked = w.escort.knocked = 0;
     }
     for (const o of this.trolleys) { o.lat = o.cart.lat0; o.cart.vel = o.cart.vel0; }
     for (const m of this.marathons) {
@@ -245,10 +253,22 @@ export const Hazards = {
       P.s = Math.max(foot - 0.05, P.s - D.rollBack * dt);
     }
   },
-  // is a wide load's escort watching just now?
-  watching(w) {
-    const W = CONFIG.wideLoad;
-    return w.on && !w.done && w.t % (W.watch + W.rest) < W.watch;
+  // a wide load's swing: how far over it is, 0 (left) .. 1 (right): `dwell` s at each end, `shift` s between
+  loadSwing(w) {
+    const W = CONFIG.wideLoad, u = w.t % (2 * (W.dwell + W.shift));
+    const ease = (x) => x * x * (3 - 2 * x);
+    return u < W.dwell ? 0 : u < W.dwell + W.shift ? ease((u - W.dwell) / W.shift) : u < 2 * W.dwell + W.shift ? 1 : 1 - ease((u - 2 * W.dwell - W.shift) / W.shift);
+  },
+  // ...and what its arrow board shows: { side: -1 (pass on its left) | 1 (on its right) | 0 (swinging: neither),
+  // closing: that side is about to shut (the last `warn` s of it) }
+  loadSignal(w) {
+    const W = CONFIG.wideLoad, u = w.t % (W.dwell + W.shift), p = this.loadSwing(w);
+    return { side: !w.on || w.done ? 0 : p <= 0 ? 1 : p >= 1 ? -1 : 0, closing: u < W.dwell && u > W.dwell - W.warn };
+  },
+  // is its escort blocking: moving over to stay in front of the player coming up behind it?
+  blocking(w) {
+    const W = CONFIG.wideLoad, back = w.escort.s - Player.s;
+    return w.on && !w.done && !w.escort.gone && Player.active && back > 0 && back < W.sight;
   },
 
   // how fast a traffic car may go, for the ones it waits at: a school crossing's STOP, a balloon on
@@ -354,13 +374,25 @@ export const Hazards = {
       if (!w.on) continue;
       w.t += dt;
       const { load, escort } = w, was = from - (load.s + load.hl) > 0; // (was the player past its nose already, last step?)
-      if (!load.gone) { load.s += W.speed * dt; load.lat = w.lat(load.s); }
-      if (!escort.gone) { escort.s += W.speed * dt; escort.lat = w.lat(escort.s); }
-      // past its nose: a bust if the escort was watching, and near enough to see
-      if (!w.passed && live && !was && Player.s - (load.s + load.hl) > 0 && Player.s - load.s < 40) {
-        w.passed = true;
-        if (!load.gone && !escort.gone && this.watching(w) && Math.abs(Player.s - escort.s) < W.sight) Player.bust('wideLoad');
+      load.knocked = Math.max(0, (load.knocked || 0) - dt);
+      escort.knocked = Math.max(0, (escort.knocked || 0) - dt);
+      // the load: crawling along, swinging from one side of its lanes to the other and back
+      if (!load.gone) {
+        load.s += W.speed * dt;
+        const [left, right] = w.ends(load.s);
+        load.lat = left + (right - left) * this.loadSwing(w);
       }
+      // its escort: behind it, moving over (slowly: escortSteer m/s) to stay in front of the player coming up
+      // behind; with nobody behind, back to the middle of the load
+      if (!escort.gone) {
+        escort.s += W.speed * dt;
+        const lo = w.lo(escort.s) - CONFIG.laneWidth / 2 + escort.hw, hi = Track.laneHi(escort.s) - escort.hw;
+        const back = escort.s - Player.s; // (with the car `commit` s behind it or less it holds its line: a late jink always beats it)
+        const want = back > 0 && back < W.commit * Math.max(4, Player.speed - W.speed) ? escort.lat : Math.max(lo, Math.min(hi, this.blocking(w) ? Player.lat : load.lat));
+        escort.lat += Math.max(-W.escortSteer * dt, Math.min(W.escortSteer * dt, want - escort.lat));
+      }
+      // (past its nose: that is all there is to it)
+      if (!w.passed && live && !was && Player.s - (load.s + load.hl) > 0 && Player.s - load.s < 40) w.passed = true;
       if (load.s > Track.length - 60 || Player.s - load.s > 200) { w.done = true; load.gone = escort.gone = true; }
     }
 

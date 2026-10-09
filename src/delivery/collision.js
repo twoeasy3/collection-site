@@ -725,6 +725,25 @@ export const Collision = (() => {
         FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: 0, big: true });
         continue;
       }
+      if (o.knock) { // (a wide load or its escort: a knock, not a wreck. It is still there, and the car is put clear of it)
+        const cost = CONFIG.obstacleKinds[o.kind], side = Player.lat < o.lat ? -1 : 1, beside = o.lat + side * (o.hw + Player.hw + 0.05);
+        const behind = Player.s < o.s - o.hl + 0.5 || beside < Track.lo(Player.s) + Player.hw || beside > Track.hi(Player.s) - Player.hw; // (run into its tail; or no room beside it)
+        if (behind) {
+          Player.s = Math.min(Player.s, o.s - o.hl - Player.hl - 0.05);
+          Player.speed = Math.min(Player.speed * cost.speedKept, o.vs ?? 0);
+        } else { // (alongside: shoved out sideways)
+          Player.lat = beside;
+          Player.latVel = side * 2;
+          Player.speed *= o.knocked > 0 ? 1 : cost.sideKept;
+        }
+        if (!(o.knocked > 0)) {
+          if (Player.tank <= 0) { hurt(Player, behind ? cost.damage : cost.sideDamage); Player.stun = Math.max(Player.stun, CONFIG.stunTime * 0.3); }
+          Game.shake = Math.max(Game.shake, behind ? 0.8 : 0.4);
+          sfx(behind ? 'crash' : 'sideswipe', 0.8);
+        }
+        o.knocked = 0.8; // (s before another knock from it costs anything: Hazards counts it down)
+        continue;
+      }
       // any touch blows the obstacle up: the car is damaged and loses speed, but drives on
       o.gone = true;
       if (o.kind === 'rock' && CAR.trait === 'rocks') { // (the 6x6 ignores rockfall: the rock is smashed aside, at no cost)
