@@ -16,6 +16,7 @@ import { MODELS } from './models.js';
 import { TURBO_COLOR, PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 import { OBSTACLE_MODELS } from './obstacleModels.js';
 import { addSuperKit } from './carExtras.js';
+import { damageShare, dentModel, scorch } from './dents.js';
 import { SpeedCameras } from '../cameras.js';
 import { Hazards } from '../hazards.js';
 
@@ -395,6 +396,10 @@ export const syncPickups = (dt) => {
   // the garage's Tank wears its own liveries; a car in TANK RAGE turns army olive
   paintOf(tankMesh.userData.body).color.setHex(!CAR.tank ? TANK_OLIVE : livery);
   paintOf(carMesh.userData.body).color.setHex(livery);
+  // a damaged car looks it: its panels crumple in steps and its paint is scorched (see dents.js; not a tank, nor a UFO)
+  const worn = Player.active ? damageShare(Player) : 0;
+  dentModel(carMesh, carMesh.userData.body, worn);
+  scorch(paintOf(carMesh.userData.body).color, worn);
   // a car with an animated model of its own shows that in place of the standard box car,
   // and its animation runs for as long as it is on screen
   const custom = CAR.model && !tank ? playerModel(CAR) : null;
@@ -402,6 +407,8 @@ export const syncPickups = (dt) => {
   if (custom) {
     custom.userData.animate(performance.now() / 1000);
     paintOf(custom.userData.body).color.setHex(livery);
+    dentModel(custom, custom.userData.body, worn);
+    scorch(paintOf(custom.userData.body).color, worn);
     custom.userData.livery?.(Player.evil);
     custom.userData.aim?.(Player.turret || 0); // (the 8x8's gun, turned to its target: see Packages)
   }

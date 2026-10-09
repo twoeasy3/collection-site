@@ -769,6 +769,10 @@ export const CONFIG = {
   passByRange: 4,
   passByChance: 0.4,
   horn: { range: 60, wait: 0.6 },
+  // dents and scorch on a damaged car (render/dents.js): at each `steps` share of damage the body's
+  // geometry is swapped for a more crumpled one (vertices shoved `amount` of the body's size per step,
+  // the same way every time); the paint darkens toward black by `scorch` at full damage
+  dents: { steps: [0.25, 0.5, 0.75], amount: 0.06, scorch: 0.35 },
   // a police car on station at the edge of its stretch (see Traffic: policeOnStation) stops this many m
   // short of the edge, braking at no more than stationBrake m/s^2 to do it
   stationShort: 3,
