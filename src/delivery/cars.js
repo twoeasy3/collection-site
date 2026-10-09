@@ -17,13 +17,24 @@
 //   tank       true = it is a tank: in TANK RAGE from the start of every level
 //   corner     true = parked in the far corner bay of the garage
 //   tier       which tier of the garage it is in (1-5): its star rating, shown with its name
+//   blue       true = a Blue Star car (the second season): better than a car of its tier with gold
+//              stars, but not as good as one a tier up; priced like a car two tiers up
 //   mass       how heavy it is in a shove (default 1): heavier knocks others aside and is knocked less
+//   shotBack   (optional) how much further back the studio camera (?cine=car) stands for its picture, for
+//              a vehicle whose wings reach past its hit box
 // ============================================================================
 import { Progress } from './progress.js';
+import { CONFIG } from './config.js';
 
 // a car's star rating, by its tier (none for a car out of the tiers)
 export const TIERS = 5;
 export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only the stars it has: no empty ones)
+export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff' };
+export const starColour = (car) => car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
+// the Blue Star cars are in the garage once level CONFIG.blueStarsAfter is delivered (which opens the next)
+export const blueStarsOpen = () => Progress.data.unlocked > CONFIG.blueStarsAfter;
+// the cars the garage shows now
+export const garageCars = () => CARS.filter(car => !car.blue || blueStarsOpen());
 
 export const CARS = [
   // In tiers, cheapest first: each tier a little faster and a little tougher than the one
@@ -37,6 +48,13 @@ export const CARS = [
     maxSpeed: 22, accel: 8, crossing: 0.7, health: 100, hw: 1.0, hl: 2.5, height: 1.95 },
   { id: 'darkvan', tier: 1, name: 'Darkvan', price: 80, color: 0x9be37a, evilColor: 0x161616, fixedLivery: true, model: 'darkvan',
     maxSpeed: 21, accel: 7, crossing: 0.65, health: 150, hw: 1.05, hl: 2.45, height: 2.4 },
+  // ---- tier 1, Blue Stars
+  { id: 'postvan', tier: 1, blue: true, name: 'Post Van', price: 270, color: 0xd8262b, evilColor: 0xe0a81c, fixedLivery: true, model: 'postvan',
+    maxSpeed: 24.5, accel: 9, crossing: 0.65, health: 160, hw: 0.9, hl: 2.1, height: 1.85 },
+  { id: 'keitruck', tier: 1, blue: true, name: 'Kei Truck', price: 290, color: 0xf2f2ee, evilColor: 0x6cb4d8, fixedLivery: true, model: 'keitruck',
+    maxSpeed: 24.5, accel: 10, agility: 1.3, crossing: 0.75, health: 120, hw: 0.74, hl: 1.7, height: 1.75 },
+  { id: 'mini', tier: 1, blue: true, name: 'Mini', price: 320, color: 0xc0212b, evilColor: 0xe8731c, fixedLivery: true, model: 'mini',
+    maxSpeed: 25.5, accel: 12, agility: 1.4, crossing: 0.4, health: 95, hw: 0.74, hl: 1.5, height: 1.35 },
   // ---- tier 2
   { id: 'lovebus', tier: 2, name: 'Love Bus', price: 130, color: 0x3fae4a, evilColor: 0xd8262b, fixedLivery: true, model: 'lovebus',
     maxSpeed: 24, accel: 7, crossing: 0.55, health: 165, hw: 1.0, hl: 2.3, height: 2.1 },
@@ -46,6 +64,15 @@ export const CARS = [
     maxSpeed: 31, accel: 13, crossing: 0.35, health: 80, hw: 0.85, hl: 1.9, height: 1.1 },
   { id: 'lowrider', tier: 2, name: 'Lowrider', price: 220, color: 0xb026ff, evilColor: 0x2fd6c6, fixedLivery: true, model: 'lowrider',
     maxSpeed: 27, accel: 9, crossing: 0.15, health: 120, hw: 1.0, hl: 2.5, height: 1.1 },
+  // ---- tier 2, Blue Stars
+  { id: 'hothatch', tier: 2, blue: true, name: 'Hot Hatch', price: 420, color: 0xf2f2f2, evilColor: 0xf2c418, fixedLivery: true, model: 'hothatch',
+    maxSpeed: 32, accel: 14, agility: 1.3, crossing: 0.4, health: 105, hw: 0.86, hl: 2.0, height: 1.42 },
+  { id: 'ute', tier: 2, blue: true, name: 'Ute', price: 440, color: 0x1f4f9a, evilColor: 0x8fd13a, fixedLivery: true, model: 'ute',
+    maxSpeed: 31.5, accel: 11, crossing: 0.8, health: 175, mass: 1.3, hw: 0.95, hl: 2.45, height: 1.45 },
+  { id: 'buggy', tier: 2, blue: true, name: 'Beach Buggy', price: 460, color: 0x1fb5c9, evilColor: 0x7a2fb8, fixedLivery: true, model: 'buggy',
+    maxSpeed: 31.5, accel: 13, agility: 1.35, crossing: 0.95, health: 100, hw: 0.85, hl: 1.75, height: 1.3 },
+  { id: 'liftedtruck', tier: 2, blue: true, name: 'Lifted Truck', price: 490, color: 0x1d5bbf, evilColor: 0xc9a66b, fixedLivery: true, model: 'liftedtruck',
+    maxSpeed: 30.5, accel: 10, crossing: 0.95, health: 190, mass: 1.6, hw: 1.12, hl: 2.75, height: 2.65 },
   // ---- tier 3
   { id: 'hearse', tier: 3, name: 'Hearse', price: 260, color: 0x151515, evilColor: 0xf2f2f2, fixedLivery: true, model: 'hearse',
     maxSpeed: 33, accel: 10, crossing: 0.4, health: 170, hw: 1.0, hl: 2.8, height: 1.65 },
@@ -55,6 +82,15 @@ export const CARS = [
     maxSpeed: 34, accel: 11, crossing: 0.95, health: 215, hw: 1.05, hl: 2.6, height: 2.1 },
   { id: 'hotrod', tier: 3, name: 'Hot Rod', price: 360, color: 0x6a2bb3, evilColor: 0x4b5320, fixedLivery: true, model: 'hotrod',
     maxSpeed: 38, accel: 15, crossing: 0.4, health: 110, hw: 0.9, hl: 2.1, height: 1.2 },
+  // ---- tier 3, Blue Stars
+  { id: 'sleeper', tier: 3, blue: true, name: 'Sleeper Wagon', price: 680, color: 0x5a1f2a, evilColor: 0xc9c3b4, fixedLivery: true, model: 'sleeper',
+    maxSpeed: 38.5, accel: 15, crossing: 0.6, health: 180, hw: 0.92, hl: 2.5, height: 1.45 },
+  { id: 'rally', tier: 3, blue: true, name: 'Rally Car', price: 720, color: 0x1d3f9e, evilColor: 0xe24a8c, fixedLivery: true, model: 'rally',
+    maxSpeed: 39, accel: 16, agility: 1.35, crossing: 0.95, health: 130, hw: 0.9, hl: 2.2, height: 1.45 },
+  { id: 'towtruck', tier: 3, blue: true, name: 'Tow Truck', price: 750, color: 0xeeeeee, evilColor: 0x2a6fb8, fixedLivery: true, model: 'towtruck',
+    maxSpeed: 36, accel: 10, crossing: 0.8, health: 220, mass: 2.0, hw: 1.05, hl: 2.85, height: 2.1 },
+  { id: 'rotary', tier: 3, blue: true, name: 'Rotary Coupe', price: 780, color: 0xf2c218, evilColor: 0x1f8a5c, fixedLivery: true, model: 'rotary',
+    maxSpeed: 40, accel: 17, agility: 1.45, crossing: 0.3, health: 120, hw: 0.88, hl: 2.15, height: 1.2 },
   // ---- tier 4
   { id: 'taxi', tier: 4, name: 'Taxi', price: 400, color: 0xffc81a, evilColor: 0x6b7a2e, fixedLivery: true, model: 'taxi',
     maxSpeed: 38, accel: 12, crossing: 0.6, health: 210, hw: 1.0, hl: 2.55, height: 1.6 },
@@ -73,6 +109,13 @@ export const CARS = [
   { id: 'evsaloon', tier: 5, name: 'EV Saloon', price: 800, color: 0xe8e4dc, evilColor: 0x2b3440, fixedLivery: true, model: 'evsaloon',
     maxSpeed: 45, accel: 22, crossing: 0.35, health: 150, hw: 0.98, hl: 2.5, height: 1.4 },
   // ---- and the tank, in a class of its own
+  // ---- tier 5, Blue Stars
+  { id: 'superlowrider', tier: 5, blue: true, name: 'Super Lowrider', price: 1200, color: 0x1a3cff, evilColor: 0x5a0a2a, fixedLivery: true, model: 'superlowrider',
+    maxSpeed: 47, accel: 16, crossing: 0.15, health: 260, hw: 1.0, hl: 2.5, height: 1.1 },
+  { id: 'classicgt', tier: 5, blue: true, name: 'Classic GT', price: 1250, color: 0x1f4d36, evilColor: 0xb0121c, fixedLivery: true, model: 'classicgt',
+    maxSpeed: 48, accel: 18, agility: 1.4, crossing: 0.35, health: 190, hw: 0.9, hl: 2.3, height: 1.25 },
+  { id: 'sixbysix', tier: 5, blue: true, name: '6x6', price: 1350, color: 0xe2dccc, evilColor: 0x4b5320, fixedLivery: true, model: 'sixbysix',
+    maxSpeed: 46.5, accel: 13, crossing: 1, health: 420, mass: 2.4, hw: 1.15, hl: 3.0, height: 2.45 },
   { id: 'tank', name: 'Tank', price: 5000, color: 0x4b5a2a, evilColor: 0x2a2d33, tank: true, corner: true,
     maxSpeed: 46, accel: 8, crossing: 1, health: 100, hw: 1.25, hl: 2.3, height: 1.9 }, // (TANK RAGE's top speed: CONFIG.tankMaxSpeed)
 ];
@@ -82,7 +125,7 @@ export const LEVEL_CARS = {
   ufo: { id: 'ufo', name: 'UFO', price: 0, color: 0xc9d2dc, evilColor: 0x4a3a66, ufo: true, noWheels: true,
     maxSpeed: 58, accel: 30, crossing: 1, agility: 2.8, health: 100, hw: 1.3, hl: 1.3, height: 1.2 },
   // a Formula 1 car: very fast, quick off the line, nimble, low, and no good over a kerb
-  f1: { id: 'f1', name: 'F1 Car', price: 0, color: 0xd8262b, evilColor: 0x151515, model: 'f1',
+  f1: { id: 'f1', name: 'F1 Car', price: 0, color: 0xd8262b, evilColor: 0x151515, model: 'f1', shotBack: 1.2,
     maxSpeed: 75, accel: 20, crossing: 0.2, agility: 1.5, health: 160, hw: 0.95, hl: 2.6, height: 1.0 },
   // a GT road car, raced: slower than an F1 car down the straights and slower off the line, but
   // tougher, heavier in the bends, and happier over a kerb

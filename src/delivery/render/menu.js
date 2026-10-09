@@ -3,10 +3,10 @@
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, setRaceClass, RACE_CLASSES } from '../levels.js';
-import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, stars } from '../cars.js';
+import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
-import { Garage } from './garage.js';
+import { Garage, withStars } from './garage.js';
 import { Sound } from './audio.js';
 import { Input } from '../input.js';
 
@@ -38,7 +38,7 @@ const card = (title, lines, { current = false, disabled = false, onPick, image }
     button.append(picture, words);
   }
   const heading = document.createElement('strong');
-  heading.textContent = title;
+  heading.replaceChildren(...[].concat(title)); // (words, or nodes: a car's name with its coloured stars)
   words.appendChild(heading);
   for (const text of lines) {
     const line = document.createElement('span');
@@ -108,7 +108,7 @@ const draw = () => {
     if (picked) levelBox.scrollTo({ left: picked.offsetLeft - (levelBox.clientWidth - picked.offsetWidth) / 2, behavior: 'smooth' });
   }
 
-  shopBox.replaceChildren(card(CAR.name + (CAR.tier ? ' ' + stars(CAR) : ''), [
+  shopBox.replaceChildren(card(withStars(CAR), [
     'Top speed ' + Math.round(CAR.maxSpeed * 3.6) + ' km/h',
     'Acceleration ' + CAR.accel + '  |  Health ' + CAR.health,
     LEVEL.car ? 'You must use this vehicle on this level. The garage car returns on other levels.' : 'Open the garage to change or buy cars',

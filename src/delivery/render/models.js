@@ -618,6 +618,564 @@ export const MODELS = {
     return group;
   },
 
+  // A Japanese kei truck: a tiny cab-over with a flat, near-upright face, a long, low flatbed
+  // with fold-down sides behind it, and little wheels right at the corners. It bobs as it idles
+  keitruck: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.27;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), steel = lambert(0xc4c8ce);
+    const body = new THREE.Group(); group.add(body);
+    const cab = box(body, paint, w, 1.1, l * 0.36, 0, 1.0, l * 0.32);              // the cab, right over the front wheels
+    box(body, glass, w * 0.86, 0.5, 0.04, 0, 1.28, l / 2 + 0.01);                   // its upright windscreen, flush in the face
+    for (const side of [-1, 1]) box(body, glass, 0.04, 0.42, l * 0.24, side * (w / 2 + 0.005), 1.3, l * 0.31); // door glass
+    box(body, paint, w * 1.02, 0.06, l * 0.37, 0, 1.57, l * 0.32);                 // the roof's lip
+    box(body, trim, w * 0.9, 0.6, 0.06, 0, 1.14, l * 0.14);                        // the cab's back panel
+    box(body, trim, w * 0.94, 0.12, l * 0.66, 0, 0.5, -l * 0.17);                  // the flatbed's floor
+    for (const side of [-1, 1]) box(body, paint, 0.05, 0.3, l * 0.64, side * (w / 2 - 0.03), 0.71, -l * 0.17); // its drop sides
+    box(body, paint, w * 0.94, 0.3, 0.05, 0, 0.71, -l / 2 + 0.03);                  // and tailgate
+    box(body, trim, 0.06, 0.5, 0.06, -w * 0.3, 1.0, l * 0.14 - 0.06);               // the headboard's rail
+    box(body, trim, 0.06, 0.5, 0.06, w * 0.3, 1.0, l * 0.14 - 0.06);
+    box(body, trim, w * 0.62, 0.06, 0.06, 0, 1.24, l * 0.14 - 0.06);
+    for (const side of [-1, 1]) {
+      box(body, LAMP, w * 0.2, 0.14, 0.06, side * w * 0.33, 0.66, l / 2 + 0.01);   // headlamps low in the face
+      box(body, TAIL, 0.1, 0.16, 0.06, side * w * 0.4, 0.66, -l / 2 - 0.01);
+      box(body, trim, 0.1, 0.08, 0.1, side * (w / 2 + 0.05), 1.18, l * 0.44);       // mirrors
+      wheel(group, R, 0.2, side * (w / 2 - 0.06), R, l * 0.36, steel);
+      wheel(group, R, 0.2, side * (w / 2 - 0.06), R, -l * 0.3, steel);
+    }
+    box(body, trim, w + 0.02, 0.14, 0.1, 0, 0.42, l / 2 + 0.03);                    // bumper
+    group.userData = { body: cab, animate: (t) => { body.position.y = Math.abs(Math.sin(t * 9)) * 0.015; } };
+    return group;
+  },
+
+  // A small post van: a tall panel van with a short, sloping nose, a rounded high roof, blind rear
+  // sides each wearing a big envelope (its flap in the van's colour) over a pale band, twin rear
+  // doors with another envelope across them, and an amber beacon on the roof that flashes as it idles
+  postvan: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.31;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), band = lambert(0xf2efe6);
+    const front = l * 0.14, scuttle = l * 0.23;                                      // (where the roof ends, and the windscreen's foot)
+    const body = box(group, paint, w, 1.32, front + l / 2, 0, 1.0, (front - l / 2) / 2); // the tall load box, up to the windscreen
+    box(group, paint, w, 0.52, l / 2 - front, 0, 0.6, (front + l / 2) / 2);           // the nose
+    prism(group, paint, w * 0.98, [[l * 0.5, 0.86], [l * 0.36, 1.0], [front, 1.0], [front, 0.86]]); // sloping bonnet
+    const rise = 1.66 - 1.0, run = scuttle - front;
+    screen(group, glass, w * 0.9, 0.05, Math.hypot(rise, run), 0, 1.33, (front + scuttle) / 2, Math.atan2(rise, run)); // the raked windscreen
+    for (const side of [-1, 1]) {
+      box(group, glass, 0.04, 0.4, l * 0.16, side * (w / 2 + 0.005), 1.32, l * 0.05); // cab door glass only
+      box(group, band, 0.03, 0.16, l * 0.9, side * (w / 2 + 0.01), 0.86, 0);         // the pale band down each side
+      box(group, LAMP, w * 0.26, 0.14, 0.06, side * w * 0.3, 0.8, l / 2 + 0.01);     // headlamps
+      box(group, TAIL, 0.1, 0.4, 0.06, side * w * 0.42, 1.2, -l / 2 - 0.01);        // tall tail lamps
+      box(group, trim, 0.12, 0.14, 0.1, side * (w / 2 + 0.06), 1.16, l * 0.2);       // mirrors
+      wheel(group, R, 0.24, side * (w / 2 - 0.05), R, l * 0.33, lambert(0x9da2a8));
+      wheel(group, R, 0.24, side * (w / 2 - 0.05), R, -l * 0.32, lambert(0x9da2a8));
+    }
+    box(group, trim, 0.03, 0.5, 0.04, 0, 0.72, -l / 2 - 0.01);                       // the split in the rear doors, under their envelope
+    box(group, trim, w * 0.5, 0.12, 0.05, 0, 0.6, l / 2 + 0.01);                     // grille
+    box(group, trim, w + 0.04, 0.18, 0.12, 0, 0.36, l / 2 + 0.03);                    // bumpers
+    box(group, trim, w + 0.04, 0.18, 0.12, 0, 0.36, -l / 2 - 0.03);
+    const hump = new THREE.Shape();                                                   // a raised, rounded high roof, side on
+    hump.moveTo(front - 0.05, 1.6);
+    hump.quadraticCurveTo(front - 0.1, 1.86, front - 0.5, 1.88);
+    hump.lineTo(-l * 0.44, 1.88);
+    hump.quadraticCurveTo(-l * 0.49, 1.88, -l * 0.49, 1.6);
+    hump.lineTo(front - 0.05, 1.6);
+    curved(group, paint, w * 0.94, hump, 0.06);
+    for (const side of [-1, 1]) {                                                       // an envelope on each flank:
+      const x = side * (w / 2 + 0.015), z0 = -l * 0.2, top = 1.5, half = 0.4, drop = 0.24;
+      box(group, band, 0.02, 0.5, half * 2, x, top - 0.25, z0);                          // the envelope,
+      for (const dir of [-1, 1]) {                                                       // and its flap, in the van's colour
+        const flap = box(group, paint, 0.03, 0.05, Math.hypot(half, drop), x, top - drop / 2, z0 + dir * half / 2);
+        flap.rotation.x = dir * -Math.atan2(drop, half);
+      }
+    }
+    {                                                                                   // and a third across the rear doors
+      const z = -l / 2 - 0.015, top = 1.5, half = 0.4, drop = 0.24;
+      box(group, band, half * 2, 0.5, 0.02, 0, top - 0.25, z);
+      for (const dir of [-1, 1]) {
+        const flap = box(group, paint, Math.hypot(half, drop), 0.05, 0.03, dir * half / 2, top - drop / 2, z);
+        flap.rotation.z = dir * Math.atan2(drop, half);
+      }
+    }
+    const beacon = new THREE.MeshBasicMaterial({ color: 0xffa31a });                  // an amber beacon on the roof
+    const lamp = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 0.18, 12), beacon);
+    lamp.position.set(0, 2.0, front - 0.6);
+    group.add(lamp);
+    box(group, trim, 0.34, 0.05, 0.34, 0, 1.9, front - 0.6);                             // on its base
+    group.userData = { body, animate: (t) => { beacon.color.setHex((t * 2.5) % 1 < 0.5 ? 0xffa31a : 0x7a4a10); } };
+    return group;
+  },
+
+  // A retro Mini: tiny, upright and round-shouldered, its body one curved side profile with a
+  // contrasting roof floating over a glasshouse all round, big round headlamps either side of a
+  // chrome grille, chrome bumpers, twin bonnet stripes, spot lamps, and little wheels right at the
+  // corners. Good is red with a white roof; Evil seventies orange with a black one. It sits still
+  mini: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, L = car.hl, R = 0.26;
+    const paint = lambert(car.color), glass = lambert(GLASS), chrome = lambert(CHROME), trim = lambert(TRIM);
+    const roofPaint = lambert(0xf4f2ec), stripe = lambert(0xf4f2ec);
+    const shell = new THREE.Shape();                                                  // the body, side on:
+    shell.moveTo(-L * 0.94, 0.24);
+    shell.lineTo(L * 0.92, 0.24);
+    shell.quadraticCurveTo(L, 0.24, L, 0.4);                                          // the front's lower lip
+    shell.quadraticCurveTo(L * 1.01, 0.74, L * 0.88, 0.8);                            // the round nose
+    shell.quadraticCurveTo(L * 0.6, 0.86, L * 0.4, 0.86);                             // the short bonnet
+    shell.lineTo(-L * 0.9, 0.86);                                                     // the waist
+    shell.quadraticCurveTo(-L * 1.0, 0.84, -L, 0.6);                                  // the round tail
+    shell.quadraticCurveTo(-L * 1.0, 0.26, -L * 0.94, 0.24);
+    const body = curved(group, paint, w - 0.06, shell, 0.06);
+    prism(group, glass, w * 0.86, [[L * 0.4, 0.85], [L * 0.2, 1.24], [-L * 0.8, 1.24], [-L * 0.88, 0.85]]); // the glasshouse
+    box(group, roofPaint, w * 0.9, 0.07, L * 1.12, 0, 1.28, -L * 0.3);  // the roof, in the other colour
+    for (const x of [-0.16, 0.16]) box(group, stripe, 0.12, 0.02, L * 0.5, x, 0.875, L * 0.66); // bonnet stripes
+    for (const side of [-1, 1]) {
+      disc(group, LAMP, 0.13, 0.06, side * w * 0.31, 0.64, L + 0.02);               // big round headlamps
+      disc(group, chrome, 0.155, 0.04, side * w * 0.31, 0.64, L + 0.005);           // in chrome rims
+      disc(group, LAMP, 0.08, 0.05, side * w * 0.14, 0.42, L + 0.1);                // spot lamps on the bumper
+      box(group, TAIL, 0.08, 0.2, 0.05, side * w * 0.4, 0.6, -L - 0.02);            // upright tail lamps
+      box(group, chrome, 0.08, 0.06, 0.08, side * (w / 2 + 0.03), 0.98, L * 0.38);   // little round-ish mirrors
+      wheel(group, R, 0.2, side * (w / 2 - 0.06), R, L * 0.74, lambert(0xd0d3d8));
+      wheel(group, R, 0.2, side * (w / 2 - 0.06), R, -L * 0.74, lambert(0xd0d3d8));
+    }
+    box(group, chrome, w * 0.34, 0.24, 0.04, 0, 0.6, L + 0.03);                       // the chrome grille
+    for (let i = 0; i < 4; i++) box(group, trim, w * 0.32, 0.02, 0.03, 0, 0.51 + i * 0.06, L + 0.05);
+    box(group, chrome, w + 0.04, 0.07, 0.08, 0, 0.32, L + 0.06);                      // thin chrome bumpers
+    box(group, chrome, w + 0.04, 0.07, 0.08, 0, 0.32, -L - 0.06);
+    const roofs = { good: 0xf4f2ec, evil: 0x161616 };
+    group.userData = {
+      body,
+      animate: () => {},
+      livery: (evil) => roofPaint.color.setHex(evil ? roofs.evil : roofs.good),
+    };
+    group.userData.livery(false);
+    return group;
+  },
+
+  // A hot hatch (a Golf GTI, more or less): a boxy little three-door, low and square, with an
+  // upright hatch on thick rear pillars, a black grille right across the nose holding four round
+  // lamps and edged in red, black bumpers and rubbing strips, a lip of a roof spoiler. It sits still
+  hothatch: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.3;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), red = lambert(0xd0142c);
+    const body = box(group, paint, w, 0.5, l, 0, 0.58, 0);
+    box(group, paint, w * 0.96, 0.08, l * 0.26, 0, 0.86, l * 0.36);                // the bonnet
+    box(group, glass, w * 0.88, 0.46, l * 0.58, 0, 1.08, -l * 0.16);               // the glasshouse, right to the tail
+    box(group, paint, w * 0.9, 0.07, l * 0.58, 0, 1.34, -l * 0.16);                // roof
+    screen(group, glass, w * 0.86, 0.05, 0.62, 0, 1.07, l * 0.19, 0.6);              // windscreen
+    screen(group, glass, w * 0.86, 0.05, 0.48, 0, 1.08, -l * 0.45, -0.18);           // the upright hatch
+    box(group, trim, w * 0.8, 0.04, 0.16, 0, 1.39, -l * 0.43);                      // the roof spoiler's lip
+    box(group, trim, w * 0.94, 0.24, 0.05, 0, 0.7, l / 2 + 0.01);                   // the grille, right across
+    box(group, red, w * 0.94, 0.03, 0.06, 0, 0.83, l / 2 + 0.02);                   // edged in red
+    for (const side of [-1, 1]) {
+      box(group, paint, 0.08, 0.46, l * 0.16, side * w * 0.445, 1.08, -l * 0.36);   // thick rear pillars
+      box(group, paint, 0.08, 0.46, 0.1, side * w * 0.445, 1.08, l * 0.0);         // and the door's
+      for (const x of [0.22, 0.38]) disc(group, LAMP, 0.085, 0.06, side * w * x, 0.7, l / 2 + 0.03); // four round lamps
+      box(group, TAIL, w * 0.24, 0.16, 0.06, side * w * 0.33, 0.72, -l / 2 - 0.01);
+      box(group, trim, 0.03, 0.1, l * 0.7, side * (w / 2 + 0.01), 0.6, 0);          // rubbing strip
+      box(group, trim, 0.12, 0.09, 0.1, side * (w / 2 + 0.06), 0.96, l * 0.14);     // mirror
+      wheel(group, R, 0.24, side * (w / 2 - 0.04), R, l * 0.31, lambert(0x5d6168));
+      wheel(group, R, 0.24, side * (w / 2 - 0.04), R, -l * 0.31, lambert(0x5d6168));
+    }
+    box(group, trim, w + 0.06, 0.18, 0.16, 0, 0.38, l / 2 + 0.04);                  // black bumpers
+    box(group, trim, w + 0.06, 0.18, 0.16, 0, 0.38, -l / 2 - 0.04);
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
+  // An Aussie ute: a saloon's long nose and cab, then a tub in the body's colour behind it, with a
+  // sports bar over the tub just behind the cab. It sits still
+  ute: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.33;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), chrome = lambert(CHROME);
+    const body = box(group, paint, w, 0.5, l, 0, 0.62, 0);
+    box(group, paint, w * 0.97, 0.08, l * 0.3, 0, 0.9, l * 0.35);                  // the long bonnet
+    box(group, glass, w * 0.88, 0.44, l * 0.24, 0, 1.12, l * 0.02);                // the cab
+    box(group, paint, w * 0.9, 0.07, l * 0.24, 0, 1.37, l * 0.02);                 // its roof
+    screen(group, glass, w * 0.86, 0.05, 0.7, 0, 1.1, l * 0.17, 0.62);               // windscreen
+    box(group, paint, w * 0.88, 0.44, 0.06, 0, 1.12, -l * 0.1);                     // the cab's back,
+    box(group, glass, w * 0.7, 0.28, 0.03, 0, 1.15, -l * 0.1 - 0.035);               // and its little window
+    const tubZ = (-l / 2 - l * 0.1) / 2, tubL = l / 2 - l * 0.1;
+    for (const side of [-1, 1]) box(group, paint, 0.06, 0.25, tubL, side * (w / 2 - 0.03), 1.0, tubZ); // the tub's sides
+    box(group, paint, w, 0.25, 0.06, 0, 1.0, -l / 2 + 0.03);                        // and tailgate
+    box(group, trim, w * 0.9, 0.04, tubL - 0.1, 0, 0.88, tubZ);                     // its floor
+    for (const side of [-1, 1]) box(group, chrome, 0.06, 0.45, 0.06, side * w * 0.4, 1.1, -l * 0.1 - 0.25); // the sports bar
+    box(group, chrome, w * 0.84, 0.06, 0.06, 0, 1.33, -l * 0.1 - 0.25);
+    box(group, trim, w * 0.6, 0.14, 0.05, 0, 0.72, l / 2 + 0.01);                   // grille
+    for (const side of [-1, 1]) {
+      box(group, LAMP, w * 0.2, 0.12, 0.06, side * w * 0.36, 0.74, l / 2 + 0.01);
+      box(group, TAIL, 0.1, 0.24, 0.05, side * w * 0.42, 0.75, -l / 2 - 0.01);
+      box(group, trim, 0.12, 0.09, 0.1, side * (w / 2 + 0.06), 1.0, l * 0.12);      // mirror
+      wheel(group, R, 0.26, side * (w / 2 - 0.05), R, l * 0.32, lambert(0xc4c8ce));
+      wheel(group, R, 0.26, side * (w / 2 - 0.05), R, -l * 0.3, lambert(0xc4c8ce));
+    }
+    box(group, trim, w + 0.04, 0.16, 0.14, 0, 0.42, l / 2 + 0.03);                  // bumpers
+    box(group, trim, w + 0.04, 0.16, 0.14, 0, 0.42, -l / 2 - 0.03);
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
+  // A beach buggy (a Meyers Manx, more or less): a curvy fibreglass tub with no doors and no roof,
+  // flared mudguards swooping over the wheels, a little windscreen, two seats, a roll bar, round
+  // lamps perched on the nose, and the air-cooled engine out in the open at the back, its twin pipes
+  // poking out. Fat tyres behind, skinny ones in front. It rocks as it idles
+  buggy: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, L = car.hl, Rf = 0.3, Rr = 0.36, zf = L * 0.64, zr = -L * 0.6;
+    const paint = lambert(car.color), glass = lambert(0x9fc6d8), trim = lambert(TRIM), chrome = lambert(CHROME);
+    const rig = new THREE.Group(); group.add(rig);                                      // (everything the springs carry)
+    const tub = new THREE.Shape();                                                      // the tub, side on
+    tub.moveTo(-L * 0.82, 0.32);
+    tub.lineTo(L * 0.82, 0.32);
+    tub.quadraticCurveTo(L, 0.34, L * 0.98, 0.56);                                      // the nose
+    tub.quadraticCurveTo(L * 0.95, 0.74, L * 0.8, 0.76);
+    tub.lineTo(L * 0.34, 0.8);                                                          // the bonnet
+    tub.quadraticCurveTo(L * 0.26, 0.8, L * 0.22, 0.62);                                // the cockpit's lip,
+    tub.lineTo(-L * 0.46, 0.62);
+    tub.quadraticCurveTo(-L * 0.52, 0.76, -L * 0.62, 0.76);                             // the deck behind it
+    tub.quadraticCurveTo(-L * 0.82, 0.76, -L * 0.82, 0.32);
+    const body = curved(rig, paint, w * 0.64, tub, 0.06);
+    const guard = (z, r, reach) => {                                                    // a mudguard's arch, side on
+      const g = new THREE.Shape(), lo = 0.4, outer = r + 0.28, inner = r + 0.14;
+      g.moveTo(z + reach, lo);
+      g.quadraticCurveTo(z + reach, r + outer, z, r + outer);
+      g.quadraticCurveTo(z - reach, r + outer, z - reach, lo);
+      g.lineTo(z - reach + 0.12, lo);
+      g.quadraticCurveTo(z - reach + 0.12, r + inner, z, r + inner);
+      g.quadraticCurveTo(z + reach - 0.12, r + inner, z + reach - 0.12, lo);
+      return g;
+    };
+    for (const side of [-1, 1]) {
+      const fender = curved(rig, paint, 0.36, guard(zf, Rf, 0.48), 0.04), back = curved(rig, paint, 0.42, guard(zr, Rr, 0.56), 0.04);
+      fender.position.x = side * (w / 2 - 0.16);
+      back.position.x = side * (w / 2 - 0.19);
+      box(rig, paint, 0.34, 0.06, zf - zr - 1.0, side * (w / 2 - 0.17), 0.42, (zf + zr) / 2); // the running board between
+      wheel(group, Rf, 0.24, side * (w / 2 - 0.16), Rf, zf, chrome);
+      wheel(group, Rr, 0.36, side * (w / 2 - 0.19), Rr, zr, chrome);
+      disc(rig, LAMP, 0.09, 0.08, side * w * 0.18, 0.88, L * 0.68);                    // round lamps on the nose
+      disc(rig, chrome, 0.11, 0.06, side * w * 0.18, 0.88, L * 0.66);
+      box(rig, lambert(0x2b2b2b), 0.4, 0.12, 0.42, side * w * 0.15, 0.68, -L * 0.1);    // the seats
+      box(rig, lambert(0x2b2b2b), 0.4, 0.42, 0.1, side * w * 0.15, 0.88, -L * 0.33);
+      box(rig, chrome, 0.06, 0.74, 0.06, side * w * 0.28, 0.99, -L * 0.42);            // the roll bar
+      for (const x of [0.08, 0.16]) disc(rig, chrome, 0.045, 0.3, side * x, 0.44, -L - 0.1); // twin pipes
+      box(rig, TAIL, 0.12, 0.08, 0.04, side * w * 0.22, 0.66, -L * 0.83);
+    }
+    box(rig, chrome, w * 0.6, 0.06, 0.06, 0, 1.36, -L * 0.42);
+    screen(rig, glass, w * 0.56, 0.03, 0.36, 0, 0.95, L * 0.24, 0.35);                  // the little windscreen
+    box(rig, lambert(0x6b6f75), w * 0.46, 0.3, 0.42, 0, 0.56, -L * 0.88);               // the engine, out in the open
+    box(rig, lambert(0x3a3d42), w * 0.3, 0.14, 0.3, 0, 0.78, -L * 0.86);                // its air cleaner
+    group.userData = { body, animate: (t) => { rig.rotation.x = Math.sin(t * 7) * 0.006; } };
+    return group;
+  },
+
+  // A lifted truck (a late-nineties full-size pickup on a big suspension lift): sky-high on huge
+  // off-road tyres, the chassis, axles and bright yellow shocks all showing underneath, a big-rig
+  // nose with the bonnet standing proud of drooping wings, a chrome crosshair grille, a light bar on
+  // the roof, chrome bumpers and mud flaps. It sits still
+  liftedtruck: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.58, base = 1.3; // (base: the body's underside, high over the tyres)
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), chrome = lambert(CHROME);
+    const shock = lambert(0xf2c418);
+    box(group, trim, w * 0.56, 0.2, l * 0.9, 0, base - 0.12, 0);                       // the chassis rails
+    const body = box(group, paint, w, 0.6, l * 0.98, 0, base + 0.3, 0);               // the body
+    box(group, paint, w * 0.56, 0.12, l * 0.3, 0, base + 0.66, l * 0.33);               // the bonnet, proud of the wings
+    box(group, glass, w * 0.9, 0.55, l * 0.25, 0, base + 0.88, -l * 0.02);              // the cab
+    box(group, paint, w * 0.92, 0.08, l * 0.25, 0, base + 1.19, -l * 0.02);             // its roof
+    screen(group, glass, w * 0.88, 0.05, 0.75, 0, base + 0.87, l * 0.13, 0.7);           // windscreen
+    box(group, paint, w * 0.9, 0.55, 0.06, 0, base + 0.88, -l * 0.145);                // the cab's back,
+    box(group, glass, w * 0.7, 0.32, 0.03, 0, base + 0.92, -l * 0.145 - 0.035);         // and its window
+    const bedFront = -l * 0.145 - 0.05, bedZ = (bedFront - l / 2) / 2, bedL = bedFront + l / 2;
+    for (const side of [-1, 1]) box(group, paint, 0.08, 0.45, bedL, side * (w / 2 - 0.04), base + 0.8, bedZ); // the bed's sides
+    box(group, paint, w, 0.45, 0.08, 0, base + 0.8, -l / 2 + 0.04);                    // and tailgate
+    box(group, trim, w * 0.9, 0.04, bedL - 0.1, 0, base + 0.6, bedZ);                  // its floor
+    box(group, trim, w * 0.8, 0.1, 0.14, 0, base + 1.29, 0);                           // the light bar
+    box(group, LAMP, w * 0.74, 0.06, 0.02, 0, base + 1.29, 0.08);
+    box(group, trim, w * 0.5, 0.46, 0.05, 0, base + 0.36, l / 2 + 0.01);               // the grille,
+    box(group, chrome, 0.1, 0.46, 0.07, 0, base + 0.36, l / 2 + 0.02);                 // its chrome crosshair
+    box(group, chrome, w * 0.5, 0.09, 0.07, 0, base + 0.36, l / 2 + 0.02);
+    for (const y of [0.13, 0.59]) box(group, chrome, w * 0.54, 0.05, 0.07, 0, base + y, l / 2 + 0.02); // and surround
+    for (const side of [-1, 1]) box(group, chrome, 0.05, 0.5, 0.07, side * w * 0.26, base + 0.36, l / 2 + 0.02);
+    box(group, chrome, w + 0.1, 0.22, 0.16, 0, base - 0.02, l / 2 + 0.06);             // chrome bumpers
+    box(group, chrome, w + 0.1, 0.22, 0.16, 0, base - 0.02, -l / 2 - 0.06);
+    for (const z of [l * 0.33, -l * 0.3]) {
+      const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, w, 8), trim);    // an axle
+      axle.rotation.z = Math.PI / 2;
+      axle.position.set(0, R, z);
+      group.add(axle);
+      for (const side of [-1, 1]) {
+        const s = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, base - R, 8), shock); // a yellow shock, axle up to frame
+        s.position.set(side * w * 0.3, (base + R) / 2 - 0.05, z + 0.25);
+        group.add(s);
+        wheel(group, R, 0.42, side * (w / 2 + 0.06), R, z, chrome);
+      }
+    }
+    for (const side of [-1, 1]) {
+      box(group, LAMP, w * 0.18, 0.2, 0.06, side * w * 0.37, base + 0.38, l / 2 + 0.01);
+      box(group, TAIL, 0.1, 0.36, 0.05, side * w * 0.44, base + 0.8, -l / 2 - 0.01);
+      box(group, trim, 0.1, 0.3, 0.22, side * (w / 2 + 0.1), base + 0.9, l * 0.12);    // big towing mirrors
+      box(group, trim, 0.4, 0.62, 0.03, side * (w / 2 + 0.06), base - 0.4, -l * 0.3 - R - 0.12); // mud flaps
+    }
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
+  // A rally car (a WRX, more or less): a four-door saloon on gold wheels with a scoop on the bonnet, a
+  // tall wing on the boot, a roof vent, fog lamps in the bumper, white roundels on the doors and red
+  // mud flaps behind every wheel. It sits still
+  rally: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.33;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), gold = lambert(0xd9b03a);
+    const white = lambert(0xf4f4f4), red = lambert(0xc8102e);
+    const body = box(group, paint, w, 0.5, l, 0, 0.62, 0);
+    box(group, paint, w * 0.96, 0.08, l * 0.3, 0, 0.9, l * 0.35);                   // bonnet
+    box(group, trim, w * 0.3, 0.1, 0.42, 0, 0.98, l * 0.3);                          // its scoop
+    box(group, glass, w * 0.86, 0.44, l * 0.36, 0, 1.12, -l * 0.02);                // the cabin
+    box(group, paint, w * 0.88, 0.07, l * 0.36, 0, 1.37, -l * 0.02);                // roof
+    box(group, trim, w * 0.24, 0.06, 0.3, 0, 1.42, l * 0.04);                        // roof vent
+    screen(group, glass, w * 0.84, 0.05, 0.66, 0, 1.1, l * 0.19, 0.6);               // windscreen
+    screen(group, glass, w * 0.84, 0.05, 0.6, 0, 1.1, -l * 0.24, -0.55);             // rear screen
+    box(group, paint, w * 0.96, 0.06, l * 0.2, 0, 0.9, -l * 0.39);                  // the boot
+    for (const side of [-1, 1]) box(group, trim, 0.06, 0.3, 0.12, side * w * 0.38, 1.06, -l * 0.45); // the wing's posts
+    box(group, paint, w * 0.94, 0.05, 0.36, 0, 1.22, -l * 0.45);                    // the tall wing
+    for (const side of [-1, 1]) {
+      const roundel = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 16), white); // a door roundel
+      roundel.rotation.z = Math.PI / 2;
+      roundel.position.set(side * (w / 2 + 0.01), 0.66, l * 0.02);
+      group.add(roundel);
+      box(group, LAMP, w * 0.2, 0.12, 0.06, side * w * 0.34, 0.76, l / 2 + 0.01);  // headlamps
+      disc(group, LAMP, 0.08, 0.06, side * w * 0.3, 0.44, l / 2 + 0.07);            // fog lamps in the bumper
+      box(group, TAIL, w * 0.22, 0.12, 0.06, side * w * 0.34, 0.76, -l / 2 - 0.01);
+      box(group, trim, 0.12, 0.09, 0.1, side * (w / 2 + 0.06), 1.0, l * 0.13);     // mirror
+      for (const z of [0.32, -0.31]) {
+        wheel(group, R, 0.26, side * (w / 2 - 0.05), R, l * z, gold);
+        box(group, red, 0.3, 0.28, 0.03, side * (w / 2 - 0.05), 0.24, l * z - R - 0.08); // mud flap
+      }
+    }
+    box(group, trim, w * 0.5, 0.14, 0.05, 0, 0.72, l / 2 + 0.01);                   // grille
+    box(group, trim, w + 0.04, 0.2, 0.14, 0, 0.42, l / 2 + 0.03);                   // bumpers
+    box(group, trim, w + 0.04, 0.2, 0.14, 0, 0.42, -l / 2 - 0.03);
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
+  // A rotary coupe (an RX-7, more or less): low and all curves, one smooth side profile from a
+  // low, pointed nose over swelling wings to a short, rounded tail, a glass bubble of a cabin, pop-up
+  // headlamps standing up out of the bonnet, a hoop of a spoiler and a tail lamp bar. It sits still
+  rotary: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, L = car.hl, R = 0.31;
+    const paint = lambert(car.color), glass = lambert(0x1a2230), trim = lambert(TRIM);
+    const shell = new THREE.Shape();                                                   // the body, side on:
+    shell.moveTo(-L * 0.94, 0.28);
+    shell.lineTo(L * 0.9, 0.28);
+    shell.quadraticCurveTo(L, 0.28, L, 0.4);                                          // the low nose
+    shell.quadraticCurveTo(L * 0.99, 0.56, L * 0.8, 0.6);
+    shell.quadraticCurveTo(L * 0.5, 0.66, L * 0.3, 0.76);                             // up the bonnet to the wings
+    shell.lineTo(-L * 0.7, 0.8);
+    shell.quadraticCurveTo(-L * 0.98, 0.8, -L, 0.6);                                  // the short, round tail
+    shell.quadraticCurveTo(-L, 0.3, -L * 0.94, 0.28);
+    const body = curved(group, paint, w - 0.08, shell, 0.06);
+    const bubble = new THREE.Shape();                                                  // the glass bubble
+    bubble.moveTo(L * 0.34, 0.74);
+    bubble.bezierCurveTo(L * 0.12, 1.06, -L * 0.04, 1.14, -L * 0.24, 1.14);
+    bubble.bezierCurveTo(-L * 0.5, 1.14, -L * 0.66, 1.0, -L * 0.78, 0.79);
+    bubble.lineTo(L * 0.34, 0.74);
+    curved(group, glass, w * 0.78, bubble, 0.05);
+    for (const side of [-1, 1]) {
+      box(group, paint, 0.34, 0.12, 0.26, side * w * 0.3, 0.72, L * 0.7);             // the pop-up headlamps, up,
+      box(group, LAMP, 0.3, 0.09, 0.02, side * w * 0.3, 0.72, L * 0.7 + 0.135);       // and lit
+      box(group, trim, 0.05, 0.12, 0.06, side * w * 0.36, 0.86, -L * 0.86);           // the spoiler's posts
+      wheel(group, R, 0.26, side * (w / 2 - 0.06), R, L * 0.66, lambert(0xc6cad0));
+      wheel(group, R, 0.28, side * (w / 2 - 0.06), R, -L * 0.62, lambert(0xc6cad0));
+    }
+    box(group, paint, w * 0.8, 0.04, 0.2, 0, 0.92, -L * 0.86);                        // the hoop of a spoiler
+    box(group, TAIL, w * 0.8, 0.08, 0.04, 0, 0.66, -L - 0.03);                        // the tail lamp bar
+    box(group, trim, w * 0.5, 0.08, 0.04, 0, 0.36, L + 0.03);                         // the mouth under the nose
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
+  // A sleeper wagon (a Swedish brick of an estate, more or less): long, square and plain, but sitting
+  // low on dark alloys, with a lip under the nose, a glasshouse right to the upright tailgate, roof
+  // rails, and twin fat exhaust tips the only real giveaway. It sits still
+  sleeper: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.32;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), chrome = lambert(CHROME);
+    const body = box(group, paint, w, 0.5, l, 0, 0.56, 0);
+    box(group, paint, w * 0.96, 0.08, l * 0.28, 0, 0.84, l * 0.36);                 // the long, flat bonnet
+    box(group, glass, w * 0.88, 0.46, l * 0.6, 0, 1.06, -l * 0.12);                 // the long glasshouse
+    box(group, paint, w * 0.9, 0.07, l * 0.6, 0, 1.32, -l * 0.12);                  // roof
+    screen(group, glass, w * 0.86, 0.05, 0.62, 0, 1.06, l * 0.2, 0.55);              // windscreen
+    screen(group, glass, w * 0.86, 0.05, 0.48, 0, 1.06, -l * 0.43, -0.12);           // the upright tailgate
+    for (const side of [-1, 1]) {
+      box(group, trim, 0.05, 0.05, l * 0.56, side * w * 0.4, 1.38, -l * 0.12);      // roof rails
+      for (const z of [0.12, -0.1]) box(group, paint, 0.08, 0.46, 0.1, side * w * 0.445, 1.06, l * z); // pillars
+      box(group, paint, 0.08, 0.46, l * 0.1, side * w * 0.445, 1.06, -l * 0.38);    // the D-pillars
+      box(group, LAMP, w * 0.26, 0.16, 0.06, side * w * 0.3, 0.68, l / 2 + 0.01);   // square headlamps
+      box(group, TAIL, 0.12, 0.36, 0.06, side * w * 0.42, 0.88, -l / 2 - 0.01);     // tall tail lamps
+      box(group, trim, 0.12, 0.09, 0.1, side * (w / 2 + 0.06), 0.94, l * 0.18);     // mirror
+      disc(group, chrome, 0.07, 0.2, side * 0.18, 0.3, -l / 2 - 0.08);               // twin fat exhaust tips
+      wheel(group, R, 0.28, side * (w / 2 - 0.05), R, l * 0.32, lambert(0x3a3d42));
+      wheel(group, R, 0.28, side * (w / 2 - 0.05), R, -l * 0.31, lambert(0x3a3d42));
+    }
+    box(group, chrome, w * 0.5, 0.18, 0.05, 0, 0.66, l / 2 + 0.01);                 // the plain grille
+    box(group, trim, w + 0.04, 0.16, 0.14, 0, 0.36, l / 2 + 0.03);                   // bumpers,
+    box(group, trim, w + 0.04, 0.16, 0.14, 0, 0.36, -l / 2 - 0.03);
+    box(group, trim, w * 0.9, 0.05, 0.16, 0, 0.26, l / 2 + 0.08);                     // and the lip under the nose
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
+  // A tow truck (an eighties one-ton wrecker): a square-jawed pickup cab with a chrome grille, an amber
+  // light bar on the roof, tool boxes either side behind it, and a boom raised over the back with its
+  // cable and hook swinging, and the sling bar slung low behind. The hook sways as it idles
+  towtruck: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.42;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), chrome = lambert(CHROME);
+    const amber = new THREE.MeshBasicMaterial({ color: 0xffa31a }), boomPaint = lambert(0xe8b81a);
+    box(group, trim, w * 0.6, 0.2, l * 0.9, 0, 0.62, 0);                              // the chassis rails
+    const body = box(group, paint, w * 0.92, 0.5, l * 0.28, 0, 1.0, l * 0.36);       // the bonnet and wings
+    box(group, paint, w, 0.6, l * 0.2, 0, 1.0, l * 0.12);                            // the cab, below the glass
+    box(group, glass, w * 0.92, 0.42, l * 0.18, 0, 1.5, l * 0.12);                  // its glass
+    box(group, paint, w * 0.94, 0.07, l * 0.2, 0, 1.74, l * 0.12);                  // its roof
+    screen(group, glass, w * 0.9, 0.05, 0.5, 0, 1.47, l * 0.215, 0.3);               // windscreen
+    box(group, trim, w * 0.8, 0.08, 0.2, 0, 1.82, l * 0.12);                         // the light bar's base
+    for (const side of [-1, 1]) box(group, amber, w * 0.3, 0.1, 0.16, side * w * 0.22, 1.89, l * 0.12); // and its lamps
+    for (const side of [-1, 1]) box(group, paint, 0.42, 0.62, l * 0.42, side * (w / 2 - 0.21), 1.0, -l * 0.24); // the tool boxes
+    box(group, trim, w * 0.5, 0.06, l * 0.42, 0, 0.78, -l * 0.24);                   // the deck between them
+    const foot = [0, 1.2, -l * 0.1], tip = [0, 2.3, -l * 0.5 - 0.2];                 // the boom, from its foot to its tip
+    const run = foot[2] - tip[2], rise = tip[1] - foot[1];
+    const boom = box(group, boomPaint, 0.2, 0.2, Math.hypot(run, rise), 0, (foot[1] + tip[1]) / 2, (foot[2] + tip[2]) / 2);
+    boom.rotation.x = Math.atan2(rise, run);
+    box(group, boomPaint, 0.3, 0.5, 0.3, 0, 1.0, -l * 0.08);                          // its base
+    const hook = new THREE.Group();                                                    // the cable and hook, swinging from the tip
+    hook.position.set(...tip);
+    group.add(hook);
+    box(hook, trim, 0.03, 1.1, 0.03, 0, -0.55, 0);
+    box(hook, chrome, 0.12, 0.16, 0.06, 0, -1.15, 0);
+    box(group, trim, w * 0.7, 0.12, 0.12, 0, 0.5, -l / 2 - 0.25);                     // the sling bar,
+    for (const side of [-1, 1]) box(group, trim, 0.04, 0.04, 0.3, side * w * 0.3, 0.58, -l / 2 - 0.1); // on its arms
+    box(group, chrome, w * 0.5, 0.36, 0.05, 0, 1.0, l / 2 + 0.01);                    // the chrome grille
+    for (const side of [-1, 1]) {
+      box(group, LAMP, w * 0.14, 0.18, 0.06, side * w * 0.36, 1.02, l / 2 + 0.01);
+      box(group, TAIL, 0.1, 0.24, 0.05, side * w * 0.42, 1.0, -l * 0.45 - 0.01);
+      box(group, trim, 0.1, 0.26, 0.18, side * (w / 2 + 0.1), 1.5, l * 0.2);          // tall mirrors
+      wheel(group, R, 0.32, side * (w / 2 - 0.08), R, l * 0.34, chrome);
+      wheel(group, R, 0.42, side * (w / 2 - 0.12), R, -l * 0.28, chrome);
+    }
+    box(group, chrome, w + 0.06, 0.2, 0.14, 0, 0.66, l / 2 + 0.04);                    // the front bumper
+    group.userData = { body, animate: (t) => { hook.rotation.x = Math.sin(t * 1.6) * 0.12; } };
+    return group;
+  },
+
+  // A six-wheeled luxury off-roader (a G-Wagen 6x6, more or less): a boxy, upright cab on three
+  // axles of huge tyres on portal hubs, round lamps with indicators perched on the wings, black
+  // flares over every wheel, a light bar on a roof rack, and an open bed behind with a roll bar and a
+  // spare standing in it. It sits still
+  sixbysix: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.55, base = 1.15;
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), chrome = lambert(CHROME);
+    const amber = lambert(0xffa31a);
+    box(group, trim, w * 0.56, 0.2, l * 0.92, 0, base - 0.2, 0);                        // the chassis rails
+    const body = box(group, paint, w, 0.55, l * 0.98, 0, base + 0.275, 0);             // the body
+    box(group, paint, w * 0.9, 0.12, l * 0.24, 0, base + 0.61, l * 0.37);               // the flat bonnet
+    const cabFront = l * 0.25, cabBack = l * 0.02, cabZ = (cabFront + cabBack) / 2, cabL = cabFront - cabBack;
+    box(group, glass, w * 0.92, 0.55, cabL, 0, base + 0.85, cabZ);                     // the upright cab
+    box(group, paint, w * 0.94, 0.08, cabL, 0, base + 1.16, cabZ);                     // its roof
+    screen(group, glass, w * 0.86, 0.05, 0.56, 0, base + 0.86, cabFront + 0.03, 0.12);  // the near-upright windscreen
+    for (const z of [cabFront - 0.05, cabZ, cabBack + 0.05]) for (const side of [-1, 1]) box(group, paint, 0.08, 0.55, 0.1, side * w * 0.455, base + 0.85, z); // pillars
+    box(group, trim, w * 0.9, 0.06, cabL, 0, base + 1.25, cabZ);                         // the roof rack,
+    box(group, LAMP, w * 0.7, 0.08, 0.03, 0, base + 1.3, cabFront - 0.05);              // and its light bar
+    const bedZ = (cabBack - l / 2) / 2, bedL = cabBack + l / 2;
+    for (const side of [-1, 1]) box(group, paint, 0.08, 0.4, bedL, side * (w / 2 - 0.04), base + 0.75, bedZ); // the bed's sides
+    box(group, paint, w, 0.4, 0.08, 0, base + 0.75, -l / 2 + 0.04);                     // and tailgate
+    box(group, trim, w * 0.9, 0.04, bedL - 0.1, 0, base + 0.56, bedZ);                  // its floor
+    for (const side of [-1, 1]) box(group, trim, 0.07, 0.6, 0.07, side * w * 0.42, base + 0.86, cabBack - 0.35); // the roll bar
+    box(group, trim, w * 0.9, 0.07, 0.07, 0, base + 1.16, cabBack - 0.35);
+    const spare = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.3, 16), lambert(0x141414)); // the spare, standing in the bed
+    spare.rotation.x = Math.PI / 2;
+    spare.position.set(0, base + 1.0, cabBack - 0.75);
+    group.add(spare);
+    box(group, trim, w * 0.5, 0.34, 0.05, 0, base + 0.3, l / 2 + 0.01);                 // the grille,
+    for (const y of [0.2, 0.3, 0.4]) box(group, chrome, w * 0.46, 0.03, 0.06, 0, base + y, l / 2 + 0.02); // its slats
+    box(group, trim, w + 0.1, 0.24, 0.2, 0, base - 0.02, l / 2 + 0.08);                 // the bumpers
+    box(group, trim, w + 0.1, 0.24, 0.2, 0, base - 0.02, -l / 2 - 0.08);
+    for (const side of [-1, 1]) {
+      disc(group, LAMP, 0.13, 0.06, side * w * 0.36, base + 0.32, l / 2 + 0.03);         // round lamps,
+      disc(group, chrome, 0.16, 0.04, side * w * 0.36, base + 0.32, l / 2 + 0.01);
+      box(group, amber, 0.14, 0.1, 0.16, side * w * 0.4, base + 0.61, l / 2 - 0.12);     // indicators perched on the wings
+      box(group, TAIL, 0.1, 0.3, 0.05, side * w * 0.44, base + 0.3, -l / 2 - 0.01);
+      box(group, trim, 0.1, 0.24, 0.2, side * (w / 2 + 0.08), base + 0.85, cabFront - 0.1); // mirrors
+      box(group, trim, 0.3, 0.06, l * 0.3, side * (w / 2 + 0.1), base - 0.05, cabZ);     // side step
+    }
+    for (const z of [l * 0.34, -l * 0.14, -l * 0.36]) {
+      const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, w * 0.9, 8), trim); // an axle,
+      axle.rotation.z = Math.PI / 2;
+      axle.position.set(0, R + 0.18, z);
+      group.add(axle);
+      for (const side of [-1, 1]) {
+        box(group, trim, 0.22, 0.4, 0.3, side * (w / 2 - 0.2), R + 0.08, z);             // its portal hubs
+        box(group, trim, 0.26, 0.12, 1.3, side * (w / 2 + 0.06), base + 0.04, z);       // a flare over the wheel
+        wheel(group, R, 0.44, side * (w / 2 + 0.02), R, z, lambert(0x3a3d42));
+      }
+    }
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
+  // A classic GT (an E-Type, more or less): all curves, a very long bonnet with a power bulge down its
+  // middle, a small oval mouth, faired-in headlamps, a fastback glass canopy set right back, slim
+  // chrome bumperettes, and wire wheels with knock-off spinners. It sits still
+  classicgt: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, L = car.hl, R = 0.32;
+    const paint = lambert(car.color), glass = lambert(0x1a2230), trim = lambert(TRIM), chrome = lambert(CHROME);
+    const shell = new THREE.Shape();                                                    // the body, side on:
+    shell.moveTo(-L * 0.92, 0.26);
+    shell.lineTo(L * 0.86, 0.26);
+    shell.quadraticCurveTo(L, 0.26, L, 0.4);                                           // the chin, under the mouth
+    shell.quadraticCurveTo(L, 0.6, L * 0.84, 0.64);                                    // the rounded nose
+    shell.quadraticCurveTo(L * 0.4, 0.78, L * 0.02, 0.8);                              // the very long bonnet
+    shell.lineTo(-L * 0.74, 0.8);
+    shell.quadraticCurveTo(-L * 0.98, 0.78, -L, 0.56);                                 // the round tail
+    shell.quadraticCurveTo(-L, 0.28, -L * 0.92, 0.26);
+    const body = curved(group, paint, w - 0.08, shell, 0.06);
+    const bulge = new THREE.Shape();                                                    // the power bulge
+    bulge.moveTo(L * 0.82, 0.6);
+    bulge.quadraticCurveTo(L * 0.5, 0.9, L * 0.06, 0.9);
+    bulge.lineTo(L * 0.06, 0.7);
+    bulge.lineTo(L * 0.82, 0.6);
+    curved(group, paint, 0.5, bulge, 0.04);
+    const canopy = new THREE.Shape();                                                   // the fastback canopy, set back
+    canopy.moveTo(L * 0.04, 0.78);
+    canopy.bezierCurveTo(-L * 0.1, 1.06, -L * 0.22, 1.12, -L * 0.36, 1.12);
+    canopy.bezierCurveTo(-L * 0.58, 1.12, -L * 0.7, 0.98, -L * 0.84, 0.79);
+    canopy.lineTo(L * 0.04, 0.78);
+    curved(group, glass, w * 0.74, canopy, 0.05);
+    box(group, trim, w * 0.3, 0.14, 0.05, 0, 0.42, L + 0.01);                           // the oval mouth,
+    box(group, chrome, w * 0.32, 0.03, 0.07, 0, 0.42, L + 0.02);                        // with its bar
+    for (const side of [-1, 1]) {
+      disc(group, LAMP, 0.13, 0.08, side * w * 0.29, 0.53, L * 0.99);                    // faired-in headlamps,
+      disc(group, glass, 0.16, 0.05, side * w * 0.29, 0.53, L * 0.97);                   // in their dark recesses
+      box(group, chrome, w * 0.3, 0.05, 0.08, side * w * 0.3, 0.3, L + 0.04);           // slim bumperettes, front
+      box(group, chrome, w * 0.32, 0.05, 0.08, side * w * 0.28, 0.32, -L - 0.04);       // and back
+      box(group, TAIL, 0.1, 0.08, 0.04, side * w * 0.36, 0.48, -L - 0.01);
+      disc(group, chrome, 0.04, 0.2, side * 0.08, 0.24, -L - 0.08);                      // twin pipes
+      for (const z of [L * 0.68, -L * 0.62]) {
+        wheel(group, R, 0.22, side * (w / 2 - 0.08), R, z, chrome);                     // wire wheels,
+        box(group, lambert(0xe6c15a), 0.04, 0.16, 0.04, side * (w / 2 + 0.06), R, z);   // with knock-off spinners
+      }
+    }
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
   // The Darkvan: a full-size panel van with lifted suspension (the A-Team's, more or less):
   // big off-road tyres, a bull bar, a roof spoiler and a short nose. In its Evil livery it is
   // the A-Team's own: black over grey with the red stripe and red wheels; in its Good one,
@@ -917,9 +1475,13 @@ export const MODELS = {
   // A long, low car on hydraulics: the front end rises and falls in a smooth, endless bob,
   // pivoting about the rear axle. The front wheels hang on their suspension: they lift only
   // part of the way with the nose, so as it rises they droop below the body.
+  // The Super Lowrider (model 'superlowrider') is the same car taken to extremes: flames licking
+  // back along its flanks, gold wire wheels on whitewalls, a chrome continental kit on the tail, a
+  // hood ornament, and neon glowing underneath, cycling through the colours; and it hops far higher,
+  // rocking side to side as it goes (three-wheel motion)
   lowrider: (car) => {
     const group = new THREE.Group();
-    const w = car.hw * 2, l = car.hl * 2, R = 0.36;
+    const w = car.hw * 2, l = car.hl * 2, R = 0.36, extreme = car.model === 'superlowrider';
     const rearZ = -l * 0.3, frontZ = l * 0.32;
 
     // everything that rises with the front end hangs off this, whose origin is the rear axle
@@ -950,15 +1512,54 @@ export const MODELS = {
       box(chassis, chrome, 0.12, 0.08, 0.1, side * (w / 2 + 0.05), 0.46, at(l * 0.12)); // mirrors
       box(chassis, lamp, w * 0.2, 0.16, 0.1, side * w * 0.33, 0.22, at(l / 2 + 0.01));
       box(chassis, tail, w * 0.24, 0.1, 0.1, side * w * 0.3, 0.24, at(-l / 2 - 0.01));
-      wheel(frontAxle, R, 0.3, side * (w / 2 - 0.05), 0, 0);         // front wheels, on their suspension
-      wheel(group, R, 0.3, side * (w / 2 - 0.05), R, rearZ);        // rear wheels stay planted
+      wheel(frontAxle, R, 0.3, side * (w / 2 - 0.05), 0, 0, extreme ? gold : undefined); // front wheels, on their suspension
+      wheel(group, R, 0.3, side * (w / 2 - 0.05), R, rearZ, extreme ? gold : undefined);  // rear wheels stay planted
+      if (extreme) {
+        for (const [parent, y, z] of [[frontAxle, 0, 0], [group, R, rearZ]]) {          // whitewalls
+          const wall = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.8, R * 0.8, 0.31, 16), lambert(0xf4f4f4));
+          wall.rotation.z = Math.PI / 2;
+          wall.position.set(side * (w / 2 - 0.05), y, z);
+          parent.add(wall);
+        }
+        const flame = (colour, x, scale) => prism(chassis, lambert(colour), 0.02, [        // flames, licking back from the nose
+          [l * 0.48, 0.1], [l * 0.48, 0.3], [l * 0.3, 0.36], [l * 0.24, 0.26], [l * 0.1, 0.34], [l * 0.04, 0.22],
+          [-l * 0.1, 0.3], [-l * 0.2, 0.17], [l * 0.1, 0.12],
+        ].map(([z, y]) => [at(z * scale + l * 0.48 * (1 - scale)), 0.2 + (y - 0.2) * scale]), x);
+        flame(0xff7a1a, side * (w / 2 + 0.01), 1);
+        flame(0xffd23f, side * (w / 2 + 0.02), 0.7);
+      }
+    }
+    let glow = null;
+    if (extreme) {
+      box(chassis, chrome, 0.06, 0.12, 0.2, 0, 0.47, at(l * 0.44));                         // the hood ornament
+      const spare = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.16, 16), lambert(0x141414)); // the continental kit:
+      spare.rotation.x = Math.PI / 2;
+      spare.position.set(0, 0.22, at(-l / 2 - 0.16));
+      chassis.add(spare);
+      disc(chassis, chrome, 0.24, 0.18, 0, 0.22, at(-l / 2 - 0.17));                       // the spare in its chrome cover
+      const fade = document.createElement('canvas');                                       // (a soft pool of light: bright in the
+      fade.width = fade.height = 64;                                                      // middle, fading out to nothing)
+      const ctx = fade.getContext('2d'), pool = ctx.createRadialGradient(32, 32, 4, 32, 32, 32);
+      pool.addColorStop(0, 'rgba(255,255,255,1)');
+      pool.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = pool;
+      ctx.fillRect(0, 0, 64, 64);
+      glow = new THREE.MeshBasicMaterial({ color: 0x00e5ff, map: new THREE.CanvasTexture(fade), transparent: true, depthWrite: false }); // the neon underneath, lighting
+      const neon = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.45, l * 1.1), glow);            // the road out past the body
+      neon.rotation.x = -Math.PI / 2;
+      neon.position.set(0, 0.02, 0);
+      group.add(neon);
     }
 
     group.userData = {
       body,
       animate: (t) => {
-        const tilt = 0.27 * (1 - Math.cos(t * 4)) / 2; // 0 (level) .. 0.27 rad, and back, smoothly
+        const tilt = (extreme ? 0.5 : 0.27) * (1 - Math.cos(t * 4)) / 2; // 0 (level) .. 0.27 rad (0.5 hopped up), and back, smoothly
         chassis.rotation.x = -tilt; // (negative pitch lifts the nose)
+        if (extreme) {
+          chassis.rotation.z = Math.sin(t * 2) * 0.12;                                    // rocking side to side,
+          glow.color.setHSL((t * 0.15) % 1, 1, 0.55);                                     // the neon cycling round
+        }
         // the front wheels rise only a third as far as the nose does
         frontAxle.position.y = R + Math.sin(tilt) * (frontZ - rearZ) * 0.3;
       },
@@ -1264,10 +1865,12 @@ export const MODELS = {
     return group;
   },
 };
+MODELS.superlowrider = MODELS.lowrider; // (the lowrider builder makes both: see it)
 
 // ---- the Battlefield's armies (CONFIG.vehicles: jeep, apc, tank; the player's 8x8: LEVEL_CARS.apc) ------
 // Each in its army's colours (the paint: userData.body; a darker second colour on its trim), with a gun that
 // turns (userData.aim(yaw): rad from straight ahead, + to its right) on all but the jeep.
+
 const ARMY_DARK = 0x2b2e26, ARMY_STEEL = 0x4a4d45;
 // a turret on a ring, turning about its middle: the group to add the gun and the hatch to
 const turretOn = (group, y, z) => {
