@@ -1,5 +1,5 @@
 import { CONFIG } from './config.js';
-import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial } from './levels.js';
+import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial, nextOnTab } from './levels.js';
 import { Progress } from './progress.js';
 import { useLevelCar, returnCar } from './cars.js';
 import { Input } from './input.js';
@@ -127,8 +127,9 @@ export const Game = {
   },
   // from the results screen: on to the next level, on the same side
   nextLevel() {
-    if (LEVEL_INDEX < 0 || LEVEL_INDEX + 1 >= LEVELS.length) { this.toMenu(); return; } // (a hidden level has no next)
-    selectLevel(LEVEL_INDEX + 1);
+    const next = LEVEL_INDEX < 0 ? null : nextOnTab(LEVEL); // (a hidden level has no next; a race's next is the next race)
+    if (!next) { this.toMenu(); return; }
+    selectLevel(LEVELS.indexOf(next));
     this.start();
   },
   start() {

@@ -3,6 +3,7 @@
 // there next time. Everything that reads or writes saved progress goes through here, so
 // the storage can be swapped (e.g. for Capacitor Preferences) without touching the game.
 // ============================================================================
+import { LEVELS, isRace } from './levels.js';
 const COOKIE = 'delivery_racer_progress';
 const ONE_YEAR = 60 * 60 * 24 * 365;
 // Saved progress counts unlocked levels by position (see LEVELS), so it remembers which order of
@@ -17,6 +18,9 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
+// races (the lapped levels, on the menu's Races tab) are always open, and never hold up the delivery levels: the
+// count of open levels is always carried on past any race at its edge
+const pastRaces = (unlocked) => { while (unlocked < LEVELS.length && isRace(LEVELS[unlocked - 1])) unlocked++; return unlocked; };
 const fresh = () => ({
   money: 0,        // tips banked
   unlocked: 1,     // how many levels are open, counting from the first
@@ -64,6 +68,7 @@ const read = () => {
       if (data.unlocked >= INSERTED_AT[order - 1]) data.unlocked++;
     }
     data.levelOrder = LEVEL_ORDER;
+    data.unlocked = pastRaces(data.unlocked);
     return data;
   } catch {
     return fresh(); // an unreadable cookie counts as no progress
@@ -85,7 +90,7 @@ export const Progress = {
     const side = this.data.bestTime[evil ? 'evil' : 'good'];
     const record = !(side[id] >= spare);
     if (record) side[id] = spare;
-    this.data.unlocked = Math.max(this.data.unlocked, index + 2);
+    if (!isRace(LEVELS[index])) this.data.unlocked = Math.max(this.data.unlocked, pastRaces(index + 2)); // (a race won opens nothing)
     this.save();
     return record;
   },

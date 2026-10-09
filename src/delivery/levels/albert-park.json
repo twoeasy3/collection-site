@@ -1,0 +1,31 @@
+{
+  "id": "albert-park",
+  "name": "Albert Park",
+  "theme": "albert-park",
+  "car": "f1",
+  "flow": "north",
+  "lanes": 2,
+  "shoulder": 2.5,
+  "shoulderTimer": false,
+  "clock": { "good": 300, "evil": 210 },
+  "tip": 400,
+  "traffic": {},
+  "trafficCount": 0,
+  "oncomingCount": 0,
+  "laps": 3,
+  "grid": { "count": 39, "kind": "f1", "gap": 7, "pace": { "min": 0.96, "max": 1.02 } },
+  "noPackages": true,
+  "understeer": true,
+  "wallDamage": true,
+  "nudge": true,
+  "stands": [{ "from": 20, "to": 240, "side": "right" }, { "from": 30, "to": 230, "side": "left", "pits": true }],
+  "runoff": [],
+  "landmarks": [],
+  "pickups": [{ "type": "wrench", "s": 600, "lane": 1 }, { "type": "wrench", "s": 1500, "lane": 0 }],
+  "segments": [
+    { "length": 400, "curve": 0.0 },
+    { "length": 1000, "curve": 0.0031416 },
+    { "length": 400, "curve": 0.0 },
+    { "length": 1000, "curve": 0.0031416 }
+  ]
+}
