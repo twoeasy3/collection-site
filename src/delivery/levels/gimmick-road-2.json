@@ -10,12 +10,12 @@
   "oncomingCount": 6,
   "segments": [
     { "length": 5400, "curve": 0 },
+    { "length": 100, "curve": 0, "grade": 0.03 },
+    { "length": 150, "curve": -0.004, "grade": 0.04 },
+    { "length": 300, "curve": 0.004, "grade": 0.04 },
+    { "length": 150, "curve": -0.004, "grade": 0.02 },
     { "length": 100, "curve": 0 },
-    { "length": 150, "curve": -0.004 },
-    { "length": 300, "curve": 0.004 },
-    { "length": 150, "curve": -0.004 },
-    { "length": 100, "curve": 0 },
-    { "length": 600, "curve": 0 }
+    { "length": 600, "curve": 0, "grade": -0.03 }
   ],
   "exits": [
     { "exitAt": 5400, "mergeAt": 6200, "out": 70, "bends": { "count": 2, "size": 6 }, "oncoming": false }

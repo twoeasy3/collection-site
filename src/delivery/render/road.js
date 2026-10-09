@@ -93,7 +93,7 @@ const buildTerrain = (colours, others) => {
   }
   for (let k = 0, last = -1; k < others.length; k += 3) {
     const near = last >= 0 && Math.hypot(others[k] - X[last], others[k + 1] - Z[last]) < 12; // (the same road, on from the last)
-    last = point(others[k], 0, others[k + 1], others[k + 2], near ? last : -1);
+    last = point(others[k], others.ys ? others.ys[k / 3] : 0, others[k + 1], others[k + 2], near ? last : -1); // (a side road's own height, on hilly ground)
   }
   const N = X.length, PREV = new Int32Array(N).fill(-1);
   for (let k = 0; k < N; k++) if (NEXT[k] >= 0) PREV[NEXT[k]] = k;
@@ -802,6 +802,7 @@ const buildRoad = () => {
       for (let s = from; s <= to; s += 5) {
         Track.toWorld(s, (lo(s) + hi(s)) / 2, tmp);
         others.push(tmp.x, tmp.z, (hi(s) - lo(s)) / 2 + 1.5);
+        (others.ys || (others.ys = [])).push(tmp.y);
       }
     };
     along(x.side0, x.sideEnd, Track.lo, Track.hi);
@@ -2138,6 +2139,35 @@ const buildRoad = () => {
           const h = (k + 1) * Q.benchHeight + Math.random() * 0.8;
           (k % 2 ? kinds.benchB : kinds.benchA).push([s + 3, beside(q.sg, s + 3, d), h / 2, Q.benchDepth + 0.2, h, 6.3]);
         }
+      }
+      // the hill the face is cut into: land rising behind the benches to the height of the top one, running on
+      // back from there (Q.hill.top m) before it falls away (over Q.hill.back m), and sloping down to the ground
+      // past each end of the quarry (over Q.hill.ends m). Under the benches it climbs with them, inside them
+      {
+        const HL = Q.hill, top = Q.benches * Q.benchHeight, dTop = floorTo + Q.benches * Q.benchDepth;
+        const joined = (at) => quarries.some(o => o !== q && o.sg === q.sg && (o.to === at || o.from === at)); // (another stretch of the same quarry runs on from there)
+        const ease = (u) => { u = Math.max(0, Math.min(1, u)); return u * u * (3 - 2 * u); };
+        const along = (s) => Math.min(joined(q.from) ? 1 : ease((s - (q.from - HL.ends)) / (HL.ends + 16)), joined(q.to) ? 1 : ease(((q.to + HL.ends) - s) / (HL.ends + 16)));
+        const across = [floorTo, dTop, dTop + HL.top * 0.5, dTop + HL.top, dTop + HL.top + HL.back * 0.5, dTop + HL.top + HL.back];
+        const rise = (d) => d <= dTop ? (d - floorTo) / (dTop - floorTo) : 1 - ease((d - dTop - HL.top) / HL.back);
+        const from = joined(q.from) ? q.from : q.from - HL.ends, to = joined(q.to) ? q.to : q.to + HL.ends;
+        const pos = [], idx = [], rows = Math.ceil((to - from) / 10);
+        for (let r = 0; r <= rows; r++) {
+          const s = Math.min(to, from + r * 10);
+          across.forEach((d, c) => {
+            Track.toWorld(s, beside(q.sg, s, d), tmp);
+            pos.push(tmp.x, tmp.y - 0.05 + top * along(s) * rise(d), tmp.z);
+            if (r && c) {
+              const a = (r - 1) * across.length + c - 1, b = a + 1, e = r * across.length + c - 1, f = e + 1;
+              idx.push(a, e, b, b, e, f);
+            }
+          });
+        }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        levelGroup.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ color: HL.colour, side: THREE.DoubleSide })));
       }
       if (floorTo - Q.floorFrom < 25) continue; // (no room on the floor for the works)
       for (let s = q.from + 30; s < q.to - 20; s += 55 + Math.random() * 30) { // heaps of crushed stone

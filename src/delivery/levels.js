@@ -4,7 +4,7 @@
 //   segments   the expressway's shape: length (m), curve (radians per metre, + = right; a hairpin
 //              is a bend turning pi radians, no tighter than the road is wide) and,
 //              optionally, grade (rise per metre: 0.03 is a 3% climb, negative goes downhill).
-//              Hills can't yet be combined with exits, and bridges must be on level road.
+//              Hills can't be combined with an exit that has flyovers (a side road without them follows the land), and bridges must be on level road.
 //   drive      'right' (default) or 'left': the side the traffic keeps to. Everything else in the
 //              level is written as if driving on the right (lanes, exits, turns, sides), and a
 //              left-hand level is shown as its mirror image: a "right" turn is seen as a left one

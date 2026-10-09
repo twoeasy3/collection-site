@@ -99,8 +99,9 @@ const createTrack = () => {
   const gradeAt = (s) => s < 0 || s >= length ? 0 : GRADES[Math.floor(s)];
   const rawGrades = mainXs.map((_, i) => gradeAt(-LEAD_IN + i * STEP));
   const hasGrades = rawGrades.some(g => g !== 0);
-  // (hills and side roads can't be combined yet: the ramps and flyovers assume level ground)
-  const hilly = hasGrades && !(LEVEL.exits || []).length;
+  // (hills and flyovers can't be combined: a flyover assumes level ground. A side road without them follows
+  // the land: it is as high as the expressway beside it, all the way: see sideHeights)
+  const hilly = hasGrades && !(LEVEL.exits || []).some(e => e.flyovers);
   const mainGrades = rawGrades.map((_, i) => {
     if (!hilly) return 0;
     let sum = 0;
@@ -119,6 +120,10 @@ const createTrack = () => {
   for (let i = 0; i < mainYs.length; i++) mainYs[i] -= lowest;
   // the road's slope at s: rise per metre in the direction of increasing s
   const grade = (s) => {
+    if (hilly && kindOf(s) === SIDE_ROAD) { // (a side road's own: from its heights)
+      const x = exitOf(s), i = Math.max(0, Math.min(x.ys.length - 2, Math.floor((s - x.side0) / x.step)));
+      return (x.ys[i + 1] - x.ys[i]) / x.step;
+    }
     if (!hilly || !isMain(s)) return 0;
     return mainGrades[Math.max(0, Math.min(mainGrades.length - 1, Math.floor((s + LEAD_IN) / STEP)))];
   };
@@ -170,6 +175,19 @@ const createTrack = () => {
     }
     return points;
   };
+  const sideHeights = (xs, zs, e) => {
+    const first = Math.max(0, Math.floor((e.exitAt + LEAD_IN) / STEP)), last = Math.min(mainXs.length - 1, Math.ceil((e.mergeAt + LEAD_IN) / STEP));
+    let ys = xs.map((x, k) => {
+      let best = Infinity, at = first;
+      for (let i = first; i <= last; i++) {
+        const d = (x - mainXs[i]) ** 2 + (zs[k] - mainZs[i]) ** 2;
+        if (d < best) { best = d; at = i; }
+      }
+      return mainYs[at];
+    });
+    for (let pass = 0; pass < 80; pass++) ys = ys.map((y, k) => k === 0 || k === ys.length - 1 ? y : (ys[k - 1] + 2 * y + ys[k + 1]) / 4);
+    return ys;
+  };
   const buildSide = (pG, hG, pE, hE, shape) => {
     // its own segments first, laid out from the exit just as the expressway's are from the start line; then
     // (or with none, all the way) the curve that brings it to the merge
@@ -215,7 +233,10 @@ const createTrack = () => {
       const a = Math.max(0, k - 1), b = Math.min(n, k + 1);
       hs.push(nearAngle(Math.atan2(xs[b] - xs[a], zs[b] - zs[a]), k ? hs[k - 1] : hG));
     }
-    return { path: makePath(xs, zs, hs, 0, step), length: total, xs, zs };
+    // on hilly ground it follows the land: each point as high as the expressway is at its nearest point (so it
+    // leaves and rejoins it level with it), smoothed a little
+    const ys = hilly ? sideHeights(xs, zs, shape) : null;
+    return { path: makePath(xs, zs, hs, 0, step, ys), length: total, xs, zs, ys: ys || xs.map(() => 0), step };
   };
 
   const exits = (LEVEL.exits || []).map((e, i) => {
@@ -228,7 +249,7 @@ const createTrack = () => {
       exitAt: e.exitAt, mergeAt: e.mergeAt, span: e.mergeAt - e.exitAt,
       oncoming, oncomingFrom: oncoming ? e.oncomingFrom || 0 : Infinity, flyovers: !!e.flyovers && oncoming && !ONE_WAY, lanes,
       side0: FIRST + 2000 + i * BLOCK, flyA0: FIRST + 12000 + i * BLOCK, flyB0: FIRST + 22000 + i * BLOCK,
-      sideEnd: FIRST + 2000 + i * BLOCK + side.length, length: side.length, path: side.path, xs: side.xs, zs: side.zs,
+      sideEnd: FIRST + 2000 + i * BLOCK + side.length, length: side.length, path: side.path, xs: side.xs, zs: side.zs, ys: side.ys, step: side.step,
       landingAt: e.exitAt - (FLY - X.ramp),  // where flyover A lands on the expressway's left shoulder
       flyoverAt: e.mergeAt + (FLY - X.ramp), // where flyover B leaves it
     };
@@ -916,7 +937,7 @@ const createTrack = () => {
       }
     }
     if (FLOW === 'south' && exits.length) problems.push('exits need northbound traffic: a "flow": "south" level cannot have them');
-    if (hasGrades && !hilly) problems.push('hills (segment grades) and exits cannot be combined yet: the grades are ignored');
+    if (hasGrades && !hilly) problems.push('hills (segment grades) and an exit with flyovers cannot be combined: the grades are ignored');
     for (const b of bridges) {
       let sloped = false;
       for (let s = b.from; s <= b.to; s += STEP) if (Math.abs(grade(s)) > 0.002) sloped = true;

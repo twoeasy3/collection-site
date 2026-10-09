@@ -386,7 +386,9 @@ export const CONFIG = {
   // wreckage (a level's "wreckage" and "tower": see wreckage.js), the scripted destruction
   // a level's quarries (render/road.js: LEVEL.quarries): the floor from floorFrom to floorTo m off the
   // road, then `benches` benches of the rock face, each benchDepth m deep and benchHeight m higher than the last
-  quarry: { floorFrom: 14, floorTo: 48, benches: 4, benchDepth: 12, benchHeight: 6 },
+  // (hill: the land the face is cut into: level with the top bench for `top` m back from it, falling away over
+  // `back` m beyond that, and sloping down to the ground over `ends` m past each end of the quarry)
+  quarry: { floorFrom: 14, floorTo: 48, benches: 4, benchDepth: 12, benchHeight: 6, hill: { top: 60, back: 120, ends: 70, colour: 0x8f7d5e } },
   wreckage: {
     trigger: 110,          // m short of it the player is when it is set off (a level's can say otherwise)
     flight: 1.6,           // s it takes to fly in and land

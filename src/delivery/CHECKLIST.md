@@ -41,11 +41,11 @@ Working list, from the owner's ideas of 2026-10-09. `[x]` done, `[~]` partly don
 
 - [ ] 40. Blue Star balance pass: cap stats strictly below the next gold tier
 - [ ] 41. Classic GT vs a future 6-star tier: decide on top-speed headroom
-- [ ] 42. Hills with side roads
+- [x] 42. Hills with side roads: a side road without flyovers now follows the land (as high as the expressway beside it), so a level can have both; an exit with flyovers still cannot. Tried on Gimmick Road 2, whose side road now climbs a hill: heights join at both ends (checked by numbers and in two screenshots). Rough spot: where the expressway bends away, the side road has a short stretch as steep as 12%. No real level uses it yet.
 - [x] 43. The 404 on every level (most likely a missing favicon). Every game page now links `/car-icon.svg` as its icon. Not confirmed in a browser that this was the 404.
 - [x] 44. Thumbnail shooting: a `?ghost` test parameter. The car is a ghost all run and cannot be busted. Checked headless (`scripts/delivery-probe.mjs` uses it).
 - [x] 45. Wrong-way drivers: a horn, flashing lights and a warning. Warning and horn checked headless on Quarry Run and Ring Road; the flashing headlights and hazards were not seen.
-- [ ] 46. Grade under the quarry rock face
+- [x] 46. Grade under the quarry rock face: a hill now rises behind the benches to the top one's height, runs back and falls away, and slopes down past each end of the quarry (`CONFIG.quarry.hill`). Seen in two screenshots of Quarry Run; where two stretches of a quarry with different floors join, the hill has a step, as the benches do.
 - [x] 47. Re-run the level clocks (Quarry Run, Tour de Coast). Quarry Run's was already right (215 / 165); Tour de Coast's is now 210 / 160 (was 215 / 165).
 - [x] 48. Unify the screenshot scripts into `scripts/shots.mjs`: named shots, `--levels` and `--cars`. Named shots used and working; `--levels` and `--cars` were not run.
 
