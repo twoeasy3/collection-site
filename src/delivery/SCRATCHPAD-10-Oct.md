@@ -198,7 +198,17 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   - Verified headless: `node scripts/.earned-check.mjs` (new, 21 checks), `.balance-check.mjs`,
     `.bundle-check.mjs`. NOT verified: the garage bays, star colour, the Saucer parked in the lot;
     the pars are not play-tested.
-- In progress: 4 (dents). Then 5 horns, 6 album and milestones.
+- DONE `fda617c`: 4 (visible damage). `render/dents.js` was in the stash but nothing called it;
+  wired into `render/items.js` (the player's car crumples in three steps and its paint darkens) and
+  `render/cars.js` (traffic: the darkened paint only). `CONFIG.dents`.
+  - Verified without a browser: `node scripts/.dents-check.mjs` (new, 9 checks on the geometry and
+    colour with three.js alone), `.bundle-check.mjs`. NOT verified: how it looks on any model.
+- DONE `e9ebe12`: 5 (a horn per car). `HORNS` in `render/audio.js` by car id (the stash had the
+  table but nothing played it); `horn.js` asks for `horn:<car id>`, `Sound.play` handles it.
+  Traffic's own honks left as they were on `main` (the stash rewired them too; not ported).
+  - Verified headless: the name asked for (also a Super car's base), all 42 car ids have an entry,
+    the four WAVs exist. NOT verified: nothing has been heard.
+- In progress: 6 (postcards album, then the milestones wall). One commit each.
 
 ## Agent 2: real circuits (`.claude/worktrees/delivery-circuits`, `delivery-circuits`)
 
@@ -222,9 +232,23 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   puts the wall at the road's edge all round (0 stretches) rather than invent any. Clock written.
 - To rebuild any: `node scripts/circuit-from-osm.mjs <id>` (config `scripts/circuits/<id>.json`, maps
   and heights cached in `scripts/circuits/cache/`, a picture in `scripts/circuits/out/<id>.svg`).
-- In progress: landmarks in `render/circuits/{monza,spa,albert-park}.js` (still empty stubs), then a
-  browser screenshot via `scripts/shots.mjs`, then `CIRCUITS-HANDOVER.md`.
-- Not verified: nothing seen in a browser yet (headless logic only).
+- Done (`856ab1e`): landmarks in `render/circuits/` (`kit.js` shared): Monza's old banking and back
+  straight where they stand plus park trees (its theme now has terrain); Spa's Eau Rouge stream, the
+  Francorchamps hotel, pine forest; Albert Park's lake shoreline, city towers, gums and palms. Albert
+  Park made flat (SRTM noise 1-17 m against a real 2.6 m).
+- Done (`bb4a64b`): `CIRCUITS-HANDOVER.md` rewritten to what is now true (table per circuit, the
+  tool, what was and was not verified, next steps). All work is finished and committed; branch tip
+  `bb4a64b`, working tree clean, nothing pushed.
+- Verified: `node scripts/delivery-levels-check.mjs` passes (47 levels, 6 races); `level-clocks.mjs`
+  drove all three to the finish (clocks written; Albert Park's was timed just before it was made
+  flat). In headless Edge via `shots.mjs` (screenshots looked at, not kept): all three circuits load
+  and draw (Monza start straight and Parabolica with the banking, Spa's hills and forest, Albert
+  Park with the lake).
+- Not verified: the start screen's Deliveries / Races tabs were never seen in a browser; no whole lap
+  watched; Spa's hotel and stream, Albert Park's skyline and Monza's north banking not seen up close.
+  Smoke test not run.
+- Skipped: menu pictures `levelshots/<id>.jpg` (shots are PNG; Spa's cine shot came out blocked).
+  Albert Park's real gravel traps (not in OSM, not invented).
 
 ## Agent 3: checklist menu and save items (`.claude/worktrees/delivery-batch`, `worktree-delivery-batch`)
 

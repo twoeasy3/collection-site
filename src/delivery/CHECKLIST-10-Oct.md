@@ -82,6 +82,117 @@ Last updated: after `37eb71c` (main), `856ab1e` (delivery-circuits), `45369f1` (
 - [ ] 51. Performance on phones
 - [ ] Level clocks and menu pictures for Hong Kong, Tokyo, Mumbai, Stelvio, Christmas
 - [ ] More circuits: Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka
-- [ ] A link to `/delivery/` from the site (owner to say where)
-- [ ] Level editor knows the new level fields
+- [ ] Level editor: full control over every feature and gimmick (itemised below)
 - [ ] Gimmick Road 2's gimmicks used in real levels
+
+## Level editor: full control over every feature and gimmick (not assigned)
+
+Asked for by the owner on 10-Oct; investigated by reading `editor.js` (757 lines),
+`delivery/editor.html` and the field list at the top of `levels.js`. Nothing built yet.
+
+**How it is today.** A level has about 90 documented fields. The editor has real controls for 13
+(`id`, `name`, `clock`, `tip`, `lanes` as one number, `theme`, `car`, `flow`, `traffic` as typed
+text, `segments`, `pickups`, `obstacles`, `targets`). Everything else is typed as raw JSON into the
+"Special features" box. Anything in that box with `from`/`to`, `s` or `at` is drawn as a band or a
+marker and can be dragged, but its other settings are again raw JSON. Only 12 kinds have a button
+that places one (`splits`, `mud`, `ice`, `bridges`, `narrows`, `frogs`, `herds`, `drifters`,
+`dropBears`, `hippos`, `tractors`, `parked`). The obstacle list is a hand-written 13 kinds. The
+editor knows nothing of what a field's values may be: the only checking is `Track.problems` after
+the fact.
+
+### E1. The foundation: one description of every level field
+
+- [ ] E1.1 A schema file (`levelSchema.js`, logic side, no rendering): for every field its shape
+      (flag, number, choice, stretch `from..to`, point `s`, timed `every {min,max}`, list of
+      these, world-placed `x,z`), each setting's type, range, default and choices, which road it
+      may be on, and a line of help. About 90 fields; the comments at the top of `levels.js` are
+      the source.
+- [ ] E1.2 The editor builds its forms, place-buttons, map drawing and default entries from the
+      schema, in place of `FEATURE_TEMPLATES`, `EDITED` and the hand-written panels.
+- [ ] E1.3 Lists the editor hard-codes come from the game instead: obstacle kinds from
+      `CONFIG.obstacleKinds`, traffic kinds from `CONFIG.vehicles`, herd, drifter, machinery,
+      landmark and wreckage kinds from their own tables.
+- [ ] E1.4 The same schema checks a level when the game loads it, so the editor and
+      `Track.problems` cannot disagree, and a new gimmick is added to the editor by adding its
+      schema entry (add this step to the README's "adding content" recipe).
+- [ ] E1.5 The raw JSON box stays, as an "advanced" fallback for anything the schema lacks.
+
+### E2. Level-wide settings that have no control today
+
+- [ ] E2.1 Road: `drive` (left / right), `lanes` as `{ north, south }` and odd counts, `median`,
+      `shoulder`, `shoulderTimer`, `speedLimit`, `laps`.
+- [ ] E2.2 Traffic: the mix as a table with sliders in place of typed text; `trafficCount`,
+      `oncomingCount`, `trafficSpeed`, `drivers` (evil, happy, angry), `hesitation`.
+- [ ] E2.3 Timed events, each a switch with a min and max: `emergencies`, `processions`,
+      `convoys` (size, kind), `railway`.
+- [ ] E2.4 Mode switches: `alwaysGood`, `noPackages`, `understeer`, `wallDamage`, `nudge`,
+      `helicopter`, `battle`, `pillboxes`.
+- [ ] E2.5 Race and rivals: `grid` (count, kind, gap, pace, from), `rival`, `rivals` (name, car,
+      colours, marker).
+- [ ] E2.6 Weather and look, where a theme allows it: `rain`, `snow`, `festive`, `elevated`.
+
+### E3. The road itself
+
+- [ ] E3.1 Segments: draw and drag the road on the map (handles for a bend's length and angle),
+      beside the table; show the gradient profile as a strip under the map.
+- [ ] E3.2 Side roads (`exits`): place the fork and merge by clicking, drag them, and edit `out`,
+      the side road's own `segments`, `lanes`, widenings and `flyovers` in a form. Today only
+      "oncoming from here" has a tool.
+- [ ] E3.3 Crossroads (`junctions`): place, with `turn`, `forward`, `turnOff`.
+- [ ] E3.4 Stretch kinds that change the road, with forms: `narrows`, `splits`, `bridges`,
+      `tunnels`, `runoff`, `stands`, `runway`, `reversible`, `quietZones`, `trafficZones`, `zones`
+      (scenery, ground, sky, sea).
+- [ ] E3.5 Circuits: closing a lapped road (show the gap and heading error, offer to close it),
+      and run-off and stands per side.
+
+### E4. Gimmicks: a place-button and a form for each (most have neither)
+
+- [ ] E4.1 Stretch gimmicks: `fog`, `gunfire`, `asteroidFields`, `storm`, `migration`,
+      `elephants`, `landmines`, `trolleys`, `stampedes`, `rockfall`, `quarries`, `tide` (with its
+      waves), plus full forms for the ten that only have a button.
+- [ ] E4.2 Point gimmicks: `cameras`, `crossings`, `stopGo`, `potholes`, `potties`, `machinery`,
+      `siteWorks`, `waterMains`, `parades`, `roadblocks`, `iceCreamStops`, `schoolCrossings`,
+      `balloons`, `drawbridges`, `wideLoads`, `marathons`, `pelotons`, `wreckage`, `tower`,
+      `shoulderRows`, `parkedPlanes`.
+- [ ] E4.3 Gimmicks on a side road (`{ road: 'side', exit: n }`): the editor leaves these off the
+      map entirely today. Draw them, place them and drag them along the side road.
+- [ ] E4.4 Lane pickers that know the road at that spot (a narrowed stretch, an exit lane, a side
+      road's own lanes), and lane ranges (`lanes: [first, last]`) for wide loads, balloons and
+      wreckage.
+- [ ] E4.5 Triggers: for anything with `trigger` or `flipAt`, show on the map where the player
+      sets it off as well as where it happens.
+- [ ] E4.6 World-placed things (`landmarks`: `x, z, r, rot`): place and turn them on the map
+      beside the road, not along it.
+- [ ] E4.7 Rules shown while editing, not after: straight road only (crossings, stop / go,
+      drawbridges), level road only (bridges), two-way only (stop / go, reversible), what cannot be
+      combined with exits. The side roads cleanup in the queue will change some of these.
+
+### E5. Keeping a level whole while it is edited
+
+- [ ] E5.1 Changing a segment's length moves or stretches everything after it (today "a change to
+      the road can leave them out of place").
+- [ ] E5.2 Undo and redo.
+- [ ] E5.3 Copy, paste and duplicate; select and move several things at once.
+- [ ] E5.4 Problems listed under the map link to the thing that causes them.
+- [ ] E5.5 Autosave of the level being edited, and Load a `.json` file (today only the built-in
+      levels can be opened, and only Download saves).
+
+### E6. Seeing and proving it
+
+- [ ] E6.1 The 3D view updates as you edit, and "Play from here" starts a run at the spot under
+      the cursor (`?at=`).
+- [ ] E6.2 A "Work out the clock" button, doing what `scripts/level-clocks.mjs` does, in the page.
+- [ ] E6.3 Filters on the map (show only one kind, hide scenery bands) and a list of everything in
+      the level to pick from.
+- [ ] E6.4 A headless check that the schema covers every field used by every level in `levels/`,
+      and that each level passes through the editor's load and save unchanged.
+
+### E7. To come from today's queue (add their fields once they exist)
+
+- [ ] E7.1 Water stages, boat traffic and "amphibious only" for the amphibious levels.
+- [ ] E7.2 The cargo a level carries, for each side.
+- [ ] E7.3 Whatever the side roads cleanup adds or lifts.
+
+Order that makes sense: E1 first (everything else is built on it), then E4.1 to E4.3 and E2 (they
+fall out of the schema almost for free), then E3.2 and E5.1, then the rest. Removed today, so not
+listed: tolls and average-speed cameras.
