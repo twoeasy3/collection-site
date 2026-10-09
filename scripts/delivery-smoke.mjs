@@ -1099,17 +1099,17 @@ try {
     fresh(); clearRoad();
     const X = CONFIG.crossing;
     let cross = Crossings.list[0]; // (made afresh as each run starts)
-    setPlayer(cross.s - X.trigger - 20, 0.1, { speed: 0.1 });
-    step(5);
+    // (timed to the player: at 25 m/s, quiet while it is further off than the train takes, set off once it is nearer)
+    const early = 25 * (Crossings.lead - X.timing.min) + 20, late = 25 * (Crossings.lead - X.timing.max) - 5;
+    for (let i = 0; i < 5; i++) { setPlayer(cross.s - early, 25); step(); }
     const quiet = cross.state;
-    setPlayer(cross.s - X.trigger + 10, 0.1);
-    step(2);
+    for (let i = 0; i < 2; i++) { setPlayer(cross.s - late, 25); step(); }
     const set = cross.state;
     const waiting = placeCar(1, 1, cross.s - 60, 12);
     const onLine = placeCar(-1, 0, cross.s, 0.01, { baseSpeed: 0.01 });
     let maxLowered = 0, sawTrain = false, front = -Infinity, lineWrecked = false;
     for (let i = 0; i < 120 * 8 && !(sawTrain && cross.state === 'idle'); i++) {
-      Player.s = cross.s - X.trigger + 10; Player.speed = 0.1;
+      Player.s = cross.s - late; Player.speed = 0.1;
       if (onLine.health > 0 && !lineWrecked) { onLine.s = cross.s; onLine.vs = -0.01; }
       step();
       lineWrecked ||= onLine.health <= 0;
@@ -1119,20 +1119,20 @@ try {
     }
     const stopLine = cross.s - X.stopLine;
     check(quiet === 'idle' && set === 'warn' && sawTrain && maxLowered === 1 && front < stopLine && front > cross.s - 60 && lineWrecked,
-      `level crossing: quiet until the player is within ${X.trigger} m, then lights, booms down and a train; a car waits ${(stopLine - front).toFixed(1)} m short of the boom, and one left on the line is wrecked`);
+      `level crossing: at 90 km/h, quiet ${early.toFixed(0)} m off, set off by ${late.toFixed(0)} m (its train timed to reach the road as the player would), then lights, booms down and a train; a car waits ${(stopLine - front).toFixed(1)} m short of the boom, and one left on the line is wrecked`);
     // the player on the line as the train goes by is wrecked; a ghost isn't; driving through a lowered boom breaks it
     fresh(); clearRoad();
     cross = Crossings.list[0];
     Crossings.start(cross);
     cross.t = X.warn; // (the train comes now)
     let wrecked = false;
-    for (let i = 0; i < 120 * 3 && !wrecked; i++) { setPlayer(cross.s, 0.1); step(); wrecked = Player.health <= 0 || !Player.active; }
+    for (let i = 0; i < 120 * 6 && !wrecked; i++) { setPlayer(cross.s, 0.1); step(); wrecked = Player.health <= 0 || !Player.active; } // (the train in from the end of the line)
     fresh(); clearRoad();
     cross = Crossings.list[0];
     Crossings.start(cross);
     cross.t = X.warn;
     let ghosted = true;
-    for (let i = 0; i < 120 * 3; i++) { setPlayer(cross.s, 0.1, { ghost: 5 }); step(); ghosted &&= Player.active && Player.health > 0; }
+    for (let i = 0; i < 120 * 6; i++) { setPlayer(cross.s, 0.1, { ghost: 5 }); step(); ghosted &&= Player.active && Player.health > 0; }
     fresh(); clearRoad();
     cross = Crossings.list[0];
     Crossings.start(cross);
@@ -2603,6 +2603,33 @@ try {
     }
     check(Game.outcome !== undefined && police > 0 && inside === 0 && vans > 5 && evilVans === 0,
       `no police within 300 m of Mountain Pass's stop / go works (${police} police cars about over the run); ${vans} vans, none of them evil`);
+  }
+
+  section('Outback Express: every train timed to the player');
+  {
+    // driving the level at a steady 25 m/s (a ghost: the train passes through), each crossing's train reaches the
+    // road within CONFIG.crossing.timing of when the player does
+    const { Crossings } = await load('/src/delivery/crossing.js');
+    const X = CONFIG.crossing;
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'outback-express'));
+    cars.selectCar('commuter');
+    Game.evil = false;
+    Game.start();
+    const meet = Crossings.list.map(() => ({ player: null, train: null }));
+    let t = 0;
+    for (let i = 0; i < 120 * 260 && Game.state === 'playing'; i++, t += 1 / 120) {
+      Object.assign(Player, { speed: 25, ghost: 99, health: Player.maxHealth });
+      Game.busts = 0; Game.time = 0;
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      Crossings.list.forEach((c, k) => {
+        if (meet[k].player === null && Player.s >= c.s) meet[k].player = t;
+        if (meet[k].train === null && c.state === 'train' && c.train * c.dir >= 0) meet[k].train = t;
+      });
+    }
+    const gaps = meet.map(m => m.train - m.player);
+    check(gaps.length === 3 && gaps.every(g => Number.isFinite(g) && g >= X.timing.min - 0.3 && g <= X.timing.max + 0.3),
+      `Outback Express: at 90 km/h each crossing's train reaches the road ${gaps.map(g => (g >= 0 ? '+' : '') + g.toFixed(1) + ' s').join(', ')} from the player (${X.timing.min} to +${X.timing.max} s)`);
   }
 
   section('quiet zones: less traffic on the narrow cliff road');

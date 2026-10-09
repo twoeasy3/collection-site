@@ -483,7 +483,7 @@ const GROUPS = [
       return { model: g };
     } },
     { name: 'Level crossings', color: 0xd8262b, has: (l) => l.crossings?.length, rules: [
-      `As you come within ${CONFIG.crossing.trigger} m the lights flash and the bell rings; the booms come down over ${CONFIG.crossing.lower} s, and ${CONFIG.crossing.warn} s on, a short train shoots across at ${kmh(CONFIG.crossing.speed)}.`,
+      `It is timed to you: at the speed you are going, the train reaches the road between ${-CONFIG.crossing.timing.min} s before you would and ${CONFIG.crossing.timing.max} s after. The lights flash and the bell rings; the booms come down over ${CONFIG.crossing.lower} s, and ${CONFIG.crossing.warn} s on, a short train shoots across at ${kmh(CONFIG.crossing.speed)}, seen coming from ${CONFIG.crossing.reach} m down the line.`,
       'Traffic waits at the booms. Anything on the line as the train goes by is wrecked, you included (unless you are a ghost).',
       `You can't stop, so ease off and arrive after it, or beat it across. A boom down is only a knock (${CONFIG.crossing.boomDamage} damage), and it breaks.`,
     ], build: () => {

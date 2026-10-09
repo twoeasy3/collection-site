@@ -1,6 +1,7 @@
 // ============================================================================
 // LEVEL CROSSINGS - a level's "crossings" (see levels.js and CONFIG.crossing): a railway line
-// across the road. As the player comes within trigger m of one (and every so often after that,
+// across the road. Timed to the player: set off so its train reaches the road about as the player would
+// (CONFIG.crossing.timing, at the speed the player is going; and every so often after that,
 // while the player hasn't gone by), its lights flash and its bell rings, its booms come down
 // across the lanes coming up to it (one each side, at its stop lines), and a short, fast train
 // shoots across the road. Traffic waits at the booms (one too close to stop carries on over);
@@ -30,8 +31,8 @@ export const Crossings = {
 
   reset() {
     const C = CONFIG.crossing;
-    this.list = (LEVEL.crossings || []).map(c => ({ s: Track.place(c), trigger: c.trigger ?? C.trigger, every: c.every || C.every,
-      state: 'idle', t: 0, triggered: false, next: 0, dir: 1, train: 0, broken: [false, false], bell: 0 }));
+    this.list = (LEVEL.crossings || []).map(c => ({ s: Track.place(c), trigger: c.trigger ?? null, every: c.every || C.every,
+      offset: between(C.timing), state: 'idle', t: 0, triggered: false, next: 0, dir: 1, train: 0, broken: [false, false], bell: 0 }));
   },
   // how far down its booms are, 0 (up) .. 1 (down across the road)
   lowered(c) {
@@ -40,6 +41,15 @@ export const Crossings = {
   },
   flashing: (c) => c.state === 'warn' || c.state === 'train',
   get trainLength() { return CONFIG.crossing.cars * CONFIG.crossing.carLength; },
+  // s from setting one off to its train reaching the road: the lights, then the run in from the end of the line
+  get lead() { return CONFIG.crossing.warn + CONFIG.crossing.reach / CONFIG.crossing.speed; },
+  // is it time to set it off? Once the player will get there in about the time its train takes (see
+  // CONFIG.crossing.timing), at the speed it is going; or, a crossing with a trigger of its own, within that
+  due(c, ahead) {
+    if (ahead <= 0) return false;
+    if (c.trigger !== null) return ahead < c.trigger;
+    return ahead / Math.max(Player.speed, 4) <= this.lead - c.offset; // (the train there offset s after the player would be)
+  },
   // the boom going way dir comes to: where it stands (s), and across which lats
   boom(c, dir) {
     const s = c.s - dir * CONFIG.crossing.stopLine;
@@ -79,7 +89,7 @@ export const Crossings = {
       const ahead = c.s - Player.s; // (how far the player has still to go to it)
       if (c.state === 'idle') {
         c.next -= dt;
-        if (Player.active && ahead > 0 && ((!c.triggered && ahead < c.trigger) || (c.triggered && c.next <= 0 && ahead < C.reach * 4))) this.start(c);
+        if (Player.active && ahead > 0 && ((!c.triggered && this.due(c, ahead)) || (c.triggered && c.next <= 0 && ahead < C.again))) this.start(c);
       } else if (c.state === 'warn') {
         if (c.t >= C.warn) {
           c.state = 'train';

@@ -852,16 +852,19 @@ export const CONFIG = {
   // after), its lights flash and its booms come down across the lanes coming up to it, and a short
   // fast train shoots across the road. Traffic waits at the booms; whatever is on the line is wrecked
   crossing: {
-    trigger: 230,          // m short of it the player sets it off (a crossing can give its own)
+    // set off by when the player will get there, at the speed it is going: so that the train reaches the road
+    // this many s after the player would (below 0, before), at random each time: ease off, or put your foot down
+    timing: { min: -0.4, max: 1.2 },
     warn: 2.6,             // s of flashing lights before the train reaches the road...
     lower: 1.2,            // ...the booms coming down over the first this many
     raise: 1.0,            // s they take to go back up once the train is clear
-    every: { min: 14, max: 24 }, // s between trains after that, while the player hasn't gone by
-    speed: 70,             // m/s the train goes at...
+    every: { min: 14, max: 24 }, // s between trains after that, while the player hasn't gone by...
+    again: 300,            // ...and is within this many m of it
+    speed: 80,             // m/s the train goes at...
     cars: 2,               // ...carriages...
     carLength: 18,         // ...each this long...
     hw: 1.6,               // ...and half this wide
-    reach: 70,             // m either side of the road the line runs out to (the train comes from that far)
+    reach: 300,            // m either side of the road the line runs out to (the train comes from that far, seen coming)
     stopLine: 6,           // m short of the line traffic stops at (the booms stand there)
     boomDamage: 10,        // health a lowered boom costs the player driving through it...
     boomKept: 0.8,         // ...and the share of its speed kept
