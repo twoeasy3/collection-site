@@ -7,20 +7,20 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `37eb71c` (main), `856ab1e` (delivery-circuits), `45369f1` (worktree-delivery-batch).
+Last updated: after `e9ebe12` (main), `bb4a64b` (delivery-circuits, finished), `45369f1` (worktree-delivery-batch).
 
 ## Agent 1: port from the discarded city-levels work (`main`)
 
 - [x] Eight new mystery effects: earthquake, rewind, giant, swap sides, magnet, blackout, traffic freeze, souped up. `e05ed11`
 - [x] Super cars (livery, body kit), lent by "souped up" or `?car=super-<id>`. `e05ed11`
 - [x] Six-star tier: a car earned on each special level. `37eb71c`
-- [~] Visible damage (dents)
-- [ ] A horn per car
-- [ ] Postcards album
+- [x] Visible damage: dents on the player's car and scorched paint. `fda617c`
+- [x] A horn for each car. `e9ebe12`
+- [~] Postcards album
 - [ ] Milestones wall
 - [-] `gimmick-road-3` and the rest of the duplicate work: discarded on the owner's word
 
-## Agent 2: real circuits (`delivery-circuits`, not yet merged)
+## Agent 2: real circuits (`delivery-circuits`, finished, not yet merged)
 
 - [x] `main` merged into the branch. `a401d13`
 - [x] Headless check that all 47 levels build and every race starts; smoke test's labels know `R1..` (test not run). `b256615`
@@ -30,7 +30,11 @@ Last updated: after `37eb71c` (main), `856ab1e` (delivery-circuits), `45369f1` (
 - [x] Albert Park: 5312 m (real 5278). No run-off is mapped there, so none is drawn. `b111bd7`
 - [x] Clocks for Monza and Spa. `e75d82d`
 - [x] Landmarks: Monza's old banking and park, Spa's forest, stream and hotel, Albert Park's lake and skyline. `856ab1e`
-- [~] Wrapping up: Albert Park's clock, handover notes
+- [x] Clock for Albert Park (335 / 260 s, timed before it was made flat and not re-timed); handover rewritten. `bb4a64b`
+- [x] Seen in headless screenshots by the agent (not kept): all three circuits load and draw
+- [ ] Albert Park's gravel traps and walls: not in OpenStreetMap, need another source
+- [ ] Menu pictures for the three circuits (Spa's cine shot came out blocked)
+- [ ] A whole lap of any circuit watched
 - [ ] Races tab opened and checked by eye (needs a browser)
 
 ## Agent 3: menus, save data, removals (`worktree-delivery-batch`, not yet merged)
@@ -49,12 +53,12 @@ Last updated: after `37eb71c` (main), `856ab1e` (delivery-circuits), `45369f1` (
 - [x] Uncommitted city-levels work stashed (`0201824`), to be dropped once agent 1's port lands
 - [x] Stale Vite server on port 5199 stopped
 - [ ] Merge `worktree-delivery-batch` into `main`
-- [ ] Merge `delivery-circuits` into `main`
+- [~] Merge `delivery-circuits` into `main`: tried once, held back by agent 1's uncommitted album work in the same files; next try when it commits
 - [ ] Drop the stash
 
 ## Queue: starts as agents finish (three at a time)
 
-1. Side roads cleanup
+1. Side roads cleanup: **started**, agent 4, branch `delivery-side-roads` (in the circuits worktree)
    - [ ] Fully-featured roads: lift the limits (hills with flyovers, `flow: south`, one-way flyovers, gimmicks on side roads)
    - [ ] Decor beside the main road prunes correctly
    - [ ] Fork and merge markings redrawn like real ones
@@ -75,7 +79,6 @@ Last updated: after `37eb71c` (main), `856ab1e` (delivery-circuits), `45369f1` (
 ## Not assigned
 
 - [ ] 28. Liveries earned for Evil and Good clears
-- [ ] 29. Daily challenge with a leaderboard (needs a server)
 - [ ] 31. Endless mode
 - [ ] 49. Smoke test in parallel workers
 - [ ] 50. Lint, format and CI
