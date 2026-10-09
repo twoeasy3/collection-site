@@ -241,7 +241,7 @@ export const Traffic = (() => {
     car.maxHealth = car.health = type.health;
     car.unspinnable = car.courier = false; // (only a rival courier: see addRacer)
     car.blockedFor = 0; car.blockedBy = null; car.clearThrow = 0;
-    car.punctured = car.stationed = car.escaping = false; car.driveBy = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
+    car.punctured = car.stationed = car.escaping = false; car.driveBy = car.stationEdge = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
     car.rivalName = car.colors = car.markColor = null; car.counted = false;
     car.smoke = 0;
     car.lane = lane;
@@ -1746,10 +1746,23 @@ export const Traffic = (() => {
         // to the edge of its stretch stays there, parked on the shoulder with its lights going: beyond it,
         // as in The Hood's gang turf, there are no police at all)
         if (car.kind === 'police' && !car.stationed && policeOnStation()) {
-          const ahead = car.s + car.dir * (15 + Math.abs(car.vs) * 2.5); // (far enough ahead to slow and pull over before the edge)
-          if (!(weightsAt(car.s).police > 0) || !(weightsAt(ahead).police > 0)) car.stationed = true;
+          const reach = 15 + Math.abs(car.vs) * 2.5; // (far enough ahead to slow and pull over before the edge)
+          if (!(weightsAt(car.s).police > 0) || !(weightsAt(car.s + car.dir * reach).police > 0)) {
+            car.stationed = true;
+            // where its stretch ends: the first point ahead with no police, to stop short of
+            let edge = car.s;
+            for (let d = 0; d <= reach && weightsAt(edge).police > 0; d += 2) edge = car.s + car.dir * d;
+            car.stationEdge = edge;
+          }
         }
-        if (car.stationed) target = Math.abs(car.lat - Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s)) < 0.8 ? 0 : car.baseSpeed * 0.35;
+        if (car.stationed) {
+          target = Math.abs(car.lat - Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s)) < 0.8 ? 0 : car.baseSpeed * 0.35;
+          // and never past the edge of its stretch, however long it takes to get over: slow enough to stop
+          // CONFIG.stationShort m short of it (braking at CONFIG.stationBrake m/s^2)
+          const left = (car.stationEdge - car.s) * car.dir - CONFIG.stationShort, most = Math.sqrt(2 * CONFIG.stationBrake * Math.max(0, left));
+          target = Math.min(target, most);
+          if (Math.abs(car.vs) > most) car.vs = car.dir * most; // (braking, not easing off: easing off would roll it over)
+        }
         // (a flat tyre: over onto the shoulder on its side, slowing, and stopped once there)
         if (car.punctured) target = Math.abs(car.lat - Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s)) < 0.8 ? 0 : car.baseSpeed * 0.35;
         if (car.shoulderRun && car.attack < 0.5) car.attack = 0.5; // (on the attack all the way up the shoulder)

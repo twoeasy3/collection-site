@@ -622,6 +622,10 @@ export const CONFIG = {
   lowriderHearing: 90,     // m from a lowrider in traffic within which its music is heard (the same way)
   policeSightRange: 45,    // m along the road within which a police car witnesses what you do
   copGlowMargin: 12,       // m further out than that the screen's edges start flashing red and blue: a warning
+  // a police car on station at the edge of its stretch (see Traffic: policeOnStation) stops this many m
+  // short of the edge, braking at no more than stationBrake m/s^2 to do it
+  stationShort: 3,
+  stationBrake: 5,
   // A good player's social standing (see social.js), in points out of 100: gift points for each gift
   // that lands on a good driver (copGift on a police car), decay lost a second. With it, from none to
   // full: the police see policeSight.empty to policeSight.full times as far; the share of evil
