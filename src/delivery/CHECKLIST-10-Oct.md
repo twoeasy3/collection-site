@@ -7,9 +7,9 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-delivery-batch).
+Last updated: after `6fc7b94` (main). Agents 1, 2 and 3 are finished and merged; agents 4, 5 and 6 are running.
 
-## Agent 1: port from the discarded city-levels work (`main`)
+## Agent 1: port from the discarded city-levels work (`main`, finished)
 
 - [x] Eight new mystery effects: earthquake, rewind, giant, swap sides, magnet, blackout, traffic freeze, souped up. `e05ed11`
 - [x] Super cars (livery, body kit), lent by "souped up" or `?car=super-<id>`. `e05ed11`
@@ -17,7 +17,10 @@ Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-deliv
 - [x] Visible damage: dents on the player's car and scorched paint. `fda617c`
 - [x] A horn for each car. `e9ebe12`
 - [x] Postcards album. `e8ccc6c`
-- [~] Milestones wall
+- [x] Milestones wall. `8c0d76e`
+- [x] Garage filter put right after the merges (earned cars out of "Gold stars", a "6 stars" choice once one is earned); `HANDOVER-batch.md` brought up to date. `8c5ead6`
+- [ ] Never run, even headless: the album and the milestones wall (they need WebGL). Try `?album&unlock` and `?milestones&unlock`
+- [ ] Never seen: the Super body kit on each model, dents, blackout, the giant, the garage with 6-star cars; no horn heard
 - [-] `gimmick-road-3` and the rest of the duplicate work: discarded on the owner's word
 
 ## Agent 2: real circuits (`delivery-circuits`, finished, merged into `main` as `e358d98`)
@@ -37,7 +40,7 @@ Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-deliv
 - [ ] A whole lap of any circuit watched
 - [ ] Races tab opened and checked by eye (needs a browser)
 
-## Agent 3: menus, save data, removals (`worktree-delivery-batch`, not yet merged)
+## Agent 3: menus, save data, removals (`worktree-delivery-batch`, finished, merged into `main` as `6344152`)
 
 - [x] 52. Save data: cookie measured (4013 of 4096 bytes, now 2931), local storage first, export / import a save code. `5e53e1a`
 - [x] 38. Level select: medals, best times, gimmick chips. `5e53e1a`
@@ -45,18 +48,25 @@ Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-deliv
 - [x] 36. Car comparison card. `865d59f`
 - [x] Toll plazas and average-speed cameras removed (owner's request). `62c2bdb`
 - [x] Gimmicks page: eight "City streets" cards. `45369f1`
-- [~] 30. Full 1:1 replay for delivery and race levels: investigation and write-up
+- [x] 30. Full 1:1 replay: investigated, written up in `REPLAY-NOTES.md`. Recommends recording inputs and a seed at a fixed step (1 to 2 KB a minute). `4a66a80`
+- [x] First step built: `scripts/.replay-check.mjs`; 41 of 43 levels replay exactly from a seed. A `traffic.js` timer bug that broke it is fixed. `3731c60`
+- [ ] Grand Prix and Market Town still part after 2 s (both have crossroads): not hunted
+- [ ] Replay in the browser: a seeded generator for logic alone, a fixed step in `main.js`, recording and playing inputs: not started
+- [ ] **That worktree is left in a mess** (see the Orchestrator section)
 
 ## Orchestrator
 
 - [x] Scratchpads read, worktrees compared with `main`, the lists gathered. `9c0befb`
 - [x] Uncommitted city-levels work stashed (`0201824`), to be dropped once agent 1's port lands
 - [x] Stale Vite server on port 5199 stopped
-- [ ] Merge `worktree-delivery-batch` into `main`
+- [x] Merge `worktree-delivery-batch` into `main`. `6344152` (four conflicts, both sides kept; the levels, save, hazards, milestones and mysteries checks all pass on the result; the save cookie is 3086 of 4096 bytes)
+- [x] Tide: a wave's crest no longer jumps the last metres as it breaks (it was drawn 4 m out to sea, then at the water's edge). `8c515fd`. Not seen in a browser
+- [x] "No way to reach the circuits": checked in a screenshot of `main`: the Races tab on the start screen lists R1 to R6, Monza, Spa and Albert Park among them. `?tab=races` opens the menu there. `6fc7b94`. Monza, Spa and Albert Park have no menu pictures yet
+- [ ] **Owner to decide:** the worktree `.claude/worktrees/delivery-batch` has the stash applied on top of it by accident (agent 3 ran `git stash pop`): 15 conflicted files, 21 untracked. Nothing is lost (its branch is merged; the stash is intact). Cleaning it needs `git reset --hard 4a66a80` there and deleting the 21 untracked files; the agent was refused that and so the orchestrator has not done it either
 - [x] Merge `delivery-circuits` into `main`. `e358d98` (one conflict, the level card in `render/menu.js`, both sides kept; `delivery-levels-check.mjs` passes on the result: 47 levels build, six races start)
-- [ ] Drop the stash
+- [ ] Drop the stash (the port has landed; held until the worktree above is cleaned)
 
-## Queue: starts as agents finish (three at a time)
+## Running and queued (three at a time)
 
 1. Side roads cleanup: **started**, agent 4, branch `delivery-side-roads` (in the circuits worktree)
    - [ ] Fully-featured roads: lift the limits (hills with flyovers, `flow: south`, one-way flyovers, gimmicks on side roads)
@@ -64,13 +74,19 @@ Last updated: after `e358d98` (main, circuits merged), `45369f1` (worktree-deliv
    - [ ] Fork and merge markings redrawn like real ones
    - [ ] Polygons flickering on side roads on hills
    - [ ] All of it checked in every theme
-2. Amphibious cars and levels
+2. Amphibious cars and levels: **started**, agent 5, branch `delivery-amphibious` (in the city-levels worktree)
    - [ ] Five amphibious cars, one per star level 1 to 5
    - [ ] Amphibious section in the garage
    - [ ] Water stages: road to water and back; ordinary traffic stops at the edge, amphibious traffic drives through
    - [ ] Boat traffic on the water
    - [ ] Five gimmicked levels in different themes, amphibious cars only
-3. The cargo
+3. Gimmick fixes and circuit run-off: **started**, agent 6, on `main`
+   - [ ] Drawbridge: not wonky, and the car climbs the raised leaf at its angle and crests it
+   - [ ] Wide loads are passable
+   - [ ] Burst water mains: water that does not look square
+   - [ ] Run-off edges on Monza and Spa smoothed (the measured widths are noisy)
+   - [ ] Sand traps as part of a shoulder, slowing cars far more
+4. The cargo: **queued**, next free slot
    - [ ] Five normal things to deliver
    - [ ] Five odd things for Evil, animated, three states each
    - [ ] Shown in a corner of the screen; Evil's state follows the time left
