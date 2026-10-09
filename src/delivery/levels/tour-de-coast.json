@@ -36,8 +36,17 @@
   },
   "pelotons": [
     { "s": 500, "count": 8 },
+    { "s": 1150, "count": 6 },
     { "s": 1900, "count": 10 },
-    { "s": 4000, "count": 8 }
+    { "s": 2950, "count": 8 },
+    { "s": 4000, "count": 8 },
+    { "s": 4550, "count": 6 },
+    { "s": 850, "count": 8, "dir": -1 },
+    { "s": 1450, "count": 6, "dir": -1 },
+    { "s": 2250, "count": 10, "dir": -1 },
+    { "s": 3300, "count": 8, "dir": -1 },
+    { "s": 3750, "count": 6, "dir": -1 },
+    { "s": 4300, "count": 8, "dir": -1 }
   ],
   "dropBears": [
     { "from": 600, "to": 1200, "count": 5 }

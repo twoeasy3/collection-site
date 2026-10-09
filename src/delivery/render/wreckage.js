@@ -1,5 +1,5 @@
 // ---- WRECKAGE: the scripted destruction (its timing and the damage: ../wreckage.js) ----------------
-// Each piece of wreckage, built to fit the lanes it lands across: a jackknifed fuel tanker, the
+// Each piece of wreckage, built to fit the lanes it lands across: a heap of boulders flung from a quarry, a jackknifed fuel tanker, the
 // control tower's shaft with its glass cab, a stack of shipping containers, a hangar's steel roof,
 // an airliner's broken fuselage. Set off, it flies in tumbling from where it went up (an airliner
 // comes down out of the sky), while the lanes it is about to land on flash red; landed, it burns.
@@ -8,7 +8,9 @@
 // beside the road where the route turns off onto the runway, the old road carrying on past it,
 // and comes crashing down across that road. Parked airliners stand about the apron.
 // A building that blows (a blast) stands by the road; its red box flashes on the road beside it,
-// then it goes up, slumps into a burning ruin, and burns on.
+// then it goes up, slumps into a burning ruin, and burns on. A quarry's blast (rock: true) is a crag of
+// the rock face instead: a flash of the charges, then rock and dust thrown out across the road, the
+// crag slumping into a heap of rubble under a pall of dust.
 // Also the fires burning out across the airfield, each sending up a column of black smoke.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
@@ -18,7 +20,7 @@ import { Game } from '../game.js';
 import { Player } from '../player.js';
 import { Wreckage } from '../wreckage.js';
 import { scene, tmp } from './scene.js';
-import { Fire, Smoke, rnd, FIRE_COLORS } from './effects.js';
+import { Fire, Smoke, Particles, rnd, FIRE_COLORS } from './effects.js';
 import { lambert, CHAR, STEEL, WHITE, GLASS, add, box, across, makeAirliner, makeTower } from './airportModels.js';
 export { makeAirliner }; // (as before)
 
@@ -64,6 +66,29 @@ const MODELS = {
     add(g, box(16, 14, 26), lambert(0xb9b2a6), 0, 7, 0);
     for (let y = 2.5; y < 13; y += 3.5) add(g, box(16.2, 1.4, 26.2), lambert(0x2f3e4a), 0, y, 0);
     add(g, box(16.4, 0.8, 26.4), STEEL, 0, 14.4, 0);
+    return g;
+  },
+  // (a quarry's blast: a crag jutting out of the rock face, banded rock, drilled for the charges)
+  rockBlast: () => {
+    const g = new THREE.Group(), tones = [0x8a8378, 0xa39a8a, 0x6f6a62, 0x9a8f7c];
+    for (let k = 0; k < 9; k++) {
+      const r = 4 + Math.random() * 4, rock = add(g, new THREE.DodecahedronGeometry(r, 0), lambert(tones[k % tones.length]),
+        rnd(5), r * 0.7 + (k % 3) * 3.5, rnd(11), Math.random() * 3, Math.random() * 3, Math.random() * 3);
+      rock.scale.set(1, 0.8 + Math.random() * 0.5, 1.1);
+    }
+    for (let k = 0; k < 6; k++) add(g, box(0.25, 0.25, 0.25), lambert(0xd8342a), -6.5, 2 + k * 1.6, rnd(9)); // the charges' red tags
+    return g;
+  },
+  // (boulders flung out of a quarry face by its blasting: a heap of them, right across their lanes)
+  boulders: (w, d) => {
+    const g = new THREE.Group(), tones = [0x5f5a52, 0x6f6a62, 0x4f4b45, 0x7a7266]; // (darker than the dust they raise)
+    for (let x = -w / 2 + 1.2; x < w / 2; x += 2.2) {
+      for (let k = 0; k < 2; k++) {
+        const r = 1.3 + Math.random() * 0.8, rock = add(g, new THREE.DodecahedronGeometry(r, 0), lambert(tones[Math.floor(Math.random() * 4)]),
+          x + rnd(0.4), r * 0.75 + k * 0.6, rnd(d / 2 - r), Math.random() * 3, Math.random() * 3, Math.random() * 3);
+        rock.scale.set(1, 0.85, 1);
+      }
+    }
     return g;
   },
   plane: (w, d) => {
@@ -124,7 +149,7 @@ Game.onLoad.push(() => {
   for (const e of LEVEL.wreckage || []) {
     const W = CONFIG.wreckage, LW = CONFIG.laneWidth, depth = W.kinds[e.kind].depth;
     const w = (e.lanes[1] - e.lanes[0] + 1) * LW - 0.4 + (e.kind === 'blast' ? CONFIG.shoulder + 0.2 : 0); // (a blast's box: out to the road's edge)
-    const mesh = e.kind === 'airliner' ? makeAirliner(w, depth, true) : MODELS[e.kind](w, depth);
+    const mesh = e.kind === 'airliner' ? makeAirliner(w, depth, true) : e.kind === 'blast' && e.rock ? MODELS.rockBlast() : MODELS[e.kind](w, depth);
     mesh.visible = false;
     const marker = new THREE.Mesh(new THREE.PlaneGeometry(w, depth + 4 + (e.slide || 0)).rotateX(-Math.PI / 2), // (an airliner's: the whole of its slide)
       new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.5, depthWrite: false,
@@ -167,7 +192,25 @@ export const syncWreckage = (now) => {
         marker.rotation.y = Track.toWorld(e.at, (e.lat0 + e.lat1) / 2, target);
         marker.position.set(target.x, target.y + 0.06, target.z);
       }
-      // the moment it blows: fire bursting out of its whole front, towards the road
+      // the moment it blows: fire bursting out of its whole front, towards the road (a quarry's: the charges'
+      // flash, then rock and dust thrown out across the road)
+      if (e.landed && !blown.has(e) && e.rock) {
+        blown.add(e);
+        const toRoad = -side, rx = -Math.cos(bh) * toRoad, rz = Math.sin(bh) * toRoad;
+        for (let k = 0; k < 40; k++) {
+          Track.toWorld(from.s + rnd(10), from.lat - side * 6, target);
+          Fire.emit(target.x, target.y + 2 + Math.random() * 10, target.z, rx * 6 + rnd(3), 2 + Math.random() * 3, rz * 6 + rnd(3),
+            0.25 + Math.random() * 0.25, 1.5 + Math.random(), 1.5, 0, FIRE_COLORS[Math.floor(Math.random() * 2)]);
+        }
+        for (let k = 0; k < 140; k++) {
+          Track.toWorld(from.s + rnd(10), from.lat - side * 6, target);
+          const v = 10 + Math.random() * 16, tone = [0x8a8378, 0xa39a8a, 0x6f6a62, 0xb8ae9a][k % 4];
+          Particles.emit(target.x, target.y + 1 + Math.random() * 10, target.z, rx * v + rnd(4), 3 + Math.random() * 6, rz * v + rnd(4),
+            1.5 + Math.random() * 1.5, 0.3 + Math.random() * 0.6, 0, 18, tone, target.y);
+          if (k % 2) Smoke.emit(target.x, target.y + 2 + Math.random() * 8, target.z, rx * v * 0.4 + rnd(2), 1 + Math.random() * 2, rz * v * 0.4 + rnd(2),
+            3 + Math.random() * 2, 2.5 + Math.random() * 2, 2.5, 0, 0xc9bfa8);
+        }
+      }
       if (e.landed && !blown.has(e)) {
         blown.add(e);
         const toRoad = -side, rx = -Math.cos(bh) * toRoad, rz = Math.sin(bh) * toRoad; // (in the world: from it towards the road)
@@ -179,6 +222,12 @@ export const syncWreckage = (now) => {
         }
       }
       if (e.t < 0 && blown.has(e)) blown.delete(e); // (a new run)
+      if (e.rock) { // (a pall of dust hanging over the rubble)
+        if (e.landed && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.4) {
+          Smoke.emit(tmp.x + rnd(8), tmp.y + 3 + Math.random() * 4, tmp.z + rnd(8), rnd(1), 1 + Math.random() * 1.5, rnd(1), 4, 3 + Math.random() * 2, 2, 0, 0xc9bfa8);
+        }
+        return;
+      }
       if (e.landed && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.6) { // (and burns on)
         Fire.emit(tmp.x + rnd(7), tmp.y + 4 + Math.random() * 3, tmp.z + rnd(7), rnd(1), 2 + Math.random() * 3, rnd(1),
           0.6 + Math.random() * 0.5, 1 + Math.random(), 1, 0, FIRE_COLORS[1 + Math.floor(Math.random() * 3)]);
@@ -187,7 +236,7 @@ export const syncWreckage = (now) => {
       }
       return;
     }
-    if (e.t < 0) return;
+    if (e.t < 0) { blown.delete(e); return; } // (a new run: see the boulders' landing)
     const mid = e.at + (e.slide || 0) / 2, mlat = (e.lat0 + e.lat1) / 2;
     marker.rotation.y = Track.toWorld(mid, mlat, tmp);
     marker.position.set(tmp.x, tmp.y + 0.06, tmp.z);
@@ -212,7 +261,22 @@ export const syncWreckage = (now) => {
     mesh.position.y = target.y + y0 * (1 - u) + arc * Math.sin(Math.PI * u);
     const tumble = 1 - u;
     mesh.rotation.set(spin.x * tumble, heading + spin.y * tumble, spin.z * tumble);
-    // landed, it burns (only near the player: the fog hides the rest)
+    // landed, it burns (only near the player: the fog hides the rest); boulders only raise dust
+    if (e.kind === 'boulders') {
+      if (e.landed && !blown.has(e)) { // (landing: a burst of dust and chips of stone)
+        blown.add(e);
+        for (let k = 0; k < 30; k++) {
+          Track.toWorld(e.at + rnd(e.depth / 2), e.lat0 + Math.random() * (e.lat1 - e.lat0), tmp);
+          Smoke.emit(tmp.x, tmp.y + 0.5, tmp.z, rnd(4), 1 + Math.random() * 3, rnd(4), 2 + Math.random() * 2, 2 + Math.random() * 2, 2.5, 0, 0xc9bfa8);
+          Particles.emit(tmp.x, tmp.y + 1, tmp.z, rnd(6), 3 + Math.random() * 5, rnd(6), 1.2, 0.2 + Math.random() * 0.3, 0, 18, 0x8a8378, tmp.y);
+        }
+      }
+      if (e.landed && e.t > W.flight + 3 && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.05) { // (a wisp now and then)
+        Track.toWorld(e.at + rnd(2), e.lat0 + Math.random() * (e.lat1 - e.lat0), tmp);
+        Smoke.emit(tmp.x, tmp.y + 1, tmp.z, rnd(1), 0.6 + Math.random() * 0.6, rnd(1), 2, 0.8 + Math.random() * 0.6, 1.5, 0, 0xc9bfa8);
+      }
+      return;
+    }
     if (e.landed && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.7) {
       Track.toWorld(e.at + rnd(2), e.lat0 + Math.random() * (e.lat1 - e.lat0), tmp);
       Fire.emit(tmp.x, tmp.y + 1 + Math.random() * 2, tmp.z, rnd(1), 2 + Math.random() * 3, rnd(1),

@@ -1,0 +1,263 @@
+{
+  "id": "market-town",
+  "name": "Market Town",
+  "theme": "suburb",
+  "clock": { "good": 185, "evil": 140 },
+  "tip": 170,
+  "lanes": 2,
+  "traffic": {
+    "commuter": 0.28,
+    "wagon": 0.2,
+    "minivan": 0.15,
+    "van": 0.12,
+    "bus": 0.1,
+    "tractor": 0.04,
+    "lovebus": 0.08,
+    "police": 0.03
+  },
+  "trafficCount": 7,
+  "oncomingCount": 6,
+  "processions": {
+    "every": {
+      "min": 50,
+      "max": 80
+    }
+  },
+  "segments": [
+    {
+      "length": 300,
+      "curve": 0
+    },
+    {
+      "length": 300,
+      "curve": 0.0025
+    },
+    {
+      "length": 800,
+      "curve": 0
+    },
+    {
+      "length": 300,
+      "curve": -0.0025
+    },
+    {
+      "length": 600,
+      "curve": 0
+    },
+    {
+      "length": 300,
+      "curve": 0.002
+    },
+    {
+      "length": 700,
+      "curve": 0
+    },
+    {
+      "length": 300,
+      "curve": -0.002
+    },
+    {
+      "length": 400,
+      "curve": 0
+    }
+  ],
+  "cameras": [
+    {
+      "s": 1000,
+      "side": "right",
+      "limit": 60
+    },
+    {
+      "s": 1250,
+      "side": "left",
+      "limit": 60
+    }
+  ],
+  "quietZones": [
+    {
+      "from": 650,
+      "to": 1400,
+      "density": 0.5
+    }
+  ],
+  "parked": [
+    {
+      "s": 680,
+      "side": "right"
+    },
+    {
+      "s": 720,
+      "side": "left"
+    },
+    {
+      "s": 860,
+      "side": "right"
+    },
+    {
+      "s": 900,
+      "side": "left"
+    },
+    {
+      "s": 1080,
+      "side": "right"
+    },
+    {
+      "s": 1120,
+      "side": "left"
+    },
+    {
+      "s": 1300,
+      "side": "right"
+    },
+    {
+      "s": 1350,
+      "side": "left"
+    }
+  ],
+  "junctions": [
+    {
+      "s": 800,
+      "turn": "straight"
+    },
+    {
+      "s": 1180,
+      "turn": "straight"
+    }
+  ],
+  "pelotons": [
+    {
+      "s": 700,
+      "count": 6
+    },
+    {
+      "s": 1850,
+      "count": 8
+    },
+    {
+      "s": 3000,
+      "count": 6
+    },
+    {
+      "s": 1100,
+      "count": 6,
+      "dir": -1
+    },
+    {
+      "s": 2250,
+      "count": 8,
+      "dir": -1
+    },
+    {
+      "s": 3450,
+      "count": 6,
+      "dir": -1
+    }
+  ],
+  "crossings": [
+    {
+      "s": 2000
+    }
+  ],
+  "stopGo": [
+    {
+      "from": 2750,
+      "to": 2950
+    }
+  ],
+  "exits": [
+    {
+      "exitAt": 2500,
+      "mergeAt": 3450,
+      "out": 90,
+      "bends": {
+        "count": 3,
+        "size": 10
+      },
+      "oncoming": true
+    }
+  ],
+  "targets": [
+    {
+      "s": 550,
+      "side": "left"
+    },
+    {
+      "s": 3700,
+      "side": "right"
+    },
+    {
+      "s": 400,
+      "side": "left",
+      "road": "side"
+    }
+  ],
+  "pickups": [
+    {
+      "type": "passenger",
+      "s": 200,
+      "lane": 1
+    },
+    {
+      "type": "radarDetector",
+      "s": 500,
+      "lane": 1
+    },
+    {
+      "type": "wrench",
+      "s": 1550,
+      "lane": 1
+    },
+    {
+      "type": "ghost",
+      "s": 1800,
+      "lane": 1
+    },
+    {
+      "type": "timePlus",
+      "s": 2350,
+      "lane": 1
+    },
+    {
+      "type": "turbo",
+      "s": 3100,
+      "lane": 1
+    },
+    {
+      "type": "mystery",
+      "s": 3800,
+      "lane": 1
+    },
+    {
+      "type": "timePlus",
+      "s": 300,
+      "lane": 1,
+      "road": "side"
+    },
+    {
+      "type": "turbo",
+      "s": 600,
+      "lane": 1,
+      "road": "side"
+    }
+  ],
+  "obstacles": [
+    {
+      "s": 250,
+      "lane": 1,
+      "road": "side",
+      "kind": "bale"
+    },
+    {
+      "s": 500,
+      "lane": 0,
+      "road": "side",
+      "kind": "bale"
+    },
+    {
+      "s": 750,
+      "lane": 1,
+      "road": "side",
+      "kind": "bale"
+    }
+  ]
+}

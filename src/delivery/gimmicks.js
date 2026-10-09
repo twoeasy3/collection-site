@@ -552,7 +552,7 @@ const GROUPS = [
       return { model: g, tick: (t) => { rocks[2].position.y = Math.max(0, 4 - ((t * 3) % 6)) ; rocks[2].userData.rock.rotation.x = t * 4; } };
     } },
     { name: 'Cyclist pelotons', color: 0xff4f8b, has: (l) => l.pelotons?.length, rules: [
-      `A bunch of cyclists riding two abreast by the kerb on your side at ${kmh(CONFIG.peloton.speed)}, setting off as you come within ${CONFIG.peloton.trigger} m.`,
+      `A bunch of cyclists riding two abreast by the kerb at ${kmh(CONFIG.peloton.speed)}, setting off as you come within ${CONFIG.peloton.trigger} m: on your side, or coming the other way down the far side.`,
       `Hit one and it is knocked flying (${CONFIG.obstacleKinds.cyclist.damage} damage); with a police car watching, that is a <strong>bust</strong>. Traffic drives straight through them.`,
     ], build: () => {
       const g = road(7, 12), riders = [];

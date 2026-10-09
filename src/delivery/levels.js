@@ -162,12 +162,16 @@
 //              as the player comes within trigger m (default CONFIG.wreckage.trigger): something goes
 //              up beside the road (from: 'left' | 'right') or falls out of the sky ('sky'), and its
 //              wreckage lands across those lanes at `at`, wrecking all there, blocking them for good.
-//              kind: 'tanker' | 'containers' | 'hangar' | 'plane' | 'airliner' (an airliner comes in
+//              kind: 'tanker' | 'containers' | 'boulders' | 'hangar' | 'plane' | 'airliner' (an airliner comes in
 //              to land `slide` m beyond `at` and slides back to it). Traffic pulls over for it.
 //              Or 'blast': a building `distance` m off the road on its side (from) blows out across
 //              its lanes out to the road's edge, wrecking all there just then, and leaves the road clear;
 //              it goes by the player's pace (see CONFIG.wreckage.blastWarn), not a trigger: with
-//              "ahead" (s), that much sooner, out of the player's reach unless the player speeds up
+//              "ahead" (s), that much sooner, out of the player's reach unless the player speeds up.
+//              rock: true makes a blast a quarry's: a crag of the rock face blasted out, rock and dust, not a building
+//   quarries   { from, to, side }: (the construction theme) a quarry beside the road over that stretch, on that
+//              side ('left' | 'right'): its floor, its rock face cut back in benches, crusher, heaps and trucks
+//              (only scenery; see CONFIG.quarry). A blast with rock: true (see wreckage) blows its face out
 //   runway     { from, width }: from there on the road is a runway, `width` m of concrete beyond each
 //              edge, with a runway's markings in place of lanes (the airport's look)
 //   tower      { at, trigger, distance, stub }: the control tower, beside the old road carrying
@@ -192,8 +196,10 @@
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall)
-//   pelotons   { s, count, speed, trigger }: cyclists two abreast by the kerb on the player's side,
-//              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton)
+//   pelotons   { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
+//              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
+//              dir -1: on the far side instead, riding towards the player (the bunch strung out behind
+//              them, past s)
 //   battle     true = the Battlefield: two armies at war down the road (see CONFIG.battle). Its traffic
 //              going the player's way is the player's side, green (good, whatever the player's side
 //              on the menu); coming the other way, the enemy's, red (evil). Best with "flow": "mixed"
@@ -253,12 +259,15 @@ import speedTrapAlley from './levels/speed-trap-alley.json';
 import mountainPass from './levels/mountain-pass.json';
 import outbackExpress from './levels/outback-express.json';
 import tourDeCoast from './levels/tour-de-coast.json';
+import ringRoad from './levels/ring-road.json';
+import marketTown from './levels/market-town.json';
+import quarryRun from './levels/quarry-run.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue,
-  speedTrapAlley, mountainPass, outbackExpress, tourDeCoast];
+  speedTrapAlley, mountainPass, outbackExpress, tourDeCoast, ringRoad, marketTown, quarryRun];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown, battlefield];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

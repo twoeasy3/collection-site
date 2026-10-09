@@ -782,19 +782,23 @@ const createTrack = () => {
     for (const z of LEVEL.landmines || []) {
       if (!(z.from < z.to) || z.from < 0 || z.to > length || !(z.count > 0)) problems.push('landmines at ' + z.from + '-' + z.to + ': from before to, on the road, with a count');
     }
+    for (const q of LEVEL.quarries || []) {
+      if (!(q.from < q.to) || q.from < 0 || q.to > length || (q.side !== 'left' && q.side !== 'right')) problems.push('quarry at ' + q.from + ': from before to, on the road, on the left or right');
+    }
     for (const h of LEVEL.potholes || []) {
       if (!(h.s >= 0 && h.s <= length) || !(Number.isInteger(h.lane) && h.lane >= 0 && h.lane < LANES)) problems.push('pothole at ' + h.s + ': in a lane on the road');
     }
     for (const p of LEVEL.pelotons || []) {
       if (!(p.s >= 0 && p.s <= length) || !(p.count > 0)) problems.push('peloton at ' + p.s + ': on the road, with a count');
-      else if (FLOW === 'south') problems.push('peloton at ' + p.s + ': it rides the player\'s way');
+      else if (p.dir === -1 ? FLOW === 'north' : FLOW === 'south') problems.push('peloton at ' + p.s + ': there is no ' + (p.dir === -1 ? 'oncoming side' : 'side the player\'s way') + ' for it to ride');
     }
     for (const e of LEVEL.wreckage || []) {
       const name = 'wreckage at ' + e.at;
       if (!CONFIG.wreckage.kinds[e.kind]) problems.push(name + ': there is no kind of wreckage called "' + e.kind + '"');
       else if (e.at < 0 || e.at > length) problems.push(name + ': beyond the road');
       else if (!(e.lanes && e.lanes[0] <= e.lanes[1] && e.lanes[0] >= 0 && e.lanes[1] < LANES)) problems.push(name + ': lanes [first, last] on the road');
-      else if (e.lanes[1] - e.lanes[0] + 1 >= openCount(1, e.at) + (ONE_WAY ? openCount(-1, e.at) : 0)) problems.push(name + ': it must leave a lane open');
+      else if (e.kind === 'boulders' ? e.lanes[1] - e.lanes[0] + 1 >= LANES // (boulders: some lane left open, either way)
+        : e.kind !== 'blast' && e.lanes[1] - e.lanes[0] + 1 >= openCount(1, e.at) + (ONE_WAY ? openCount(-1, e.at) : 0)) problems.push(name + ': it must leave a lane open'); // (a blast leaves the road clear)
     }
     for (const r of LEVEL.hippos || []) {
       if (!(r.from < r.to) || r.from < 0 || r.to > length) problems.push('hippos at ' + r.from + '-' + r.to + ': from before to, on the road');

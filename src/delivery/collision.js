@@ -9,6 +9,10 @@ import { Game } from './game.js';
 import { Message } from './messages.js';
 import { CAR } from './cars.js';
 
+// where a cyclist rides: by the kerb of the side its peloton rides along (dir 1: the player's side, its
+// inner row further out; dir -1: the far side, mirrored)
+const kerbLat = (ride, s) => ride.dir < 0 ? Track.laneLo(s) + 0.55 + ride.row * 0.9 : Track.laneHi(s) - 0.55 - ride.row * 0.9;
+
 // ============================================================================
 // COLLISION - oriented boxes in track space: x = distance along track, y = lateral
 // All vehicles are bodies that trade momentum; damage scales with impact speed.
@@ -316,12 +320,14 @@ export const Collision = (() => {
         add('landmine', s, Track.laneOffset(lane, s), { phase: mineRand(), buried: true, rise: 0 }); // (see CONFIG.battle.mineRise)
       }
     }
-    // pelotons: cyclists two abreast along the kerb of the player's side, waiting to set off
+    // pelotons: cyclists two abreast along the kerb of the player's side, waiting to set off (or, dir -1,
+    // along the far kerb, to ride towards the player)
     for (const p of LEVEL.pelotons || []) {
-      const P = CONFIG.peloton;
+      const P = CONFIG.peloton, dir = p.dir === -1 ? -1 : 1;
       for (let i = 0; i < p.count; i++) {
-        const s = Track.place(p) - Math.floor(i / 2) * P.spacing, row = i % 2;
-        add('cyclist', s, 0, { ride: { s0: s, row, speed: p.speed || P.speed, trigger: p.trigger || P.trigger, on: false, t: Math.random() * 9 } });
+        const s = Track.place(p) - dir * Math.floor(i / 2) * P.spacing, row = i % 2; // (the bunch trailing back the way it rides from)
+        const ride = { s0: s, row, dir, speed: p.speed || P.speed, trigger: p.trigger || P.trigger, on: false, t: Math.random() * 9 };
+        add('cyclist', s, kerbLat(ride, s), { ride, face: dir < 0 ? Math.PI : 0 });
       }
     }
     for (const z of LEVEL.dropBears || []) { // (each somewhere in its stretch, anywhere across the road)
@@ -584,10 +590,9 @@ export const Collision = (() => {
         const P = CONFIG.peloton, w = o.ride;
         if (!w.on && w.s0 - Player.s < w.trigger) w.on = true;
         w.t += dt;
-        if (w.on) o.s += w.speed * dt;
-        const kerb = Track.laneHi(o.s) - 0.55 - w.row * 0.9;
-        o.lat = kerb + Math.sin(w.t * 1.7 + w.row) * P.wobble;
-        o.face = Math.cos(w.t * 1.7 + w.row) * 0.05;
+        if (w.on) o.s += w.dir * w.speed * dt;
+        o.lat = kerbLat(w, o.s) + Math.sin(w.t * 1.7 + w.row) * P.wobble;
+        o.face = (w.dir < 0 ? Math.PI : 0) + Math.cos(w.t * 1.7 + w.row) * 0.05;
       } else if (o.kind === 'cow' || o.kind === 'kangaroo') {
         const roo = o.kind === 'kangaroo';
         if (o.rest > 0) { o.rest -= dt; o.h = 0; continue; } // standing at the roadside
@@ -743,7 +748,7 @@ export const Collision = (() => {
       if (o.ride) { // a cyclist back where its peloton waits
         o.s = o.ride.s0;
         o.ride.on = false;
-        o.lat = Track.laneHi(o.s) - 0.55 - o.ride.row * 0.9;
+        o.lat = kerbLat(o.ride, o.s);
         continue;
       }
       if (o.migrate) { // back to where it started out in the herd

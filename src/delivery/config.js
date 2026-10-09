@@ -384,6 +384,9 @@ export const CONFIG = {
   // each, out to `beyond` m either side and round again; galloping, bobbing up to `hop` m, `hops` times a second
   migration: { speed: { min: 4, max: 7 }, beyond: 35, hop: 0.2, hops: 2.5 },
   // wreckage (a level's "wreckage" and "tower": see wreckage.js), the scripted destruction
+  // a level's quarries (render/road.js: LEVEL.quarries): the floor from floorFrom to floorTo m off the
+  // road, then `benches` benches of the rock face, each benchDepth m deep and benchHeight m higher than the last
+  quarry: { floorFrom: 14, floorTo: 48, benches: 4, benchDepth: 12, benchHeight: 6 },
   wreckage: {
     trigger: 110,          // m short of it the player is when it is set off (a level's can say otherwise)
     flight: 1.6,           // s it takes to fly in and land
@@ -402,7 +405,7 @@ export const CONFIG = {
     towerFall: 2.6,        // s the control tower takes to come down...
     towerScale: 1.6,       // ...a tower this many times the usual size (some 85 m tall)
     kinds: {               // m each kind covers along the road (it covers its lanes across)
-      tanker: { depth: 3.5 }, containers: { depth: 5 }, hangar: { depth: 5 }, plane: { depth: 7 }, airliner: { depth: 34 }, blast: { depth: 18 },
+      tanker: { depth: 3.5 }, containers: { depth: 5 }, boulders: { depth: 6 }, hangar: { depth: 5 }, plane: { depth: 7 }, airliner: { depth: 34 }, blast: { depth: 18 },
     },
   },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game
@@ -622,6 +625,10 @@ export const CONFIG = {
   lowriderHearing: 90,     // m from a lowrider in traffic within which its music is heard (the same way)
   policeSightRange: 45,    // m along the road within which a police car witnesses what you do
   copGlowMargin: 12,       // m further out than that the screen's edges start flashing red and blue: a warning
+  // a police car on station at the edge of its stretch (see Traffic: policeOnStation) stops this many m
+  // short of the edge, braking at no more than stationBrake m/s^2 to do it
+  stationShort: 3,
+  stationBrake: 5,
   // A good player's social standing (see social.js), in points out of 100: gift points for each gift
   // that lands on a good driver (copGift on a police car), decay lost a second. With it, from none to
   // full: the police see policeSight.empty to policeSight.full times as far; the share of evil
@@ -953,8 +960,9 @@ export const CONFIG = {
     // walk across the fields there: never nearer the road than `out` m beyond its edge, nor further than out + spread
     airstrike: { every: { min: 8, max: 16 }, height: 32, speed: 95, bombs: { min: 5, max: 8 }, out: 14, spread: 45, from: 160, to: 520 },
   },
-  // a cyclist peloton (a level's "pelotons": { s, count, speed, trigger }): cyclists riding two abreast
-  // along the kerb of the player's side, setting off as the player comes within trigger m. Obstacles:
+  // a cyclist peloton (a level's "pelotons": { s, count, speed, trigger, dir }): cyclists riding two abreast
+  // along the kerb of the player's side (or, dir -1, the far side, towards the player), setting off as the
+  // player comes within trigger m. Obstacles:
   // only the player can hit them, and knocking one off with a police car watching is a bust
   peloton: {
     speed: 9,              // m/s

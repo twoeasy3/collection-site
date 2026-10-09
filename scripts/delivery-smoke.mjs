@@ -12,31 +12,43 @@ const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['commut
 globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: 'delivery_racer_progress=' + allOpen };
 
 // the game's dice are loaded, so a run is the same every time: a check that fails, fails again, and can be
-// looked into (--seed=n for another run of the dice)
-{
-  let seed = Number((process.argv.find(a => a.startsWith('--seed=')) || '').slice(7)) || 20261008;
-  Math.random = () => { // (mulberry32)
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+// looked into (--seed=n for another run of the dice). They are loaded afresh for every section, from the
+// seed and the section's name, and again after every check, from those and how many checks into the
+// section it is: so how many dice one test throws (a level given more cyclists, say) never changes the
+// throws of the tests in other sections, nor of the ones before it in its own
+const SEED = Number((process.argv.find(a => a.startsWith('--seed=')) || '').slice(7)) || 20261008;
+let dice = SEED;
+Math.random = () => { // (mulberry32)
+  dice = (dice + 0x6d2b79f5) | 0;
+  let t = Math.imul(dice ^ (dice >>> 15), 1 | dice);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+const reseed = (...parts) => { // (FNV-1a over the seed and the parts)
+  let h = 0x811c9dc5;
+  for (const ch of [SEED, ...parts].join('|')) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
+  dice = h | 0;
+};
 const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
 let failures = 0;
 const QUICK = process.argv.includes('--quick');
 // a section's heading, after how long the one before took
 const started = Date.now();
 let sectionStart = started;
+let sectionName = '', checksIn = 0; // (the section the checks are in, and how many so far: see reseed)
 const section = (name) => {
   const now = Date.now();
   if (now - sectionStart > 50) console.log(`  (${((now - sectionStart) / 1000).toFixed(1)} s)`);
   sectionStart = now;
   if (name) console.log(name);
+  sectionName = name || '';
+  checksIn = 0;
+  reseed(sectionName);
 };
 const check = (ok, what) => {
   if (!ok) failures++;
   console.log((ok ? '  ok    ' : '  FAIL  ') + what);
+  reseed(sectionName, ++checksIn);
 };
 
 try {
@@ -1261,6 +1273,54 @@ try {
       meet.passedPack && meet.touched === 0 && meet.wrecks === 0 && meet.waited &&
       plough.passedPack && plough.slowest > 0.95,
       `a peloton on a one-lane road: a good driver eases out past it (to ${clearRoadPass.widest.toFixed(2)} m), touching none; with a car coming the other way it waits behind the bunch first, and no head-on; an evil one ploughs through at ${Math.round(plough.slowest * 100)}% of its speed`);
+
+    // a peloton coming the other way (dir -1): waiting on the far side until the player is near, then riding
+    // towards it by the far kerb, facing its way; and a good driver coming up behind it the other way eases
+    // out past it just the same (an evil one ploughs through)
+    {
+      const road = levels.HIDDEN_LEVELS['gimmick-road'], at = 2600;
+      const freshOncoming = () => {
+        levels.selectSpecial({ ...road, pelotons: [{ s: at, count: 6, dir: -1 }] });
+        cars.selectCar('commuter');
+        Game.evil = false;
+        Game.start();
+      };
+      freshOncoming(); clearRoad();
+      const pack = Collision.obstacles.filter(o => o.ride), lead = pack[0];
+      setPlayer(at - P.trigger - 50, 0.1);
+      step(120);
+      const waitedFar = pack.every(r => !r.ride.on && Math.abs(r.s - r.ride.s0) < 1e-6) && pack.every(r => r.s >= at - 1e-6);
+      setPlayer(at - P.trigger + 20, 0.1);
+      step(1);
+      const s0 = lead.s;
+      step(120);
+      const towards = s0 - lead.s;
+      const farKerb = pack.every(r => r.lat < T().laneOffset(0, r.s) && r.lat > T().laneLo(r.s)) && pack.every(r => Math.abs(Math.abs(r.face) - Math.PI) < 0.1);
+      const passBy = (evil) => {
+        freshOncoming();
+        const riders = Collision.obstacles.filter(o => o.ride);
+        setPlayer(at - 250, 0.1, { ghost: 9 });
+        step(2); // (they set off)
+        const back0 = Math.max(...riders.map(o => o.s)); // (the back of the bunch, riding towards lower s)
+        const follower = placeCar(-1, 0, back0 + 60, 18, { evil });
+        for (const c of Traffic.cars) if (c !== follower) Object.assign(c, { active: false, unused: true });
+        let touched = 0, passed = false, slowest = Infinity, widest = -Infinity;
+        for (let i = 0; i < 120 * 30 && !passed; i++) {
+          setPlayer(Math.min(...riders.map(o => o.s)) - 250, 0.1, { ghost: 9 });
+          step();
+          const back = Math.max(...riders.map(o => o.s)), front = Math.min(...riders.map(o => o.s));
+          if (riders.some(o => Collision.overlap(follower, o))) touched++;
+          if (follower.s < back + 30 && follower.s > front) slowest = Math.min(slowest, Math.abs(follower.vs) / follower.baseSpeed);
+          if (follower.s < back + 2 && follower.s > front) widest = Math.max(widest, follower.lat);
+          passed = follower.s < front - 5;
+        }
+        return { touched, passed, slowest, widest, wrecked: follower.health <= 0 || !follower.active };
+      };
+      const good = passBy(false), bad = passBy(true);
+      check(waitedFar && Math.abs(towards - P.speed) < 0.2 && farKerb && good.passed && good.touched === 0 && !good.wrecked &&
+        good.widest > T().laneOffset(0, 0) + 0.5 && bad.passed && bad.slowest > 0.95,
+        `a peloton coming the other way: waits on the far side, then rides towards the player at ${towards.toFixed(1)} m/s by the far kerb; a good driver behind it eases out past it (to ${good.widest.toFixed(2)} m), touching none; an evil one ploughs through at ${Math.round(bad.slowest * 100)}% of its speed`);
+    }
 
     // ...which is a bust with a police car watching, and no offence without one
     const knock = (police) => {

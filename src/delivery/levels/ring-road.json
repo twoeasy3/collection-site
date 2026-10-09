@@ -1,0 +1,334 @@
+{
+  "id": "ring-road",
+  "name": "Ring Road",
+  "theme": "city",
+  "clock": { "good": 265, "evil": 200 },
+  "tip": 200,
+  "speedLimit": 90,
+  "traffic": {
+    "commuter": 0.25,
+    "taxi": 0.2,
+    "suv": 0.14,
+    "van": 0.14,
+    "minivan": 0.1,
+    "bus": 0.08,
+    "semi": 0.06,
+    "police": 0.03
+  },
+  "trafficCount": 10,
+  "oncomingCount": 8,
+  "emergencies": {
+    "every": {
+      "min": 45,
+      "max": 75
+    }
+  },
+  "segments": [
+    {
+      "length": 450,
+      "curve": 0
+    },
+    {
+      "length": 100,
+      "curve": 0
+    },
+    {
+      "length": 150,
+      "curve": -0.004
+    },
+    {
+      "length": 300,
+      "curve": 0.004
+    },
+    {
+      "length": 150,
+      "curve": -0.004
+    },
+    {
+      "length": 100,
+      "curve": 0
+    },
+    {
+      "length": 400,
+      "curve": 0
+    },
+    {
+      "length": 100,
+      "curve": 0
+    },
+    {
+      "length": 150,
+      "curve": -0.004
+    },
+    {
+      "length": 300,
+      "curve": 0.004
+    },
+    {
+      "length": 150,
+      "curve": -0.004
+    },
+    {
+      "length": 100,
+      "curve": 0
+    },
+    {
+      "length": 400,
+      "curve": 0
+    },
+    {
+      "length": 75,
+      "curve": 0
+    },
+    {
+      "length": 150,
+      "curve": -0.004
+    },
+    {
+      "length": 300,
+      "curve": 0.004
+    },
+    {
+      "length": 150,
+      "curve": -0.004
+    },
+    {
+      "length": 25,
+      "curve": 0
+    },
+    {
+      "length": 250,
+      "curve": 0
+    },
+    {
+      "length": 50,
+      "curve": 0
+    },
+    {
+      "length": 125,
+      "curve": -0.004
+    },
+    {
+      "length": 250,
+      "curve": 0.004
+    },
+    {
+      "length": 125,
+      "curve": -0.004
+    },
+    {
+      "length": 50,
+      "curve": 0
+    },
+    {
+      "length": 200,
+      "curve": 0
+    }
+  ],
+  "exits": [
+    {
+      "exitAt": 450,
+      "mergeAt": 1250,
+      "out": 70,
+      "bends": {
+        "count": 4,
+        "size": 12
+      },
+      "oncoming": true
+    },
+    {
+      "exitAt": 1650,
+      "mergeAt": 2450,
+      "out": 70,
+      "bends": {
+        "count": 5,
+        "size": 10
+      },
+      "oncoming": true
+    },
+    {
+      "exitAt": 2850,
+      "mergeAt": 3550,
+      "out": 70,
+      "bends": {
+        "count": 3,
+        "size": 14
+      },
+      "oncoming": true
+    },
+    {
+      "exitAt": 3800,
+      "mergeAt": 4400,
+      "out": 70,
+      "bends": {
+        "count": 2,
+        "size": 6
+      },
+      "oncoming": true
+    }
+  ],
+  "cameras": [
+    {
+      "s": 750,
+      "side": "right"
+    },
+    {
+      "s": 950,
+      "side": "centre"
+    },
+    {
+      "s": 2000,
+      "side": "left"
+    },
+    {
+      "s": 2200,
+      "side": "right"
+    },
+    {
+      "s": 3150,
+      "side": "centre"
+    },
+    {
+      "s": 3300,
+      "side": "right"
+    },
+    {
+      "s": 4050,
+      "side": "left"
+    }
+  ],
+  "targets": [
+    {
+      "s": 1500,
+      "side": "right"
+    },
+    {
+      "s": 3700,
+      "side": "left"
+    },
+    {
+      "s": 300,
+      "side": "right",
+      "road": "side",
+      "exit": 1
+    }
+  ],
+  "pickups": [
+    {
+      "type": "passenger",
+      "s": 150,
+      "lane": 2
+    },
+    {
+      "type": "turbo",
+      "s": 500,
+      "lane": 3
+    },
+    {
+      "type": "turbo",
+      "s": 1750,
+      "lane": 2
+    },
+    {
+      "type": "turbo",
+      "s": 2900,
+      "lane": 3
+    },
+    {
+      "type": "turbo",
+      "s": 3800,
+      "lane": 2
+    },
+    {
+      "type": "radarDetector",
+      "s": 1450,
+      "lane": 2
+    },
+    {
+      "type": "wrench",
+      "s": 2600,
+      "lane": 3
+    },
+    {
+      "type": "timePlus",
+      "s": 400,
+      "lane": 1,
+      "road": "side",
+      "exit": 0
+    },
+    {
+      "type": "wrench",
+      "s": 350,
+      "lane": 1,
+      "road": "side",
+      "exit": 1
+    },
+    {
+      "type": "timePlus",
+      "s": 300,
+      "lane": 1,
+      "road": "side",
+      "exit": 2
+    },
+    {
+      "type": "ghost",
+      "s": 250,
+      "lane": 1,
+      "road": "side",
+      "exit": 3
+    }
+  ],
+  "obstacles": [
+    {
+      "s": 200,
+      "lane": 1,
+      "road": "side",
+      "exit": 0
+    },
+    {
+      "s": 550,
+      "lane": 1,
+      "road": "side",
+      "exit": 0,
+      "kind": "cone"
+    },
+    {
+      "s": 180,
+      "lane": 0,
+      "road": "side",
+      "exit": 1,
+      "kind": "cone"
+    },
+    {
+      "s": 500,
+      "lane": 1,
+      "road": "side",
+      "exit": 1
+    },
+    {
+      "s": 200,
+      "lane": 1,
+      "road": "side",
+      "exit": 2
+    },
+    {
+      "s": 420,
+      "lane": 0,
+      "road": "side",
+      "exit": 2
+    },
+    {
+      "s": 150,
+      "lane": 1,
+      "road": "side",
+      "exit": 3,
+      "kind": "cone"
+    },
+    {
+      "s": 380,
+      "lane": 1,
+      "road": "side",
+      "exit": 3
+    }
+  ]
+}

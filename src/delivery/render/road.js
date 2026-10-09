@@ -2037,8 +2037,12 @@ const buildRoad = () => {
         kinds.lamp.push([s + side * 30, lat, 12.2, 1.6, 0.6, 0.8]);
       }
     }
+    // (a level's quarries, LEVEL.quarries { from, to, side }: see below. The site's big things keep out of them)
+    const quarries = (LEVEL.quarries || []).map(q => ({ ...q, sg: q.side === 'left' ? -1 : 1 }));
+    const inQuarry = (s, side) => quarries.some(q => q.sg === side && s > q.from - 40 && s < q.to + 40);
     for (let s = 40; s < Track.end; s += 90 + Math.random() * 70) {
       const side = Math.random() < 0.5 ? -1 : 1, d = 25 + Math.random() * 40, lat = beside(side, s, d), r = Math.random();
+      if (inQuarry(s, side)) continue;
       if (r < 0.35) { // a steel frame going up: columns and floor beams, a few storeys
         const floors = 3 + Math.floor(Math.random() * 5), w = 18, dd = 14;
         for (const [x, z] of [[-w / 2, -dd / 2], [w / 2, -dd / 2], [-w / 2, dd / 2], [w / 2, dd / 2], [0, -dd / 2], [0, dd / 2]]) {
@@ -2118,8 +2122,47 @@ const buildRoad = () => {
       timber: 0xd4b07a, spool: 0x8a6a45, hivis: 0xff8a1a, skin: 0xe0b48c, hat: 0xf6e12a, beacon: 0xffa21a, bags: 0xb8a77a,
       scaffold: 0x9aa3ab, plank: 0xb8925a, genset: 0x3f7d3a, dirt: 0x7a6248, drum: 0x2c3440, mixer: 0xe86a1e,
       gravel: 0x9c968a, pipe: 0xb5b0a6, craneMast: 0xf2c21a, jib: 0xf2c21a, counter: 0x8a8f96 };
+    // ---- quarries: a gravel floor by the road, and beyond it the rock face cut back in benches, each
+    // higher than the last, banded in the rock's colours; on the floor heaps of crushed stone, the
+    // crusher with its conveyor up to the biggest heap, and haul trucks parked up
+    const Q = CONFIG.quarry;
+    Object.assign(kinds, { qFloor: [], benchA: [], benchB: [], stone: [], crusher: [], hopper: [], haul: [], haulCab: [], tyre: [] });
+    for (const q of quarries) {
+      for (let s = q.from; s < q.to; s += 10) kinds.qFloor.push([s + 5, beside(q.sg, s + 5, (Q.floorFrom + Q.floorTo) / 2), 0.03, Q.floorTo - Q.floorFrom, 0.06, 10.4]);
+      for (let k = 0; k < Q.benches; k++) {
+        const d = Q.floorTo + k * Q.benchDepth + Q.benchDepth / 2;
+        for (let s = q.from + k * 8; s < q.to - k * 8; s += 6) {
+          const h = (k + 1) * Q.benchHeight + Math.random() * 0.8;
+          (k % 2 ? kinds.benchB : kinds.benchA).push([s + 3, beside(q.sg, s + 3, d), h / 2, Q.benchDepth + 0.2, h, 6.3]);
+        }
+      }
+      for (let s = q.from + 30; s < q.to - 20; s += 55 + Math.random() * 30) { // heaps of crushed stone
+        const h = 4 + Math.random() * 4;
+        kinds.stone.push([s, beside(q.sg, s, Q.floorFrom + 8 + Math.random() * (Q.floorTo - Q.floorFrom - 16)), h / 2, h * 2.4, h, h * 2.4]);
+      }
+      const mid = (q.from + q.to) / 2, crushD = Q.floorTo - 6; // the crusher, and its conveyor up to the big heap
+      kinds.crusher.push([mid, beside(q.sg, mid, crushD), 3, 6, 6, 8]);
+      kinds.hopper.push([mid, beside(q.sg, mid, crushD), 7, 4, 2, 5]);
+      const heapS = mid + 26, heapD = Q.floorFrom + 10;
+      kinds.stone.push([heapS, beside(q.sg, heapS, heapD), 4.5, 20, 9, 20]);
+      const a = {}, b = {};
+      Track.toWorld(mid, beside(q.sg, mid, crushD), a); a.y += 6;
+      Track.toWorld(heapS, beside(q.sg, heapS, heapD), b); b.y += 9.5;
+      const belt = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.5, Math.hypot(b.x - a.x, b.y - a.y, b.z - a.z)), new THREE.MeshLambertMaterial({ color: 0x3a3d42 }));
+      belt.position.set((a.x + b.x) / 2, (a.y + b.y) / 2, (a.z + b.z) / 2);
+      belt.lookAt(b.x, b.y, b.z);
+      levelGroup.add(belt);
+      for (let k = 0; k < 2; k++) { // haul trucks, parked up on the floor
+        const ts = q.from + 40 + k * 24 + Math.random() * 20, td = Q.floorFrom + 6 + k * 5;
+        kinds.haul.push([ts, beside(q.sg, ts, td), 2.6, 4, 2.4, 8]);
+        kinds.haulCab.push([ts + 4.2, beside(q.sg, ts + 4.2, td), 2.9, 2.6, 2.2, 2]);
+        for (const [dz, dx] of [[-2.6, -1.9], [-2.6, 1.9], [2.8, -1.9], [2.8, 1.9]]) kinds.tyre.push([ts + dz, beside(q.sg, ts + dz, td) + dx, 1.2, 2.4, 0.9, 2.4]);
+      }
+    }
+    Object.assign(colours, { qFloor: 0xb5ab98, benchA: 0x9a9182, benchB: 0x7f786c, stone: 0xa9a092, crusher: 0x5f646b, hopper: 0xf2b51c,
+      haul: 0xf2c21a, haulCab: 0x2c3440, tyre: 0x1c1c1c });
     for (const [name, list] of Object.entries(kinds)) {
-      instances(name === 'gravel' || name === 'dirt' ? cone : name === 'pipe' || name === 'spool' ? tube : name === 'mixer' || name === 'skin' ? sphereGeo : cube,
+      instances(name === 'gravel' || name === 'dirt' || name === 'stone' ? cone : name === 'pipe' || name === 'spool' ? tube : name === 'mixer' || name === 'skin' ? sphereGeo : cube,
         colours[name], list, name === 'lamp' || name === 'beacon' || name === 'hivis');
     }
     // "ROAD WORK" signs, yellow diamonds on posts beside the road, every so often, facing the player
