@@ -192,8 +192,8 @@ export const Collision = (() => {
       hurt(a, damage * hit(a, shareA) * 2);
       hurt(b, damage * hit(b, shareB) * 2);
       if (a.isPlayer || b.isPlayer) Traffic.arrest(a.isPlayer ? b : a); // (under the player's siren)
-      if (a.isPlayer) b.grudge = true;
-      if (b.isPlayer) a.grudge = true;
+      if (a.isPlayer) b.grudge = CONFIG.grudgeTime;
+      if (b.isPlayer) a.grudge = CONFIG.grudgeTime;
       // traffic that collides with traffic tends to take it personally
       if (Math.random() < CONFIG.rivalryChance) startRivalry(a, b);
       if (Math.random() < CONFIG.rivalryChance) startRivalry(b, a);

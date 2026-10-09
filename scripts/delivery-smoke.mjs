@@ -1926,36 +1926,68 @@ try {
     check(T.junctions.length === 10 && turns.length === 5 && turns.every(jn => Math.abs(Math.abs(jn.turned) - Math.PI / 2) < 0.02) &&
       T.junctions.every(jn => jn.arms.length === 2 && jn.arms.every(arm => arm.length > jn.half + 150)),
       `${T.junctions.length} junctions: ${turns.length} quarter turns (radius ${turns[0].radius.toFixed(1)} m) and ${straight.length} straight on, every arm running ${Math.min(...T.junctions.flatMap(jn => jn.arms.map(a => a.length))).toFixed(0)} m or more`);
-    // a drive through: traffic leaves down the arms (carrying straight on at turns, turning off
-    // straight on), never across traffic on the road (it only goes with nothing beside it on the outside of the
-    // bend: see Traffic's leaveAtJunction), and is gone at the end
-    let leftAtTurns = 0, leftStraight = 0, close = 0, stuck = 0;
-    const leaving = new Map(), p = {}; // (each one leaving, and the lat it left the road at)
-    for (let i = 0; i < 120 * 200 && Game.state === 'playing'; i++) {
-      Player.health = Player.maxHealth; Game.busts = 0; Game.time = 0;
-      Game.update(1 / 120);
-      FxQueue.length = 0;
-      for (const g of Traffic.cars) {
-        if (!g.active || !g.junction) { leaving.delete(g); continue; }
-        if (!leaving.has(g)) { leaving.set(g, g.lat); if (T.junctions[g.junction.j].way) leftAtTurns++; else leftStraight++; }
-        if (g.junction.u > g.junction.length + 1) stuck++;
-        if (g.junction.u < 3) continue; // (just starting off, a car tailgating it on the road may still be close behind)
-        for (const c of Traffic.cars) {
-          if (!c.active || c.junction || !T.isMain(c.s)) continue;
-          // (not one that was following it in its own lane, still close behind; nor one out of control)
-          if (Math.abs(c.lat - leaving.get(g)) < 2 || c.spin > 0 || c.wobble > 0 || c.stun > 0) continue;
-          T.toWorld(c.s, c.lat, p);
-          if (Math.hypot(p.x - g.wx, p.z - g.wz) < 2.5) close++;
+    // leaving at junctions, one car at a time (the road cleared, the player held well back, every junction's
+    // chances of leaving at 1 so nothing is left to the dice): at a turn a car carries straight on down the arm
+    // ahead and is gone at its end, unless something going its way is beside it on the outside of the bend
+    // (it would cut across it); at a junction straight on only a car in the outside lane turns off; and
+    // oncoming traffic gives way while one is crossing the box
+    {
+      const alone = () => { for (const c of Traffic.cars) Object.assign(c, { active: false, unused: true }); };
+      const put = (lane, s, speed, dir = 1) => {
+        const car = Traffic.cars.find(c => !c.active && c.unused);
+        Object.assign(car, { active: true, unused: false, kind: 'commuter', dir, bound: dir > 0 ? 'north' : 'south', fixed: false, parked: false, emergency: false,
+          racer: false, procession: 0, junction: null, junctionSeen: null, s, lane, lat: T.laneOffset(lane, s), vs: dir * speed, baseSpeed: speed, latVel: 0,
+          yaw: 0, yawVel: 0, stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, think: 99, rival: null, pendingLane: null, pulledOver: false,
+          evil: false, mood: 0, emotion: 'neutral', hesitant: false, tap: 0, hw: CONFIG.vehicles.commuter.hw, hl: CONFIG.vehicles.commuter.hl });
+        return car;
+      };
+      const fresh = (jn) => {
+        Game.start();
+        alone();
+        for (const x of T.junctions) Object.assign(x, { forward: 1, turnOff: 1 });
+        Object.assign(Player, { s: jn.s - 300, lat: T.laneOffset(T.laneRange(1, jn.s - 300)[1], jn.s - 300), speed: 0, ghost: 99, launching: false });
+      };
+      const run = (cars, seconds, each) => {
+        for (let i = 0; i < 120 * seconds; i++) {
+          Player.speed = 0; Player.health = Player.maxHealth; Game.time = 0;
+          Game.update(1 / 120);
+          FxQueue.length = 0;
+          each?.();
         }
-      }
+      };
+      const kept0 = T.junctions.map(x => ({ ...x })); // (put back after: the junctions outlast a restart)
+      const turn = turns[1], ahead = straight[1];
+      const [first, last] = T.laneRange(1, turn.s - 30);
+      // (the lane on the inside of the bend, and the one beside it on the outside)
+      const inside = turn.way > 0 ? last : first, outside = turn.way > 0 ? first : last;
+      fresh(turn);
+      const goes = put(inside, turn.s - 30, 10);
+      let left = false, gone = false;
+      run([goes], 40, () => { left ||= !!goes.junction; gone ||= left && !goes.active; });
+      fresh(turn);
+      const held = put(inside, turn.s - 30, 10), blocker = put(outside, turn.s - 32, 10);
+      let cut = false;
+      run([held, blocker], 6, () => { cut ||= !!held.junction; });
+      const [, outer] = T.laneRange(1, ahead.s - 30);
+      fresh(ahead);
+      const turner = put(outer, ahead.s - 30, 10), keeper = put(outer - 1, ahead.s - 40, 10);
+      let turned = false, kept = true;
+      run([turner, keeper], 8, () => { turned ||= !!turner.junction; kept &&= !keeper.junction; });
+      fresh(turn);
+      const crosser = put(inside, turn.s - 12, 10), oncoming = put(T.laneRange(-1, turn.s)[1], turn.end + 40, 10, -1);
+      let busyIn = false;
+      run([crosser, oncoming], 6, () => { if (turn.busy && oncoming.active && oncoming.s < turn.end && oncoming.s > turn.s) busyIn = true; });
+      T.junctions.forEach((x, i) => Object.assign(x, kept0[i]));
+      check(left && gone && !cut && turned && kept && !busyIn,
+        `junctions: at a turn a car carries straight on down the arm and is gone at its end, but not across one beside it on the outside of the bend; ` +
+        `straight on, one in the outside lane turns off and one in from it doesn't; oncoming traffic waits while one crosses the box` +
+        (left && gone && !cut && turned && kept && !busyIn ? '' : ` [left ${left}, gone ${gone}, cut ${cut}, turned ${turned}, kept ${kept}, oncoming in the busy box ${busyIn}]`));
     }
-    check(Game.outcome === 'delivered' && leftAtTurns > 0 && leftStraight > 0 && close === 0 && !stuck,
-      `a drive through: ${leftAtTurns} cars carried straight on at turns and ${leftStraight} turned off straight on, down arms the player can't take, none across traffic on the road` +
-      (Game.outcome === 'delivered' && !close && !stuck ? '' : ` [outcome ${Game.outcome || Game.state}, near ${close}, stuck ${stuck}, player at ${Player.s.toFixed(0)}${Player.active ? '' : ', wrecked'}${Player.busted ? ', busted' : ''}]`));
     // driving on the left: the level is shown mirrored, so steering is reversed in the game's own terms
     const steerFor = (id) => {
       levels.selectLevel(levels.LEVELS.findIndex(l => l.id === id));
       Game.start();
+      for (const c of Traffic.cars) c.active = false; // (nothing beside the car to stop it moving over)
       Object.assign(Player, { s: 100, speed: 15, launching: false });
       const lat0 = Player.lat;
       steerNote = `active ${Player.active}, busted ${Player.busted}, state ${Game.state}, paused ${Game.paused}`;
@@ -2497,6 +2529,48 @@ try {
       (crosses && m.gone && Player.active && Math.abs(hp - Player.health - M.damage) < 1e-6 && fast > 8 ? ''
         : ` [crosses ${crosses} (lat ${Math.min(...lats).toFixed(1)} to ${Math.max(...lats).toFixed(1)}, road ${T().lo(m.s).toFixed(1)} to ${T().hi(m.s).toFixed(1)}), gone ${m.gone}, active ${Player.active}, cost ${(hp - Player.health).toFixed(1)}, speed after ${fast.toFixed(1)}]`));
     Game.toMenu();
+  }
+
+  section('grudges and chasing');
+  {
+    // Back Roads (two-way): one evil car about, nothing else, the player held still at 600 m in its own lane
+    const T = () => track.Track;
+    levels.selectLevel(levels.LEVELS.findIndex(l => l.id === 'back-roads'));
+    cars.selectCar('commuter');
+    Game.evil = false;
+    Game.start();
+    for (const c of Traffic.cars) Object.assign(c, { active: false, unused: true });
+    const [first, last] = T().laneRange(1, 600), [, oncomingLast] = T().laneRange(-1, 600);
+    const car = Traffic.cars[0], type = CONFIG.vehicles.commuter;
+    Object.assign(car, { active: true, unused: false, kind: 'commuter', dir: 1, bound: 'north', fixed: false, parked: false, emergency: false, racer: false,
+      procession: 0, junction: null, s: 600, lane: first, lat: T().laneOffset(first, 600), vs: 15, baseSpeed: 15, latVel: 0, yaw: 0, yawVel: 0,
+      stun: 0, spin: 0, wobble: 0, toad: null, arrest: -1, think: 99, rival: null, pendingLane: null, pulledOver: false, evil: true, mood: 0,
+      emotion: 'neutral', hesitant: false, tap: 0, hw: type.hw, hl: type.hl, height: type.height, mass: type.mass, health: type.health, maxHealth: type.health });
+    // a grudge wears off CONFIG.grudgeTime s after the last upset
+    car.grudge = CONFIG.grudgeTime;
+    const hold = (lane) => Object.assign(Player, { s: car.s, lat: T().laneOffset(lane, car.s), speed: car.vs, ghost: 99, launching: false });
+    let at = null;
+    for (let i = 0; i < 120 * (CONFIG.grudgeTime + 1); i++) {
+      hold(last);
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      if (at === null && !(car.grudge > 0)) at = i / 120;
+    }
+    // chasing: a car out to get the player (here, a jerk's mystery) steers at it alongside, but never over
+    // the centre line after it into the oncoming lanes
+    let furthest = -Infinity;
+    for (let i = 0; i < 120 * 4; i++) {
+      Object.assign(Player, { mystery: 'jerk', mysteryTime: 9 });
+      hold(oncomingLast);
+      Game.update(1 / 120);
+      FxQueue.length = 0;
+      // (how far past its own lane's centre it has come, towards the oncoming side)
+      const toward = Math.sign(T().laneOffset(oncomingLast, car.s) - T().laneOffset(first, car.s));
+      if (car.active) furthest = Math.max(furthest, (car.lat - T().laneOffset(first, car.s)) * toward);
+    }
+    Object.assign(Player, { mystery: '', mysteryTime: 0 });
+    check(at !== null && Math.abs(at - CONFIG.grudgeTime) < 0.05 && furthest < 0.3,
+      `a grudge wears off ${at?.toFixed(2)} s after the last upset; a car chasing the player alongside in the oncoming lane stays on its own side (at most ${furthest.toFixed(2)} m past its lane's centre towards it)`);
   }
 
   section('cars');

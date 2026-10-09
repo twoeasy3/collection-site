@@ -663,6 +663,7 @@ export const CONFIG = {
   splashRadius: 4,         // m
   splashDamage: 6,
   attitudeRange: 50,       // metres behind a car at which it reacts to the player
+  grudgeTime: 7,           // s a driver the player has upset holds its grudge (throwing at the player), from the last upset
   // How a traffic driver treats the player: by its side, its mood, and the player's side.
   //   good driver, good player: happy, friendly (moves aside, and eases off, letIn of its pace, to
   //     let the player in from the lane beside); angry, sulky (tailgates, within tailgate m, honks,

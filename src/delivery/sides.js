@@ -81,7 +81,7 @@ document.getElementById('page').innerHTML = `
 
 <section>
   <h2>Moods and grudges</h2>
-  <p>Every driver has a mood, shown by the face that pops up over the car. A <strong>grudge</strong> is separate: a driver holding one throws at you instead of at other traffic.</p>
+  <p>Every driver has a mood, shown by the face that pops up over the car. A <strong>grudge</strong> is separate: a driver holding one throws at you instead of at other traffic, for ${C.grudgeTime} s after you last upset it.</p>
   ${table(['What happens', 'Mood', 'Grudge'], [
     ['Your gift lands on a good driver', signed(C.packageMoodBoost), '—'],
     ['Your gift lands on an evil driver', 'to furious', `throws at you for ${C.giftOffence} s, then now and then`],
