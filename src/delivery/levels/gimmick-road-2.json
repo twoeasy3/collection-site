@@ -38,12 +38,6 @@
   "marathons": [
     { "s": 1600, "lane": 5, "count": 10, "water": 1850 }
   ],
-  "tolls": [
-    { "s": 2300 }
-  ],
-  "averageCameras": [
-    { "from": 2600, "to": 3200, "limit": 90 }
-  ],
   "balloons": [
     { "s": 3550, "lanes": [3, 5] }
   ],

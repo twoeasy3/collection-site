@@ -7,6 +7,7 @@ import { Track } from './track.js';
 import { LEVEL, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
 import { THEMES } from './themes.js';
 import { Progress } from './progress.js';
+import './render/demo.js'; // (?demo: before the menu)
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Game } from './game.js';
@@ -50,6 +51,7 @@ import './render/menu.js';
 import './render/touch.js';
 import './render/album.js';
 import './render/milestones.js';
+import './render/savecode.js';
 import './horn.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
@@ -68,6 +70,7 @@ if (params.get('garage') !== null) {
   Garage.evil = params.get('garage') === 'evil';
   Garage.open();
   if (params.get('hover')) Garage.hover(params.get('hover'));
+  if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');

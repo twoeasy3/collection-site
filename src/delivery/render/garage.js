@@ -11,6 +11,8 @@ import { renderer } from './scene.js';
 import { makeCarMesh, shapeCarMesh, makeTankMesh } from './cars.js';
 import { MODELS } from './models.js';
 import { makeUfo } from './carExtras.js';
+import { GarageView, arrange, mountGarageView } from './garageview.js';
+import { showComparison } from './compare.js';
 
 // The lot: three rows of bays, a long covered garage along the back, the cars parked strictly column by
 // column in order of their stars and price, cheapest first (one with no stars, the Tank, last), and in
@@ -72,9 +74,10 @@ const label = (text, w, h, size, colour = '#ffd23f', ground = '#20242c') => {
 const buildLot = () => {
   built = onShow();
   lot.clear();
-  const sorted = garageCars().sort((a, b) => rank(a) - rank(b) || a.price - b.price);
+  // (sorted and filtered by the bar's Sort and Show buttons: see render/garageview.js)
+  const sorted = arrange(garageCars().sort((a, b) => rank(a) - rank(b) || a.price - b.price));
   order = [];
-  for (let i = 0; i < sorted.length; i += ROWS) order.push(...sorted.slice(i, i + ROWS).sort((a, b) => bulk(a) - bulk(b))); // (in each column, the biggest at the back)
+  for (let i = 0; i < sorted.length; i += ROWS) order.push(...sorted.slice(i, i + ROWS).sort((a, b) => GarageView.usual ? bulk(a) - bulk(b) : 0)); // (in each column, the biggest at the back; sorted some other way, strictly in that order)
   COLS = Math.ceil(order.length / ROWS);
   LOT_W = COLS * BAY_W;
   const mid = (LOT_W - BAY_W) / 2, left = -BAY_W / 2, right = LOT_W - BAY_W / 2;
@@ -168,6 +171,7 @@ const refresh = () => {
   liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
   const shown = looking || inUse, owned = Progress.owns(shown.id);
   info.replaceChildren(...withStars(shown), '  -  ' + stats(shown));
+  showComparison(inUse, shown); // (the car in use against the one looked at: see render/compare.js)
   // the button under the stats: what can be done with the car shown
   action.textContent = shown === inUse ? 'In use' : owned ? 'Use this car' : Progress.data.money >= shown.price ? 'Buy for ' + money(shown.price) : 'Need ' + money(shown.price);
   action.disabled = shown === inUse || (!owned && Progress.data.money < shown.price);
@@ -255,6 +259,16 @@ renderer.domElement.addEventListener('click', (event) => {
 });
 
 liveryBtn.addEventListener('click', () => { Garage.evil = !Garage.evil; refresh(); });
+// the bar's Sort and Show buttons: the lot built again, from its first column (a car looked at that is no longer
+// parked is let go)
+mountGarageView(() => {
+  buildLot();
+  if (!order.includes(looking)) looking = null;
+  scrollX = clampScroll(0);
+  fling = 0;
+  hovered = null;
+  refresh();
+});
 document.getElementById('garageBackBtn').addEventListener('click', () => Garage.close());
 
 const anchor = new THREE.Vector3();
@@ -287,6 +301,11 @@ export const Garage = {
     startScreen.classList.remove('hidden');
     document.body.classList.remove('in-garage');
     renderer.domElement.style.cursor = '';
+  },
+  // for testing: look at the car with this id, as if it had been tapped (its stats, and the comparison card)
+  look(carId) {
+    const mesh = parked.find(m => m.userData.car.id === carId);
+    if (mesh) { pick(mesh); scrollTo(mesh.userData.car); }
   },
   // for testing: show the tooltip of the car with this id as if the pointer were on it
   hover(carId) {

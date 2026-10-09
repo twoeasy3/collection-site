@@ -73,25 +73,6 @@ try {
   g.run(3, () => { quiet(); });
   check(m.members.some(o => o.gone) && P.health < health, 'marathon: running into the runners knocks them down, and costs health');
 
-  // ---- toll (s 2300)
-  start(2150, 3, 30);
-  g.run(10, () => { quiet(); return P.s > 2320; });
-  check(Hazards.tolls[0].rammed && said('ran the toll'), 'toll: flat out through it rams the boom');
-  start(2150, 3, 20);
-  g.run(30, () => { quiet(); g.drive(P.s > 2230 && P.s < 2300 && P.speed > 7 ? -1 : 1, 0); return P.s > 2320; });
-  check(Hazards.tolls[0].paid && !Hazards.tolls[0].rammed && G.fines === 15 && !P.busted, 'toll: slowing down for it pays the fee ($' + G.fines + ') and is no offence');
-
-  // ---- average-speed cameras (2600 - 3200, 90 km/h)
-  start(2550, 3, 40);
-  g.run(30, () => { quiet(); return P.s > 3220; });
-  check(G.fines > 0 && said('AVERAGE SPEED CAMERA'), 'average-speed cameras: flat out between them is a fine ($' + G.fines + ')');
-  start(2550, 3, 20);
-  g.run(60, () => { quiet(); g.drive(P.speed > 23 ? 0 : 1, 0); P.speed = Math.min(P.speed, 24); return P.s > 3220; });
-  check(G.fines === 0 && said('Thank you'), 'average-speed cameras: under the limit all the way is no offence');
-  start(2550, 3, 40);
-  g.run(90, () => { quiet(); g.drive(P.s > 3100 && P.s < 3195 && P.speed > 15 ? -1 : 1, 0); return P.s > 3220; });
-  check(G.fines > 0, 'average-speed cameras: braking just before the second gantry does not fool them ($' + G.fines + ')');
-
   // ---- balloon (s 3550)
   start(3250, 3, 30);
   let landed = false;

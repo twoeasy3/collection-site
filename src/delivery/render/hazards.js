@@ -1,11 +1,10 @@
-// ---- HAZARDS: Gimmick Road 2's things that aren't obstacles (what they do: ../hazards.js, and
-// ../cameras.js for the average-speed cameras; the trolleys, runners, wide load and the rest that can be
+// ---- HAZARDS: Gimmick Road 2's things that aren't obstacles (what they do: ../hazards.js;
+// the trolleys, runners, wide load and the rest that can be
 // run into are drawn as obstacles) ----
 // A school crossing: a zebra, a lollipop person at the kerb whose sign turns to STOP, and the children
 // walking across. A burst water main: a jet of water out of the road and the wet lane beyond it. A
 // hot-air balloon coming down on its lanes, its shadow flashing where it will land. A drawbridge: the
-// river, two leaves that lift, a boom and lamps each side. A toll plaza: a canopy, a boom across each
-// lane. And the average-speed cameras' gantries.
+// river, two leaves that lift, a boom and lamps each side.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
@@ -81,7 +80,7 @@ const boom = (length) => {
 
 const group = new THREE.Group();
 scene.add(group);
-let schools = [], mains = [], balloons = [], bridges = [], tolls = [];
+let schools = [], mains = [], balloons = [], bridges = [];
 
 Game.onLoad.push(() => {
   group.clear();
@@ -190,49 +189,6 @@ Game.onLoad.push(() => {
     }
     return { leaves, booms, lamps };
   });
-  // ---- toll plazas: a canopy over the lanes going the player's way, a boom across each, and its sign
-  tolls = (LEVEL.tolls || []).map((t) => {
-    const s = Track.place(t), [first, last] = Track.laneRange(1, s), arms = [];
-    const lo = Track.laneOffset(first, s) - LW / 2, hi = Track.laneOffset(last, s) + LW / 2, mid = (lo + hi) / 2, w = hi - lo;
-    const plaza = at(s, mid);
-    add(plaza, box(w + 4, 0.5, 9), lambert(0x1f6b3a), 0, 5.2, 0);
-    add(plaza, box(w + 4.2, 0.2, 9.2), lambert(0xf4f4f4), 0, 5.5, 0);
-    for (const x of [-(w / 2 + 1.4), w / 2 + 1.4]) add(plaza, box(0.5, 5, 0.5), lambert(0x8a9096), x, 2.5, 0);
-    const sign = board('TOLL $' + (t.fee ?? CONFIG.toll.fee) + '  SLOW', '#1f6b3a', '#fff', Math.min(w + 2, 9), 1.4);
-    sign.position.set(0, 6.4, -4.6);
-    sign.rotation.y = Math.PI;
-    plaza.add(sign);
-    for (let lane = first; lane <= last; lane++) {
-      const x = -(Track.laneOffset(lane, s) - mid); // (local +x is to the left)
-      const hinge = new THREE.Group(), arm = boom(LW - 0.5);
-      hinge.position.set(x + LW / 2 - 0.2, 1.1, 0);
-      hinge.rotation.y = Math.PI; // (reaching to the right, across its lane)
-      hinge.add(arm);
-      plaza.add(hinge);
-      add(plaza, box(0.3, 1.3, 0.3), lambert(0xffd23f), x + LW / 2 - 0.2, 0.65, 0);
-      arms.push({ arm, lat: Track.laneOffset(lane, s) });
-    }
-    return { s, arms };
-  });
-  // ---- average-speed cameras: a gantry at each end, a camera over each lane going the player's way
-  for (const z of LEVEL.averageCameras || []) {
-    const from = Track.place({ s: z.from, road: z.road, exit: z.exit }), limit = z.limit ?? CONFIG.averageSpeed.limit;
-    [from, from + (z.to - z.from)].forEach((s, k) => {
-      const lo = Track.lo(s), hi = Track.hi(s), gantry = at(s, (lo + hi) / 2), w = hi - lo + 1;
-      for (const x of [-w / 2, w / 2]) add(gantry, box(0.4, 6.4, 0.4), lambert(0x8a9096), x, 3.2, 0);
-      add(gantry, box(w + 0.4, 0.5, 0.5), lambert(0x8a9096), 0, 6.4, 0);
-      const [first, last] = Track.laneRange(1, s);
-      for (let lane = first; lane <= last; lane++) {
-        const x = -(Track.laneOffset(lane, s) - (lo + hi) / 2);
-        add(gantry, box(0.7, 0.6, 0.9), lambert(0xf2c21c), x, 5.85, 0);
-        add(gantry, box(0.35, 0.35, 0.1), lambert(0x1b1d22), x, 5.85, -0.5);
-      }
-      const sign = board(k ? 'CHECK ENDS' : 'AVERAGE SPEED ' + limit, '#2f5fd8', '#fff', 7, 1.2);
-      sign.position.set(0, 7.3, -0.3);
-      sign.rotation.y = Math.PI;
-      gantry.add(sign);
-    });
-  }
 });
 
 export const syncHazards = (now) => {
@@ -276,19 +232,5 @@ export const syncHazards = (now) => {
     for (const { leaf, d } of mesh.leaves) leaf.rotation.x = d * open * 1.15; // (its free end up: see ../hazards.js)
     mesh.booms.forEach((arm) => { arm.rotation.z = (1 - down) * Math.PI / 2 * 0.95; });
     mesh.lamps.forEach((lamp, i) => lamp.color.setHex(c.state !== 'idle' && i % 2 === phase ? LAMP_ON : LAMP_OFF));
-  });
-  Hazards.tolls.forEach((toll, k) => {
-    const mesh = tolls[k];
-    if (!mesh) return;
-    // (the boom of the lane the car paid in lifts; rammed, the one it went through is gone)
-    const lane = mesh.arms.reduce((best, a) => Math.abs(a.lat - Player.lat) < Math.abs(best.lat - Player.lat) ? a : best, mesh.arms[0]);
-    if (toll.paid && !mesh.paidAt) mesh.paidAt = lane;
-    if (toll.rammed && !mesh.rammedAt) mesh.rammedAt = lane;
-    if (!toll.paid) mesh.paidAt = null;
-    if (!toll.rammed) mesh.rammedAt = null;
-    for (const a of mesh.arms) {
-      a.arm.visible = a !== mesh.rammedAt;
-      a.arm.rotation.z = a === mesh.paidAt ? toll.lift * Math.PI / 2 * 0.95 : 0;
-    }
   });
 };

@@ -58,11 +58,6 @@
     "wideLoad": ["Wide load ahead. Don't pass while the escort is watching!"],
     "jackknife": ["Road train jackknifing!! Find the open lane!"],
     "stampede": ["STAMPEDE!! They're coming down the road at you!"],
-    "tollPaid": ["Toll paid: ${fee}."],
-    "tollRam": ["You ran the toll!!"],
-    "averageStart": ["Average speed check: ${limit} km/h for the next ${length} m."],
-    "averageOk": ["Average ${speed} km/h. Thank you for not speeding."],
-    "averageFine": ["AVERAGE SPEED CAMERA! ${speed} in a ${limit}: ${fine} fine. Next time it's a bust!"],
     "wrongWay": ["WRONG-WAY DRIVER!! Coming at you in the right-hand lane!"],
     "tunnel": ["Tunnel! Lights on."],
     "parade": ["Street parade ahead! The whole road's taken."],
@@ -130,8 +125,7 @@
     "cyclist": ["The police saw you knock a cyclist off!!"],
     "runner": ["The police saw you knock a runner down!!"],
     "school": ["You ran a school crossing!!"],
-    "wideLoad": ["The escort saw you overtake a wide load!!"],
-    "toll": ["Toll evasion!!"]
+    "wideLoad": ["The escort saw you overtake a wide load!!"]
   },
   "reactions": {
     "goodOnPolice": [
