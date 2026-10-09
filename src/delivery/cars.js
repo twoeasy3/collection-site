@@ -18,6 +18,8 @@
 //   corner     true = parked in the far corner bay of the garage
 //   tier       which tier of the garage it is in (1-5): its star rating, shown with its name
 //   mass       how heavy it is in a shove (default 1): heavier knocks others aside and is knocked less
+//   shotBack   (optional) how much further back the studio camera (?cine=car) stands for its picture, for
+//              a vehicle whose wings reach past its hit box
 // ============================================================================
 import { Progress } from './progress.js';
 
@@ -82,7 +84,7 @@ export const LEVEL_CARS = {
   ufo: { id: 'ufo', name: 'UFO', price: 0, color: 0xc9d2dc, evilColor: 0x4a3a66, ufo: true, noWheels: true,
     maxSpeed: 58, accel: 30, crossing: 1, agility: 2.8, health: 100, hw: 1.3, hl: 1.3, height: 1.2 },
   // a Formula 1 car: very fast, quick off the line, nimble, low, and no good over a kerb
-  f1: { id: 'f1', name: 'F1 Car', price: 0, color: 0xd8262b, evilColor: 0x151515, model: 'f1',
+  f1: { id: 'f1', name: 'F1 Car', price: 0, color: 0xd8262b, evilColor: 0x151515, model: 'f1', shotBack: 1.2,
     maxSpeed: 75, accel: 20, crossing: 0.2, agility: 1.5, health: 160, hw: 0.95, hl: 2.6, height: 1.0 },
   // a GT road car, raced: slower than an F1 car down the straights and slower off the line, but
   // tougher, heavier in the bends, and happier over a kerb

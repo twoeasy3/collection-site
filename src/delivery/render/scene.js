@@ -4,6 +4,7 @@ import { damp } from '../util.js';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
 import { Game } from '../game.js';
+import { CAR } from '../cars.js';
 
 // ============================================================================
 // RENDERING
@@ -89,7 +90,7 @@ const studioCamera = () => {
   const h = Track.toWorld(Player.s, Player.lat, tmp2);
   const side = Player.evil ? -1 : 1;
   const fx = Math.sin(h), fz = Math.cos(h), lx = Math.cos(h) * side, lz = -Math.sin(h) * side; // ahead, and to its left (or right)
-  const k = (Player.hl + Player.hw) / 2.7; // (further back from a bigger vehicle, so each fills the frame alike)
+  const k = (Player.hl + Player.hw) / 2.7 * (CAR.shotBack ?? 1); // (further back from a bigger vehicle, so each fills the frame alike)
   camera.position.set(tmp2.x + (fx * 4.6 + lx * 3.2) * k, tmp2.y + 3.4 * k, tmp2.z + (fz * 4.6 + lz * 3.2) * k);
   tmp2.y += 0.8;
   aim(tmp2);
