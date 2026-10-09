@@ -11,9 +11,17 @@ import { renderer } from './scene.js';
 import { makeCarMesh, shapeCarMesh, makeTankMesh } from './cars.js';
 import { MODELS } from './models.js';
 
-const PER_ROW = 10, ROWS = 2;        // 20 bays: an open row in front, a covered row behind
-const BAY_W = 3.7, BAY_D = 6.6;
-const FRONT_Z = 5, BACK_Z = -10.5;   // centre lines of the two rows
+// The lot: three rows of bays, a long covered garage along the back, the cars parked strictly column by
+// column (front, middle, back, then the next column), in order of their stars and price, cheapest first
+// (one with no stars, the Tank, last). It runs off to the right as far as the cars do, and is scrolled
+// side to side (a drag or swipe, the wheel, the arrow keys): the camera frames the three rows to the
+// screen's height, so on a phone held upright each car is big, and a few columns show at a time
+const ROWS = 3, BAY_W = 3.9, BAY_D = 6.6;
+const ROW_Z = [7.6, 0.6, -6.4];      // centre lines of the rows, front to back (the back row under the roof)
+const order = [...CARS].sort((a, b) => (a.tier || 99) - (b.tier || 99) || a.price - b.price);
+const COLS = Math.ceil(order.length / ROWS);
+const colX = (col) => col * BAY_W;
+const LOT_W = COLS * BAY_W;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x2b3342);
@@ -30,60 +38,54 @@ const box = (material, w, h, d, x, y, z) => {
   return mesh;
 };
 const lambert = (color) => new THREE.MeshLambertMaterial({ color });
+// a canvas texture with text on it
+const label = (text, w, h, size, colour = '#ffd23f', ground = '#20242c') => {
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = ground;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = colour;
+  ctx.font = 'bold ' + size + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, w / 2, h / 2 + size * 0.06);
+  const map = new THREE.CanvasTexture(canvas);
+  map.colorSpace = THREE.SRGBColorSpace;
+  return map;
+};
 
 // ---- the lot and the building ---------------------------------------------------------------
 {
-  const width = PER_ROW * BAY_W;
-  box(lambert(0x5b6068), 90, 0.2, 70, 0, -0.1, 0);                      // tarmac
-  box(lambert(0x747a84), width + 3, 0.04, BAY_D + 1.5, 0, 0.02, BACK_Z); // garage floor
+  const mid = (LOT_W - BAY_W) / 2, left = -BAY_W / 2, right = LOT_W - BAY_W / 2;
+  box(lambert(0x5b6068), LOT_W + 80, 0.2, 60, mid, -0.1, 2);                    // tarmac
+  box(lambert(0x747a84), LOT_W + 3, 0.04, BAY_D + 1.5, mid, 0.02, ROW_Z[2]);    // garage floor
   const paint = new THREE.MeshBasicMaterial({ color: 0xe8e8e8 });
-  for (const z of [FRONT_Z, BACK_Z]) {
-    for (let i = 0; i <= PER_ROW; i++) { // lines between the bays
-      box(paint, 0.14, 0.02, BAY_D, (i - PER_ROW / 2) * BAY_W, 0.05, z);
-    }
+  for (const z of ROW_Z) {
+    for (let i = 0; i <= COLS; i++) box(paint, 0.14, 0.02, BAY_D, left + i * BAY_W, 0.05, z); // lines between the bays
+    box(paint, LOT_W, 0.02, 0.14, mid, 0.05, z - BAY_D / 2);                                  // and behind them
   }
-  box(paint, width, 0.02, 0.14, 0, 0.05, FRONT_Z - BAY_D / 2); // the front row's back line
-
-  // the garage: back wall, side walls, a roof on pillars, a sign
+  // the garage: a back wall, end walls, a roof on pillars over the back row, signs along its front
   const wall = lambert(0x596170), roof = lambert(0x3f4654), trim = lambert(0xffd23f);
-  const backZ = BACK_Z - BAY_D / 2 - 0.6, frontZ = BACK_Z + BAY_D / 2 + 0.6, H = 5.2;
-  box(wall, width + 4, H, 0.5, 0, H / 2, backZ);
-  for (const side of [-1, 1]) box(wall, 0.5, H, frontZ - backZ, side * (width / 2 + 1.8), H / 2, (frontZ + backZ) / 2);
-  box(roof, width + 5, 0.5, frontZ - backZ + 1.6, 0, H + 0.25, (frontZ + backZ) / 2);
-  for (let i = 0; i <= PER_ROW; i += 2) box(wall, 0.4, H, 0.4, (i - PER_ROW / 2) * BAY_W, H / 2, frontZ);
-  box(trim, width + 5, 0.5, 0.3, 0, H + 0.25, frontZ + 0.8);
-
-  const canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 96;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#20242c';
-  ctx.fillRect(0, 0, 512, 96);
-  ctx.fillStyle = '#ffd23f';
-  ctx.font = 'bold 64px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('GARAGE', 256, 70);
-  const map = new THREE.CanvasTexture(canvas);
-  map.colorSpace = THREE.SRGBColorSpace;
-  const sign = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.25), new THREE.MeshBasicMaterial({ map }));
-  sign.position.set(0, H + 1.9, frontZ + 0.8);
-  scene.add(sign);
-}
-
-// ---- the cars, parked from the middle of the front row outward ------------------------------
-const bayOrder = [];
-for (let row = 0; row < ROWS; row++) {
-  for (let k = 0; k < PER_ROW; k++) { // 4, 5, 3, 6, ... : middle bays first
-    const col = PER_ROW / 2 - 1 + (k % 2 ? (k + 1) / 2 : -k / 2);
-    bayOrder.push({ x: (col - (PER_ROW - 1) / 2) * BAY_W, z: row ? BACK_Z : FRONT_Z });
+  const backZ = ROW_Z[2] - BAY_D / 2 - 0.6, frontZ = ROW_Z[2] + BAY_D / 2 + 0.6, H = 5.2;
+  box(wall, LOT_W + 4, H, 0.5, mid, H / 2, backZ);
+  for (const x of [left - 1.8, right + 1.8]) box(wall, 0.5, H, frontZ - backZ, x, H / 2, (frontZ + backZ) / 2);
+  box(roof, LOT_W + 5, 0.5, frontZ - backZ + 1.6, mid, H + 0.25, (frontZ + backZ) / 2);
+  for (let i = 0; i <= COLS; i += 2) box(wall, 0.4, H, 0.4, left + i * BAY_W, H / 2, frontZ);
+  box(trim, LOT_W + 5, 0.5, 0.3, mid, H + 0.25, frontZ + 0.8);
+  const garageSign = label('GARAGE', 512, 96, 64);
+  for (let x = mid - Math.floor(COLS / 8) * 8 * BAY_W / 2; x <= right; x += 8 * BAY_W) { // (one every eight bays)
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.25), new THREE.MeshBasicMaterial({ map: garageSign }));
+    sign.position.set(x, H + 1.9, frontZ + 0.8);
+    scene.add(sign);
   }
 }
-const corner = bayOrder.pop(); // the last bay filled is the far corner of the covered row
-let nextBay = 0;
-const parked = CARS.slice(0, PER_ROW * ROWS).map((car) => {
+
+// ---- the cars, parked column by column --------------------------------------------------------
+const parked = order.map((car, i) => {
   const mesh = car.tank ? makeTankMesh(car.color) : car.model ? MODELS[car.model](car) : makeCarMesh(car.color);
   if (!car.tank && !car.model) shapeCarMesh(mesh, car);
-  const bay = car.corner ? corner : bayOrder[nextBay++];
-  mesh.position.set(bay.x, 0, bay.z);
+  mesh.position.set(colX(Math.floor(i / ROWS)), 0, ROW_Z[i % ROWS]);
   mesh.userData.car = car;
   scene.add(mesh); // (moves it out of the game's scene, where makeCarMesh put it)
   // a "for sale" marker floating over cars that aren't owned yet
@@ -91,6 +93,13 @@ const parked = CARS.slice(0, PER_ROW * ROWS).map((car) => {
   tag.position.y = car.height + 1.5;
   mesh.add(tag);
   mesh.userData.tag = tag;
+  // its stars, painted on the tarmac at the front of its bay
+  if (car.tier) {
+    const plate = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.8), new THREE.MeshBasicMaterial({ map: label(stars(car), 256, 84, 60, '#ffd23f', '#3f444c') }));
+    plate.rotation.x = -Math.PI / 2;
+    plate.position.set(mesh.position.x, 0.06, mesh.position.z + BAY_D / 2 - 0.55);
+    scene.add(plate);
+  }
   return mesh;
 });
 // a glowing ring under the car in use
@@ -150,16 +159,60 @@ const pick = (mesh) => {
   refresh();
 };
 
+// ---- scrolling side to side ---------------------------------------------------------------------
+// The camera's x: dragged (a mouse or a finger), flung on a little by the speed of a swipe, and nudged by
+// the wheel and the arrow keys; never past the first column or the last
+let scrollX = 0, fling = 0, drag = null, dragged = false; // drag: { x (the pointer's last x), moved (px in all), t }
+const view = { width: 1 }; // m of lot across the screen at the cars (see render)
+// (the view's edges kept to the lot, a little over; a lot narrower than the screen sits in the middle of it)
+const clampScroll = (x) => {
+  const lo = -BAY_W / 2 - 1 + view.width / 2, hi = LOT_W - BAY_W / 2 + 1 - view.width / 2;
+  return lo > hi ? (LOT_W - BAY_W) / 2 : Math.max(lo, Math.min(hi, x));
+};
+const scrollTo = (car) => { const i = order.indexOf(car); if (i >= 0) scrollX = clampScroll(colX(Math.floor(i / ROWS))); };
+const perPixel = () => view.width / Math.max(1, renderer.domElement.clientWidth);
+renderer.domElement.addEventListener('pointerdown', (event) => {
+  if (!Garage.isOpen) return;
+  drag = { x: event.clientX, moved: 0, t: performance.now() };
+  fling = 0;
+});
 renderer.domElement.addEventListener('pointermove', (event) => {
   if (!Garage.isOpen) return;
-  hovered = carAt(event);
-  renderer.domElement.style.cursor = hovered ? 'pointer' : '';
+  if (drag) {
+    const dx = event.clientX - drag.x, now = performance.now();
+    drag.moved += Math.abs(dx);
+    scrollX = clampScroll(scrollX - dx * perPixel());
+    fling = -dx * perPixel() / Math.max(0.008, (now - drag.t) / 1000); // (m/s, for the fling as it lets go)
+    drag.x = event.clientX;
+    drag.t = now;
+  }
+  hovered = drag && drag.moved > 8 ? null : carAt(event);
+  renderer.domElement.style.cursor = hovered ? 'pointer' : drag && drag.moved > 8 ? 'grabbing' : '';
+});
+const letGo = () => {
+  if (drag && performance.now() - drag.t > 80) fling = 0; // (held still before letting go: no fling)
+  dragged = !!drag && drag.moved > 8;
+  drag = null;
+};
+renderer.domElement.addEventListener('pointerup', letGo);
+renderer.domElement.addEventListener('pointercancel', letGo);
+renderer.domElement.addEventListener('wheel', (event) => {
+  if (!Garage.isOpen) return;
+  scrollX = clampScroll(scrollX + (Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY) * perPixel());
+  fling = 0;
+}, { passive: true });
+window.addEventListener('keydown', (event) => {
+  if (!Garage.isOpen || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+  scrollX = clampScroll(scrollX + (event.key === 'ArrowRight' ? 1 : -1) * BAY_W);
+  fling = 0;
 });
 renderer.domElement.addEventListener('click', (event) => {
   if (!Garage.isOpen) return;
+  if (dragged) { dragged = false; return; } // (the end of a drag is no click)
   const mesh = carAt(event);
   if (mesh) pick(mesh); // (on touch there is no hover: the purchase prompt states the price)
 });
+
 liveryBtn.addEventListener('click', () => { Garage.evil = !Garage.evil; refresh(); });
 document.getElementById('garageBackBtn').addEventListener('click', () => Garage.close());
 
@@ -176,6 +229,8 @@ export const Garage = {
     ui.classList.remove('hidden');
     startScreen.classList.add('hidden');
     document.body.classList.add('in-garage');
+    scrollTo(order.find(car => car.id === Progress.data.car) || order[0]); // (the car in use in view)
+    fling = 0;
     refresh();
   },
   close() {
@@ -197,11 +252,18 @@ export const Garage = {
   render(now) {
     const canvas = renderer.domElement;
     const aspect = canvas.clientWidth / canvas.clientHeight;
-    const back = Math.max(1, 2.05 / aspect); // stand further back on a narrow screen, so all 20 bays fit
+    // (the three rows framed to the screen's height, whatever its shape: a wider screen just shows more columns)
+    const back = 1;
+    const dt = Math.min(0.05, (now - (Garage.last || now)) / 1000);
+    Garage.last = now;
+    if (!drag && Math.abs(fling) > 0.05) { scrollX = clampScroll(scrollX + fling * dt); fling *= Math.pow(0.04, dt); }
+    scrollX = clampScroll(scrollX); // (and kept in, should the screen change shape)
     camera.aspect = aspect;
-    camera.position.set(0, 17 * back, 25 * back);
-    camera.lookAt(0, 0, -3);
+    camera.position.set(scrollX, 20 * back, 27 * back);
+    camera.lookAt(scrollX, 0, 0.5);
     camera.updateProjectionMatrix();
+    const distance = camera.position.distanceTo(new THREE.Vector3(scrollX, 0, 0.5));
+    view.width = 2 * distance * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * aspect;
 
     for (const mesh of parked) {
       mesh.userData.tag.rotation.y = now / 500;
