@@ -1305,51 +1305,64 @@ export const MODELS = {
     return group;
   },
 
-  // Hammond's Dampervan: a split-window camper (a VW Type 2), two-tone with its white top and big V on
-  // the nose, gone to sea in a boat hull built round it, its bow well out in front: curtains at the
-  // windows, a propeller and rudder under the back
+  // Hammond's Dampervan: a high-top T3 camper gone to sea, as it was: dark green, a red band round its
+  // side windows with a harlequin stripe of diamonds under them, a white fibreglass high top with a
+  // window in its front, and below the cream stripe at its sheer line the black boat hull it was built
+  // into, its bow pushed out round in front of the nose, a white bow plate on its corner, a tyre hung off
+  // the front for a fender. A propeller and rudder at the back
   dampervan: (car) => {
     const group = new THREE.Group();
-    const w = car.hw * 2, l = car.hl * 2, R = 0.33;
-    const paint = lambert(car.color), white = lambert(0xf2efe6), glass = lambert(GLASS), trim = lambert(TRIM);
-    const body = box(group, paint, w, 0.85, l, 0, 0.78, 0);                           // the lower half, in colour
-    box(group, white, w, 0.9, l * 0.98, 0, 1.65, -l * 0.01);                           // the white top
-    box(group, white, w * 0.98, 0.08, l * 0.96, 0, 2.12, -l * 0.01);                   // its roof
+    const w = car.hw * 2, l = car.hl * 2, R = 0.34;
+    const paint = lambert(car.color), red = lambert(0xc8262b), glass = lambert(GLASS), trim = lambert(TRIM);
+    const black = lambert(0x1c1c1e), cream = lambert(0xeae2c8), fibreglass = lambert(0xe8e6dc);
+    const sheer = 0.98, nose = l / 2;
+    // the hull: from just over the wheels' middles up to the sheer, its bow rounding out in front of the nose
+    const hw = w / 2 + 0.06, plan = [[-hw, -nose - 0.05], [hw, -nose - 0.05], [hw, nose - 0.25]];
+    for (let k = 1; k < 8; k++) { const a = (k / 8) * Math.PI; plan.push([hw * Math.cos(a), nose - 0.25 + 0.75 * Math.sin(a)]); }
+    plan.push([-hw, nose - 0.25]);
+    hull(group, black, plan, 0.3, sheer - 0.3);
+    hull(group, cream, plan.map(([x, z]) => [x * 1.01, z + (z > nose - 0.3 ? 0.01 : 0)]), sheer, 0.07); // the cream stripe at the sheer
+    const plate = box(group, cream, 0.06, 0.5, 0.7, hw * 0.78, 0.72, nose + 0.32);      // the white bow plate, on its corner
+    plate.rotation.y = 0.75;
+    // the van above it: dark green, its square nose, the big windscreen, the grille band and round lamps
+    const body = box(group, paint, w, 0.95, l, 0, sheer + 0.06 + 0.47, 0);
+    box(group, glass, w * 0.88, 0.46, 0.04, 0, 1.72, nose + 0.005);                     // the windscreen, near upright in its square face
+    box(group, trim, w * 0.5, 0.2, 0.04, 0, 1.2, nose + 0.01);                          // the grille
     for (const side of [-1, 1]) {
-      box(group, glass, w * 0.42, 0.42, 0.04, side * w * 0.23, 1.72, l / 2 + 0.005);   // the split windscreen
-      const vee = box(group, white, 0.12, 0.9, 0.04, side * w * 0.12, 1.05, l / 2 + 0.01); // the big V on the nose, pointing down
-      vee.rotation.z = -side * 0.5;
-      for (const z of [0.18, -0.06, -0.3]) {
-        box(group, glass, 0.04, 0.4, l * 0.18, side * (w / 2 + 0.005), 1.72, l * z);  // windows,
-        box(group, lambert(0xd8a13a), 0.045, 0.16, l * 0.17, side * (w / 2 + 0.006), 1.84, l * z); // their curtains
+      disc(group, LAMP, 0.12, 0.06, side * w * 0.36, 1.2, nose + 0.02);                // round lamps
+      box(group, glass, 0.04, 0.42, l * 0.13, side * (w / 2 + 0.005), 1.72, l * 0.36);   // the cab's door window
+      box(group, red, 0.04, 0.5, l * 0.66, side * (w / 2 + 0.005), 1.72, -l * 0.12);    // the red band round the side windows,
+      for (const z of [0.12, -0.08, -0.28]) box(group, glass, 0.045, 0.36, l * 0.16, side * (w / 2 + 0.008), 1.74, l * z); // the windows in it
+      box(group, cream, 0.04, 0.06, l * 0.86, side * (w / 2 + 0.006), 1.42, 0);        // the harlequin stripe:
+      for (let k = 0; k < 9; k++) {                                                      // its diamonds
+        const d = box(group, [red, lambert(0x2f6fd6), lambert(0xf2c418)][k % 3], 0.05, 0.09, 0.09, side * (w / 2 + 0.01), 1.42, -l * 0.4 + k * l * 0.1);
+        d.rotation.x = Math.PI / 4;
       }
-      disc(group, LAMP, 0.11, 0.06, side * w * 0.36, 0.95, l / 2 + 0.02);              // round lamps
-      box(group, TAIL, 0.08, 0.14, 0.04, side * w * 0.42, 1.0, -l / 2 - 0.01);
-      wheel(group, R, 0.24, side * (w / 2 - 0.05), R, l * 0.34, lambert(0xf2efe6));
-      wheel(group, R, 0.24, side * (w / 2 - 0.05), R, -l * 0.32, lambert(0xf2efe6));
+      box(group, TAIL, 0.08, 0.2, 0.04, side * w * 0.42, 1.3, -nose - 0.01);
+      wheel(group, R, 0.26, side * (w / 2 - 0.04), R, l * 0.32, black);
+      wheel(group, R, 0.26, side * (w / 2 - 0.04), R, -l * 0.3, black);
     }
-    disc(group, lambert(0xd8d8d8), 0.14, 0.04, 0, 1.5, l / 2 + 0.02);                   // the badge, over the V
-    // the boat hull it sits in: wider than the van, its bow coming to a point well out in front, red
-    // antifouling below white topsides, a rubbing strake round the sheer, bow lights and a bow rail
-    const hw = w / 2 + 0.2, stern = -l / 2 - 0.15, shoulder = l / 2 - 0.1, bow = l / 2 + 1.1;
-    const plan = (inset) => [[-hw + inset, stern + inset], [hw - inset, stern + inset], [hw - inset, shoulder], [0, bow - inset * 2], [-hw + inset, shoulder]];
-    hull(group, lambert(0xb3261e), plan(0.06), 0.2, 0.22);                             // the antifouling
-    hull(group, lambert(0xf4f2ec), plan(0), 0.42, 0.34);                               // the topsides
-    hull(group, trim, plan(-0.03), 0.76, 0.06);                                        // the rubbing strake
-    hull(group, lambert(0x5a3a22), [[-hw + 0.05, shoulder + 0.05], [hw - 0.05, shoulder + 0.05], [0, bow - 0.1]], 0.8, 0.03); // the foredeck
-    disc(group, new THREE.MeshBasicMaterial({ color: 0xff2a1a }), 0.06, 0.06, -0.42, 0.68, l / 2 + 0.6); // bow lights: port,
-    disc(group, new THREE.MeshBasicMaterial({ color: 0x2aff5a }), 0.06, 0.06, 0.42, 0.68, l / 2 + 0.6); // starboard
-    for (const side of [-1, 1]) box(group, lambert(CHROME), 0.04, 0.32, 0.04, side * 0.3, 0.98, l / 2 + 0.5); // the bow rail
-    box(group, lambert(CHROME), 0.64, 0.04, 0.04, 0, 1.14, l / 2 + 0.5);
-    box(group, lambert(CHROME), 0.04, 0.04, 0.5, 0, 1.14, l / 2 + 0.75);
-    box(group, lambert(CHROME), w + 0.04, 0.1, 0.1, 0, 0.42, l / 2 + 0.04);            // bumpers
-    box(group, lambert(CHROME), w + 0.04, 0.1, 0.1, 0, 0.42, -l / 2 - 0.04);
-    box(group, trim, 0.06, 0.06, 0.5, 0, 0.2, -l / 2 - 0.02);                           // the propeller's shaft,
+    // the high top: white fibreglass, rounded over the front, a window in its front slope
+    const top = new THREE.Shape();
+    top.moveTo(nose - 0.15, 1.98);
+    top.quadraticCurveTo(nose - 0.1, 2.5, nose - 0.55, 2.62);
+    top.lineTo(-nose + 0.3, 2.68);
+    top.quadraticCurveTo(-nose + 0.02, 2.66, -nose + 0.02, 2.3);
+    top.lineTo(-nose + 0.02, 1.98);
+    curved(group, fibreglass, w * 0.98, top, 0.08);
+    const skylight = box(group, glass, w * 0.5, 0.24, 0.05, 0, 2.3, nose - 0.08);
+    skylight.rotation.x = -0.45;
+    // a tyre hung off the front corner, for a fender
+    const tyre = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.12, 8, 14), black);
+    tyre.rotation.y = 0.8;
+    tyre.position.set(w * 0.34, 1.22, nose + 0.12);
+    group.add(tyre);
+    box(group, trim, 0.06, 0.06, 0.5, 0, 0.36, -nose - 0.25);                         // the propeller's shaft,
     const prop = new THREE.Group();                                                     // and its propeller
-    prop.position.set(0, 0.2, -l / 2 - 0.22);
+    prop.position.set(0, 0.36, -nose - 0.5);
     group.add(prop);
     for (let k = 0; k < 3; k++) box(prop, lambert(0xc9a227), 0.05, 0.34, 0.03, 0, 0, 0).rotation.z = k * Math.PI * 2 / 3;
-    box(group, trim, 0.05, 0.5, 0.36, 0, 0.3, -l / 2 - 0.5);                           // the rudder
+    box(group, trim, 0.05, 0.5, 0.36, 0, 0.5, -nose - 0.75);                          // the rudder
     group.userData = { body, animate: (t) => { prop.rotation.z = t * 18; } };
     return group;
   },
