@@ -23,7 +23,7 @@ import { LEVEL } from './levels.js';
 import { Track } from './track.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
-import { FxQueue, sfx } from './physics.js';
+import { FxQueue, sfx, sfxAt } from './physics.js';
 import { Game } from './game.js';
 
 export const Wreckage = {
@@ -144,7 +144,8 @@ export const Wreckage = {
       }
       if (!e.slide && e.kind !== 'blast' && !e.landed && e.t >= W.flight) { // down it comes, blowing up whatever is there
         e.landed = true;
-        this.fireballs(e.s0, e.s1, e.lat0, e.lat1, 4);
+        if (e.kind === 'boulders') sfxAt('crash', e.at, 1); // (boulders thud down: no fire)
+        else this.fireballs(e.s0, e.s1, e.lat0, e.lat1, 4);
         if (Math.abs(e.at - Player.s) < 120) Game.shake = 1;
       }
       if (!e.landed) continue;

@@ -1,5 +1,5 @@
 // ---- WRECKAGE: the scripted destruction (its timing and the damage: ../wreckage.js) ----------------
-// Each piece of wreckage, built to fit the lanes it lands across: a jackknifed fuel tanker, the
+// Each piece of wreckage, built to fit the lanes it lands across: a heap of boulders flung from a quarry, a jackknifed fuel tanker, the
 // control tower's shaft with its glass cab, a stack of shipping containers, a hangar's steel roof,
 // an airliner's broken fuselage. Set off, it flies in tumbling from where it went up (an airliner
 // comes down out of the sky), while the lanes it is about to land on flash red; landed, it burns.
@@ -77,6 +77,18 @@ const MODELS = {
       rock.scale.set(1, 0.8 + Math.random() * 0.5, 1.1);
     }
     for (let k = 0; k < 6; k++) add(g, box(0.25, 0.25, 0.25), lambert(0xd8342a), -6.5, 2 + k * 1.6, rnd(9)); // the charges' red tags
+    return g;
+  },
+  // (boulders flung out of a quarry face by its blasting: a heap of them, right across their lanes)
+  boulders: (w, d) => {
+    const g = new THREE.Group(), tones = [0x5f5a52, 0x6f6a62, 0x4f4b45, 0x7a7266]; // (darker than the dust they raise)
+    for (let x = -w / 2 + 1.2; x < w / 2; x += 2.2) {
+      for (let k = 0; k < 2; k++) {
+        const r = 1.3 + Math.random() * 0.8, rock = add(g, new THREE.DodecahedronGeometry(r, 0), lambert(tones[Math.floor(Math.random() * 4)]),
+          x + rnd(0.4), r * 0.75 + k * 0.6, rnd(d / 2 - r), Math.random() * 3, Math.random() * 3, Math.random() * 3);
+        rock.scale.set(1, 0.85, 1);
+      }
+    }
     return g;
   },
   plane: (w, d) => {
@@ -224,7 +236,7 @@ export const syncWreckage = (now) => {
       }
       return;
     }
-    if (e.t < 0) return;
+    if (e.t < 0) { blown.delete(e); return; } // (a new run: see the boulders' landing)
     const mid = e.at + (e.slide || 0) / 2, mlat = (e.lat0 + e.lat1) / 2;
     marker.rotation.y = Track.toWorld(mid, mlat, tmp);
     marker.position.set(tmp.x, tmp.y + 0.06, tmp.z);
@@ -249,7 +261,22 @@ export const syncWreckage = (now) => {
     mesh.position.y = target.y + y0 * (1 - u) + arc * Math.sin(Math.PI * u);
     const tumble = 1 - u;
     mesh.rotation.set(spin.x * tumble, heading + spin.y * tumble, spin.z * tumble);
-    // landed, it burns (only near the player: the fog hides the rest)
+    // landed, it burns (only near the player: the fog hides the rest); boulders only raise dust
+    if (e.kind === 'boulders') {
+      if (e.landed && !blown.has(e)) { // (landing: a burst of dust and chips of stone)
+        blown.add(e);
+        for (let k = 0; k < 30; k++) {
+          Track.toWorld(e.at + rnd(e.depth / 2), e.lat0 + Math.random() * (e.lat1 - e.lat0), tmp);
+          Smoke.emit(tmp.x, tmp.y + 0.5, tmp.z, rnd(4), 1 + Math.random() * 3, rnd(4), 2 + Math.random() * 2, 2 + Math.random() * 2, 2.5, 0, 0xc9bfa8);
+          Particles.emit(tmp.x, tmp.y + 1, tmp.z, rnd(6), 3 + Math.random() * 5, rnd(6), 1.2, 0.2 + Math.random() * 0.3, 0, 18, 0x8a8378, tmp.y);
+        }
+      }
+      if (e.landed && e.t > W.flight + 3 && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.05) { // (a wisp now and then)
+        Track.toWorld(e.at + rnd(2), e.lat0 + Math.random() * (e.lat1 - e.lat0), tmp);
+        Smoke.emit(tmp.x, tmp.y + 1, tmp.z, rnd(1), 0.6 + Math.random() * 0.6, rnd(1), 2, 0.8 + Math.random() * 0.6, 1.5, 0, 0xc9bfa8);
+      }
+      return;
+    }
     if (e.landed && Math.abs(e.at - Player.s) < 300 && Math.random() < 0.7) {
       Track.toWorld(e.at + rnd(2), e.lat0 + Math.random() * (e.lat1 - e.lat0), tmp);
       Fire.emit(tmp.x, tmp.y + 1 + Math.random() * 2, tmp.z, rnd(1), 2 + Math.random() * 3, rnd(1),

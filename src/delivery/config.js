@@ -405,7 +405,7 @@ export const CONFIG = {
     towerFall: 2.6,        // s the control tower takes to come down...
     towerScale: 1.6,       // ...a tower this many times the usual size (some 85 m tall)
     kinds: {               // m each kind covers along the road (it covers its lanes across)
-      tanker: { depth: 3.5 }, containers: { depth: 5 }, hangar: { depth: 5 }, plane: { depth: 7 }, airliner: { depth: 34 }, blast: { depth: 18 },
+      tanker: { depth: 3.5 }, containers: { depth: 5 }, boulders: { depth: 6 }, hangar: { depth: 5 }, plane: { depth: 7 }, airliner: { depth: 34 }, blast: { depth: 18 },
     },
   },
   // the bullet train (a mystery: see bullettrain.js), far faster than anything else in the game

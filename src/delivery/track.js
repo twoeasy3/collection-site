@@ -797,7 +797,8 @@ const createTrack = () => {
       if (!CONFIG.wreckage.kinds[e.kind]) problems.push(name + ': there is no kind of wreckage called "' + e.kind + '"');
       else if (e.at < 0 || e.at > length) problems.push(name + ': beyond the road');
       else if (!(e.lanes && e.lanes[0] <= e.lanes[1] && e.lanes[0] >= 0 && e.lanes[1] < LANES)) problems.push(name + ': lanes [first, last] on the road');
-      else if (e.kind !== 'blast' && e.lanes[1] - e.lanes[0] + 1 >= openCount(1, e.at) + (ONE_WAY ? openCount(-1, e.at) : 0)) problems.push(name + ': it must leave a lane open'); // (a blast leaves the road clear)
+      else if (e.kind === 'boulders' ? e.lanes[1] - e.lanes[0] + 1 >= LANES // (boulders: some lane left open, either way)
+        : e.kind !== 'blast' && e.lanes[1] - e.lanes[0] + 1 >= openCount(1, e.at) + (ONE_WAY ? openCount(-1, e.at) : 0)) problems.push(name + ': it must leave a lane open'); // (a blast leaves the road clear)
     }
     for (const r of LEVEL.hippos || []) {
       if (!(r.from < r.to) || r.from < 0 || r.to > length) problems.push('hippos at ' + r.from + '-' + r.to + ': from before to, on the road');

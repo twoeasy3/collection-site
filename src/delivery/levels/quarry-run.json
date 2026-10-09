@@ -101,6 +101,15 @@
   ],
   "wreckage": [
     {
+      "at": 1650,
+      "kind": "boulders",
+      "from": "left",
+      "lanes": [
+        1,
+        1
+      ]
+    },
+    {
       "at": 2600,
       "kind": "blast",
       "from": "right",
@@ -109,7 +118,16 @@
         1
       ],
       "rock": true,
-      "distance": 18
+      "distance": 6
+    },
+    {
+      "at": 3980,
+      "kind": "boulders",
+      "from": "left",
+      "lanes": [
+        0,
+        0
+      ]
     }
   ],
   "fog": [
