@@ -51,9 +51,8 @@ Scaffolding so three agents could each build a circuit without touching the same
 - `levels.js`: imports the three, `CIRCUIT_LEVELS` appended last in `LEVELS` (so saved progress, which
   counts by position, is undisturbed), `isRace`, `RACE_LEVELS`, `DELIVERY_LEVELS`, `nextOnTab`, and
   `levelLabel` numbering races `R1..` and delivery specials `S1..` by their own tab.
-- A race tab for the start screen was written as a patch script but **not applied** (the owner stopped
-  the run): `C:\Users\tooea\AppData\Local\Temp\claude\c--Users-tooea-Documents-----------------carSite\1a92d5ad-3167-4f99-990d-b4ae2101880d\scratchpad\tabs_patch.py`
-  (a session scratch file; it may be gone). It patched: `progress.js` (races always open, delivering
+- The race tab for the start screen **is applied** (it went in just before the stop; `node --check`
+  passes on every edited file, but it has never been opened in a browser). It changed: `progress.js` (races always open, delivering
   skips past races when opening the next level, `pastRaces`), `game.js` (`nextLevel` uses `nextOnTab`),
   `delivery/index.html` (tab buttons `#tabDelivery` / `#tabRaces`, the four race controls moved into
   `#raceMenu`), `style.css` (`#startScreen:not(.races) #raceMenu { display: none }`), and
@@ -67,14 +66,15 @@ Scaffolding so three agents could each build a circuit without touching the same
 
 ## Next steps
 
-1. Syntax-check (`node --check`) everything above; the circuit scenery branch and level lists were
-   never loaded.
+1. Load the game once: the circuit scenery branch, the stub circuits and the level lists were only
+   syntax-checked, never run.
 2. Finish or rewrite `scripts/circuit-from-osm.mjs` per the spec above, prove it on Monza, then run
    one agent per circuit (each in its own worktree with a junction to `node_modules`; never delete a
    worktree dir holding that junction without `rmdir` on the link first), each writing only its level
    JSON, its `render/circuits/<id>.js`, `scripts/circuits/<id>.json` and `levelshots/<id>.jpg`
    (`node scripts/shots.mjs shots --levels=<id>`), committing after each milestone.
-3. Apply the race-tab patch (or redo it from the description above), then `node scripts/level-clocks.mjs
+3. Open the game and check the Deliveries / Races tabs by eye (locked groups, R1.. labels, Next level
+   after a race), then `node scripts/level-clocks.mjs
    monza spa albert-park --write`.
 4. Do not run the smoke test unless asked. `scripts/delivery-smoke.mjs` line ~739 asserts the special
    levels' labels are `S1..`; it will need updating for the `R` labels.
