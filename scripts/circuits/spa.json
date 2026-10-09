@@ -1,0 +1,10 @@
+{
+  "id": "spa",
+  "name": "Spa-Francorchamps",
+  "bbox": [5.955, 50.424, 5.98, 50.448],
+  "relation": 284560,
+  "start": {"lat":50.4440643,"lon":5.9651626},
+  "realLength": 7004,
+  "elevation": {"smooth":60},
+  "level": {"name":"Spa-Francorchamps","theme":"spa","laps":2}
+}

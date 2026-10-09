@@ -7,7 +7,7 @@
   "lanes": 2,
   "shoulder": 2.5,
   "shoulderTimer": false,
-  "clock": { "good": 300, "evil": 210 },
+  "clock": { "good": 365, "evil": 280 },
   "tip": 400,
   "traffic": {},
   "trafficCount": 0,

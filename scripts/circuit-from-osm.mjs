@@ -316,7 +316,7 @@ const RO = { max: 60, minWidth: 2, gap: 40, within: 4, share: 0.35, barriers: []
 const HALF = 6;      // m from the centre line to where the level draws its wall with no run-off (2 lanes of 3.5 + 2.5)
 const REACH = RO.max + HALF + 40; // m a ray looks out
 const BARRIERS = ['wall', 'fence', 'guard_rail', 'tyres', 'jersey_barrier', 'block', 'retaining_wall', 'city_wall', 'hedge', 'yes', 'armco', 'barrier', 'cable_barrier', ...RO.barriers];
-const TRAP = (t) => t.natural === 'sand' || ((t.surface === 'gravel' || t.surface === 'sand' || t.surface === 'fine_gravel' || t.surface === 'pebblestone') && !t.highway) || t.landuse === 'sand' || t.raceway === 'runoff' || t.runoff;
+const TRAP = (t) => t.natural === 'sand' || t.natural === 'shingle' || ((t.surface === 'gravel' || t.surface === 'sand' || t.surface === 'fine_gravel' || t.surface === 'pebblestone') && !t.highway) || t.landuse === 'sand' || t.raceway === 'runoff' || t.runoff;
 const APRON = (t) => !!t['area:highway'] || (t.highway === 'raceway' && t.area === 'yes') || ((t.surface === 'asphalt' || t.surface === 'concrete' || t.surface === 'paved') && (t.area === 'yes' || !t.highway) && !t.building && !t.amenity && !t.leisure);
 const GRASS = (t) => t.landuse === 'grass' || t.landuse === 'meadow' || t.natural === 'grassland' || t.surface === 'grass' || t.landuse === 'greenfield';
 const HARD = (t) => (t.building && t.building !== 'no') || t.landuse === 'forest' || t.natural === 'wood' || t.natural === 'water' || t.natural === 'scrub' || t.natural === 'tree_row' || t.waterway || t.leisure === 'bleachers' || t.man_made === 'embankment' || t.natural === 'cliff';
