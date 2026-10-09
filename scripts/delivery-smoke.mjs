@@ -2573,12 +2573,13 @@ try {
       `a grudge wears off ${at?.toFixed(2)} s after the last upset; a car chasing the player alongside in the oncoming lane stays on its own side (at most ${furthest.toFixed(2)} m past its lane's centre towards it)`);
     // blocking: a smug driver (evil, happy, the player good) a lane over moves into the player's lane in front of
     // it only with room enough ahead for the player's speed (CONFIG.blocking), and not from too far ahead either
-    const B = CONFIG.blocking, own = T().laneRange(1, 600);
+    const B = CONFIG.blocking, own = T().laneRange(1, 600), chance = CONFIG.laneChangeChance;
+    CONFIG.laneChangeChance = 0; // (no lane changes on a whim, only its moves at the player)
     const blocks = (ahead, speed) => {
       Game.start();
       for (const c of Traffic.cars) Object.assign(c, { active: false, unused: true });
       Object.assign(car, { active: true, unused: false, s: 600 + ahead, lane: own[0], lat: T().laneOffset(own[0], 600 + ahead), vs: speed, baseSpeed: speed,
-        mood: 0.9, emotion: 'happy', evil: true, grudge: 0, rival: null, hunt: 0, pendingLane: null, think: 0, stun: 0, spin: 0, wobble: 0 });
+        mood: 0.9, emotion: 'happy', evil: true, grudge: 0, blockedPlayer: false, rival: null, hunt: 0, pendingLane: null, think: 0, stun: 0, spin: 0, wobble: 0 });
       let moved = false;
       for (let i = 0; i < 120 * 4 && !moved; i++) {
         Object.assign(Player, { s: car.s - ahead, lat: T().laneOffset(own[1], car.s - ahead), speed, ghost: 99, launching: false, mystery: '', mysteryTime: 0 });
@@ -2590,7 +2591,26 @@ try {
       return moved;
     };
     const room = (speed) => Math.max(B.min, speed * B.headway) + car.hl + Player.hl; // (nose to tail, centre to centre)
+    // shadowing: once in the player's way, a driver with no grudge stays put when the player moves over again;
+    // one holding a grudge follows it over
+    const follows = (grudge) => {
+      const ahead = room(15) + 5;
+      if (!blocks(ahead, 15)) return null;
+      let moved = false;
+      for (let i = 0; i < 120 * 6 && !moved; i++) {
+        Object.assign(Player, { s: car.s - ahead, lat: T().laneOffset(own[0], car.s - ahead), speed: 15, ghost: 99, launching: false });
+        car.vs = 15; car.s = Player.s + ahead; car.grudge = grudge;
+        Game.update(1 / 120);
+        FxQueue.length = 0;
+        moved = car.lane === own[0];
+      }
+      return moved;
+    };
+    const shadow = { calm: follows(0), grudge: follows(CONFIG.grudgeTime) };
     const cases = { slowNear: blocks(room(10) + 3, 10), fastNear: blocks(room(10) + 3, 30), fastFar: blocks(room(30) + 3, 30), tooFar: blocks(room(30) + B.window + 15, 30) };
+    CONFIG.laneChangeChance = chance;
+    check(shadow.calm === false && shadow.grudge === true,
+      `shadowing: a driver with no grudge blocks the player once and stays put when it moves over again; one holding a grudge follows it over [${JSON.stringify(shadow)}]`);
     check(cases.slowNear && !cases.fastNear && cases.fastFar && !cases.tooFar,
       `blocking: a smug driver ${room(10).toFixed(0)}+ m ahead moves into the player's lane at 36 km/h, but not that close at 108 km/h; ` +
       `there it waits for ${room(30).toFixed(0)}+ m, and from ${(room(30) + B.window).toFixed(0)}+ m it doesn't bother [${JSON.stringify(cases)}]`);

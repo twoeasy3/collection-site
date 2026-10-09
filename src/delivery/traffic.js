@@ -290,6 +290,7 @@ export const Traffic = (() => {
     car.rival = null;   // another traffic car this one is bullying
     car.rivalTime = 0;
     car.grudge = 0; // s left of its grudge against the player (see CONFIG.grudgeTime)
+    car.blockedPlayer = false; // it has moved over in front of the player once (see mayBlock)
     car.wreckedByPlayer = false; // set once one of the player's packages has doomed it (see Packages)
     car.spite = false;           // an evil driver given a gift by the player: it throws at the player now and then...
     car.offended = 0;            // ...after this many s of throwing only at the player (see CONFIG.giftOffence)
@@ -482,6 +483,9 @@ export const Traffic = (() => {
     const gap = (car.s - target.s) * car.dir - car.hl - target.hl, need = Math.max(B.min, speed * B.headway);
     return gap >= need && gap <= need + B.window;
   };
+  // may it move over in front of the player again? Once, for any car; after that, only while it holds a
+  // grudge: shadowing the player's every lane change is for one the player has upset
+  const mayBlock = (car) => !car.blockedPlayer || car.grudge > 0;
   // could the car move over into that lane right now?
   const canMove = (car, lane, ignorePlayer) => {
     const [first, last] = Track.laneRange(car.dir, car.s);
@@ -956,9 +960,9 @@ export const Traffic = (() => {
     };
     if (att === 'turf' && car.hunt > 0) return; // (hunting: see update)
     // (into the player's lane, in its way: only with room enough ahead of the player for its speed, see roomToBlock)
-    if ((att === 'smug' || att === 'rage' || att === 'vigilante') && Player.active && car.dir > 0 && roomToBlock(car, Player)) {
+    if ((att === 'smug' || att === 'rage' || att === 'vigilante') && Player.active && car.dir > 0 && roomToBlock(car, Player) && mayBlock(car)) {
       const dir = Math.sign(playerLane - car.lane);
-      if (dir) tryMove(car, dir, true);
+      if (dir && tryMove(car, dir, true) && (car.pendingLane ?? car.lane) === playerLane) car.blockedPlayer = true; // (in the player's way: that was its block)
     } else if ((att === 'friendly' || att === 'wingman') && inRange && playerLane === car.lane) aside();
     else if (att === 'wary' && near && playerLane === car.lane) aside();
     else if (att === 'sulky' && inRange) { /* it holds its lane */ } else if (!car.racer && Math.random() < CONFIG.laneChangeChance) { // (a racer picks its lane to race: see seekTow, and the overtakes in update)
@@ -1758,7 +1762,10 @@ export const Traffic = (() => {
           const H2 = CONFIG.attitude.hunt, [first, last] = Track.laneRange(car.dir, car.s);
           const playerLane = clamp(Track.nearestLane(Player.lat, Player.s), first, last);
           if (car.huntRole === 'block') { // ahead of it in its lane, slowing it, braking hard now and then
-            if (car.lane !== playerLane && roomToBlock(car, Player)) car.lane = playerLane; // (moving over only with room: see roomToBlock)
+            if (car.lane !== playerLane && roomToBlock(car, Player) && mayBlock(car)) { // (moving over only with room, see roomToBlock; and again only with a grudge, see mayBlock)
+              car.lane = playerLane;
+              car.blockedPlayer = true;
+            }
             target = Player.speed * H2.blockPace;
             brakeCheck(car, dt);
           } else if (car.huntRole === 'flank') { // in the lane beside it, coming up alongside to lean on it
