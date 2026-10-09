@@ -49,7 +49,7 @@ const label = (text, w, h, size, colour = '#ffd23f', ground = '#20242c') => {
   ctx.font = 'bold ' + size + 'px sans-serif';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(text, w / 2, h / 2 + size * 0.06);
+  ctx.fillText(text, w / 2, h / 2 + size * 0.06, w * 0.92);
   const map = new THREE.CanvasTexture(canvas);
   map.colorSpace = THREE.SRGBColorSpace;
   return map;

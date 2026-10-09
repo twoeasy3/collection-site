@@ -16,12 +16,13 @@
 //              one it is drawn as the standard box car, sized from hw / hl / height
 //   tank       true = it is a tank: in TANK RAGE from the start of every level
 //   corner     true = parked in the far corner bay of the garage
-//   tier       which tier of the garage it is in (1-4): its star rating, shown with its name
+//   tier       which tier of the garage it is in (1-5): its star rating, shown with its name
+//   mass       how heavy it is in a shove (default 1): heavier knocks others aside and is knocked less
 // ============================================================================
 import { Progress } from './progress.js';
 
 // a car's star rating, by its tier (none for a car out of the tiers)
-export const TIERS = 4;
+export const TIERS = 5;
 export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only the stars it has: no empty ones)
 
 export const CARS = [
@@ -61,6 +62,16 @@ export const CARS = [
     maxSpeed: 37, accel: 11, crossing: 0.9, health: 300, hw: 1.0, hl: 2.25, height: 1.8 },
   { id: 'miata', tier: 4, name: 'Sportscar', price: 500, color: 0xd8262b, evilColor: 0xffd21f, fixedLivery: true, model: 'miata',
     maxSpeed: 42, accel: 15, crossing: 0.25, health: 135, hw: 0.85, hl: 1.95, height: 1.1 },
+  // ---- tier 5
+  // (a modern American muscle car: long, low and wide, heavy, a bonnet bulge and twin stripes)
+  { id: 'muscle', tier: 5, name: 'Muscle Car', price: 650, color: 0xc81e1e, evilColor: 0x161616, fixedLivery: true, model: 'muscle',
+    maxSpeed: 46, accel: 15, crossing: 0.45, health: 240, mass: 1.8, hw: 1.0, hl: 2.5, height: 1.35 },
+  // (a late-90s full-size SUV: a long tall box on a truck frame, chrome grille, silver lower body)
+  { id: 'fullsize', tier: 5, name: 'Full-Size', price: 700, color: 0x2f5a3a, evilColor: 0x5a1f22, fixedLivery: true, model: 'fullsize',
+    maxSpeed: 43, accel: 12, crossing: 0.9, health: 360, mass: 2.2, hw: 1.05, hl: 2.75, height: 1.95 },
+  // (an electric luxury saloon: smooth and low, a glass roof, light bars front and back; very quick off the line)
+  { id: 'evsaloon', tier: 5, name: 'EV Saloon', price: 800, color: 0xe8e4dc, evilColor: 0x2b3440, fixedLivery: true, model: 'evsaloon',
+    maxSpeed: 45, accel: 22, crossing: 0.35, health: 150, hw: 0.98, hl: 2.5, height: 1.4 },
   // ---- and the tank, in a class of its own
   { id: 'tank', name: 'Tank', price: 5000, color: 0x4b5a2a, evilColor: 0x2a2d33, tank: true, corner: true,
     maxSpeed: 46, accel: 8, crossing: 1, health: 100, hw: 1.25, hl: 2.3, height: 1.9 }, // (TANK RAGE's top speed: CONFIG.tankMaxSpeed)
