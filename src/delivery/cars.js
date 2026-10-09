@@ -109,6 +109,13 @@ export const CARS = [
   { id: 'evsaloon', tier: 5, name: 'EV Saloon', price: 800, color: 0xe8e4dc, evilColor: 0x2b3440, fixedLivery: true, model: 'evsaloon',
     maxSpeed: 45, accel: 22, crossing: 0.35, health: 150, hw: 0.98, hl: 2.5, height: 1.4 },
   // ---- and the tank, in a class of its own
+  // ---- tier 5, Blue Stars
+  { id: 'superlowrider', tier: 5, blue: true, name: 'Super Lowrider', price: 1200, color: 0x1a3cff, evilColor: 0x5a0a2a, fixedLivery: true, model: 'superlowrider',
+    maxSpeed: 47, accel: 16, crossing: 0.15, health: 260, hw: 1.0, hl: 2.5, height: 1.1 },
+  { id: 'classicgt', tier: 5, blue: true, name: 'Classic GT', price: 1250, color: 0x1f4d36, evilColor: 0xb0121c, fixedLivery: true, model: 'classicgt',
+    maxSpeed: 48, accel: 18, agility: 1.4, crossing: 0.35, health: 190, hw: 0.9, hl: 2.3, height: 1.25 },
+  { id: 'sixbysix', tier: 5, blue: true, name: '6x6', price: 1350, color: 0xe2dccc, evilColor: 0x4b5320, fixedLivery: true, model: 'sixbysix',
+    maxSpeed: 46.5, accel: 13, crossing: 1, health: 420, mass: 2.4, hw: 1.15, hl: 3.0, height: 2.45 },
   { id: 'tank', name: 'Tank', price: 5000, color: 0x4b5a2a, evilColor: 0x2a2d33, tank: true, corner: true,
     maxSpeed: 46, accel: 8, crossing: 1, health: 100, hw: 1.25, hl: 2.3, height: 1.9 }, // (TANK RAGE's top speed: CONFIG.tankMaxSpeed)
 ];

@@ -96,6 +96,7 @@ const ENGINES = {
   junker: { files: ['Engine Rev 1'], idle: 0.6, top: 1.2 },
   darkvan: { files: ['Truck Engine'], idle: 0.7, top: 1.25 },
   lowrider: { files: ['Lowrider', 'Lowrider 2'], fixed: true },
+  superlowrider: { files: ['Lowrider', 'Lowrider 2'], fixed: true },
   wagon: { files: ['Truck Engine'], idle: 0.8, top: 1.4 },
   sport: { files: ['Engine Sports Car 5'], idle: 0.7, top: 1.6 },
   lovebus: { files: ['Truck Engine'], idle: 0.7, top: 1.3 },
