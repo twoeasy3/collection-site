@@ -113,6 +113,31 @@ const ENGINES = {
   gt: { files: ['Engine Sports Car 5'], idle: 0.7, top: 1.75 }, // (deeper than the F1's)
   lmp: { files: ['Engine Sports Car 5'], idle: 0.8, top: 1.9 },  // (between the two)
 };
+// each car's horn, by its id (a garage car's, a level car's, the secret bus's), played by a sound named
+// 'horn:<id>' (the player's horn: see horn.js, and Sound.play): { file, rate (playback rate: the pitch) }
+// or { synth } (a stand-in of its own: the UFO's warble, the racers' short beep). A car not listed gets
+// `default`. Small cars: the compact horns, pitched to size; the big trucks and the tanks: the big rig's,
+// low; the bus and the boat: the fire truck's. (Traffic's own honks are SAMPLES' horn...: see Traffic)
+const C1 = 'Compact Car Horn 1', C3 = 'Compact Car Horn 3', RIG = 'Big Rig Horn 1', FIRE = 'Fire Truck Horn';
+const HORNS = {
+  default: { file: C1, rate: 1 },
+  // garage cars
+  commuter: { file: C1, rate: 1 }, junker: { file: C3, rate: 0.9 }, darkvan: { file: RIG, rate: 1.1 },
+  postvan: { file: C3, rate: 1.05 }, keitruck: { file: C1, rate: 1.25 }, mini: { file: C1, rate: 1.3 },
+  lovebus: { file: C3, rate: 0.85 }, wagon: { file: C1, rate: 0.95 }, sport: { file: C3, rate: 1.15 }, lowrider: { file: C3, rate: 0.8 },
+  hothatch: { file: C1, rate: 1.1 }, ute: { file: C3, rate: 1 }, buggy: { file: C1, rate: 1.2 }, liftedtruck: { file: RIG, rate: 1 },
+  hearse: { file: C3, rate: 0.75 }, minivan: { file: C1, rate: 0.9 }, pickup: { file: C3, rate: 0.95 }, hotrod: { file: C1, rate: 0.85 },
+  sleeper: { file: C1, rate: 1 }, rally: { file: C3, rate: 1.2 }, towtruck: { file: RIG, rate: 1.05 }, rotary: { file: C3, rate: 1.1 },
+  taxi: { file: C1, rate: 1.05 }, suv: { file: C3, rate: 0.9 }, miata: { file: C1, rate: 1.15 },
+  muscle: { file: C1, rate: 0.8 }, fullsize: { file: C3, rate: 0.85 }, evsaloon: { file: C1, rate: 1.2 },
+  superlowrider: { file: C3, rate: 0.75 }, classicgt: { file: C3, rate: 1 }, sixbysix: { file: RIG, rate: 1 },
+  tank: { file: RIG, rate: 0.7 },
+  // the 6-star cars with no base car (cars.js EARNED_CARS)
+  hellrod: { file: C1, rate: 0.75 }, courier: { file: C1, rate: 1 }, showdown: { file: C1, rate: 0.78 },
+  // level cars, and the secret bus
+  ufo: { synth: 'warble' }, f1: { synth: 'beep' }, gt: { synth: 'beep' }, lmp: { synth: 'beep' },
+  jetboat: { file: FIRE, rate: 1.2 }, apc: { file: RIG, rate: 0.7 }, bus: { file: FIRE, rate: 1 },
+};
 const pick = (list) => list[Math.floor(Math.random() * list.length)];
 // how loud a loaded WAV is on average (root mean square of its first channel), worked out once
 const rms = {};
@@ -286,6 +311,10 @@ const SYNTH = {
   tick: (v) => tone(1000, 1000, 0.06, 0.25 * v, 'square'),
   win: (v) => [523, 659, 784, 1047].forEach((f, i) => tone(f, f, 0.28, 0.22 * v, 'triangle', i * 0.12)),
   fail: (v) => [392, 330, 262, 196].forEach((f, i) => tone(f, f * 0.97, 0.32, 0.22 * v, 'sawtooth', i * 0.16)),
+  // horns (see HORNS): a two-note car horn (until its file has loaded), a racer's short high beep, and the UFO's warble
+  horn: (v) => { tone(440, 430, 0.4, 0.18 * v, 'square'); tone(554, 540, 0.4, 0.14 * v, 'square'); },
+  beep: (v) => tone(1760, 1700, 0.12, 0.18 * v, 'square'),
+  warble: (v) => [0, 0.09, 0.18, 0.27].forEach((d, i) => tone(i % 2 ? 1320 : 990, i % 2 ? 1500 : 880, 0.1, 0.16 * v, 'sine', d)),
 };
 Object.assign(SYNTH, {
   explodeBig: SYNTH.explode, crashHard: SYNTH.crash, sideswipe: SYNTH.crash, headOn: SYNTH.crash, heavy: SYNTH.crash,
@@ -316,6 +345,14 @@ export const Sound = {
     if (!ctx || ctx.state !== 'running' || volume <= 0.02) return;
     // the same sound many times in an instant (a pile-up) would just be a loud click
     if (ctx.currentTime - (lastPlayed[name] || -1) < 0.05) return;
+    if (name.startsWith('horn:')) { // a car's own horn (see HORNS): its file at its pitch, or its stand-in
+      const horn = HORNS[name.slice(5)] || HORNS.default, v = Math.min(1, volume);
+      if (horn.synth) SYNTH[horn.synth](v);
+      else if (buffers[horn.file]) sample(horn.file, v, 0, horn.rate);
+      else SYNTH.horn(v);
+      lastPlayed[name] = ctx.currentTime;
+      return;
+    }
     const entry = SAMPLES[name], v = Math.min(1, volume);
     if (!entry && !(entry === null && SYNTH[name])) return; // no file for it ('' or left out): silent; null: its stand-in
     const files = !entry ? [] : typeof entry === 'string' ? [entry] : Array.isArray(entry) ? [pick(entry)] : entry.seq;
