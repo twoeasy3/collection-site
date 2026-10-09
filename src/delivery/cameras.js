@@ -24,7 +24,7 @@ export const SpeedCameras = {
   reset() {
     const C = CONFIG.speedCamera;
     this.list = (LEVEL.cameras || []).map((c, i) => ({
-      s: Track.place(c), limit: (c.limit ?? C.limit) / 3.6,
+      s: Track.place(c), limit: (c.limit ?? LEVEL.speedLimit ?? C.limit) / 3.6,
       obstacle: Collision.obstacles.find(o => o.camera === i), passed: false, warned: false, flash: 0,
     }));
     this.caught = 0;
@@ -53,11 +53,18 @@ export const SpeedCameras = {
       this.caught++;
       const kmh = Math.round(Player.speed * 3.6), limit = Math.round(cam.limit * 3.6);
       if (this.caught === 1) {
-        Game.fines += CONFIG.speedCamera.fine;
+        const fine = this.fineFor((Player.speed - cam.limit) * 3.6);
+        Game.fines += fine;
         const line = Message.say('events', 'speedFine');
-        if (line) line.text = line.text.replace('${speed}', kmh).replace('${limit}', limit).replace('${fine}', '$' + CONFIG.speedCamera.fine);
+        if (line) line.text = line.text.replace('${speed}', kmh).replace('${limit}', limit).replace('${fine}', '$' + fine);
       } else Player.bust('speeding');
     }
+  },
+  // the fine for being `over` km/h over the limit: the step it reached (CONFIG.speedCamera.fines)
+  fineFor(over) {
+    let fine = 0;
+    for (const step of CONFIG.speedCamera.fines) if (over > step.over) fine = step.fine;
+    return fine;
   },
   // the brightest flash going just now, 0..1 (for the screen's flash)
   get flash() { return Math.max(0, ...this.list.map(c => c.flash)) / CONFIG.speedCamera.flash; },

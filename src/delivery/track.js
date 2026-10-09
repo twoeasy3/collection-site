@@ -679,6 +679,9 @@ const createTrack = () => {
   // ---- checking the level data ---------------------------------------------------------------
   const problems = [];
   {
+    for (const z of LEVEL.quietZones || []) {
+      if (!(z.from < z.to) || z.from < 0 || z.to > length || !(z.density >= 0 && z.density <= 1)) problems.push('quiet zone at ' + z.from + ': from before to, on the road, a density from 0 to 1');
+    }
     const clock = LEVEL.clock;
     if (!(clock && clock.good > 0 && clock.evil > 0)) problems.push('clock: { good, evil }, seconds for each side (see scripts/level-clocks.mjs)');
     const reach = FLY - X.ramp;

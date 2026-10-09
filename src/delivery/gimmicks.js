@@ -454,7 +454,7 @@ const GROUPS = [
   { name: 'Gimmick Road', cards: [
     { name: 'Speed cameras', color: 0xf2c21c, has: (l) => l.cameras?.length, rules: [
       `A camera on its pole, on the shoulder or on the centre line, with a speed limit sign ${CONFIG.speedCamera.signAhead} m before it. You are warned of each ${CONFIG.speedCamera.warn} m out. Pass it over its limit (${CONFIG.speedCamera.limit} km/h unless it says otherwise) and the screen flashes white.`,
-      `The first time in a run is a <strong>$${CONFIG.speedCamera.fine} fine</strong>, taken off what you bank. Every one after that is a <strong>bust</strong>.`,
+      `The first time in a run is a <strong>fine</strong>, taken off what you bank, by how far over you were: ${CONFIG.speedCamera.fines.map((f, i, all) => `$${f.fine}${i < all.length - 1 ? ` up to ${all[i + 1].over} km/h over` : ` beyond that`}`).join(', ')}. Every one after that is a <strong>bust</strong>.`,
       'Run it over and there is no offence (just the knock); the sign is only a knock. A radar detector keeps you from being caught at all, but you are still warned.',
     ], build: () => {
       const g = road(9, 12), cam = ob('camera', { height: 4.2 });
@@ -483,7 +483,7 @@ const GROUPS = [
       return { model: g };
     } },
     { name: 'Level crossings', color: 0xd8262b, has: (l) => l.crossings?.length, rules: [
-      `As you come within ${CONFIG.crossing.trigger} m the lights flash and the bell rings; the booms come down over ${CONFIG.crossing.lower} s, and ${CONFIG.crossing.warn} s on, a short train shoots across at ${kmh(CONFIG.crossing.speed)}.`,
+      `It is timed to you: at the speed you are going, the train reaches the road between ${-CONFIG.crossing.timing.min} s before you would and ${CONFIG.crossing.timing.max} s after. The lights flash and the bell rings; the booms come down over ${CONFIG.crossing.lower} s, and ${CONFIG.crossing.warn} s on, a short train shoots across at ${kmh(CONFIG.crossing.speed)}, seen coming from ${CONFIG.crossing.reach} m down the line.`,
       'Traffic waits at the booms. Anything on the line as the train goes by is wrecked, you included (unless you are a ghost).',
       `You can't stop, so ease off and arrive after it, or beat it across. A boom down is only a knock (${CONFIG.crossing.boomDamage} damage), and it breaks.`,
     ], build: () => {

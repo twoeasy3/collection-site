@@ -5,7 +5,11 @@
   "clock": { "good": 205, "evil": 160 },
   "tip": 160,
   "lanes": 2,
-  "traffic": { "wagon": 0.25, "van": 0.2, "commuter": 0.2, "semi": 0.15, "darkvan": 0.12, "police": 0.08 },
+  "traffic": { "wagon": 0.25, "van": 0.2, "commuter": 0.2, "semi": 0.15, "darkvan": 0.12 },
+  "trafficZones": [
+    { "from": 0, "to": 1340, "traffic": { "police": 0.03 } },
+    { "from": 2020, "to": 3618, "traffic": { "police": 0.03 } }
+  ],
   "trafficCount": 5,
   "oncomingCount": 6,
   "segments": [
@@ -34,8 +38,8 @@
   ],
   "rockfall": [
     { "from": 380, "to": 650, "count": 7, "side": "left" },
-    { "from": 2560, "to": 2840, "count": 8, "side": "right" },
-    { "from": 2940, "to": 3260, "count": 6, "side": "left" }
+    { "from": 2560, "to": 2840, "count": 8, "side": "left" },
+    { "from": 2940, "to": 3260, "count": 6, "side": "right" }
   ],
   "stopGo": [
     { "from": 1640, "to": 1720 }

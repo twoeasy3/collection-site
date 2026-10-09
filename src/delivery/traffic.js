@@ -291,6 +291,7 @@ export const Traffic = (() => {
     car.rivalTime = 0;
     car.grudge = 0; // s left of its grudge against the player (see CONFIG.grudgeTime)
     car.blockedPlayer = false; // it has moved over in front of the player once (see mayBlock)
+    car.quietRoll = null; // the quiet stretch it has been thinned out of, or let into (see quietZones)
     car.wreckedByPlayer = false; // set once one of the player's packages has doomed it (see Packages)
     car.spite = false;           // an evil driver given a gift by the player: it throws at the player now and then...
     car.offended = 0;            // ...after this many s of throwing only at the player (see CONFIG.giftOffence)
@@ -962,11 +963,14 @@ export const Traffic = (() => {
     // (into the player's lane, in its way: only with room enough ahead of the player for its speed, see roomToBlock)
     if ((att === 'smug' || att === 'rage' || att === 'vigilante') && Player.active && car.dir > 0 && roomToBlock(car, Player) && mayBlock(car)) {
       const dir = Math.sign(playerLane - car.lane);
-      if (dir && tryMove(car, dir, true) && (car.pendingLane ?? car.lane) === playerLane) car.blockedPlayer = true; // (in the player's way: that was its block)
+      if (dir && tryMove(car, dir, true)) car.blockedPlayer = true; // (its move at the player: that was its block, whether or not the player is still there)
     } else if ((att === 'friendly' || att === 'wingman') && inRange && playerLane === car.lane) aside();
     else if (att === 'wary' && near && playerLane === car.lane) aside();
     else if (att === 'sulky' && inRange) { /* it holds its lane */ } else if (!car.racer && Math.random() < CONFIG.laneChangeChance) { // (a racer picks its lane to race: see seekTow, and the overtakes in update)
-      tryMove(car, Math.random() < 0.5 ? 1 : -1);
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      // (one out to block the player that has had its go, with no grudge, never wanders back into its way)
+      const blocker = (att === 'smug' || att === 'rage' || att === 'vigilante') && !mayBlock(car) && ahead > 0 && ahead < CONFIG.attitudeRange + 70;
+      if (!(blocker && Math.sign(playerLane - car.lane) === dir)) tryMove(car, dir);
     }
   };
 
@@ -1411,6 +1415,11 @@ export const Traffic = (() => {
       if (car.racer) car.shield = Math.max(0, (car.shield || 0) - dt); // (untouchable, just set down)
       if (!car.active) {
         // (a fixed vehicle that has gone stays gone: its slot is not reused this run)
+        // (on, or coming up to, a quiet stretch, a level's "quietZones": everything turning up now the player
+        // meets on it, so only its density's share do; the rest wait a while, then try again)
+        const quiet = (LEVEL.quietZones || []).find(z => Player.s > z.from - CONFIG.spawnMax && Player.s < z.to);
+        if (quiet && (car.quietWait = (car.quietWait || 0) - dt) > 0) continue;
+        if (quiet && Math.random() >= quiet.density) { car.quietWait = CONFIG.quietRetry; continue; }
         if (!car.fixed && !car.unused && mix().length) {
           // (the Battlefield's green army: only ever from behind the player, coming by; with no room there yet, later)
           if (LEVEL.battle && car.dir > 0) { spawnBehind(car); continue; }
@@ -1429,9 +1438,16 @@ export const Traffic = (() => {
       if (LEVEL.battle && car.evil && car.health > 0 && ahead < -CONFIG.battle.evilBehind) Object.assign(car, { health: 0, wreckedByPlayer: false, hitBy: null });
       // (an emergency vehicle going the player's way starts out behind the player, and is gone
       // once it is well ahead; one coming the other way once it is behind)
-      const gone = !car.emergency ? ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 150
+      let gone = !car.emergency ? ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 150
         : car.dir > 0 ? ahead < -E.behind - 100 || ahead > CONFIG.spawnMax + 150
         : ahead < -CONFIG.despawnBehind || ahead > CONFIG.spawnMax + 300;
+      // (and coming into a quiet stretch, a level's "quietZones", only its density's share go on into it: the rest
+      // are taken off while still far enough from the player not to be seen to go, and turn up elsewhere)
+      const quiet = (LEVEL.quietZones || []).find(z => car.s >= z.from && car.s < z.to);
+      if (quiet && car.quietRoll !== quiet && !car.fixed && !car.racer && !car.emergency && !car.procession && Math.abs(ahead) > CONFIG.quietCull) {
+        car.quietRoll = quiet;
+        if (Math.random() >= quiet.density) gone = true;
+      }
       if ((gone && !car.racer && !(car.hunt > 0)) || !Track.inBounds(car.s)) { // (a racer races on, wherever it is; so does a hunter)
         car.active = false;
         continue;
@@ -1726,7 +1742,7 @@ export const Traffic = (() => {
         // to the edge of its stretch stays there, parked on the shoulder with its lights going: beyond it,
         // as in The Hood's gang turf, there are no police at all)
         if (car.kind === 'police' && !car.stationed && policeOnStation()) {
-          const ahead = car.s + car.dir * 15;
+          const ahead = car.s + car.dir * (15 + Math.abs(car.vs) * 2.5); // (far enough ahead to slow and pull over before the edge)
           if (!(weightsAt(car.s).police > 0) || !(weightsAt(ahead).police > 0)) car.stationed = true;
         }
         if (car.stationed) target = Math.abs(car.lat - Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s)) < 0.8 ? 0 : car.baseSpeed * 0.35;

@@ -44,6 +44,18 @@ const prism = (parent, material, w, profile, x = 0) => {
   parent.add(mesh);
   return mesh;
 };
+// a solid whose side view is the curved THREE.Shape `shape` (x along the car, y up), `w` wide across it
+// with its edges rounded off by `round`
+const curved = (parent, material, w, shape, round) => {
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: w - 2 * round, curveSegments: 14, bevelEnabled: true, bevelThickness: round, bevelSize: round, bevelSegments: 3,
+  });
+  geo.rotateY(-Math.PI / 2);
+  geo.translate(w / 2 - round, 0, 0);
+  const mesh = new THREE.Mesh(geo, material);
+  parent.add(mesh);
+  return mesh;
+};
 // a windscreen (or a rear window), as `slab` tips it, made solid: the wedge under the glass, from its
 // lower edge back (or forward) to beneath its upper edge, filled in, so there is no seeing through
 // the car's sides past it
@@ -717,6 +729,125 @@ export const MODELS = {
   // The Sportscar: a little two-seat roadster (a first Mazda Miata), top down, pop-up
   // headlamps up, twin racing stripes over the bonnet and boot: white on red in the Good
   // livery, black on yellow in the Evil one.
+  // A modern American muscle car: long, low and wide; a long flat bonnet with a power bulge and a scoop,
+  // the glasshouse set well back under a short roof, quad round headlamps set in a wide dark grille, a
+  // full-width tail lamp bar, twin stripes over it nose to tail, fat tyres
+  muscle: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.38;
+    const shell = new THREE.Group();
+    group.add(shell);
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), stripe = lambert(0xf2f2f2);
+    const body = box(shell, paint, w, 0.62, l, 0, 0.66, 0);
+    box(shell, paint, w * 0.98, 0.08, l * 0.42, 0, 1.0, l * 0.27);                 // the long bonnet
+    box(shell, paint, w * 0.42, 0.1, l * 0.3, 0, 1.08, l * 0.27);                  // its bulge...
+    box(shell, trim, w * 0.2, 0.08, 0.3, 0, 1.15, l * 0.33);                       // ...and scoop
+    box(shell, glass, w * 0.84, 0.36, l * 0.34, 0, 1.18, -l * 0.12);               // glasshouse, set back
+    box(shell, paint, w * 0.86, 0.07, l * 0.28, 0, 1.38, -l * 0.13);               // roof
+    screen(shell, glass, w * 0.82, 0.05, 0.6, 0, 1.17, l * 0.07, 0.75);              // raked windscreen
+    screen(shell, glass, w * 0.82, 0.05, 0.6, 0, 1.15, -l * 0.31, -0.55);            // rear screen
+    box(shell, paint, w * 0.96, 0.1, l * 0.2, 0, 1.0, -l * 0.39);                  // short boot deck...
+    box(shell, trim, w * 0.9, 0.06, 0.12, 0, 1.08, -l / 2 + 0.06);                 // ...with a lip spoiler
+    for (const x of [-0.16, 0.16]) { // twin stripes over the roof, the bonnet and the boot
+      box(shell, stripe, w * 0.12, 0.012, l * 0.28, x * w, 1.42, -l * 0.13);
+      box(shell, stripe, w * 0.12, 0.012, l * 0.42, x * w, 1.045, l * 0.27);
+      box(shell, stripe, w * 0.12, 0.012, l * 0.2, x * w, 1.055, -l * 0.39);
+    }
+    box(shell, trim, w * 0.94, 0.32, 0.06, 0, 0.82, l / 2 + 0.02);                 // the wide grille
+    box(shell, trim, w + 0.06, 0.2, 0.16, 0, 0.42, l / 2 + 0.04);                  // bumpers
+    box(shell, trim, w + 0.06, 0.2, 0.16, 0, 0.42, -l / 2 - 0.04);
+    box(shell, TAIL, w * 0.9, 0.14, 0.06, 0, 0.86, -l / 2 - 0.01);                 // the tail lamp bar
+    for (const side of [-1, 1]) {
+      for (const x of [0.3, 0.4]) disc(shell, LAMP, 0.09, 0.06, side * w * x, 0.84, l / 2 + 0.05); // quad headlamps
+      box(shell, trim, 0.12, 0.08, 0.1, side * (w / 2 + 0.06), 1.12, l * 0.04);    // mirrors
+      box(shell, trim, 0.08, 0.24, 0.5, side * (w / 2 + 0.01), 0.62, -l * 0.28);   // side scoops
+      wheel(group, R, 0.32, side * (w / 2 - 0.06), R, l * 0.32);
+      wheel(group, R + 0.02, 0.4, side * (w / 2 - 0.08), R + 0.02, -l * 0.31);      // (fatter at the back)
+    }
+    group.userData = {
+      body,
+      animate: (t) => { shell.rotation.z = Math.sin(t * 9) * 0.006; }, // (a lumpy idle)
+    };
+    return group;
+  },
+
+  // A late-90s full-size SUV: a long, tall box on a truck frame; three rows of side windows, a chrome bar
+  // grille between square headlamps, a silver lower body, a roof rack, running boards, barn doors at the back
+  fullsize: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, l = car.hl * 2, R = 0.44;
+    const shell = new THREE.Group();
+    group.add(shell);
+    const paint = lambert(car.color), glass = lambert(GLASS), trim = lambert(TRIM), chrome = lambert(CHROME), silver = lambert(0xb9bcc0);
+    const body = box(shell, paint, w, 0.62, l, 0, 1.05, 0);
+    box(shell, silver, w + 0.02, 0.36, l + 0.02, 0, 0.62, 0);                      // the silver lower body
+    box(shell, paint, w * 0.98, 0.12, l * 0.2, 0, 1.4, l * 0.39);                  // bonnet
+    box(shell, glass, w * 0.96, 0.52, l * 0.72, 0, 1.62, -l * 0.1);                // the long glasshouse...
+    box(shell, paint, w * 0.98, 0.08, l * 0.74, 0, 1.92, -l * 0.1);                // ...its roof
+    screen(shell, glass, w * 0.9, 0.05, 0.55, 0, 1.6, l * 0.28, 0.5);                // windscreen
+    for (const z of [0.25, 0.04, -0.17, -0.4]) for (const side of [-1, 1]) box(shell, paint, 0.08, 0.54, 0.12, side * w * 0.485, 1.62, l * z); // pillars: three rows of windows
+    for (const side of [-1, 1]) box(shell, trim, 0.06, 0.06, l * 0.62, side * w * 0.38, 2.0, -l * 0.1); // roof rack rails...
+    for (const z of [0.1, -0.15, -0.38]) box(shell, trim, w * 0.8, 0.05, 0.06, 0, 2.03, l * z);         // ...and bars
+    box(shell, chrome, w * 0.6, 0.34, 0.06, 0, 1.12, l / 2 + 0.02);                // the chrome grille...
+    for (const y of [1.02, 1.12, 1.22]) box(shell, trim, w * 0.58, 0.03, 0.04, 0, y, l / 2 + 0.05); // ...its bars
+    box(shell, chrome, w + 0.1, 0.26, 0.2, 0, 0.58, l / 2 + 0.06);                 // chrome bumpers
+    box(shell, chrome, w + 0.1, 0.26, 0.2, 0, 0.58, -l / 2 - 0.06);
+    box(shell, trim, 0.04, 0.6, 0.04, 0, 1.15, -l / 2 - 0.02);                     // the barn doors' split
+    for (const side of [-1, 1]) {
+      box(shell, LAMP, 0.36, 0.2, 0.06, side * w * 0.36, 1.12, l / 2 + 0.03);      // square headlamps
+      box(shell, TAIL, 0.12, 0.5, 0.08, side * w * 0.45, 1.1, -l / 2 - 0.02);      // tall tail lamps
+      box(shell, trim, 0.16, 0.12, 0.14, side * (w / 2 + 0.08), 1.5, l * 0.25);    // mirrors
+      box(shell, trim, 0.22, 0.06, l * 0.42, side * (w / 2 + 0.1), 0.42, -l * 0.02); // running boards
+      wheel(group, R, 0.34, side * (w / 2 - 0.06), R, l * 0.32, lambert(0xb9bcc0));
+      wheel(group, R, 0.34, side * (w / 2 - 0.06), R, -l * 0.3, lambert(0xb9bcc0));
+    }
+    group.userData = {
+      body,
+      animate: (t) => {
+        shell.rotation.z = Math.sin(t * 1.4) * 0.014; // (soft springs: it wallows)
+        shell.position.y = Math.sin(t * 2.8) * 0.014;
+      },
+    };
+    return group;
+  },
+
+  // An electric luxury saloon, all curves: one smooth side profile (a rounded nose sweeping up the bonnet,
+  // a short tail tucked under) with a dark glass canopy arching from the windscreen to the tail over it,
+  // both extruded across the car with rounded edges. Thin light bars glow right across the nose and the
+  // tail; flush aero wheels; no grille. Silent: it sits still
+  evsaloon: (car) => {
+    const group = new THREE.Group();
+    const w = car.hw * 2, L = car.hl, R = 0.37;
+    const paint = lambert(car.color), glass = lambert(0x1a2230), trim = lambert(TRIM);
+    const shell = new THREE.Shape();                                                 // the body, side on:
+    shell.moveTo(-L * 0.92, 0.3);
+    shell.lineTo(L * 0.9, 0.3);
+    shell.quadraticCurveTo(L, 0.3, L, 0.52);                                         // the chin
+    shell.quadraticCurveTo(L, 0.8, L * 0.86, 0.86);                                  // the rounded nose
+    shell.quadraticCurveTo(L * 0.6, 0.98, L * 0.38, 1.0);                            // the bonnet
+    shell.lineTo(-L * 0.78, 1.02);                                                   // the waist
+    shell.quadraticCurveTo(-L * 0.98, 1.0, -L, 0.82);                                // the tail's lip
+    shell.quadraticCurveTo(-L * 1.01, 0.4, -L * 0.92, 0.3);                          // tucked under
+    const body = curved(group, paint, w - 0.1, shell, 0.05);
+    const canopy = new THREE.Shape();                                                // the glass, side on:
+    canopy.moveTo(L * 0.4, 0.96);
+    canopy.bezierCurveTo(L * 0.16, 1.26, L * 0.02, 1.4, -L * 0.18, 1.4);             // windscreen into the roof
+    canopy.bezierCurveTo(-L * 0.48, 1.4, -L * 0.7, 1.18, -L * 0.86, 0.98);           // and a long fastback
+    canopy.lineTo(L * 0.4, 0.96);
+    curved(group, glass, w * 0.8, canopy, 0.05);
+    const bar = new THREE.MeshBasicMaterial({ color: 0xf4f8ff });
+    box(group, bar, w * 0.84, 0.04, 0.05, 0, 0.7, L + 0.04);                         // the light bar across the nose
+    box(group, TAIL, w * 0.88, 0.05, 0.05, 0, 0.88, -L - 0.05);                      // and across the tail
+    box(group, trim, w * 0.6, 0.1, 0.05, 0, 0.44, L + 0.04);                         // the lower intake (there is no grille)
+    for (const side of [-1, 1]) {
+      box(group, trim, 0.1, 0.06, 0.12, side * (w / 2 + 0.03), 1.02, L * 0.3);      // slim mirrors
+      box(group, lambert(0xc8ccd2), 0.02, 0.03, L * 0.7, side * (w / 2 + 0.01), 0.86, -L * 0.04); // flush handle strip
+      for (const z of [0.64, -0.62]) wheel(group, R, 0.3, side * (w / 2 - 0.08), R, L * z, lambert(0xd5d9de)); // aero wheels
+    }
+    group.userData = { body, animate: () => {} };
+    return group;
+  },
+
   miata: (car) => {
     const group = new THREE.Group();
     const w = car.hw * 2, l = car.hl * 2, R = 0.32;

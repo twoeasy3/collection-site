@@ -131,10 +131,10 @@ Game.onLoad.push(() => {
     });
     crossings.push({ lamps, booms, carriages });
   }
-  // stop / go: the oncoming lane dug up, spoil beside it, and the workers with their signs
+  // stop / go: the oncoming lane and its shoulder dug up, spoil beside them, and the workers with their signs
   for (const z of LEVEL.stopGo || []) {
     const from = Track.place({ s: z.from }), to = from + (z.to - z.from);
-    group.add(new THREE.Mesh(buildStrip(from, to, (s) => Track.laneLo(s) + 0.2, -0.9, 0.02, 2), flat(0x3a2a1c, -3)));
+    group.add(new THREE.Mesh(buildStrip(from, to, (s) => Track.lo(s) + 0.2, -0.9, 0.02, 2), flat(0x3a2a1c, -3))); // (out to the road's edge, shoulder and all)
     for (let s = from + 6; s < to; s += 11) {
       const h = Track.toWorld(s, Track.lo(s) - 1.6, tmp);
       const heap = add(group, new THREE.ConeGeometry(1.3, 1.1, 7), lambert(0x6e5232), tmp.x, tmp.y + 0.5, tmp.z);

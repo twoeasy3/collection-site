@@ -275,13 +275,13 @@ export const Collision = (() => {
       }
     }
     for (const z of LEVEL.frogs || []) add('frog', 0, 0, { ...stretch(z), fromS: 0, fromLat: 0, toS: 0, toLat: 0, t: 1, rest: 0 });
-    // stop / go roadworks: cones down the centre line, and across the dug-up lane at each end (see StopGo)
+    // stop / go roadworks: cones down the centre line, and across the dug-up lane and its shoulder at each end (see StopGo)
     for (const z of LEVEL.stopGo || []) {
       const from = Track.place({ s: z.from }), to = from + (z.to - z.from);
       for (let s = from; s <= to; s += CONFIG.stopGo.coneEvery) add('cone', s, -0.55);
       for (const s of [from - 2, to + 2]) {
-        const lo = Track.laneLo(s) + 0.6;
-        for (let k = 0; k < 3; k++) add('cone', s, lo + (-0.55 - lo) * k / 2);
+        const lo = Track.lo(s) + 0.6, n = Math.max(3, Math.round((-0.55 - lo) / 1.6) + 1); // (a cone every metre and a half or so)
+        for (let k = 0; k < n; k++) add('cone', s, lo + (-0.55 - lo) * k / (n - 1));
       }
     }
     // speed cameras on their poles: on a shoulder, or on the centre line (see SpeedCameras)
@@ -290,7 +290,7 @@ export const Collision = (() => {
       add('camera', s, c.side === 'centre' ? 0 : Track.shoulderOffset(c.side === 'left' ? -1 : 1, s), { camera: i });
       // (and its speed limit sign on the shoulder on its side, a little short of it: one on the centre line, on the right)
       const at = s - CONFIG.speedCamera.signAhead;
-      if (Track.inBounds(at)) add('limitSign', at, Track.shoulderOffset(c.side === 'left' ? -1 : 1, at), { limit: c.limit ?? CONFIG.speedCamera.limit });
+      if (Track.inBounds(at)) add('limitSign', at, Track.shoulderOffset(c.side === 'left' ? -1 : 1, at), { limit: c.limit ?? LEVEL.speedLimit ?? CONFIG.speedCamera.limit });
     });
     // rockfall: each rock somewhere in its stretch, landing anywhere across the road, up the hillside
     // on its side until the player is near (see CONFIG.rockfall). Seeded: the same rocks every run

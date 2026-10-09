@@ -530,6 +530,8 @@ export const CONFIG = {
   spawnMin: 480,           // spawn window ahead of the player, metres (inside the fog)
   spawnMax: 640,
   despawnBehind: 80,
+  quietCull: 250,          // m from the player beyond which a car going into a quiet stretch may be taken off (unseen)
+  quietRetry: 3,           // s a car kept from turning up near a quiet stretch waits before it tries again (see quietZones)
   trafficLaneChangeRate: 2.5, // 1/s
   laneChangeChance: 0.3,   // per decision (every 1-3 s) for a random lane change
   signalTime: 1.5,         // s a calm (happy or neutral), good driver signals before changing lane;
@@ -569,7 +571,7 @@ export const CONFIG = {
   // crit / spin: its own odds of a critical hit / of spinning out, as a multiple of the usual (default 1; 0 = never)
   vehicles: {
     // (a vintage delivery van, in the one livery: livery is its paint, whatever the driver)
-    van:     { hw: 1.1,  hl: 2.7, height: 2.3, mass: 1.8, health: 90,  speed: 0.95, model: 'deliveryvan', livery: 0x1e5b3f },
+    van:     { hw: 1.1,  hl: 2.7, height: 2.3, mass: 1.8, health: 90,  speed: 0.95, special: true, model: 'deliveryvan', livery: 0x1e5b3f }, // (special: never evil, as a bus)
     bus:     { hw: 1.3,  hl: 5.5, height: 3.1, mass: 4,   health: 180, speed: 0.8, special: true, model: 'citybus' },
     tractor: { hw: 1.2,  hl: 2.0, height: 2.4, mass: 2.5, health: 150, speed: 1, special: true },
     police:  { hw: 0.95, hl: 2.1, height: 1.4, mass: 1.2, health: 80,  speed: 1.1, special: true, model: 'police' },
@@ -829,10 +831,11 @@ export const CONFIG = {
   // bust. Running one over (it is an obstacle) is no offence. A radar detector warns of them: it
   // keeps the car from being caught at all
   speedCamera: {
-    limit: 100,            // km/h, unless the camera has its own
+    limit: 100,            // km/h, unless the level ("speedLimit") or the camera ("limit") says otherwise
     warn: 180,             // m short of a camera the player is warned of it (radar detector or not)
     signAhead: 70,         // m short of a camera its speed limit sign stands, on the shoulder on its side
-    fine: 20,              // $ the first offence costs
+    // $ the first offence costs, by how far over the limit (km/h) the car was: the last step it reached
+    fines: [{ over: 0, fine: 20 }, { over: 10, fine: 50 }, { over: 20, fine: 80 }, { over: 30, fine: 120 }],
     flash: 0.35,           // s the flash lasts
   },
   // a funeral procession (a level's "processions": see Traffic.startProcession): a hearse and its
@@ -849,16 +852,19 @@ export const CONFIG = {
   // after), its lights flash and its booms come down across the lanes coming up to it, and a short
   // fast train shoots across the road. Traffic waits at the booms; whatever is on the line is wrecked
   crossing: {
-    trigger: 230,          // m short of it the player sets it off (a crossing can give its own)
+    // set off by when the player will get there, at the speed it is going: so that the train reaches the road
+    // this many s after the player would (below 0, before), at random each time: ease off, or put your foot down
+    timing: { min: -0.4, max: 1.2 },
     warn: 2.6,             // s of flashing lights before the train reaches the road...
     lower: 1.2,            // ...the booms coming down over the first this many
     raise: 1.0,            // s they take to go back up once the train is clear
-    every: { min: 14, max: 24 }, // s between trains after that, while the player hasn't gone by
-    speed: 70,             // m/s the train goes at...
+    every: { min: 14, max: 24 }, // s between trains after that, while the player hasn't gone by...
+    again: 300,            // ...and is within this many m of it
+    speed: 80,             // m/s the train goes at...
     cars: 2,               // ...carriages...
     carLength: 18,         // ...each this long...
     hw: 1.6,               // ...and half this wide
-    reach: 70,             // m either side of the road the line runs out to (the train comes from that far)
+    reach: 300,            // m either side of the road the line runs out to (the train comes from that far, seen coming)
     stopLine: 6,           // m short of the line traffic stops at (the booms stand there)
     boomDamage: 10,        // health a lowered boom costs the player driving through it...
     boomKept: 0.8,         // ...and the share of its speed kept

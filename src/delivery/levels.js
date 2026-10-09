@@ -87,6 +87,9 @@
 //   traffic    which vehicles turn up as traffic and how often, relative to each other:
 //              { "darkvan": 0.44, "van": 0.18, "police": 0.1 }. The kinds are those in
 //              CONFIG.vehicles. An empty list ({}) means no traffic at all.
+//              Keep the police light (a share of about 0.03 to 0.04): the levels from Speed Trap Alley on do.
+//              For a stretch with no police at all (and a buffer either side, so none can see into it), give
+//              the police only in trafficZones round it: a police car stays on station at a zone's edge
 //   trafficCount, oncomingCount  how many vehicles are about at once, each way (defaults in
 //              CONFIG; together no more than CONFIG.trafficPool)
 //   drivers    { evil, happy, angry }: the share of drivers that are evil, and the chance a
@@ -123,6 +126,8 @@
 //   zones      { id, from, to, scenery, ground, sky, sea }: stretches of the level with a look of their
 //              own (on a level whose theme is 'zones': see render/road.js). The player is welcomed into
 //              each (messages.json: zones, by id). (Their traffic: see trafficZones)
+//   quietZones [{ from, to, density }]: stretches with less traffic (a narrow bridge with no shoulder): only
+//              `density` (0-1) of the cars that would turn up there do; the rest turn up elsewhere
 //   trafficZones [{ from, to, traffic: { kind: weight } }]: stretches where the traffic turning up is
 //              different: each sets the weights of the kinds it names over the level's "traffic" (0 takes
 //              a kind away), a later one over an earlier. With police only in such stretches, a police
@@ -170,12 +175,15 @@
 //              short of there, it comes crashing down across that road (only a sight)
 //   parkedPlanes  { s, d, turn }: airliners parked d m off the road on the left, turned a little
 //   cameras    { s, side, limit }: a speed camera on its pole, on a shoulder (side 'left' | 'right') or
-//              on the centre line ('centre'); limit in km/h (default CONFIG.speedCamera.limit). Passing
-//              it faster is a fine the first time in a run, a bust after; run over, it's no offence
+//              on the centre line ('centre'); limit in km/h (default the level's speedLimit, or else
+//              CONFIG.speedCamera.limit). Passing it faster is a fine the first time in a run (by how far
+//              over: CONFIG.speedCamera.fines), a bust after; run over, it's no offence
+//   speedLimit km/h: the limit at the level's speed cameras, where a camera doesn't say
 //   processions  { every: { min, max } }: now and then a funeral procession, a hearse and its cars,
 //              slow, nose to tail (see CONFIG.procession)
 //   crossings  { s, trigger, every }: a level crossing: lights, booms, and a short fast train across
-//              the road, set off as the player comes within trigger m (see CONFIG.crossing). On straight road
+//              the road, set off so the train gets there about as the player would (see CONFIG.crossing),
+//              or with a trigger, as the player comes within that many m. On straight road
 //   stopGo     { from, to, go?, clear? }: stop / go roadworks on a two-way road: the oncoming side dug up
 //              over that stretch (as long as it likes), both ways taking turns through the lane left. go: s
 //              each way gets the GO; clear: s between, for the last through to clear (a long works wants
