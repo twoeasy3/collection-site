@@ -48,3 +48,6 @@ wheel_level_test/
 
 # Car stats generation working files
 stats_draft/
+
+# Claude agent worktrees and config
+.claude/

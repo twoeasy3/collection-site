@@ -13,6 +13,7 @@ import { Tide } from './tide.js';
 import { SpeedCameras } from './cameras.js';
 import { Crossings } from './crossing.js';
 import { StopGo } from './stopgo.js';
+import { WaterMains } from './watermains.js';
 import { Hippos } from './hippos.js';
 import { Elephants } from './elephants.js';
 import { Wreckage } from './wreckage.js';
@@ -172,6 +173,7 @@ export const Game = {
     this.tankPieces = Progress.data.tankPieces || 0; // (the run's own, until it is settled)
     this.zone = null; // the level zone the player is in (see update)
     this.inFog = false; // in a fog bank (see update)
+    this.inTunnel = false; // in a tunnel (see update)
     this.lap = 0;     // laps done, on a lapped level ("laps")
     Message.clear();
     UfoStrike.reset();
@@ -186,6 +188,7 @@ export const Game = {
     Crossings.reset();
     StopGo.reset();
     Hazards.reset();
+    WaterMains.reset();
     if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
     startScreen.classList.add('hidden');
@@ -332,9 +335,14 @@ export const Game = {
       const fog = Track.foggy(Player.s) > 0;
       if (fog && !this.inFog) Message.say('events', 'fog');
       this.inFog = fog;
+      // and into a tunnel (a level's "tunnels")
+      const tunnel = Track.tunnel(Player.s) > 0;
+      if (tunnel && !this.inTunnel) Message.say('events', 'tunnel');
+      this.inTunnel = tunnel;
     }
     if (playing) Crossings.update(dt);
     StopGo.update(dt);
+    if (playing) WaterMains.update(dt);
     Traffic.update(dt);
     if (playing) SpeedCameras.update(dt);
     UfoStrike.update(dt);

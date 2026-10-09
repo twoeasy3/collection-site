@@ -39,9 +39,14 @@ import { Photo, syncPhoto, photoCamera, startPhoto } from './render/photo.js';
 import { syncTankCorner } from './render/tankcorner.js';
 import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
+import { syncMovers } from './render/movers.js';
+import { syncTunnel } from './render/tunnel.js';
+import { syncWaterMains } from './render/watermains.js';
+import { syncReversible } from './render/reversible.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
 import './render/touch.js';
+import './horn.js';
 import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
 import { Social } from './social.js';
@@ -176,9 +181,13 @@ const frame = (now) => {
     syncSite();
     syncRoadside(dt);
     syncHazards(now);
+    syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
+    syncWaterMains(dt);
+    syncReversible();
     syncBattle(dt);
     syncZones(dt);
     syncStorm(dt);
+    syncMovers(dt);
     emitVehicleSmoke(dt);
     syncPackages(dt);
     syncPickups(dt);

@@ -1342,6 +1342,7 @@ try {
     for (let k = 0; k < 10 && !started; k++) started = Traffic.startProcession(1);
     const train = Traffic.cars.filter(c => c.active && c.procession).sort((a, b) => b.s - a.s);
     const rightCars = train.length === CONFIG.procession.cars + 1 && train[0].kind === 'hearse' && train.slice(1).every(c => c.colors?.[0] === CONFIG.procession.paint);
+    for (const c of Traffic.cars) if (!c.procession) Object.assign(c, { active: false, unused: true });
     for (let i = 0; i < 120 * 8; i++) { setPlayer(train[0].s - 300, 0.1, { ghost: 9, health: Player.maxHealth }); step(); } // (out of everyone's way)
     const lane = train.every(c => c.lane === train[0].lane) && train.every(c => Math.abs(Math.abs(c.vs) - CONFIG.procession.speed) < 0.3);
     const gapsOk = train.slice(1).every((c, i) => { const g = train[i].s - c.s - train[i].hl - c.hl; return g > 1 && g < 15; });

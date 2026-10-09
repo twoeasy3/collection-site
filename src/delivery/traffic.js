@@ -244,6 +244,9 @@ export const Traffic = (() => {
     car.blockedFor = 0; car.blockedBy = null; car.clearThrow = 0;
     car.punctured = car.stationed = car.escaping = car.wrongWay = car.wrongWarned = false; car.driveBy = car.stationEdge = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
     car.rivalName = car.colors = car.markColor = null; car.counted = false;
+    car.parade = car.roadblock = car.icecream = car.convoy = car.reversible = null; // (a float in a parade, a car in a roadblock, an ice-cream van at its stop, a convoy's member, an oncoming car down a reversed lane: see placeFixed, startConvoy, reversed)
+    car.shedSaid = false; car.shedWait = undefined; // (a shedding truck: see shed)
+    car.patience = 0; // (an evil driver's, in a jam: see rubbernecking)
     car.smoke = 0;
     car.lane = lane;
     car.lat = Track.laneOffset(lane, car.s);
@@ -383,6 +386,172 @@ export const Traffic = (() => {
       Object.assign(car, { fixed: true, parked: true, parkSide: side, viaSide: false, evil: false, defiant: false,
         baseSpeed: 0, vs: 0, lat: parkedLat(side, car.s), hazards: true });
     }
+    // a car from the pool for something the level puts out going the player's way: a spare, or one of the
+    // player's way's own
+    const spareNorth = () => cars.find(c => !c.active && c.unused) || cars.find(c => !c.active && !c.unused && c.dir > 0);
+    // ...and a street parade's floats (a level's "parades": see CONFIG.parade): one in every lane of the
+    // player's side at s, abreast, waiting to step off as the player comes near (the band behind them, and
+    // the drum: see Collision's marchers, and update)
+    (LEVEL.parades || []).forEach((p, id) => {
+      const s = Track.place(p), [first, last] = Track.laneRange(1, s), shared = { beat: 0, said: false };
+      for (let lane = first; lane <= last; lane++) {
+        const car = spareNorth();
+        if (!car) break;
+        car.dir = 1;
+        car.bound = 'north';
+        car.s = s;
+        outfit(car, 'float', lane);
+        Object.assign(car, { fixed: true, parade: { id, lead: lane === first, shared }, viaSide: false, evil: false, defiant: false, hesitant: false,
+          baseSpeed: p.speed || CONFIG.parade.speed, vs: 0, paint: id * 7 + lane, showMood: false });
+      }
+    });
+    // ...and the ice-cream vans at their stops (a level's "iceCreamStops": see CONFIG.iceCream): each stopped in
+    // its lane at s, hazards on, until a while after the player comes near
+    for (const st of LEVEL.iceCreamStops || []) {
+      const car = spareNorth();
+      if (!car) break;
+      car.dir = 1;
+      car.bound = 'north';
+      car.s = Track.place(st);
+      outfit(car, 'icecream', st.lane);
+      Object.assign(car, { fixed: true, icecream: { pace: car.baseSpeed, wait: st.wait ?? CONFIG.iceCream.wait, timer: null, jingle: 0, said: false },
+        viaSide: false, evil: false, defiant: false, hesitant: false, baseSpeed: 0, vs: 0, hazards: true, showMood: false });
+    }
+    // ...and a police roadblock's cars (a level's "roadblocks": see CONFIG.roadblock): one across every lane of
+    // the player's side at s but the gap (the roadblock's own, or one at random each run), lights going
+    for (const r of LEVEL.roadblocks || []) {
+      const s = Track.place(r), [first, last] = Track.laneRange(1, s), shared = { said: false, waved: false };
+      const gap = r.gap !== undefined ? r.gap : first + Math.floor(Math.random() * (last - first + 1));
+      for (let lane = first; lane <= last; lane++) {
+        if (lane === gap) continue;
+        const car = spareNorth();
+        if (!car) break;
+        car.dir = 1;
+        car.bound = 'north';
+        car.s = s;
+        outfit(car, 'police', lane);
+        Object.assign(car, { fixed: true, roadblock: { side: lane - first < (last - first) / 2 ? -1 : 1, shared }, viaSide: false, evil: false, defiant: false, hesitant: false,
+          baseSpeed: 0, vs: 0, yaw: Math.PI / 2, showMood: false });
+      }
+    }
+  };
+  // ---- convoys (a level's "convoys": see CONFIG.convoy) -------------------------------------------------
+  // Three or four vehicles of a kind nose to tail in one lane, turning up where new traffic does, going
+  // the player's way ahead of it or coming the other way; each follower keeps right on the one ahead (see
+  // update). They take cars from the pool that the level leaves unused. False if there was no room
+  let nextConvoy = Infinity, convoys = 0;
+  const startConvoy = (dir) => {
+    const C = CONFIG.convoy, L = LEVEL.convoys, size = L.size || C.size;
+    const spare = cars.filter(c => !c.active && c.unused);
+    if (spare.length < size + 1 || !Player.active || !Track.isMain(Player.s) || !mix().length) return false;
+    const kind = L.kind && CONFIG.vehicles[L.kind] ? L.kind : pickKind(Player.s);
+    const type = CONFIG.vehicles[kind];
+    for (let tries = 0; tries < 4; tries++) {
+      const s0 = Track.spawnAt(Player.s, 150 + Math.random() * 150, dir);
+      if (Number.isNaN(s0) || !Track.inBounds(s0)) continue;
+      const [first, last] = Track.laneRange(dir, s0), lane = first + Math.floor(Math.random() * (last - first + 1));
+      const spots = [];
+      for (let k = 0; k < size; k++) spots.push(s0 - dir * k * (2 * type.hl + C.gap));
+      if (!spots.every(s => Track.inBounds(s) && cars.every(o => !o.active || o.junction || o.lane !== lane || Math.abs(o.s - s) > 22))) continue;
+      const id = ++convoys;
+      let ahead = null;
+      spots.forEach((s, k) => {
+        const car = spare[k];
+        car.dir = dir;
+        car.bound = dir > 0 ? 'north' : 'south';
+        car.s = s;
+        outfit(car, kind, lane);
+        Object.assign(car, { convoy: { id, ahead }, viaSide: false, hesitant: false, showMood: false });
+        if (ahead) { car.baseSpeed = ahead.baseSpeed; car.vs = ahead.vs; } // (all at the leader's pace)
+        ahead = car;
+      });
+      return true;
+    }
+    return false;
+  };
+
+  // ---- reversible lanes (a level's "reversible": see CONFIG.reversible) ----------------------------------
+  // Each stretch flips as the player comes near: its lane is oncoming from then on. The traffic in it going
+  // the player's way moves out (see update), and oncoming cars come down it the wrong way, one every so
+  // often, appearing ahead of the player (see reversed)
+  let reversibles = [];
+  const reversed = (r, dt) => {
+    const R = CONFIG.reversible;
+    if (!r.flipped) {
+      if (Player.active && Player.s > r.from - (r.flipAt ?? R.flipAt) && Player.s < r.to) {
+        r.flipped = true;
+        r.next = 0.5;
+        Message.say('events', 'reversible');
+      }
+      return;
+    }
+    if (Player.s > r.to || !Player.active || (r.next -= dt) > 0) return;
+    r.next = between(R.every);
+    const s = Player.s + between(R.ahead);
+    if (s > r.to - 10 || s < r.from) return; // (none from beyond the stretch)
+    const car = cars.find(c => !c.active && c.unused) || cars.find(c => !c.active && !c.unused && c.dir < 0);
+    if (!car || !cars.every(o => !o.active || o.lane !== r.lane || Math.abs(o.s - s) > 25)) return;
+    car.dir = -1;
+    car.bound = 'south';
+    car.s = s;
+    outfit(car, pickKind(s), r.lane);
+    Object.assign(car, { reversible: r, wrongWay: true, viaSide: false, hesitant: false, evil: false, showMood: false });
+  };
+
+  // ---- rubbernecking (see CONFIG.rubberneck) -------------------------------------------------------------
+  // A wreck is worth a look: for a while after a car blows up, the traffic coming up to the spot slows right
+  // down to see, and the jam forms behind. Collision tells of each (noteWreck)
+  const wrecks = []; // { s, lat, t (s left) }
+  const noteWreck = (v) => {
+    if (v.isPlayer || v.toad || v.racer || !Track.isMain(v.s)) return;
+    wrecks.push({ s: v.s, lat: v.lat, t: CONFIG.rubberneck.linger });
+  };
+  // ...and an evil driver that has sat in the jam long enough goes up the shoulder, if it is clear, and is
+  // arrested for it if a police car is near enough to see (as the player would be busted)
+  const rubberneck = (car, target, dt) => {
+    const R = CONFIG.rubberneck;
+    let slow = false;
+    for (const w of wrecks) {
+      const ahead = (w.s - car.s) * car.dir;
+      if (ahead > -(car.hl + 6) && ahead < R.range) slow = true;
+    }
+    if (slow && !car.shoulderRun) target = Math.min(target, car.baseSpeed * R.pace);
+    if (car.evil && !car.racer && !car.parade && !car.convoy && !CONFIG.vehicles[car.kind].kerb) {
+      if (!car.shoulderRun && Math.abs(car.vs) < car.baseSpeed * R.slowBelow && Math.abs(car.s - Player.s) < CONFIG.spawnMax) car.patience += dt;
+      else car.patience = Math.max(0, car.patience - dt);
+      if (car.patience > R.patience && !car.shoulderRun && !car.oncoming && shoulderClear(car, 60)) {
+        const [first, last] = Track.laneRange(car.dir, car.s);
+        car.lane = car.dir > 0 ? last : first;
+        car.shoulderRun = { for: 0, past: null, impatient: true };
+        car.signal = kerbSide(car);
+        car.pendingLane = null;
+        car.patience = 0;
+      }
+      if (car.shoulderRun?.impatient) {
+        target = Math.max(target, car.baseSpeed); // (no holding back, up the shoulder)
+        if (car.shoulderRun.for > R.longest) { car.shoulderRun = null; car.signal = -kerbSide(car); }
+        else if (cars.some(o => o.active && o.kind === 'police' && !o.roadblock && Math.abs(o.s - car.s) < R.policeSight) && arrestNow(car)) {
+          if (Math.abs(car.s - Player.s) < 150) Message.say('events', 'shoulderBusted');
+        }
+      }
+    }
+    return target;
+  };
+
+  // a shedding truck (a kind with sheds: true, see CONFIG.cargo): while it is ahead of the player and near,
+  // now and then a load off the back, anywhere across its lane and a little either side, which slides on
+  // down the road and stops: one of the level's pool of loads (see Collision), the first out of play or
+  // left well behind
+  const shed = (car, dt) => {
+    const C = CONFIG.cargo, ahead = car.s - Player.s;
+    if (ahead < 0 || ahead > C.near) return;
+    if (!car.shedSaid) { car.shedSaid = true; Message.say('events', 'cargo'); }
+    if ((car.shedWait = (car.shedWait ?? between(C.every)) - dt) > 0) return;
+    car.shedWait = between(C.every);
+    const load = Collision.obstacles.find(o => o.cargo && (o.gone || o.s < Player.s - 300));
+    if (!load) return;
+    Object.assign(load, { gone: false, s: car.s - car.hl - 1, lat: car.lat + (Math.random() - 0.5) * 2 * (car.hw + 0.6), slide: Math.max(0, Math.abs(car.vs) - 4), face: 0, h: 0 });
+    sfxAt('cargoDrop', car.s, 0.7);
   };
 
   // a racer on the grid (a level's "grid") at s, in that lane: false if the pool has no car spare.
@@ -439,7 +608,7 @@ export const Traffic = (() => {
   // how a traffic driver treats the player (see CONFIG.attitude): by its side, its mood and the
   // player's side. null: it pays the player no special attention. (Not racers, who have race rules
   // of their own; nor the police, ambulances, nor trucks and tractors, which keep to themselves)
-  const minds = (car) => Player.active && !LEVEL.battle && !car.racer && !car.procession && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
+  const minds = (car) => Player.active && !LEVEL.battle && !car.racer && !car.procession && !car.parade && car.kind !== 'police' && !car.emergency && car.kind !== 'tractor' &&
     !CONFIG.vehicles[car.kind].kerb && car.dir === Player.dir;
   const attitude = (car) => {
     if (!minds(car)) return null;
@@ -882,12 +1051,25 @@ export const Traffic = (() => {
   };
   // a horn to suit the vehicle (police cars have sirens instead), only near the player. (Nobody at war
   // or in a race honks: an army's vehicles, a race's grid)
-  const noHorn = (car) => LEVEL.battle || car.racer;
+  const noHorn = (car) => LEVEL.battle || car.racer || car.parade || car.procession;
   const HORNS = { commuter: 'hornSmall', sport: 'hornSmall', darkvan: 'hornBig', van: 'hornBig', tractor: 'hornBig', bus: 'hornBus' };
   const honk = (car) => {
     if (car.kind === 'police' || noHorn(car) || car.honkWait > 0 || Math.abs(car.s - Player.s) > CONFIG.hornRange) return;
     car.honkWait = CONFIG.hornWait;
     sfxAt(HORNS[car.kind] || 'horn', car.s);
+  };
+  // the player's horn (horn.js, CONFIG.horn): traffic ahead going its way within range reacts. A calm good
+  // driver in the player's lane moves over if it can (either way); an angry or evil one honks back
+  const hornedAt = () => {
+    const H = CONFIG.horn, lane = Track.nearestLane(Player.lat, Player.s);
+    for (const car of cars) {
+      if (!car.active || car.junction || car.toad || car.arrest >= 0 || car.dir < 0 || car.racer || car.emergency || car.procession || car.kind === 'police') continue;
+      const gap = car.s - Player.s;
+      if (gap <= 0 || gap > H.range) continue;
+      if (car.evil || car.emotion === 'angry') { car.honkWait = 0; honk(car); continue; }
+      if (car.pendingLane !== null || car.pulledOver || Track.openLane(car.lane, car.s) !== lane) continue;
+      if (!tryMove(car, 1, true)) tryMove(car, -1, true);
+    }
   };
 
   // A car that hurts the player while the player's siren sounds is arrested: a police
@@ -938,7 +1120,9 @@ export const Traffic = (() => {
   };
 
   const think = (car) => {
-    if (car.punctured || car.stationed || car.procession) return; // (pulled over with a flat, a police car on station, or in a funeral procession)
+    if (car.punctured || car.stationed || car.procession || car.parade || car.convoy || car.icecream) return; // (pulled over with a flat, a police car on station, in a funeral procession, a parade's float, a convoy, an ice-cream van)
+    // (queued behind an ice-cream van at its stop: nobody pulls out round it, see CONFIG.iceCream)
+    if (car.dir > 0 && cars.some(v => v.active && v.icecream && v.baseSpeed === 0 && v.s - car.s > -5 && v.s - car.s < CONFIG.iceCream.queue)) return;
     if (car.kind === 'tractor' || CONFIG.vehicles[car.kind].kerb) return; // a tractor just trundles along its lane, and a truck keeps to the kerb
     if (car.pendingLane !== null) return; // (already signalling for a move)
     if (sirenFor(car)) return; // (no lane changes of its own with a siren behind it)
@@ -1384,6 +1568,9 @@ export const Traffic = (() => {
     placeFixed();
     nextEmergency = LEVEL.emergencies ? between(LEVEL.emergencies.every) : Infinity;
     nextProcession = LEVEL.processions ? between(LEVEL.processions.every) : Infinity;
+    nextConvoy = LEVEL.convoys ? between(LEVEL.convoys.every) : Infinity;
+    wrecks.length = 0;
+    reversibles = (LEVEL.reversible || []).map(r => ({ ...r, flipped: false, next: 0 }));
     if (!mix().length) return; // otherwise an empty road
     // (when everything is oncoming, the first of it starts further off)
     // (the Battlefield's green army never starts out ahead: it all comes up from behind the player, see update)
@@ -1403,6 +1590,14 @@ export const Traffic = (() => {
       const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1 : Math.random() < 0.6 ? 1 : -1;
       nextProcession = startProcession(dir) ? between(LEVEL.processions.every) : 2;
     }
+    // now and then a convoy, either way (one at a time; with no room for it just now, it tries again a little later)
+    if (LEVEL.convoys && !cars.some(c => c.active && c.convoy) && (nextConvoy -= dt) <= 0) {
+      const dir = Track.flow === 'north' ? 1 : Track.flow === 'south' ? -1 : Math.random() < 0.65 ? 1 : -1;
+      nextConvoy = startConvoy(dir) ? between(LEVEL.convoys.every) : 2;
+    }
+    for (const w of wrecks) w.t -= dt; // (a wreck is worth a look for a while)
+    for (let i = wrecks.length - 1; i >= 0; i--) if (wrecks[i].t <= 0) wrecks.splice(i, 1);
+    for (const r of reversibles) reversed(r, dt);
     if (Track.junctions.length) junctionState();
     if (LEVEL.grid) raceMood(dt);
     huntRoles();
@@ -1486,6 +1681,51 @@ export const Traffic = (() => {
         keepOnRoad(car, 0);
         continue;
       }
+      if (car.roadblock) { // a roadblock's car: parked across its lane, lights going; a siren has it pull aside
+        const R = CONFIG.roadblock, rb = car.roadblock, sh = rb.shared;
+        car.vs = car.latVel = car.yawVel = 0;
+        car.yaw = Math.PI / 2;
+        car.braking = car.hazards = false;
+        if (!sh.said && Player.active && car.s - Player.s > 0 && car.s - Player.s < R.warn) { sh.said = true; Message.say('events', 'roadblock'); }
+        if (!sh.waved && Player.siren > 0 && Player.active && car.s - Player.s > 0 && car.s - Player.s < R.wave) { sh.waved = true; Message.say('events', 'roadblockWaved'); }
+        if (sh.waved) { // over to the shoulder on its side, and clear of the lanes
+          const want = Track.shoulderOffset(rb.side, car.s) + rb.side * 1.2;
+          car.lat += Math.sign(want - car.lat) * Math.min(Math.abs(want - car.lat), R.aside * dt);
+        }
+        continue;
+      }
+      if (car.parade) { // a float: the parade's lead float keeps the band's drum going, and says the parade is coming
+        const P = CONFIG.parade, sh = car.parade.shared;
+        if (car.parade.lead && Player.active && Math.abs(car.s - Player.s) < P.heard) {
+          if ((sh.beat -= dt) <= 0) { sh.beat = P.drumEvery; sfxAt('drum', car.s, 0.8); }
+          if (!sh.said && car.s > Player.s) { sh.said = true; Message.say('events', 'parade'); }
+        }
+      }
+      if (car.icecream) { // an ice-cream van at its stop: its jingle going; a while after the player comes near, off it goes
+        const I = CONFIG.iceCream, ic = car.icecream;
+        if (ic.timer === null && Player.active && Player.s > car.s - I.trigger) {
+          ic.timer = ic.wait;
+          Message.say('events', 'iceCream');
+        }
+        if (car.baseSpeed === 0 && Player.active && Math.abs(car.s - Player.s) < I.heard && (ic.jingle -= dt) <= 0) {
+          ic.jingle = I.jingleEvery;
+          sfxAt('jingle', car.s, 0.6);
+        }
+        if (ic.timer !== null && car.baseSpeed === 0 && (ic.timer -= dt) <= 0) { // off it goes
+          car.baseSpeed = ic.pace;
+          car.hazards = false;
+        }
+      }
+      // a reversed lane (see reversed): a car going the player's way in it moves out, or stops short of it
+      for (const r of reversibles) {
+        if (!r.flipped || car.dir < 0 || car.lane !== r.lane || car.s < r.from - 120 || car.s > r.to) continue;
+        const [first, last] = Track.laneRange(car.dir, car.s);
+        const lane = [r.lane - 1, r.lane + 1].find(l => l >= first && l <= last && l !== r.lane && laneClear(car, l, 14));
+        if (lane !== undefined) { car.lane = lane; car.pendingLane = null; car.signal = lane - r.lane; }
+        else if (car.s < r.from) car.vs *= Math.max(0, 1 - dt * 1.5); // (no room yet: braking before the stretch)
+      }
+      if (car.reversible && (car.s < car.reversible.from - 20 || !car.reversible.flipped)) { car.active = false; continue; } // (out at the near end of its stretch)
+      if (CONFIG.vehicles[car.kind].sheds && car.dir === Player.dir && Player.active) shed(car, dt);
       // ice: a car hitting a patch may spin out (and blow up), the likelier the faster it is going
       // (not one that is parked, nor an ambulance)
       const icy = !!Track.icy(car.s, car.lat);
@@ -1745,6 +1985,20 @@ export const Traffic = (() => {
           (furious(car) ? CONFIG.race.fury.pace : 1) * (1 + (CONFIG.race.chase.pace - 1) * chasing(car));
         if (car.racer && LEVEL.grid?.rival) target = rivalPace(car, target, dt); // (a rival courier: see rivalPace)
         if (car.pulledOver) target = car.baseSpeed * CONFIG.sirenPickup.pulledOverPace;
+        // in a convoy: right on the one ahead, and shutting the gap in the player's face (see CONFIG.convoy)
+        if (car.convoy?.ahead) {
+          const a = car.convoy.ahead, G = CONFIG.convoy;
+          if (!a.active) car.convoy.ahead = null; // (the one ahead gone: this one leads now)
+          else {
+            if (a.lane !== car.lane) { car.lane = a.lane; car.pendingLane = null; } // (it follows the one ahead into any lane it takes)
+            const gap = (a.s - car.s) * car.dir - a.hl - car.hl, mid = a.s - car.dir * (a.hl + gap / 2);
+            target = Math.max(0, Math.abs(a.vs) + (gap - G.gap) * G.close);
+            const merging = Player.active && Math.abs(Player.s - mid) < gap / 2 + Player.hl && Math.abs(Player.lat - car.lat) < CONFIG.laneWidth * 1.3 &&
+              Math.abs(Player.lat - car.lat) > car.hw + Player.hw - 0.3 && Player.latVel * Math.sign(car.lat - Player.lat) > 0.3;
+            if (merging) target += G.shut;
+          }
+        }
+        if (!car.racer && !car.emergency && !car.parade && !car.roadblock && !car.icecream && !car.procession && !LEVEL.battle) target = rubberneck(car, target, dt);
         if (car.kind === 'driveby' && !car.punctured) target = driveBy(car, target, dt); // (out for trouble)
         // (on a level whose police are only in some stretches, its traffic zones', a police car that comes
         // to the edge of its stretch stays there, parked on the shoulder with its lights going: beyond it,
@@ -1845,10 +2099,11 @@ export const Traffic = (() => {
           // its gearbox: it doesn't run into it, half a second off)
           const pushy = car.racer || car.escaping; // (a racer, or a car making its getaway: see driveBy)
           const passing = pushy && o.lane !== car.lane, closing = Math.max(0, Math.abs(car.vs) - Math.abs(o.vs));
-          const room = o.hl + car.hl + (passing ? 1 + closing * 0.5 : pushy ? 2 + closing * 1.5 : 8);
+          const inSameProcession = car.procession && o.procession === car.procession;
+          const room = o.hl + car.hl + (inSameProcession ? 2 : passing ? 1 + closing * 0.5 : pushy ? 2 + closing * 1.5 : 8);
           if (gap > 0 && gap < room && Math.abs(o.lat - car.lat) < o.hw + car.hw) {
             // (a racer sits in its tow, on its pace, ready to pull out; only too close does it back off)
-            target = Math.min(target, Math.abs(o.vs) * (car.racer && gap > o.hl + car.hl + 3 ? 0.99 : 0.9));
+            target = Math.min(target, Math.abs(o.vs) * (inSameProcession ? 1 : car.racer && gap > o.hl + car.hl + 3 ? 0.99 : 0.9));
             held = o;
           }
         }
@@ -2115,5 +2370,6 @@ export const Traffic = (() => {
     placeFixed();
   };
 
-  return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, startProcession, mourn, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer };
+  return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, startProcession, mourn, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer,
+    noteWreck, hornedAt, get reversibles() { return reversibles; } };
 })();

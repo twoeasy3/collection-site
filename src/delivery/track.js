@@ -415,9 +415,7 @@ const createTrack = () => {
   };
   const onShoulder = (lat, s) => lat > laneHi(s) || lat < laneLo(s);
   // the level's ice patch at (s, lat), if any: on the expressway, over one lane or (with no lane) all of them
-  const ice = LEVEL.ice || [];
-  // (and the patches that come and go, anywhere: a burst water main's, while it sprays: see Hazards)
-  const sprays = [];
+  const ice = LEVEL.ice || [], slicks = [], sprays = [];
   const icy = (s, lat) => {
     for (const p of sprays) if (p.on && s >= p.from && s <= p.to && Math.abs(lat - laneOffset(p.lane, s)) <= LW / 2) return p;
     if (!isMain(s)) return null;
@@ -425,7 +423,20 @@ const createTrack = () => {
       if (s < p.from || s > p.to) continue;
       if (p.lane === undefined ? lat >= laneLo(s) && lat <= laneHi(s) : Math.abs(lat - laneOffset(p.lane, s)) <= LW / 2) return p;
     }
+    for (const p of slicks) if (s >= p.from && s <= p.to && Math.abs(lat - p.lat) <= p.half) return p;
     return null;
+  };
+  // how far into a tunnel s is (a level's "tunnels": { from, to }): 0 (outside) .. 1 (well inside), over
+  // CONFIG.tunnel.edge m at each portal (the light fades in and out)
+  const tunnels = LEVEL.tunnels || [];
+  const tunnel = (s) => {
+    if (!isMain(s)) return 0;
+    let most = 0;
+    for (const t of tunnels) {
+      const E = CONFIG.tunnel.edge, u = Math.min(s - t.from + E * 0.3, t.to + E * 0.3 - s) / E;
+      if (u > 0) most = Math.max(most, Math.min(1, u));
+    }
+    return most;
   };
   // is s in the mud? (a level's "mud": stretches of the main road where it gives way to mud)
   const mud = LEVEL.mud || [];
@@ -814,6 +825,37 @@ const createTrack = () => {
       if (!(z.from < z.to) || z.from < 0 || z.to > length) problems.push((z.count ? 'rockfall' : 'fog') + ' at ' + z.from + '-' + z.to + ': from before to, on the road');
       else if (z.count && z.side !== 'left' && z.side !== 'right') problems.push('rockfall at ' + z.from + ': side is left or right');
     }
+    for (const t of tunnels) {
+      if (!(t.from < t.to) || t.from < 30 || t.to > length - 30) problems.push('tunnel at ' + t.from + '-' + t.to + ': from before to, on the road, clear of the start and the finish');
+      else if (t.to - t.from < 60) problems.push('tunnel at ' + t.from + ': too short (60 m at least)');
+      for (const x of exits) if (overlaps(t.from - 20, t.to + 20, x.exitAt - X.laneZone, x.mergeAt + X.laneZone)) problems.push('tunnel at ' + t.from + ': an exit\'s ramps are in it');
+    }
+    for (const p of LEVEL.parades || []) {
+      if (!(p.s >= 0 && p.s <= length)) problems.push('parade at ' + p.s + ': beyond the road');
+      else if (FLOW === 'south') problems.push('parade at ' + p.s + ': there is no side going the player\'s way for it');
+    }
+    for (const r of LEVEL.roadblocks || []) {
+      const [first, last] = laneRange(1, r.s || 0);
+      if (!(r.s >= 0 && r.s <= length)) problems.push('roadblock at ' + r.s + ': beyond the road');
+      else if (last - first < 1) problems.push('roadblock at ' + r.s + ': the player\'s side needs two lanes or more, for a gap');
+      else if (r.gap !== undefined && !(Number.isInteger(r.gap) && r.gap >= first && r.gap <= last)) problems.push('roadblock at ' + r.s + ': gap is a lane on the player\'s side (' + first + ' to ' + last + ')');
+    }
+    for (const st of LEVEL.iceCreamStops || []) {
+      const [first, last] = laneRange(1, st.s || 0);
+      if (!(st.s >= 0 && st.s <= length)) problems.push('ice-cream stop at ' + st.s + ': beyond the road');
+      else if (!(Number.isInteger(st.lane) && st.lane >= first && st.lane <= last)) problems.push('ice-cream stop at ' + st.s + ': lane is one on the player\'s side (' + first + ' to ' + last + ')');
+    }
+    for (const r of LEVEL.reversible || []) {
+      const [first, last] = laneRange(1, r.from || 0);
+      if (!(r.from < r.to) || r.from < 50 || r.to > length) problems.push('reversible lane at ' + r.from + '-' + r.to + ': from before to, on the road, clear of the start');
+      else if (!(Number.isInteger(r.lane) && r.lane >= first && r.lane <= last) || last - first < 1) problems.push('reversible lane at ' + r.from + ': lane is one of two or more on the player\'s side (' + first + ' to ' + last + ')');
+      else if (ONE_WAY) problems.push('reversible lane at ' + r.from + ': only on a two-way road');
+    }
+    if (LEVEL.convoys && !(LEVEL.convoys.every && LEVEL.convoys.every.min > 0 && LEVEL.convoys.every.max >= LEVEL.convoys.every.min)) problems.push('convoys: every { min, max } s');
+    for (const m of LEVEL.waterMains || []) {
+      if (!(m.s >= 0 && m.s <= length)) problems.push('water main at ' + m.s + ': beyond the road');
+      else if (m.lane !== undefined && !(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road (or no lane: the centre line)');
+    }
     for (const z of LEVEL.landmines || []) {
       if (!(z.from < z.to) || z.from < 0 || z.to > length || !(z.count > 0)) problems.push('landmines at ' + z.from + '-' + z.to + ': from before to, on the road, with a count');
     }
@@ -987,7 +1029,7 @@ const createTrack = () => {
     apart, laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesOn, edge, extraLane, onBridge, icy, sprays, muddy, foggy, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
+    lanesOn, edge, extraLane, onBridge, icy, sprays, slicks, muddy, foggy, tunnel, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };
