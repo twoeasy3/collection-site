@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `6fc7b94` (main). Agents 1, 2 and 3 are finished and merged; agents 4, 5 and 6 are running.
+Last updated: after `a22cab5` (main). Agents 1 to 4 are finished and merged; agents 5, 6 and 7 are running.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -68,12 +68,14 @@ Last updated: after `6fc7b94` (main). Agents 1, 2 and 3 are finished and merged;
 
 ## Running and queued (three at a time)
 
-1. Side roads cleanup: **started**, agent 4, branch `delivery-side-roads` (in the circuits worktree)
-   - [ ] Fully-featured roads: lift the limits (hills with flyovers, `flow: south`, one-way flyovers, gimmicks on side roads)
-   - [ ] Decor beside the main road prunes correctly
-   - [ ] Fork and merge markings redrawn like real ones
-   - [ ] Polygons flickering on side roads on hills
-   - [ ] All of it checked in every theme
+1. Side roads cleanup: **finished**, agent 4, merged into `main` as `a22cab5` (no conflicts; levels, hazards and save checks pass)
+   - [x] Polygons flickering on side roads on hills: the side road sat up to 4 cm (18 cm at worst) below the expressway's ground; now exactly level with it, slope capped at 6%. `3a2fefe`. Checked by numbers and stills, not by watching it move
+   - [x] Fork and merge markings: lane-drop dashes, a nose where the solid lines meet, chevrons in the wedge, edge lines carried onto the side road. Side roads now part from the expressway by 14 m. `249424f`
+   - [x] Decor beside the main road prunes by real distance to every other road, in every theme. `7ae100d`
+   - [x] More allowed: hills with flyovers, exits on an all-oncoming level, pickups and obstacles in any side-road lane, six more gimmick kinds, a full left shoulder. `c01a8ee`
+   - [~] Every theme: shot in 25 of 28, about a third of the pictures opened. Not looked at: singaporeNight, canberra, suburb, battlefield, bathurst, panorama, montreal, sea, night, hongkong, christmas, monza
+   - [ ] Still not allowed: flyovers on a one-way level; 17 gimmick kinds on a side road (ice, mud, fog, roadblocks, tunnels and others: now reported when the level loads)
+   - [ ] Scenery along a side road's own roadside in themes other than the city
 2. Amphibious cars and levels: **started**, agent 5, branch `delivery-amphibious` (in the city-levels worktree)
    - [ ] Five amphibious cars, one per star level 1 to 5
    - [ ] Amphibious section in the garage
@@ -81,12 +83,12 @@ Last updated: after `6fc7b94` (main). Agents 1, 2 and 3 are finished and merged;
    - [ ] Boat traffic on the water
    - [ ] Five gimmicked levels in different themes, amphibious cars only
 3. Gimmick fixes and circuit run-off: **started**, agent 6, on `main`
-   - [ ] Drawbridge: not wonky, and the car climbs the raised leaf at its angle and crests it
+   - [x] Drawbridge: the car climbs the raised leaf at its angle and crests it. `1f18343`. Not yet seen by the orchestrator
    - [ ] Wide loads are passable
    - [ ] Burst water mains: water that does not look square
    - [ ] Run-off edges on Monza and Spa smoothed (the measured widths are noisy)
    - [ ] Sand traps as part of a shoulder, slowing cars far more
-4. The cargo: **queued**, next free slot
+4. The cargo: **started**, agent 7, branch `delivery-cargo` (in the circuits worktree)
    - [ ] Five normal things to deliver
    - [ ] Five odd things for Evil, animated, three states each
    - [ ] Shown in a corner of the screen; Evil's state follows the time left

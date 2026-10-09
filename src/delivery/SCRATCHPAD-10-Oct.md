@@ -371,9 +371,22 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   and a last sweep of loose objects. Seen in screenshots on Expressway, Big Business, Ring Road,
   Market Town, Quarry Run. Not routed: backdrops over 60 m across and meshes built in world
   terms that are not strips (zone crags, cliff faces).
-- 4. Fully-featured side roads: in progress.
-- 4. Fully-featured side roads: not started.
-- 5. Every theme: not started.
+- **4. Fully-featured side roads: done as far as it goes, `c01a8ee`.** Lifted: hills with flyovers,
+  exits on a `flow: south` level, pickups / obstacles in any open side lane and on its shoulders,
+  tractors, landmines, rockfall, drop bears, pelotons, migration on a side road, a full left
+  shoulder, ruts on dirt. Left (documented in `levels.js`, reported as the level loads): flyovers on
+  a one-way level, and ice, mud, fog, stopGo, parked, roadblocks, iceCreamStops, reversible,
+  wreckage, machinery, siteWorks, parades, hippos, elephants, quarries, tunnels, bridges on a side
+  road. Checked headless (a built level driven down its side road with each kind on it), one
+  screenshot of hills with flyovers; not play-tested.
+- **5. Every theme: looked at, nothing further to commit.** Ring Road's first fork and merge shot
+  from above in 25 of the 28 themes (`?theme=`; not spa or albert-park; monza shot but not looked
+  at), and mirrored (`"drive": "left"`, temporary edit, restored). About a third of the images were
+  opened: farm, beach, safari, singapore, coast, construction, snow, hood, tokyo, hell, space,
+  airport, mumbai, left-hand. In those, line colours follow the theme and no scenery is on a side
+  road. Shots: scratchpad `shots-side-roads/` (before, part1-4, themes, left).
+  Farm, Mystery Meadows and UFO have no exits on this branch.
+- Branch tip `c01a8ee`, four commits on `delivery-side-roads`, not pushed. Smoke test not run.
 
 ## Agent 5: amphibious cars and levels (.claude/worktrees/delivery-city-levels, delivery-amphibious)
 
@@ -391,8 +404,23 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   have a current, channels narrow, barges are slow and wide), never a wall to wait behind. No ferry
   timetable, no drawbridge, stop / go, level crossing, school crossing or roadblock on these levels.
   Each level's fit is noted under step 5.
-- 2. Water stages in the engine: in progress.
-- 3. Traffic and water, boat traffic: not started.
-- 4. Amphibious-only levels (the flag, the menu): not started.
+- **2 and 3. Water stages, traffic and boats: done, `e459b4c`** (one commit: the drawing imports the
+  boat models). `water: [{ from, to, current? }]` in a level; `Track.water(s)` (0 dry .. 1); logic
+  `water.js`, drawing `render/water.js`, boats `render/boatModels.js` (dinghy, barge, ferry, pedalo),
+  tuning `CONFIG.water`. The road is not dug out: the water stands 0.32 m over it and what floats is
+  sat down into it. Afloat: 74% top speed, softer steering and brakes, bow wave, wake, bobbing, a
+  boat's engine note. Traffic that can't float pulls onto ITS OWN SHOULDER from 170 m out and stops
+  13 m short of the slipway nose to tail (at most 6 a side; no more of them turn up for that edge
+  until the queue is passed): every lane stays open. Amphibious kinds (the five cars' ids) drive in
+  and out. Boats turn up on the water only and tie up at the bank short of the far slipway (they do
+  not turn back: a boat's direction never changes in this engine). A boat's wake shoves the car off
+  its line; a stage can have a sideways current.
+  - Checked with `node scripts/.water-check.mjs` (new): the car never drops under 19 m/s, no land
+    vehicle in the water, no boat out of it, queue wholly on the shoulder, amphibious traffic in and
+    out, a level refused without an amphibious car, old saves keep their place. Screenshots looked at.
+  - Not handled: ambulances, processions and convoys ignore the water (not used on these levels).
+  - Screenshots: `&ff` over about 15 s leaves the camera off the road on ANY level (seen on level 2
+    as well); not mine, not fixed. Shorter `&ff`, or `&cine`, is fine.
+- 4. Amphibious-only levels: `Game.start` refuses (done in `e459b4c`); the menu's words in progress.
 - 5. Five levels: not started.
 - 6. Gimmicks page cards, README, HANDOVER: not started.
