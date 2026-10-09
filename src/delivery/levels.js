@@ -255,12 +255,15 @@ import speedTrapAlley from './levels/speed-trap-alley.json';
 import mountainPass from './levels/mountain-pass.json';
 import outbackExpress from './levels/outback-express.json';
 import tourDeCoast from './levels/tour-de-coast.json';
+import ringRoad from './levels/ring-road.json';
+import marketTown from './levels/market-town.json';
+import quarryRun from './levels/quarry-run.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
 // counts unlocked levels by position
 export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue,
-  speedTrapAlley, mountainPass, outbackExpress, tourDeCoast];
+  speedTrapAlley, mountainPass, outbackExpress, tourDeCoast, ringRoad, marketTown, quarryRun];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown, battlefield];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS];
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special ones

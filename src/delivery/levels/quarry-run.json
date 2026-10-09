@@ -1,0 +1,281 @@
+{
+  "id": "quarry-run",
+  "name": "Quarry Run",
+  "theme": "construction",
+  "clock": { "good": 215, "evil": 165 },
+  "tip": 210,
+  "lanes": 2,
+  "shoulderTimer": false,
+  "traffic": {
+    "semi": 0.22,
+    "pickup": 0.28,
+    "darkvan": 0.14,
+    "van": 0.14,
+    "junker": 0.12,
+    "commuter": 0.07,
+    "police": 0.03
+  },
+  "trafficCount": 7,
+  "oncomingCount": 6,
+  "segments": [
+    {
+      "length": 400,
+      "curve": 0
+    },
+    {
+      "length": 300,
+      "curve": 0.002
+    },
+    {
+      "length": 600,
+      "curve": 0
+    },
+    {
+      "length": 300,
+      "curve": -0.002
+    },
+    {
+      "length": 700,
+      "curve": 0
+    },
+    {
+      "length": 300,
+      "curve": 0.0015
+    },
+    {
+      "length": 600,
+      "curve": 0
+    },
+    {
+      "length": 300,
+      "curve": -0.0015
+    },
+    {
+      "length": 900,
+      "curve": 0
+    }
+  ],
+  "stopGo": [
+    {
+      "from": 900,
+      "to": 1060
+    },
+    {
+      "from": 2800,
+      "to": 2980
+    }
+  ],
+  "rockfall": [
+    {
+      "from": 1700,
+      "to": 1950,
+      "count": 7,
+      "side": "left"
+    },
+    {
+      "from": 3650,
+      "to": 3900,
+      "count": 7,
+      "side": "right"
+    }
+  ],
+  "fog": [
+    {
+      "from": 2000,
+      "to": 2250
+    }
+  ],
+  "mud": [
+    {
+      "from": 450,
+      "to": 620
+    },
+    {
+      "from": 2350,
+      "to": 2520
+    },
+    {
+      "from": 3300,
+      "to": 3440
+    }
+  ],
+  "machinery": [
+    {
+      "s": 1400,
+      "kind": "dumpTruck"
+    },
+    {
+      "s": 2600,
+      "kind": "excavator"
+    },
+    {
+      "s": 4150,
+      "kind": "bulldozer"
+    },
+    {
+      "kind": "roller",
+      "from": 3000,
+      "to": 3250,
+      "side": "right"
+    },
+    {
+      "kind": "forklift",
+      "s": 300,
+      "side": "left"
+    }
+  ],
+  "siteWorks": [
+    {
+      "kind": "excavator",
+      "s": 250,
+      "side": "right"
+    },
+    {
+      "kind": "pipes",
+      "s": 1200,
+      "side": "left"
+    },
+    {
+      "kind": "trench",
+      "from": 2650,
+      "to": 2700,
+      "side": "right"
+    },
+    {
+      "kind": "pipes",
+      "s": 4000,
+      "side": "left"
+    }
+  ],
+  "exits": [
+    {
+      "exitAt": 1450,
+      "mergeAt": 2300,
+      "out": 50,
+      "bends": {
+        "count": 3,
+        "size": 12
+      },
+      "oncoming": true
+    },
+    {
+      "exitAt": 3400,
+      "mergeAt": 4150,
+      "out": 90,
+      "bends": {
+        "count": 3,
+        "size": 10
+      },
+      "oncoming": true
+    }
+  ],
+  "targets": [
+    {
+      "s": 700,
+      "side": "left"
+    },
+    {
+      "s": 3100,
+      "side": "right"
+    },
+    {
+      "s": 350,
+      "side": "right",
+      "road": "side",
+      "exit": 0
+    }
+  ],
+  "pickups": [
+    {
+      "type": "wrench",
+      "s": 200,
+      "lane": 1
+    },
+    {
+      "type": "passenger",
+      "s": 800,
+      "lane": 1
+    },
+    {
+      "type": "timePlus",
+      "s": 1300,
+      "lane": 1
+    },
+    {
+      "type": "armour",
+      "s": 1650,
+      "lane": 1
+    },
+    {
+      "type": "ghost",
+      "s": 2100,
+      "lane": 1
+    },
+    {
+      "type": "turbo",
+      "s": 2700,
+      "lane": 1
+    },
+    {
+      "type": "wrench",
+      "s": 3550,
+      "lane": 1
+    },
+    {
+      "type": "mystery",
+      "s": 4300,
+      "lane": 1
+    },
+    {
+      "type": "timePlus",
+      "s": 450,
+      "lane": 1,
+      "road": "side",
+      "exit": 0
+    },
+    {
+      "type": "wrench",
+      "s": 300,
+      "lane": 1,
+      "road": "side",
+      "exit": 1
+    }
+  ],
+  "obstacles": [
+    {
+      "s": 150,
+      "lane": 1,
+      "road": "side",
+      "exit": 0,
+      "kind": "pile"
+    },
+    {
+      "s": 300,
+      "lane": 0,
+      "road": "side",
+      "exit": 0,
+      "kind": "cone"
+    },
+    {
+      "s": 600,
+      "lane": 1,
+      "road": "side",
+      "exit": 0,
+      "kind": "beam"
+    },
+    {
+      "s": 200,
+      "lane": 0,
+      "road": "side",
+      "exit": 1,
+      "kind": "pile"
+    },
+    {
+      "s": 500,
+      "lane": 1,
+      "road": "side",
+      "exit": 1,
+      "kind": "cone"
+    }
+  ]
+}
