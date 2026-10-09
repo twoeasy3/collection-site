@@ -5,7 +5,7 @@
 // it always has, every car in order of its stars.
 import '../menus.css';
 import { Progress } from '../progress.js';
-import { blueStarsOpen } from '../cars.js';
+import { blueStarsOpen, EARNED_CARS } from '../cars.js';
 
 // (by: how two cars compare; none: as the garage has them, by stars and then price)
 const SORTS = [
@@ -21,8 +21,10 @@ const SHOWS = [
   { id: 'owned', name: 'Owned', has: (car) => Progress.owns(car.id) },
   { id: 'sale', name: 'For sale', has: (car) => !Progress.owns(car.id) },
   { id: 'afford', name: 'Can afford', has: (car) => !Progress.owns(car.id) && Progress.data.money >= car.price },
-  { id: 'gold', name: 'Gold stars', has: (car) => !!car.tier && !car.blue, when: blueStarsOpen },
+  { id: 'gold', name: 'Gold stars', has: (car) => !!car.tier && !car.blue && !car.earned, when: blueStarsOpen },
   { id: 'blue', name: 'Blue stars', has: (car) => !!car.blue, when: blueStarsOpen },
+  // (the 6-star cars, each earned on a special level: offered once there is one. See cars.js EARNED_CARS)
+  { id: 'earned', name: '6 stars', has: (car) => !!car.earned, when: () => EARNED_CARS.some(car => Progress.earned(car)) },
 ];
 
 export const GarageView = {
