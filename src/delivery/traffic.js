@@ -241,7 +241,7 @@ export const Traffic = (() => {
     car.maxHealth = car.health = type.health;
     car.unspinnable = car.courier = false; // (only a rival courier: see addRacer)
     car.blockedFor = 0; car.blockedBy = null; car.clearThrow = 0;
-    car.punctured = car.stationed = car.escaping = car.wrongWay = false; car.driveBy = car.stationEdge = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
+    car.punctured = car.stationed = car.escaping = car.wrongWay = car.wrongWarned = false; car.driveBy = car.stationEdge = null; // (a flat tyre: see Gunfire; a drive-by's business: see driveBy)
     car.rivalName = car.colors = car.markColor = null; car.counted = false;
     car.smoke = 0;
     car.lane = lane;
@@ -1869,7 +1869,16 @@ export const Traffic = (() => {
             if (free !== undefined && (!car.wrongWay || near < W.swerve)) { car.lane = free; car.pendingLane = null; }
             else if (!car.wrongWay || near < W.swerve) target = Math.min(target, Math.max(0, (near - W.stopShort) * 0.5)); // (no way round: stopping)
           }
-          if (car.wrongWay) car.pendingLane = null;
+          if (car.wrongWay) {
+            car.pendingLane = null;
+            // coming up on the player: a warning as it comes within `warn` m, and it leans on its horn
+            // every `horn` s from there on until it is by (its lights flash: see render/cars.js)
+            const ahead = car.s - Player.s;
+            if (Player.active && ahead > 0 && ahead < W.warn) {
+              if (!car.wrongWarned) { car.wrongWarned = true; Message.say('events', 'wrongWay'); car.wrongHorn = 0; }
+              if ((car.wrongHorn -= dt) <= 0) { car.wrongHorn = W.horn; sfxAt(HORNS[car.kind] || 'horn', car.s, 1.5); }
+            }
+          }
         }
         // one alongside on the attack, with a bend coming: it is given the corner (see CONFIG.race.cede)
         let ceding = 1;

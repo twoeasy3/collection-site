@@ -140,19 +140,21 @@ export const makeTankMesh = (color) => {
 const brakeMat = new THREE.MeshBasicMaterial({ color: 0xff1a1a });
 const brakeHaloMat = new THREE.MeshBasicMaterial({ color: 0xff3020, transparent: true, opacity: 0.35, depthWrite: false });
 const amberMat = new THREE.MeshBasicMaterial({ color: 0xffa21a });
+const flashMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.9, depthWrite: false });
 const addLamps = (group) => {
   const lamps = new THREE.Group();
   const brakes = [0, 1].map(() => new THREE.Mesh(unitBox, brakeMat));
   const halos = [0, 1].map(() => new THREE.Mesh(unitBox, brakeHaloMat));
   const blinkers = [0, 1, 2, 3].map(() => new THREE.Mesh(unitBox, amberMat)); // front then back; left (-x) then right
-  lamps.add(...brakes, ...halos, ...blinkers);
+  const flashers = [0, 1].map(() => new THREE.Mesh(unitBox, flashMat)); // headlights flashed (a wrong-way driver's)
+  lamps.add(...brakes, ...halos, ...blinkers, ...flashers);
   group.add(lamps);
-  group.userData.lamps = { lamps, brakes, halos, blinkers };
+  group.userData.lamps = { lamps, brakes, halos, blinkers, flashers };
 };
 // v: the vehicle (its hitbox sizes the lamps); show: false for a vehicle that isn't car-shaped;
 // turnX: the side of the model (+1 = local +x, -1 = -x) whose indicators blink, 0 = none
-export const syncLamps = (group, v, show, braking, turnX, hazards) => {
-  const { lamps, brakes, halos, blinkers } = group.userData.lamps;
+export const syncLamps = (group, v, show, braking, turnX, hazards, flashing) => {
+  const { lamps, brakes, halos, blinkers, flashers } = group.userData.lamps;
   lamps.visible = show;
   if (!show) return;
   const w = v.hw * 2, l = v.hl * 2, y = Math.min(1.1, Math.max(0.55, v.height * 0.5));
@@ -170,6 +172,13 @@ export const syncLamps = (group, v, show, braking, turnX, hazards) => {
     lamp.visible = blink && (hazards || turnX === side);
     lamp.scale.set(0.2, 0.14, 0.08);
     lamp.position.set(side * (w / 2 - 0.08), y, (front ? 1 : -1) * (l / 2 + 0.05));
+  });
+  // (big and bright, so they are seen from well up the road)
+  const flash = !!flashing && Math.floor(performance.now() / 140) % 2 === 0;
+  flashers.forEach((lamp, i) => {
+    lamp.visible = flash;
+    lamp.scale.set(w * 0.42, 0.5, 0.1);
+    lamp.position.set((i ? 1 : -1) * w * 0.3, y, l / 2 + 0.12);
   });
 };
 
@@ -303,6 +312,6 @@ export const syncTraffic = () => {
       // (in the scene's own terms: its matrix, not its world one, which a mirrored level reverses)
       turnX = Math.sign(signalAt.applyMatrix4(unplace.copy(mesh.matrix).invert()).x);
     }
-    syncLamps(mesh, car, lit, car.braking, turnX, car.hazards);
+    syncLamps(mesh, car, lit, car.braking, turnX, car.hazards || car.wrongWay, car.wrongWay); // (a wrong-way driver: hazards on, headlights flashing)
   }
 };

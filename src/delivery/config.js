@@ -629,7 +629,8 @@ export const CONFIG = {
   // expressway's right-hand lane: see Track.transfer): cars coming at it look look m ahead, and
   // lookTime s at their closing speed, to move over a lane or stop stopShort m off it; it keeps to its
   // lane, swerving over (into a lane clear `room` m round it) only within swerve m of something in it
-  wrongWay: { look: 30, lookTime: 2, stopShort: 6, swerve: 40, room: 10 },
+  // (for the player: a warning as one comes within warn m ahead, and its horn every horn s from there on)
+  wrongWay: { look: 30, lookTime: 2, stopShort: 6, swerve: 40, room: 10, warn: 320, horn: 1.1 },
   // a police car on station at the edge of its stretch (see Traffic: policeOnStation) stops this many m
   // short of the edge, braking at no more than stationBrake m/s^2 to do it
   stationShort: 3,

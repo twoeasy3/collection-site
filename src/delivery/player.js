@@ -48,6 +48,7 @@ export const Player = {
   mystery: '',         // the mystery effect running (see startMystery), '' = none...
   mysteryTime: 0,      // ...and s of it left
   nextMystery: '',     // the effect the next mystery will be, if not left to chance (?mystery= in the URL)
+  testGhost: false,    // a ghost for the whole run, whatever happens (?ghost in the URL: screenshots and tests)
   tank: 0,             // 1 once TANK RAGE has started; it lasts for the rest of the level
   danger: CONFIG.dangerTime, // s of shoulder driving left before the police come (see Social.dangerTime)
   busted: false,
@@ -153,7 +154,7 @@ export const Player = {
     this.dropOncoming = false;
   },
   bust(reason) {
-    if (this.busted || this.tank > 0 || this.radar > 0) return; // nobody busts a tank, nor a car with a radar detector
+    if (this.busted || this.tank > 0 || this.radar > 0 || this.testGhost) return; // nobody busts a tank, nor a car with a radar detector (nor a test's ghost: ?ghost)
     // (nor anyone for the shoulder with a bullet train about, or just gone: an empty danger meter
     // busts the car once that is over, if it is still on the shoulder)
     if ((reason === 'shoulder' || reason === 'seen') && BulletTrain.mercy) return;
@@ -404,7 +405,7 @@ export const Player = {
     this.stun = Math.max(0, this.stun - dt);
     this.shield = Math.max(0, this.shield - dt);
     this.grace = Math.max(0, (this.grace || 0) - dt); // (after a caution: see bust)
-    this.ghost = Math.max(0, this.ghost - dt);
+    this.ghost = this.testGhost ? 1 : Math.max(0, this.ghost - dt);
     this.passenger = Math.max(0, this.passenger - dt);
     this.radar = Math.max(0, this.radar - dt); // (when it runs out with the shoulder meter full: a bust, below)
     this.siren = Math.max(0, this.siren - dt);

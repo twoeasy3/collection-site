@@ -295,6 +295,30 @@ const GROUPS = [
       'Scripted destruction as you come near: tankers, containers and hangars go up beside the road, a plane falls out of the sky, an airliner comes in to land and slides across the lanes.',
       'Whatever its wreckage lands on is wrecked, and it blocks those lanes for good; traffic pulls over for it. A building can blow out across the road too: keep up and you\'ll be past it, or not.',
     ], build: () => ({ model: makeAirliner(14, 30, true) }) },
+    { name: 'Quarries and blasts', color: 0xb9a37c, has: (l) => l.quarries?.length, rules: [
+      `A quarry is cut into the hillside beside the road: ${CONFIG.quarry.benches} benches, each ${CONFIG.quarry.benchHeight} m high and ${CONFIG.quarry.benchDepth} m deep, with the works on its floor.`,
+      `Now and then a crag of the face is blasted out across the road. Its red box flashes for ${W.blastWarn} s first, then rock and dust sweep over the lanes in ${W.blastTime} s: whatever is in the box is wrecked, you included.`,
+      'It is timed to your pace, not to a spot: keep up and you are just short of it as it goes; ease off, or be through it already. The road is left clear afterwards.',
+    ], build: () => {
+      const g = road(9, 14), rock = lambert(0xb9a37c), dark = lambert(0x8f7c5c), Q = CONFIG.quarry;
+      for (let k = 0; k < Q.benches; k++) g.add(box(3, 1.5, 14, k % 2 ? dark : rock, 7.5 + k * 3, 0.75 + k * 1.5, 0));
+      const boxMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
+      const warn = mesh(new THREE.PlaneGeometry(9, 5).rotateX(-Math.PI / 2), boxMat, 0, 0.06, -1);
+      const dust = [0, 1, 2, 3].map(k => mesh(new THREE.SphereGeometry(1.1, 10, 8), lambert(0xcbb894, { transparent: true, opacity: 0.8 }), 0, 1, -1 + (k % 2 ? 1 : -1)));
+      g.add(warn, ...dust);
+      return { model: g, spin: false, tick: (t) => {
+        const u = t % 4;
+        warn.visible = u < 2 && Math.floor(t * 6) % 2 === 0;
+        dust.forEach((d, k) => { const v = (u - 2 - k * 0.1) / 1.2; d.visible = v > 0 && v < 1; d.position.x = 6 - v * 10; d.scale.setScalar(0.6 + v * 1.6); d.material.opacity = 0.8 * (1 - v); });
+      } };
+    } },
+    { name: 'Boulders', color: 0x8d8272, has: (l) => l.wreckage?.some(e => e.kind === 'boulders'), rules: [
+      `As you come near, boulders come down off the face and thud onto the road, about ${W.flight} s after they start to fall. No fire: just rock.`,
+      'Whatever they land on is wrecked, and the lanes they land in are blocked for good. One lane is always left open: traffic pulls over for it, and so must you.',
+    ], build: () => {
+      const g = road(9, 12), rocks = [[1.5, -2.6, 0], [1.1, -0.9, 1.6], [1.3, -1.2, -1.8], [0.8, 0.3, -0.4]].map(([r, x, z]) => { const rock = ob('rock', { r }); rock.position.set(x, 0, z); g.add(rock); return rock; });
+      return { model: g, tick: (t) => rocks.forEach((rock, k) => { rock.position.y = Math.max(0, 7 - ((t * 5 + k * 1.5) % 14)); }) };
+    } },
     { name: 'The control tower', color: 0xd3cfc5, has: (l) => l.tower, rules: [
       'The airport\'s control tower stands beside the old road where the route turns off, and as you come up to it, it comes crashing down across that road.',
       'Only a sight (it falls across the road you don\'t take). The airport also has its runway, and airliners parked beside it.',
@@ -378,6 +402,20 @@ const GROUPS = [
       const red = box(0.62, 0.22, 0.35, glow(0xff2a2a), -0.34, y, z), white = box(0.62, 0.22, 0.35, glow(0xffffff), 0.34, y, z);
       const mount = box(1.5, 0.12, 0.6, lambert(0x15171c), 0, v.height + 0.05, z); // (dark, so the white lamp shows on the white roof)
       return { model: group(car, mount, red, white), tick: (t) => { const on = Math.floor(t * 6) % 2 === 0; red.visible = on; white.visible = !on; } };
+    } },
+    { name: 'Wrong-way drivers', color: 0xffd23f, has: (l) => !l.flow && l.exits?.some(x => !x.flyovers && x.oncoming !== false), rules: [
+      'A side road with oncoming traffic and no flyover has nowhere to send it: where its lane meets the expressway, a car carries straight on into your right-hand lane, coming at you.',
+      `You are warned ${CONFIG.wrongWay.warn} m out; it flashes its headlights and hazards and leans on its horn all the way in. It keeps to its lane, swerving only for something stopped in front of it within ${CONFIG.wrongWay.swerve} m.`,
+      'Meeting it is a head-on: both wrecked. Traffic going your way moves over a lane for it, or stops if it can\'t.',
+    ], build: () => {
+      const g = road(9, 16), v = CONFIG.vehicles.commuter;
+      const wrong = painted(vehicle('commuter', 0xffffff), 0x24242b), right = painted(vehicle('commuter', 0xffffff), 0x4fc3f7);
+      wrong.position.set(2.2, 0, -3); wrong.rotation.y = Math.PI;
+      right.position.set(-2.2, 0, 4);
+      const lamps = [-1, 1].map(side => box(v.hw * 0.8, 0.45, 0.1, glow(0xffffff), 2.2 + side * v.hw * 0.6, 0.7, -3 + v.hl + 0.1));
+      const amber = [-1, 1].map(side => box(0.2, 0.16, 0.1, glow(0xffa21a), 2.2 + side * (v.hw - 0.08), 0.7, -3 + v.hl + 0.12));
+      g.add(wrong, right, ...lamps, ...amber);
+      return { model: g, tick: (t) => { const on = Math.floor(t * 7) % 2 === 0, blink = Math.floor(t * 3) % 2 === 0; lamps.forEach(l => { l.visible = on; }); amber.forEach(a => { a.visible = blink; }); } };
     } },
     { name: 'Tractors', color: 0x2e8b3d, has: (l) => l.tractors?.length, rules: [
       `Slow farm traffic at ${CONFIG.tractorSpeed} m/s. Each waits where it is until you come near, then sets off.`,
@@ -557,6 +595,8 @@ const GROUPS = [
     ], build: () => {
       const g = road(7, 12), riders = [];
       for (let k = 0; k < 4; k++) { const c = ob('cyclist'); c.position.set(1.6 + (k % 2) * 1.0, 0, 3 - Math.floor(k / 2) * 3); g.add(c); riders.push(c); }
+      // (and a bunch coming the other way, down the far side)
+      for (let k = 0; k < 4; k++) { const c = ob('cyclist'); c.position.set(-1.6 - (k % 2) * 1.0, 0, -3 + Math.floor(k / 2) * 3); c.rotation.y = Math.PI; g.add(c); riders.push(c); }
       return { model: g, tick: (t) => riders.forEach((c, k) => c.userData.animate(t + k * 0.7)) };
     } },
   ] },
