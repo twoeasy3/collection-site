@@ -472,6 +472,50 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
 - 4 (logic). DONE `8255e1f`: `delivery.js`, a timed state after `Game.finish` (state is 'finished' and the
   results fixed at the line; only the results screen waits). Off unless rendering sets `Delivery.staged`,
   so headless runs are as before. `node scripts/.cargo-check.mjs`: all good.
-- 3. Corner display: in progress.
-- 4 (drawing), 5 (docs): not started.
-- Not run: the smoke test (by instruction).
+- 3. Corner display: DONE `cd3b18d`. `render/cargo.js` + `cargohud.css`: a round window on the right under
+  the TANK RAGE corner (92 px; 64 px beside it on a screen under 480 px tall), drawn by the game's own
+  renderer with a scissor (no third WebGL context). State by the clock, a tick and a flash on each change.
+  Hidden in photo mode, cine, screensavers, garage, races. Seen at 1100x650 and 520x900.
+- 4 (drawing). DONE `cd3b18d`: park 1.7 s, unload 1.1, moment 1.6, beat 0.5 (4.9 s), any key / tap / click
+  skips after 0.35 s (car and cargo are then put where they would have ended up). No ending on: races,
+  Battlefield, UFO (Asteroid Run), jetboat (Oh Mine!); nor after busted / timeout. All Heck's hearse and the
+  rival levels DO get it. Seen as stills on Farm Lanes, Expressway, Night Drive, Singapore, Tokyo, All Heck.
+- 5. Docs: DONE `9d018de`. Page `delivery/cargo.html` linked from the menu and the Gimmicks page; README, HANDOVER.
+- Edits to shared files, all small: `game.js` (import, `Delivery.reset()` in start, 3 lines in finish, 1 in
+  update, the confirm handler), `main.js` (import + 3 calls), `config.js` (one `consignment` block before
+  "scenery"), `render/items.js` (ghost look off during the delivery: 2 conditions), `levels.js` (doc lines
+  after `alwaysGood`), 8 level JSONs (one `cargo` line each), `index.html` (2 elements, 1 menu link),
+  `vite.config.js` and `.bundle-check.mjs` (the new page).
+- Checked: `.cargo-check` (22 checks), `.bundle-check`, `delivery-levels-check`, `delivery-probe` on 7 levels.
+  `.replay-check` fails on expressway ("runs part at 7 s") with the base `game.js` too: not from this work.
+- NOT verified: nothing seen moving or heard (stills only); no real phone; the kerb camera not looked at on
+  every level (a finish in a tunnel, on a bridge or with things on the shoulder may sit badly). Smoke test not run.
+- For the owner to overrule: thresholds 50% / 20% of the clock; the pairings; the ending's 4.9 s; the car is a
+  ghost at the kerb (HUD behind the results reads GHOST 0.3); a late delivery also gets the ending; the test
+  hooks `&cargostate=` and `&deliver=`; furious set-down plays the 'burst' sound.
+- Screenshots: `scratchpad/shots-cargo/` (32 PNGs).
+
+## Agent 6: gimmick fixes and circuit run-off (main checkout, main)
+
+- **1. Drawbridge: done, `1f18343`.** Cause: the leaves were drawn at 66 degrees from hinges 8 m apart
+  while the car "jumped" on a fixed parabola from the hinge, through the leaf, at road pitch. Now two
+  15 m leaves lifting to 0.5 rad; `Hazards.deck(c, s)` / `Hazards.surface(s)` give height and slope,
+  `Hazards.ride` sets `Player.air` and `Player.pitch` (climb, lip, arc, landing), the drawing uses
+  the same line, the camera goes up with the car. A JUMP 70+ board on the way in; every garage car's
+  top speed clears it hands off. A little short: into the river. Far too slow: rolls back to the foot
+  and is held until the leaves come down (the one place the player waits, as the cost of a miss).
+  `.hazards-check` extended (surface, pitch, crest, landing, roll-back). Screenshots looked at.
+  For the owner to overrule: on the leaf the engine adds nothing (the speed at the foot decides);
+  launch capped at 12 m/s up; `CONFIG.drawbridge.gravity` 20.
+- **2. Wide loads: done, `f673318`.** Rule: the load swings from one side of its lanes to the other
+  (5 s at each end, 1.5 s between); pass at speed on the side its arrow board points to (left: in the
+  lane; right: on the shoulder, shoulder rules apply). No bust. The escort moves over slowly to block
+  and holds its line 1.1 s before it is reached: jink late. Hitting either is a knock (12 / 8 damage
+  from behind, they stay), not a wreck. `.hazards-check` passes it flat out from 10 points of the
+  rhythm on three lanes a side and on two. Not built: the Gimmicks card's little model only slides.
+- **3. Water mains: done, `39ac540`.** `makePuddle` / `makeFountain` in `render/watermains.js`, used
+  by both versions. Seen on Gimmick Road 2 (the lane version); the round `watermains.js` pool was not
+  caught spraying in a screenshot. The Gimmicks page card still draws its own rectangle.
+  Also fixed there: a frame's dt could be negative after `?ff` (the camera off the road in shots).
+- 4. Run-off smoothing: in progress.
+- 5. Sand traps: not started.

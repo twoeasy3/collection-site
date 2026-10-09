@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `2f30028` (main). Agents 1 to 5 are finished and merged; agents 6 and 7 are running; one slot is free.
+Last updated: after `558f5c4` (main). Agents 1 to 5 and 7 are finished and merged; agent 6 is on its last part; two slots are free and the queue is empty.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -91,14 +91,19 @@ Last updated: after `2f30028` (main). Agents 1 to 5 are finished and merged; age
 3. Gimmick fixes and circuit run-off: **started**, agent 6, on `main`
    - [x] Drawbridge: the car climbs the raised leaf at its angle and crests it. `1f18343`. Not yet seen by the orchestrator
    - [x] Wide loads are passable: the load swings side to side and an arrow board shows the side to pass on, at speed; a mistake is a knock, never a bust. `f673318`. Not yet seen by the orchestrator
-   - [ ] Burst water mains: water that does not look square
-   - [ ] Run-off edges on Monza and Spa smoothed (the measured widths are noisy)
-   - [ ] Sand traps as part of a shoulder, slowing cars far more
-4. The cargo: **started**, agent 7, branch `delivery-cargo` (in the circuits worktree)
-   - [ ] Five normal things to deliver
-   - [ ] Five odd things for Evil, animated, three states each
-   - [ ] Shown in a corner of the screen; Evil's state follows the time left
-   - [ ] New ending: car stops, camera pans to the kerb, cargo handed over, then results
+   - [x] Burst water mains: irregular, soft-edged pools and a fountain. `39ac540`. Not yet seen by the orchestrator
+   - [x] Run-off edges on Monza and Spa smoothed: the tool filters the measured widths, a stretch can taper, both circuits regenerated. `8621adb`. Not yet seen by the orchestrator
+   - [~] Sand traps as part of a shoulder, slowing cars far more
+4. The cargo: **finished**, agent 7, merged into `main` as `558f5c4` (no conflicts into main; levels, cargo, save and bundle checks pass)
+   - [x] Five normal things: tower of pizzas, wedding cake, goldfish, gift-wrapped cactus, grandfather clock. `9b2aebb`
+   - [x] Five odd things for Evil, animated, three states each: ticking parcel, porcupine, crate of bees, cursed doll, specimen jar. `9b2aebb`
+   - [x] Shown in a corner of the screen; Evil's state follows the time left (agitated at 50% of the clock, furious at 20%). `cd3b18d`
+   - [x] New ending: the car pulls in at the kerb, the camera pans round, the cargo is set down, then the results (4.9 s, skippable; results fixed at the line). `8255e1f`, `cd3b18d`
+   - [x] A Cargo page showing all ten, linked from the menu and the Gimmicks page. `9b2aebb`, `9d018de`
+   - [ ] Never seen moving or heard; not on a real phone; the kerb camera looked at on six levels only
+   - [ ] For the owner to overrule: a late delivery also gets the ending; the thresholds; the length; the HUD behind the results reads "GHOST"
+   - [ ] `.replay-check` fails on Expressway (runs part at 7 s); the agent says it fails the same without its work
+   - [ ] `.hazards-check` sometimes throws when run straight after other checks, and passes by itself
 
 ## Not assigned
 
