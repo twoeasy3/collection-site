@@ -66,6 +66,7 @@ if (params.get('garage') !== null) {
   Garage.evil = params.get('garage') === 'evil';
   Garage.open();
   if (params.get('hover')) Garage.hover(params.get('hover'));
+  if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
