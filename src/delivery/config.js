@@ -220,6 +220,7 @@ export const CONFIG = {
     // chases it down and rams it, as anywhere; but it never drops back for one behind it, it only
     // blocks it, moving across into its lane (at most every blockEvery s) without lifting off
     blockEvery: 0.8,
+    blocking: { min: 3, headway: 0.3, window: 20 }, // (on a circuit, racing close: the room it needs to block, as CONFIG.blocking)
     // ...and a rival ahead is rammed with a nudge, not at full tilt: it closes right up, nudge m/s
     // faster than its rival, and shoves. An evil racer that is angry races in a fury: fury.pace
     // times its top speed, fury.nerve times its nerve in the bends

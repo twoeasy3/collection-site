@@ -479,7 +479,7 @@ export const Traffic = (() => {
   // is the car far enough ahead of `target` to move over in front of it, and not so far that it is no block?
   // (CONFIG.blocking: the gap it needs grows with the target's speed)
   const roomToBlock = (car, target) => {
-    const B = CONFIG.blocking, speed = target.isPlayer ? target.speed : Math.abs(target.vs);
+    const B = LEVEL.laps ? CONFIG.race.blocking : CONFIG.blocking, speed = target.isPlayer ? target.speed : Math.abs(target.vs); // (racing round a circuit, closer)
     const gap = (car.s - target.s) * car.dir - car.hl - target.hl, need = Math.max(B.min, speed * B.headway);
     return gap >= need && gap <= need + B.window;
   };
