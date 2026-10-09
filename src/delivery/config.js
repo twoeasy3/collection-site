@@ -664,6 +664,10 @@ export const CONFIG = {
   splashDamage: 6,
   attitudeRange: 50,       // metres behind a car at which it reacts to the player
   grudgeTime: 7,           // s a driver the player has upset holds its grudge (throwing at the player), from the last upset
+  // a car moving over in front of another to block it (an angry or smug driver in the player's way, a hunter,
+  // a racer): only with this much room ahead of it, the more the faster the one blocked is going. The gap
+  // must be at least `min` m and `headway` s at the target's speed, and no more than `window` m beyond that
+  blocking: { min: 15, headway: 1.5, window: 40 },
   // How a traffic driver treats the player: by its side, its mood, and the player's side.
   //   good driver, good player: happy, friendly (moves aside, and eases off, letIn of its pace, to
   //     let the player in from the lane beside); angry, sulky (tailgates, within tailgate m, honks,

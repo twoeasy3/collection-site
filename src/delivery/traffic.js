@@ -475,6 +475,13 @@ export const Traffic = (() => {
     for (const c of behind) c.huntRole = 'flank';
     if (behind[0]) behind[0].huntRole = 'tail';
   };
+  // is the car far enough ahead of `target` to move over in front of it, and not so far that it is no block?
+  // (CONFIG.blocking: the gap it needs grows with the target's speed)
+  const roomToBlock = (car, target) => {
+    const B = CONFIG.blocking, speed = target.isPlayer ? target.speed : Math.abs(target.vs);
+    const gap = (car.s - target.s) * car.dir - car.hl - target.hl, need = Math.max(B.min, speed * B.headway);
+    return gap >= need && gap <= need + B.window;
+  };
   // could the car move over into that lane right now?
   const canMove = (car, lane, ignorePlayer) => {
     const [first, last] = Track.laneRange(car.dir, car.s);
@@ -948,7 +955,8 @@ export const Traffic = (() => {
       tryMove(car, dir) || tryMove(car, -dir);
     };
     if (att === 'turf' && car.hunt > 0) return; // (hunting: see update)
-    if ((att === 'smug' || att === 'rage' || att === 'vigilante') && inRange) { // into the player's lane, in its way
+    // (into the player's lane, in its way: only with room enough ahead of the player for its speed, see roomToBlock)
+    if ((att === 'smug' || att === 'rage' || att === 'vigilante') && Player.active && car.dir > 0 && roomToBlock(car, Player)) {
       const dir = Math.sign(playerLane - car.lane);
       if (dir) tryMove(car, dir, true);
     } else if ((att === 'friendly' || att === 'wingman') && inRange && playerLane === car.lane) aside();
@@ -1736,7 +1744,7 @@ export const Traffic = (() => {
             car.lane = lane;
             target = car.baseSpeed * (gap > 0 ? 1.35 : 0.7);
           } else if (gap < -(rival.hl + car.hl)) { // (behind it: a block)
-            if (lane !== car.lane && car.blockWait <= 0 && laneClear(car, lane, 6)) {
+            if (lane !== car.lane && car.blockWait <= 0 && laneClear(car, lane, 6) && roomToBlock(car, rival)) {
               car.lane = lane;
               car.blockWait = CONFIG.race.blockEvery;
             }
@@ -1750,7 +1758,7 @@ export const Traffic = (() => {
           const H2 = CONFIG.attitude.hunt, [first, last] = Track.laneRange(car.dir, car.s);
           const playerLane = clamp(Track.nearestLane(Player.lat, Player.s), first, last);
           if (car.huntRole === 'block') { // ahead of it in its lane, slowing it, braking hard now and then
-            car.lane = playerLane;
+            if (car.lane !== playerLane && roomToBlock(car, Player)) car.lane = playerLane; // (moving over only with room: see roomToBlock)
             target = Player.speed * H2.blockPace;
             brakeCheck(car, dt);
           } else if (car.huntRole === 'flank') { // in the lane beside it, coming up alongside to lean on it
