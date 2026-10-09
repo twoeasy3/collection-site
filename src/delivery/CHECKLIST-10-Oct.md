@@ -210,6 +210,8 @@ Each idea below is a look the game does not have, with the gimmick that would ma
 new scenery. "Reuses" is what is already in the engine. A star marks the five that would suit the
 amphibious levels in the queue.
 
+Pick the most unique theme from what is already in the game first
+
 - [ ] T1. **Venice** ★: the road is a quay between palazzi, humped bridges, striped mooring poles,
       and the canal itself for the water stretches. Gimmick: acqua alta, the square floods on a
       timer and the quay becomes water. Boat traffic: gondolas (slow), vaporetti (the bus), water
