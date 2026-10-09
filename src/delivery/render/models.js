@@ -44,6 +44,18 @@ const prism = (parent, material, w, profile, x = 0) => {
   parent.add(mesh);
   return mesh;
 };
+// a solid whose side view is the curved THREE.Shape `shape` (x along the car, y up), `w` wide across it
+// with its edges rounded off by `round`
+const curved = (parent, material, w, shape, round) => {
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: w - 2 * round, curveSegments: 14, bevelEnabled: true, bevelThickness: round, bevelSize: round, bevelSegments: 3,
+  });
+  geo.rotateY(-Math.PI / 2);
+  geo.translate(w / 2 - round, 0, 0);
+  const mesh = new THREE.Mesh(geo, material);
+  parent.add(mesh);
+  return mesh;
+};
 // a windscreen (or a rear window), as `slab` tips it, made solid: the wedge under the glass, from its
 // lower edge back (or forward) to beneath its upper edge, filled in, so there is no seeing through
 // the car's sides past it
@@ -799,28 +811,38 @@ export const MODELS = {
     return group;
   },
 
-  // An electric luxury saloon: smooth and low, no grille; a dark glass canopy from the windscreen to the
-  // tail, thin light bars glowing right across the nose and the tail, flush aero wheels. Silent: it sits still
+  // An electric luxury saloon, all curves: one smooth side profile (a rounded nose sweeping up the bonnet,
+  // a short tail tucked under) with a dark glass canopy arching from the windscreen to the tail over it,
+  // both extruded across the car with rounded edges. Thin light bars glow right across the nose and the
+  // tail; flush aero wheels; no grille. Silent: it sits still
   evsaloon: (car) => {
     const group = new THREE.Group();
-    const w = car.hw * 2, l = car.hl * 2, R = 0.37;
+    const w = car.hw * 2, L = car.hl, R = 0.37;
     const paint = lambert(car.color), glass = lambert(0x1a2230), trim = lambert(TRIM);
-    const body = box(group, paint, w, 0.58, l, 0, 0.66, 0);
-    prism(group, paint, w * 0.98, [[l * 0.5, 0.5], [l * 0.5, 0.86], [l * 0.32, 1.0], [l * 0.32, 0.5]]); // the smooth, sloping nose
-    box(group, paint, w * 0.96, 0.08, l * 0.2, 0, 0.98, -l * 0.39);                // the tail
-    screen(group, glass, w * 0.86, 0.05, 0.9, 0, 1.12, l * 0.2, 0.55);               // the canopy: windscreen,
-    box(group, glass, w * 0.84, 0.06, l * 0.3, 0, 1.4, -l * 0.07);                 // roof
-    screen(group, glass, w * 0.86, 0.05, 0.9, 0, 1.17, -l * 0.3, -0.45);             // and rear screen in one,
-    box(group, glass, w * 0.86, 0.32, l * 0.5, 0, 1.18, -l * 0.06);                // and its sides
-    for (const side of [-1, 1]) box(group, paint, 0.06, 0.34, l * 0.5, side * w * 0.43, 1.18, -l * 0.06); // a body-colour line under the glass
+    const shell = new THREE.Shape();                                                 // the body, side on:
+    shell.moveTo(-L * 0.92, 0.3);
+    shell.lineTo(L * 0.9, 0.3);
+    shell.quadraticCurveTo(L, 0.3, L, 0.52);                                         // the chin
+    shell.quadraticCurveTo(L, 0.8, L * 0.86, 0.86);                                  // the rounded nose
+    shell.quadraticCurveTo(L * 0.6, 0.98, L * 0.38, 1.0);                            // the bonnet
+    shell.lineTo(-L * 0.78, 1.02);                                                   // the waist
+    shell.quadraticCurveTo(-L * 0.98, 1.0, -L, 0.82);                                // the tail's lip
+    shell.quadraticCurveTo(-L * 1.01, 0.4, -L * 0.92, 0.3);                          // tucked under
+    const body = curved(group, paint, w - 0.1, shell, 0.05);
+    const canopy = new THREE.Shape();                                                // the glass, side on:
+    canopy.moveTo(L * 0.4, 0.96);
+    canopy.bezierCurveTo(L * 0.16, 1.26, L * 0.02, 1.4, -L * 0.18, 1.4);             // windscreen into the roof
+    canopy.bezierCurveTo(-L * 0.48, 1.4, -L * 0.7, 1.18, -L * 0.86, 0.98);           // and a long fastback
+    canopy.lineTo(L * 0.4, 0.96);
+    curved(group, glass, w * 0.8, canopy, 0.05);
     const bar = new THREE.MeshBasicMaterial({ color: 0xf4f8ff });
-    box(group, bar, w * 0.94, 0.04, 0.05, 0, 0.84, l / 2 + 0.01);                  // the light bar across the nose
-    box(group, TAIL, w * 0.94, 0.05, 0.05, 0, 0.92, -l / 2 - 0.01);                // and across the tail
-    box(group, trim, w * 0.7, 0.12, 0.05, 0, 0.5, l / 2 + 0.01);                   // the lower intake (there is no grille)
+    box(group, bar, w * 0.84, 0.04, 0.05, 0, 0.7, L + 0.04);                         // the light bar across the nose
+    box(group, TAIL, w * 0.88, 0.05, 0.05, 0, 0.88, -L - 0.05);                      // and across the tail
+    box(group, trim, w * 0.6, 0.1, 0.05, 0, 0.44, L + 0.04);                         // the lower intake (there is no grille)
     for (const side of [-1, 1]) {
-      box(group, trim, 0.1, 0.06, 0.12, side * (w / 2 + 0.05), 1.02, l * 0.12);    // slim mirrors
-      box(group, lambert(0xc8ccd2), 0.02, 0.03, l * 0.36, side * (w / 2 + 0.005), 0.86, -l * 0.02); // flush handle strip
-      for (const z of [0.32, -0.31]) wheel(group, R, 0.3, side * (w / 2 - 0.05), R, l * z, lambert(0xd5d9de)); // aero wheels
+      box(group, trim, 0.1, 0.06, 0.12, side * (w / 2 + 0.03), 1.02, L * 0.3);      // slim mirrors
+      box(group, lambert(0xc8ccd2), 0.02, 0.03, L * 0.7, side * (w / 2 + 0.01), 0.86, -L * 0.04); // flush handle strip
+      for (const z of [0.64, -0.62]) wheel(group, R, 0.3, side * (w / 2 - 0.08), R, L * z, lambert(0xd5d9de)); // aero wheels
     }
     group.userData = { body, animate: () => {} };
     return group;
