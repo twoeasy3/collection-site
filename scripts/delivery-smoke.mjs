@@ -2579,6 +2579,7 @@ try {
       Game.start();
       for (const c of Traffic.cars) Object.assign(c, { active: false, unused: true });
       Object.assign(car, { active: true, unused: false, s: 600 + ahead, lane: own[0], lat: T().laneOffset(own[0], 600 + ahead), vs: speed, baseSpeed: speed,
+        kind: 'commuter', fixed: false, parked: false, emergency: false, racer: false, procession: 0, junction: null, // (whatever its slot was dealt on the restart)
         mood: 0.9, emotion: 'happy', evil: true, grudge: 0, blockedPlayer: false, rival: null, hunt: 0, pendingLane: null, think: 0, stun: 0, spin: 0, wobble: 0 });
       let moved = false;
       for (let i = 0; i < 120 * 4 && !moved; i++) {
