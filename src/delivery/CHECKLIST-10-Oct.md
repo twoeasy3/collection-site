@@ -199,3 +199,85 @@ the fact.
 Order that makes sense: E1 first (everything else is built on it), then E4.1 to E4.3 and E2 (they
 fall out of the schema almost for free), then E3.2 and E5.1, then the rest. Removed today, so not
 listed: tolls and average-speed cameras.
+
+## New themes (ideas, not assigned)
+
+Thought up by the orchestrator on 10-Oct at the owner's request; none is built. The game has 25
+themes already: city and night city, suburb, hood, farm, beach, coast, safari, snow (alpine),
+construction, airport, Singapore by day and night, Canberra, Hong Kong, Tokyo, Mumbai, Christmas,
+Bathurst and Panorama, Montreal, hell, battlefield, sea and space, plus Monza, Spa and Albert Park.
+Each idea below is a look the game does not have, with the gimmick that would make it more than
+new scenery. "Reuses" is what is already in the engine. A star marks the five that would suit the
+amphibious levels in the queue.
+
+- [ ] T1. **Venice** ★: the road is a quay between palazzi, humped bridges, striped mooring poles,
+      and the canal itself for the water stretches. Gimmick: acqua alta, the square floods on a
+      timer and the quay becomes water. Boat traffic: gondolas (slow), vaporetti (the bus), water
+      taxis. Reuses: `tide.js`, bridges, the sea's water.
+- [ ] T2. **Mangrove delta** ★: a causeway on stilts through mangroves, stilt houses, a floating
+      market where the road ends and the river begins. Gimmick: market boats drift across the
+      channel as herds do; crocodiles in place of hippos. Boat traffic: longtails, rice barges.
+      Reuses: `hippos.js`, herds, rain.
+- [ ] T3. **Fjord** ★: a road cut into a cliff over dark water, waterfalls, red boathouses, then
+      the ferry slip where the road simply goes into the fjord and comes out the other side.
+      Gimmick: the ferry crossing as a moving platform, or swim it; icebergs calving. Reuses:
+      terrain, tunnels, rockfall, snow.
+- [ ] T4. **Ice road** ★: a ploughed road across a frozen lake, snowbanks for kerbs, fishing huts,
+      pressure ridges. Gimmick: the ice has a weight limit; cracks spread behind heavy vehicles,
+      and thin stretches are open water that only an amphibious car crosses. Aurora at night.
+      Reuses: ice, snow, the truck kinds' `mass`.
+- [ ] T5. **Flooded city** ★: the city theme after the river broke its banks: water to the door
+      handles in the dips, cars abandoned, sandbags, people on roofs. Gimmick: the water level
+      rises through the run, so the dry stretches shrink. Boat traffic: rescue boats, a floating
+      bus. Reuses: city scenery, water mains, the Mumbai rain.
+- [ ] T6. **Desert canyon**: red rock walls, mesas, a dry riverbed for a shoulder, tumbleweed.
+      Gimmick: a dust storm that closes visibility like fog but blows cars sideways; a flash flood
+      down the wash. Reuses: fog, storm, terrain, rockfall.
+- [ ] T7. **Volcano island**: black sand, palms, steam vents, a lava field across the old road.
+      Gimmick: lava bombs landing on the road and cooling into obstacles; lava flows that close a
+      lane for good partway through the run. Reuses: quarry blasts and boulders, hell's palette.
+- [ ] T8. **Autumn countryside**: orange and red forest, stone walls, covered bridges, a village
+      with a harvest fair. Gimmick: wet leaves in the bends (slick only off the racing line),
+      a hay-cart convoy, a low sun straight ahead on one stretch. Reuses: farm, ice, convoys.
+- [ ] T9. **Favela hillside**: a steep switchback road between stacked houses in every colour,
+      stairs, cable cars overhead, a football pitch on a roof. Gimmick: balls bouncing down the
+      stairs onto the road, motorbike taxis that filter between lanes. Reuses: Stelvio's
+      hairpins, drifters, the rickshaw's agility.
+- [ ] T10. **Night market**: a street closed down to two lanes by stalls, lanterns, steam,
+      neon signs in the rain. Gimmick: the stalls creep outward as the evening goes on, and
+      pedestrians cross anywhere. Reuses: narrows, parades, the lit themes, school crossing's
+      walkers.
+- [ ] T11. **Container port**: stacks of containers for walls, gantry cranes, straddle carriers,
+      rail lines in the road. Gimmick: cranes lower containers into lanes on a rhythm; straddle
+      carriers drive over you if you are low enough. Reuses: machinery, level crossings, falling
+      cargo, potties' patterns.
+- [ ] T12. **Theme park**: the road runs through the park: a rollercoaster looping over it,
+      a Ferris wheel, a log flume that crosses as a water stretch, a parade route. Gimmick: the
+      coaster's train shares the road for a stretch; bumper cars as traffic. Reuses: parades,
+      bullet train, balloons.
+- [ ] T13. **Film studio backlot**: one street that is a Western town, then a spaceship set, then
+      a painted sky on a flat, with cameras on cranes and a director's chair. Gimmick: stunt
+      cars that crash on cue (scripted wreckage) and a "cut!" that freezes traffic. Reuses:
+      zones (a look per stretch), wreckage, the traffic-freeze mystery.
+- [ ] T14. **Toy room**: the whole level at toy scale: a road of plastic track across a carpet,
+      building blocks, a train set, a sleeping cat. Gimmick: marbles rolling down the track, the
+      cat's paw as a hazard, a ramp-and-loop jump. Reuses: drifters, drawbridge jump, the models
+      are already toy-like.
+- [ ] T15. **Underwater tunnel**: a glass tube on the sea bed: whales and shoals outside, a
+      leaking stretch, an air-lock at each end. Gimmick: leaks that flood a lane until a pump
+      catches up; a section with the lights out. Reuses: tunnels, water mains, blackout.
+- [ ] T16. **Old Wild West**: a dirt main street, saloon, water tower, a steam railway beside the
+      road, cactus. Gimmick: a train robbery (riders alongside the train, across the road), a
+      cattle drive, a duel at noon that stops the traffic. Reuses: railway, stampedes, gunfire,
+      the safari's unmarked dirt road.
+- [ ] T17. **Rice terraces**: a narrow road stepping down green terraces, water buffalo, a
+      temple gate over the road, kites. Gimmick: the terraces flood in turn, spilling across the
+      road as moving slick patches; ducks crossing in a line. Reuses: terrain, water mains'
+      slicks, herds.
+- [ ] T18. **Moon base**: grey regolith, domes, a low black sky with the Earth in it, a road of
+      compacted dust. Gimmick: low gravity: every bump is a long jump and braking takes twice as
+      far. Different from the space theme, which has no ground. Reuses: space's sky, potholes,
+      the jump physics.
+
+If only a few are built: T1 to T5 go with the amphibious levels; T7, T11 and T14 bring the most
+that is new to play; T8 and T10 are the cheapest, being mostly new colours on existing scenery.

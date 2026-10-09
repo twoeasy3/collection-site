@@ -208,7 +208,14 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   Traffic's own honks left as they were on `main` (the stash rewired them too; not ported).
   - Verified headless: the name asked for (also a Super car's base), all 42 car ids have an entry,
     the four WAVs exist. NOT verified: nothing has been heard.
-- In progress: 6 (postcards album, then the milestones wall). One commit each.
+- DONE `e8ccc6c`: 6a (postcards album). `render/album.js` from the stash; the CSS (end of
+  `style.css`), the "Postcards" button and `#album` panel in `delivery/index.html`, the import in
+  `main.js`, `export` on `LEVEL_SHOTS` in `render/menu.js` and `?album` in `scripts/shots.mjs` are
+  new. Reads the best times: nothing new saved.
+  - Verified: `node --check` and `.bundle-check.mjs` only. NOT run at all, even headless (it
+    imports the menu module, which needs WebGL): the panel has never been opened.
+- PAUSED for the orchestrator's merge of the circuits branch. My tracked files are clean.
+- Next: 6b (milestones wall), then `HANDOVER-batch.md`.
 
 ## Agent 2: real circuits (`.claude/worktrees/delivery-circuits`, `delivery-circuits`)
 
@@ -292,5 +299,20 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
   not looked at (the page's one window-sized canvas does not come out in a tall screenshot).
   Found, not mine, not fixed: the bullet train's card logs `THREE.Object3D.add: object not an
   instance of THREE.Object3D. undefined` (it was there before the cards went in).
-- In progress: **replay investigation** (replaces 30's simple ghost). Findings go into
-  `src/delivery/REPLAY-NOTES.md` on `worktree-delivery-batch` as each is reached.
+- **Replay system: findings** are in `src/delivery/REPLAY-NOTES.md` on `worktree-delivery-batch`
+  (`4a66a80`). In short:
+  - Recommendation: record inputs + seed at a fixed step (about 1 to 2 KB a minute) rather than
+    state (measured 158 to 289 KB a minute at ten samples a second, and about twenty gimmick
+    modules to open up).
+  - First step built, `3731c60`: `scripts/.replay-check.mjs` plays a scripted run twice from one
+    seed at a fixed 1/120 s step and hashes the whole state every second; `.replay-trace.mjs`
+    names the call where two runs first part. It found one real bug, fixed in `traffic.js`
+    `outfit()`: per-car timers only set as first used (`seek`, `overtake`, `feint`, ...) carried
+    over on pooled cars, so races, rival levels and five delivery levels did not replay. With it,
+    the nine levels checked first all replay exactly (two races, a rival level, the Battlefield
+    among them); the other levels are being swept now.
+  - Still open before it works in the browser (not started): the logic needs its own seeded
+    generator (rendering draws from the same `Math.random`), `main.js` needs a fixed-step
+    accumulator, the level must be rebuilt from the seed, inputs fed by step number.
+  - The simple translucent ghost (30) was not built: it falls out of input replay later.
+  - The `traffic.js` change resets timers when a car is dealt out; no smoke test was run on it.
