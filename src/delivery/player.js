@@ -9,6 +9,7 @@ import { Message } from './messages.js';
 import { UfoStrike } from './ufostrike.js';
 import { BulletTrain } from './bullettrain.js';
 import { Tide } from './tide.js';
+import { Water } from './water.js';
 import { Wreckage } from './wreckage.js';
 import { Game } from './game.js';
 import { Social } from './social.js';
@@ -38,6 +39,8 @@ export const Player = {
   brakeLight: false,   // braking at all: the brake lights are on
   onIce: false,        // on an ice patch (see CONFIG.ice)
   wading: 0,           // how deep the tide's water is where the car is (see Tide): 0 = dry, 1 = full depth
+  afloat: false,       // afloat on a water stage (see Water), and how deep its water is where the car is: 0 = dry road .. 1
+  waterDepth: 0,
   dropOncoming: false, // the helicopter is setting the car down on the oncoming side (no dry lane on its own)
   turbo: 0,            // s of turbocharger left
   ghost: 0,            // s of passing through cars and barriers left
@@ -150,6 +153,8 @@ export const Player = {
     this.stun = 0;
     this.onIce = false;
     this.wading = 0;
+    this.afloat = false;
+    this.waterDepth = 0;
     if (!keepHealth) this.health = this.maxHealth;
     this.smoke = 0;
     this.shield = CONFIG.respawnShield + (this.dropOncoming ? CONFIG.tide.oncomingShield : 0);
@@ -264,7 +269,8 @@ export const Player = {
     if (effect === 'rushHour') Traffic.rushHour(true);
     if (effect === 'moodSwing') Traffic.moodSwing(true);
     if (effect === 'carSwap') { // (any of the garage's cars but this one and the Tank; none for a level's own vehicle)
-      const others = CARS.includes(CAR) ? CARS.filter(c => c !== CAR && !c.tank && !c.earned) : [];
+      // (on an amphibious level, only another amphibious car: the swap must float)
+      const others = CARS.includes(CAR) ? CARS.filter(c => c !== CAR && !c.tank && !c.earned && (!LEVEL.amphibious || c.amphibious)) : [];
       if (others.length) this.takeCar(() => lendCar(others[Math.floor(Math.random() * others.length)]));
     }
   },
@@ -361,6 +367,9 @@ export const Player = {
     // in the tide's water, slowed the same way, only more so (see CONFIG.tide)
     const wet = this.wading > CONFIG.tide.wet;
     if (wet) top *= Math.max(CONFIG.tide.slowest, 1 - CONFIG.tide.crossing * (1 - R.slowest) * (1 - crossing));
+    // on a water stage (see Water): a car that floats goes on as a boat, with less top speed, pull and braking
+    const sea = Water.feel(this.s, Water.floats(CAR) || this.tank > 0), afloat = sea.depth > 0, seaAccel = sea.accel, seaBrake = sea.brake;
+    top *= sea.top;
     let drive = throttle;
     // the slowest the brakes bring it: on a lapped circuit, minSpeed; anywhere else, to a stop, for as long
     // as the brake is held (let go, it rolls on up to minSpeed again by itself)
@@ -372,13 +381,14 @@ export const Player = {
     if (this.speed > top) {
       // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
       // (or on a railway track: slowed down to it hard)
-      this.speed = Math.max(top, this.speed - (rails || wet || mud ? R.bite : CONFIG.brake * 0.5) * dt);
+      // (or driving into the water: it ploughs in and is slowed to its pace afloat, never stopped)
+      this.speed = Math.max(top, this.speed - (rails || wet || mud ? R.bite : afloat ? CONFIG.water.drag : CONFIG.brake * 0.5) * dt);
     } else if (drive > 0) {
-      this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * (this.puncture ? CONFIG.puncture.accel : 1) * dt);
+      this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * (this.puncture ? CONFIG.puncture.accel : 1) * seaAccel * dt);
     } else if (drive < 0 && this.puncture) { // (a flat tyre: hard, and all the way down to a stop)
       this.speed = Math.max(0, this.speed + drive * CONFIG.brake * CONFIG.puncture.brake * grip * dt);
     } else if (drive < 0 && this.speed > slowest) {
-      this.speed = Math.max(slowest, this.speed + drive * CONFIG.brake * grip * dt);
+      this.speed = Math.max(slowest, this.speed + drive * CONFIG.brake * grip * seaBrake * dt);
     } else if (lifting && drive === 0) { // (no brakes, lifting off: coasting down; with a flat tyre, to a stop to change it)
       this.speed = Math.max(Math.min(this.speed, this.puncture ? 0 : CONFIG.minSpeed), this.speed - CONFIG.mystery.noBrakes.coast * dt);
     }
@@ -437,6 +447,16 @@ export const Player = {
     if (this.wading >= CONFIG.tide.deep && this.shield <= 0) {
       this.health -= CONFIG.tide.damage * (1 - this.crossing) * this.damageScale * dt;
     }
+    // a water stage (see Water): down the slipway and afloat, said as it floats and as it lands; a car that
+    // doesn't float is damaged out in the channel
+    const sea = Water.feel(this.s, Water.floats(CAR) || this.tank > 0), seaSteer = sea.steer, seaGrip = sea.grip;
+    this.waterDepth = sea.depth;
+    if (sea.afloat !== this.afloat) {
+      this.afloat = sea.afloat;
+      Message.say('events', sea.afloat ? 'afloat' : 'ashore');
+      if (sea.afloat) sfx('waveCrash', 0.5);
+    }
+    if (sea.damage && this.shield <= 0 && this.ghost <= 0) this.health -= sea.damage * this.damageScale * dt;
     this.updateSpeed(dt, throttle, stopping);
     this.s += this.speed * dt;
     // on the right shoulder at the exit = taking the side road; at its end, back onto the expressway
@@ -450,7 +470,7 @@ export const Player = {
     if (this.busted) {
       wantVel = 0;
     } else if (steer !== 0) {
-      wantVel = steer * CONFIG.steerSpeed * this.agility;
+      wantVel = steer * CONFIG.steerSpeed * this.agility * seaSteer; // (afloat, it moves across more slowly)
     } else {
       // only a faint nudge, and only once the car is close to a lane line: within
       // laneAssistFree of the centre it stays exactly where it was left
@@ -464,8 +484,10 @@ export const Player = {
     // (a car sliding wide in a bend, on a level where cars understeer or with no brakes, has lost its grip, as on ice)
     const push = understeer(this), sliding = !this.onIce && push !== 0;
     const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce || sliding ? CONFIG.ice.steerGrip : 1) *
-      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) && CAR.trait !== 'mud' ? CONFIG.mud.steerGrip : 1);
+      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) && CAR.trait !== 'mud' ? CONFIG.mud.steerGrip : 1) * seaGrip; // (and afloat, its steering takes slowly)
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
+    // afloat, a current carries the car sideways and a boat's wake shoves it off the boat's line (see Water.push)
+    if (this.afloat && !this.busted) this.latVel += Water.push(this) * dt;
     // a wave rushing in shoves a car in the water towards the centre line
     if (this.wading > CONFIG.tide.wet && !this.busted && Tide.rushing(this.s)) this.latVel -= CONFIG.tide.shove * dt;
     // on ice in a bend, the car understeers: what the bend asks of the tyres beyond the little
@@ -509,7 +531,8 @@ export const Player = {
       }
     }
     this.tyreGrace = Math.max(0, (this.tyreGrace || 0) - dt);
-    this.onShoulder = LEVEL.shoulderTimer !== false && !(LEVEL.shoulderTimer === 'mud' && Track.muddy(this.s)) && Track.onShoulder(this.lat, this.s) &&
+    // (nor on a water stage: the channel is water from bank to bank, with no shoulder to keep off)
+    this.onShoulder = LEVEL.shoulderTimer !== false && !(LEVEL.shoulderTimer === 'mud' && Track.muddy(this.s)) && Track.onShoulder(this.lat, this.s) && !(this.waterDepth > 0) &&
       this.passenger <= 0 && this.tank <= 0 && !this.puncture && !(this.tyreGrace > 0);
     if (this.onShoulder) {
       // (mercy: with a bullet train about, the shoulder may be the only way out of its path)

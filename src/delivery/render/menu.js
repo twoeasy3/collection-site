@@ -2,7 +2,7 @@
 // The start screen is only a menu. Picking a level just marks it; the level is built when
 // a run starts (Game.start). Nothing here reloads the page.
 import { CONFIG } from '../config.js';
-import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
+import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
 import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, earnedFor } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
@@ -68,7 +68,11 @@ const levelBox = document.getElementById('levels'), groupBox = document.getEleme
 // for each group; below them, the levels of the group shown (to begin with, the one with the level picked)
 const TABS = { delivery: { list: DELIVERY_LEVELS, groups: [] }, race: { list: RACE_LEVELS, groups: [] } };
 for (let i = 0; i < MAIN_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(MAIN_LEVELS.length, i + 5)]);
-for (let i = MAIN_LEVELS.length; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
+{ // (the special levels five at a time, then the amphibious ones, a group of their own)
+  const specials = DELIVERY_LEVELS.length - AMPHIBIOUS_LEVELS.length;
+  for (let i = MAIN_LEVELS.length; i < specials; i += 5) TABS.delivery.groups.push([i, Math.min(specials, i + 5)]);
+  for (let i = specials; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
+}
 for (let i = 0; i < RACE_LEVELS.length; i += 5) TABS.race.groups.push([i, Math.min(RACE_LEVELS.length, i + 5)]);
 let tab = isRace(LEVEL) ? 'race' : 'delivery'; // (the tab shown: the one with the level picked, to begin with)
 const groupOf = (k) => Math.max(0, TABS[tab].groups.findIndex(([a, b]) => k >= a && k < b));

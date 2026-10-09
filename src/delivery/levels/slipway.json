@@ -1,0 +1,30 @@
+{
+  "id": "slipway",
+  "name": "Slipway Beach",
+  "theme": "beach",
+  "amphibious": true,
+  "clock": { "good": 200, "evil": 150 },
+  "tip": 220,
+  "lanes": 4,
+  "traffic": { "commuter": 0.3, "wagon": 0.15, "lovebus": 0.12, "toybota": 0.14, "herald": 0.1, "floatvan": 0.08, "dinghy": 0.3, "pedalo": 0.3, "barge": 0.12 },
+  "trafficCount": 12,
+  "oncomingCount": 10,
+  "trafficSpeed": { "min": 10, "max": 16 },
+  "segments": [
+    { "length": 400, "curve": 0 },
+    { "length": 250, "curve": 0.003 },
+    { "length": 500, "curve": 0 },
+    { "length": 300, "curve": -0.0025 },
+    { "length": 600, "curve": 0 },
+    { "length": 250, "curve": 0.002 },
+    { "length": 500, "curve": 0 }
+  ],
+  "water": [
+    { "from": 700, "to": 1050 },
+    { "from": 1500, "to": 2350, "current": 1.5 }
+  ],
+  "pickups": [
+    { "type": "turbo", "s": 300, "lane": 2 },
+    { "type": "wrench", "s": 1250, "lane": 3 }
+  ]
+}

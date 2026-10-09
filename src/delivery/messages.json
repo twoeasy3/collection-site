@@ -69,6 +69,8 @@
     "shoulderBusted": ["An impatient driver just got busted on the shoulder!"],
     "battle": ["BATTLEFIELD! You're with the green army. Fire with the throw button!"],
     "wave": ["WAVE INCOMING!! Get out of the water!"],
+    "afloat": ["Afloat! Slower, and it steers like a boat.", "Into the water! Keep off the boats' wakes.", "SPLASH! You're a boat now."],
+    "ashore": ["Back on dry land!", "Up the slipway! Wheels again."],
     "lap": ["Lap complete!"],
     "finalLap": ["FINAL LAP!"],
     "puncture": ["You got a puncture!! Pull over to change a tyre."],

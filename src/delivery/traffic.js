@@ -16,6 +16,7 @@ import { Pickups } from './pickups.js';
 import { Gunfire } from './gunfire.js';
 import { Crossings } from './crossing.js';
 import { StopGo } from './stopgo.js';
+import { Water } from './water.js';
 import { Hazards } from './hazards.js';
 
 // ---- traffic ---------------------------------------------------------------
@@ -70,12 +71,13 @@ export const Traffic = (() => {
     if (s !== undefined) for (const z of LEVEL.trafficZones || []) if (s >= z.from && s < z.to) Object.assign(weights, z.traffic);
     return weights;
   };
-  const mix = (s) => Object.entries(weightsAt(s)).filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0);
+  // (and on a level with water stages, only the kinds that can be at s, going way dir: see Water.allows)
+  const mix = (s, dir) => Object.entries(weightsAt(s)).filter(([kind, rate]) => CONFIG.vehicles[kind] && rate > 0 && Water.allows(kind, s, dir));
   // police only where its traffic zones put them (none in the level's own list)? Then one that comes to
   // the edge of such a stretch stays there, on station (see update)
   const policeOnStation = () => !(LEVEL.traffic?.police > 0) && (LEVEL.trafficZones || []).some(z => z.traffic.police > 0);
-  const pickKind = (s) => {
-    const kinds = mix(s);
+  const pickKind = (s, dir) => {
+    const kinds = mix(s, dir);
     let r = Math.random() * kinds.reduce((sum, [, rate]) => sum + rate, 0);
     for (const [kind, rate] of kinds) {
       r -= rate;
@@ -117,7 +119,8 @@ export const Traffic = (() => {
   const placeAt = (car, distance) => {
     car.s = Track.spawnAt(Player.s, distance, car.dir);
     if (Number.isNaN(car.s) || !Track.inBounds(car.s)) return false;
-    const [first, all] = Track.laneRange(car.dir, car.s), kind = pickKind(car.s);
+    if (Water.on && !mix(car.s, car.dir).length) return false; // (nothing of the level's can be there: a boat on the road, a car on the water)
+    const [first, all] = Track.laneRange(car.dir, car.s), kind = pickKind(car.s, car.dir);
     const last = car.dir > 0 ? Math.max(first, Math.min(all, Tide.dryLane(car.s))) : all; // (none turns up in the tide's water)
     // (a vehicle that keeps to the kerb starts out there)
     const lane = CONFIG.vehicles[kind].kerb ? Track.openLane(kerbLane(car.dir, car.s), car.s)
@@ -1585,6 +1588,7 @@ export const Traffic = (() => {
 
   const update = (dt) => {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: every car stands where it is, solid; see mysteries.js)
+    Water.marshal(cars); // (a level's water stages: who is to wait at the water's edge, and where)
     // now and then an emergency vehicle, either way (one at a time; if there is no room for it
     // just now, it tries again a second later)
     if (LEVEL.emergencies && !cars.some(c => c.active && c.emergency) && (nextEmergency -= dt) <= 0) {
@@ -2285,7 +2289,7 @@ export const Traffic = (() => {
         // (on ice, and on a level where cars understeer, they don't slow for a bend: they slide wide instead;
         // though a racer, knowing the track, slows for the bends ahead as much as lets it slide a little)
         target = Math.min(target, giveWay(car), car.onIce || LEVEL.understeer ? Infinity : cornerSpeed(car.s, weightOf(car)));
-        const hold = Math.min(Crossings.holdFor(car), StopGo.holdFor(car), Hazards.holdFor(car)); // (waiting at a level crossing, or a STOP; or one of Hazards')
+        const hold = Math.min(Crossings.holdFor(car), StopGo.holdFor(car), Hazards.holdFor(car), Water.holdFor(car)); // (waiting at a level crossing, or a STOP; or one of Hazards'; or at the water's edge)
         const cyclists = passPeloton(car); // (giving cyclists room, or waiting behind them for it)
         // quirks of its kind (see CONFIG.vehicles): a bin lorry pulling up where it is, every so often
         const quirk = CONFIG.vehicles[car.kind];
@@ -2300,6 +2304,7 @@ export const Traffic = (() => {
         if (car.racer) target = Math.min(target, racingLine(car) * ceding);
         if (car.racer && !Track.loop && Track.finished(car.s)) { car.done = true; target = 0; } // (a rival courier, delivered: it pulls up past the line)
         if (Track.muddy(car.s)) target *= CONFIG.mud.trafficPace; // (in mud)
+        target *= Water.pace(car); // (an amphibious car afloat on a water stage)
         // wading through the tide's water: slowed, the more so in deep water
         if (depth > CONFIG.tide.wet) target *= depth >= CONFIG.tide.deep ? CONFIG.tide.trafficPace : 0.8;
         // hesitating: every so often a touch of the brakes, sharply
@@ -2324,7 +2329,7 @@ export const Traffic = (() => {
           return clamp(lat, Math.min(a, b), Math.max(a, b));
         };
         let aimLat = beside ? ownSide(rival.lat)
-          : car.pulledOver || car.shoulderRun || car.punctured || car.stationed ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right)
+          : car.pulledOver || car.shoulderRun || car.punctured || car.stationed || car.waterWait != null ? Track.shoulderOffset(car.dir > 0 ? 1 : -1, car.s) // (the shoulder on its right; waterWait: in the queue at the water's edge, see Water)
           : StopGo.detour(car) ?? cyclists.lat ?? Track.laneOffset(car.lane, car.s); // (through stop / go works, coming the other way: in the lane left open)
         if (car.passing === Player && car.attack > 0 && !beside && Math.abs(Player.s - car.s) < Player.hl + car.hl + 10) {
           // (going by the player, it keeps as far from it as the road allows: squeezing by, if the player is astride the lanes)

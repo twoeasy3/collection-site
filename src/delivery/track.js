@@ -444,6 +444,15 @@ const createTrack = () => {
   // is s in the mud? (a level's "mud": stretches of the main road where it gives way to mud)
   const mud = LEVEL.mud || [];
   const muddy = (s) => isMain(s) && mud.some(m => s >= m.from && s <= m.to);
+  // the level's water stages (its "water": [{ from, to }]: see water.js and CONFIG.water), and how deep the water
+  // is at s: 0 = dry road .. 1 = the channel's depth, deepening down the slipway at each end of a stage. (A
+  // stage may run on before the start line or past the finish: a level that starts, or ends, on the water)
+  const waters = (LEVEL.water || []).map(w => ({ from: w.from, to: w.to }));
+  const water = (s) => {
+    if (!waters.length || !isMain(s)) return 0;
+    for (const w of waters) if (s > w.from && s < w.to) return Math.min(1, (s - w.from) / CONFIG.water.slipway, (w.to - s) / CONFIG.water.slipway);
+    return 0;
+  };
   // how thick a fog bank is at s (a level's "fog"): 0 (none) .. 1, thickening over its edges (see CONFIG.fog)
   const fogBanks = LEVEL.fog || [];
   const foggy = (s) => {
@@ -919,6 +928,22 @@ const createTrack = () => {
       if (t.washUp && !(t.washUp.types && t.washUp.count && t.washUp.count.max >= t.washUp.count.min)) problems.push('tide: washUp needs types { type: share } and count { min, max }');
       if (!RIGHT || ONE_WAY || (LEVEL.exits || []).length) problems.push('tide: only on a two-way road with lanes going the player\'s way, and no exits');
     }
+    waters.forEach((w, i) => {
+      const name = 'water at ' + w.from + '-' + w.to;
+      if (!(w.from < w.to) || w.to - w.from < CONFIG.water.slipway * 3) problems.push(name + ': from before to, and ' + CONFIG.water.slipway * 3 + ' m long at least (a slipway at each end)');
+      else if (i && w.from < waters[i - 1].to + 60) problems.push(name + ': 60 m of road at least after the water before');
+      else {
+        if (!LEVEL.amphibious) problems.push(name + ': only on an amphibious level ("amphibious": true)');
+        for (const x of exits) if (overlaps(w.from - 20, w.to + 20, x.exitAt - X.laneZone, x.mergeAt + X.laneZone)) problems.push(name + ': the ramps of an exit are in it');
+        for (const j of junctions) if (overlaps(w.from - 20, w.to + 20, j.s - 20, j.end + 20)) problems.push(name + ': a junction is in it');
+        for (const z of splits) if (overlaps(w.from - 20, w.to + 20, z.from, z.to)) problems.push(name + ': the two ways of the road are apart there');
+        for (const t of tunnels) if (overlaps(w.from - 20, w.to + 20, t.from, t.to)) problems.push(name + ': a tunnel is in it');
+        let sloped = false;
+        for (let s = Math.max(0, w.from - 20); s <= Math.min(length, w.to + 20); s += STEP) if (Math.abs(grade(s)) > 0.002) sloped = true;
+        if (sloped) problems.push(name + ': water lies level: no hills there');
+        if (LEVEL.railway) problems.push(name + ': no railway on a level with water');
+      }
+    });
     zones.forEach((z, i) => {
       const name = 'zone ' + (z.id || i + 1);
       if (!(z.from < z.to) || (i && z.from < zones[i - 1].to)) problems.push(name + ': from before to, and after the zone before');
@@ -1032,7 +1057,7 @@ const createTrack = () => {
     apart, laneCount: LANES, leftLanes: LEFT, rightLanes: RIGHT, medianLanes: MID, medianHalf: HM, shoulder: SH, flow: FLOW, mirrored: MIRRORED,
     toWorld, fromWorld, grade, hilly, transfer, along, progress, finished, inBounds, spawnAt, place, isMain,
     laneOffset, openLane, nearestLane, laneRange, assistOffset,
-    lanesOn, edge, extraLane, onBridge, icy, sprays, slicks, muddy, foggy, tunnel, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
+    lanesOn, edge, extraLane, onBridge, icy, sprays, slicks, muddy, water, waters, foggy, tunnel, bend, onRails, junctions, zoneAt, lo, hi, laneLo, laneHi, shoulderOffset, onShoulder, rampLaneZone, sideOpen, sideWidth, sideLeft, sideOncoming,
     flyPillar, sideDistance, mainDistance, exits,
   };
 };

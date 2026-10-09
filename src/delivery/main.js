@@ -25,6 +25,7 @@ import { syncUfoStrike } from './render/ufostrike.js';
 import { syncBulletTrain } from './render/bullettrain.js';
 import { syncJunctions } from './render/junctions.js';
 import { syncTide } from './render/tide.js';
+import { syncWater } from './render/water.js';
 import { syncHippos } from './render/hippos.js';
 import { syncElephants } from './render/elephants.js';
 import { syncWreckage } from './render/wreckage.js';
@@ -181,6 +182,7 @@ const frame = (now) => {
     syncBulletTrain();
     syncJunctions(now);
     syncTide(now);
+    syncWater(now, dt); // (after the car and the traffic are placed: it floats them)
     syncHippos();
     syncElephants(now);
     syncWreckage(now);
@@ -217,7 +219,7 @@ const frame = (now) => {
     // (in the race screensaver: the watched car, and the rest of the field, as the camera hears them)
     const heard = Game.raceWatch && Game.state === 'playing' && !Game.paused ? raceAudio(dt) : null;
     if (heard) Sound.engine(heard.speed, CAR.id, CAR.maxSpeed, heard.gain, heard.pitch);
-    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher)
+    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : Player.afloat ? 'jetboat' : CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher; afloat on a water stage, a boat's)
       Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
     Sound.pack(heard ? heard.pack : 0);
     // the siren, louder the nearer the nearest police car or ambulance (the screensaver's too), and a radar

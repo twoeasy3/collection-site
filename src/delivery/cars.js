@@ -27,6 +27,7 @@
 //              it as a boat, slower and softer to steer (see CONFIG.water and water.js). The amphibious cars are a
 //              section of the garage of their own (see amphibiousCars and the garage), with sea-green stars, one at
 //              each star level, open from the start; an amphibious level (its "amphibious") is only driven in one
+//   draft      m of an amphibious car that is under the water when it is afloat (default CONFIG.water.draft)
 //   mass       how heavy it is in a shove (default 1): heavier knocks others aside and is knocked less
 //   shotBack   (optional) how much further back the studio camera (?cine=car) stands for its picture, for
 //              a vehicle whose wings reach past its hit box
@@ -153,19 +154,19 @@ export const CARS = [
   // (the ids are short: each is in a full save's cookie. See progress.js)
   // (May's Herald: a little sixties convertible under sail. Light, slow, and it turns on a sixpence)
   { id: 'herald', tier: 1, amphibious: true, name: 'Sailing Herald', price: 60, color: 0xd9c9a8, evilColor: 0x5a1f2a, fixedLivery: true, model: 'herald',
-    maxSpeed: 23, accel: 9, agility: 1.2, crossing: 0.5, health: 90, hw: 0.8, hl: 1.95, height: 1.0, perk: AMPHIBIOUS_PERK },
+    maxSpeed: 23, accel: 9, agility: 1.2, crossing: 0.5, health: 90, hw: 0.8, hl: 1.95, height: 1.0, draft: 0.5, perk: AMPHIBIOUS_PERK },
   // (the Transporter: a square-nosed van lashed between two yellow floats. Wide, steady, tough for its tier)
   { id: 'floatvan', tier: 2, amphibious: true, name: 'Float Van', price: 180, color: 0x2f7fc4, evilColor: 0x7a2a2a, fixedLivery: true, model: 'transporter',
-    maxSpeed: 26, accel: 8, crossing: 0.6, health: 160, mass: 1.3, hw: 1.3, hl: 2.3, height: 2.0, perk: AMPHIBIOUS_PERK },
+    maxSpeed: 26, accel: 8, crossing: 0.6, health: 160, mass: 1.3, hw: 1.3, hl: 2.3, height: 2.0, draft: 0.85, perk: AMPHIBIOUS_PERK },
   // (the Toybota: a pickup with an outboard where its tailgate was. The all-rounder)
   { id: 'toybota', tier: 3, amphibious: true, name: 'Toybota', price: 310, color: 0xc8322b, evilColor: 0x23262b, fixedLivery: true, model: 'toybota',
     maxSpeed: 34, accel: 11, crossing: 0.9, health: 190, hw: 1.0, hl: 2.5, height: 1.6, perk: AMPHIBIOUS_PERK },
   // (the Dampervan: a high-top camper built into a boat's hull. Slow off the line, and very hard to sink)
   { id: 'dampervan', tier: 4, amphibious: true, name: 'Dampervan', price: 470, color: 0x1f4d36, evilColor: 0x4a2a5e, fixedLivery: true, model: 'dampervan',
-    maxSpeed: 37, accel: 10, crossing: 0.7, health: 290, mass: 1.6, hw: 1.0, hl: 2.3, height: 2.7, perk: AMPHIBIOUS_PERK },
+    maxSpeed: 37, accel: 10, crossing: 0.7, health: 290, mass: 1.6, hw: 1.0, hl: 2.3, height: 2.7, draft: 0.72, perk: AMPHIBIOUS_PERK },
   // (the Nissank: a pickup on two great pontoons with twin outboards. The quick one, and heavy with it)
   { id: 'nissank', tier: 5, amphibious: true, name: 'Nissank', price: 750, color: 0x2a55b8, evilColor: 0xb8881f, fixedLivery: true, model: 'nissank',
-    maxSpeed: 44, accel: 14, crossing: 0.9, health: 310, mass: 2, hw: 1.35, hl: 2.6, height: 1.7, perk: AMPHIBIOUS_PERK },
+    maxSpeed: 44, accel: 14, crossing: 0.9, health: 310, mass: 2, hw: 1.35, hl: 2.6, height: 1.7, draft: 0.85, perk: AMPHIBIOUS_PERK },
   { id: 'tank', name: 'Tank', price: 5000, color: 0x4b5a2a, evilColor: 0x2a2d33, tank: true, corner: true,
     maxSpeed: 46, accel: 8, crossing: 1, health: 100, hw: 1.25, hl: 2.3, height: 1.9 }, // (TANK RAGE's top speed: CONFIG.tankMaxSpeed)
 ];
@@ -246,8 +247,11 @@ export let CAR = find();
 
 // A level with a vehicle of its own puts the player in that; any other level gives back
 // the car picked in the garage. Called when a level is picked and when a run starts.
-export const useLevelCar = (id) => {
+// (amphibious: the level is an amphibious one, its "amphibious": the car in use if it floats, or else the best
+// amphibious car the player owns. With none owned the car in use stays, and Game.start won't start the level)
+export const useLevelCar = (id, amphibious) => {
   CAR = (id && (LEVEL_CARS[id] || CARS.find(c => c.id === id))) || find(); // (a special vehicle, or one of the garage's)
+  if (amphibious && !id && !CAR.amphibious) CAR = ownedAmphibious() || CAR;
   lent = null;
 };
 

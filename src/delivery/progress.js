@@ -16,7 +16,10 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // Speed Trap Alley at 20; order 15, Mountain Pass at 21; order 16, Outback Express at 22; order 17,
 // Tour de Coast at 23; orders 18 to 20, Ring Road, Market Town and Quarry Run at 24 to 26; orders 21 to
 // 25, Hong Kong Harbour, Tokyo Expressway, Mumbai Monsoon, Stelvio Pass and Christmas Eve at 27 to 31.
-const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31]; // (for orders 2, 3, ...)
+// Order 26 put the five amphibious levels in at 41 to 45: after every delivery level there was, ahead only of the
+// circuits, which are races and always open. A save from before that counted past 40 had delivered the last
+// special level, and so has the first amphibious level open and no more: it is held at 41 ({ cap }).
+const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 // races (the lapped levels, on the menu's Races tab) are always open, and never hold up the delivery levels: the
@@ -78,7 +81,9 @@ const restore = (saved) => {
     data.car = RENAMED[data.car] || data.car;
     delete data.best; // (best tips, no longer kept)
     for (let order = saved.levelOrder || 1; order < LEVEL_ORDER; order++) {
-      if (data.unlocked >= INSERTED_AT[order - 1]) data.unlocked++;
+      const at = INSERTED_AT[order - 1];
+      if (typeof at === 'object') data.unlocked = Math.min(data.unlocked, at.cap);
+      else if (data.unlocked >= at) data.unlocked++;
     }
     data.levelOrder = LEVEL_ORDER;
     data.unlocked = pastRaces(data.unlocked);
