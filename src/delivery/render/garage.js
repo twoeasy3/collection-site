@@ -1,6 +1,6 @@
 // ---- garage: the car shop, a 3D parking lot with a garage behind it ---------------------
-// Every car in CARS is parked in a bay. Click an owned car to use it; click one that is for
-// sale to buy it (hovering shows the price). The Good / Evil toggle swaps every car to its
+// Every car in CARS is parked in a bay. Tap any car, owned or not, to see its stats; the button under them
+// uses it, or buys it (hovering shows the price). The Good / Evil toggle swaps every car to its
 // other livery: buying a car buys both.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
@@ -102,11 +102,17 @@ const parked = order.map((car, i) => {
   }
   return mesh;
 });
-// a glowing ring under the car in use
-const ring = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.12, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffd23f }));
-ring.rotation.x = Math.PI / 2;
-ring.position.y = 0.12;
-scene.add(ring);
+// a glowing ring under the car in use, and a white one under the car being looked at (tapped: its stats shown,
+// to use or buy it from the button below them)
+const ringOf = (color) => {
+  const r = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.12, 8, 40), new THREE.MeshBasicMaterial({ color }));
+  r.rotation.x = Math.PI / 2;
+  r.position.y = 0.12;
+  scene.add(r);
+  return r;
+};
+const ring = ringOf(0xffd23f), lookRing = ringOf(0xffffff);
+let looking = null; // the car whose stats are shown (null: the one in use)
 
 // ---- interface ---------------------------------------------------------------------------------
 const ui = document.getElementById('garageUi');
@@ -114,6 +120,7 @@ const tip = document.getElementById('garageTip');
 const info = document.getElementById('garageInfo');
 const bank = document.getElementById('garageBank');
 const liveryBtn = document.getElementById('liveryBtn');
+const action = document.getElementById('garageAction');
 const startScreen = document.getElementById('startScreen');
 const money = (amount) => '$' + amount.toFixed(2);
 const stats = (car) => 'Top speed ' + Math.round(car.maxSpeed * 3.6) + ' km/h  |  Acceleration ' +
@@ -137,27 +144,39 @@ const refresh = () => {
   const inUse = CARS.find(car => car.id === Progress.data.car) || SECRET_CARS[Progress.data.car] || CARS[0];
   bank.textContent = 'Bank ' + money(Progress.data.money);
   liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
-  info.textContent = inUse.name + (inUse.tier ? ' ' + stars(inUse) : '') + '  -  ' + stats(inUse);
+  const shown = looking || inUse, owned = Progress.owns(shown.id);
+  info.textContent = shown.name + (shown.tier ? ' ' + stars(shown) : '') + '  -  ' + stats(shown);
+  // the button under the stats: what can be done with the car shown
+  action.textContent = shown === inUse ? 'In use' : owned ? 'Use this car' : Progress.data.money >= shown.price ? 'Buy for ' + money(shown.price) : 'Need ' + money(shown.price);
+  action.disabled = shown === inUse || (!owned && Progress.data.money < shown.price);
   ring.visible = parked.some(mesh => mesh.userData.car === inUse);
+  lookRing.visible = !!looking && looking !== inUse;
   for (const mesh of parked) {
     const car = mesh.userData.car;
     mesh.userData.body.material.color.setHex(Garage.evil ? car.evilColor : car.color);
     mesh.userData.livery?.(Garage.evil);
     mesh.userData.tag.visible = !Progress.owns(car.id);
     if (car === inUse) ring.position.set(mesh.position.x, 0.12, mesh.position.z);
+    if (car === looking) lookRing.position.set(mesh.position.x, 0.12, mesh.position.z);
   }
 };
 
+// a car tapped: its stats shown, with the button to use it, or to buy it (locked or not, any car can be looked at)
 const pick = (mesh) => {
-  const car = mesh.userData.car;
+  looking = mesh.userData.car;
+  refresh();
+};
+action.addEventListener('click', () => {
+  const car = looking;
+  if (!car || car.id === Progress.data.car) return;
   if (!Progress.owns(car.id)) {
-    if (Progress.data.money < car.price) return; // the tooltip already says so
+    if (Progress.data.money < car.price) return;
     if (!confirm('Buy the ' + car.name + ' for ' + money(car.price) + '? You get both liveries.')) return;
     Progress.buy(car);
   }
   selectCar(car.id);
   refresh();
-};
+});
 
 // ---- scrolling side to side ---------------------------------------------------------------------
 // The camera's x: dragged (a mouse or a finger), flung on a little by the speed of a swipe, and nudged by
@@ -229,6 +248,7 @@ export const Garage = {
     ui.classList.remove('hidden');
     startScreen.classList.add('hidden');
     document.body.classList.add('in-garage');
+    looking = null; // (the car in use's stats shown)
     scrollTo(order.find(car => car.id === Progress.data.car) || order[0]); // (the car in use in view)
     fling = 0;
     refresh();
@@ -275,8 +295,8 @@ export const Garage = {
       const car = hovered.userData.car, owned = Progress.owns(car.id);
       tip.textContent = car.name + (car.tier ? ' ' + stars(car) : '') + '  -  ' + (
         car.id === Progress.data.car ? 'in use'
-          : owned ? 'owned, click to use'
-            : money(car.price) + (Progress.data.money < car.price ? ' (not enough in the bank)' : ', click to buy'));
+          : owned ? 'owned, click for its stats'
+            : money(car.price) + ', click for its stats');
       anchor.set(hovered.position.x, car.height + 2.6, hovered.position.z).project(camera);
       tip.style.left = (anchor.x + 1) / 2 * canvas.clientWidth + 'px';
       tip.style.top = (1 - anchor.y) / 2 * canvas.clientHeight + 'px';

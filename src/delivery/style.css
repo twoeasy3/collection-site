@@ -197,7 +197,9 @@ summary { cursor: pointer; font-weight: 700; }
 #garageUi #garageBank { color: #ffd23f; font-weight: 700; margin-right: auto; }
 #garageUi button { pointer-events: auto; font: inherit; font-size: 16px; font-weight: 700; padding: 9px 18px;
   border: 0; border-radius: 9px; background: #ffd23f; color: #222; cursor: pointer; }
+#garageUi .pick { display: flex; flex-direction: column; align-items: center; gap: 8px; }
 #garageInfo { text-align: center; font-size: 16px; font-weight: 700; }
+#garageUi #garageAction:disabled { background: #8a8f99; color: #2a2d33; cursor: default; }
 #garageTip { display: none; position: fixed; transform: translate(-50%, -100%); pointer-events: none;
   padding: 6px 12px; border-radius: 8px; background: rgba(15,18,24,.9); border: 2px solid #ffd23f;
   font-size: 14px; font-weight: 700; white-space: nowrap; }

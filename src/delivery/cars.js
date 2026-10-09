@@ -22,7 +22,7 @@ import { Progress } from './progress.js';
 
 // a car's star rating, by its tier (none for a car out of the tiers)
 export const TIERS = 4;
-export const stars = (car) => car.tier ? '★'.repeat(car.tier) + '☆'.repeat(TIERS - car.tier) : '';
+export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only the stars it has: no empty ones)
 
 export const CARS = [
   // In tiers, cheapest first: each tier a little faster and a little tougher than the one
