@@ -5,8 +5,10 @@
 //   unload   the cargo comes out of it and is set down on the kerbside,
 //   moment   it has a moment of its own (an Evil one in whatever state it had got to),
 //   and after a beat the results come up (Delivery.done calls back to Game).
-// A key, tap or click skips straight to the results (skip()). The times and distances are
-// CONFIG.consignment.ending. Rendering only draws it (render/cargo.js), from the fields here.
+// A key, tap or click skips straight to the results (skip()): the car is then put at the kerb and the
+// cargo beside it, where they would have ended up. Either way they stay there behind the results
+// (`delivered`) until the next run. The times and distances are CONFIG.consignment.ending. Rendering
+// only draws it (render/cargo.js), from the fields here.
 // It only happens where something can show it: `staged` is set by the rendering when it loads, so a
 // headless run goes straight to the results as it always did. Not on a level that carries nothing
 // (a race, the Battlefield: see cargo.js) nor in a vehicle with no kerb to pull in at
@@ -22,6 +24,8 @@ import { cargoFor, cargoState } from './cargo.js';
 export const Delivery = {
   staged: false,   // something is there to show it (render/cargo.js says so)
   active: false,   // it is going on: the results are held back
+  delivered: false, // it is over (or was skipped): car and cargo stay at the kerb behind the results
+  get on() { return this.active || this.delivered; }, // (either: the car is this module's to move)
   t: 0,            // s since the car crossed the line
   phase: '',       // park | unload | moment | beat
   u: 0,            // how far through that phase, 0 .. 1
@@ -68,19 +72,32 @@ export const Delivery = {
   },
   finish() {
     const done = this.done;
-    this.reset();
+    this.active = false;
+    this.delivered = this.landed = true;
+    this.phase = '';
+    this.done = null;
+    this.hold();
     if (done) done();
+  },
+  // the car stopped at the kerb (still a ghost: the traffic drives through it)
+  hold() {
+    Player.s = this.to.s;
+    Player.lat = this.to.lat;
+    Player.speed = Player.latVel = Player.yaw = Player.yawVel = 0;
+    Player.ghost = Math.max(Player.ghost, 0.3);
   },
   // (a new run, or back to the menu: nothing left over)
   reset() {
-    this.active = false;
+    this.active = this.delivered = false;
     this.t = this.u = 0;
     this.phase = '';
     this.landed = false;
     this.done = null;
   },
-  // every step while it goes on, in place of the player's own update: the car is driven from here
+  // every step while it goes on (and after, behind the results), in place of the player's own update:
+  // the car is driven from here
   update(dt) {
+    if (this.delivered) { this.hold(); return; }
     if (!this.active) return;
     const E = CONFIG.consignment.ending;
     this.t += dt;
@@ -89,7 +106,6 @@ export const Delivery = {
     Player.latVel = dt > 0 ? (lat - Player.lat) / dt : 0;
     Player.lat = lat;
     Player.speed = this.roll * (1 - u);
-    Player.vs = Player.speed;
     Player.ghost = Math.max(Player.ghost, 0.3); // (the traffic drives through it)
     updateYaw(Player, dt);
     if (u >= 1) Player.latVel = 0;

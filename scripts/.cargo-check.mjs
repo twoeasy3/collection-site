@@ -65,7 +65,7 @@ try {
   g.run(E.skipAfter + 0.1);
   ok('skip: straight to the results', Delivery.skip() === true && !Delivery.active && Game.state === 'finished');
   g.run(2);
-  ok('...and the car just rolls to a stop', Game.state === 'finished' && Player.speed < 1);
+  ok('...with the car put at the kerb and the cargo down', Game.state === 'finished' && Delivery.delivered && Delivery.landed && Player.speed === 0 && Player.lat === Delivery.to.lat && Player.s === Delivery.to.s);
 
   toLine('expressway', true);
   ok('Evil on time, from near the line: calm (the whole clock left)', Delivery.active && Delivery.state === 0);

@@ -1231,7 +1231,7 @@ export const CONFIG = {
   //   moment   s of its own there (the furious one misbehaves), then `beat` s more before the results;
   //   skipAfter  s before a key, tap or click skips it (so the key held over the line doesn't);
   //   pan      { from, to }: when (s) the camera leaves the chase view and when it has come round to the kerb;
-  //   camera   where it ends up, from the car: m `ahead`, m `out` beyond the cargo, m `up`, and its `fov`;
+  //   camera   where it ends up, from the car: m `ahead`, m `out` beyond the cargo (kept short: still over the road, inside any wall or fence), m `up`, and its `fov` (fovPortrait: on an upright screen);
   //   scale    the cargo's size at the kerb (the models are about a metre tall).
   // noEnding: the vehicles that set nothing down (no kerb in space or at sea)
   // (CONFIG.cargo is something else: the load a truck sheds)
@@ -1239,7 +1239,7 @@ export const CONFIG = {
     agitated: 0.5, furious: 0.2,
     corner: { fov: 30, spin: 0.5, pulse: 0.7 },
     ending: { park: 1.7, unload: 1.1, moment: 1.6, beat: 0.5, skipAfter: 0.35, least: 8, reach: 60, inset: 0.8, beside: 1.3,
-      pan: { from: 0.25, to: 2.1 }, camera: { ahead: 6.5, out: 4.2, up: 2.3, fov: 46 }, scale: 1.5 },
+      pan: { from: 0.25, to: 2.1 }, camera: { ahead: 8, out: 0.4, up: 2.3, fov: 46, fovPortrait: 72 }, scale: 1.5 },
     noEnding: ['ufo', 'jetboat'],
   },
 
