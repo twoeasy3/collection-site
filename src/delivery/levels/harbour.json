@@ -29,9 +29,6 @@
   "narrows": [
     { "from": 1560, "to": 1960, "lanesPerSide": 1 }
   ],
-  "fog": [
-    { "from": 880, "to": 1180 }
-  ],
   "tunnels": [
     { "from": 2260, "to": 2640 }
   ],
