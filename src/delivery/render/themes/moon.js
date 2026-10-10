@@ -66,7 +66,10 @@ export const moon = ({ add, flat, instances, sideStrip, offRoads, beside, inJunc
     const n = Math.floor((s - FIRST) / EVERY), u = s - FIRST - n * EVERY, base = n % 2 ? -1 : 1;
     return side === base ? u < 85 : u > 125 || (u > 40 && u < 105);
   };
-  const crater = (s, lat, r) => { rims.push([s, lat, 0, r * 2, r * 1.1, r * 2]); floors.push([s, lat, 0.04, r * 1.78, 0.08, r * 1.78]); };
+  // (never on the road: a hairpin brings the road back past what was laid beside it the first time. A thing beside
+  // its own stretch is always further off than this, so a level without hairpins is laid out as it was; a side road's are left as they were)
+  const spot = {}, onRoad = (s, lat, r) => { if (!Track.isMain(s)) return false; Track.toWorld(s, lat, spot); return Track.mainDistance(spot.x, spot.z) < Math.max(Track.hi(s), -Track.lo(s)) + r + 2; };
+  const crater = (s, lat, r) => { if (onRoad(s, lat, r)) return; rims.push([s, lat, 0, r * 2, r * 1.1, r * 2]); floors.push([s, lat, 0.04, r * 1.78, 0.08, r * 1.78]); };
   for (const [from, to] of roads) {
     for (let s0 = from + 6; s0 < to - 6; s0 += 30) {
       for (const side of [-1, 1]) {
@@ -75,7 +78,7 @@ export const moon = ({ add, flat, instances, sideStrip, offRoads, beside, inJunc
         else if (roll < 0.6) { for (let k = 0; k < 5; k++) { const r = 1 + rand() * 2.2; crater(s + (rand() - 0.5) * 26, beside(side, s, far + r + rand() * 18), r); } }
         else {
           const r = 1.5 + rand() * rand() * 7, lat = beside(side, s, far + r);
-          rocks[0].push([s, lat, r * 0.3, r, r * 0.85, r * 1.15]);
+          if (!onRoad(s, lat, r * 0.6)) rocks[0].push([s, lat, r * 0.3, r, r * 0.85, r * 1.15]);
           for (let k = 0; k < 4; k++) { const m = 0.5 + rand() * 1.4; rocks[k % 2].push([s + (rand() - 0.5) * (r * 2 + 6), lat + (rand() - 0.5) * (r * 2 + 6), m * 0.3, m, m * 0.8, m]); }
         }
       }

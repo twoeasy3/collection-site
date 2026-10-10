@@ -37,8 +37,18 @@ export const toyroom = ({ add, flat, instances, sideStrip, offRoads, beside, inJ
   const rugs = BRIGHT.map(() => []), fringes = [];
   for (let s = Track.start + 120; s < Track.end; s += 420) {
     const side = rand() < 0.5 ? -1 : 1, w = 50 + rand() * 40, l = 80 + rand() * 60, lat = beside(side, s, 16 + w / 2);
-    rugs[Math.floor(rand() * 3) + 3].push([s, lat, 0.03, w, 0.06, l]);
-    rugs[Math.floor(rand() * 3)].push([s, lat, 0.05, w * 0.7, 0.07, l * 0.75]);
+    const outer = Math.floor(rand() * 3) + 3, inner = Math.floor(rand() * 3);
+    // (where the road doubles back, a hairpin's legs, a rug laid beside one leg would lie over the next: not there)
+    // (every 5 m of the rug as it lies, a straight rectangle turned the road's way at its middle: at five places
+    // along it and three across, 35 m and 45 m apart, the road went between the places looked at and under the rug)
+    let clear = true;
+    const turn = Track.toWorld(s, lat, p), cx = p.x, cz = p.z, fx = Math.sin(turn), fz = Math.cos(turn), keep = Math.max(Track.hi(s), -Track.lo(s)) + 2;
+    for (let a = -(w + 3) / 2; a <= (w + 3) / 2 && clear; a += 5) for (let b = -l / 2; b <= l / 2 && clear; b += 5) {
+      if (Track.mainDistance(cx + fx * b + fz * a, cz + fz * b - fx * a) < keep) clear = false;
+    }
+    if (!clear) continue;
+    rugs[outer].push([s, lat, 0.03, w, 0.06, l]);
+    rugs[inner].push([s, lat, 0.05, w * 0.7, 0.07, l * 0.75]);
     fringes.push([s, lat, 0.02, w + 3, 0.04, l]);
   }
   rugs.forEach((list, i) => instances(cube, [0xb5483f, 0xd9a441, 0x3f7f6b, 0x7a3f58, 0x2d5f8a, 0xc9b79a][i], list, false, 4));
