@@ -137,7 +137,8 @@ Three agents at a time; the next item starts as each one finishes.
 - [~] Road gimmicks, resumed from the saved ramp work: agent 19, branch `delivery-gimmicks` (a new worktree)
 - [~] New levels on new themes, built from the gimmicks the game has now (owner, 10-Oct: "Let's get some agents going making new levels with the new themes and the gimmicks we have right now"). No new gimmick per theme. Three agents, three themes each, a level on each:
   - [~] A (agent 20, `delivery-themes`): the shared base first (where the new levels live, saved progress undisturbed), then T14 toy room, T15 underwater tunnel, T18 moon base
-  - [ ] B (`delivery-themes-b`, waiting for A's base): T13 film studio backlot, T1 Venice, T4 ice road
+  - [~] B (agent 21, `delivery-themes-b`): T13 film studio backlot, T1 Venice, T4 ice road
+    - [x] T13 film studio backlot: theme `backlot` (`29d651b`), level `backlot` "Quiet on Set" (`65e69cf`): 4150 m in five sets (the lot, a Western town, a soundstage tunnel with a spaceship corridor, a New York street of flats, painted skies), 29 cash pickups, nine rows side by side. Verified: the levels, schema, bundle and save checks; a ghost driven to the finish; each row takes only the pickup in the car's lane (a headless check); 30 stills along the level looked at. Not verified: nothing played by hand, nothing seen moving (the wind machines' fans, the gimmicks in action), no sound
   - [ ] C (`delivery-themes-c`, waiting for A's base): T12 theme park, T7 volcano island, T11 container port
 - **Standing rule for level content (owner, 10-Oct):** "add more Cash bonus pickups on the level from now, and have parts of the level where two or more pickups are side by side." Given to the theme agents, the Stelvio and Market Town agent and the gimmicks agent. Older levels have between none and four cash pickups
 - **The level progression rework waits:** the owner will do "a full rebalance later"
