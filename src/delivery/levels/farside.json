@@ -40,7 +40,7 @@
     { "length": 94, "curve": -0.0334212 },
     { "length": 200, "curve": 0 },
     { "length": 94, "curve": 0.0334212 },
-    { "length": 150, "curve": 0 },
+    { "length": 150, "curve": -0.006 },
     { "length": 80, "curve": 0, "grade": 0.2, "ease": 6 },
     { "length": 80, "curve": 0, "grade": -0.2, "ease": 6 },
     { "length": 80, "curve": 0, "ease": 6 },
