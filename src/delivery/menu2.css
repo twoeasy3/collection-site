@@ -325,3 +325,9 @@
   #startScreen .tile { grid-template-columns: 96px minmax(0, 1fr); }
   #startScreen .sheet-bar h2 small { display: block; margin: 4px 0 0; }
 }
+
+/* the level tiers (tiers.js): the group chips are stars, gold or blue; a level that wants a car the player has none of shows a dark outline of one */
+#startScreen .menu-groups button.gold { color: #ffd23f; }
+#startScreen .menu-groups button.blue { color: #4fa8ff; }
+#startScreen .car-card .picture.silhouette canvas { filter: brightness(0); opacity: .75; }
+#startScreen .car-card .picture.silhouette { background: #cfd4db; }
