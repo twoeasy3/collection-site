@@ -687,13 +687,15 @@ const notes = () => {
 // (and a column for any other setting the schema gives a segment: one more entry there is one more column here)
 const SEGMENT_EXTRAS = Object.entries(FIELDS.segments.settings).filter(([k]) => !['length', 'curve', 'grade'].includes(k));
 const segmentRows = () => {
-  $('segments').tHead.innerHTML = '<tr><th>Length m</th><th>Bend &deg;</th><th>Slope %</th>' + SEGMENT_EXTRAS.map(([, S]) => `<th title="${S.help || ''}">${S.label}</th>`).join('') + '<th></th></tr>';
-  $('segments').tBodies[0].innerHTML = (level.segments || []).map((seg, i) => `<tr data-i="${i}">
-    <td><input type="number" min="10" step="10" data-k="length" value="${seg.length}"></td>
-    <td><input type="number" step="5" data-k="bend" value="${Math.round((seg.curve || 0) * seg.length * 180 / Math.PI * 10) / 10}"></td>
-    <td><input type="number" step="0.5" data-k="grade" value="${((seg.grade || 0) * 100).toFixed(1)}"></td>
-    ${SEGMENT_EXTRAS.map(([k, S]) => `<td><input type="number" ${S.min !== undefined ? `min="${S.min}"` : ''} ${S.max !== undefined ? `max="${S.max}"` : ''} step="${S.step ?? 'any'}" data-k="${k}" data-extra="1" value="${seg[k] ?? ''}"></td>`).join('')}
-    <td class="ops"><button data-op="up" title="Move up">&uarr;</button><button data-op="down" title="Move down">&darr;</button><button data-op="del" title="Remove">&times;</button></td></tr>`).join('');
+  // (built as elements, never as HTML text: a level file's values are not to be trusted with the page)
+  const cell = (k, value, more) => h('td', null, h('input', { type: 'number', ...more, 'data-k': k, value: String(value) }));
+  fill($('segments').tHead, h('tr', null, h('th', null, 'Length m'), h('th', null, 'Bend °'), h('th', null, 'Slope %'), SEGMENT_EXTRAS.map(([, S]) => h('th', { title: S.help || '' }, S.label)), h('th')));
+  fill($('segments').tBodies[0], (level.segments || []).map((seg, i) => h('tr', { 'data-i': i },
+    cell('length', seg.length, { min: 10, step: 10 }),
+    cell('bend', Math.round((seg.curve || 0) * seg.length * 180 / Math.PI * 10) / 10, { step: 5 }),
+    cell('grade', ((Number(seg.grade) || 0) * 100).toFixed(1), { step: 0.5 }),
+    SEGMENT_EXTRAS.map(([k, S]) => cell(k, seg[k] ?? '', { min: S.min, max: S.max, step: S.step ?? 'any', 'data-extra': '1' })),
+    h('td', { class: 'ops' }, h('button', { 'data-op': 'up', title: 'Move up' }, '↑'), h('button', { 'data-op': 'down', title: 'Move down' }, '↓'), h('button', { 'data-op': 'del', title: 'Remove' }, '×')))));
 };
 // everything on the expressway moved by a change to it: each place along it (a point's, a stretch's two ends, an
 // exit's fork and merge, a water station) put through `move`. Things on a side road are measured along that, and stay
@@ -1185,8 +1187,8 @@ window.addEventListener('resize', () => draw());
 let autosaved = null;
 try { autosaved = JSON.parse(localStorage.getItem(AUTOSAVE)); } catch { /* (none, or storage blocked) */ }
 if (!autosaved || !Array.isArray(autosaved.segments)) autosaved = null;
-$('pick').innerHTML = (autosaved ? `<option value="auto">Autosaved: ${String(autosaved.name || autosaved.id || 'a level').replace(/</g, '&lt;')} (where you left off)</option>` : '') +
-  '<option value="-1">A new, blank level</option>' + sources.map(([label], i) => `<option value="${i}">${label}</option>`).join('');
+fill($('pick'), autosaved ? h('option', { value: 'auto' }, 'Autosaved: ' + String(autosaved.name || autosaved.id || 'a level') + ' (where you left off)') : null,
+  h('option', { value: '-1' }, 'A new, blank level'), sources.map(([label], i) => h('option', { value: String(i) }, label)));
 const openLevel = (raw) => {
   level = loadLevel(raw);
   sel = null;
