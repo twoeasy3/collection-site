@@ -54,7 +54,7 @@ const fresh = () => ({
   stats: {},       // milestone counters, by name (packagesLanded, copsOutrun, kmDriven...: see milestones.js), across every run
   levelOrder: LEVEL_ORDER, // the order of levels `unlocked` counts by
   tierBase: null,  // the levels open (by position) when the tiers (tiers.js) were first looked at: they stay open. null: not yet
-  tierCars: {},    // the car last picked for each tier's levels while their ribbon half is not earned, by tier (the player's own pick, `car`, is kept apart)
+  tierCars: {},    // the car last picked for each tier's levels while their medal is not earned, by tier (the player's own pick, `car`, is kept apart)
 });
 
 // The save is kept in local storage (BACKUP: the store of record, read first, the whole save, as big as it

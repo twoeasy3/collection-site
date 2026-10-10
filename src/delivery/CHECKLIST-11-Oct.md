@@ -429,7 +429,11 @@ The owner's words, as in `CHECKLIST-10-Oct.md`. Q52 and Q53 are done and left ou
   prints and checks it, `node scripts/tiers.mjs move <id> <tier|outside> [position]` moves a level. Rules and the
   amphibious rule (Q12: half a ribbon on every stage of its blue tier, ONE function, `Tiers.amphibiousOpens`) are in
   `tiers.js`. Switch: `CONFIG.progression.tiers` (false = the old rule); `?tiers=1` / `?tiers=0` for a visit.
-- Ribbons are the best times (nothing new saved); `tierBase` keeps a save's already-open levels open; `tierCars` keeps a
+- Medals are the best times (nothing new saved); `tierBase` keeps a save's already-open levels open; `tierCars` keeps a
   restricted level's car apart from the player's pick (Q45). Null car, disabled START and the filtered garage: done.
 - NOT built (5c, for the rebalance): traffic made of cars in the tier of its level.
 - `scripts/tier-money.mjs` is the rushed-run money table; `scripts/.tiers-check.mjs` checks the rules.
+- Wording (owner, 11-Oct): a half-ribbon is now a MEDAL. Delivering a level on Good earns 1 medal, on Evil 1 medal; a level's two
+  are its ribbon; a level with one side only gives both at once. The menu's existing bronze / silver / gold (time to spare)
+  is the GRADE of a medal, shown as before on each side's half: delivering on time is at least a bronze, so a side has a medal
+  exactly when it has a grade. Same word, one thing: see the report to the owner.

@@ -76,7 +76,7 @@ const params = new URLSearchParams(location.search);
 // (Progress.noSave: the save stays as it was before the visit, whatever is delivered, bought or counted in it)
 if (['autostart', 'hidden', 'test', 'edited', 'pick', 'car', 'ghost', 'mystery', 'theme', 'beaten', 'owns'].some(key => params.get(key) !== null)) Progress.noSave = true;
 // ?beaten=expressway,back-roads:evil,farm:both and ?owns=lovebus,wagon&money=500: a state to look at (the level tiers:
-// ribbons are best times; nothing is saved). A level listed alone is a Good half.
+// medals are best times; nothing is saved). A level listed alone is a Good medal.
 if (params.get('beaten')) {
   for (const token of params.get('beaten').split(',')) {
     const [id, side = 'good'] = token.split(':');
