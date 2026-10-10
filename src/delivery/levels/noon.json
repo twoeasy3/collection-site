@@ -1,6 +1,10 @@
 {
   "id": "noon",
   "name": "High Noon",
+  "description": {
+    "good": "A cactus for the far end of the territory. Mind the cattle on Main Street and the train at the crossing, and tip your hat to the sheriff.",
+    "evil": "A sack of snakes, six towns to scare. Scatter the herd down Main Street, fly the gulch and race the posse to the mine. This road ain't big enough."
+  },
   "theme": "wildwest",
   "clock": { "good": 205, "evil": 155 },
   "tip": 300,
