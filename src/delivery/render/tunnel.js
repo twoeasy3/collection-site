@@ -30,11 +30,13 @@ const build = () => {
   lightsOwn = !!(THEMES[LEVEL.theme] || THEMES.city).headlights;
   if (!has) return;
   const T = CONFIG.tunnel, H = T.height;
-  const wall = new THREE.MeshLambertMaterial({ color: 0x5a5d63, side: THREE.DoubleSide });
-  const tiles = new THREE.MeshLambertMaterial({ color: 0xd9dcd2, side: THREE.DoubleSide });
-  const roof = new THREE.MeshLambertMaterial({ color: 0x3d4046, side: THREE.DoubleSide });
-  const lamp = new THREE.MeshBasicMaterial({ color: 0xfff3d0 });
-  const face = new THREE.MeshLambertMaterial({ color: 0x6b6e74, side: THREE.DoubleSide });
+  // (a theme may give a tunnel its colours, `tunnel` in themes.js: a cardboard box in the toy room)
+  const look = { wall: 0x5a5d63, tiles: 0xd9dcd2, roof: 0x3d4046, lamp: 0xfff3d0, face: 0x6b6e74, ...(THEMES[LEVEL.theme] || THEMES.city).tunnel };
+  const wall = new THREE.MeshLambertMaterial({ color: look.wall, side: THREE.DoubleSide });
+  const tiles = new THREE.MeshLambertMaterial({ color: look.tiles, side: THREE.DoubleSide });
+  const roof = new THREE.MeshLambertMaterial({ color: look.roof, side: THREE.DoubleSide });
+  const lamp = new THREE.MeshBasicMaterial({ color: look.lamp });
+  const face = new THREE.MeshLambertMaterial({ color: look.face, side: THREE.DoubleSide });
   const add = (geo, mat) => { if (!geo.attributes.normal) geo.computeVertexNormals(); const mesh = new THREE.Mesh(geo, mat); group.add(mesh); return mesh; };
   const spot = new THREE.Object3D();
   for (const t of LEVEL.tunnels) {

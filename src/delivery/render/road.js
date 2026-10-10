@@ -9,6 +9,7 @@ import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
 import { setHeadlights } from './headlights.js';
 import { THEMES } from '../themes.js';
 import { CIRCUITS } from './circuits/index.js';
+import { THEME_SCENERY } from './themes/index.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -3176,6 +3177,9 @@ const buildRoad = () => {
     instances(cube, 0x2a2a2a, tanks);
     instances(tube, 0x6b5436, trunks);
     instances(cube, 0x3f7a2e, fronds);
+  } else if (THEME_SCENERY[theme.scenery]) {
+    // ---- a theme with a file of its own (render/themes/<scenery>.js): given what stands things beside a road here
+    THEME_SCENERY[theme.scenery]({ theme, add, flat, instances, sideStrip, buildStrip, offRoads, standsClear, clearOfRoads, beside, inJunction, exits, cube, tube, cone, levelGroup, elevatedRoad });
   }
   if (theme.snow && theme.scenery !== 'alpine') snowfall();
   if (theme.rain) rainfall();
