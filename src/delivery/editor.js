@@ -620,6 +620,7 @@ const status = () => {
 };
 // everything that follows a change to the level: the road laid out again, the game's word on it, the map
 const changed = ({ layout = true } = {}) => {
+  update3d();
   if (layout) { build(); facts = roadFacts(level); survey(); diagnose(); }
   status();
   showProblems();
@@ -631,6 +632,7 @@ const changed = ({ layout = true } = {}) => {
 };
 // everything made afresh (a level opened, an undo)
 const refresh = () => {
+  update3d();
   build(); facts = roadFacts(level); survey(); diagnose();
   renderLevel(); segmentRows(); renderTools(); renderList(); renderInspector(); jsonBox();
   status(); showProblems(); notes();
@@ -754,8 +756,6 @@ $('segments').addEventListener('click', (e) => {
   changed();
 });
 $('addSegment').addEventListener('click', () => { level.segments.push({ length: 300, curve: 0 }); segmentRows(); changed(); });
-
-// ---- the tools: select, or place one of anything the schema says can be placed, grouped and searched ----
 // a lapped road closed (levelSchema.js closeLoop): the bends each turned a touch, and two segments made longer or
 // shorter, what is on them and after them carried along as for any change of length (see resize)
 $('closeLoop').addEventListener('click', () => {
@@ -768,6 +768,8 @@ $('closeLoop').addEventListener('click', () => {
   $('loopNote').textContent += ' Closed: ' + (closed.moved.length ? closed.moved.map(m => 'segment ' + (m.i + 1) + ' ' + m.from + ' to ' + m.to + ' m').join(', ') : 'no length changed') +
     '; ' + Math.abs(closed.turned * 180 / Math.PI).toFixed(2) + '° shared out over the bends.';
 });
+
+// ---- the tools: select, or place one of anything the schema says can be placed, grouped and searched ----
 const sameTool = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const levelRules = (key) => (FIELDS[key].rules || []).filter(id => !SPAN_RULES.includes(id) && RULES[id].broken(facts, {}, [0, 0])).map(id => RULES[id].text);
 const toolButton = (label, t, swatch, title, key) => {
@@ -833,6 +835,8 @@ window.addEventListener('message', (e) => {
   if (!m || e.source !== view3d.contentWindow) return;
   if (m.type === 'flyReady') { toolTo3d(); if (revealed) view3d.contentWindow.postMessage({ type: 'reveal', on: true }, '*'); } // (still showing, in a view made afresh)
   if (m.type === 'reveal') { revealed = !!m.on; showRevealed(); }
+  if (m.type === 'pose' && asked3d) remake3d(m.cam);
+  own3d = m.type === 'placed' || m.type === 'removed'; // (the view's own change: not made afresh for it)
   if (m.type === 'placed') {
     (level[m.list] ||= []).push(m.item);
     sel = { key: m.list, i: level[m.list].length - 1 };
@@ -1169,7 +1173,27 @@ window.addEventListener('keydown', (e) => {
 
 // ---- the 3D view: the game itself, in the editor, on the level as it stands, with a free camera (?edited&fly) ----
 const hand = () => { try { localStorage.setItem(STORE, JSON.stringify(saveLevel(level))); return true; } catch { return false; } };
+// (and kept in step with the level: a little after the last change the view is made afresh, its camera where it
+// was. A change made in the view itself, a thing placed or removed there, is in it already)
+const STALE_3D = 900; // ms after the last change
+let stale3d = 0, own3d = false, asked3d = 0;
+const remake3d = (cam) => {
+  clearTimeout(asked3d);
+  asked3d = 0;
+  if (view3d.hidden || !hand()) return;
+  view3d.src = './?edited&fly' + (cam ? '&cam=' + cam.join(',') : '') + '&v=' + Date.now();
+};
+function update3d() {
+  if (view3d.hidden || own3d) return;
+  clearTimeout(stale3d);
+  stale3d = setTimeout(() => {
+    if (view3d.hidden || !view3d.contentWindow) return;
+    view3d.contentWindow.postMessage({ type: 'pose' }, '*'); // (its answer makes the view afresh: see the messages below)
+    asked3d = setTimeout(() => remake3d(null), 500); // (no answer: a view still loading. Afresh from the start line)
+  }, STALE_3D);
+}
 const show3d = (on) => {
+  clearTimeout(stale3d);
   view3d.hidden = !on;
   canvas.hidden = on;
   $('fit').hidden = on;
@@ -1239,6 +1263,32 @@ const play = (evil, from) => {
   window.open('./?edited' + (evil ? '&evil' : '') + (from ? '&at=' + Math.round(from) : ''), '_blank');
 };
 $('play').addEventListener('click', () => play(false));
+// "Work out the clock": the game, loaded out of sight on the level as it stands, drives its clean run and says
+// what clock that gives (main.js ?edited&clock, cleanrun.js: what scripts/level-clocks.mjs does)
+let clockFrame = null;
+$('workClock').addEventListener('click', () => {
+  if (!hand()) { $('status').textContent = 'Could not hand the level to the game (storage is blocked).'; return; }
+  if (clockFrame) clockFrame.remove();
+  clockFrame = h('iframe', { hidden: true, title: 'The clean run' });
+  document.body.append(clockFrame);
+  $('workClock').disabled = true;
+  $('status').textContent = 'Driving the clean run...';
+  clockFrame.src = './?edited&clock&v=' + Date.now();
+});
+window.addEventListener('message', (e) => {
+  const m = e.data;
+  if (!m || m.type !== 'clock' || !clockFrame || e.source !== clockFrame.contentWindow) return;
+  clockFrame.remove();
+  clockFrame = null;
+  $('workClock').disabled = false;
+  if (m.problem || !m.delivered) { $('status').textContent = 'No clock: ' + (m.problem || 'the clean run was not delivered (' + m.outcome + ').'); return; }
+  const was = level.clock ? level.clock.good + ' / ' + level.clock.evil + ' s' : 'none';
+  level.clock = m.clock;
+  renderLevel();
+  changed({ layout: false });
+  $('status').textContent = 'The clock: ' + m.clock.good + ' s Good, ' + m.clock.evil + ' s Evil (it was ' + was + '), from a clean run of ' + m.time.toFixed(1) + ' s in the ' + m.car +
+    (m.pluses ? ', less ' + m.pluses + ' time plus' + (m.pluses === 1 ? '' : 'es') : '') + '.';
+});
 $('playEvil').addEventListener('click', () => play(true));
 $('playFrom').addEventListener('click', () => setTool(tool.kind === 'playFrom' ? { kind: 'select' } : { kind: 'playFrom' }));
 $('download').addEventListener('click', () => {
@@ -1278,32 +1328,6 @@ if (params.get('bend')) { // (a segment's handle dragged to that far on from whe
   const [i, fwd, lat] = params.get('bend').split(':').map(Number), end = segmentEnds()[i], p0 = points[clamp(Math.round(segmentStart(i) / STEP), 0, points.length - 1)];
   press(...toScreen(end.x, end.y));
   moveTo(...toScreen(p0.x + Math.sin(p0.h) * fwd + Math.cos(p0.h) * lat, p0.y + Math.cos(p0.h) * fwd - Math.sin(p0.h) * lat));
-// "Work out the clock": the game, loaded out of sight on the level as it stands, drives its clean run and says
-// what clock that gives (main.js ?edited&clock, cleanrun.js: what scripts/level-clocks.mjs does)
-let clockFrame = null;
-$('workClock').addEventListener('click', () => {
-  if (!hand()) { $('status').textContent = 'Could not hand the level to the game (storage is blocked).'; return; }
-  if (clockFrame) clockFrame.remove();
-  clockFrame = h('iframe', { hidden: true, title: 'The clean run' });
-  document.body.append(clockFrame);
-  $('workClock').disabled = true;
-  $('status').textContent = 'Driving the clean run...';
-  clockFrame.src = './?edited&clock&v=' + Date.now();
-});
-window.addEventListener('message', (e) => {
-  const m = e.data;
-  if (!m || m.type !== 'clock' || !clockFrame || e.source !== clockFrame.contentWindow) return;
-  clockFrame.remove();
-  clockFrame = null;
-  $('workClock').disabled = false;
-  if (m.problem || !m.delivered) { $('status').textContent = 'No clock: ' + (m.problem || 'the clean run was not delivered (' + m.outcome + ').'); return; }
-  const was = level.clock ? level.clock.good + ' / ' + level.clock.evil + ' s' : 'none';
-  level.clock = m.clock;
-  renderLevel();
-  changed({ layout: false });
-  $('status').textContent = 'The clock: ' + m.clock.good + ' s Good, ' + m.clock.evil + ' s Evil (it was ' + was + '), from a clean run of ' + m.time.toFixed(1) + ' s in the ' + m.car +
-    (m.pluses ? ', less ' + m.pluses + ' time plus' + (m.pluses === 1 ? '' : 'es') : '') + '.';
-});
   release();
 }
 if (params.get('undo') || params.get('redo')) { clearTimeout(pending); record(); for (let n = 0; n < Number(params.get('undo')); n++) undo(); for (let n = 0; n < Number(params.get('redo')); n++) redo(); }

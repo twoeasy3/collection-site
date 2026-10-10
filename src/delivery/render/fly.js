@@ -122,6 +122,8 @@ export const startFly = () => {
   window.addEventListener('message', (e) => { // (the editor's tool, and its button for what is set off later)
     if (e.data && e.data.type === 'tool') tool = e.data.tool;
     if (e.data && e.data.type === 'reveal') reveal(!!e.data.on);
+    // (where the camera is, as ?cam takes it: the editor asks before it makes the view afresh for a change to the level)
+    if (e.data && e.data.type === 'pose') tell({ type: 'pose', cam: [camera.position.x, camera.position.y, camera.position.z, yaw * 180 / Math.PI, pitch * 180 / Math.PI].map(n => Math.round(n * 100) / 100) });
   });
   if (new URLSearchParams(location.search).get('reveal') !== null) reveal(true);
   tell({ type: 'flyReady' });
