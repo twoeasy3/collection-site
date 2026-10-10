@@ -368,16 +368,41 @@ for (const id of ['albumBtn', 'milestonesBtn', 'exportBtn', 'importBtn', 'screen
 
 // "What's on this road": the level's gimmicks, pickups and traffic, with their models (render/levelcard3d.js,
 // brought in only when it is first asked for: it carries the reference pages' models)
+// A tap always opens the sheet, at once: the first time the card's code is still to come (and on a phone that
+// can be a while), so the sheet opens with a line saying so and is filled when it has; and if it cannot be had
+// (no connection; a page left open over a new version of the site, whose files are gone) or the card cannot be
+// drawn, the sheet says that, and the next tap tries again. Nothing fails without a word on the screen.
 const roadBox = document.getElementById('roadCard');
-let roadModule = null;
+let roadModule = null, roadLoading = null, roadAsked = null;
+// the sheet with a line in place of the card
+const roadLine = (level, words) => {
+  const closeBtn = make('button', 'menu-chip', 'Close');
+  closeBtn.addEventListener('click', closeSheet);
+  roadBox.replaceChildren(make('div', 'sheet-box road',
+    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', label(level) + '  ' + level.name)), closeBtn),
+    make('div', 'sheet-main', make('div', 'sheet-body', make('p', 'road-wait', words)))));
+};
 const roadCard = async (level) => {
-  roadModule ||= await import('./levelcard3d.js');
-  if (sheet === roadBox || !menuUp()) return; // (asked for twice; or a run started while it was on its way)
-  // (what it returns lets its renderer go when the sheet closes. With no renderer to be had the card opens
-  // without its models: see render/modelviews.js viewRenderer. Whatever else goes wrong in building it is said, not swallowed)
-  let onClose = null;
-  try { onClose = roadModule.showRoadCard(roadBox, level, closeSheet); } catch (error) { console.error(error); return; }
-  openSheet(roadBox, onClose);
+  if (sheet === roadBox || !menuUp()) return; // (asked for twice; or no menu to open it over)
+  // (what showRoadCard returns gives back what its models took when the sheet closes. With no renderer to be had
+  // the card opens without its models: see render/modelviews.js viewRenderer)
+  const fill = () => {
+    try { onSheetClose = roadModule.showRoadCard(roadBox, level, closeSheet); } catch (error) {
+      console.error(error);
+      roadLine(level, 'This card could not be drawn.');
+    }
+  };
+  const asked = roadAsked = {}; // (this asking: a later one, for another level, takes its place)
+  if (roadModule) { openSheet(roadBox, () => roadBox.replaceChildren()); fill(); return; }
+  roadLine(level, 'Loading…');
+  openSheet(roadBox, () => roadBox.replaceChildren());
+  try { roadModule = await (roadLoading ||= import('./levelcard3d.js')); } catch (error) {
+    roadLoading = null; // (the next tap asks for it again)
+    console.error(error);
+    if (sheet === roadBox && roadAsked === asked) roadLine(level, 'This card could not be loaded. Check the connection, or reload the page.');
+    return;
+  }
+  if (sheet === roadBox && roadAsked === asked && menuUp()) fill(); // (not if it was closed while on its way, or a run started)
 };
 
 // the keys. Heard ahead of the game's own (input.js: Enter is its "confirm", which starts a run), so that Enter
