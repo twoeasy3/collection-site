@@ -1255,6 +1255,12 @@ export const CONFIG = {
     out: 14,               // ...this far off the road's edge
     near: { min: 60, max: 130 }, // m short of it the player sets one off
     size: { min: 0.6, max: 1.4 }, // m, a rock's radius
+    // (the look of it, render/items.js: a rock waits on the land, and comes down over the land)
+    hill: 3,               // m above the road the land must stand, where a rock would wait, to be a hillside: on a level
+                           // whose land has none on the side its rockfall names, the rocks wait on the other side's;
+                           // with none on either (flat land), each waits on a crag of its own, `height` m tall
+    hop: 2.2,              // m high a rock's first bound is, each one after it lower...
+    bounds: 4,             // ...this many of them on its way down
   },
   // THE BATTLEFIELD (a level's "battle": see levels.js). Two armies drive at each other down every lane
   // of the road: the player's (good, green), all of it going the player's way, and the enemy's (evil, red),
