@@ -12,6 +12,7 @@ import { toyroom } from './toyroom.js';
 // (batch B's imports go above this line)
 import { themepark } from './themepark.js';
 import { volcano } from './volcano.js';
+import { port } from './port.js';
 // (batch C's imports go above this line)
 
 export const THEME_SCENERY = {
@@ -20,5 +21,6 @@ export const THEME_SCENERY = {
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   themepark,
   volcano,
+  port,
   // (batch C: theme park, volcano island, container port: new themes go above this line)
 };

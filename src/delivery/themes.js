@@ -108,5 +108,7 @@ export const THEMES = {
   // volcano: a volcano island (render/themes/volcano.js): a black road over black sand under an ashen sky, rivers of lava glowing beside it and across under every bridge, basalt, palms, steam vents, torches, the sea beyond the surf, ash coming down, and the volcano smoking on the skyline; a tunnel is a lava tube
   volcano: { sky: 0xa89aa0, ground: 0x29272b, road: 0x161518, scenery: 'volcano', line: 0xe8e2d4, centre: 0xffa51e, tunnel: { wall: 0x2a2224, tiles: 0xff6a1e, roof: 0x151113, face: 0x3a3032, lamp: 0xffb060 },
     light: { sky: 0xffe6cf, ground: 0x6a3a26, ambient: 1.35, sun: 0xffd2a8, sunlight: 1.15 } },
+  // port: a container port (render/themes/port.js): concrete under a grey sky, walls of stacked containers in every colour, gantry cranes over the road, straddle carriers up and down beside it, rails let into the road, floodlight masts, and on the right the quay: quay cranes over container ships, and the harbour
+  port: { sky: 0xb5c3cd, ground: 0x8b8e91, road: 0x33363b, scenery: 'port' },
   // (batch C: theme park, volcano island, container port: new themes go above this line)
 };
