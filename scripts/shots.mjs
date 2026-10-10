@@ -23,6 +23,15 @@
 // A run leaves nothing behind, and two runs at most take pictures at once (a third waits): see below. Its
 // folder in %LOCALAPPDATA%\Temp is delivery-shots-run-<pid>-<when>; a start removes those of dead runs, and
 // touches nothing else there (not the delivery-shots-XXXXXX folders of older versions of this script).
+// HOW TO, for the common jobs (older notes describe a script that started a browser for every picture and wrote
+// only PNGs: the command line is the same, what follows is what it does now):
+//   a level, part-way along:   node scripts/shots.mjs <dir> "bridge=?level=1&ghost&at=900&ff=4"
+//   a level's menu still:      node scripts/shots.mjs <dir> --levels=<id>             (<dir>/<id>.png, to look at)
+//   ...and the menu's own two: node scripts/shots.mjs --levels=<id> --write=<dir>     (<dir>/<id>.jpg and <dir>/large/<id>.jpg)
+//                              node scripts/shots.mjs --levels=<id> --write           (the same, into src/delivery/levelshots)
+//   the menu on a phone:       node scripts/shots.mjs <dir> "menu=index.html" --size=390x844 --scale=3
+//   a reference page:          node scripts/shots.mjs <dir> "gimmicks=gimmicks.html" --size=1100x2400
+// Look at every picture made: a grey frame, the inside of a wall or a tree across it are the usual failures.
 import { createServer } from 'vite';
 import { logicServer } from './delivery-headless.mjs';
 import { spawn, spawnSync } from 'node:child_process';
@@ -63,10 +72,17 @@ if (opt('levels', false) || opt('cars', false)) {
   const CINE = { mumbai: '&cineout=-1&cineup=10&cineback=30', spa: '&cineside=left', 'albert-park': '&cineside=left', // (a block of flats; the pit building; a tree)
     expressway: '&at=880', 'back-roads': '&at=600', canberra: '&at=1200', // (each one's bridge)
     'grand-pacific': '&at=6000', 'passage-du-gois': '&at=900', safari: '&at=2350', airport: '&at=850', // (the Sea Cliff Bridge; the causeway; the hippos' river; a parked plane)
-    'mountain-pass': '&at=420', 'outback-express': '&at=1080', 'tour-de-coast': '&at=1600', stelvio: '&at=250', // (a rockfall; a level crossing; the cliff road; clear of a fir that fills the frame)
+    'mountain-pass': '&at=2460&ff=4', 'outback-express': '&at=1080', 'tour-de-coast': '&at=1600', stelvio: '&at=250', // (a hairpin under the peaks, on the way down: 420 is behind a fir since the level was re-laid; a level crossing; the cliff road; clear of a fir that fills the frame)
     // (an entry with an &ff of its own is taken after that many seconds, not six: a place chosen to the metre)
     'quarry-run': '&at=2520&ff=1&cineside=left&cineup=8' }; // (the crag before its blast, benches, stockpiles, a stacker, a siren mast: its level's agent's choice)
   const FF = (id) => /[?&]ff=/.test(CINE[id] || '') ? '' : '&ff=6';
+  // (more places, in a statement of their own so that a branch changing one entry above merges cleanly)
+  Object.assign(CINE, {
+    toys: '&at=250', leaks: '&at=500', backlot: '&at=3400', venice: '&at=350', // (clear of a domino as tall as the frame; out of the entry tunnel, in the glass tube; among the sets; clear of a bridge's parapet)
+    'marina-bay': '&cineout=-1&cineup=10&cineback=30', montreal: '&at=350', bathurst: '&at=600', // (each one's start is between grandstands, and the camera inside one)
+    slipway: '&at=720', harbour: '&at=520', ford: '&at=1320', fjord: '&at=1950', // (the amphibious levels: afloat)
+    stunts: '&cineout=-1&cineup=10&cineback=30', // (a New York street set: over the road, as its level's agent found it)
+    'albert-park': '&cineside=left&at=150' }); // (the tree again, further on)
   if (opt('levels', false)) {
     levels.LEVELS.forEach((level, i) => {
       if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine${FF(level.id)}${CINE[level.id] || ''}`, !!PAIR.folder]);
@@ -129,12 +145,17 @@ const endBrowsersOf = (folder) => {
   } catch { /* (none to end) */ }
 };
 // a run's folder and its browsers, twice over if need be; says so if something of it is still there
-const removeRun = (folder, browsers = true) => {
+const removeRun = (folder, browsers = true, leaving = false) => {
   let error = null;
   for (let round = 0; round < 2; round++) {
     if (browsers) endBrowsersOf(folder);
     if (!(error = remove(folder))) return;
     browsers = true;
+  }
+  // (A run's own folder, emptied, sometimes cannot be removed while the run itself lives, on a machine with every
+  // core busy: EPERM for as long as it is tried. So a command left behind removes it a few seconds after the run.)
+  if (leaving && WINDOWS) {
+    try { spawn(join(SYSTEM, 'cmd.exe'), ['/d', '/s', '/c', `"ping -n 5 127.0.0.1 >nul & rmdir /s /q "${folder}""`], { detached: true, stdio: 'ignore', windowsHide: true, windowsVerbatimArguments: true }).unref(); return; } catch { /* (said below) */ }
   }
   console.log('  (could not remove ' + folder + ' yet: ' + String(error && error.message || error).split('\n')[0] + '; the next run takes it)');
 };
@@ -168,7 +189,7 @@ const cleanup = () => { // (however the run ends, and all of it at once: an 'exi
   if (child && child.exitCode === null) { try { WINDOWS ? spawnSync(join(SYSTEM, 'taskkill.exe'), ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }) : child.kill('SIGKILL'); } catch { /* (gone already) */ } }
   if (slot) remove(slot, 2000);
   // (a browser that closed by itself has no helpers left to end, and asking costs a second: only if its files will not go)
-  if (!child || remove(own, child.exitCode === null ? 0 : 3000)) removeRun(own, !!child);
+  if (!child || remove(own, child.exitCode === null ? 0 : 3000)) removeRun(own, !!child, true);
 };
 process.on('exit', cleanup);
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) process.on(signal, () => { console.log('  (' + signal + ': cleaning up)'); cleanup(); process.exit(130); });

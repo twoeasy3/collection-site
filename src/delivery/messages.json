@@ -135,7 +135,12 @@
     "headland": ["The headland - cyclists on the road!"],
     "cliffs": ["The cliff road - one lane, and the peloton!"],
     "causeway": ["The causeway - the tide is coming in!"],
-    "harbour": ["The harbour - nearly there!"]
+    "harbour": ["The harbour - nearly there!"],
+    "cameraRow": ["Camera Row - the shops are watching!"],
+    "cameraHill": ["Camera Hill - there is one over the brow!"],
+    "retailPark": ["The retail park - it is backed up!"],
+    "theParade": ["The Parade - two cameras in the fog!"],
+    "lastJam": ["The last jam - and the last camera!"]
   },
   "bustCount": {
     "1": ["First Offence - "],
