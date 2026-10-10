@@ -228,9 +228,12 @@ const refresh = () => {
   const sideNow = Garage.evil, sideWord = sideNow ? 'Evil' : 'Good', ruleNow = restrictedTier(sideNow) ?? null, ruleOther = restrictedTier(!sideNow) ?? null;
   ruleBanner.classList.toggle('hidden', ruleNow === null && ruleOther === null);
   ruleBanner.classList.toggle('restricted', ruleNow !== null);
-  ruleBanner.replaceChildren(...(ruleNow !== null
-    ? [sideWord + ': only ', tierStarsNode(ruleNow), ' cars until you earn a medal on this level on ' + sideWord]
+  const chip = document.createElement('span');
+  chip.className = 'rulechip';
+  chip.replaceChildren(...(ruleNow !== null
+    ? [sideWord + ': only ', tierStarsNode(ruleNow), ' cars until you earn this level’s ' + sideWord + ' medal']
     : [sideWord + ': any car (medal earned)']));
+  ruleBanner.replaceChildren(chip);
   for (const b of sideBtns) { const on = (b.dataset.side === 'evil') === Garage.evil; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }
   const shown = looking || inUse, owned = Progress.owns(shown.id);
   const needs = restrictedTier(Garage.evil) ?? null;
@@ -239,7 +242,7 @@ const refresh = () => {
   const badge = document.createElement('span');
   badge.className = 'notallowed';
   badge.replaceChildren(...(shown.silhouette ? ['No car of this tier owned: buy one in the lot'] : reasonNode()));
-  info.replaceChildren(...withStars(shown), ...(notAllowed ? [' - ', badge] : []), '  -  ' + stats(shown));
+  info.replaceChildren(...withStars(shown), ...(notAllowed && !shown.silhouette ? [' - ', badge] : []), '  -  ' + stats(shown));
   showComparison(inUse, shown); // (the car in use against the one looked at: see render/compare.js)
   // the button under the stats: what can be done with the car shown
   // (the car in use, looked at in the other side's livery: the button takes that side)

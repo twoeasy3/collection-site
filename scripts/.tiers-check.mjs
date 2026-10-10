@@ -201,6 +201,28 @@ check(Tiers.medals(g.levels.LEVELS[0]) === 1, 'its best times are its medals (a 
   localStorage.removeItem('delivery_racer_progress_backup');
   Progress.noSave = true;
 }
+// old saves from the old rule, at 1, 10, 30, 41 levels open and all complete: loaded under the tiers (the default) every
+// level they had open is still open (tierBase), money and cars are kept, and the car rule is only on levels with no medal
+{
+  g.CONFIG.progression.tiers = true;
+  const LV = g.levels.LEVELS, order = Progress.data.levelOrder;
+  for (const open of [1, 10, 30, 41, LV.length]) {
+    const done = LV.slice(0, open - (open === LV.length ? 0 : 1)); // (the last one open is the one it is on: not yet delivered, except for all complete)
+    const old = { money: 77.25, unlocked: open, levelOrder: order, cars: ['hatch', 'lovebus', 'wagon'], car: 'lovebus', bestTime: { good: Object.fromEntries(done.map(l => [l.id, 9])), evil: {} } };
+    localStorage.setItem('delivery_racer_progress_backup', JSON.stringify(old));
+    Progress.reload();
+    const d = Progress.data;
+    check(d.money === 77.25 && d.car === 'lovebus' && d.cars.includes('wagon') && d.cars.includes('commuter'), 'old save with ' + open + ' open: money and cars kept');
+    const shut = LV.slice(0, d.unlocked).filter(l => !Tiers.isOpen(l));
+    check(shut.length === 0 && Tiers.legacy() === d.unlocked, 'old save with ' + open + ' open: all ' + d.unlocked + ' levels it had open are open under the tiers' + (shut.length ? ' (shut: ' + shut.map(l => l.id).join(', ') + ')' : ''));
+    const last = LV[Math.min(d.unlocked, LV.length) - 1];
+    const medals = LV.slice(0, d.unlocked).filter(l => Tiers.medals(l) > 0).length;
+    check(Tiers.isOpen(LV[0]) && medals === done.length, 'old save with ' + open + ' open: its ' + done.length + ' delivered levels are medals');
+    console.log('        ' + open + ' open: tierBase ' + d.tierBase + ', ' + medals + ' levels with a medal, last open "' + last.id + '" ' + (Tiers.place(last) ? 'tier ' + Tiers.place(last).tier + ' #' + Tiers.place(last).pos : 'outside the tiers') + ', car rule there: ' + Tiers.restriction(last, false));
+  }
+  localStorage.removeItem('delivery_racer_progress_backup');
+  Progress.noSave = true;
+}
 // ---- the switch
 g.CONFIG.progression.tiers = false;
 check(!Tiers.on() && Tiers.restriction(a, false) === null, 'the switch off: no tier rule');

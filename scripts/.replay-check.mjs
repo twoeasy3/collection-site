@@ -64,6 +64,9 @@ const play = (level, seedValue) => {
   Object.assign(Progress.data, { stats: {}, tankPieces: 0, money: 0, bestTime: { good: {}, evil: {} } });
   // (the level built afresh from the seed: building it draws random numbers too, and what it builds is kept from
   // run to run otherwise, so a run would depend on whether the level was already loaded: see REPLAY-NOTES.md)
+  // (the tiers are on by default: a tier level starts only in a car of its tier, and the player owns the Commuter alone. Own every
+  // car, so the level starts in a car of its tier as a player's would: the rule is the game's own, only the garage is full)
+  Progress.data.cars = [...new Set([...Progress.data.cars, ...g.cars.CARS.map(c => c.id)])];
   if (!KEEP_LEVEL) G.loaded = null;
   G.start();
   const hashes = [], perSecond = Math.round(1 / STEP);
