@@ -286,12 +286,14 @@ const raceDay = (ctx) => {
         kit.at(0xb5462f, PYRAMID, c.x, c.y + 4.2, c.z, 8, 2.2, 6, c.h, false, -1);
       }
     } else if (z.scenery === 'gois') {
-      // fishing boats lying off the causeway, on the sea side
-      for (let s = z.from + 80, k = 0; s < z.to - 60; s += 90 + rand() * 80, k++) {
-        const d = 28 + rand() * 70, lat = beside(1, s, d), hull = [0x2f5f8f, 0xb5462f, 0x2f7d5a, 0xf2f2ee][k % 4];
-        kit.of(hull).push([s, lat, 0.45, 2.6, 1.1, 7]);
-        kit.of(WHITE).push([s - 1.4, lat, 1.6, 1.8, 1.3, 2.2]);
-        kit.of(0x5b4632).push([s + 1, lat, 3.4, 0.14, 4.6, 0.14]);
+      // fishing boats lying off the causeway, out on the water: the sand on that side runs 130 m from the road (LAND in
+      // road.js) and the sea begins there, so a boat is further out than that. Trawlers, seen from a road a good way off
+      for (let s = z.from + 110, k = 0; s < z.to - 60; s += 100 + rand() * 90, k++) {
+        const d = 144 + rand() * 60, lat = beside(1, s, d), hull = [0x2f5f8f, 0xb5462f, 0x2f7d5a, 0xf2f2ee][k % 4];
+        kit.of(hull).push([s, lat, 0.9, 6.6, 2.8, 21]);
+        kit.of(WHITE).push([s - 5.5, lat, 3.6, 5, 3.3, 6.5]);
+        kit.of(0x2f3542).push([s - 5.5, lat, 5.5, 5.3, 0.6, 6.8]);
+        kit.of(0x5b4632).push([s + 2, lat, 8, 0.4, 14, 0.4], [s + 2, lat, 13, 0.25, 0.25, 9]);
       }
     } else if (z.scenery === 'shellharbour') {
       // flags on poles down both verges, a jetty with yachts moored along it, and the harbour light
