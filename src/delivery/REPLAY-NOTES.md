@@ -148,3 +148,18 @@ seconds to detect drift.
 - Expressway, Tokyo Expressway, Marina Bay, Mount Panorama, Mumbai Monsoon, Safari, The Hood,
   Battlefield, Showdown: all pass (60 s of game time each, or to the end of the run: the script's
   weaving gets the car busted out on some levels inside a minute).
+
+### Every level, later on 2026-10-10
+
+The check run over all 53 levels (48 on the menu, 5 hidden), 60 s each: 31 replayed exactly, 17 did not, and
+the 5 amphibious levels never started (the check owned no amphibious car). Four causes, all of the same
+kind, state that outlives a run:
+
+| Source | Where | State |
+|---|---|---|
+| The save | `Progress.data.stats` carries on from the run before, and a milestone reached says so with a line picked by the dice (`milestones.js` through `Message.pick`): one draw more in one run than the other. `tankPieces` is kept too | Not a fault: it is "what is in the garage" above, and a recording's header must hold it. The check now puts the save back before each run. With it, 13 of the 17 replay (and Ford, once it could start) |
+| Everything else on a pooled car | `hunt`, `huntRole`, `shoulderRun`, `oncoming`, `boosts`, `damageScale`, `spinIce`, `hitBy`, `hitAt`, `sideTick`, `checkWait`, `squeeze`, `passSide`, `inGravel`, `wrongHorn`, a pursuit's `aimLat`... set as first used, in six files, and never put back | **Fixed**: `blank()` in `traffic.js` puts back every field a slot carries, whoever set it, when the slot is dealt out and when a run starts. No list to keep. Market Town, Spa, the test track and Gimmick Road |
+| The queues at the water's edge | `Water.queues`, counted on the last step of the run before, read by `Water.allows` as the first traffic is dealt out | **Fixed**: `Water.reset()`, from `Traffic.reset`. Slipway and Harbour |
+| The last contacts | `Collision`'s `tick` never went back to 0, and the player kept `sideTick`, `hitBy`, `hitAt` | **Fixed** in `Collision.resetObstacles` (it parted no run in the check, but it is the same fault) |
+
+After: all 53 replay exactly, and another seed gives another run on each.

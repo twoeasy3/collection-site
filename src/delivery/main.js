@@ -70,6 +70,9 @@ import { Message } from './messages.js';
 // With it, ?level=3 picks the level (locked or not), ?at=1650 starts that many metres along
 // the expressway and ?ff=5 runs the game for that many seconds before the first frame is drawn.
 const params = new URLSearchParams(location.search);
+// A visit with any of these is a test, not play: it lends cars and opens levels, so none of it is saved
+// (Progress.noSave: the save stays as it was before the visit, whatever is delivered, bought or counted in it)
+if (['autostart', 'hidden', 'test', 'edited', 'pick', 'car', 'ghost', 'mystery', 'theme'].some(key => params.get(key) !== null)) Progress.noSave = true;
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.open(params.get('garage') === 'evil');
@@ -93,6 +96,27 @@ if (params.get('gt') !== null) setRaceClass('gt'); // ?gt: every race in GT road
 if (params.get('lmp') !== null) setRaceClass('lmp'); // (?lmp: in Le Mans prototypes)
 if (params.get('ghost') !== null) Player.testGhost = true; // ?ghost: the car is a ghost for the whole run (nothing wrecks it: for screenshots and tests)
 if (params.get('mystery')) Player.nextMystery = params.get('mystery'); // ?mystery=toad: every mystery pickup is that one
+// ?edited: the level the editor left in local storage. It is not trusted: one that is no level, has no road, or
+// cannot be built is not started (that used to stop the page dead, with nothing to say why): the menu, and why
+const EDITED_LONGEST = 200000; // m of road, at most
+const editedLevel = () => {
+  let level = null;
+  try { level = JSON.parse(localStorage.getItem('delivery_editor_level')); } catch { /* (no level handed over) */ }
+  if (level === null) return { level }; // (none handed over: the test track)
+  const menuLevel = LEVELS.indexOf(LEVEL), road = level.segments;
+  let problem = '';
+  if (typeof level !== 'object' || Array.isArray(level)) problem = 'it is not a level';
+  else if (!Array.isArray(road) || !road.length) problem = 'it has no road (no segments)';
+  else if (road.some(seg => !seg || typeof seg.length !== 'number' || !(seg.length > 0) || !isFinite(seg.length))) problem = 'a segment of its road has no length';
+  else if (road.reduce((sum, seg) => sum + seg.length, 0) > EDITED_LONGEST) problem = 'its road is over ' + EDITED_LONGEST / 1000 + ' km long';
+  else {
+    try { selectSpecial(level); Game.load(); } catch (e) { problem = 'it could not be built (' + (e && e.message || e) + ')'; }
+    Game.loaded = null; // (a run builds it again, in its own order)
+  }
+  if (problem) selectLevel(Math.max(0, menuLevel));
+  return { level, problem };
+};
+const edited = hidden === 'edited' ? editedLevel() : null;
 if (params.get('racewatch') !== null) {
   Game.startRaceWatch();
   if (params.get('camcheck') !== null) { // (a check of every trackside camera)
@@ -103,13 +127,16 @@ if (params.get('racewatch') !== null) {
 } else if (params.get('screensaver') !== null) {
   Game.startScreensaver();
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
+} else if (edited && edited.problem) { // (nothing starts: the menu, with a line across the top of the page)
+  const note = document.createElement('div');
+  note.textContent = 'The edited level was not started: ' + edited.problem + '. Open it in the level editor to put it right.';
+  note.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:99;padding:8px 12px;background:#7a1f16;color:#fff;font:600 14px system-ui,sans-serif;text-align:center';
+  document.body.appendChild(note);
+  console.warn(note.textContent);
 } else if (autostart !== null || hidden) {
   Game.evil = autostart === 'evil' || params.get('evil') !== null;
-  if (hidden === 'edited') {
-    let edited = null;
-    try { edited = JSON.parse(localStorage.getItem('delivery_editor_level')); } catch { /* (no level handed over) */ }
-    selectSpecial(edited || HIDDEN_LEVELS.testbed);
-  } else if (hidden) selectSpecial(HIDDEN_LEVELS[hidden] || HIDDEN_LEVELS.testbed);
+  if (hidden === 'edited') selectSpecial(edited.level || HIDDEN_LEVELS.testbed);
+  else if (hidden) selectSpecial(HIDDEN_LEVELS[hidden] || HIDDEN_LEVELS.testbed);
   else selectLevel((Number(params.get('level')) || 1) - 1);
   // ?theme=snow: the level in that theme, whatever its own (a copy of it: nothing of the run is saved)
   if (params.get('theme') && THEMES[params.get('theme')]) selectSpecial({ ...LEVEL, theme: params.get('theme') });
