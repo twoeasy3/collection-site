@@ -5,7 +5,7 @@
 // other livery: buying a car buys both.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CAR, carInUse, selectCar, stars, starColour, STAR_COLOURS, blueStarsOpen, garageCars, restrictedTier } from '../cars.js';
+import { CAR, carInUse, selectCar, stars, starColour, STAR_COLOURS, blueStarsOpen, garageCars, restrictedTier, setViewSide, carAllowedOn } from '../cars.js';
 import { Tiers, tierStarsNode } from '../tiers.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
@@ -233,6 +233,10 @@ const refresh = () => {
   action.textContent = shown === inUse && !otherSide ? 'In use' : owned ? 'Switch'
     : Progress.data.money >= shown.price ? 'Buy for ' + money(shown.price) : 'Need ' + money(shown.price);
   action.disabled = (shown === inUse && !otherSide) || (!owned && Progress.data.money < shown.price);
+  // (the level's car rule on the side on show: a car not allowed there cannot be used, and "Use" is off with it)
+  const barred = shown.silhouette || (owned && !IdeasLot.on && !carAllowedOn(shown, Garage.evil));
+  if (barred) { action.textContent = shown.silhouette ? 'No car of this tier owned' : 'Not allowed on this level'; action.disabled = true; }
+  useBtn.disabled = !!barred;
   action.title = owned ? 'Drive the ' + shown.name + ' as ' + sideName() + ', and stay in the garage' : '';
   // (Use: the same, and back to the menu with it; a car not yet bought has none, only its Buy)
   useBtn.style.display = owned ? '' : 'none';
@@ -311,6 +315,7 @@ const take = async (leave) => {
   // open, so there is nothing to buy; it becomes the car in use just as a garage car does)
   const car = IdeasLot.on ? IdeasLot.looking : looking || CAR;
   if (!car) return;
+  if (!carAllowedOn(car, Garage.evil)) { refresh(); return; } // (the level's car rule, on the side on show: guarded here, not only by the lot)
   const same = car.id === carInUse().id && Garage.evil === Game.evil;
   if (same && !leave) return;
   if (!same) {
@@ -390,7 +395,8 @@ renderer.domElement.addEventListener('click', (event) => {
   if (mesh) pick(mesh); // (on touch there is no hover: the purchase prompt states the price)
 });
 
-for (const b of sideBtns) b.addEventListener('click', () => { Garage.evil = b.dataset.side === 'evil'; refresh(); });
+// The side on show changes the car rule (a level's medal is a side's): the lot is filtered again for the side now picked
+for (const b of sideBtns) b.addEventListener('click', () => Garage.setSide(b.dataset.side === 'evil'));
 // the bar's Sort and Show buttons: the lot built again, from its first column (a car looked at that is no longer
 // parked is let go)
 mountGarageView(() => garageCars(), () => {
@@ -413,16 +419,29 @@ export const Garage = {
   isOpen: false,
   evil: false, // which livery is on show
 
-  open(evil = Game.evil) { // (evil: the livery to show the cars in; the side being played, unless told)
+  // the side on show: the livery, and the car rule of the level on that side (a medal is a side's), so the lot, the
+  // car in use and the buttons are those of the side picked. Returns true when the lot was built again
+  setSide(evil, fresh = false) {
+    this.evil = !!evil;
+    setViewSide(this.evil);
     const only = restrictedTier() ?? null;
     const retiered = GarageView.restrictTier !== only;
     GarageView.restrictTier = only;
     const emptied = GarageView.settle(); // (the Show choice may have fallen empty since: back to All)
-    if (built !== onShow() || retiered || emptied) buildLot(); // (the lot filtered to the tier the level allows) (first time in, or the Blue Star cars have just arrived, or a 6-star car has been earned)
+    const rebuilt = built !== onShow() || retiered || emptied;
+    if (rebuilt) buildLot(); // (the lot filtered to the tier the level allows) (first time in, or the Blue Star cars have just arrived, or a 6-star car has been earned)
+    if (!fresh) {
+      if (looking && !order.includes(looking)) looking = null; // (a car not in this side's lot is not looked at)
+      if (rebuilt) { scrollTo(order.find(car => car && car.id === carInUse().id) || order[0]); fling = 0; hovered = null; }
+      refresh();
+    }
+    return rebuilt;
+  },
+  open(evil = Game.evil) { // (evil: the livery to show the cars in; the side being played, unless told)
+    this.setSide(evil, true);
     this.isOpen = true;
     carAtOpen = CAR;
     sideAtOpen = Game.evil;
-    this.evil = evil;
     Game.inMenu = true; // Enter must not start a run from here
     ui.classList.remove('hidden');
     startScreen.classList.add('hidden');
@@ -437,8 +456,9 @@ export const Garage = {
     measure();
   },
   close() {
+    setViewSide(null); // (the car rule goes by the side being played again)
     // a different car: tell the rest of the game (the player gets into it when a run starts)
-    if (CAR !== carAtOpen || Game.evil !== sideAtOpen) window.dispatchEvent(new Event('carchange')); // (or another side: the menu draws itself again)
+    window.dispatchEvent(new Event('carchange')); // (always: the side on show may have put the car in use under another rule than the one being played; the menu draws itself again)
     this.isOpen = false;
     IdeasLot.leave();
     Game.inMenu = false;
