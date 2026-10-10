@@ -4,12 +4,16 @@
 // A level driven in a car of its own (its "car") is timed in that. Only the levels named are timed.
 //   node scripts/level-clocks.mjs mountain-pass tour-de-coast          prints their clean runs and clocks
 //   node scripts/level-clocks.mjs mountain-pass tour-de-coast --write  and writes the clocks into their files
+//   node scripts/level-clocks.mjs --all                                every level's, and which written clocks are far off
+// The run is seeded from the level's id, so a level's clock is the same every time (--seed=x: other dice).
 import { logicServer } from './delivery-headless.mjs'; // (a Vite server that shares no cache with any other run)
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const WRITE = process.argv.includes('--write');
+const SEED = (process.argv.find(a => a.startsWith('--seed=')) || '').slice(7); // (other dice: the run is seeded from the level's id, so it is the same every time)
+const ALL = process.argv.includes('--all'); // (every level, and at the end those whose written clock is more than a rounding step from the one worked out)
 const IDS = process.argv.slice(2).filter(a => !a.startsWith('--'));
-if (!IDS.length) { console.log('Name the levels to time: node scripts/level-clocks.mjs <id> ... [--write]'); process.exit(1); }
+if (!IDS.length && !ALL) { console.log('Name the levels to time: node scripts/level-clocks.mjs <id> ... [--write]'); process.exit(1); }
 
 const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
 globalThis.window = { addEventListener() {} };
@@ -20,52 +24,27 @@ const server = await logicServer();
 try {
   const load = (path) => server.ssrLoadModule(path);
   const levels = await load('/src/delivery/levels.js');
-  const { Game } = await load('/src/delivery/game.js');
-  const { Player } = await load('/src/delivery/player.js');
-  const { Input } = await load('/src/delivery/input.js');
-  const { FxQueue } = await load('/src/delivery/physics.js');
-  const cars = await load('/src/delivery/cars.js');
-  const { CONFIG } = await load('/src/delivery/config.js');
-  Object.defineProperty(Input, 'throttle', { get: () => 1, configurable: true });
-  // (on a level with water stages the run holds its lane, as a driver does against a current: left to drift it
-  // lands on the shoulder and is busted, which is no clean run)
-  const track = await load('/src/delivery/track.js');
-  let holdLane = false;
-  Object.defineProperty(Input, 'steer', { configurable: true, get: () => {
-    if (!holdLane) return 0;
-    const T = track.Track, [first] = T.laneRange(1, Player.s);
-    return Math.max(-1, Math.min(1, (T.laneOffset(first, Player.s) - Player.lat) * 0.6)) * (T.mirrored ? -1 : 1);
-  } });
-  const C = CONFIG.clock, round = (t) => Math.max(C.round, Math.round(t / C.round) * C.round);
+  const { cleanRun } = await load('/src/delivery/cleanrun.js'); // (the run and the sum: the level editor's button uses the same)
+  const C = (await load('/src/delivery/config.js')).CONFIG.clock;
   const all = [...levels.LEVELS, ...Object.values(levels.HIDDEN_LEVELS)];
-  for (const id of IDS) {
+  const off = [];
+  for (const id of ALL ? all.map(l => l.id) : IDS) {
     const level = all.find(l => l.id === id);
     if (!level) { console.log(`${id}: no such level`); continue; }
     if (levels.LEVELS.includes(level)) levels.selectLevel(levels.LEVELS.indexOf(level));
     else levels.selectSpecial(level);
-    cars.selectCar(level.amphibious ? C.amphibious : C.car); // (an amphibious level is timed in the amphibious reference car)
-    Game.evil = false;
-    holdLane = !!level.water;
-    Game.start();
-    let t = 0;
-    while (Game.state === 'playing' && t < 900) {
-      Object.assign(Player, { ghost: 99, health: Player.maxHealth });
-      Game.busts = 0;
-      Game.time = 0; // (the clock held: the run is timed here)
-      Game.update(1 / 60);
-      FxQueue.length = 0;
-      t += 1 / 60;
-    }
-    if (Game.outcome !== 'delivered') { console.log(`${id}: NOT DELIVERED (${Game.outcome || 'still driving'})`); continue; }
-    const pluses = (level.pickups || []).filter(p => p.type === 'timePlus').length, back = pluses * C.timePlus;
-    const clock = { good: round(t * C.good) - back, evil: round(t * C.evil) - back };
-    console.log(`${id}: clean run ${t.toFixed(1)} s in the ${level.car || (level.amphibious ? C.amphibious : C.car)}, ${pluses} time plus${pluses === 1 ? '' : 'es'}: ` +
+    const run = cleanRun(SEED);
+    if (!run.delivered) { console.log(`${id}: NOT DELIVERED (${run.outcome})`); continue; }
+    const { clock, pluses } = run;
+    console.log(`${id}: clean run ${run.time.toFixed(1)} s in the ${run.car}, ${pluses} time plus${pluses === 1 ? '' : 'es'}: ` +
       `good ${clock.good} s, evil ${clock.evil} s (was ${JSON.stringify(level.clock)})`);
+    if (level.clock && (Math.abs(level.clock.good - clock.good) > C.round || Math.abs(level.clock.evil - clock.evil) > C.round)) off.push(`${id}: written ${level.clock.good} / ${level.clock.evil}, worked out ${clock.good} / ${clock.evil}`);
     if (!WRITE) continue;
     const path = new URL(`../src/delivery/levels/${id}.json`, import.meta.url);
     const text = readFileSync(path, 'utf8'), line = `"clock": { "good": ${clock.good}, "evil": ${clock.evil} }`;
     writeFileSync(path, /"clock": \{[^}]*\}/.test(text) ? text.replace(/"clock": \{[^}]*\}/, line) : text.replace(/"time": [\d.]+/, line));
   }
+  if (ALL) { console.log(''); console.log(off.length ? off.length + ' written clocks more than ' + C.round + ' s from the one worked out:' : 'every written clock is within a rounding step of the one worked out'); for (const line of off) console.log('  ' + line); }
 } finally {
   await server.close();
 }

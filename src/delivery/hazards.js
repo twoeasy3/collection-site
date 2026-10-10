@@ -115,7 +115,7 @@ export const Hazards = {
       return { from, to, lane: m.lane, lat: Track.laneOffset(m.lane, from), on: false, t: 0, warned: false };
     });
     Track.sprays.length = 0;
-    for (const m of this.mains) Track.sprays.push({ from: m.from, to: m.to, lane: m.lane, on: false });
+    for (const m of this.mains) Track.sprays.push({ from: m.from, to: m.to, lane: m.lane, on: false, water: true }); // (water: see Player.onWater)
     this.balloons = (LEVEL.balloons || []).map((b) => {
       const s = place(b), LW = CONFIG.laneWidth;
       return { s, lat0: Track.laneOffset(b.lanes[0], s) - LW / 2, lat1: Track.laneOffset(b.lanes[1], s) + LW / 2, state: 'idle', t: 0, hit: false };
