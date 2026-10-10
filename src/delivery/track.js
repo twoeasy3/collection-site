@@ -1087,7 +1087,6 @@ const createTrack = () => {
     }
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
-      else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');
     }
     for (const r of LEVEL.jamRamps || []) {
       const J = CONFIG.jamRamp, far = r.s + J.run + J.gap + (r.queue ?? J.queue) * J.spacing + 40, name = 'ramp over the jam at ' + r.s;

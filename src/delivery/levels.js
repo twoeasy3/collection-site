@@ -355,10 +355,11 @@
 //              it throws a plume of dust, which the wind carries to the side it blows to ('left' | 'right'). In a
 //              plume the player sees next to nothing; a lane upwind of the vehicle is clear, which may be the
 //              oncoming one. Nothing is done to the car (see CONFIG.dust)
-//   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
-//              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
-//              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a
-//              bend it is carried wide. Boards before it give the speed. Put something in it to be steered round
+//   washboards { from, to }: washboard dirt: the road is corrugated right across over the stretch. On it, at any speed,
+//              the steering takes less and the car wanders (the faster, the worse), in a bend it is carried wide, and
+//              it is held to CONFIG.washboard.most m/s (a faster car dragged down to that: never stopped). Boards
+//              before it. Leave a lane or shoulder it does not reach, or put something in it to be steered round. Drawn
+//              in what the theme makes it of (themes.js, WASHBOARDS)
 //   pelotons  { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind

@@ -192,7 +192,7 @@ Game.onLoad.push(() => {
     group.add(new THREE.Mesh(buildRipples(b.from, b.to, B.ripple, B.ripple * 0.42, 0.02), flat(0x7a5d3c, -4)));
     for (const back of [B.sign, 20]) {
       if (b.from - back < 5) continue;
-      for (const lat of [Track.hi(b.from - back) - 0.6, Track.lo(b.from - back) + 0.6]) at(b.from - back, lat).add(makeSign('WASHBOARD\n' + kmh(b.skim) + '+ OR CRAWL', '#ffd23f', '#111', 5.8, 2.6));
+      for (const lat of [Track.hi(b.from - back) - 0.6, Track.lo(b.from - back) + 0.6]) at(b.from - back, lat).add(makeSign('WASHBOARD\nSLOWS, SHAKES', '#ffd23f', '#111', 5.8, 2.6));
     }
   }
   // ---- crosswinds: windsocks

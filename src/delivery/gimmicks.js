@@ -900,15 +900,16 @@ export const GROUPS = [
         car.position.set(0, y, z); car.rotation.x = on > 0 && on < GB.ramp.run ? -GB.ramp.angle : y > 0 ? -0.28 + 0.032 * (on - GB.ramp.run) : 0; } };
     } },
     { name: 'Washboard dirt', color: 0xa9865a, has: (l) => l.washboards?.length, rules: [
-      `A dirt road worn into corrugations right across. A board before it gives its speed: at ${kmh(GB.board.skim)} or more the car <strong>skims the tops</strong> and it runs smooth, with all its steering.`,
-      `Crawling (${kmh(GB.board.calm)} or less) it rides each one, and steers as ever. That always works, and it is slow.`,
-      `In between, the wheels hop: ${pct(GB.board.steerLoss)} of the steering is gone at the worst of it, the car wanders, and in a bend it is carried to the outside. Braking for something on the dirt drops you right into it.`,
-      'So come in fast and stay fast, round whatever is in the way, or come in slow. The cash is on the line that needs steering.',
+      'A road worn into corrugations right across, in whatever the place is made of: dirt, buckled steel plates in a port, rippled dust on the Moon, planks in the West, cobbles in a town. A board before it. On it the wheels hop, at any speed.',
+      `<strong>It slows the car</strong>: on it there is no going faster than ${kmh(GB.board.most)}, and a car in faster is dragged down to that at ${GB.board.drag} m/s² (in at 90 km/h, about 25 km/h gone over 40 m of it). Never stopped: under ${kmh(GB.board.most)} it keeps its speed.`,
+      `<strong>And it shakes</strong>, the faster the worse: at ${kmh(GB.board.full)} or more ${pct(GB.board.steerLoss)} of the steering is gone, the car wanders, and in a bend it is carried to the outside. Crawling, a little of all that.`,
+      'So it is a cost, not a wall: straight across loses speed and some say over the line, and is still the short way. A lane or shoulder it does not reach, or the way round, keeps both and takes longer. The cash is on the line that needs steering.',
     ], build: () => {
       const g = road(9, 16, 0xa9865a), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
       for (let z = -7.5; z < 8; z += 1.1) g.add(box(9, 0.06, 0.45, lambert(0x7a5d3c), 0, 0.03, z));
       g.add(car);
-      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4, slow = u < 0.5; car.position.set(slow ? Math.sin(t * 9) * 0.5 : 0, slow ? Math.abs(Math.sin(t * 22)) * 0.16 : 0.05, -7 + ((slow ? u * 2 : (u - 0.5) * 2)) * 14); car.rotation.z = slow ? Math.sin(t * 17) * 0.08 : 0; } };
+      // (in fast, slowing all the way across, hopping about the whole time)
+      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4; car.position.set(Math.sin(t * 9) * 0.45, Math.abs(Math.sin(t * 22)) * 0.14, -7 + (1 - (1 - u) ** 2) * 14); car.rotation.z = Math.sin(t * 17) * 0.07; } };
     } },
     { name: 'Low bridge', color: 0xc1121f, has: (l) => l.lowBridges?.length, rules: [
       `A height bar across your side of the road, ${GB.bar.clearance.toFixed(1)} m up unless its board says otherwise, with an exit before it: the side road is the tall vehicles' way round, and the tall traffic takes it.`,

@@ -1514,13 +1514,15 @@ export const CONFIG = {
   // `spread` m more either side, carried `drift` m to the side the wind blows to by its far end. In it `most` of
   // the view is gone at its head, less in proportion further back. A board and a windsock `sign` m before
   dust: { slowest: 4, length: 60, fullAt: 16, spread: 0.9, drift: 4.5, most: 0.9, sign: 120 },
-  // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
-  // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
-  // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,
-  // the car wanders (`wander` m/s^2 sideways, to and fro) and in a bend it is carried to the outside (`slide` of
-  // what the bend asks, speed^2 x curvature, up to slideMost m/s^2), the screen shaking (`shake`). Boards `sign` m
-  // before it give the speed; ripples every `ripple` m are drawn across it
-  washboard: { calm: 9, skim: 20, shape: 0.6, steerLoss: 0.88, wander: 9, slide: 1.6, slideMost: 14, shake: 0.4, soundEvery: 0.22, sign: 120, ripple: 2.4 },
+  // washboard dirt ("washboards": { from, to }): corrugations right across the road. On them the wheels hop at any
+  // speed: the roughness grows with the speed (speed / `full`, to the power `shape`: all of it at `full` m/s or more),
+  // and with it steerLoss of the steering's bite is gone, the car wanders (`wander` m/s^2 sideways, to and fro), in a
+  // bend it is carried to the outside (`slide` of what the bend asks, speed^2 x curvature, up to slideMost m/s^2), the
+  // screen shakes (`shake`) and the wheels rattle (a sound every soundEvery s). And it slows the car: on it there is no
+  // going faster than `most` m/s, and one on it faster is dragged down to that at `drag` m/s^2 (never stopped: a car
+  // under `most` keeps its speed, and can pull up to it). Boards `sign` m before it; ripples every `ripple` m are
+  // drawn across it, in the stuff the theme makes them of (themes.js, WASHBOARDS)
+  washboard: { full: 14, shape: 0.6, steerLoss: 0.55, wander: 5, slide: 1.2, slideMost: 10, shake: 0.35, soundEvery: 0.22, most: 18, drag: 4, sign: 120, ripple: 2.4 },
   crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it
