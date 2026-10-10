@@ -5,14 +5,20 @@
 //   node scripts/shots.mjs shots --levels                    every level's menu picture (?cine), as <id>.png
 //   node scripts/shots.mjs shots --cars                      every garage car's (?cine=car), good and evil
 //   node scripts/shots.mjs shots --levels=quarry-run,ring-road   only those
-// Options: --size=1100x650 (Edge goes no narrower than about 500), --wait=7000 (ms of page time each
-// shot is given before the picture is taken), --evil (the levels' pictures as Evil), --browser=<path>.
-// A game address gets ?autostart added unless it names a mode of its own; add &ghost so nothing wrecks
-// the car, &at=<m> to start that far along, and &ff=<s> to run the game on before the first frame.
+// Options: --size=1100x650 (any size), --scale=2 (device pixels to a CSS pixel, as on a phone: the picture is
+// then twice the size each way; it is 1 unless asked), --wait=7000 (ms of page time each shot is given, once
+// its page has loaded, before the picture is taken), --evil (the levels' pictures as Evil), --browser=<path>.
+// A game address (one starting with ?) gets ?autostart added unless it names a mode of its own; add &ghost so
+// nothing wrecks the car, &at=<m> to start that far along, and &ff=<s> to run the game on before the first
+// frame. So a picture of the MENU is written index.html?... (or just index.html), not ?...
+// Each line says how long the picture took, and under it the page's console errors and warnings.
+// A run leaves nothing behind, and two runs at most take pictures at once (a third waits): see below. Its
+// folder in %LOCALAPPDATA%\Temp is delivery-shots-run-<pid>-<when>; a start removes those of dead runs, and
+// touches nothing else there (not the delivery-shots-XXXXXX folders of older versions of this script).
 import { createServer } from 'vite';
 import { logicServer } from './delivery-headless.mjs';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -20,7 +26,7 @@ const args = process.argv.slice(2);
 const opt = (name, fallback) => { const a = args.find(x => x === '--' + name || x.startsWith('--' + name + '=')); return a === undefined ? fallback : a.includes('=') ? a.slice(name.length + 3) : true; };
 const out = resolve(args.find(a => !a.startsWith('--') && !a.includes('=')) || 'shots');
 const [width, height] = String(opt('size', '1100x650')).split('x').map(Number);
-const wait = Number(opt('wait', 7000));
+const wait = Number(opt('wait', 7000)), scale = Number(opt('scale', 1)) || 1;
 
 const browser = opt('browser', null) || [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
@@ -67,22 +73,29 @@ if (!shots.length) { console.log('Nothing to shoot: node scripts/shots.mjs <out-
 //    for three minutes after each picture);
 //  - everything a run writes (Vite's cache, the browser's profile, the browser's TEMP) is in one folder of the
 //    run's, in the machine's own temp folder whatever TEMP says, removed however the run ends;
-//  - that folder holds the run's pid, kept fresh: a run starts by removing the folders (and ending the
-//    browsers) of runs that are dead, since a run that is killed outright removes nothing itself;
+//  - that folder's NAME is its marker, delivery-shots-run-<pid>-<when>: made in one step, so there is never a
+//    folder of a run's without it (a pid FILE was lost when the removing of a folder took it first and then met
+//    a file the browser still held). A run starts by ending the browsers and removing the folders of runs that
+//    are dead: those whose process is gone, or whose `alive` file (freshened every 15 s) is 15 minutes old.
+//    Only folders of exactly that name are ever touched: not the delivery-shots-XXXXXX of older versions of
+//    this script, nor anything else in the temp folder;
 //  - at most SLOTS runs take pictures at once on the machine: the rest wait their turn.
 const ROOT = process.env.LOCALAPPDATA && existsSync(join(process.env.LOCALAPPDATA, 'Temp')) ? join(process.env.LOCALAPPDATA, 'Temp') : tmpdir();
-const SLOTS = 2;             // runs taking pictures at once, on the whole machine
-const STALE = 5 * 60 * 1000; // ms without its pid file freshened (every 15 s) after which a run is taken for dead
+const SLOTS = 2;              // runs taking pictures at once, on the whole machine
+const STALE = 15 * 60 * 1000; // ms without a sign of life after which a run is taken for dead, whatever its pid says (pids are used again)
+const RUN = /^delivery-shots-run-(\d+)-[a-z0-9]+$/, SLOT = /^delivery-shots-slot-\d+$/;
 const WINDOWS = process.platform === 'win32', SYSTEM = join(process.env.SystemRoot || 'C:/Windows', 'System32');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); // (a wait where nothing may be awaited: on the way out)
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
-const remove = (path) => { try { rmSync(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch { /* (a file still held: a later run's sweep takes it) */ } };
-// a folder is a dead run's (or a dead run's slot) only if it holds a pid file of this script's, and that run is gone
-const dead = (folder) => {
-  try {
-    const pid = Number(readFileSync(join(folder, 'pid'), 'utf8'));
-    return pid > 0 && pid !== process.pid && (!alive(pid) || Date.now() - statSync(join(folder, 'pid')).mtimeMs > STALE);
-  } catch { return false; } // (no pid file: not provably ours, or a run just starting)
+const age = (path) => { try { return Date.now() - statSync(path).mtimeMs; } catch { return null; } };
+// Removing, tried again for `ms` while a browser that has just ended lets go of its files (Windows refuses a file
+// that is open: EBUSY, EPERM). Answers the error if it would not go.
+const remove = (path, ms = 12000) => {
+  for (const until = Date.now() + ms; ;) {
+    try { rmSync(path, { recursive: true, force: true }); return null; } catch (error) { if (Date.now() > until) return error; }
+    pause(250);
+  }
 };
 // every browser process started with that folder as its profile or TEMP: found by command line, not by tree
 // (the helpers of a browser whose parent is gone belong to no tree)
@@ -91,34 +104,52 @@ const endBrowsersOf = (folder) => {
     if (WINDOWS) {
       const exe = browser.replace(/\\/g, '/').split('/').pop().replace(/'/g, "''"), text = folder.replace(/'/g, "''");
       spawnSync(join(SYSTEM, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
-        `Get-CimInstance Win32_Process -Filter "Name='${exe}'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${text}') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`], { stdio: 'ignore', timeout: 30000 });
+        // (asked again until there are none: a browser ended as it starts has helpers still on their way up)
+        `for ($i = 0; $i -lt 12; $i++) { $found = @(Get-CimInstance Win32_Process -Filter "Name='${exe}'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${text}') }); if (-not $found) { break }; $found | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 300 }`], { stdio: 'ignore', timeout: 45000 });
     } else spawnSync('pkill', ['-9', '-f', folder], { stdio: 'ignore' });
   } catch { /* (none to end) */ }
+};
+// a run's folder and its browsers, twice over if need be; says so if something of it is still there
+const removeRun = (folder, browsers = true) => {
+  let error = null;
+  for (let round = 0; round < 2; round++) {
+    if (browsers) endBrowsersOf(folder);
+    if (!(error = remove(folder))) return;
+    browsers = true;
+  }
+  console.log('  (could not remove ' + folder + ' yet: ' + String(error && error.message || error).split('\n')[0] + '; the next run takes it)');
+};
+// dead: its process gone, or no sign of life for a long while. (A slot is a folder with its owner's pid in a file;
+// one with no pid yet is a run between making it and writing it, or one that died there.)
+const deadRun = (name) => { const pid = Number(RUN.exec(name)[1]), since = age(join(ROOT, name, 'alive')) ?? age(join(ROOT, name)); return pid !== process.pid && since !== null && (!alive(pid) || since > STALE); };
+const deadSlot = (folder) => {
+  let pid = 0;
+  try { pid = Number(readFileSync(join(folder, 'pid'), 'utf8')); } catch { const since = age(folder); return since !== null && since > 60000; }
+  const since = age(join(folder, 'pid'));
+  return pid !== process.pid && since !== null && (!(pid > 0) || !alive(pid) || since > STALE);
 };
 const sweep = () => {
   let names = [];
   try { names = readdirSync(ROOT); } catch { /* (no such folder) */ }
   for (const name of names) {
-    if (!name.startsWith('delivery-shots-') || !dead(join(ROOT, name))) continue;
-    if (!name.startsWith('delivery-shots-slot-')) { endBrowsersOf(join(ROOT, name)); console.log('  (removing what a dead run left: ' + name + ')'); }
-    remove(join(ROOT, name));
+    if (RUN.test(name) && deadRun(name)) { console.log('  (removing what a dead run left: ' + name + ')'); removeRun(join(ROOT, name)); }
+    else if (SLOT.test(name) && deadSlot(join(ROOT, name))) remove(join(ROOT, name), 2000);
   }
 };
 sweep();
-const own = mkdtempSync(join(ROOT, 'delivery-shots-'));
-writeFileSync(join(own, 'pid'), String(process.pid));
+const own = join(ROOT, 'delivery-shots-run-' + process.pid + '-' + Date.now().toString(36));
+mkdirSync(own); // (not recursive: it must be new)
 let slot = null, child = null, server = null, cleaned = false;
-const fresh = setInterval(() => { for (const folder of [own, slot]) { try { const now = new Date(); if (folder) utimesSync(join(folder, 'pid'), now, now); } catch { /* (gone) */ } } }, 15000);
-fresh.unref();
+const fresh = () => { try { writeFileSync(join(own, 'alive'), ''); if (slot) { const now = new Date(); utimesSync(join(slot, 'pid'), now, now); } } catch { /* (gone) */ } };
+fresh();
+setInterval(fresh, 15000).unref();
 const cleanup = () => { // (however the run ends, and all of it at once: an 'exit' handler cannot wait)
   if (cleaned) return;
   cleaned = true;
-  if (child) {
-    if (child.exitCode === null) { try { WINDOWS ? spawnSync(join(SYSTEM, 'taskkill.exe'), ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }) : child.kill('SIGKILL'); } catch { /* (gone already) */ } }
-    endBrowsersOf(own); // (a helper that outlived it would hold the profile, and be a process left behind)
-  }
-  if (slot) remove(slot);
-  remove(own);
+  if (child && child.exitCode === null) { try { WINDOWS ? spawnSync(join(SYSTEM, 'taskkill.exe'), ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }) : child.kill('SIGKILL'); } catch { /* (gone already) */ } }
+  if (slot) remove(slot, 2000);
+  // (a browser that closed by itself has no helpers left to end, and asking costs a second: only if its files will not go)
+  if (!child || remove(own, child.exitCode === null ? 0 : 3000)) removeRun(own, !!child);
 };
 process.on('exit', cleanup);
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) process.on(signal, () => { console.log('  (' + signal + ': cleaning up)'); cleanup(); process.exit(130); });
@@ -129,7 +160,7 @@ const takeSlot = async () => {
   for (let told = false; ; told = true) {
     for (let k = 1; k <= SLOTS; k++) {
       const folder = join(ROOT, 'delivery-shots-slot-' + k);
-      if (dead(folder)) remove(folder);
+      if (deadSlot(folder)) remove(folder, 2000);
       try { mkdirSync(folder); } catch { continue; } // (taken)
       writeFileSync(join(folder, 'pid'), String(process.pid));
       return folder;
@@ -207,7 +238,7 @@ const shoot = async (url, file) => {
     });
     const page = (method, params, timeout) => send(method, params, sessionId, timeout);
     await page('Page.enable'); await page('Runtime.enable'); await page('Log.enable');
-    await page('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false }); // (the picture's size exactly, and any size: a window goes no narrower than 500)
+    await page('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: scale, mobile: false }); // (the picture's size exactly, and any size: a window goes no narrower than 500)
     const went = await page('Page.navigate', { url }, LIMIT);
     if (went.errorText) note('error: ' + went.errorText);
     if (!await Promise.race([loaded, sleep(LIMIT)])) note('warning: not loaded after ' + LIMIT / 1000 + ' s: the picture is of the page as it stood');
