@@ -285,6 +285,29 @@ const raceDay = (ctx) => {
         kit.at(WHITE, cube, c.x, c.y + 1.6, c.z, 7, 3.2, 5, c.h, false, 4);
         kit.at(0xb5462f, PYRAMID, c.x, c.y + 4.2, c.z, 8, 2.2, 6, c.h, false, -1);
       }
+    } else if (z.scenery === 'seacliff') {
+      // the cliff road has the cliff on one side and the rail on the other, so no arch and no barriers: knots of
+      // fans out on the grass past the rail with their flags, and the race's helicopter hanging over the water
+      for (const [s, k] of [[z.from + 230, 0], [z.from + 560, 1], [z.from + 930, 2]]) {
+        for (let i = 0; i < 6; i++) {
+          const at = s + i * 1.5 + rand(), lat = beside(1, at, 3.4 + rand() * 1.2), tall = 1.5 + rand() * 0.3;
+          kit.of(SHIRTS[(k * 3 + i) % SHIRTS.length]).push([at, lat, tall / 2, 0.45, tall, 0.35]);
+          kit.of(SKIN[Math.floor(rand() * SKIN.length)]).push([at, lat, tall + 0.17, 0.3, 0.3, 0.3]);
+          if (i % 2 === 0) {
+            kit.of(WHITE).push([at + 0.5, lat, 2.4, 0.08, 4.8, 0.08]);
+            kit.of(BANNERS[(k + i) % BANNERS.length]).push([at + 0.5, lat, 4.1, 0.06, 1.4, 2.2]);
+          }
+        }
+      }
+      const hs = z.from + 700, h = kit.point(hs, beside(1, hs, 55), 17);
+      if (kit.at(WHITE, cube, h.x, h.y, h.z, 3, 3, 8.5, h.h, false, 0)) {
+        kit.at(0xe23b3b, cube, h.x, h.y - 0.5, h.z, 3.1, 0.8, 8.6, h.h, false, -1);
+        kit.at(WHITE, cube, h.x - Math.sin(h.h) * 7, h.y + 0.6, h.z - Math.cos(h.h) * 7, 0.6, 0.8, 7, h.h, false, -1);
+        kit.at(0x2f3542, cube, h.x, h.y + 2.1, h.z, 0.5, 1.2, 0.5, h.h, false, -1);
+        kit.at(0x2f3542, cube, h.x, h.y + 2.8, h.z, 12, 0.12, 0.5, h.h + 0.6, false, -1);
+        kit.at(0x2f3542, cube, h.x, h.y + 2.8, h.z, 12, 0.12, 0.5, h.h + 0.6 + Math.PI / 2, false, -1);
+        kit.at(0x9fd2f2, cube, h.x + Math.sin(h.h) * 3.4, h.y + 0.35, h.z + Math.cos(h.h) * 3.4, 2.7, 1.5, 2, h.h, false, -1);
+      }
     } else if (z.scenery === 'gois') {
       // fishing boats lying off the causeway, out on the water: the sand on that side runs 130 m from the road (LAND in
       // road.js) and the sea begins there, so a boat is further out than that. Trawlers, seen from a road a good way off
