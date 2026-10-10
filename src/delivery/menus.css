@@ -35,6 +35,18 @@
 
 /* ---- garage: the Sort and Show buttons, and the comparison card ---- */
 #garageUi .bar .view-btn { font-size: 14px; padding: 7px 12px; background: #e9e9e9; }
+/* ---- garage: its two tabs, and the Car ideas lot behind the second (render/ideaslot.js) ---- */
+#garageUi .tabs { display: flex; gap: 4px; }
+#garageUi .tabs .tab { background: rgba(255, 255, 255, .16); color: #fff; font-size: 18px; }
+#garageUi .tabs .tab.on { background: #fff; color: #222; }
+body.ideas-tab #garageUi .view-btn, body.ideas-tab #garageUi .compare { display: none !important; }
+body.ideas-tab #garageBank { visibility: hidden; }
+body.ideas-tab #garageInfo { max-width: 720px; margin: 0 auto; }
+body.ideas-tab #garageInfo strong { display: block; font-size: 19px; color: #ffd23f; }
+body.ideas-tab #garageInfo div { font-weight: 400; }
+#garageTip.idea { white-space: normal; width: max-content; max-width: min(360px, 84vw); font-weight: 400; }
+#garageTip.idea strong { display: block; color: #ffd23f; }
+body.ideas-studio #garageUi, body.ideas-studio #garageTip { display: none !important; }
 #garageUi .compare { pointer-events: none; padding: 10px 14px; border-radius: 10px; background: rgba(20, 24, 32, .88);
   color: #fff; font-size: 13px; box-shadow: 0 4px 18px rgba(0, 0, 0, .4); max-width: calc(100vw - 24px); box-sizing: border-box; }
 /* (in the bottom left corner, clear of the cars; on a narrow screen, above the stats instead) */

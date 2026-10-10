@@ -171,7 +171,7 @@ export const Traffic = (() => {
   // bursts on touching anything (see Collision). Afterwards each turns back into what it was.
   let toads = false;
   const makeToad = (car) => {
-    if (car.toad || car.emergency || car.parked || car.junction) return; // (an ambulance stays an ambulance, and a parked car parked)
+    if (car.toad || car.emergency || car.parked || car.junction || car.driver) return; // (an ambulance stays an ambulance, and a parked car parked; nor one driven from elsewhere: see car.driver)
     const T = CONFIG.mystery.toad;
     car.toad = { health: car.health, maxHealth: car.maxHealth, hw: car.hw, hl: car.hl, height: car.height, mass: car.mass };
     Object.assign(car, T, { health: 1, maxHealth: 1, spin: 0, wobble: 0, rival: null, stun: 0 });
@@ -344,6 +344,8 @@ export const Traffic = (() => {
     car.procession = 0;     // the funeral procession it is in (see startProcession), 0 = none
     car.stopGoFor = null;   // the stop / go works it has decided whether to run the STOP at (see StopGo)
     car.passingPack = null; // where it is steering by a peloton, out past it (see passPeloton)
+    car.driver = null;      // driven by another module (a police pursuit's cars: see pursuit.js): a function (car, dt) called from update in place of all a driver does...
+    car.sirenOn = false;    // ...its siren going: traffic gives way to it as to an ambulance (see sirenFor)
     if (toads) makeToad(car);
     car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
     car.think = Math.random() * 2;
@@ -1114,7 +1116,7 @@ export const Traffic = (() => {
     if (underSiren(car)) return Player;
     if (car.emergency || car.defiant) return null;
     for (const a of cars) {
-      if (!a.active || !a.emergency || a.dir !== car.dir) continue;
+      if (!a.active || !(a.emergency || a.sirenOn) || a.dir !== car.dir) continue; // (sirenOn: a pursuit's interceptor)
       const gap = (car.s - a.s) * a.dir;
       if (gap > 0 && gap < E.range && Track.openLane(car.lane, car.s) === Track.openLane(a.lane, car.s)) return a;
     }
@@ -1126,7 +1128,7 @@ export const Traffic = (() => {
   const stillPulledOver = (car) => {
     const siren = car.pulledFor;
     if (siren === Player) return Player.siren > 0;
-    return !!siren && siren.active && siren.emergency && (car.s - siren.s) * siren.dir > -(car.hl + siren.hl + 10);
+    return !!siren && siren.active && (siren.emergency || siren.sirenOn) && (car.s - siren.s) * siren.dir > -(car.hl + siren.hl + 10);
   };
 
   const think = (car) => {
@@ -1663,7 +1665,7 @@ export const Traffic = (() => {
         car.quietRoll = quiet;
         if (Math.random() >= quiet.density) gone = true;
       }
-      if ((gone && !car.racer && !(car.hunt > 0)) || !Track.inBounds(car.s)) { // (a racer races on, wherever it is; so does a hunter)
+      if ((gone && !car.racer && !(car.hunt > 0) && !car.driver) || !Track.inBounds(car.s)) { // (a racer races on, wherever it is; so does a hunter; one driven from elsewhere is taken off by whatever drives it)
         car.active = false;
         continue;
       }
@@ -1750,12 +1752,12 @@ export const Traffic = (() => {
       // the tide (going the player's way): a car a wave catches in deep water stalls there
       // (not one that is parked, nor an ambulance)
       const depth = car.dir > 0 ? Tide.depth(car.s, car.lat) : 0;
-      if (depth >= CONFIG.tide.deep && !car.stalled && !car.parked && !car.emergency && !car.fixed && !(car.spin > 0) && Tide.surging(car.s)) {
+      if (depth >= CONFIG.tide.deep && !car.stalled && !car.parked && !car.emergency && !car.fixed && !car.driver && !(car.spin > 0) && Tide.surging(car.s)) {
         car.stalled = true;
         car.pendingLane = null;
       }
       // wreckage: a car whose lane is blocked ahead pulls over onto the nearer shoulder, and stops there
-      if (!car.halted && !car.emergency && !car.parked && !car.fixed && !(car.spin > 0) && Wreckage.ahead(car)) {
+      if (!car.halted && !car.emergency && !car.parked && !car.fixed && !car.driver && !(car.spin > 0) && Wreckage.ahead(car)) {
         car.halted = car.lat < (Track.laneLo(car.s) + Track.laneHi(car.s)) / 2 ? -1 : 1;
         car.pendingLane = null;
       }
@@ -1845,6 +1847,10 @@ export const Traffic = (() => {
         car.signal = there ? 0 : car.halted;
         car.hazards = there;
         updateYaw(car, dt);
+        continue;
+      }
+      if (car.driver) { // driven from elsewhere (a police pursuit: see pursuit.js)
+        car.driver(car, dt);
         continue;
       }
       // at a junction, some leave the road down an arm the player can't take (see leaveAtJunction)
@@ -2390,5 +2396,6 @@ export const Traffic = (() => {
 
   return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, startProcession, mourn, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer,
     noteWreck, hornedAt, get reversibles() { return reversibles; },
+    outfit, spare: () => cars.find(c => !c.active && c.unused) || null, // (for a police pursuit: see pursuit.js)
     frozen: false }; // (TRAFFIC FREEZE: set by Mysteries; update, Collision.updateObstacles and Hazards.update stand still while it is)
 })();

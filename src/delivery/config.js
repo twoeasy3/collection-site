@@ -780,6 +780,10 @@ export const CONFIG = {
     cargotruck: { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 20, max: 24 }, noSpin: true, sheds: true, special: true },
     // an ice-cream van (a level's "iceCreamStops": see CONFIG.iceCream), pink, in the one livery; never evil
     icecream: { hw: 1.0, hl: 2.4, height: 2.3, mass: 1.6, health: 120, speed: 0.9, special: true, model: 'deliveryvan', livery: 0xf7b6d2 },
+    // a police pursuit's two cars (a level's "pursuits": see CONFIG.pursuit and pursuit.js), never in a level's traffic list:
+    // the getaway car, and the interceptor, a model seen nowhere else (low and wide, a light bar, a push bar)
+    getaway: { hw: 0.95, hl: 2.3, height: 1.3, mass: 1.3, health: 220, speed: 1, special: true, model: 'getaway', livery: 0x7a1420, crit: 0.5 },
+    interceptor: { hw: 1.05, hl: 2.45, height: 1.15, mass: 1.7, health: 400, speed: 1, special: true, model: 'interceptor', livery: 0x1a2236, crit: 0, spin: 0 },
   },
   // an ice-cream van's stop (a level's "iceCreamStops": { s, lane, wait? }): the van stopped in its lane, its
   // jingle going, and the traffic behind it in a residential street brakes to a halt and waits, nobody
@@ -850,6 +854,23 @@ export const CONFIG = {
     wave: 160,             // m short of it a siren has the cars pulling aside
     aside: 3,              // m/s they move
     warn: 220,             // m short of it the player is warned
+  },
+  // a police pursuit (a level's "pursuits": { every: { min, max } }; pursuit.js), a traffic event: a getaway car and,
+  // `gap` m behind it (closing on that at `closing` m/s per m out), an interceptor, set off `behind` m behind the
+  // player, the interceptor's siren heard from `heard` m. The getaway car runs at `pace` times the player's car's
+  // top speed (between speed.min and speed.max), and `rush` m/s more while it is over `near` m from the player
+  // (so it comes up quickly, is a few seconds going by, and is gone).
+  pursuit: {
+    behind: 260, gap: 30, closing: 0.8, heard: 420,
+    pace: 1.3, speed: { min: 30, max: 75 }, rush: 24, near: 40,
+    clearOfEnd: 700,       // m short of the finish beyond which none sets off
+    retry: 2,              // s before it tries again, with no room for it
+    leftBehind: 450,       // m behind the player at which one that never got by is taken off
+    // how the two are driven: every `rethink` s, into the lane with the most clear road ahead (looking `look` s
+    // on; a car within `margin` m of its side is in the way; each metre across the road costs `drift` m of clear
+    // road, and the lane it is in already is worth `stick` m); `swerve` m/s sideways; and brakes that are not
+    // always enough (`brake` m/s^2, to `followGap` m behind what is in the way)
+    driving: { look: 3, rethink: 0.2, margin: 0.35, drift: 1.5, stick: 12, swerve: 8, accel: 9, brake: 15, followGap: 3 },
   },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
@@ -1319,6 +1340,15 @@ export const CONFIG = {
   // rad per m/s^2). Windsocks stand `ahead` m before the stretch and every sockEvery m along it
   crosswind: { strength: 7, lull: 0.3, every: 6, length: 2.6, rise: 0.6, heightRef: 1.45, heightPower: 1.5, leeHeight: 2, leeReach: 5.5, lee: 0.1, shove: 2.4,
     traffic: 0.35, lean: 0.006, ahead: 90, sockEvery: 150 },
+  // crests (no field of their own: a level's segments, their "grade" and "ease"): where the road falls away under
+  // the car faster than `gravity` m/s^2 (the game's, as the drawbridge's) can pull the car down after it, the car
+  // leaves the ground (by more than `slack` m/s in a step), flies the arc it left on with no throttle, brake or
+  // steering, and lands on what is there: harder than landSoft m/s into the ground costs landDamage a m/s over.
+  // (A hop lower than `hop` m is not felt.) A crest counts as one where a car at `fastest` m/s or less would fly;
+  // one that flies at signUnder m/s or less gets a board with that speed `sign` m before it, and from camFrom m
+  // before it to its top the camera comes down to camHeight m and in to camBack m behind the car (easing over
+  // camEase m), so the far side is hidden until the car is over. "Airborne" is said after sayAfter s in the air
+  crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it
   // and start.pitch up (rad); it comes no nearer than `near` nor goes further than `far`, between `low` and `high`

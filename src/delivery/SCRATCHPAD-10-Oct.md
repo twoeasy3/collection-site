@@ -534,3 +534,148 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
 - Not looked into: `.hazards-check` throwing at its line 38 straight after other checks.
 - Screenshots: scratchpad `shots-fixes/` (`before`, `bridge`, `load`, `water`, `runoff-before`,
   `runoff-after`, `gravel`, and `monza-/spa-before.svg`, `-after.svg`).
+
+## Agent 8: level editor (.claude/worktrees/delivery-city-levels, delivery-editor)
+
+Task: checklist "Level editor: full control over every feature and gimmick" (E1.1 to E7.3). Finished. Never ran the smoke test.
+Commits on `delivery-editor` (not pushed, not merged): 3df4ec5 schema + check, ee04af4 editor rebuilt from it,
+032114d picture hooks + README recipe, 465b555 checklist, 369e072 road handles + gradient strip, 5d6a7db and one after.
+
+- [x] E1.1, E1.2, E1.3, E1.5: `levelSchema.js` (99 fields, 164 settings), `editorForms.js`, `editor.js` rewritten from it
+- [x] E2.1 to E2.5; E2.6 partly (weather belongs to the theme: shown, not switched)
+- [x] E3.1 to E3.4; E3.5 partly (says how far a loop is from closed; no "close it")
+- [x] E4.1 to E4.7
+- [x] E5.1, E5.2, E5.4, E5.5; E5.3 partly (duplicate, copy, paste of one thing; no multi-select)
+- [x] E6.3, E6.4; E6.1 partly (Play from here; the 3D view still by its button)
+- [x] E7.1 to E7.3
+- [ ] E1.4 (the game checking levels with the schema) and E6.2 (a clock button): not done
+- Checks: `.schema-check.mjs` passes (53 levels, round-trip clean), `.bundle-check.mjs`, `delivery-levels-check.mjs` (52 built, no FAIL).
+- A new level field = one entry in `FIELDS` in `levelSchema.js` (README, "Adding content"). AT MERGE: `.schema-check.mjs`
+  will fail for fields added on other branches until each has its entry (Agent 10's `crosswinds`, a segment's `ease`, ...).
+- Nothing was clicked by hand: screenshots only, with scripted clicks and drags from the address (scratchpad `shots-editor/`).
+
+## Agent 10: road gimmicks (main checkout, main)
+
+Task: checklist "New gimmicks": G16, H1, H2, H8, H4, H5, then down the list. Never runs the smoke test.
+Files of its own: `gambles.js`, `render/gambles.js`, `render/gambleModels.js`, `levels/gimmick-road-3.json`
+(`?hidden=gimmick-road-3`), `scripts/.gimmicks3-check.mjs`. Small additive edits in `game.js` (reset, update),
+`main.js` (syncGambles), `track.js` (validation block "Gimmick Road 3's", a segment's `ease`), `config.js` (one block),
+`levels.js` (docs), `gimmicks.js` (group "Road gambles"), `levelinfo.js`, `messages.json`.
+Nothing here has been played by hand: headless checks and stills only.
+
+Level fields added (for the editor's schema):
+- `crosswinds: [{ from, to, dir: 'left' | 'right', strength?, every?, length? }]` (expressway only)
+- a segment's `ease` (m, 2 to 200): how sharply its slope blends into the next (a crest)
+
+Progress:
+- [x] Gimmick Road 3 + G16 crosswind: done, `1d48924`. On Grand Pacific (sea cliff bridge
+  6080-6520), Hurricane (1900-2400, stronger), Tokyo (1700-2250). Clocks not re-timed: the clock's ghost feels no wind.
+  `.gimmicks3-check.mjs wind` passes (11). Stills: `shots-gimmicks3/wind-1`, `wind-2`, `card-wind`.
+- [x] H1 crest jumps: done, `9d7711b`. No object: a segment's `ease`; `Gambles.updateFlight` (the flight engine the
+  ramp and the cushions will use), `Gambles.blind` (the camera down behind the car, `render/scene.js`), a
+  board with the speed. Collision skips what the car is in the air above (`collision.js`, two lines). On Rival
+  Run (top at 4400, a bale at 4428 lane 3) and Mystery Meadows (2740, the cows beyond). `crest` passes (11).
+  Stills: `crest-1-sign` .. `crest-5-over`, `card-crest`. `&speed=` and `&lane=` added to the address (main.js).
+- Schema entries (`levelSchema.js`): `crosswinds`, a segment's `ease`: in the commit after the editor's merge.
+- For the owner: `scripts/level-clocks.mjs` disagrees with two clocks kept as they were: Rival Run 300 / 285 (it
+  says 255 / 195) and Mystery Meadows 234 / 166 (it says 145 / 115). Not changed.
+- Decisions to overrule: wind strength 7 m/s^2 and height to the power 1.5; a ghost and a tank feel no wind;
+  crests use gravity 20 (the drawbridge's); the camera drops to 6 m up, 11 m back before a crest; the UFO and the
+  boat never fly.
+
+## Agent 11: new themes (.claude/worktrees/delivery-city-levels, delivery-themes)
+
+Task: checklist "New themes" in the owner's order: T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio,
+T1 Venice, T4 ice road, then down the ranking. Per theme: the look, its gimmick, a level. Never runs the smoke test.
+Files of its own: `render/themes/` (one file per theme's scenery, `index.js` names them; road.js calls the one named),
+`extras.js` + `render/extras.js` (the one place game.js and main.js call the new gimmicks from), one logic file and one
+render file per gimmick. Small additive edits in `render/road.js` (one branch), `render/tunnel.js` (a theme's tunnel
+colours), `themes.js`, `game.js`, `main.js`, `collision.js`, `track.js` (validation), `config.js`, `levels.js`,
+`levelSchema.js`, `gimmicks.js`, `levelinfo.js`, `messages.json`, `progress.js`.
+Nothing here has been played by hand: headless checks and stills only.
+
+Progress:
+- [x] T14 toy room, the look: 14e3c56 (`toyroom` in themes.js, `render/themes/toyroom.js`, `toyModels.js`)
+
+## Agent 9: police pursuit and road characters (.claude/worktrees/delivery-circuits, delivery-pursuit)
+
+Branch `delivery-pursuit` (from `main` at 2e0a296), never pushed. Nothing here has been played by hand or
+heard: headless checks and stills only. Stills: scratchpad `shots-pursuit/`.
+
+Shared-file edits are small and additive: `traffic.js` (a `car.driver` hook, `sirenOn`, `Traffic.outfit` /
+`Traffic.spare` exported), `game.js` (three lines: `Characters.reset` / `.update`), `main.js` (one sync call,
+the siren's range), `config.js` (one block per event, two vehicle kinds), `track.js` (validation), `levels.js`
+(docs), `levelinfo.js`, `gimmicks.js`, `police.js`, `messages.json`, six level JSONs (one line each).
+New events hang off `characters.js` / `render/characters.js`, so `game.js` and `main.js` are not touched again.
+
+- [x] P1 police pursuit: logic 881f429, drawing ee6dde8. `pursuits: { every }` on big-business, night,
+  speed-trap-alley, ring-road, tokyo, gimmick-road-2. Check: `node scripts/.pursuit-check.mjs` (43 ok).
+  Address: `&pursuit=3&pursuitend=caught&pursuitbehind=60&pursuitsettle=40`.
+  Decisions to overrule: one interceptor; not a garage car; "the police add the player to the chase" is a
+  heat meter that ends in a bust (`busts.pursuit`), Evil only, with a warning first; a Good player in the
+  interceptor's way is never busted; the Good reward is only for `caught`; left alone the ending is drawn
+  up the road (40 / 25 / 35); the getaway car's pace is 112% of the player's own car's top speed.
+  Not done: no HUD meter for the heat (a message warns), no editor control, no still of the two parked.
+- [x] P2 bank robber: bcd6b25. `robbers: [{ s }]` on big-business, night, the-hood, ring-road, gimmick-road-2, and after a pursuit's wreck. Check: `node scripts/.robber-check.mjs`. Address: `&robber=1600`, `&robber=carry`. Decisions to overrule: he pays as he goes ($15 / 100 m, 1000 m), not at the end; the police run at 97% of the player's top speed (a clear road gets him there, traffic gets you caught); handing over = slowing below 9 m/s beside any police car; he rides on the roof.
+- [ ] P9 sleepy lorry: in progress
+
+**10-Oct, the redo (agent 12, same branch; supersedes P1 and P2 above).** At the owner's word the pursuit is now a
+simple traffic event, as an ambulance is: every `pursuits.every` s a getaway car comes up from behind flat out,
+weaving, the interceptor (its own model) 30 m behind with its siren going (heard from 420 m, one warning message),
+traffic pulls aside, and the two drive on and are taken off out of sight ahead. Nothing gained or lost by the player;
+hitting either is an ordinary collision. Never on a race or the Battlefield.
+Removed: the bank robber (P2, reverted: f2404a4); the three endings, the Good and Evil gambles, reward, bag of cash,
+heat and its bust (`busts.pursuit`, the police page's row), eight messages, the helicopter, `characters.js` and
+`render/characters.js` (`game.js` calls `Pursuit` itself; `main.js` imports `render/pursuit.js`), `&pursuitend`,
+`&pursuitsettle`. `pursuit.js` 402 to 152 lines, `CONFIG.pursuit` 45 to 17. Simplified: cab1580. Merged with `main`
+and `pursuits` added to `levelSchema.js` (with a `notRace` rule): dcaa98c. Check: `node scripts/.pursuit-check.mjs`
+(29 ok). Stills: scratchpad `shots-pursuit2/`. Address: `&pursuit=3&pursuitbehind=60`. Not played by hand or heard.
+The getaway car now passes at 130% of the player's car's top speed (was 112%: it took 25 s to get by).
+
+## Agent 14: Stelvio and Market Town (.claude/worktrees/delivery-levelfix, delivery-levelfix)
+
+Shots: `scratchpad/shots-levelfix/before` and `/after` (68 each: chase every 200 m, from above at each fork, merge, crossroads, rockfall). Scripts in `scratchpad/levelfix/`.
+
+### Part 1: faults seen in the "before" shots (nothing changed yet)
+Stelvio:
+- S1 every rockfall rock waits hanging in the sky: 32 m above the ROAD's plane, 18 m off its edge, whatever the land does there (over the valley on the downhill side; 10-30 m above the hillside on the uphill one). Seen at 600, 800, 1400, 2400, 2800, 3200, 3800.
+- S2 hairpins read as plain bends: no wall, no chevron boards, no snow poles, the same rail as everywhere.
+- S3 the face between two legs is a smooth grey ramp, sawtoothed where the 8 m grid cuts it; pines stand half-buried on it.
+- S4 pines 10 m off the road up to 12 m tall fill the screen on the inside of bends.
+- S5 the summit (2000-2500, in fog) is an empty white plateau: no sign, no building, nothing to see; a dead stretch.
+- S6 no view: the valley side is the same snow as the hill side.
+Market Town:
+- M1 crossroads (800, 1180): houses, lawns, driveways and trees stand ON the cross road's arms (a house across the right arm at 1180; five trees on the arms at 800); the arms' yellow and edge lines come and go under them. A speed-limit sign stands in the mouth of the 1180 box.
+- M2 the arms have no pavement, no kerb: suburb pavement stops dead at the box.
+- M3 fork (2500) and merge (3450): the pavement and fence end square where the exit lane opens and start again with a point after the merge; a sliver of pavement lies in the wedge between the two roads.
+- M4 the side road (986 m) is bare: no houses, pavement, lamps or trees, three hay bales on green.
+- M5 the side road's three bends (size 10) start straight out of the nose: it wriggles beside the main road.
+- M6 the railway at 2000 is a flat brown band with trees on it.
+- M7 the whole level is one kind of house: no market, no town centre; nothing marks the level's name.
+
+## Agent 15: Good cargo, C1 to C20 (.claude/worktrees/delivery-cargo-good, delivery-cargo-good)
+
+Branch `delivery-cargo-good` (from `main` at 533c75b), never pushed. Stills only: nothing seen moving. Stills: scratchpad `shots-cargo-good/` (`sheet.png` is all twenty).
+
+- [x] C1 to C20 built, registered, on the cargo page: cc34343, then the globe and the checklist ticks in the commit after it. New file `render/cargoModelsGood2.js`; `render/cargoModels.js` +2 lines (import, `...GOOD2_MODELS`); `cargo.js` `CARGO.good` now 25 and reordered so all turn up by default; `cargopage.js` heading counts the items. No level JSON edited. `.cargo-check`, `.bundle-check`, `delivery-levels-check` pass.
+
+## Agent 16: Evil cargo, C21 to C40 (.claude/worktrees/delivery-cargo-evil, delivery-cargo-evil)
+
+- c8ba744: all twenty built, a first pass, in the new `render/cargoModelsEvil2.js` (state-free, its own helpers); 20 entries appended to `CARGO.evil` in `cargo.js`; in `render/cargoModels.js` one import line after the three.js import and one line `...EVIL2_MODELS,` at the end of `CARGO_MODELS`. Also `cargopage.js` (the section headings count the table instead of saying "five") and `.cargo-check.mjs` (a label: "every item turns up"). Both will clash trivially with the Good branch's mirror-image edits.
+- Ids: egg, cooker, flytrap, barrel, mirror, skunk, cannonball, mimic, fireworks, alien, teddy, bats, ice, snakes, genie, reactor, goose, jack, cloud, piranhas. No level JSON touched: the rotation hands them out (cargo-check lists who gets what).
+- Checks: `.cargo-check`, `.bundle-check`, `delivery-levels-check` pass. Seen: stills of the cargo page, every item in three states. In progress: HUD corner and kerb pictures, contact sheets.
+- 269134e: finished. Thundercloud darker, reactor arcs bolder, checklist ticked. Seen as well: mirror, genie and thundercloud in the HUD corner in all three states; mirror, goose and mimic furious at the kerb. Contact sheets: scratchpad `shots-cargo-evil/sheet-1.png`, `sheet-2.png`. Nothing seen moving; not pushed.
+
+### Part 2: boulders (done, 2050f4e)
+- Cause: a rock's waiting place and fall were measured from the ROAD's plane (`o.h` above `Track.toWorld(s, lat).y`, which is the road's height at s whatever lat is); the land is only known to the renderer. So every waiting rock hung 22 m (Stelvio 32 m) over road level, 14-18 m off the edge: in the sky over the valley, or 10-30 m over the slope.
+- Fix (render/items.js `rockWay` / `placeRock`, every level): each rock gets a way down over what is drawn. Terrain themes: it waits on the land (`landAt`, new export of render/road.js: the terrain grid as drawn, triangle by triangle), on the side the level names if that is uphill, else the other. A level that gives `height` (quarry-run's bench): a ledge that high. Flat land (gimmick-road; fjord's valley floor): a crag `height` tall built under it. It comes down over that ground in 4 bounds and rests on the road sunk 0.18 r with a dark patch. The game's side (`o.h`, `o.land`, when it can be hit) is unchanged but for a `ledge` flag.
+- Also: pines stand on the grid as drawn (they used the analytic height, metres off on a cliff); a quarry's blasted boulders (render/wreckage.js) had every second rock 0.6 m up on nothing: all on the road now.
+- Stelvio: rock stretches moved 40 m clear of hairpins (no slope there) and the summit one (1860-1980, no hillside) to 1345-1500; `height`/`out` removed.
+- Seen in shots: stelvio, mountain-pass, fjord, gimmick-road, quarry-run (`scratchpad/levelfix/t1`, `t2`).
+
+### Part 3: markings (done, 1d787fa)
+- Cause: a crossroads' arms were not in the list of roads scenery is kept off (`paved` in render/road.js held only side roads, flyovers and the expressway round an exit; with no exits it was empty and every check passed). So lots (lawn, drive, house, fence, trees) lay on the cross road and its lines showed and vanished under them. At the fork the pavement strip was cut row by row, leaving slivers in the wedge.
+- Fix: arms are roads 900+ in `paved` (and in the terrain's `others`): every theme's instances and side strips keep off them. `sideStrip(..., whole)`: full width or nothing, and with a number, only where that many m beyond are clear too. Suburb: pavement along side roads and arms (with corners), bridged round the outside of forks and merges; lots, lamps on side roads (never where another road's lot is); trees along arms. A camera's limit sign moves short of a box.
+- Market Town: exit `out` 90 -> 70, `bends` removed (it swung out twice: 7 changes of hand in 986 m; now 971 m, tightest 100 m); camera 1250 -> 1300.
+- Other levels looked at after: back-roads, quarry-run, ring-road forks, singapore crossroads: unchanged (`scratchpad/levelfix/t5`).
+- NOT done: no change to the fork geometry in track.js (the 130 m `shapeLead` before `out` starts is why a side road runs beside the road, then swings: left alone, other branches are in track.js); no give-way line where a side road meets a crossroads (no level has that); no spacing rule in the validator.

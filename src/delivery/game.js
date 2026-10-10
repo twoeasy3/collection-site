@@ -32,6 +32,7 @@ import { Collision } from './collision.js';
 import { Packages } from './packages.js';
 import { Pickups, Targets } from './pickups.js';
 import { Delivery } from './delivery.js';
+import { Pursuit } from './pursuit.js';
 
 // ============================================================================
 // GAME STATE
@@ -208,6 +209,7 @@ export const Game = {
     Gambles.reset();
     Milestones.reset();
     WaterMains.reset();
+    Pursuit.reset();
     if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
     startScreen.classList.add('hidden');
@@ -370,6 +372,7 @@ export const Game = {
     if (playing) WaterMains.update(dt);
     Traffic.update(dt);
     if (playing) SpeedCameras.update(dt);
+    if (playing) Pursuit.update(dt);
     UfoStrike.update(dt);
     BulletTrain.update(dt);
     if (playing) Tide.update(dt);

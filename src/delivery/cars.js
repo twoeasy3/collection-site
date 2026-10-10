@@ -280,43 +280,44 @@ export const returnCar = () => {
 // own with a racing stripe (and a body kit: render/carExtras.js addSuperKit). Never in the garage:
 // it is lent for a while by the "souped up" mystery (see Player.startMystery), or ?car=super-<id>.
 // SUPER_LIVERIES: by car id, good: [body, stripe], evil: [body, stripe]; kit: parts of the kit turned
-// off ({ wing: false }), or on (lights: true, a roof rack of lamps, for the vans). A car without an
+// off ({ wing: false }), or on (lights: true, a roof rack of lamps; bullbar: true, a bull bar with spot lamps;
+// snorkel: true: for the vans and the off-roaders, on top of the wing). A car without an
 // entry gets a metallic version of its own colours (see superLivery).
 export const SUPER_LIVERIES = {
   commuter: { good: [0xe3b522, 0x151515], evil: [0x101010, 0xe3b522] },                 // gold with black / black with gold
   junker: { good: [0x1c1c1c, 0xc81e1e], evil: [0x7a2a16, 0xe8dcc0] },                   // matte black, a red stripe / rust with bone
-  darkvan: { good: [0xc9ccd2, 0x151515], evil: [0x2a2d33, 0xd0101c], kit: { wing: false, lights: true } }, // chrome silver / gunmetal with red
-  postvan: { good: [0xb3121c, 0xf0c030], evil: [0xd99a10, 0x151515] },                  // crimson with gold / gold with black
+  darkvan: { good: [0xc9ccd2, 0x151515], evil: [0x2a2d33, 0xd0101c], kit: { lights: true, snorkel: true } }, // chrome silver / gunmetal with red (it has a bull bar of its own)
+  postvan: { good: [0xb3121c, 0xf0c030], evil: [0xd99a10, 0x151515], kit: { lights: true, bullbar: true } }, // crimson with gold / gold with black
   keitruck: { good: [0xf7f7f2, 0xd8262b], evil: [0x4a9ad0, 0xf2f2f2] },                 // pearl with rising-sun red / ice blue with white
   mini: { good: [0x1f5a3a, 0xf2f2f2], evil: [0xf0701a, 0x151515] },                     // racing green, white stripes / orange with black
-  lovebus: { good: [0x8fd14a, 0xe03aa0], evil: [0x9a1420, 0x151515], kit: { wing: false, lights: true } }, // lime with magenta / deep red with black
+  lovebus: { good: [0x8fd14a, 0xe03aa0], evil: [0x9a1420, 0x151515], kit: { lights: true, bullbar: true } }, // lime with magenta / deep red with black
   wagon: { good: [0x62a8e8, 0xf4f4f4], evil: [0xf25aa8, 0x151515] },                    // sky metallic with white / hot pink with black
   sport: { good: [0x4dff2a, 0x151515], evil: [0x151515, 0x4dff2a] },                    // neon green with black / black with neon green
   hothatch: { good: [0xf7f7f2, 0xd8262b], evil: [0xf2c418, 0x151515] },                 // pearl with red / yellow with black
   ute: { good: [0x1a4fb0, 0xf4f4f4], evil: [0x9ae03a, 0x151515] },                      // deep blue with white / lime with black
   buggy: { good: [0x22c8d8, 0xf2862a], evil: [0x8a35d0, 0xb6ff3a] },                    // teal with orange / purple with lime
-  liftedtruck: { good: [0x1d5bbf, 0xd0d4da], evil: [0xd2b07a, 0x151515] },              // royal blue with silver / desert tan with black
+  liftedtruck: { good: [0x1d5bbf, 0xd0d4da], evil: [0xd2b07a, 0x151515], kit: { lights: true, bullbar: true, snorkel: true } }, // royal blue with silver / desert tan with black
   hearse: { good: [0x101010, 0xd4a52a], evil: [0xf2f2f2, 0x6a2bb3] },                   // black with gold / white with purple
-  minivan: { good: [0xe0cfa0, 0x6b4a2a], evil: [0x3a4a5e, 0xf08a2a] },                  // champagne with brown / slate with orange
-  pickup: { good: [0xd0621c, 0xf4e8c8], evil: [0x2f5a2a, 0xc8a86a] },                   // burnt orange with cream / forest with tan
+  minivan: { good: [0xe0cfa0, 0x6b4a2a], evil: [0x3a4a5e, 0xf08a2a], kit: { lights: true, bullbar: true } }, // champagne with brown / slate with orange
+  pickup: { good: [0xd0621c, 0xf4e8c8], evil: [0x2f5a2a, 0xc8a86a], kit: { bullbar: true, snorkel: true } }, // burnt orange with cream / forest with tan
   hotrod: { good: [0x7a2fd0, 0xff8a1a], evil: [0x4b5320, 0xc81e1e] },                   // purple with flame orange / olive drab with red
   sleeper: { good: [0x6a2030, 0x8a8a8a], evil: [0xd2cab8, 0x151515] },                  // maroon with grey / beige with black (still a sleeper)
   rally: { good: [0x1d3f9e, 0xf2d21f], evil: [0xe24a8c, 0xf4f4f4] },                    // blue with yellow / pink with white
   towtruck: { good: [0xf4f4f4, 0xd8262b], evil: [0x2a6fb8, 0xf2c418] },                 // white with red / blue with yellow
   rotary: { good: [0xf2c218, 0x151515], evil: [0x1f8a5c, 0xf4f4f4] },                   // yellow with black / green with white
   taxi: { good: [0xffc81a, 0x151515], evil: [0x6b7a2e, 0xffc81a] },                     // yellow with black / olive with yellow
-  suv: { good: [0x1f3f8f, 0xd0d4da], evil: [0xf2f2f2, 0x1f3f8f] },                      // navy with silver / white with navy
+  suv: { good: [0x1f3f8f, 0xd0d4da], evil: [0xf2f2f2, 0x1f3f8f], kit: { lights: true, bullbar: true, snorkel: true } }, // navy with silver / white with navy
   miata: { good: [0xd8262b, 0xf4f4f4], evil: [0xffd21f, 0x151515] },                    // red with white / yellow with black
   muscle: { good: [0xc81e1e, 0xf4f4f4], evil: [0x101010, 0xc81e1e] },                   // red with white / black with red
   fullsize: { good: [0x2f5a3a, 0xd4a52a], evil: [0x5a1f22, 0xf4e8c8] },                 // deep green with gold / wine with cream
   evsaloon: { good: [0xe8e4dc, 0x2a8cff], evil: [0x2b3440, 0x40e8ff] },                 // pearl with electric blue / slate with cyan
   superlowrider: { good: [0x1a3cff, 0xf0c030], evil: [0x5a0a2a, 0xd8d8d8] },            // blue with gold / wine with chrome
   classicgt: { good: [0x1f4d36, 0xd8b040], evil: [0xb0121c, 0xf4f4f4] },                // racing green with gold / red with white
-  sixbysix: { good: [0xe2dccc, 0x151515], evil: [0x4b5320, 0xf08a2a] },                 // sand with black / olive with orange
+  sixbysix: { good: [0xe2dccc, 0x151515], evil: [0x4b5320, 0xf08a2a], kit: { lights: true, bullbar: true, snorkel: true } }, // sand with black / olive with orange
   // (the amphibious cars: boat colours)
   herald: { good: [0xf4f1e6, 0x1d4f9c], evil: [0x1a2a3a, 0xe8c040] },                   // sail white with navy / midnight with brass
-  floatvan: { good: [0xf2862a, 0xf4f4f4], evil: [0x2a2d33, 0x22c8d8] },                 // lifeboat orange with white / gunmetal with teal
-  toybota: { good: [0xd8262b, 0xf4f4f4], evil: [0x151515, 0xd8262b] },                  // rescue red with white / black with red
+  floatvan: { good: [0xf2862a, 0xf4f4f4], evil: [0x2a2d33, 0x22c8d8], kit: { lights: true } }, // lifeboat orange with white / gunmetal with teal
+  toybota: { good: [0xd8262b, 0xf4f4f4], evil: [0x151515, 0xd8262b], kit: { lights: true, bullbar: true, snorkel: true } }, // rescue red with white / black with red
   dampervan: { good: [0x22a8a0, 0xf4e8c8], evil: [0x5a1f6a, 0xb6ff3a] },                // sea green with cream / plum with lime
   nissank: { good: [0x1d5bbf, 0xf2c418], evil: [0x8a1030, 0xd0d4da] },                  // powerboat blue with yellow / wine with silver
 };

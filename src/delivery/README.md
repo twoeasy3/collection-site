@@ -52,6 +52,7 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `&level=3` | Picks that level (by its position on the menu), locked or not |
 | `&at=1650` | Starts that many metres along |
 | `&ff=5` | Runs the game five seconds before the first frame |
+| `&speed=31`, `&lane=4` | Starts doing that many m/s (hands off, it holds), and in that lane: for pictures |
 | `&car=lowrider` | Drives that car, owned or not |
 | `&theme=snow` | The level in that theme, whatever its own |
 | `&rival`, `&rival=evil`, `&rival=good` | A rival courier on any delivery level |
@@ -68,6 +69,7 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `&touch` | Shows the on-screen controls on a desktop |
 | `&cargostate=2` | An Evil run's cargo in that state (0 calm, 1 agitated, 2 furious) whatever the clock says |
 | `&deliver=3.5` | Stops the delivery at the kerb that many seconds in, for a picture (with `&at=` just short of the finish and `&ff=14`) |
+| `&pursuit=3` | A police pursuit set off 3 s into the run, on any delivery level; `&pursuitbehind=60` starts it that far behind |
 | `?pick=41` | The menu with that level picked, every level open for the visit (a look at its card); `&start` presses Start Game too |
 
 An amphibious level started from the address with no amphibious car owned is driven in the Float Van for

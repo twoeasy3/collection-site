@@ -47,7 +47,7 @@ try {
   check(!T().problems.length, 'the level loads without problems');
 
   // ---- crosswind (300 - 900, blowing to the left: towards the oncoming lanes)
-  section('wind', () => {
+  await section('wind', async () => {
     const W = C.crosswind, w = () => Gambles.winds[0];
     // hands off through the whole stretch at a steady 25 m/s: how far the car is carried
     const drift = (car, opts = {}) => {
@@ -123,6 +123,63 @@ try {
     const perGust = Math.abs(Gambles.windPush({ ...w(), every: 1, length: 1 }, g.cars.CARS.find(c => c.id === 'lowrider').height, 0.5)) / C.steerResponse * w().length;
     check(lazy < C.laneWidth / 2 && slow > 20 && !P.busted && G.wrecks === 0 && perGust < C.laneWidth / 2,
       'crosswind, the safe line: a low car in the windward lane, corrected only when a metre off its line, stays in its lane (' + lazy.toFixed(2) + ' m off at most; a whole gust hands off moves it ' + perGust.toFixed(1) + ' m), never slowed, no bust');
+  });
+
+  // ---- crest jumps (two crests, their tops at 1190 and 1490; a barrier over the first in lane 4, over the
+  // second in lanes 3 and 5)
+  await section('crest', async () => {
+    const K = C.crest, crests = () => Gambles.crests;
+    start(1000, 3, 20);
+    check(crests().length === 2 && crests().every(c => c.speed < K.signUnder), 'crests: the level has two, found from its profile alone (flying from ' + crests().map(c => Math.round(c.speed * 3.6) + ' km/h').join(', ') + ')');
+    const need = crests()[0].speed;
+    // over the first crest at a held speed, in a lane: what happened
+    const over = (v, n, { steer = null, car = 'sport', to = 1300, from = 1060 } = {}) => {
+      start(from, n, v, { car });
+      let top = 0, steered = 0, slowest = 99;
+      const lat0 = P.lat, health = P.health;
+      const t = g.run(30, () => {
+        quiet();
+        P.speed = Math.min(P.speed, v);
+        if (steer) g.drive(1, steer());
+        if (Gambles.fly) { top = Math.max(top, Gambles.fly.top); steered = Math.max(steered, Math.abs(P.latVel)); }
+        slowest = Math.min(slowest, P.speed);
+        return P.s > to || G.wrecks > 0;
+      });
+      return { t, top, lost: health - P.health, flights: Gambles.flights, wrecks: G.wrecks, steered, slowest, lat: P.lat - lat0 };
+    };
+    // the risky line, done right: flat out in a clear lane
+    const fast = over(31, 3);
+    check(fast.flights === 1 && fast.top > 0.5 && fast.lost === 0 && fast.wrecks === 0, 'crest, the risk taken and right: at ' + Math.round(31 * 3.6) + ' km/h in a clear lane the car flies (' + fast.top.toFixed(1) + ' m up) and lands unhurt');
+    check(said('Airborne'), 'crest: being in the air is said');
+    // ...done wrong: flat out in the lane with the barrier over the top
+    const wrong = over(31, 4);
+    check(wrong.flights === 1 && (wrong.lost > 10 || wrong.wrecks > 0), 'crest, the risk taken and wrong: flying in the lane the barrier is in, it lands in it (' + (wrong.wrecks ? 'wrecked' : wrong.lost.toFixed(0) + ' health lost') + ')');
+    // no steering in the air: full lock held all the way over moves it no faster across than it left the ground with
+    start(1060, 3, 31);
+    let turned = 0, air = 0, atOff = null;
+    g.run(10, () => { quiet(); P.speed = 31; g.drive(1, P.s > 1150 ? 1 : 0); if (Gambles.fly) { if (atOff === null) atOff = P.latVel; air++; turned = Math.max(turned, Math.abs(P.latVel - atOff)); } return P.s > 1300; });
+    check(air > 20 && turned < 1e-6, 'crest: in the air the steering does nothing (' + air + ' steps in the air at full lock, sideways speed unchanged)');
+    // the safe line: under the crest's speed the car stays on the ground, sees the barrier from the top and steers round it
+    const slow = over(need - 3, 4, { steer: () => (P.s > 1185 && P.s < 1225 && P.lat < lane(5, P.s) - 0.2 ? 1 : 0) });
+    check(slow.flights === 0 && slow.lost === 0 && slow.wrecks === 0 && slow.slowest > 15, 'crest, the safe line: at ' + Math.round((need - 3) * 3.6) + ' km/h it stays on the ground, and steers round the barrier from the top (no damage, never under ' + Math.round(slow.slowest * 3.6) + ' km/h)');
+    check(fast.t < slow.t - 0.4, 'crest: flying is the faster way over (' + fast.t.toFixed(1) + ' s against ' + slow.t.toFixed(1) + ' s from 1060 to 1300 m)');
+    // a slow car never leaves the ground at all, flat out
+    const commuter = over(g.cars.CARS[0].maxSpeed, 3, { car: 'commuter' });
+    check(commuter.flights === 0, 'crest: the Commuter, flat out (' + Math.round(g.cars.CARS[0].maxSpeed * 3.6) + ' km/h), never leaves the ground');
+    // a hard landing costs: a fast car flies further and comes down harder
+    const hard = over(42, 3, { car: 'miata' });
+    check(hard.flights === 1 && hard.top > 2 && hard.lost > 0 && hard.lost < 40 && hard.wrecks === 0, 'crest: at ' + Math.round(42 * 3.6) + ' km/h it flies ' + hard.top.toFixed(1) + ' m up and the landing costs ' + hard.lost.toFixed(0) + ' health');
+    // the camera: coming up to the top it is down behind the car; over it, back up
+    check(Gambles.blind(1000) === 0 && Gambles.blind(1170) > 0.9 && Gambles.blind(1260) === 0, 'crest: the camera comes down behind the car on the way up (' + Gambles.blind(1170).toFixed(2) + ' at 1170 m) and is back over the top');
+    // no other level has a crest by accident
+    const others = [];
+    for (const l of [...g.levels.LEVELS, ...Object.values(g.levels.HIDDEN_LEVELS)]) {
+      if (l.id === 'gimmick-road-3' || l.segments.some(seg => seg.ease)) continue;
+      g.select(l); G.start();
+      if (Gambles.crests.length && !g.cars.CAR.noWheels) others.push(l.id + ' (' + Gambles.crests.map(c => Math.round(c.speed * 3.6)).join(', ') + ' km/h)');
+    }
+    g.select('gimmick-road-3');
+    check(!others.length, 'crest: no level without an "ease" of its own has a crest a car could fly' + (others.length ? ': ' + others.join('; ') : ''));
   });
 
   console.log(failures ? failures + ' FAILED' : 'all checks passed');

@@ -6,6 +6,7 @@ import { Player } from '../player.js';
 import { Game } from '../game.js';
 import { CAR } from '../cars.js';
 import { LEVEL } from '../levels.js';
+import { Gambles } from '../gambles.js';
 
 // ============================================================================
 // RENDERING
@@ -139,8 +140,10 @@ export const updateCamera = (dt, snap) => {
   const cam = Game.screensaver ? CONFIG.screensaver : CONFIG; // (the screensaver's camera stands further back)
   const baseBack = cam.camBack, baseH = cam.camHeight;
   const inTunnel = tunnelCamera(Player.s - baseBack);
-  const camBack = baseBack + ((CONFIG.tunnel?.camBack ?? baseBack) - baseBack) * inTunnel;
-  const camHeight = baseH + ((CONFIG.tunnel?.camHeight ?? 5.5) - baseH) * inTunnel;
+  // (and coming up to a crest a car can fly, down behind the car, so the far side stays hidden: see Gambles.blind)
+  const blind = Game.screensaver ? 0 : Gambles.blind(Player.s) * (1 - inTunnel);
+  const camBack = baseBack + ((CONFIG.tunnel?.camBack ?? baseBack) - baseBack) * inTunnel + (CONFIG.crest.camBack - baseBack) * blind;
+  const camHeight = baseH + ((CONFIG.tunnel?.camHeight ?? 5.5) - baseH) * inTunnel + (CONFIG.crest.camHeight - baseH) * blind;
   Track.toWorld(Player.s - camBack, camLat, tmp);
   const shake = CONFIG.hitShake * Game.shake;
   camera.position.set(tmp.x + (Math.random() - 0.5) * shake,

@@ -5,9 +5,9 @@ Kept by the orchestrator; updated whenever an agent commits or the owner adds so
 the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPAD-10-Oct.md`.
 
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
-Nothing is pushed.
+**Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: round 2 started from `2e0a296` (main). Agents 1 to 7 are finished and merged; agents 8, 9 and 10 are running.
+Last updated: after `3047fac` (main; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 17 (in-game UI), 18 (menu UI), 19 (road gimmicks), 20 (theme levels A). Theme levels B and C start as soon as A has committed the shared base.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -111,11 +111,44 @@ $1. Largest step between neighbouring widths: Monza 47.5 m to 0, Spa 27.5 m to 0
 The owner's standing instruction (10-Oct): assign the unassigned lists, and give any new task to
 whichever agent is free, without asking first.
 
-5. Level editor, full control: **started**, agent 8, branch `delivery-editor` (in the city-levels worktree). Items E1 to E7 below, in the order given at the end of that section
-6. Police pursuit and the other road characters: **started**, agent 9, branch `delivery-pursuit` (in the circuits worktree). P1 then P2, then P9, P7, P8, P6, P5, P3, P4, P10, P11, P12, P13
-7. Road gimmicks: **started**, agent 10, on `main`. A hidden Gimmick Road 3, then G16 crosswind, H1 crest jumps, H2 ramp over the jam, H8 washboard, H4 low bridge, H5 ford, then the rest of the kept G and H lists; each also put on two or three real levels
-8. New themes: **queued**, next free slot. In the owner's order (most unlike the game first): T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio backlot, T1 Venice, T4 ice road, then on down the ranking; a level for each
+5. Level editor, full control: **finished**, agent 8, merged into `main` as `5fe99da` (no conflicts). A schema of 99 level fields (`levelSchema.js`); the editor builds every form, place-button and its map from it; all level files load and save through it unchanged. Not started: E1.4 (the game validating with the schema), E6.2 (clock button). Partly: E2.6, E3.5, E5.3, E6.1. Nothing clicked by hand. The item ticks are in the editor section below
+6. Police pursuit: **redone and merged** into `main` as `65478c1` (agent 12; `f2404a4`, `cab1580`, `dcaa98c`, `b64201e`). Now 152 lines of logic where it was 402. The owner's verdict on the first version: "It is supposed to just be a simple traffic event." So: a getaway car and the interceptor (a model of its own) come through from behind like an ambulance does and drive on; no endings, rewards or gambles. The bank robber wanting a lift (P2, the orchestrator's idea, never asked for) is removed. The other road characters (P3 to P13) are NOT being built. First version, stopped at 09:21: `881f429`, `ee6dde8`, `bcd6b25`
+7. Road gimmicks: **stopped at 09:21**, agent 10, on `main`. Unfinished ramp-over-the-jam work is sitting uncommitted in the main checkout (17 files). Nobody is on it. Done so far: G16 crosswinds (`1d48924`: on Grand Pacific, Hurricane, Tokyo) and H1 crest jumps (`9d7711b`: on Rival Run, Mystery Meadows), both on the hidden Gimmick Road 3. It re-timed two clocks by a lot; told to put them back. A hidden Gimmick Road 3, then G16 crosswind, H1 crest jumps, H2 ramp over the jam, H8 washboard, H4 low bridge, H5 ford, then the rest of the kept G and H lists; each also put on two or three real levels
+8. New themes: **stopped at 09:21**, agent 11, branch `delivery-themes` (in the city-levels worktree). The toy room's look is committed (`14e3c56`); its gimmick is uncommitted in that worktree. Nobody is on it. In the owner's order (most unlike the game first): T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio backlot, T1 Venice, T4 ice road, then on down the ranking; a level for each
 9. Queued after that, as slots free: menu pictures and clocks (the three circuits, the five themed levels, Super and 6-star cars); 28 liveries; 31 endless mode; the replay system's next step (`REPLAY-NOTES.md`); 51 performance on phones; 49 and 50 (test speed, lint and CI)
+
+- [x] Super cars screenshotted: all 35, Good and Evil (70 pictures, two contact sheets, sent to the owner). Every one has its livery, stripe and kit. To look at closer: the Super of the Super Lowrider (caught mid-hop, parts apart), the Dampervan (too big for the frame), the Tow Truck's wing beside its crane
+- [x] Super cars: the stripe stops at every screen and window; the kit rides the body's animation; an underglow under every Super car; vans and off-roaders get a wing, a bull bar, a snorkel and roof lamps. `136c0d5`, `35e0ac3`
+- [x] Menu pictures of the 35 Super cars, Good and Evil, in `carshots/` as `super-<id>-good.jpg` / `-evil.jpg`. `8d7ab8f`. Nothing shows them yet
+- [x] A car picked in the garage takes the side whose livery is showing; the garage opens in the livery of the side being played. `8a0bd79`. Seen in one screenshot ("Drive it as Evil"); not clicked
+
+## Round 3: clearing the list (owner, 10-Oct: "Delegate agents to properly clear the list")
+
+Three agents at a time; the next item starts as each one finishes.
+
+- [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
+- [x] Police pursuit redone as a plain traffic event: a getaway car and its interceptor come through from behind and drive on; nothing gained or lost by the player. Merged, `65478c1`; levels, schema, pursuit and hazards checks pass. Seen as two small stills and its Gimmicks card. For the owner: the pair now pass at 130% of the player's top speed; the getaway car is no longer an "evil" car; the helicopter was removed
+- [~] Car ideas lot: agent 13
+- [x] Twenty more Good cargo items (C1 to C20): agent 15, merged into `main` (`cc34343`, `533d5a2`); cargo, bundle and levels checks pass; seen on the Cargo page's contact sheet, sent to the owner. Weakest: sushi boat, tea set, globe. Nothing seen moving
+- [x] Twenty more Evil cargo items (C21 to C40), three states each: agent 16, merged into `main` as `6fc32e2` (`c8ba744`, `269134e`; two small conflicts with the Good branch, both sides kept); cargo, bundle and levels checks pass; 50 items in all now. Seen on two contact sheets, sent to the owner. Weakest: the teddy bear's middle state, the cannonball's first two states, the reactor's last, the skunk asleep. Nothing seen moving
+- [ ] Cargo picked by hand for more levels (the pairs suggested under "More cargo"): not done; every level gets one by its place on the menu
+- [~] Menu UI rework (M1 to M3 in the section "Menu UI" at the end): agent 18, branch `delivery-menu`
+- [~] In-game UI improvements (U1 to U5): agent 17, branch `delivery-ui`. The owner asked what the "on fire" message was: there is none (the orchestrator had listed it without checking); the agent has been told to build the stay-on-screen list only from messages that exist
+- [~] Road gimmicks, resumed from the saved ramp work: agent 19, branch `delivery-gimmicks` (a new worktree)
+- [~] New levels on new themes, built from the gimmicks the game has now (owner, 10-Oct: "Let's get some agents going making new levels with the new themes and the gimmicks we have right now"). No new gimmick per theme. Three agents, three themes each, a level on each:
+  - [~] A (agent 20, `delivery-themes`): the shared base first (where the new levels live, saved progress undisturbed), then T14 toy room, T15 underwater tunnel, T18 moon base
+  - [ ] B (`delivery-themes-b`, waiting for A's base): T13 film studio backlot, T1 Venice, T4 ice road
+  - [ ] C (`delivery-themes-c`, waiting for A's base): T12 theme park, T7 volcano island, T11 container port
+- **Standing rule for level content (owner, 10-Oct):** "add more Cash bonus pickups on the level from now, and have parts of the level where two or more pickups are side by side." Given to the theme agents, the Stelvio and Market Town agent and the gimmicks agent. Older levels have between none and four cash pickups
+- **The level progression rework waits:** the owner will do "a full rebalance later"
+- [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
+- [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
+- [ ] Next 5: 28 liveries, 31 endless mode, replay in the browser
+- [ ] Next 6: 51 phone performance, 49 parallel smoke test, 50 lint and CI
+- [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
+- Not in the queue unless the owner says: road characters P3 to P13 (the owner wanted the pursuit kept simple); anything needing a person (listening, playing by hand, a real phone)
+
+- [ ] Next 0b: the level progression rework (the owner's spec is in the section "Level progression rework" at the end; nine things in it need the owner's answer before it is built)
 
 ## Not assigned
 
@@ -389,9 +422,14 @@ leave.
 
 ### How the car answers
 
-- [ ] G16. **Crosswind**: a steady push sideways on an exposed stretch (a viaduct, a dam), with
+- [x] G16. **Crosswind**: a steady push sideways on an exposed stretch (a viaduct, a dam), with
       gusts announced by a windsock. Tall cars are pushed more; passing a truck gives shelter,
       then a shove as you clear it.
+      _Built (`1d48924`, `gambles.js`, field `crosswinds`):_ on Gimmick Road 3 (300-900), Grand Pacific's
+      sea cliff bridge, Hurricane, Tokyo. Verified by `scripts/.gimmicks3-check.mjs wind` (push by
+      height, taps hold the lane, shelter beside a bus and the shove on clearing it, traffic drifts in
+      lane, the low car's safe line) and in stills on Gimmick Road 3 (socks, the card). Not verified:
+      played by hand; the lean on screen; the three real levels on screen.
 - [ ] G18. **Fuel**: a long level where the tank will not make it. Petrol stations are on the
       shoulder: pull in and stop (time lost) or run dry and coast.
 - [ ] G20. **Fragile cargo**: on this level the package breaks with bumps, kerbs and hard
@@ -414,9 +452,15 @@ leave.
 Written to the counterplay rule: every one is a gamble the player can take or leave, and each
 says what the gamble is. All are things that happen on real roads, as the eleven kept ones are.
 
-- [ ] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
+- [x] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
       car flies: no steering in the air, and it lands on whatever is over the top. _Gamble:_ lift
       and see, or fly blind and gain seconds. _Builds on:_ the drawbridge's jump, hills.
+      _Built (`9d7711b`, `gambles.js`, a segment's `ease`: no object placed):_ on Gimmick Road 3 (tops at
+      1190 and 1490), Rival Run (4400), Mystery Meadows (2740, the cows over the top). Verified by
+      `.gimmicks3-check.mjs crest` (flies in a clear lane unhurt, lands in the barrier in the wrong one,
+      no steering in the air, the safe line under the board's speed, faster by 2.4 s, a hard landing
+      costs, no other level has a crest by accident) and in stills (the hidden far side, the car in the
+      air, the card). Not verified: played by hand; the two real crests on screen; sound.
 - [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
       in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
       slow and it lands in it. _Gamble:_ the jump or the slow way round. _Builds on:_ drawbridge
@@ -494,33 +538,19 @@ Not obstacles: road users with something of their own going on, that the player 
 hinder or keep clear of. Each is a random or timed event, as ambulances, funeral processions and
 convoys already are (a level's `every: { min, max }`), so any level can have them.
 
-- [ ] P1. **Police pursuit** (the owner's idea): a chase already under way comes through the
-      level: a getaway car weaving through the traffic flat out, and behind it a pursuit car that
-      is **a model of its own, seen only in this event** (a low, wide interceptor with a light bar
-      and push bar, unlike the patrol cars), its siren heard coming before it is seen. The
-      helicopter joins with its searchlight.
-      - *What they do:* the getaway car takes any gap, the shoulder and the oncoming side; the
-        interceptor follows its line and tries to get alongside to turn it. Traffic pulls aside
-        for the siren, so a clear channel opens behind the two of them and closes again.
-      - *A Good player's gamble:* get in the getaway car's way. Hold a lane it wants, box it in
-        against traffic or the kerb, and the interceptor gets its chance: social standing, a
-        cash reward, and a bust wiped. Getting it wrong means being hit by one or both.
-      - *An Evil player's gamble:* run interference for the criminal: block the interceptor, or
-        tuck into the channel behind the chase and ride it through the traffic. The getaway
-        driver throws a bag of cash out for the help; the police add the player to the chase.
-      - *Or keep out of it:* move over and let it go by, at the cost of nothing.
-      - *How it ends:* caught (the two of them stopped on the shoulder further up, lights going,
-        a thing to rubberneck at), crashed (wreckage ahead), or away. Which one depends on what
-        happened, and on the player if the player took part.
-      - *Builds on:* emergencies, the police and their sight, the helicopter, wrong-way drivers'
-        warning and horn, rubbernecking, wreckage, cash pickups.
-      - *To settle when built:* whether the interceptor can also be earned as a car; one
-        interceptor or two; whether it can happen on race levels (suggest not).
-- [ ] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
-      a man with a bag stands on the shoulder with his thumb out, as a passenger pickup does.
-      *Gamble:* carry him for a large payout and have every police car on the level after the
-      car until he is dropped; or drive him straight to the next patrol car for standing.
-      *Builds on:* the passenger pickup, P1.
+- [x] P1. **Police pursuit** (the owner's idea), built in its simple form: a traffic event, as an ambulance is.
+      Now and then (`pursuits: { every: { min, max } }`) a getaway car comes up from behind flat out, weaving
+      through the traffic, and after it an interceptor that is **a model of its own, seen only in this event**,
+      its siren heard before it is seen; traffic pulls aside as for an ambulance, and the two drive on through
+      and away. Nothing in it for the player and nothing against: hitting either is a collision like any other.
+      - *Built (10-Oct, `delivery-pursuit`):* `pursuit.js`, `render/pursuitModels.js`, `CONFIG.pursuit`, a Gimmicks
+        card, a `levelSchema.js` entry; on Big Business, Night Drive, Speed Trap Alley, Ring Road, Tokyo and Gimmick
+        Road 2; never on a race or the Battlefield. *Verified:* `node scripts/.pursuit-check.mjs`; stills of the chase
+        going by. *Not verified:* never played by hand, the siren never heard.
+      - *Taken out at the owner's word (10-Oct):* the first build's three endings (caught, crashed, away), the Good
+        and Evil gambles with their rewards, bag of cash and bust, and the helicopter.
+- [-] P2. **Bank robber wants a lift**: dropped at the owner's word (10-Oct). Built once on `delivery-pursuit`
+      and reverted: the pursuit is a simple traffic event, and nobody on the road wants a lift from it.
 - [ ] P3. **Street racers**: two tuned cars line up beside the player at speed, flash their
       lights, and go: a race through the traffic to a marked point a kilometre on. *Gamble:*
       take it up (cash for winning, and the police take an interest in all three) or let them
@@ -570,6 +600,251 @@ convoys already are (a level's `every: { min, max }`), so any level can have the
       not. *Gamble:* through the stubble field beside it (rough, slow, unpoliced) or wait for a
       gateway. *Builds on:* tractors, wide load, mud.
 
-The orchestrator's view: P1 is the best of these by some way, because both sides have something
-to do with it and it ends differently each time; P2 follows from it almost for free. P7 and P8
+The orchestrator's view (before P1 was cut down to a simple traffic event and P2 dropped, at the
+owner's word): P1 was the best of these by some way. P7 and P8
 are the freshest: other road users as something to use, not to avoid. P9 gives the horn a job.
+
+## Car ideas lot: 30 models (assigned, agent 13)
+
+Asked for by the owner on 10-Oct: "a list of 30 generic name/car models, and a real life vehicle to
+base it off. Then have an agent make them. Add a tab in the garage for the parking lot of car
+ideas." The names are generic on purpose (no maker's or model's name); none repeats a car the game
+already has. They are ideas on show, not cars for sale: kept out of the garage's own list, so
+saved progress and the balance of the tiers are untouched.
+
+| # | Id | Name in the game | Based on | What makes it recognisable |
+|---|---|---|---|---|
+| 1 | `bubble` | Bubble Car | BMW Isetta | Egg shape, the whole front is the door, narrow rear track |
+| 2 | `threewheeler` | Three-Wheeler | Reliant Robin | One front wheel, wedge nose, tall cabin |
+| 3 | `tinsnail` | Tin Snail | Citroën 2CV | Arched roofline, roll-back canvas roof, separate round headlamps, skinny wheels |
+| 4 | `bug` | People's Bug | Volkswagen Beetle (Type 1) | Dome roof, separate rounded wings, sloping tail with engine vents |
+| 5 | `twostroke` | Two-Stroke Saloon | Trabant 601 | Small boxy two-door, little tail fins, pale pastel paint |
+| 6 | `brickestate` | Brick Estate | Volvo 240 estate | Square everything, long flat roof, big bumpers |
+| 7 | `woody` | Woody Wagon | 1949 Ford "Woody" wagon | Wood-panelled sides, split windscreen, surfboard on the roof |
+| 8 | `stately` | Stately Saloon | Rolls-Royce Silver Shadow | Tall upright chrome grille with a mascot, long bonnet, two-tone paint |
+| 9 | `limo` | Stretch Limo | Lincoln Town Car stretch limousine | Very long, many side windows, boomerang aerial |
+| 10 | `milkfloat` | Milk Float | Smith's / Wales & Edwards electric milk float | Open sides stacked with crates, flat cab, tiny wheels, slow |
+| 11 | `pony` | Pony Car | 1965 Ford Mustang fastback | Long bonnet, short deck, fastback roof, triple tail lamps |
+| 12 | `splitwindow` | Split-Window Coupe | 1963 Chevrolet Corvette Sting Ray | Pointed nose, pop-up lamps, split rear window, side pipes |
+| 13 | `snake` | Snake Roadster | AC Cobra 427 | Open two-seater, fat rear arches, oval mouth, roll hoop, twin stripes |
+| 14 | `rearengine` | Rear-Engine Coupe | Porsche 911 (classic) | Round lamps on raised wings, sloping teardrop tail, whale-tail spoiler |
+| 15 | `wedge` | Wedge Supercar | Lamborghini Countach | Flat wedge, scissor doors, huge rear wing, wide rear tyres |
+| 16 | `gullwing` | Stainless Gullwing | DeLorean DMC-12 | Bare brushed-metal body, gullwing doors, louvred rear window |
+| 17 | `centreseat` | Centre-Seat Hypercar | McLaren F1 | Low cab-forward bubble, central driving seat, roof air scoop |
+| 18 | `pandacoupe` | Panda Coupe | Toyota Sprinter Trueno AE86 | Two-tone white over black, pop-up lamps, boxy hatch |
+| 19 | `midnight` | Midnight Coupe | Nissan Skyline GT-R (R34) | Square shoulders, four round tail lamps, tall rear wing |
+| 20 | `rallywedge` | Rally Wedge | Lancia Stratos | Very short, wraparound visor windscreen, roof spoiler, bank of spot lamps |
+| 21 | `safari` | Safari Wagon | Land Rover Defender 110 | Flat aluminium panels, roof rack and ladder, spare wheel on the bonnet, snorkel |
+| 22 | `widetruck` | Wide Truck | AM General Hummer H1 | Extremely wide and low for a truck, slot grille, flat windscreen |
+| 23 | `polytruck` | Polygon Truck | Tesla Cybertruck | One peaked triangle of flat steel, light bar front and back |
+| 24 | `monster` | Monster Truck | Bigfoot (Ford F-250) | Pickup body on enormous tyres, visible suspension, flags |
+| 25 | `corrugated` | Corrugated Van | Citroën H Van | Ribbed sides, snout of a bonnet, tall square body |
+| 26 | `foodtruck` | Food Truck | Grumman Olson step van | Serving hatch with an awning, menu board, roof vent |
+| 27 | `motorhome` | Motorhome | Winnebago Brave (1970s) | Slab-sided box with a coloured stripe, big windscreen, roof air-conditioner |
+| 28 | `schoolbus` | School Bus | Blue Bird conventional school bus | Yellow, bonnet out front, black stripes, stop sign arm, roof lamps |
+| 29 | `doubledecker` | Double Decker | AEC Routemaster | Two decks, open rear platform, half-cab beside the engine |
+| 30 | `fireengine` | Fire Engine | American LaFrance pumper | Red, ladder on top, hose reels and pump panel, light bar |
+
+- [ ] The 30 models, in a state-free file of their own
+- [ ] A table of the 30 (name, what it is based on, size, colours for Good and Evil, a line about it)
+- [ ] A "Car ideas" tab in the garage: a second lot where they are parked, to look at, with the Livery button working
+- [ ] A picture of each, looked at and corrected until it reads as what it is based on
+
+## More cargo: 40 ideas (draft, not assigned)
+
+Drafted by the orchestrator on 10-Oct at the owner's request. None is built. The game has ten now
+(Good: tower of pizzas, wedding cake, goldfish, gift-wrapped cactus, grandfather clock; Evil:
+ticking parcel, porcupine, crate of bees, cursed doll, specimen jar). The same pattern is kept:
+a Good item has some charm and one small idle animation; an Evil item has three states that read
+at thumbnail size, calm at the start, agitated at half the clock, furious for the last fifth.
+"Fits" is a level or theme it would suit.
+
+### Good: 20 ordinary things, none of them a plain box
+
+| # | Item | Idle animation | Fits |
+|---|---|---|---|
+| C1 | Tray of coffees | Four cups in a holder; steam curls, one lid rattles | City, Rush hour |
+| C2 | Bunch of balloons | Tied to a weight, bobbing and tugging at their strings | Suburbs, Christmas |
+| C3 | Birthday present with a huge bow | The bow's tails flutter; something inside makes it hop now and then | Suburbs |
+| C4 | Bouquet in a vase | Flowers nod; a petal falls and a new one grows back | Farm, Market Town |
+| C5 | Stack of pancakes | Wobbles; syrup drips slowly down the side | Back Roads |
+| C6 | Ice-cream sundae | The cherry slides, stops, slides back up; melting drips | Beach, Hurricane |
+| C7 | Sushi boat | The little wooden boat rocks; a piece slides and returns | Tokyo, Hong Kong |
+| C8 | Tiered tea set | Cups chatter on their saucers; the pot's lid lifts with a puff | Canberra, Market Town |
+| C9 | Record player | The record turns, the arm bobs, notes float off | The Hood, Night Drive |
+| C10 | Lava lamp | Blobs rise and sink | Night levels |
+| C11 | Snow globe | A tiny village inside; the snow swirls and settles | Stelvio, Christmas, Mountain Pass |
+| C12 | Potted bonsai | Leaves shiver; a tiny bird hops along a branch | Tokyo, Singapore |
+| C13 | Puppy in a basket | Ears flop, tail wags, head tilts | Suburbs, Farm |
+| C14 | Canary in a cage | Hops between perches; the cage swings | Oh Mine! (the mine), Hong Kong |
+| C15 | Bowl of ramen | Steam rises; the chopsticks lift a noodle and drop it | Tokyo, Night levels |
+| C16 | Globe on a stand | Spins slowly, tilts, spins back | Airport, Canberra |
+| C17 | Trophy | Gleams; a star of light travels round the rim | Big Business, the circuits' menus |
+| C18 | Surfboard with a ribbon | Leans and rocks like a see-saw on its fin | Grand Pacific, Beach |
+| C19 | Tool box, open | Spanners rattle in their trays; the lid creaks | Construction, Quarry Run |
+| C20 | Telescope on a tripod | Swings round to look at things; the lens glints | Asteroid Run, Mountain Pass |
+
+**Built (Agent 15, branch `delivery-cargo-good`):** all twenty, in `render/cargoModelsGood2.js`, on the cargo page and in the default rotation (no level JSON edited).
+
+- [x] C1 to C20 built: ids `coffee`, `balloons`, `present`, `bouquet`, `pancakes`, `sundae`, `sushi`, `teaset`, `record`, `lavalamp`, `snowglobe`, `bonsai`, `puppy`, `canary`, `ramen`, `globe`, `trophy`, `surfboard`, `toolbox`, `telescope`.
+- Looked at: every one as a still on the cargo page (scratchpad `shots-cargo-good/sheet.png`, and `p1` to `p4`, `q1`); pancakes, record player and puppy in the HUD corner; record player and telescope at the kerb. Stills only: none has been seen moving.
+- Departures from the table: C18 the surfboard stands on its tail in a heap of sand and rocks from side to side (lying on its fin it was a sliver at thumbnail size); C14 the cage rocks on its base, it does not hang.
+- `CARGO.good` was reordered so every item turns up under the default rotation (places 6 and 15 fall on levels that name their own, so goldfish and wedding cake, which levels name, sit there).
+
+### Evil: 20 things nobody should be driving about with
+
+| # | Item | Calm | Agitated (half the clock left) | Furious (a fifth left) | Fits |
+|---|---|---|---|---|---|
+| C21 | Egg in a nest | A large speckled egg, rocking a little | Cracked, an eye at the crack | Hatched: a furious little dragon (or goose) flapping in the shell | Farm, Safari |
+| C22 | Pressure cooker | Hissing gently | Lid rattling, valve whistling, steam jets | Red hot, lid bouncing, about to go | City, Mumbai |
+| C23 | Venus flytrap | Jaws shut, swaying | Jaws open, tracking things, drooling | Snapping in every direction, straining out of its pot | Mystery Meadows, Safari |
+| C24 | Barrel of toxic waste | Sealed, a soft green glow | Lid bulging, ooze down the side | Lid off, bubbling over, a tentacle of slime | Construction, Oh Mine! |
+| C25 | Haunted mirror | An ordinary mirror | A face in it that is not yours | Hands coming out of the glass | Night Drive, All Heck |
+| C26 | Skunk in a carrier | Asleep | Awake, tail up through the bars | Stamping, a green cloud | Back Roads, Farm |
+| C27 | Cannonball with a fuse | A black ball, fuse unlit | Fuse lit, short sparks | Fuse nearly gone, rolling about by itself | Battlefield, Passage du Gois |
+| C28 | Mimic chest | A treasure chest | Lid lifts on a row of teeth, a tongue | Running in circles on stubby legs, snapping | All Heck, Mystery Meadows |
+| C29 | Beehive piñata of fireworks | A bundle of rockets, tied | One fizzing | Rockets going off in turn, the bundle spinning | Christmas, Hong Kong |
+| C30 | Baby alien in an incubator | Curled up, a slow pulse of light | Awake, hands on the glass, the light quickening | Glass cracked, antennae out, the whole thing levitating | Asteroid Run, Airport |
+| C31 | Possessed teddy bear | Sitting, button eyes | Head turned all the way round | Standing, eyes red, holding its own stuffing | Suburbs, Night Drive |
+| C32 | Cage of bats | Hanging asleep | A few awake, eyes glowing | All of them battering the bars | Night levels, tunnels |
+| C33 | Ice block with something in it | A frosty block, a shape inside | Dripping, the shape has moved | Shattered open: a thawed, cross yeti cub (or caveman's arm) | Stelvio, Mountain Pass |
+| C34 | Sack of snakes | A tied sack, shifting | Heads poking through holes | The neck come undone, snakes spilling | Safari, Mumbai |
+| C35 | Bottle with a genie | A corked bottle, smoke inside | Cork wobbling, a face in the smoke | Cork out, an arm and a scowl coming out | Mumbai, Hong Kong |
+| C36 | Unstable reactor core | A canister, steady blue rings | Rings spinning fast, turning yellow, alarms | White hot, arcs of lightning, humming upward | Big Business, Construction |
+| C37 | Angry goose in a crate | A crate with a beak hole, quiet | Head out, hissing | Out of the crate entirely, wings wide | Farm, Canberra |
+| C38 | Jack-in-the-box | Closed, the handle turning by itself | Lid twitching, the tune speeding up | Sprung: a leering clown lunging on its spring | Christmas, Suburbs |
+| C39 | Thundercloud in a jar | A small grey cloud | Dark, rumbling, flickers of light | Lightning cracking the glass, rain inside | Hurricane, Mumbai |
+| C40 | Piranha tank | Fish idling | Circling fast, the water churning | Leaping out, snapping, water everywhere | Passage du Gois, the amphibious levels |
+
+- [x] **C21 to C40 built** (agent 16, branch `delivery-cargo-evil`): all twenty, in
+  `render/cargoModelsEvil2.js`, listed in `CARGO.evil` (ids egg, cooker, flytrap, barrel, mirror,
+  skunk, cannonball, mimic, fireworks, alien, teddy, bats, ice, snakes, genie, reactor, goose, jack,
+  cloud, piranhas). The egg hatches a dragon; the ice holds a yeti cub. No level names one yet: the
+  rotation by menu position hands them out. Looked at: every one in all three states as stills of the
+  cargo page (two moments each), and the mirror, genie and thundercloud in the HUD corner. Nothing
+  was seen moving.
+
+### Notes for whoever builds them
+
+- **Pairs that suit a level** (one Good, one Evil, as each level carries): snow globe and ice block
+  (Stelvio); canary and toxic barrel (Oh Mine!); sushi boat and fireworks (Hong Kong); telescope
+  and baby alien (Asteroid Run); puppy and skunk (Farm); ramen and cage of bats (Night Drive);
+  surfboard and piranha tank (the amphibious levels); tool box and reactor core (Construction).
+- **Cheapest to build first** (shapes the game mostly has): pressure cooker, cannonball, toxic
+  barrel, jack-in-the-box, lava lamp, snow globe, trophy, tray of coffees.
+- **Hardest to make read small:** haunted mirror (a flat thing seen at an angle), genie (smoke),
+  thundercloud (soft shapes): each needs a strong colour change between states to carry it.
+- **Close to ones the game has** (keep apart if both are used): possessed teddy bear and the
+  cursed doll; cage of bats and the crate of bees; pressure cooker and the ticking parcel.
+- With 50 items, a level's cargo could be picked from two or three that suit it instead of one,
+  the same every run by level and side, so replays of a level are not always the same parcel.
+
+## In-game UI improvements (owner, 10-Oct; queued as "Next 0")
+
+The owner's five, in their words, each with what it comes to. None is started.
+
+- [ ] U1. "The level meter takes up too much of the screen, rework it to different style in the
+      same corner as the other meters." The progress bar across the top centre goes; the distance
+      through the level becomes a compact meter in the top-left block with the clock, tip, busts
+      and social standing, in a style of its own (not another long bar). Pause and Exit level,
+      which sit under it now, need a new place that is out of the way.
+- [ ] U2. "Have a odometer for the danger/shoulder meter instead, have it sit at 0 danger when not
+      active." The shoulder's danger timer becomes a dial (a small gauge with a needle, as a car's
+      instrument is): always there, resting at 0 while the car is on the road, climbing while it
+      is on the shoulder, falling back when it leaves. No element that appears and disappears.
+- [ ] U3. "The messages are right in the way of the horizon in both desktop and mobile." Event and
+      status messages move off the horizon line, where the road ahead is read: to a strip clear
+      of it (low on the screen above the controls, or the top edge), on desktop and on a phone,
+      checked against the on-screen buttons, the cargo window and the tank corner.
+- [ ] U4. "Some critical messages should stay indefinitely like punctures. I'll let you have the
+      judgement call but extract all message times to a config." Every message's time on screen
+      comes out of the code into one table in `config.js` (by kind of message). Messages about a
+      condition that is still true stay until it ends: a puncture, no brakes, a stalled engine, a
+      wanted level, a mystery effect running, being on fire, the wrong way down a road. Which
+      ones are "critical" is the builder's call, written down in the table for the owner to edit.
+- [ ] U5. "The mystery effect should be written as the pick up status, so the player can remember
+      what it was." While a mystery effect runs, the pickup's status line names the effect
+      (Earthquake, Giant, Traffic freeze...) with its time left, as a turbo or ghost shows its
+      own name, not just "Mystery".
+
+Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `render/touch.js`
+(the phone layout), `messages.js` and `messages.json` (the times), `config.js`, `player.js` or
+`mysteries.js` (the effect's name for the status). To be checked in screenshots at 1100x650 and
+520x900, in a level with every meter showing at once.
+
+## Level progression rework (owner's spec, 10-Oct; queued, not started)
+
+### The spec, in the owner's words
+
+> Divide levels into groups of 5.
+> Each star tier gets 5 levels.
+> 1/2/3/4/5 then blue 1/blue 2/ etc
+> Each level will have a ribbon for beating it. The left half of the ribbon is Good and the Right half is evil.
+> When playing a level without that half of the ribbon earned, the player is only allowed to use cars from EXACTLY that tier. No tiers lower or higher, no tiers from another coloured stars. When beating the level on evil this way, the player can replay it in any (evil) car.
+> The progression will be as follows:
+> When a tier is unlocked, the first two levels are unlocked
+> Level 3 requires 1 ribbon (any two halves)
+> Level 4 requires 2 ribbons (any 4 halves)
+> Level 5 requires level 4 to be beaten (any half)
+> Beating Level 5 unlocks the next tier
+> For levels with no good/evil option, it awards a full ribbon
+
+### As a checklist
+
+- [ ] R1. Levels in tiers of five: gold 1, 2, 3, 4, 5, then blue 1, 2, 3, 4, 5. Ten tiers, fifty places. The menu's groups become the tiers, each headed by its stars.
+- [ ] R2. A ribbon on every level: the left half earned by beating it as Good, the right half as Evil. A level with no choice of side (the Battlefield, an "always Good" level) gives the whole ribbon at once. Shown on the level's card, and counted per tier.
+- [ ] R3. The car rule: on a level whose half-ribbon for the side being played is not yet earned, only a car of exactly that tier may be driven: same number of stars, same colour of stars. Once that half is earned, the level can be replayed on that side in any car.
+- [ ] R4. Unlocking inside a tier: levels 1 and 2 open with the tier; level 3 needs two half-ribbons in the tier; level 4 needs four; level 5 needs level 4 beaten on either side.
+- [ ] R5. Beating level 5 on either side opens the next tier (its first two levels).
+- [ ] R6. Saved progress carried over: a best time already saved on a side becomes that half of the ribbon; tiers and levels open accordingly, so nobody loses what they had.
+- [ ] R7. The menu and garage say why: a locked level says what it needs ("2 more half-ribbons in this tier"); a level that restricts the car says which tier, and the garage marks the cars that qualify.
+- [ ] R8. Checks: the unlock rules, the car rule on both sides, old saves, and that no player can be left with no way forward.
+
+### What the spec does not settle (to be answered before it is built)
+
+**Answered by the owner (10-Oct): "Leave the Special and Amphibious levels outside of the progression system."** So the tiers are made of the 31 main levels only; specials and amphibious levels keep their own groups and have no ribbon rule or car rule. That settles most of 1 and 2 below. Still open: the races (assumed outside too, on their own tab); 31 levels make six tiers of five and one over, against ten tiers (gold 1 to 5, blue 1 to 5): which levels go in which tier, and what fills the blue tiers; 3 (owning a car of the tier); 4 (Blue 4 has no cars).
+
+1. **Which level goes in which place.** The game has 31 main levels, 9 specials, 5 amphibious
+   levels and 6 races: 51 against 50 places. Do the races keep their own tab outside the tiers
+   (leaving 45 for 50 places, so five short)? Where do the specials and the amphibious levels go?
+2. **Levels that bring their own vehicle** (Asteroid Run's UFO, Oh Mine!'s jetboat, the
+   Battlefield's 8x8, the races' F1 / GT / LMP) and the **amphibious-only levels** cannot obey
+   "exactly that tier's cars". Are they outside the tiers, or exempt from the car rule?
+3. **Having a car of the tier.** The player must own one to play at all. Gold 1 has the free
+   Commuter; every other tier's cheapest car costs money (gold 2: $130, blue 1: $270, blue 5:
+   $1,200). If the tips from a tier do not cover the next tier's cheapest car, the player is stuck.
+   Is the cheapest car of a new tier lent or given, or must the tips be made to cover it?
+4. **Blue 4 looks empty.** Reading `cars.js` finds Blue Star cars at 1, 2, 3 and 5 stars and none
+   at 4 (to be confirmed by the builder). A tier with no cars cannot be played under the car rule.
+5. **Cars with no tier, or their own:** the Tank, the City Bus, the 6-star earned cars, the
+   amphibious cars (sea-green stars, 1 to 5), Super cars lent by a mystery. Assumed: none of them
+   may start an unribboned level; a mystery may still lend one mid-run.
+6. **"Beating" a level:** assumed to mean delivered on time, as "Deliver it on time to open the
+   next" means today; a late delivery earns nothing.
+7. **The Blue Star season** opens today after level 20. Under this spec it opens by beating gold
+   5's fifth level: assumed to replace the old rule.
+8. **Medals** (bronze, silver, gold by time to spare, added today) are kept beside the ribbons:
+   assumed.
+9. **The half-ribbons that count** towards levels 3 and 4: assumed to be those earned in that
+   tier only, not across the game.
+
+## Menu UI (owner, 10-Oct; agent 18, branch `delivery-menu`)
+
+The owner's words: "Rework the UI to be more game like than a webpage. Have a place for a level
+description, unique for both Good and Evil. The gimmicks list should be moved to a button where
+clicking it gives you a card showing the 3d models (gimmicks page) of all the gimmicks in the level,
+pick ups and traffic."
+
+- [ ] M1. The start screen reworked to feel like a game's menu, not a web page: a composed screen
+      (a level-select stage with the picked level shown large, the car and side as part of the
+      scene, proper game buttons with states and sound, movement between screens), in place of a
+      scrolling page of cards and rows of grey buttons. Works with mouse, keyboard and touch, on
+      desktop and on a phone. It stays strictly a menu, with no page reloads.
+- [ ] M2. A level description on the menu, written twice for every level: one for Good, one for
+      Evil, each in that side's voice, shown for the side picked.
+- [ ] M3. The gimmick chips leave the level card; a button opens a card for the level showing the
+      3D models (the ones the Gimmicks page draws) of everything in it: its gimmicks, its
+      pickups and its traffic, each named, with a line on what it does.
+- To keep in mind while building: the level progression rework (the section above) will put
+  levels in tiers of five with a two-halved ribbon on each and a car rule per tier; the new menu
+  should have a place for those, though the rules themselves are a separate job.

@@ -3,37 +3,56 @@
 // road does that the player can take a risk on, or not. None stops the car and none busts it: each has a
 // fast line that pays when it is driven right and costs when it is not, and a slow line that always works.
 //   crosswinds   a wind across an exposed stretch: tall cars are pushed harder, a tall vehicle gives shelter
+//   crests       (no field: the road's own profile, a segment's grade and ease) a crest sharp enough that a fast
+//                car leaves the ground over it: no steering in the air, and it lands on whatever is over the top
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
 // ============================================================================
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
+import { CAR } from './cars.js';
 import { Track } from './track.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Message } from './messages.js';
-import { sfx } from './physics.js';
+import { hurt, sfx } from './physics.js';
 import { Game } from './game.js';
+import { Hazards } from './hazards.js';
 
 const clamp01 = (u) => Math.max(0, Math.min(1, u));
+const smooth = (u) => { u = clamp01(u); return u * u * (3 - 2 * u); };
+const spot = {}; // (a point in the world, for Track.toWorld)
+const FLAT = { y: 0, slope: 0 };
 
 export const Gambles = {
   winds: [],      // { from, to, dir (-1: it blows to the left, 1: to the right), strength, every, length }
   lee: null,      // the vehicle the player is sheltered by, in a crosswind (null: none)
   windNow: 0,     // m/s^2 the wind is pushing the player's car sideways just now (signed; 0 out of the wind): for the drawing
   said: {},       // what has been said this run, once each
+  crests: [],     // { s (its top), from, to (where the road falls away fastest), speed (m/s: faster than this, a car leaves the ground) }
+  fly: null,      // the player's car in the air: { vy (m/s up), vx (along the road), latVel, t (s so far), top (m: the highest it got off the ground) }
+  alt: 0,         // ...and how high it is, in the world (m)
+  ground: null,   // the height of what was under the car last step (null: not known: just set down, or off the expressway)
+  slope: 0,       // ...and its slope (rise per m), and where the car was
+  lastS: 0,
+  flights: 0,     // how many times the car has left the ground this run (for a check)
 
   // the level's lists (as a level loads, for the drawing, and again as each run starts)
   build() {
     const W = CONFIG.crosswind;
     this.winds = (LEVEL.crosswinds || []).map(w => ({ from: w.from, to: w.to, dir: w.dir === 'left' ? -1 : 1,
       strength: w.strength ?? W.strength, every: w.every ?? W.every, length: w.length ?? W.length }));
+    this.buildCrests();
   },
   reset() {
     this.build();
     this.lee = null;
     this.windNow = 0;
     this.said = {};
+    this.fly = null;
+    this.ground = null;
+    this.flights = 0;
+    this.lastS = Player.s;
   },
   once(key, ...more) {
     if (this.said[key]) return;
@@ -89,8 +108,98 @@ export const Gambles = {
     }
   },
 
+  // ---- leaving the ground: crests (and whatever else stands on the road to be driven up) ---------------------
+  // The car follows the ground until the ground falls away under it faster than gravity can pull the car down
+  // after it: then it flies, on the arc it left on (CONFIG.crest.gravity, the game's own, as the drawbridge's),
+  // with no throttle, brake or steering, and comes down on whatever is there. All of it from the road's own
+  // profile (Track's heights: a level's segments, their grade and ease), so a crest needs nothing placed on it.
+  // the road's height at s (m, in the world), and its slope there (rise per m, over the 4 m about s)
+  roadY(s) { Track.toWorld(s, 0, spot); return spot.y; },
+  roadSlope(s) { return (this.roadY(s + 2) - this.roadY(s - 2)) / 4; },
+  // what stands on the road at (s, lat) to be driven up: { y: m above the road, slope }
+  extra() { return FLAT; },
+  // the crests of the loaded level: every place where the road falls away fast enough that a car at
+  // CONFIG.crest.fastest or less would leave the ground, with the speed that does it
+  buildCrests() {
+    const C = CONFIG.crest, need = C.gravity / (C.fastest * C.fastest);
+    this.crests = [];
+    if (!Track || !Track.hilly) return;
+    let run = null;
+    for (let s = 4; s < Track.length - 4; s += 2) {
+      const bend = -(this.roadSlope(s + 2) - this.roadSlope(s - 2)) / 4; // (how fast the slope is falling, per m)
+      if (bend > need) {
+        if (!run) run = { from: s, to: s, most: 0 };
+        run.to = s;
+        run.most = Math.max(run.most, bend);
+      } else if (run) { this.crests.push({ s: (run.from + run.to) / 2, from: run.from, to: run.to, speed: Math.sqrt(C.gravity / run.most) }); run = null; }
+    }
+  },
+  // how blind the road ahead of s is: 0 .. 1, coming up to a crest a garage car can fly (the camera comes
+  // down behind the car, so the far side stays hidden until the car is over the top: render/scene.js)
+  blind(s) {
+    const C = CONFIG.crest;
+    let most = 0;
+    if (!this.crests.length || !Track.isMain(s)) return 0;
+    for (const c of this.crests) {
+      if (c.speed > C.signUnder) continue;
+      most = Math.max(most, smooth((s - (c.from - C.camFrom)) / C.camEase) * (1 - smooth((s - c.s) / C.camEase)));
+    }
+    return most;
+  },
+  updateFlight(dt) {
+    const P = Player, C = CONFIG.crest;
+    if (Hazards.jump) { this.fly = null; this.ground = null; return; } // (off a drawbridge's leaf: Hazards has it)
+    if (!P.active || CAR.noWheels || !Track.isMain(P.s) || Math.abs(P.s - this.lastS) > 30) { // (no car, one with no wheels (the UFO, the boat), a side road, or set down somewhere else)
+      this.fly = null;
+      this.ground = null;
+      this.lastS = P.s;
+      return;
+    }
+    if (this.fly) { // (in the air there is nothing to push against, brake on or steer with)
+      const F = this.fly;
+      P.s -= (P.speed - F.vx) * dt;
+      P.speed = F.vx;
+      P.lat = Math.max(Track.lo(P.s) + P.hw, Math.min(Track.hi(P.s) - P.hw, P.lat + (F.latVel - P.latVel) * dt));
+      P.latVel = F.latVel;
+    }
+    const road = this.roadY(P.s), ex = this.extra(P.s, P.lat), slope = this.roadSlope(P.s) + ex.slope, ground = road + ex.y;
+    const live = P.shield <= 0 && P.ghost <= 0 && P.tank <= 0;
+    // off the ground: where the slope has dropped away since the last step by more than gravity makes up for
+    if (!this.fly && this.ground !== null && P.speed * (this.slope - slope) - C.gravity * dt > C.slack) {
+      this.fly = { vy: P.speed * this.slope, vx: P.speed, latVel: P.latVel, t: 0, top: 0 };
+      this.alt = Math.max(ground, this.ground + this.fly.vy * dt);
+    }
+    this.lastS = P.s;
+    if (this.fly) {
+      const F = this.fly;
+      F.vy -= C.gravity * dt;
+      this.alt += F.vy * dt;
+      F.t += dt;
+      if (this.alt > ground) {
+        P.air = this.alt - road;
+        P.pitch = Math.atan2(F.vy, Math.max(P.speed, 6)) - Math.atan(Track.grade(P.s)); // (its nose the way it is flying: main.js adds the road's own slope)
+        if (F.top <= C.hop && this.alt - ground > C.hop) this.flights++;
+        F.top = Math.max(F.top, this.alt - ground);
+        if (F.t > C.sayAfter && F.top > C.hop) this.once('airborne');
+        return;
+      }
+      // down: hard, if it came down into the ground faster than landSoft
+      const into = P.speed * slope - F.vy;
+      if (F.top > C.hop) {
+        if (live && into > C.landSoft) hurt(P, (into - C.landSoft) * C.landDamage);
+        Game.shake = Math.max(Game.shake, Math.min(1, into / 14));
+        sfx('drop', Math.min(1, into / 10));
+      }
+      this.fly = null;
+    }
+    this.ground = ground;
+    this.slope = slope;
+    if (ex.y || ex.slope) { P.air = ex.y; P.pitch = Math.atan(ex.slope); }
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
+    this.updateFlight(dt);
     this.updateWinds(dt);
   },
 };

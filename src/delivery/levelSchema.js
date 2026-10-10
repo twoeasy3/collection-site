@@ -77,6 +77,7 @@ const segmentSettings = {
   length: int('Length (m)', { min: 1, max: 20000, required: true, init: 300 }),
   curve: num('Curve (rad/m, + right)', { min: -0.2, max: 0.2, step: 0.0005, init: 0 }),
   grade: num('Slope (rise per m)', { min: -1, max: 1, step: 0.005 }),
+  ease: num('Ease (m: a short one makes a crest)', { min: 2, max: 200, step: 1, default: CONFIG.gradeEase, help: 'How sharply this slope blends into the next. A steep climb and drop with 6 or so: a fast car flies over the top.' }),
 };
 
 // ---- the groups the editor lists fields in -----------------------------------------------------------
@@ -108,6 +109,7 @@ export const RULES = {
   noFlyovers: { text: 'A one-way level\'s exits cannot have flyovers', broken: (f, e) => f.oneWay && !!e.flyovers },
   closedLoop: { text: 'The road must come back round to where it starts (a closed loop)', broken: (f) => !f.closed },
   battle: { text: 'Only with "battle"', broken: (f) => !f.level.battle },
+  notRace: { text: 'Not on a race, nor the Battlefield', broken: (f) => !!(f.level.laps || f.level.battle || (f.level.grid && !f.level.grid.rival)) },
   zonesTheme: { text: 'Shown on a level whose theme is in zones (coast, safari)', broken: () => false },
 };
 
@@ -157,6 +159,8 @@ export const FIELDS = {
   processions: { shape: 'timed', group: 'events', label: 'Funeral processions', help: 'Now and then a hearse and its cars, slow, nose to tail. Not on a level with water.', settings: { every: every({ min: 40, max: 70 }, { required: true }) } },
   convoys: { shape: 'timed', group: 'events', label: 'Convoys', help: 'Now and then a convoy of one kind nose to tail in one lane, shutting their gaps in the player\'s face. Not on a level with water.',
     settings: { every: every({ min: 20, max: 35 }, { required: true }), size: int('Vehicles', { min: 2, max: 20, default: C.convoy?.size }), kind: pick('Kind', VEHICLE_KINDS, { default: C.convoy?.kind }) } },
+  pursuits: { shape: 'timed', group: 'events', label: 'Police pursuits', rules: ['playerSide', 'notRace'], help: 'Now and then a getaway car comes through from behind flat out, an interceptor after it, siren going; the traffic pulls aside and the two drive on.',
+    settings: { every: every({ min: 30, max: 60 }, { required: true }) } },
   railway: { shape: 'timed', group: 'events', label: 'Railway down the median', rules: ['needsMedian'], help: 'A bullet train comes through, against the player, every so often.', settings: { every: every({ min: 14, max: 24 }, { required: true }) } },
 
   // ---- mode switches ----
@@ -239,6 +243,9 @@ export const FIELDS = {
 
   // ---- hazards on the road ----
   ice: { shape: 'stretch', group: 'hazards', label: 'Ice', help: 'An ice patch on that lane (no lane: across the road).', settings: { lane: lane('Lane', { help: 'Left out: across the road.' }) } },
+  crosswinds: { shape: 'stretch', group: 'hazards', label: 'Crosswind', span: 500, help: 'An exposed stretch with a gusting wind across it: tall cars are pushed harder, a tall vehicle alongside gives shelter.',
+    settings: { dir: pick('Blows to the', SIDES, { required: true, init: 'left' }), strength: num('Strength (m/s²)', { min: 0.5, max: 50, step: 0.5, default: C.crosswind?.strength }),
+      every: num('A gust every (s)', { min: 1, max: 60, step: 0.5, default: C.crosswind?.every }), length: num('A gust lasts (s)', { min: 0.5, max: 60, step: 0.1, default: C.crosswind?.length }) } },
   mud: { shape: 'stretch', group: 'hazards', label: 'Mud', help: 'The road gives way to mud: a car is slowed in it by how well it crosses.' },
   fog: { shape: 'stretch', group: 'hazards', label: 'Fog bank', span: 300, help: 'The fog closes right in, and the police see less.' },
   potholes: { shape: 'point', group: 'hazards', label: 'Pothole', road: 'both', help: 'A jolt, and maybe a flat tyre.', settings: { lane: lane('Lane', { required: true }), r: num('Radius (m)', { min: 0.2, max: 5, step: 0.1, default: C.site?.potholeR }) } },

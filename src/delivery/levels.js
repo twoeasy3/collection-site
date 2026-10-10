@@ -133,6 +133,9 @@
 //   trafficSpeed  { min, max } m/s the traffic cruises at (default CONFIG.trafficMin/MaxSpeed)
 //   emergencies  { every: { min, max } }: now and then (every min-max s) an ambulance comes
 //              through, siren going, either way (see CONFIG.emergency)
+//   pursuits   { every: { min, max } }: now and then (every min-max s) a police pursuit comes through from behind,
+//              a getaway car flat out and an interceptor after it, siren going (see CONFIG.pursuit and
+//              pursuit.js). Not on a race, the Battlefield, or an all-oncoming road
 //   hesitation false = traffic too fast for the player never hesitates, and none comes up from
 //              behind (see CONFIG.hesitation)
 //   asteroidFields  { from, to, count, moving, seed }: `count` asteroids of assorted sizes
@@ -281,8 +284,8 @@
 //   marathons  { s, lane, count, water? }: runners in one lane behind a pace car; water: where its water station stands
 //   stampedes  { from, to, count, kind: 'cow' | 'kangaroo' }: animals charging down the road at the player
 //   (and wreckage of kind 'roadtrain': a road train jackknifing across its lanes)
-//   (Gimmick Road 3's: the road gambles, see gambles.js and CONFIG, each under its own name. Every one is a risk the
-//   player can take or leave: none stops the car, and none busts it. On the expressway only)
+//   (Gimmick Road 3's: the road gambles, see gambles.js and CONFIG, each under its own name)
+//   (every one is a risk to take or leave: none stops the car, and none busts it. On the expressway only)
 //   crosswinds { from, to, dir: 'left' | 'right', strength?, every?, length? }: an exposed stretch with a wind across it,
 //              blowing to that side (as the level is written): a steady push with a gust every `every` s lasting
 //              `length` s (CONFIG.crosswind's if not said; strength: m/s^2 on a car as tall as the Commuter). A taller
