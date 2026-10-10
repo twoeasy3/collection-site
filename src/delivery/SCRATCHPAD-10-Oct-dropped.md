@@ -26,6 +26,15 @@ the morning's handover (architecture pointers, the earlier agents' notes and tra
   content at fixed positions; segment lengths whole numbers. For the older levels 20 to 30: "update them to
   this standard without changing the list of gimmicks in the level" (`scripts/.gimmick-kinds-b.mjs <id>
   --diff=main` must say the kinds are the same).
+- **Do not cram gimmicks into a level (the owner, late on 10-Oct, of the day's levels).** "The agents that
+  build levels really need to know that they should not aim to cram every gimmick into every level." And:
+  "Burst water mains and potholes and tunnels appear almost every level. It should be thematic." A level
+  has one idea and a few kinds that belong to its place. The "standard" below was read off the newest levels
+  and its counts of kinds (10 to 16 a level, something every 150 to 300 m) are what caused this: treat them
+  as an upper bound on busyness, never a target, and never quote a number of kinds in a brief.
+- **Rockfall only under a real rock face.** "The rockfall gimmick keeps getting added to places where they
+  float in mid air." Place `rockfall` (and boulder `wreckage`) only where a face or steep slope stands above
+  the road on that side, and look at each one in a still before the level is called done.
 - **Plain obstacles are dressing, not gimmicks.** Place generic kinds (crate, cone, barrier, bale); the
   theme's mapping at the foot of `themes.js` (`OBSTACLES`, `DRIFTING`, `themedKind`) draws each as a thing
   of its place. Build no obstacle models inside a level's work. Every obstacle must read at a glance

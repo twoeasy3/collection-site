@@ -118,8 +118,13 @@ try {
   check((await g.load('cars.js')).CAR === base && P.maxHealth === base.health, 'souped up: its own car back after');
   start('suburbs', 'lowrider');
   mystery('soupedUp');
-  check(P.mystery === M.fallback, 'souped up: the Lowrider has no Super version (' + P.mystery + ' instead)');
   const { CARS, superOf, SUPER_LIVERIES } = g.cars;
+  {
+    const lent = (await g.load('cars.js')).CAR, own = CARS.find(c => c.id === 'superlowrider');
+    check(P.mystery === 'soupedUp' && lent.super && lent.base.id === 'lowrider' && lent.model === own.model && lent.maxSpeed === own.maxSpeed && lent.health === own.health,
+      'souped up: the Lowrider becomes the garage\'s Super Lowrider (' + lent.name + ', ' + lent.maxSpeed + ' m/s)');
+    check(superOf(superOf(CARS.find(c => c.id === 'lowrider'))) === null, '...which has no Super version of its own while lent');
+  }
   const tiered = CARS.filter(c => c.tier && c.tier <= 5 && c.id !== 'lowrider');
   check(tiered.every(c => superOf(c) && superOf(c).id === 'super-' + c.id && superOf(superOf(c)) === null), 'a Super version of each of the ' + tiered.length + ' tiered cars, and none of a Super car');
   check(tiered.every(c => SUPER_LIVERIES[c.id]), 'a Super livery for each' + tiered.filter(c => !SUPER_LIVERIES[c.id]).map(c => ' (none: ' + c.id + ')').join(''));

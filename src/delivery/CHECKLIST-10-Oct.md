@@ -1234,6 +1234,86 @@ pick ups and traffic."
           them, show through a thick bank. The erupting look is `229dd8d`, `render/themes/volcano.js`.)
     - [ ] Q43. "UFO air strike effect takes too long to happen, maybe it should start ticking damage before the
           UFO leaves".
+    - [ ] Q44. "Remove the slowdown for breaking the barrier on a level crossing. It makes it almost impossible
+          to get hit by the bullet train. Increase it by one segment too". (Read as: breaking a crossing's
+          boom no longer slows the car; and the bullet train gets one more carriage. To confirm with the
+          owner if "it" means something else.)
+    - [ ] Q45. **For the level progression rework, when it comes in (not before; add to its spec, R1 to R8 in the
+          section "Level progression rework" near the end of this file).** The owner: "A player who clicks
+          on an incomplete level of a new tier, and has no cars of that tier should select a null_car,
+          silhouetted car and not be able to start the level. Clicking into a garage with a car restriction
+          should automatically filter out the garage to just cars that can be selected. Keep the player's
+          previous pick, so when they choose a different level the car is re-selected". So: (a) on a level
+          whose ribbon half is not yet earned, with no car of that exact tier owned, the car card shows a
+          silhouette (a `null_car`) and START is disabled; (b) opening the garage from a level that
+          restricts the car shows only the cars that may be driven there; (c) the player's own pick is
+          remembered apart from the car forced by a restricted level, and comes back when they move to a
+          level that allows it.
+    - [ ] Q46. "Level 51 has a bridge that narrows. It has jagged steps." (Cattle Drive, `levels/cattle.json`:
+          the one-lane bridge at 1280 to 1420 with its `narrows`; the narrowing is drawn in steps where it
+          should taper.)
+    - [ ] Q47. "Allow level crossings to define a train model. The level crossing in the Wild West should not
+          use the bullet train." (A `train` setting on a crossing or on the theme; a steam train for High
+          Noon and Cattle Drive.)
+    - [ ] Q48. **A STANDING RULE for every level brief:** "The agents that build levels really need to know that
+          they should not aim to cram every gimmick into every level." (With Q21: gimmicks suit the theme. A
+          level has a few kinds that belong to its place and one idea of its own, not one of everything.)
+    - [ ] Q49. **A STANDING RULE, and levels to fix:** "The rockfall gimmick keeps getting added to places where
+          they float in mid air. There needs to be some standing memory about this". (Rockfall only where a
+          rock face or slope stands above the road on that side, and looked at in a still before the level
+          is called done; an audit of every level with `rockfall` or boulder `wreckage` for rocks that hang
+          in the air. Saved to the orchestrator's memory.)
+    - [ ] Q50. **An audit of every vehicle model**, the owner's three parts:
+      - [ ] Q50a. "Define proper headlights, brake light and turn signals to all vvehicles."
+      - [ ] Q50b. "Audit all models to not have gaps in their models. For example, the hearse's rear window is not
+            connected to its chassis, the Tow Truck's rear bumper is floating."
+      - [ ] Q50c. "Audit all damaged models to make sure they don't look silly. The Polygon Truck's damage model
+            phases though its windscreen, and keeps its lights hanging."
+      - Which models: the garage cars (`render/models.js`), the Blue 4 cars and the idea cars
+        (`render/ideaModels.js`), traffic (`render/trafficModels.js`), pursuit, emergency and level
+        vehicles, the amphibious cars and boats. Dents and scorching came in with `fda617c`. Each model to
+        be looked at in stills from several sides, whole and damaged, lights on.
+    - [ ] Q51. "Audit and add more idle animations to vehicles where it makes sense". (Goes with Q50, the same
+          pass over every model. Some have one already through `userData.animate`: the Lowrider's hop, the
+          Junker's shudder, the Love Bus's sway, eleven of the idea cars. Q30 limits one of them: the
+          Gullwing's doors only in the garage.)
+    - [ ] Q52. "Remove the top speed clamp and allow Magenta 6-stars to scale as per their model. These are
+          supposed to be fun extras". (The nine earned cars: `earnedCar()` in `cars.js:259-260` holds top
+          speed to 49 to 52 m/s (`EARNED_SPEED`, `NEXT_TIER_CAPS.maxSpeed`) and acceleration and health to
+          `NEXT_TIER_CAPS`, so the Road F1 is slower than the F1 its own level lends. **The owner's
+          correction: "Magenta 6-star is not a real tier, just an assignment for cars outside of the tier
+          system."** So the six magenta stars are a label, not a rung above gold and blue 5: nothing should
+          treat these cars as a sixth tier (`tier: 6`, "next tier" caps, a place in any tier's balance, the
+          progression rework's tiers and car rule, Delivery's "next step of the line" on `delivery-stats`,
+          the handover's "6-star tier" wording). To do: take the speed clamp off so each drives as its
+          vehicle does; with no tier to belong to, the orchestrator reads the acceleration and health caps
+          as going too (the owner named only top speed: confirm). The balance and earned checks assert the
+          caps and will need to follow.)
+      - **Q52, how to do it, from the owner after reading the code:** "The stats are fine in this file. There
+        is no reason to calculate these stats instead of defining new stats with existing models." So the
+        stats stay in `cars.js` (no move to JSON for this); `earnedCar()` stops computing: no `Math.min` /
+        `Math.max` against `EARNED_SPEED` or `NEXT_TIER_CAPS`; each of the nine earned cars is written out
+        with its own top speed, acceleration and health beside the model it uses, as the garage cars are.
+        That settles the question above: all three are defined, none is clamped.
+      - **Q52 and Q53 DONE on `main` by the orchestrator at the owner's word ("Just edit it now, its faster";
+        "Also do the unclamping of 6-star cars while you're at it, but nerf the race cars slightly for their
+        road versions").** `cars.js`: `earnedCar()` no longer clamps anything and `EARNED_SPEED` is gone;
+        each earned car drives by the figures written for it (top speed / acceleration / health): Hell Rod
+        50 / 18 / 200, Saucer 58 / 30 / 100, GT Racer 57 / 13 / 240 (the GT is 62 / 14 on its circuit), Land
+        Jetboat 34 / 13 / 120, Road F1 68 / 18 / 160 (75 / 20), Road Prototype 68 / 18 / 280 (75 / 20),
+        Courier Special 50 / 19 / 220, Showdown Muscle 52 / 17 / 300, Road 8x8 32 / 9 / 450. `tier: 6` is
+        still what draws six stars: nothing else was changed to stop treating it as a tier. `superOf`: the
+        Lowrider's Super version is the garage's Super Lowrider as it stands (model, colours, 47 / 16 /
+        260, no kit). The earned and mysteries checks rewritten to match; earned, mysteries, balance and
+        bundle checks pass. NOT run: the other checks. NOT seen or driven: the souped-up Lowrider on
+        screen, any earned car at its new speed (the Road F1 at 68 m/s on an ordinary level is untried:
+        bends, the jump over a jam, the camera).
+    - [x] Q53. "the lowrider gets skipped for an upgrade. That is not correct, its upgrade is the Super Lowrider
+          (in the regular garage)." (`superOf` in `cars.js:379-380` returns nothing for `car.id ===
+          'lowrider'`, so the "souped up" mystery skips it. To do: a souped-up Lowrider becomes the Super
+          Lowrider, the Blue 5 garage car `superlowrider` (`cars.js:168`), for as long as the effect lasts,
+          not a livery and kit on its own model. With Q40: a car with no Super variant is told so; the
+          Lowrider is not one of those.)
 - [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
   - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
     truck gimmick for now." What it is: the car's trait `tow` (`cars.js:127-129`): driven into fallen
