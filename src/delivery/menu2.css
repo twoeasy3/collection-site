@@ -69,6 +69,9 @@
   background: linear-gradient(180deg, rgba(8, 11, 17, .5) 0, transparent 26%, transparent 34%, rgba(8, 11, 17, .82) 66%, rgba(8, 11, 17, .96) 100%); }
 #startScreen .menu-stage > :not(.shot) { z-index: 2; }
 #startScreen .menu-stage.locked .shot { filter: grayscale(1) brightness(.5); }
+/* (a level with no picture yet: the road's own stripes, in the accent colour) */
+#startScreen .menu-stage .shot.none, #startScreen .menu-strip .thumb.none { background: repeating-linear-gradient(112deg, #1a2030 0 46px, #202839 46px 92px), #1a2030; }
+#startScreen .menu-stage .shot.none::after { content: ""; position: absolute; left: 50%; top: 8%; bottom: 30%; width: 8px; margin-left: -4px; background: repeating-linear-gradient(180deg, var(--accent) 0 34px, transparent 34px 70px); opacity: .5; transform: perspective(300px) rotateX(50deg); }
 @keyframes stage-drift { from { transform: scale(1.03) translateX(-.8%); } to { transform: scale(1.09) translateX(.8%); } }
 #startScreen .menu-stage.enter .shot { animation: stage-shot-in .28s ease-out, stage-drift 24s ease-in-out .28s infinite alternate; }
 #startScreen .menu-stage.enter .info, #startScreen .menu-stage.enter .plate, #startScreen .menu-stage.enter .ribbon { animation: stage-in .24s ease-out; }
@@ -188,7 +191,8 @@
 #startScreen .sheet-bar h2 { flex: 1 1 auto; margin: 0; opacity: 1; font: italic 800 24px/1 var(--display); font-stretch: condensed; letter-spacing: .04em; text-transform: uppercase;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #startScreen .sheet-bar h2 small { margin-left: 10px; font: 700 12px/1 system-ui, sans-serif; letter-spacing: .14em; color: var(--accent); }
-#startScreen .sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 14px 18px 18px; }
+#startScreen .sheet-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 14px 18px 18px;
+  scrollbar-width: thin; scrollbar-color: #4a556b transparent; }
 #startScreen .options { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px 22px; }
 #startScreen .options section { display: flex; flex-wrap: wrap; align-content: flex-start; gap: 6px; }
 #startScreen .options h3 { flex: 0 0 100%; margin: 0 0 2px; font: 700 12px/1 system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
@@ -209,7 +213,9 @@
   #startScreen .menu-stage .info { padding: 0 14px 12px; }
   #startScreen .menu-stage .arrow { top: 22%; }
   #startScreen .menu-stage .desc { font-size: 14px; }
-  #startScreen .menu-strip .thumb { flex: 1 0 86px; min-width: 86px; height: 66px; }
+  #startScreen .menu-strip { gap: 6px; }
+  #startScreen .menu-strip .thumb { flex: 1 1 0; min-width: 0; height: 66px; }
+  #startScreen .menu-strip .thumb .name { left: 6px; right: 4px; font-size: 12px; }
   #startScreen .menu-side { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-areas: "car side" "race race" "start start"; gap: 8px; padding: 8px; }
   #startScreen .car-card { grid-area: car; }
   #startScreen .car-card .picture { flex: 0 0 64px; }
@@ -244,4 +250,37 @@
 }
 @media (prefers-reduced-motion: reduce) {
   #startScreen .menu-backdrop i, #startScreen .menu-stage .shot, #startScreen #startBtn, #startScreen .menu-stage.enter *, #startScreen .menu-stage.flip *, #startScreen .sheet-box { animation: none !important; }
+}
+
+/* ---- "what's on this road" (render/levelcard3d.js): three groups of tiles, each tile a model and a line. The
+   models are drawn by one canvas laid over the tiles (it scrolls with nothing: each frame it draws every tile's
+   patch where the tile is now) ---- */
+#startScreen .sheet-main { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
+#startScreen .sheet-main .sheet-body { flex: 1 1 auto; }
+#startScreen .road-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
+#startScreen .road-notes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+#startScreen .road-notes em, #startScreen .tile .pool em { font-style: normal; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent); }
+#startScreen .road-group + .road-group { margin-top: 16px; }
+#startScreen .road-group h3 { display: flex; align-items: baseline; gap: 9px; margin: 0 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--line);
+  font: italic 800 20px/1 var(--display); font-stretch: condensed; letter-spacing: .06em; text-transform: uppercase; }
+#startScreen .road-group h3 small { font: 700 12px/1 system-ui, sans-serif; color: var(--accent); }
+#startScreen .road-group h3 a { margin-left: auto; font: 700 12px/1 system-ui, sans-serif; letter-spacing: .04em; text-transform: none; color: var(--ink-dim); text-decoration: none; }
+#startScreen .road-group h3 a::after { content: " \203A"; }
+#startScreen .road-group h3 a:hover { color: var(--accent); }
+#startScreen .road-group .none { font-size: 13px; color: var(--ink-dim); }
+#startScreen .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 8px; }
+#startScreen .tile { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px; align-items: center; padding: 6px 10px 6px 6px; border-radius: 10px; background: var(--panel-2); box-shadow: inset 0 0 0 1px var(--line); }
+#startScreen .tile .view { height: 84px; border-radius: 7px; background: radial-gradient(circle at 50% 62%, var(--glow, rgba(255, 255, 255, .2)), rgba(10, 13, 19, .9) 72%); }
+#startScreen .tile .words { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+#startScreen .tile strong { font: 700 16px/1.1 var(--display); letter-spacing: .02em; }
+#startScreen .tile strong small { margin-left: 8px; padding: 1px 6px; border-radius: 4px; font: 700 11px/1.4 system-ui, sans-serif; color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); white-space: nowrap; }
+#startScreen .tile p { font-size: 12px; line-height: 1.35; color: #d5dbe5; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4; overflow: hidden; }
+#startScreen .tile p strong { font: inherit; font-weight: 700; color: #fff; }
+#startScreen .tile .pool { display: flex; flex-wrap: wrap; gap: 4px; }
+#startScreen .tile .pool em { font-size: 11px; padding: 2px 7px; }
+#startScreen .tile:has(.pool) { grid-column: 1 / -1; }
+@media (max-width: 760px) {
+  #startScreen .tiles { grid-template-columns: minmax(0, 1fr); }
+  #startScreen .tile { grid-template-columns: 96px minmax(0, 1fr); }
+  #startScreen .sheet-bar h2 small { display: block; margin: 4px 0 0; }
 }

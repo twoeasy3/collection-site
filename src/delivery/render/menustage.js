@@ -136,6 +136,7 @@ const drawStage = () => {
   const key = level.id + (evil ? '/evil' : '/good'), sameLevel = !!drawn && drawn.split('/')[0] === level.id;
   const shot = (sameLevel && stage.querySelector('.shot')) || make('div', 'shot'); // (the same level drawn again keeps its picture, drifting as it was)
   if (LEVEL_SHOTS[level.id]) shot.style.backgroundImage = `url("${LEVEL_SHOTS[level.id]}")`;
+  else shot.classList.add('none'); // (no picture of it yet)
   const plate = make('div', 'plate', make('small', '', kindOf(level)), make('b', '', label(level)));
   const ribbon = make('div', 'ribbon', ...(open ? (oneSided(level) ? [false] : [false, true]).map(side => ribbonHalf(level, side)) : []));
   // what the level needs (a line of its own: a car that floats, the vehicle it is driven in, the level before it)
@@ -184,6 +185,7 @@ const drawStrip = (first, last) => {
     const thumb = make('button', 'thumb' + (level === cursor ? ' current' : '') + (open ? '' : ' locked'),
       make('b', '', label(level)), pips, make('span', 'name', level.name));
     if (LEVEL_SHOTS[level.id]) thumb.style.backgroundImage = `url("${LEVEL_SHOTS[level.id]}")`;
+    else thumb.classList.add('none');
     thumb.title = open ? level.name : level.name + ': not open yet';
     thumb.addEventListener('click', () => { if (level !== cursor) blip('menuMove'); show(level); });
     return thumb;
@@ -292,7 +294,12 @@ for (const id of ['albumBtn', 'milestonesBtn', 'exportBtn', 'importBtn', 'screen
 // "What's on this road": the level's gimmicks, pickups and traffic, with their models (render/levelcard3d.js,
 // brought in only when it is first asked for: it carries the reference pages' models)
 const roadBox = document.getElementById('roadCard');
-const roadCard = null;
+let roadModule = null;
+const roadCard = async (level) => {
+  roadModule ||= await import('./levelcard3d.js');
+  if (sheet === roadBox || !menuUp()) return; // (asked for twice; or a run started while it was on its way)
+  openSheet(roadBox, roadModule.showRoadCard(roadBox, level, closeSheet)); // (what it returns lets its renderer go when the sheet closes)
+};
 
 // the keys. Heard ahead of the game's own (input.js: Enter is its "confirm", which starts a run), so that Enter
 // starts nothing while a level not open yet is on the stage
@@ -348,6 +355,7 @@ if (params.get('tab') === 'races') { tab = 'race'; cursor = TABS.race.list[0]; i
 if (params.get('side') === 'evil') Game.evil = true; // (not saved)
 if (params.get('cursor')) { cursor = LEVELS[Math.max(0, Math.min(LEVELS.length - 1, Number(params.get('cursor')) - 1))]; tab = tabOf(cursor); if (isOpen(cursor)) show(cursor); }
 if (params.get('options') !== null) openSheet(options);
+if (params.get('road') !== null) setTimeout(() => roadCard(cursor), 0); // (once main.js has had its say: ?pick=)
 // ?do=key:ArrowRight,key:KeyE,click:%23startBtn,swipe:left ... : the menu worked from the address, one step every
 // 150 ms (a key pressed, a button clicked, the stage swiped), to check the controls where nobody can press them
 if (params.get('do')) {

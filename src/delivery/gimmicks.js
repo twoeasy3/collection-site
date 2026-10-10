@@ -1,14 +1,13 @@
 // ============================================================================
-// THE GIMMICKS PAGE (delivery/gimmicks.html): everything the levels throw at the player beyond the
+// THE GIMMICKS (delivery/gimmicks.html): everything the levels throw at the player beyond the
 // plain obstacles and the everyday traffic, each with a model (the game's own where it has one, or
 // one made to stand for it), what it does, and the levels it turns up in. The numbers come from the
 // game's CONFIG and the levels from the level files themselves, so the page stays true as they change.
-// As the power-ups page: one renderer draws every card, a canvas over the whole window, drawn into
-// patch by patch (each card's .view), and left clear everywhere else.
+// Only the catalogue is here (GROUPS): the page that shows all of it is gimmickspage.js, and the menu's
+// "what's on this road" card shows a level's own (render/levelcard3d.js). Both draw the models the same
+// way (render/modelviews.js).
 // ============================================================================
 import * as THREE from 'three';
-import './powerups.css';
-import './gimmicks.css';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
 import { LEVEL_CARS, amphibiousCars } from './cars.js';
@@ -59,7 +58,7 @@ const sign = (text, bg, fg = '#fff', w = 3.2, h = 1.4) => {
 };
 // where the levels are: every level (on the menu) that has it, by its number and name; and the test
 // level, Gimmick Road (off the menu: ?hidden=gimmick-road), where the newest are tried out first
-const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null),
+export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null),
   has(HIDDEN_LEVELS['gimmick-road']) ? '<span>Test</span> Gimmick Road (?hidden=gimmick-road)' : null,
   has(HIDDEN_LEVELS['gimmick-road-2']) ? '<span>Test</span> Gimmick Road 2 (?hidden=gimmick-road-2)' : null,
   has(HIDDEN_LEVELS['gimmick-road-3']) ? '<span>Test</span> Gimmick Road 3 (?hidden=gimmick-road-3)' : null].filter(Boolean);
@@ -72,7 +71,7 @@ const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONF
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
 const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
-const GROUPS = [
+export const GROUPS = [
   { name: 'The road itself', cards: [
     { name: 'Side roads', color: 0x2e8b4a, has: (l) => l.exits?.length, rules: [
       'An exit lane opens beside the right-hand lane: take it, and the side road runs on beside the expressway and joins it again further up.',
@@ -873,96 +872,3 @@ const GROUPS = [
     } },
   ] },
 ];
-
-// ---- the page: the groups (a row of buttons to jump to each), then the cards -------------------------
-const hex = (color) => '#' + color.toString(16).padStart(6, '0');
-const slug = (name) => name.toLowerCase().replace(/[^a-z]+/g, '-');
-document.getElementById('groups').innerHTML = GROUPS.map(g => `<a href="#${slug(g.name)}">${g.name}</a>`).join('');
-const cardBox = document.getElementById('cards');
-const views = [];
-// (gimmicks.html?group=vehicles shows that group alone, and &from=5 only its cards from the fifth on: for a look at a card)
-const only = new URLSearchParams(location.search).get('group'), fromCard = Number(new URLSearchParams(location.search).get('from') || 1);
-for (const g of GROUPS.filter(g => !only || slug(g.name) === only).map(g => only ? { ...g, cards: g.cards.slice(fromCard - 1) } : g)) {
-  const heading = document.createElement('h2');
-  heading.className = 'group';
-  heading.id = slug(g.name);
-  heading.textContent = g.name;
-  cardBox.append(heading);
-  for (const card of g.cards) {
-    const levels = where(card.has);
-    const el = document.createElement('article');
-    el.className = 'card';
-    el.style.setProperty('--glow', hex(card.color) + '55');
-    el.style.setProperty('--swatch', hex(card.color));
-    el.innerHTML = `
-      <div class="view"></div>
-      <div class="body">
-        <h2>${card.name}</h2>
-        <ul>${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>
-        <p class="levels">${card.everywhere ? 'On every level' : levels.length ? 'In ' + levels.join(', ') : 'Not in any level yet'}</p>
-      </div>`;
-    cardBox.append(el);
-    views.push(makeView(el.querySelector('.view'), card));
-  }
-}
-
-// ---- a little scene per card: the model on its stand, framed whatever its size ------------------------
-function makeView(el, card) {
-  const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2.2));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-  sun.position.set(3, 6, 5);
-  scene.add(sun);
-  const { model, tick, spin = true, lift: built } = card.build();
-  card.lift = built;
-  const turn = new THREE.Group(); // (the turntable: the model turns on it, and animates on its own)
-  turn.add(model);
-  scene.add(turn);
-  // framed: the camera back far enough for the whole of it, looking a little down on it
-  // (over the whole of its animation: it is played through a few seconds and measured all the way, so
-  // nothing that hops, drops or tumbles goes out of the picture)
-  const bounds = new THREE.Box3().setFromObject(model);
-  if (tick) {
-    for (let t = 0; t < 8; t += 0.1) { tick(t, 0.1); model.updateMatrixWorld(true); bounds.union(new THREE.Box3().setFromObject(model)); }
-  }
-  const size = bounds.getSize(new THREE.Vector3()), mid = bounds.getCenter(new THREE.Vector3());
-  turn.position.set(-mid.x, -bounds.min.y, -mid.z);
-  const camera = new THREE.PerspectiveCamera(32, 1.6, 0.1, 400);
-  const radius = bounds.getBoundingSphere(new THREE.Sphere()).radius, far = radius / Math.sin(THREE.MathUtils.degToRad(16)) * 0.92;
-  const lift = card.lift ?? 0.42; // (how far down it is looked on)
-  camera.position.set(0, size.y * 0.5 + far * Math.sin(lift), far * Math.cos(lift));
-  camera.lookAt(0, size.y * 0.5, 0);
-  return { el, scene, camera, turn, model, tick, spin, phase: Math.random() * 6 };
-}
-
-// ---- drawing ------------------------------------------------------------------------------------
-const canvas = document.getElementById('stage');
-const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x000000, 0);
-let last = performance.now();
-const frame = (now) => {
-  const dt = Math.min(0.05, (now - last) / 1000);
-  last = now;
-  const w = window.innerWidth, h = window.innerHeight;
-  const size = renderer.getSize(new THREE.Vector2());
-  if (size.x !== w || size.y !== h) renderer.setSize(w, h, false);
-  renderer.setScissorTest(false);
-  renderer.clear();
-  renderer.setScissorTest(true);
-  const t = now / 1000;
-  for (const v of views) {
-    const r = v.el.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > h || r.width === 0) continue; // (off screen: neither drawn nor moved)
-    const bottom = h - r.bottom;
-    renderer.setViewport(r.left, bottom, r.width, r.height);
-    renderer.setScissor(r.left, bottom, r.width, r.height);
-    v.camera.aspect = r.width / r.height;
-    v.camera.updateProjectionMatrix();
-    if (v.spin) v.turn.rotation.y += dt * 0.5;
-    v.tick?.(t + v.phase, dt);
-    renderer.render(v.scene, v.camera);
-  }
-  requestAnimationFrame(frame);
-};
-requestAnimationFrame(frame);
