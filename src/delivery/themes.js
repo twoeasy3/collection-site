@@ -107,6 +107,9 @@ export const THEMES = {
   // venice: the road is a quay (render/themes/venice.js): the ground is the lagoon's water, a wall of palazzi along the left, the canal along the right with its mooring poles, gondolas and vaporetti, palazzi out of the water beyond; a hump in the road is a bridge over a side canal, a tunnel a sotoportego, a tide's stretch the open lagoon
   venice: { sky: 0xc3dcec, ground: 0x4c9590, road: 0x8d877d, scenery: 'venice', line: 0xefe8d6, centre: 0xe0c27a, channel: { shallow: 0x6fb0a6, deep: 0x2f6f6c, glint: 0x8fcfc4 },
     tunnel: { wall: 0xb5654a, tiles: 0xe6dcc6, roof: 0x6b4a2c, face: 0xd9a066, lamp: 0xffd9a0 } },
+  // iceroad: a ploughed road across a frozen lake at night (render/themes/iceroad.js): bare blue ice between snowbanks and marker poles, pressure ridges (a hump in the road is one), fishing huts with their windows lit, the dark shore far off, stars, a moon and the aurora
+  iceroad: { sky: 0x06122a, ground: 0xdfe9f2, road: 0x6f9cbc, scenery: 'iceroad', line: 0xf2f7fb, centre: 0xffa23a, lit: true, headlights: true, night: true, channel: { shallow: 0x6f9fb8, deep: 0x16384f, glint: 0x8fc4dc },
+    light: { sky: 0xa8c8ff, ground: 0x3a4a66, ambient: 0.95, sun: 0xcfe2ff, sunlight: 0.55 } },
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // (batch C: theme park, volcano island, container port: new themes go above this line)
 };
