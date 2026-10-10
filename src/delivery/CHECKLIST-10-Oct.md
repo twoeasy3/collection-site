@@ -589,3 +589,49 @@ convoys already are (a level's `every: { min, max }`), so any level can have the
 The orchestrator's view: P1 is the best of these by some way, because both sides have something
 to do with it and it ends differently each time; P2 follows from it almost for free. P7 and P8
 are the freshest: other road users as something to use, not to avoid. P9 gives the horn a job.
+
+## Car ideas lot: 30 models (assigned, agent 13)
+
+Asked for by the owner on 10-Oct: "a list of 30 generic name/car models, and a real life vehicle to
+base it off. Then have an agent make them. Add a tab in the garage for the parking lot of car
+ideas." The names are generic on purpose (no maker's or model's name); none repeats a car the game
+already has. They are ideas on show, not cars for sale: kept out of the garage's own list, so
+saved progress and the balance of the tiers are untouched.
+
+| # | Id | Name in the game | Based on | What makes it recognisable |
+|---|---|---|---|---|
+| 1 | `bubble` | Bubble Car | BMW Isetta | Egg shape, the whole front is the door, narrow rear track |
+| 2 | `threewheeler` | Three-Wheeler | Reliant Robin | One front wheel, wedge nose, tall cabin |
+| 3 | `tinsnail` | Tin Snail | Citroën 2CV | Arched roofline, roll-back canvas roof, separate round headlamps, skinny wheels |
+| 4 | `bug` | People's Bug | Volkswagen Beetle (Type 1) | Dome roof, separate rounded wings, sloping tail with engine vents |
+| 5 | `twostroke` | Two-Stroke Saloon | Trabant 601 | Small boxy two-door, little tail fins, pale pastel paint |
+| 6 | `brickestate` | Brick Estate | Volvo 240 estate | Square everything, long flat roof, big bumpers |
+| 7 | `woody` | Woody Wagon | 1949 Ford "Woody" wagon | Wood-panelled sides, split windscreen, surfboard on the roof |
+| 8 | `stately` | Stately Saloon | Rolls-Royce Silver Shadow | Tall upright chrome grille with a mascot, long bonnet, two-tone paint |
+| 9 | `limo` | Stretch Limo | Lincoln Town Car stretch limousine | Very long, many side windows, boomerang aerial |
+| 10 | `milkfloat` | Milk Float | Smith's / Wales & Edwards electric milk float | Open sides stacked with crates, flat cab, tiny wheels, slow |
+| 11 | `pony` | Pony Car | 1965 Ford Mustang fastback | Long bonnet, short deck, fastback roof, triple tail lamps |
+| 12 | `splitwindow` | Split-Window Coupe | 1963 Chevrolet Corvette Sting Ray | Pointed nose, pop-up lamps, split rear window, side pipes |
+| 13 | `snake` | Snake Roadster | AC Cobra 427 | Open two-seater, fat rear arches, oval mouth, roll hoop, twin stripes |
+| 14 | `rearengine` | Rear-Engine Coupe | Porsche 911 (classic) | Round lamps on raised wings, sloping teardrop tail, whale-tail spoiler |
+| 15 | `wedge` | Wedge Supercar | Lamborghini Countach | Flat wedge, scissor doors, huge rear wing, wide rear tyres |
+| 16 | `gullwing` | Stainless Gullwing | DeLorean DMC-12 | Bare brushed-metal body, gullwing doors, louvred rear window |
+| 17 | `centreseat` | Centre-Seat Hypercar | McLaren F1 | Low cab-forward bubble, central driving seat, roof air scoop |
+| 18 | `pandacoupe` | Panda Coupe | Toyota Sprinter Trueno AE86 | Two-tone white over black, pop-up lamps, boxy hatch |
+| 19 | `midnight` | Midnight Coupe | Nissan Skyline GT-R (R34) | Square shoulders, four round tail lamps, tall rear wing |
+| 20 | `rallywedge` | Rally Wedge | Lancia Stratos | Very short, wraparound visor windscreen, roof spoiler, bank of spot lamps |
+| 21 | `safari` | Safari Wagon | Land Rover Defender 110 | Flat aluminium panels, roof rack and ladder, spare wheel on the bonnet, snorkel |
+| 22 | `widetruck` | Wide Truck | AM General Hummer H1 | Extremely wide and low for a truck, slot grille, flat windscreen |
+| 23 | `polytruck` | Polygon Truck | Tesla Cybertruck | One peaked triangle of flat steel, light bar front and back |
+| 24 | `monster` | Monster Truck | Bigfoot (Ford F-250) | Pickup body on enormous tyres, visible suspension, flags |
+| 25 | `corrugated` | Corrugated Van | Citroën H Van | Ribbed sides, snout of a bonnet, tall square body |
+| 26 | `foodtruck` | Food Truck | Grumman Olson step van | Serving hatch with an awning, menu board, roof vent |
+| 27 | `motorhome` | Motorhome | Winnebago Brave (1970s) | Slab-sided box with a coloured stripe, big windscreen, roof air-conditioner |
+| 28 | `schoolbus` | School Bus | Blue Bird conventional school bus | Yellow, bonnet out front, black stripes, stop sign arm, roof lamps |
+| 29 | `doubledecker` | Double Decker | AEC Routemaster | Two decks, open rear platform, half-cab beside the engine |
+| 30 | `fireengine` | Fire Engine | American LaFrance pumper | Red, ladder on top, hose reels and pump panel, light bar |
+
+- [ ] The 30 models, in a state-free file of their own
+- [ ] A table of the 30 (name, what it is based on, size, colours for Good and Evil, a line about it)
+- [ ] A "Car ideas" tab in the garage: a second lot where they are parked, to look at, with the Livery button working
+- [ ] A picture of each, looked at and corrected until it reads as what it is based on
