@@ -1135,12 +1135,13 @@ const buildRoad = () => {
   // mud: where the road gives way to it, a sheet of churned brown right across, its ruts and puddles
   // darker, and a ragged edge where the road begins again
   for (const m of LEVEL.mud || []) {
-    const mudMat = flat(0x5e4630);
+    const soft = theme.soft || {}; // (a theme whose soft ground is not earth: the thaw's slush)
+    const mudMat = flat(soft.mud ?? 0x5e4630);
     mudMat.polygonOffset = true;
     mudMat.polygonOffsetFactor = -1;
     mudMat.polygonOffsetUnits = -1;
     add(buildStrip(m.from, m.to, (s) => Track.lo(s) - 2, (s) => Track.hi(s) + 2, 0.006, 3), mudMat);
-    const rut = flat(0x4a3622);
+    const rut = flat(soft.track ?? 0x4a3622);
     rut.polygonOffset = true;
     rut.polygonOffsetFactor = -2;
     rut.polygonOffsetUnits = -2;
@@ -1150,7 +1151,7 @@ const buildRoad = () => {
         add(buildStrip(m.from, m.to, (s) => at(s) - 0.25, (s) => at(s) + 0.25, 0.012, 3), rut);
       }
     }
-    const puddle = flat(0x6b6a55);
+    const puddle = flat(soft.puddle ?? 0x6b6a55);
     puddle.polygonOffset = true;
     puddle.polygonOffsetFactor = -2;
     puddle.polygonOffsetUnits = -2;
