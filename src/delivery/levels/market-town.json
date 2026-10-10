@@ -71,7 +71,7 @@
       "limit": 60
     },
     {
-      "s": 1250,
+      "s": 1300,
       "side": "left",
       "limit": 60
     }
@@ -171,11 +171,7 @@
     {
       "exitAt": 2500,
       "mergeAt": 3450,
-      "out": 90,
-      "bends": {
-        "count": 3,
-        "size": 10
-      },
+      "out": 70,
       "oncoming": true
     }
   ],

@@ -312,7 +312,8 @@ export const Collision = (() => {
       const s = Track.place(c);
       add('camera', s, c.side === 'centre' ? 0 : Track.shoulderOffset(c.side === 'left' ? -1 : 1, s), { camera: i });
       // (and its speed limit sign on the shoulder on its side, a little short of it: one on the centre line, on the right)
-      const at = s - CONFIG.speedCamera.signAhead;
+      let at = s - CONFIG.speedCamera.signAhead;
+      for (const jn of Track.junctions) if (Track.isMain(at) && at > jn.s - 9 && at < jn.end + 9) at = jn.s - 9; // (not in the mouth of a crossroads: short of it)
       if (Track.inBounds(at)) add('limitSign', at, Track.shoulderOffset(c.side === 'left' ? -1 : 1, at), { limit: c.limit ?? LEVEL.speedLimit ?? CONFIG.speedCamera.limit });
     });
     // rockfall: each rock somewhere in its stretch, landing anywhere across the road, up the hillside

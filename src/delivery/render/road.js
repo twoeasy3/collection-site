@@ -820,6 +820,15 @@ const buildRoad = () => {
     along(x.side0, x.sideEnd, Track.lo, Track.hi);
     if (x.flyovers) for (const from of [x.flyA0, x.flyB0]) along(from, from + CONFIG.ramps.flyoverLength, () => -LW / 2 - 0.5, () => LW / 2 + 0.5);
   }
+  // (and each arm of a crossroads that the road does not take, a level's "junctions": as wide as the road, level)
+  for (const jn of Track.junctions) {
+    for (const arm of jn.arms) {
+      for (let d = jn.half; d <= arm.length; d += 5) {
+        others.push(jn.centre.x + arm.dir.x * d, jn.centre.z + arm.dir.z * d, jn.half + 1.5);
+        (others.ys || (others.ys = [])).push(jn.centre.y);
+      }
+    }
+  }
   // ---- keeping scenery off the other roads ----------------------------------------------------------
   // Every road's pavement, shoulders and all, as points 2 m apart along its middle (x, z, half its width there,
   // which road), in a grid of squares to look them up by: each side road and flyover whole, and the expressway
@@ -843,6 +852,17 @@ const buildRoad = () => {
     pavedRoad(1 + 3 * n, x.side0, x.sideEnd, Track.lo, Track.hi);
     if (x.flyovers) [x.flyA0, x.flyB0].forEach((from, k) => pavedRoad(2 + 3 * n + k, from, from + FLY, () => -LW / 2 - 0.5, () => LW / 2 + 0.5));
   });
+  // (a crossroads' arms: roads 900 on, two to a junction. Until 2026-10-10 they were not here at all, and on a level
+  // with no exits nothing was: houses, lawns, trees, fences and pavements stood on the cross road, over its lines)
+  Track.junctions.forEach((jn, j) => jn.arms.forEach((arm, k) => {
+    for (let d = jn.half; d <= arm.length; d += 2) {
+      const x = jn.centre.x + arm.dir.x * d, z = jn.centre.z + arm.dir.z * d;
+      const key = Math.floor(x / SQUARE) * 100003 + Math.floor(z / SQUARE);
+      if (!squares.has(key)) squares.set(key, []);
+      squares.get(key).push(paved.length);
+      paved.push(x, z, jn.half, 900 + 2 * j + k);
+    }
+  }));
   // which road s is on
   const roadOf = (s) => {
     if (Track.isMain(s)) return 0;
@@ -886,7 +906,10 @@ const buildRoad = () => {
   // a strip beside a road (as buildStrip: ground cover, a pavement, a rail), stopping short of any other road:
   // each row of it runs out from its edge nearer the road only as far as it is clear, and where that edge
   // itself is on another road the strip breaks off
-  const sideStrip = (sFrom, sTo, latA, latB, y, step = 4) => {
+  // (whole: no part rows. A pavement is its full width or not there: a sliver of one in the wedge between two roads is no
+  // pavement. As a number: and only where that many m beyond it are clear too, so that two roads' pavements, in the
+  // wedge where the roads part, both begin where there is room for the two of them and grass between)
+  const sideStrip = (sFrom, sTo, latA, latB, y, step = 4, whole = false) => {
     if (!paved.length) return buildStrip(sFrom, sTo, latA, latB, y, step);
     const fa = typeof latA === 'function' ? latA : () => latA, fb = typeof latB === 'function' ? latB : () => latB;
     const pos = [], idx = [], own = roadOf(sFrom);
@@ -899,16 +922,19 @@ const buildRoad = () => {
       if (swap) [a, b] = [b, a];
       Track.toWorld(s, (a + b) / 2, spot);
       const width = Math.abs(b - a);
-      let reach = width;
-      if (roadGap(spot.x, spot.z, own, width / 2 + VERGE) <= width / 2 + VERGE) {
+      const beyond = typeof whole === 'number' ? whole : 0;
+      let reach = width + beyond;
+      if (roadGap(spot.x, spot.z, own, width / 2 + beyond + VERGE) <= width / 2 + beyond + VERGE) {
         reach = -1;
-        for (let d = 0; d <= width; d += Math.min(1, width || 1)) {
+        for (let d = 0; d <= width + beyond; d += Math.min(1, width || 1)) {
           Track.toWorld(s, a + Math.sign(b - a) * d, spot);
           if (!offRoads(spot.x, spot.z, 0, own)) break;
           reach = d;
           if (!width) break;
         }
       }
+      if (whole && reach < width + beyond - 0.01) reach = -1;
+      reach = Math.min(reach, width);
       if (reach < Math.min(width, 0.2) && width) joined = false;
       else if (reach < 0) joined = false;
       else {
@@ -1825,8 +1851,34 @@ const buildRoad = () => {
     // ---- suburb: a pavement each side, then lots: a front lawn behind a picket fence, a house
     // with a door and windows facing the road, a driveway and a mailbox; here and there a little
     // park of trees instead. Trees in the gardens, and street lamps along the pavement.
+    // (the same along each side road, and along each arm of a crossroads: lots, lamps and pavement, as the main road's.
+    // runs: every road that has them, [from, to, the number of its first lot])
+    const runs = [[Track.start, Track.end, 0], ...exits.map((x, n) => [x.side0, x.sideEnd, 5000 * (n + 1)])];
     for (const side of [-1, 1]) {
-      add(sideStrip(Track.start, Track.end, (q) => beside(side, q, 0.4), (q) => beside(side, q, 2.4), 0.03), flat(0xcfd0cb));
+      for (const [from, to] of runs) add(sideStrip(from, to, (q) => beside(side, q, 0.4), (q) => beside(side, q, 2.4), 0.03, 4, exits.length ? 3 : true), flat(0xcfd0cb));
+    }
+    // (round the outside of each fork and merge the pavement runs on unbroken, from the exit lane's kerb onto the side
+    // road's and back: there the two roads are one pavement wide apart, and each one's strip would stop for the other)
+    for (const x of exits) {
+      for (const [a, b] of [[x.exitAt - 45, x.exitAt], [x.side0, x.side0 + 45], [x.sideEnd - 45, x.sideEnd], [x.mergeAt, x.mergeAt + 45]]) {
+        add(buildStrip(a, b, (q) => beside(1, q, 0.4), (q) => beside(1, q, 2.4), 0.03), flat(0xcfd0cb));
+      }
+    }
+    for (const jn of Track.junctions) {
+      for (const arm of jn.arms) {
+        for (const side of [-1, 1]) { // (from the corner, where the road's own pavement stops, out along the arm)
+          const pos = [], r = { x: -arm.dir.z, z: arm.dir.x };
+          // (and the corner: on round it to where the road's own pavement, kept a verge and more off the arm, breaks off)
+          for (const [u, v] of [[jn.half + 0.4, 0.4], [jn.half + 0.4, 2.4], [arm.length, 0.4], [arm.length, 2.4],
+            [jn.half + 0.4, 2.4], [jn.half + 0.4, 8], [jn.half + 2.4, 2.4], [jn.half + 2.4, 8]]) {
+            pos.push(jn.centre.x + arm.dir.x * u + r.x * side * (jn.half + v), jn.centre.y + 0.03, jn.centre.z + arm.dir.z * u + r.z * side * (jn.half + v));
+          }
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+          geo.setIndex([0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6]);
+          add(geo, flat(0xcfd0cb));
+        }
+      }
     }
     // (run down, theme.rundown: drab walls, boarded windows, gaps in the fences, dead trees, bare dirt,
     // burnt-out houses, wrecks on the lawns, rubbish and graffiti)
@@ -1863,10 +1915,19 @@ const buildRoad = () => {
     const FENCE = 2.8; // m off the pavement edge to the fence (and LOT m along the road per lot: see gunfire.js)
     // (nothing goes where it would stand on a side road)
     const clear = (s, lat) => standsClear(s, lat, 20, LOT, CONFIG.ramps.clearBuilding); // (a lot: its house and garden)
-    for (const side of [-1, 1]) {
-      for (let s = Track.start + (side > 0 ? 0 : LOT / 2), lot = 0; s < Track.end - LOT; s += LOT, lot++) {
+    // (nor where another road's lot already is: the expressway's come first, then each side road's between and beyond)
+    const taken = [], lotSpot = {};
+    const free = (s, lat, run) => {
+      Track.toWorld(s, lat, lotSpot);
+      if (taken.some(t => t[2] !== run && Math.hypot(t[0] - lotSpot.x, t[1] - lotSpot.z) < LOT + 6)) return false;
+      taken.push([lotSpot.x, lotSpot.z, run]);
+      return true;
+    };
+    for (const [runFrom, runTo, lot0] of runs) for (const side of [-1, 1]) {
+      for (let s = runFrom + (side > 0 ? 0 : LOT / 2), lot = lot0; s < runTo - LOT; s += LOT, lot++) {
         const mid = s + LOT / 2;
         if (!clear(mid, beside(side, mid, 12))) continue;
+        if (exits.length && !free(mid, beside(side, mid, 14), lot0)) continue;
         // (each lot the same every time: The Hood's shooters are in these houses, see gunfire.js)
         const house = houseAt(side, lot);
         if (!house) { // a little park
@@ -1932,7 +1993,17 @@ const buildRoad = () => {
         tree(mid + Math.random() * 8 - 4, beside(side, mid, front + across + 5 + Math.random() * 10));   // and the back
       }
     }
-    for (let s = Track.start, k = 0; s < Track.end; s += 55, k++) { // street lamps, each side in turn
+    // (a row of trees along each side of a cross road, where the road runs straight over it: its arms lie square
+    // to the road there, so a spot on one is a spot beside the road, that far out)
+    for (const jn of Track.junctions) {
+      if (jn.way) continue;
+      jn.arms.forEach((arm, k) => {
+        for (const side of [-1, 1]) {
+          for (let d = jn.half + 14; d < arm.length - 6; d += 17) tree(jn.s + jn.half + side * (jn.half + 6.5), (k ? -1 : 1) * (d + Math.random() * 4));
+        }
+      });
+    }
+    for (const [runFrom, runTo] of runs) for (let s = runFrom, k = 0; s < runTo; s += 55, k++) { // street lamps, each side in turn
       const side = k % 2 ? 1 : -1;
       if (!clear(s, beside(side, s, 0.8))) continue;
       lampPosts.push([s, beside(side, s, 0.8), 2.75, 0.16, 5.5, 0.16]);
