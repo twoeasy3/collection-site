@@ -17,46 +17,64 @@
     <div class="buttons">
       <button id="play" class="primary">Play it</button>
       <button id="playEvil">Play as Evil</button>
+      <button id="playFrom" title="Then click the road: a run starts at that spot">Play from here</button>
+    </div>
+    <div class="buttons">
+      <button id="load" title="Open a level's .json file from this computer (or drop one on the page)">Load .json</button>
       <button id="download">Download .json</button>
+      <button id="undo" title="Undo (Ctrl+Z)">&#8630; Undo</button>
+      <button id="redo" title="Redo (Ctrl+Y)">&#8631; Redo</button>
+      <input type="file" id="file" accept=".json,application/json" hidden>
     </div>
     <p class="note" id="status"></p>
   </section>
-  <section>
-    <h2>Level</h2>
-    <div class="grid">
-      <label>Name <input id="f-name"></label>
-      <label>Id <input id="f-id"></label>
-      <label>Good clock (s) <input id="f-good" type="number" min="10"></label>
-      <label>Evil clock (s) <input id="f-evil" type="number" min="10"></label>
-      <label>Tip ($) <input id="f-tip" type="number" min="0"></label>
-      <label>Lanes <input id="f-lanes" type="number" min="2" max="12"></label>
-      <label>Theme <select id="f-theme"></select></label>
-      <label>Car <select id="f-car"></select></label>
-      <label>Traffic flow <select id="f-flow"><option value="">two-way</option><option value="north">all my way</option><option value="south">all oncoming</option></select></label>
-    </div>
-    <label class="block">Traffic mix <input id="f-traffic" placeholder="darkvan 0.4, commuter 0.2, van 0.2, police 0.05"></label>
-  </section>
-  <section>
-    <h2>Road <span class="small" id="length"></span></h2>
-    <table id="segments"><thead><tr><th>Length m</th><th>Bend °</th><th>Slope %</th><th></th></tr></thead><tbody></tbody></table>
-    <button id="addSegment">+ Add a segment</button>
-  </section>
-  <section>
-    <h2>Special features <span class="small">as JSON</span></h2>
-    <textarea id="extra" spellcheck="false" aria-label="The level's special features, as JSON"></textarea>
-    <div class="buttons"><button id="tidy">Tidy</button></div>
-    <p class="note" id="extraNote"></p>
-  </section>
-  <section>
-    <h2>Place</h2>
-    <div class="tools" id="tools"></div>
-    <div id="item"></div>
-  </section>
+  <nav class="tabs" id="tabs">
+    <button data-tab="level">Level</button><button data-tab="road">Road</button><button data-tab="place">Place</button><button data-tab="list">List</button><button data-tab="json">JSON</button>
+  </nav>
+  <div class="tab" id="tab-level"></div>
+  <div class="tab" id="tab-road" hidden>
+    <section>
+      <h2>Segments <span class="small" id="length"></span></h2>
+      <table id="segments"><thead><tr><th>Length m</th><th>Bend &deg;</th><th>Slope %</th><th></th></tr></thead><tbody></tbody></table>
+      <div class="buttons"><button id="addSegment">+ Add a segment</button>
+        <label class="check" title="When a segment's length changes (or one is removed), everything further along the road moves with it, and what is on that segment is stretched with it"><input type="checkbox" id="carry" checked><span>Move what comes after</span></label></div>
+      <p class="note" id="loopNote"></p>
+    </section>
+    <div id="roadFields"></div>
+  </div>
+  <div class="tab" id="tab-place" hidden>
+    <section>
+      <input id="search" type="search" placeholder="Search everything that can be placed..." aria-label="Search what can be placed">
+      <div class="tools" id="tools"></div>
+    </section>
+  </div>
+  <div class="tab" id="tab-list" hidden>
+    <section>
+      <h2>Shown on the map</h2>
+      <div class="buttons"><button id="showAll">Show all</button><button id="hideAll">Hide all</button><button id="hideScenery" title="Zones, run-off, gravel, stands, quarries and landmarks hidden">Hide scenery</button></div>
+      <div class="filters" id="filters"></div>
+    </section>
+    <section>
+      <h2>Everything in the level <span class="small" id="listCount"></span></h2>
+      <div id="everything"></div>
+    </section>
+  </div>
+  <div class="tab" id="tab-json" hidden>
+    <section>
+      <h2>The level as JSON <span class="small">advanced</span></h2>
+      <p class="note">The whole level, as it will be saved. Anything the forms lack can be typed here (see levels.js); it is applied as soon as it is valid.</p>
+      <textarea id="extra" class="json" spellcheck="false" aria-label="The level, as JSON"></textarea>
+      <div class="buttons"><button id="tidy">Tidy</button></div>
+      <p class="note" id="extraNote"></p>
+    </section>
+  </div>
 </aside>
 <main id="mapBox"><canvas id="map"></canvas>
   <iframe id="view3d" title="The level in 3D" hidden></iframe>
-  <div class="hint" id="hint">Scroll to zoom &middot; drag the road to pan &middot; click to place or select &middot; drag an item to move it &middot; Delete removes it</div>
+  <div class="hint" id="hint"></div>
   <div class="viewButtons"><button id="fit">Fit</button><button id="show3d" class="primary">3D view</button><button id="refresh3d" hidden>Update with my edits</button><button id="reveal3d" hidden title="Landmines, drop bears, rockfalls and the airport's wreckage only appear as the player comes up to them. This shows them all as they end up (T in the view does the same).">Show what triggers later</button></div>
+  <aside id="inspector" hidden></aside>
+  <div id="problems" hidden></div>
 </main>
 <script type="module" src="/src/delivery/editor.js"></script>
 </body>

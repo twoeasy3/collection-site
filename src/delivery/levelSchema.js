@@ -591,3 +591,6 @@ export const writeSetting = (e, k, S, v) => {
   else if (!empty) e[k] = S.type === 'number' && S.int ? Math.round(v) : v;
   return e;
 };
+export const initialValue = initial;
+// a level-wide field, as a setting (for the editor's forms: a "timed" field is an object of settings)
+export const asSetting = (def) => ({ ...def, type: def.shape === 'timed' ? 'object' : def.shape });
