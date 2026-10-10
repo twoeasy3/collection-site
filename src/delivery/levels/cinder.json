@@ -1,6 +1,10 @@
 {
   "id": "cinder",
   "name": "Cinder Island",
+  "description": {
+    "good": "A lava lamp for the far side of the island: up the mountain and down, gently over the drawbridge, and do watch for falling rocks.",
+    "evil": "A pressure cooker across an island that is already boiling: geysers, lava bombs and a drawbridge over the lava. Jump it."
+  },
   "theme": "volcano",
   "clock": { "good": 225, "evil": 170 },
   "tip": 270,

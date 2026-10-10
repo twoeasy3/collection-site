@@ -1,6 +1,10 @@
 {
   "id": "docks",
   "name": "Dock Run",
+  "description": {
+    "good": "A globe to the far end of the terminal: keep clear of the cranes and the forklifts, stop for the trains, and mind the 60 limit.",
+    "evil": "A leaking barrel through the docks: beat the trains, jump the bridge, and grab the cash under the stack before it comes down."
+  },
   "theme": "port",
   "clock": { "good": 215, "evil": 160 },
   "tip": 270,

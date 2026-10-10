@@ -343,7 +343,7 @@ Build the theme first, then the level. Make sure the theme is reusable
 - [ ] T6. **Desert canyon**: red rock walls, mesas, a dry riverbed for a shoulder, tumbleweed.
       Gimmick: a dust storm that closes visibility like fog but blows cars sideways; a flash flood
       down the wash. Reuses: fog, storm, terrain, rockfall.
-- [ ] T7. **Volcano island**: black sand, palms, steam vents, a lava field across the old road.
+- [x] T7. **Built (agent 22, `delivery-themes-c`): theme `volcano`, level `cinder` "Cinder Island" from the gimmicks the game has (the lava bombs and the lost lanes below were not built). Verified: levels, schema, bundle, save, descriptions and targets checks; a ghost driven to the end; each pickup of a row taken only from its own lane; screenshots along the whole level and of a target. Not verified: nothing played by hand, nothing seen moving (the scenery that moves was seen only in stills), nothing heard.** **Volcano island**: black sand, palms, steam vents, a lava field across the old road.
       Gimmick: lava bombs landing on the road and cooling into obstacles; lava flows that close a
       lane for good partway through the run. Reuses: quarry blasts and boulders, hell's palette.
 - [ ] T8. **Autumn countryside**: orange and red forest, stone walls, covered bridges, a village
@@ -357,11 +357,11 @@ Build the theme first, then the level. Make sure the theme is reusable
       neon signs in the rain. Gimmick: the stalls creep outward as the evening goes on, and
       pedestrians cross anywhere. Reuses: narrows, parades, the lit themes, school crossing's
       walkers.
-- [ ] T11. **Container port**: stacks of containers for walls, gantry cranes, straddle carriers,
+- [x] T11. **Built (agent 22, `delivery-themes-c`): theme `port`, level `docks` "Dock Run" from the gimmicks the game has (the cranes lowering boxes into lanes below were not built: the cranes are scenery). Verified: levels, schema, bundle, save, descriptions and targets checks; a ghost driven to the end; each pickup of a row taken only from its own lane; screenshots along the whole level and of a target. Not verified: nothing played by hand, nothing seen moving (the scenery that moves was seen only in stills), nothing heard.** **Container port**: stacks of containers for walls, gantry cranes, straddle carriers,
       rail lines in the road. Gimmick: cranes lower containers into lanes on a rhythm; straddle
       carriers drive over you if you are low enough. Reuses: machinery, level crossings, falling
       cargo, potties' patterns.
-- [ ] T12. **Theme park**: the road runs through the park: a rollercoaster looping over it,
+- [x] T12. **Built (agent 22, `delivery-themes-c`): theme `themepark`, level `park` "Thrill Park" from the gimmicks the game has (the coaster sharing the road and the bumper cars below were not built: the coaster is scenery). Verified: levels, schema, bundle, save, descriptions and targets checks; a ghost driven to the end; each pickup of a row taken only from its own lane; screenshots along the whole level and of a target. Not verified: nothing played by hand, nothing seen moving (the scenery that moves was seen only in stills), nothing heard.** **Theme park**: the road runs through the park: a rollercoaster looping over it,
       a Ferris wheel, a log flume that crosses as a water stretch, a parade route. Gimmick: the
       coaster's train shares the road for a stretch; bumper cars as traffic. Reuses: parades,
       bullet train, balloons.
