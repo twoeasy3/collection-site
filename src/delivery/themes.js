@@ -143,4 +143,19 @@ export const THEMES = {
   // port: a container port (render/themes/port.js): concrete under a grey sky, walls of stacked containers in every colour, gantry cranes over the road, straddle carriers up and down beside it, rails let into the road, floodlight masts, and on the right the quay: quay cranes over container ships, and the harbour
   port: { sky: 0xb5c3cd, ground: 0x8b8e91, road: 0x33363b, scenery: 'port' },
   // (batch C: theme park, volcano island, container port: new themes go above this line)
+  // wildwest: the old Wild West (render/themes/wildwest.js): a dirt road over red desert, a town of false-front wooden buildings
+  // every 800 m with the road for its main street, a railway and its steam train along the left, mesas on the skyline
+  wildwest: { sky: 0x7fb8e6, ground: 0xc8754a, road: 0xd6b083, scenery: 'wildwest', unmarked: true,
+    target: { offset: 2, height: 4.6, beam: true }, // (at the street's edge, over the hitching rails: the buildings' faces are 6 m off)
+    tunnel: { wall: 0x6b4a32, tiles: 0x8f6a44, roof: 0x4a3526, face: 0x97492f, lamp: 0xffc870 } },
+  // favela: a hillside of houses (render/themes/favela.js): boxes in every colour stacked row over row up land that climbs with the
+  // road (terrain), water tanks on the roofs, stairways, tangled wires, a football pitch, a cable car overhead; the city and the sea below
+  favela: { sky: 0x9fd6f2, ground: 0x3f8fc0, road: 0x55575c, scenery: 'favela', terrain: { gentle: 0xb3a07c, steep: 0x9a6a48, rough: 0.3, flat: 10, rise: 40 },
+    target: { style: 'gantry', offset: -1.2, arm: 2.2, height: 5, beam: true }, // (a mast at the kerb, the ring hung out over the shoulder: the houses stand 3 m off)
+    tunnel: { wall: 0x8a8f96, tiles: 0xf2c14e, roof: 0x4a4d52, face: 0x9a958a, lamp: 0xfff0c8 } },
+  // rice: rice terraces (render/themes/rice.js): the land (terrain) cut into level paddies that follow its contours, flooded, in
+  // every green, palms, huts on stilts, farmers and buffalo, kites, tall brick gates over the road, mist in the low ground
+  rice: { sky: 0xcfe9ea, ground: 0x86c08a, road: 0x66625c, scenery: 'rice', terrain: { gentle: 0x4f9a3f, steep: 0x6b5a3c, rough: 0.5, flat: 2, rise: 30 },
+    target: { height: 4.2, beam: true } }, // (up over the roadside palms' feet)
+  // (batch D: Wild West, favela, rice terraces: new themes go above this line)
 };

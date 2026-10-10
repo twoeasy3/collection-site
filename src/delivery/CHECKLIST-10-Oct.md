@@ -361,7 +361,10 @@ Build the theme first, then the level. Make sure the theme is reusable
 - [ ] T8. **Autumn countryside**: orange and red forest, stone walls, covered bridges, a village
       with a harvest fair. Gimmick: wet leaves in the bends (slick only off the racing line),
       a hay-cart convoy, a low sun straight ahead on one stretch. Reuses: farm, ice, convoys.
-- [ ] T9. **Favela hillside**: a steep switchback road between stacked houses in every colour,
+- [x] T9. **Favela hillside** (done as theme `favela` and level "Favela Heights", `levels/morro.json`, with the game's existing
+      gimmicks: a parade for the carnival, burst mains, an ice-cream van, trolleys, a fun run, cyclists, a balloon, a tunnel and a
+      crest on the ridge. NO bouncing balls or filtering motorbike taxis of its own. Verified: the checks, a ghost probe to the
+      end, screenshots along it. Not played by hand): a steep switchback road between stacked houses in every colour,
       stairs, cable cars overhead, a football pitch on a roof. Gimmick: balls bouncing down the
       stairs onto the road, motorbike taxis that filter between lanes. Reuses: Stelvio's
       hairpins, drifters, the rickshaw's agility.
@@ -392,11 +395,16 @@ Build the theme first, then the level. Make sure the theme is reusable
       of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a glass tube on the sea bed: whales and shoals outside, a
       leaking stretch, an air-lock at each end. Gimmick: leaks that flood a lane until a pump
       catches up; a section with the lights out. Reuses: tunnels, water mains, blackout.
-- [ ] T16. **Old Wild West**: a dirt main street, saloon, water tower, a steam railway beside the
+- [x] T16. **Old Wild West** (done as theme `wildwest` and level "High Noon", `levels/noon.json`, with the game's existing
+      gimmicks: stampedes for the cattle drive, a level crossing, a mine tunnel, three crests, pursuits for the posse. NO train
+      robbery or duel of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a dirt main street, saloon, water tower, a steam railway beside the
       road, cactus. Gimmick: a train robbery (riders alongside the train, across the road), a
       cattle drive, a duel at noon that stops the traffic. Reuses: railway, stampedes, gunfire,
       the safari's unmarked dirt road.
-- [ ] T17. **Rice terraces**: a narrow road stepping down green terraces, water buffalo, a
+- [x] T17. **Rice terraces** (done as theme `rice` and level "Emerald Steps", `levels/rice.json`, with the game's existing
+      gimmicks: a ford with its side road for the bridge, burst mains and mud for the spill, herds for the buffalo, tractors,
+      speed cushions, cyclists, fog in the valley, a crest and a crosswind on the ridge. NO flooding terraces or ducks of its
+      own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a narrow road stepping down green terraces, water buffalo, a
       temple gate over the road, kites. Gimmick: the terraces flood in turn, spilling across the
       road as moving slick patches; ducks crossing in a line. Reuses: terrain, water mains'
       slicks, herds.
