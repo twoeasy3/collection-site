@@ -1123,6 +1123,10 @@ pick ups and traffic."
       and the built site's look is still going. `main` is at `7a90971`, ten merges ahead of what is live
       (`8fa45a6`), not pushed. One stray process: `node` PID 26760 (a hung bundle check; the agent's kill
       was refused): for the owner to end.
+- **Stood down on the owner's word ("Draft a handover for the next delegation agent, push and stand down").**
+      `HANDOVER-orchestrator-10-Oct.md` is the handover for the next orchestrator. `main` pushed with it:
+      everything merged on 10-Oct is on the remote and deploying. Not checked on `main` itself before it
+      went: the six merges after `6409bb9` (each passed its own checks on its branch).
 - [x] **The last agent has stopped: NO agent is running.** Its results:
   - **All 28 checks pass at `a29522e`** (what is live, `8fa45a6`, plus Speed Trap Alley, Mountain Pass and
     the suburb scenery). At `6409bb9` (that plus the themed obstacles, batch F, one burst-main system,
