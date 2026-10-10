@@ -74,7 +74,7 @@ const paint = (mesh, evil) => {
 };
 
 // ---- the lot, and the ideas parked in it: built the first time the tab is opened --------------------------
-let parked = [], order = [];
+const parked = [];
 const buildLot = () => {
   const byLength = [...IDEA_CARS].sort((a, b) => a.hl - b.hl);
   const rows = ROWS.map((row, r) => IDEA_CARS.filter(car => Math.floor(byLength.indexOf(car) / COLS) === r));
@@ -112,7 +112,6 @@ const buildLot = () => {
     plate.position.set(colX(col), 0.06, ROWS[r].z + ROWS[r].depth / 2 - 0.45);
     scene.add(plate);
   }));
-  order = parked.map(mesh => mesh.userData.car);
 };
 const lookRing = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.12, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffffff }));
 lookRing.rotation.x = Math.PI / 2;
@@ -124,7 +123,7 @@ const params = new URLSearchParams(location.search);
 let studio = null; // { scene, camera, width, height, meshes }
 const buildStudio = (ids) => {
   const cars = (ids === 'all' ? IDEA_CARS : ids.split(',').map(id => IDEA_CARS.find(car => car.id === id))).filter(Boolean);
-  const yaws = params.get('views') === '3' ? [0.65, -Math.PI / 2, Math.PI + 0.65] : [0.65, Math.PI + 0.65]; // (front and right; side on; back and left)
+  const yaws = params.get('views') === '3' ? [0.65, -Math.PI / 2, Math.PI + 0.65] : params.get('views') === '1' ? [0.65] : [0.65, Math.PI + 0.65]; // (front and right; side on; back and left)
   const room = new THREE.Scene(), tilt = 0.4, sin = Math.sin(tilt), cos = Math.cos(tilt), meshes = [];
   room.background = new THREE.Color(0xdde3ea);
   room.add(new THREE.HemisphereLight(0xffffff, 0x8a8f99, 1.6));
@@ -157,7 +156,6 @@ const buildStudio = (ids) => {
 };
 
 // ---- interface ------------------------------------------------------------------------------------------
-const ui = document.getElementById('garageUi');
 const tip = document.getElementById('garageTip');
 const info = document.getElementById('garageInfo');
 const action = document.getElementById('garageAction');
@@ -303,8 +301,8 @@ export const IdeasLot = {
     if (!drag && Math.abs(fling) > 0.05) { scrollX = clampScroll(scrollX + fling * dt); fling *= Math.pow(0.04, dt); }
     scrollX = clampScroll(scrollX);
     camera.aspect = aspect;
-    camera.position.set(scrollX, 27, 37);
-    camera.lookAt(scrollX, 0, -1.5);
+    camera.position.set(scrollX, 24, 32.5);
+    camera.lookAt(scrollX, 0, -1.6);
     camera.updateProjectionMatrix();
     const front = new THREE.Vector3(scrollX, 0, FRONT).sub(camera.position);
     const depth = front.dot(camera.getWorldDirection(new THREE.Vector3()));
