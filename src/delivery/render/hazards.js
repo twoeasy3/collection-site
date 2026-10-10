@@ -167,9 +167,16 @@ Game.onLoad.push(() => {
     const s = Track.place(c), lo = Track.lo(s), hi = Track.hi(s), width = hi - lo, mid = (lo + hi) / 2, L = D.leaf;
     // (the river under the whole span: the leaves, down, cover it. Its colour is the theme's: its `river`, or its
     // water stages' deep water, or blue; with a `riverCore`, a brighter band down the middle of it: lava)
-    const look = THEMES[LEVEL.theme] || THEMES.city;
-    group.add(new THREE.Mesh(buildStrip(s - L, s + L, lo - 120, hi + 120, 0.08, 2), flat(look.river ?? look.channel?.deep ?? 0x2e6c8f, -14)));
-    if (look.riverCore !== undefined) group.add(new THREE.Mesh(buildStrip(s - L * 0.4, s + L * 0.4, lo - 120, hi + 120, 0.085, 2), flat(look.riverCore, -15)));
+    // (The water is a sheet WATER m over the road, drawn OVER rows nearer than it is so that it hides the road and
+    // its lines under it (they are drawn 2 nearer). A leaf's own parts are drawn as much nearer, and no part of a
+    // leaf is lower than its top by more than its plate, which lies clear of the sheet: so at every angle a leaf is
+    // over the water, all of it. The sheet was drawn 14 rows nearer, which put it over a leaf's deck, and over the
+    // lower end of a raised leaf; and a leaf had girders 1.4 m deep under it, which stood in the water at the hinge.
+    // The core is a band of the sheet, not a second sheet over it)
+    const look = THEMES[LEVEL.theme] || THEMES.city, WATER = 0.05, OVER = -3;
+    const river = flat(look.river ?? look.channel?.deep ?? 0x2e6c8f, OVER), core = look.riverCore !== undefined ? 0.4 : 0;
+    for (const d of [-1, 1]) group.add(new THREE.Mesh(buildStrip(s + d * L * core, s + d * L, lo - 120, hi + 120, WATER, 2), river));
+    if (core) group.add(new THREE.Mesh(buildStrip(s - L * core, s + L * core, lo - 120, hi + 120, WATER, 2), flat(look.riverCore, OVER)));
     for (const d of [-1, 1]) { // (its banks: a stone quay each side, and a pier with a cabin either side of the road at each hinge)
       group.add(new THREE.Mesh(buildStrip(s + d * L, s + d * (L + 1.2), lo - 120, lo, 0.3, 2), flat(0x8a8378, -1)));
       group.add(new THREE.Mesh(buildStrip(s + d * L, s + d * (L + 1.2), hi, hi + 120, 0.3, 2), flat(0x8a8378, -1)));
@@ -182,7 +189,10 @@ Game.onLoad.push(() => {
     }
     // each leaf: hinged at its bank, its top (local y 0) the road, reaching `leaf` m to the middle. A line
     // from the hinge at Hazards.bridgeAngle: the same line Hazards.deck gives the car
-    const deck = lambert(0x41444b), steel = lambert(0x9c4a3a), white = glow(0xf4f4f4), yellow = glow(0xffc400);
+    // (all of it over the road, the plate PLATE m thick: its underside 0.01 m clear of the water when it is down)
+    const nearer = (material) => Object.assign(material, { polygonOffset: true, polygonOffsetFactor: OVER, polygonOffsetUnits: OVER });
+    const deck = nearer(lambert(0x41444b)), steel = nearer(lambert(0x9c4a3a)), under = nearer(lambert(0x6e3528)), white = nearer(glow(0xf4f4f4)), yellow = nearer(glow(0xffc400));
+    const dark = nearer(glow(0x1b1d22)), bright = nearer(glow(0xffd23f)), PLATE = 0.05;
     const lines = []; // [x across the leaf (+ to the left), colour, dashed]
     const lanes = [];
     for (let n = 0; n < Track.laneCount; n++) lanes.push(Track.laneOffset(n, s));
@@ -194,18 +204,18 @@ Game.onLoad.push(() => {
     lines.push([mid - Track.laneLo(s), white, false], [mid - Track.laneHi(s), white, false]);
     const leaves = [-1, 1].map((d) => {
       const pivot = at(s + d * L, mid, 0.11), leaf = new THREE.Group();
-      add(leaf, box(width, 0.4, L), deck, 0, -0.2, -d * L / 2);
-      for (const x of [-1, 1]) { // (a girder under each edge, deepest at the hinge; and a rail along the top)
-        add(leaf, box(0.4, 1.0, L * 0.98), steel, x * (width / 2 - 0.2), -0.9, -d * L / 2);
-        add(leaf, box(0.12, 0.12, L), steel, x * (width / 2 - 0.1), 0.9, -d * L / 2);
-        for (let k = 0; k <= 5; k++) add(leaf, box(0.1, 0.9, 0.1), steel, x * (width / 2 - 0.1), 0.45, -d * (0.2 + k * (L - 0.4) / 5));
+      add(leaf, box(width, PLATE, L), deck, 0, -PLATE / 2, -d * L / 2);
+      for (const x of [-1, 1]) { // (a plate girder standing along each edge, over the deck: a web, a flange along its top, stiffeners)
+        add(leaf, box(0.16, 0.9, L * 0.98), under, x * (width / 2 - 0.2), 0.45, -d * L / 2);
+        add(leaf, box(0.4, 0.12, L), steel, x * (width / 2 - 0.2), 0.96, -d * L / 2);
+        for (let k = 0; k <= 5; k++) add(leaf, box(0.34, 0.9, 0.12), steel, x * (width / 2 - 0.2), 0.45, -d * (0.2 + k * (L - 0.4) / 5));
       }
       for (const [x, material, dashed] of lines) {
         if (!dashed) add(leaf, box(0.14, 0.02, L - 0.8), material, x, 0.012, -d * L / 2);
         else for (let z = 1.5; z < L - 1; z += 6) add(leaf, box(0.14, 0.02, 2.4), material, x, 0.012, -d * (z + 1.2));
       }
-      for (let k = 0; k * 1.2 < width; k++) add(leaf, box(0.6, 0.03, 0.5), glow(k % 2 ? 0x1b1d22 : 0xffd23f), -width / 2 + 0.3 + k * 1.2, 0.015, -d * (L - 0.3)); // (its lip, marked)
-      add(leaf, box(width, 0.5, 0.12), glow(0xffd23f), 0, -0.2, -d * L);
+      for (let k = 0; k * 1.2 < width; k++) add(leaf, box(0.6, 0.03, 0.5), k % 2 ? dark : bright, -width / 2 + 0.3 + k * 1.2, 0.015, -d * (L - 0.3)); // (its lip, marked)
+      add(leaf, box(width, PLATE, 0.12), bright, 0, -PLATE / 2, -d * L);
       pivot.add(leaf);
       return { leaf, d };
     });

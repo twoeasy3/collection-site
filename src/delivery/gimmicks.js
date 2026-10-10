@@ -785,13 +785,13 @@ export const GROUPS = [
       return { model: g, tick: (t) => { const on = Math.floor(t * 6) % 2 === 0; lights.forEach((l, k) => { l.visible = (k % 2 === 0) === on; }); } };
     } },
     { name: 'Falling cargo', color: 0xb9834a, has: (l) => l.traffic?.cargotruck || l.trafficZones?.some(z => z.traffic.cargotruck), rules: [
-      `A cargo truck sheds its load: while one is within ${CG.near} m ahead of you, a crate, a bale or a tyre comes off the back every ${range(CG.every, ' s')}, in its lane or a little either side.`,
+      `A cargo truck sheds its load: while one is within ${CG.near} m ahead of you, a crate or a bale comes off the back every ${range(CG.every, ' s')}, in its lane or a little either side.`,
       `Each slides on down the road and stops where it lies: an obstacle, yours to hit (a crate: ${CONFIG.obstacleKinds.crate.damage} damage). The traffic drives through them.`,
       'Do not sit behind it. Get past, and nothing more falls.',
     ], build: () => {
       const g = road(9, 30), truck = vehicle('cargotruck', 0x2f6f9f);
       truck.position.set(2.2, 0, 6);
-      const loads = ['crate', 'tyre', 'bale'].map((kind, k) => { const o = ob(kind, { hw: 0.6, hl: 0.6, height: 1.1 }); o.position.set(2.2 + (k - 1) * 1.3, 0, -6 - k * 3.2); o.rotation.y = k * 0.7; return o; });
+      const loads = ['crate', 'bale', 'crate'].map((kind, k) => { const o = ob(kind, { hw: 0.6, hl: 0.6, height: 1.1 }); o.position.set(2.2 + (k - 1) * 1.3, 0, -6 - k * 3.2); o.rotation.y = k * 0.7; return o; });
       g.add(truck, ...loads);
       return { model: g, tick: (t) => truck.userData.animate?.(t) };
     } },
