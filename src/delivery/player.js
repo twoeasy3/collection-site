@@ -279,7 +279,8 @@ export const Player = {
     if (effect === 'moodSwing') Traffic.moodSwing(true);
     if (effect === 'carSwap') { // (any of the garage's cars but this one and the Tank; none for a level's own vehicle)
       // (on an amphibious level, only another amphibious car: the swap must float)
-      const others = CARS.includes(CAR) ? CARS.filter(c => c !== CAR && !c.tank && !c.earned && (!LEVEL.amphibious || c.amphibious)) : [];
+      // (a car idea in use, ideas.js, is swapped for a garage car as any other is, and given back after; none is ever what the swap deals)
+      const others = CARS.includes(CAR) || CAR.idea ?CARS.filter(c => c !== CAR && !c.tank && !c.earned && (!LEVEL.amphibious || c.amphibious)) : [];
       if (others.length) this.takeCar(() => lendCar(others[Math.floor(Math.random() * others.length)]));
     }
   },

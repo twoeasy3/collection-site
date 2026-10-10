@@ -131,6 +131,7 @@ const HORNS = {
   hearse: { file: C3, rate: 0.75 }, minivan: { file: C1, rate: 0.9 }, pickup: { file: C3, rate: 0.95 }, hotrod: { file: C1, rate: 0.85 },
   sleeper: { file: C1, rate: 1 }, rally: { file: C3, rate: 1.2 }, towtruck: { file: RIG, rate: 1.05 }, rotary: { file: C3, rate: 1.1 },
   taxi: { file: C1, rate: 1.05 }, suv: { file: C3, rate: 0.9 }, miata: { file: C1, rate: 1.15 },
+  gullwing: { file: C1, rate: 1.1 }, rearengine: { file: C3, rate: 1.05 }, snake: { file: C1, rate: 0.82 }, polytruck: { file: RIG, rate: 1.15 },
   muscle: { file: C1, rate: 0.8 }, fullsize: { file: C3, rate: 0.85 }, evsaloon: { file: C1, rate: 1.2 },
   superlowrider: { file: C3, rate: 0.75 }, classicgt: { file: C3, rate: 1 }, sixbysix: { file: RIG, rate: 1 },
   tank: { file: RIG, rate: 0.7 },

@@ -223,10 +223,14 @@ export const Progress = {
     if (now - this.countSaved >= COUNT_SAVE_EVERY) { this.countSaved = now; this.save(); } else this.countDirty = true;
   },
   flush() { if (this.countDirty) this.save(); },
-  // (an earned car, a 6-star one, is owned once its level's par is beaten: see earned())
+  // (an earned car, a 6-star one, is owned once its level's par is beaten: see earned(); a free one, a car idea,
+  // always: it is never written into `cars`, so the save, and its cookie, are no bigger for there being thirty)
   owns(carId) {
-    return this.data.cars.includes(carId) || this.earnedCars.some(car => car.id === carId && this.earned(car));
+    return this.data.cars.includes(carId) || this.earnedCars.some(car => car.id === carId && this.earned(car)) ||
+      this.freeCars.some(car => car.id === carId);
   },
+  // the cars that are free and always open (set by cars.js: the car ideas, ideas.js)
+  freeCars: [],
   // the cars that are earned, not bought (set by cars.js: { id, earned: { level, par: { good, evil? } } })
   earnedCars: [],
   // true: the car's level has been delivered with at least its par's seconds to spare, on every side the par names

@@ -39,7 +39,8 @@ Content now:
   6 (R1 to R6), three of them traced from real circuits (Monza, Spa-Francorchamps, Albert Park), always
   open. All are listed in the README. Five more are hidden (`testbed`, `grand-prix`, `gimmick-road`,
   `gimmick-road-2`, `gimmick-road-3`) and one is the screensaver's.
-- **37 garage cars:** 17 gold-star cars in five tiers, 14 Blue Star cars (a second season, open
+- **41 garage cars:** 17 gold-star cars in five tiers, 18 Blue Star cars (four at four stars since 2026-10-10:
+  the Stainless Gullwing, Rear-Engine Coupe, Snake Roadster and Polygon Truck, which were car ideas; a second season, open
   once level 20 is delivered), 5 amphibious cars, and the Tank.
 - **9 earned cars, the 6-star tier:** one for each special level and each of the first three races, owned
   once its level is delivered with enough time to spare (`EARNED_CARS` in `cars.js`; never bought).
@@ -47,8 +48,9 @@ Content now:
   effect (or `?car=super-<id>`); never owned.
 - **Vehicles that belong to levels:** UFO, F1 car, GT car, LMP prototype, jetboat and the
   Battlefield's 8x8. One secret car, the City Bus. On an amphibious level TANK RAGE gives the Amphibious Tank.
-- **A Car ideas lot** in the garage: thirty models on show that are not cars (`ideas.js`): nothing there is
-  bought, saved, driven or in traffic.
+- **A Car ideas lot** in the garage: models that are not garage cars yet (`ideas.js`), each of which can be
+  picked there and driven: tierless, free, with placeholder figures nobody has balanced; not in traffic, and
+  only the one in use is saved. Checked by `scripts/.ideas-check.mjs` and in stills; never driven by hand.
 - **18 mystery effects** (`CONFIG.mystery.effects`, `mysteries.js`), ten things to deliver (`cargo.js`),
   50 kinds of traffic vehicle and 38 themes.
 - **Amphibious cars and levels (added 2026-10-10):** five garage cars, one at each star level (Sailing
