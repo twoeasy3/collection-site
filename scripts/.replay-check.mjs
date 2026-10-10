@@ -23,8 +23,9 @@ Math.random = () => {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 
-const g = await boot({ cars: ['commuter', 'sport'] });
+const g = await boot({ cars: ['commuter', 'sport', 'floatvan'] }); // (the Float Van: an amphibious level starts in nothing else)
 const { Game: G, Player: P, Traffic, Collision, Input } = g;
+const { Progress } = await g.load('progress.js');
 let failures = 0;
 const check = (ok, what) => { if (!ok) failures++; console.log((ok ? '  ok    ' : '  FAIL  ') + what); };
 
@@ -57,6 +58,10 @@ const play = (level, seedValue) => {
   g.select(level);
   seed(seedValue);
   G.evil = false;
+  // (and the save as it was: a run reads it, and writes to it. The milestone counters carry on from the run before,
+  // and one reached says so with a line picked by the dice; TANK RAGE pieces found are kept. A recording's header
+  // would hold these: see REPLAY-NOTES.md, "What is in the garage")
+  Object.assign(Progress.data, { stats: {}, tankPieces: 0, money: 0, bestTime: { good: {}, evil: {} } });
   // (the level built afresh from the seed: building it draws random numbers too, and what it builds is kept from
   // run to run otherwise, so a run would depend on whether the level was already loaded: see REPLAY-NOTES.md)
   if (!KEEP_LEVEL) G.loaded = null;
