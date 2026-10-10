@@ -2,7 +2,8 @@
 // MILESTONES - counters kept across every run in the save (Progress.data.stats, bumped with
 // Progress.count), and the milestones they reach: thresholds per counter in CONFIG.milestones, each with
 // a title in messages.json (group "milestones", key "<counter>_<threshold>"). Reaching one mid-run says
-// it, with a sound. Nothing but bragging rights: the wall on the start screen (render/milestones.js).
+// nothing and makes no sound: it is counted, and shows on the wall. Nothing but bragging rights: the wall
+// on the start screen (render/milestones.js).
 // The counters: packagesLanded (packages.js), hipposSurvived (hippos.js), trainsDodged (bullettrain.js),
 // and here: copsOutrun, wrecks, busts (watched each step), levelsDelivered and kmDriven (on finish).
 // ============================================================================
@@ -47,8 +48,10 @@ export const Milestones = {
   },
 };
 
-// a counter crossing one of its thresholds: the milestone's title, and a sound
+// a counter crossing one of its thresholds: the milestone's title, and a sound. Never while a level is
+// being driven (nothing of a milestone is an event of the run): only as the run ends (see onFinish)
 Progress.onCount = (key, before, after) => {
+  if (Game.state === 'playing') return;
   for (const at of CONFIG.milestones[key] || []) {
     if (before < at && after >= at) {
       Message.say('milestones', key + '_' + at);

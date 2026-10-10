@@ -15,14 +15,15 @@ try {
   const start = (id = 'suburbs') => { g.select(id); G.evil = false; P.testGhost = true; g.said.length = 0; G.start(); g.drive(1, 0); };
   const said = (text) => g.said.some(line => line.includes(text));
 
-  // ---- a threshold crossed says its title, once
+  // ---- a threshold crossed while the level is driven is counted, and nothing is said of it
   start();
   Progress.count('packagesLanded', 9);
   g.run(0.1);
-  check(!said('Paper boy'), '9 packages: nothing said');
+  check(stats.packagesLanded === 9 && !said('Paper boy'), '9 packages: counted, nothing said');
   Progress.count('packagesLanded');
   g.run(0.1);
-  check(stats.packagesLanded === 10 && said('Paper boy'), 'the 10th says "' + g.Message.pick('milestones', 'packagesLanded_10') + '"');
+  check(G.state === 'playing' && stats.packagesLanded === 10, 'the 10th is counted mid-run (' + stats.packagesLanded + ')');
+  check(!said('Paper boy') && !g.Message.lines.some(l => l.text.includes(': ')), '...and its milestone ("' + g.Message.pick('milestones', 'packagesLanded_10') + '") is not said during the run');
 
   // ---- a police car seen, then left behind
   for (const c of T.cars) c.active = false;
