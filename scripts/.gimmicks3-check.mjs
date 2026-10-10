@@ -244,6 +244,14 @@ try {
     // the slowest car, crawling onto it, never comes to a stand on it: it goes off the lip into the queue
     const crawl = at(6, 4, { car: 'commuter' });
     check(crawl.on && crawl.slowestOn >= J.crawl - 0.01 && crawl.s > 2415, 'ramp: the Commuter at ' + Math.round(6 * 3.6) + ' km/h is never brought to a stand on it (slowest ' + crawl.slowestOn.toFixed(1) + ' m/s; it got to ' + Math.round(crawl.s) + ' m)');
+    // a siren coming up behind clears the jam, and is not left standing behind it (an ambulance, in the queue's lane)
+    start(1900, 3, 0);
+    const amb = put('ambulance', 2150, lane(3, 2150), 26);
+    Object.assign(amb, { fixed: false, emergency: true });
+    const jammed = queue().length;
+    let slowestAmb = 99, past = false;
+    g.run(40, () => { for (const c of g.Traffic.cars) if (c !== amb && !c.fixed && !c.jamPace) c.active = false; P.speed = 0; P.s = 1900; if (amb.active && amb.s > 2380) slowestAmb = Math.min(slowestAmb, amb.vs); if (amb.s > 2470) past = true; return past || !amb.active; });
+    check(jammed > 0 && queue().length === 0 && Gambles.ramps[0].released && past && slowestAmb > 3, 'ramp: a siren coming up behind clears the jam (' + jammed + ' cars drive off) and gets through it, never stopped (' + slowestAmb.toFixed(1) + ' m/s at its slowest past the transporter)');
     // on the real levels
     real('jamRamps', (l) => {
       const rr = Gambles.ramps[0], q = g.Traffic.cars.filter(c => c.active && c.jam).length, [first, last] = T().laneRange(1, rr.s);
@@ -556,8 +564,45 @@ try {
     van.fixed = false;
     let onIt = 0, fastest = 0;
     g.run(60, () => { for (const c of g.Traffic.cars) if (c !== van && !c.fixed) c.active = false; P.speed = 0; P.s = 1500; if (van.active && Gambles.onTar(van.s, van.lat)) onIt++; if (van.active && van.s > 1800 && van.s < 2040) fastest = Math.max(fastest, van.vs); return !van.active || van.s > 2050; });
-    check(onIt === 0 && fastest > 0 && fastest <= K.queue + 0.5, 'tarmac: a van coming up its lane moves out of it and crawls past (' + fastest.toFixed(1) + ' m/s at most)');
+    check(van.lane !== 5 && onIt < 150 && fastest > 0 && fastest <= K.queue + 0.5, 'tarmac: a van coming up its lane moves out of it and crawls past (' + fastest.toFixed(1) + ' m/s at most; on the tar for ' + (onIt / 60).toFixed(1) + ' s: traffic will swerve onto it for the cash there, as for any pickup)');
     real('tarmac', () => check(Gambles.tars.length > 0, '  its tar: ' + Gambles.tars.map(x => x.from + ' to ' + x.to + ' m, lane ' + x.lane).join('; ')));
+  });
+
+  // ---- truck spray (the wet stretch 2520 - 2880)
+  await section('spray', async () => {
+    const S = C.spray;
+    // the player kept `back` m behind the tail of a vehicle of `kind` doing 20 m/s in lane 4, `over` lanes to its
+    // side, for 3 s from `at` m: how much of the view is gone at the end, and whether the car was touched
+    const behind = (kind, back, over = 0, at = 2780) => { // (well beyond the level's own tractor, which starts at 2640)
+      start(at - 60, 4, 20);
+      const lead = put(kind, at, lane(4, at), 20);
+      let slowest = 99;
+      g.run(3, () => {
+        for (const c of g.Traffic.cars) if (c !== lead && !c.fixed) c.active = false;
+        lead.vs = 20; lead.lat = lane(4, lead.s);
+        Object.assign(P, { s: lead.s - lead.hl - back, lat: lane(4 + over, lead.s), speed: 20 });
+        slowest = Math.min(slowest, P.speed);
+      });
+      return { veil: Gambles.veil, of: Gambles.veilOf, health: P.health === P.maxHealth, slowest };
+    };
+    const close = behind('semi', 8);
+    check(close.veil > 0.7 && close.of === 'spray', 'spray, the risk taken: 8 m behind a lorry on the wet stretch, ' + Math.round(close.veil * 100) + '% of the view is gone');
+    check(close.health && close.slowest >= 20, 'spray: nothing is done to the car itself (no damage, never slowed)');
+    check(said('spray'), 'spray: it is announced');
+    const far = behind('semi', S.length + 10);
+    check(far.veil === 0, 'spray, the safe line: hanging back ' + (S.length + 10) + ' m, beyond the cloud, the view is clear');
+    const mid = behind('semi', S.length / 2);
+    check(mid.veil > 0.25 && mid.veil < close.veil, 'spray: half way back in the cloud less of it is gone (' + Math.round(mid.veil * 100) + '%)');
+    const beside = behind('semi', 8, 1), wide = behind('semi', 8, -2);
+    check(beside.veil > 0.5 && wide.veil === 0, 'spray: the cloud reaches over the next lane (' + Math.round(beside.veil * 100) + '% gone there: pulling out to pass is blind), not the one beyond');
+    const car = behind('commuter', 8);
+    check(car.veil === 0, 'spray: a car throws none up');
+    const dry = behind('semi', 8, 0, 2300);
+    check(dry.veil === 0, 'spray: on the dry road before it a lorry throws none up');
+    // alongside and past the lorry the view is back
+    const past = behind('semi', -12, 1);
+    check(past.veil === 0, 'spray: alongside the lorry and ahead of it the view is clear again');
+    real('spray', () => check(Gambles.wets.length > 0, '  its wet road: ' + Gambles.wets.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
   });
 
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)

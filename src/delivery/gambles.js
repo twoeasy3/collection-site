@@ -18,6 +18,7 @@
 //                jolt, and between the ruts it is slow going
 //   tarmac       a coned-off lane of fresh tar beside a roadworks queue: empty, and sticky: the longer on it the
 //                slower the car, and for a while after
+//   spray        a wet stretch where every tall vehicle drags a cloud of spray: in it the player sees next to nothing
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -66,6 +67,9 @@ export const Gambles = {
   rutJolts: 0,    // how many times it has climbed out of one this run (for a check)
   tars: [],       // fresh tarmac: { from, to, lane, lo, hi (lat: the lane) }
   tar: 0,         // how much of it is on the player's tyres (0 clean .. 1 as much as they hold)
+  wets: [],       // truck spray: { from, to }
+  veil: 0,        // how much of the view is gone just now (0 clear .. 1), eased; and what took it: 'spray' | null
+  veilOf: null,
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
@@ -89,6 +93,7 @@ export const Gambles = {
     });
     this.ruts = (LEVEL.ruts || []).map(r => ({ from: r.from, to: r.to }));
     this.tars = (LEVEL.tarmac || []).map((z) => { const c = Track.laneOffset(z.lane, (z.from + z.to) / 2); return { from: z.from, to: z.to, lane: z.lane, lo: c - CONFIG.laneWidth / 2, hi: c + CONFIG.laneWidth / 2 }; });
+    this.wets = (LEVEL.spray || []).map(z => ({ from: z.from, to: z.to }));
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -131,6 +136,8 @@ export const Gambles = {
     this.rut = null;
     this.rutJolts = 0;
     this.tar = 0;
+    this.veil = 0;
+    this.veilOf = null;
     this.cushionHits = 0;
     this.inFord = null;
     this.up = 0;
@@ -139,10 +146,14 @@ export const Gambles = {
     this.flights = 0;
     this.lastS = Player.s;
   },
+  // An event's vehicles (a police pursuit's two cars, driven from pursuit.js; an ambulance or any other emergency
+  // vehicle) are none of a gimmick's business: nothing here slows them, moves them over, takes them off the road
+  // or leaves them stuck. They get through or round every one, as the player can
+  event(car) { return !!car.driver || !!car.emergency; },
   // traffic is held to `pace` m/s through from..to on the expressway, coming down to it over the CONFIG
   // .gambleApproach m before (whichever way it is going): its speed is capped outright, after its own update
   crawl(car, pace, from, to) {
-    if (!car.active || car.junction || car.emergency || !Track.isMain(car.s)) return;
+    if (!car.active || car.junction || this.event(car) || !Track.isMain(car.s)) return;
     const A = CONFIG.gambleApproach, before = car.dir > 0 ? from - car.s : car.s - to;
     if (before > A.reach || (car.dir > 0 ? car.s > to : car.s < from)) return;
     const cap = pace + A.perMetre * Math.max(0, before);
@@ -229,11 +240,30 @@ export const Gambles = {
       if (!this.fly && P.s < r.s + R.foot && Math.abs(across) <= R.half) { this.onRamp = r; this.once('jamRamp'); }
       else if (this.up < 0.6 && Math.abs(across) < R.half + P.hw) { P.lat = r.lat + (across < 0 ? -1 : 1) * (R.half + P.hw); P.latVel = 0; }
     }
+    // a siren coming up behind clears the jam: with a pursuit's cars or an emergency vehicle within `release` m of
+    // its back, the queue drives off as ordinary traffic (the transporter stays where it is). So nothing with a
+    // siren is ever left standing behind it
+    for (const r of this.ramps) {
+      if (r.released || !Traffic.cars.some(car => car.active && car.dir > 0 && this.event(car) && Track.isMain(car.s) && car.s > r.s - R.release && car.s < r.last)) continue;
+      r.released = true;
+      for (const car of Traffic.cars) {
+        if (!car.active || !car.jam || car.s < r.s - 5 || car.s > r.last + 20) continue;
+        Object.assign(car, { jam: false, fixed: false, baseSpeed: car.jamPace || CONFIG.trafficMinSpeed + 4 });
+      }
+      if (P.active && Math.abs(P.s - r.s) < 500) this.once('jamCleared');
+    }
     // (nothing queues behind it: traffic coming up its lane moves over well before, so its ramps stay clear)
     for (const r of this.ramps) {
       if (Math.abs(r.s - P.s) > 700) continue;
       for (const car of Traffic.cars) {
-        if (!car.active || car.fixed || car.dir < 0 || car.lane !== r.lane || car.s > r.s + r.run || car.s < r.s - R.keepClear || !Track.isMain(car.s)) continue;
+        if (!car.active || car.dir < 0 || car.s > r.s + r.run + R.cab || car.s < r.s - R.keepClear || !Track.isMain(car.s)) continue;
+        if (car.driver) { // (a pursuit's car picks its own lane, by what it sees ahead, and the transporter is no car: it is steered off its lane, and kept out of it)
+          const side = car.lat < r.lat ? -1 : 1, clear = R.half + car.hw + 0.3;
+          if (Math.abs((car.aimLat ?? car.lat) - r.lat) < clear) car.aimLat = r.lat + side * CONFIG.laneWidth;
+          if (car.s > r.s - 3 && Math.abs(car.lat - r.lat) < R.half + car.hw) { car.lat = r.lat + side * (R.half + car.hw); car.latVel = 0; }
+          continue;
+        }
+        if (car.fixed || car.lane !== r.lane || car.s > r.s + r.run) continue;
         const [first, last] = Track.laneRange(1, car.s), other = r.lane > first ? r.lane - 1 : r.lane + 1;
         if (other > last) continue;
         car.lane = other;
@@ -372,7 +402,7 @@ export const Gambles = {
       }
       // tall traffic goes round by the exit (and one that turns up beyond the exit, far from the player, is taken away)
       for (const car of Traffic.cars) {
-        if (!car.active || car.dir < 0 || car.fixed || car.height <= bar.clearance || !Track.isMain(car.s) || car.s > bar.s) continue;
+        if (!car.active || car.dir < 0 || car.fixed || this.event(car) || car.height <= bar.clearance || !Track.isMain(car.s) || car.s > bar.s) continue;
         if (bar.exit && car.s < bar.exit.exitAt) car.viaSide = true;
         else if (car.s > bar.s - L.traffic && Math.abs(car.s - P.s) > L.unseen) car.active = false;
       }
@@ -479,7 +509,7 @@ export const Gambles = {
       const [first, last] = Track.laneRange(1, (z.from + z.to) / 2), sunny = z.side > 0 ? z.first - 1 : z.last + 1;
       if (sunny < first || sunny > last) continue; // (every lane is in the shade)
       for (const car of Traffic.cars) {
-        if (!car.active || car.fixed || car.dir < 0 || car.lane < z.first || car.lane > z.last || car.s > z.to || car.s < z.from - Z.keepClear || !Track.isMain(car.s)) continue;
+        if (!car.active || car.fixed || this.event(car) || car.dir < 0 || car.lane < z.first || car.lane > z.last || car.s > z.to || car.s < z.from - Z.keepClear || !Track.isMain(car.s)) continue;
         car.signal = sunny - car.lane;
         car.lane = sunny;
         car.pendingLane = null;
@@ -498,7 +528,7 @@ export const Gambles = {
     const R = CONFIG.rut, P = Player;
     if (!this.ruts.length) return;
     for (const car of Traffic.cars) { // (the traffic keeps to its ruts, at a tractor's pace)
-      if (!car.active || car.junction || car.emergency || !this.rutted(car.s)) continue;
+      if (!car.active || car.junction || this.event(car) || !this.rutted(car.s)) continue;
       for (const r of this.ruts) this.crawl(car, R.traffic, r.from, r.to);
       car.pendingLane = null;
     }
@@ -555,7 +585,7 @@ export const Gambles = {
       if (Math.abs(z.from - P.s) > 800 && Math.abs(z.to - P.s) > 800) continue;
       const [first, last] = Track.laneRange(1, (z.from + z.to) / 2), other = z.lane > first ? z.lane - 1 : z.lane + 1;
       for (const car of Traffic.cars) { // (the traffic keeps off it, and crawls past it)
-        if (!car.active || car.dir < 0 || car.junction || !Track.isMain(car.s) || car.s > z.to || car.s < z.from - T.keepClear) continue;
+        if (!car.active || car.dir < 0 || car.junction || this.event(car) || !Track.isMain(car.s) || car.s > z.to || car.s < z.from - T.keepClear) continue;
         if (car.lane === z.lane && !car.fixed && other <= last) { car.signal = other - car.lane; car.lane = other; car.pendingLane = null; }
         this.crawl(car, T.queue, z.from, z.to);
       }
@@ -569,6 +599,41 @@ export const Gambles = {
     if (P.speed > pace) P.speed = Math.max(pace, P.speed - T.bite * dt);
   },
 
+  // ---- what cannot be seen through: truck spray -------------------------------------------------------------
+  // Nothing here touches the car: only what the player can see of the road (render/gambles.js lays a veil over
+  // the picture, all but the car and the few metres before it, by Gambles.veil).
+  // how deep the point (s, lat) is in the cloud a vehicle drags behind it: 0 (out of it) .. 1 (at its tail).
+  // The cloud is `length` m long and `half` m either side of the vehicle's line, a little wider further back
+  // (`drift`: m it is carried sideways by its far end)
+  cloud(car, s, lat, length, half, drift = 0) {
+    const d = car.dir > 0 ? car.s - car.hl - s : s - car.s - car.hl; // (m behind its tail)
+    if (d < 0 || d > length) return 0;
+    const u = d / length;
+    return Math.abs(lat - car.lat - drift * u) <= half + u ? 1 - u : 0;
+  },
+  wet(s) { return Track.isMain(s) ? this.wets.find(z => s >= z.from && s <= z.to) || null : null; },
+  // a wet stretch: every vehicle CONFIG.spray.height m tall or more that is moving drags a cloud of spray, as
+  // long as CONFIG.spray.length m at speed. In it the view is gone, the nearer its tail the more
+  sprays(car) { return car.active && !car.junction && car.height >= CONFIG.spray.height && Math.abs(car.vs) > CONFIG.spray.slowest && !!this.wet(car.s); },
+  sprayLength(car) { return CONFIG.spray.length * Math.min(1, Math.abs(car.vs) / CONFIG.spray.fullAt); },
+  updateVeil(dt) {
+    const V = CONFIG.veil, S = CONFIG.spray, P = Player;
+    let want = 0, of = null;
+    if (P.active && Track.isMain(P.s)) {
+      if (this.wets.some(z => P.s > z.from - S.sign && P.s < z.to)) this.once('spray');
+      if (this.wets.length && this.wet(P.s)) {
+        for (const car of Traffic.cars) {
+          if (!this.sprays(car)) continue;
+          const deep = this.cloud(car, P.s, P.lat, this.sprayLength(car), car.hw + S.spread) * S.most;
+          if (deep > want) { want = deep; of = 'spray'; }
+        }
+      }
+    }
+    if (want > 0) this.veilOf = of;
+    this.veil += (want - this.veil) * Math.min(1, dt * (want > this.veil ? V.close : V.clear));
+    if (this.veil < 0.004 && !want) { this.veil = 0; this.veilOf = null; }
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
@@ -579,6 +644,7 @@ export const Gambles = {
     this.updateShade(); // (after the washboard's: both have a say in Player.shaken)
     this.updateRuts(dt);
     this.updateTar(dt);
+    this.updateVeil(dt);
     this.updateWinds(dt);
   },
 };

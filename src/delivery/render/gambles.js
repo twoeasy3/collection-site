@@ -40,6 +40,17 @@ const at = (s, lat, y = 0) => {
 };
 
 let socks = [];   // { wind (its index in Gambles.winds), model }
+// the veil over the picture (Gambles.veil): a sheet over the canvas, under the HUD, with a hole round the car
+const VEILS = { spray: '214, 222, 228' };
+const veil = document.createElement('div');
+veil.style.cssText = 'position:fixed;inset:0;pointer-events:none;opacity:0;z-index:0';
+document.getElementById('game')?.insertAdjacentElement('afterend', veil);
+let veilOf = null;
+// the clouds the traffic drags (one a vehicle, drawn only where it has one)
+const cloudGroup = new THREE.Group();
+scene.add(cloudGroup);
+const CLOUD = new THREE.BoxGeometry(1, 1, 1), cloudMats = { spray: new THREE.MeshBasicMaterial({ color: 0xdfe6ea, transparent: true, opacity: 0.4, depthWrite: false }) };
+let clouds = [];
 let leaned = 0;   // (the roll given the player's car last frame, taken off again before the next is put on)
 
 Game.onLoad.push(() => {
@@ -127,6 +138,14 @@ Game.onLoad.push(() => {
     for (let s = z.from; s <= z.to; s += T.cone) cone(s, Track.laneOffset(z.lane, s) + side * LW / 2);
     if (z.from - T.sign > 5) at(z.from - T.sign, Track.hi(z.from - T.sign) - 0.6).add(makeSign('FRESH TAR\nSTICKY', '#ff8a1a', '#111', 5.4, 2.6));
   }
+  // ---- truck spray: the road wet (darker, with a sheen), a board before; the clouds are drawn as they go (syncGambles)
+  for (const z of Gambles.wets) {
+    group.add(new THREE.Mesh(buildStrip(z.from, z.to, (s) => Track.lo(s), (s) => Track.hi(s), 0.011, 4), new THREE.MeshBasicMaterial({ color: 0x0c1218, transparent: true, opacity: 0.38, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 })));
+    const s = z.from - CONFIG.spray.sign;
+    if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign('WET ROAD\nSPRAY', '#1f6fb2', '#fff', 5.4, 2.6));
+  }
+  cloudGroup.clear();
+  clouds = [];
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {
     const B = CONFIG.washboard;
@@ -153,6 +172,27 @@ Game.onLoad.push(() => {
 
 export const syncGambles = (now) => {
   const t = now / 1000, W = CONFIG.crosswind;
+  // the veil, and the clouds that bring it
+  const V = CONFIG.veil;
+  if (Gambles.veilOf !== veilOf) {
+    veilOf = Gambles.veilOf;
+    const c = VEILS[veilOf] || VEILS.spray;
+    veil.style.background = 'radial-gradient(ellipse 70% 60% at 50% 74%, rgba(' + c + ',0) ' + V.hole * 100 + '%, rgba(' + c + ',1) ' + V.full * 100 + '%)';
+  }
+  veil.style.opacity = Game.state === 'playing' ? Gambles.veil.toFixed(3) : '0';
+  if (Gambles.wets.length) {
+    const S = CONFIG.spray;
+    for (let i = 0; i < Traffic.cars.length; i++) {
+      const car = Traffic.cars[i], on = Gambles.sprays(car);
+      if (!on) { if (clouds[i]) clouds[i].visible = false; continue; }
+      const mesh = clouds[i] || (clouds[i] = cloudGroup.add(new THREE.Mesh(CLOUD, cloudMats.spray)).children.at(-1));
+      const length = Gambles.sprayLength(car), half = car.hw + S.spread * 0.6;
+      mesh.visible = true;
+      mesh.rotation.y = Track.toWorld(car.s - car.dir * (car.hl + length / 2), car.lat, tmp);
+      mesh.position.set(tmp.x, tmp.y + 1.1 + 0.15 * Math.sin(t * 5 + i), tmp.z);
+      mesh.scale.set(2 * half, 2.2, length);
+    }
+  }
   for (const sock of socks) {
     const w = Gambles.winds[sock.wind];
     if (w) sock.model.userData.set((Gambles.gust(w) - W.lull * 0.6) / (1 - W.lull * 0.6), w.dir, t);

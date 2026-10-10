@@ -156,7 +156,12 @@
     { "s": 2220, "side": "left" },
     { "s": 3900, "side": "right" }
   ],
+  "spray": [
+    { "from": 3110, "to": 3490 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 3300, "lane": 2 },
+    { "type": "cash10", "s": 3300, "lane": 3 },
     { "type": "siren", "s": 1450, "lane": 3 },
     { "type": "radarDetector", "s": 1880, "lane": 1 },
     { "type": "turbo", "s": 200, "lane": 2 },

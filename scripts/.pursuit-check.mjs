@@ -23,7 +23,9 @@ try {
   // a fresh run on a level, the car at s doing v; a pursuit set off `at` s in (null: left to the level's clock)
   const start = (level, { s = 1500, v = 22, evil = false, at = 0.1, n = 1 } = {}) => {
     reseed(seed0 + n * 7919);
-    g.select(level);
+    // (without the level's cash pickups: what they pay is none of a pursuit's doing, and "no cash" below is about the pursuit)
+    const found = typeof level === 'string' ? [...g.levels.LEVELS, ...Object.values(g.levels.HIDDEN_LEVELS)].find(l => l.id === level) : level;
+    g.select({ ...found, pickups: (found.pickups || []).filter(p => !/^cash/.test(p.type)) });
     P.testGhost = false;
     G.evil = evil;
     g.said.length = 0;

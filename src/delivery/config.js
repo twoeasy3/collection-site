@@ -1401,10 +1401,11 @@ export const CONFIG = {
   // flight: over the queue if it came fast enough, landing `margin` m or more past the last car (a board `sign` m
   // before gives the speed that does it hands off), or down into the queue. Beside it the car is kept out of the
   // trailer and its cab (`cab` m past the lip). Traffic coming up its lane moves over from keepClear m before.
+  // (A siren within `release` m of its back clears the jam: the queue drives off, and the transporter stays.)
   // (From `commit` m before its foot, in line with it, the car no longer brakes by itself for the queue beyond;
   // on the ramps it is never slower than `crawl` m/s, so nothing comes to a stand on them)
   // (The queue is the level's ordinary traffic no longer than `longest` m (half its length) or taller than `tallest` m)
-  jamRamp: { crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
+  jamRamp: { release: 320, crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
   // a low bridge ("lowBridges": { s, clearance? }): a height bar across the player's side and its shoulder, `clearance`
   // m off the road (the bridge's own, or this), between an exit and its merge. A car taller than that which goes at
   // it loses `damage` health and perMetre more for each m too tall, keeps `keep` of its speed, and is through. Said
@@ -1446,6 +1447,15 @@ export const CONFIG = {
   tarmac: { fill: 4, clean: 3, slow: 0.9, bite: 45, queue: 8, keepClear: 160, sign: 120, cone: 14 },
   // (traffic that one of these slows comes down to its pace over the `reach` m before: perMetre m/s more for each m short of it)
   gambleApproach: { reach: 60, perMetre: 0.25 },
+  // the veil over the picture when something takes the view (spray, the sun, dust: see Gambles.veil): it closes
+  // at `close` a second and clears at `clear`; the car and what is within `hole` of the picture's height round
+  // it are always seen, the veil full from `full` of it out
+  veil: { close: 6, clear: 2.5, hole: 0.13, full: 0.42 },
+  // truck spray ("spray": { from, to }): a wet stretch. Every moving vehicle `height` m tall or more (faster than
+  // `slowest` m/s) drags a cloud `length` m long at fullAt m/s or more (shorter in proportion slower), its own
+  // width and `spread` m more either side, widening by a metre to its far end. In it `most` of the view is gone
+  // at its tail, less in proportion further back. A board `sign` m before
+  spray: { height: 2.2, slowest: 4, length: 45, fullAt: 18, spread: 3.6, most: 0.92, sign: 120 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

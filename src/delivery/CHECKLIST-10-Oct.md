@@ -609,6 +609,18 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       point in it to be a gamble at all.
 - [ ] H11. **Truck spray**: in rain every lorry drags a cloud of spray: nothing can be seen
       behind one. _Gamble:_ hang back and see, or overtake blind. _Builds on:_ rain, fog.
+      _Built (`gambles.js`, field `spray: { from, to }`, a wet stretch, not the whole level's
+      rain):_ every moving vehicle 2.2 m tall or more drags a cloud up to 45 m long over its lane
+      and most of the next each side. In it a veil comes over the picture (`Gambles.veil`, a sheet
+      over the canvas with a hole round the car), up to 92% at the lorry's tail. Nothing is done to
+      the car. On Gimmick Road 3 (2520-2880, with a tractor at 2640 to throw one up every run),
+      Mumbai (1380-1950, over its potholes and water mains) and Hurricane (3110-3490). Clocks not
+      re-timed. Verified by `.gimmicks3-check.mjs spray` (76% gone 8 m behind a lorry, clear 10 m
+      beyond the cloud, less half way back, gone in the next lane and clear in the one beyond, a
+      car throws none, none on the dry road, clear alongside, the car untouched, both real levels)
+      and in stills (in the cloud behind the tractor and beside it, the card). Not verified:
+      played by hand; a lorry's full cloud on screen (the tractor's is short: it is slow); Mumbai
+      and Hurricane with a lorry in view. The cloud is a plain translucent box.
 - [ ] H12. **Low sun**: one stretch runs straight into the sun and the screen washes out,
       except in the shadow of a lorry, a bridge or a row of trees. _Gamble:_ tuck in behind
       something slow to see, or run in the glare. _Builds on:_ fog, tunnels' light change.

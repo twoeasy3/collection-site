@@ -453,7 +453,7 @@ export const Traffic = (() => {
         car.bound = 'north';
         car.s = spot.s;
         outfit(car, small.length ? small[(k * 7 + spot.lane) % small.length] : 'commuter', spot.lane);
-        Object.assign(car, { fixed: true, jam: true, viaSide: false, evil: false, defiant: false, hesitant: false, baseSpeed: 0, vs: 0, showMood: false });
+        Object.assign(car, { fixed: true, jam: true, jamPace: car.baseSpeed, viaSide: false, evil: false, defiant: false, hesitant: false, baseSpeed: 0, vs: 0, showMood: false }); // (jamPace: what it drives off at, if the jam is cleared: see Gambles)
       });
     }
     // ...and a police roadblock's cars (a level's "roadblocks": see CONFIG.roadblock): one across every lane of
