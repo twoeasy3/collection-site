@@ -10,8 +10,9 @@
 // A game address gets ?autostart added unless it names a mode of its own; add &ghost so nothing wrecks
 // the car, &at=<m> to start that far along, and &ff=<s> to run the game on before the first frame.
 import { createServer } from 'vite';
+import { logicServer } from './delivery-headless.mjs';
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, statSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -35,7 +36,7 @@ if (opt('levels', false) || opt('cars', false)) {
   const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
   globalThis.window = { addEventListener() {} };
   globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: '' };
-  const reader = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+  const reader = await logicServer();
   const levels = await reader.ssrLoadModule('/src/delivery/levels.js'), cars = await reader.ssrLoadModule('/src/delivery/cars.js');
   const side = opt('evil', false) ? '=evil' : '';
   const only = (value) => typeof value === 'string' ? value.split(',') : null;
@@ -63,7 +64,12 @@ const launch = (file, list, timeout) => new Promise((done) => {
   child.on('error', (e) => { clearTimeout(timer); done({ stderr: String(e) }); });
 });
 mkdirSync(out, { recursive: true });
-const server = await createServer({ server: { port: 5199, strictPort: false }, logLevel: 'error' });
+// A folder of this run's own for Vite's cache and the browser's profile. Every worktree's node_modules is a
+// junction to one folder, so the usual cache (node_modules/.vite) is one for them all, and a server started
+// from another worktree deletes it to bundle the dependencies again (see delivery-headless.mjs); and one
+// profile in TEMP had two runs' browsers in it at once. It costs a few seconds of bundling each run.
+const own = mkdtempSync(join(tmpdir(), 'delivery-shots-'));
+const server = await createServer({ server: { port: 5199, strictPort: false, hmr: false }, cacheDir: join(own, 'vite'), logLevel: 'error' });
 await server.listen();
 const base = `http://localhost:${server.config.server.port}/delivery/`;
 let failed = 0;
@@ -74,7 +80,7 @@ try {
     const file = join(out, name + '.png');
     // (not spawnSync: the server answering the browser is in this process, and has to keep running meanwhile)
     const run = await launch(browser, ['--headless=new', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--hide-scrollbars', '--mute-audio', '--no-first-run', '--disable-extensions', '--disable-component-extensions-with-background-pages',
-      '--user-data-dir=' + join(tmpdir(), 'delivery-shots-profile'), // (a profile of its own: with the everyday one, a browser already open takes the address and no picture is made)
+      '--user-data-dir=' + join(own, 'profile'), // (a profile of its own: with the everyday one, a browser already open takes the address and no picture is made)
       `--window-size=${width},${height}`, `--virtual-time-budget=${wait}`, `--screenshot=${file}`, url], 180000);
     const ok = existsSync(file) && statSync(file).size > 2000;
     if (!ok) failed++;
@@ -82,6 +88,7 @@ try {
   }
 } finally {
   await server.close();
+  try { rmSync(own, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* (the browser may still hold a file; it is in TEMP) */ }
 }
 console.log(failed ? failed + ' failed' : shots.length + ' shot' + (shots.length === 1 ? '' : 's') + ' in ' + out);
 process.exit(failed ? 1 : 0);
