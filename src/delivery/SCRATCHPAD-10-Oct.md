@@ -58,7 +58,10 @@ is lost: `git reset --hard 4a66a80` there and deleting the untracked files clean
 1. Revert `scripts/shots.mjs`, then fix it properly (see "The machine").
 2. **Live bugs on the menu, reported by the owner, none fixed** (see "The menu on a phone"): the level card is
    squished on a phone; "What's on this road" does nothing on a phone; the wrong-way driver card's headlights
-   flash on the tail end; the 3D models on the reference pages trail their tiles when scrolling.
+   flash on the tail end; the 3D models on the reference pages trail their tiles when scrolling. Added by the
+   owner in the evening (M4 and M5 under "Menu UI" in the checklist): the level pictures are too blurry on a
+   desktop (600x267 stretched over the stage: two versions wanted); the car on the start screen is to be its
+   live 3D model, not a picture.
 3. Run every check on `main`, merge `delivery-gimmicks`, push if the owner says.
 4. Levels 20 to 30 to the new standard (the owner: "update them to this standard without changing the list
    of gimmicks in the level"): two branches, barely begun.

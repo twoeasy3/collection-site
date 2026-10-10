@@ -80,7 +80,6 @@
     { "from": 3531, "to": 3701, "count": 5 }
   ],
   "drifters": [
-    { "from": 1506, "to": 1656, "kind": "tyre", "count": 5, "pattern": "zigzag" },
     { "from": 3872, "to": 4017, "kind": "crate", "count": 5, "pattern": "dart" }
   ],
   "marathons": [
