@@ -242,6 +242,59 @@ try {
   check(Site.holes.length === 3 && Site.holes.every(h => !g.track.Track.isMain(h.s)), 'side road: its potholes are on it');
   check(crossingWent, 'side road: its level crossing went off as the car came up to it');
   check(said('STAMPEDE') && seen > 0, 'side road: the stampede charged (' + seen + ' of 8 run into or gone by)');
+
+  // ---- slippery road: ice and a burst main's water against the dry road (CONFIG.ice, CONFIG.waterMain), on
+  // three straight stretches of this level with everything else taken off it
+  {
+    const T = g.track.Track, LW = g.CONFIG.laneWidth, SPAN = 300;
+    const straight = (from) => { for (let s = from; s < from + SPAN; s += 5) if (Math.abs(T.bend(s)) > 1e-6 || !T.isMain(s)) return false; return true; };
+    const spots = [];
+    for (let s = 600; s < T.length - SPAN - 200 && spots.length < 3; s += 20) if (straight(s)) { spots.push(s); s += SPAN + 40; }
+    const [dryAt, iceAt, wetAt] = spots;
+    check(spots.length === 3, 'slippery road: three straight stretches to try it on (at ' + spots.join(', ') + ')');
+    g.select({ ...level, id: 'slippery-road', exits: [], pickups: [], schoolCrossings: [], trolleys: [], marathons: [], balloons: [], drawbridges: [], wreckage: [], cameras: [], potholes: [], crossings: [], stampedes: [], wideLoads: [], targets: [],
+      ice: [{ from: iceAt, to: iceAt + SPAN }], waterMains: [{ s: wetAt, lane: 4, length: SPAN }, { s: wetAt, lane: 5, length: SPAN }] });
+    const { WaterMains } = await g.load('watermains.js');
+    // (both mains kept spraying, and the other system's round slicks kept off the road: see AUDIT-10-Oct.md, C1)
+    const hold = () => { quiet(); Hazards.mains.forEach((m, i) => { m.on = true; m.t = 0; T.sprays[i].on = true; }); for (const m of WaterMains.list) { m.on = false; m.wait = 99; m.wet = 0; } };
+    const brakeFrom = 30, brakeTo = 10;
+    // m the car takes to brake from 30 to 10 m/s, and s to move one lane across (lane 4 to lane 5) at full steer
+    const braking = (at, ghost) => {
+      start(at + 10, 4, brakeFrom, { ghost }); hold(); g.drive(-1, 0);
+      let off = 0;
+      g.run(12, () => { hold(); if (at !== dryAt && !P.onIce) off++; return P.speed <= brakeTo; });
+      return { d: P.s - at - 10, on: off <= 1, v: P.speed }; // (a main's water is on the road from the run's second step)
+    };
+    const across = (at, ghost) => {
+      start(at + 10, 4, 20, { ghost }); hold();
+      const from = P.lat, side = Math.sign(lane(5, at) - lane(4, at));
+      g.drive(1, side);
+      let off = 0;
+      const t = g.run(6, () => { hold(); if (at !== dryAt && !P.onIce) off++; return Math.abs(P.lat - from) >= LW; });
+      return { t, on: off <= 1, moved: Math.abs(P.lat - from) };
+    };
+    const b = { dry: braking(dryAt), ice: braking(iceAt), wet: braking(wetAt) }, a = { dry: across(dryAt), ice: across(iceAt), wet: across(wetAt) };
+    const m1 = (x) => x.toFixed(1), s2 = (x) => x.toFixed(2);
+    console.log('         (braking ' + brakeFrom + ' to ' + brakeTo + ' m/s: dry ' + m1(b.dry.d) + ' m, ice ' + m1(b.ice.d) + ' m, mains water ' + m1(b.wet.d) + ' m)');
+    console.log('         (one lane across at full steer: dry ' + s2(a.dry.t) + ' s, ice ' + s2(a.ice.t) + ' s, mains water ' + s2(a.wet.t) + ' s)');
+    check(b.ice.on && b.wet.on && a.ice.on && a.wet.on, 'slippery road: the car was on the ice, and on the water, all the way through each try');
+    check(b.dry.v <= brakeTo && b.ice.v <= brakeTo && b.wet.v <= brakeTo, 'slippery road: the brakes still slow the car on all three');
+    check(b.ice.d > b.dry.d * 1.5, 'slippery road: braking takes clearly longer on ice (' + m1(b.ice.d / b.dry.d) + ' times the dry road\'s distance)');
+    check(b.wet.d > b.dry.d * 1.5, 'slippery road: braking takes clearly longer on a main\'s water (' + m1(b.wet.d / b.dry.d) + ' times)');
+    check(a.dry.moved >= LW && a.ice.moved >= LW && a.wet.moved >= LW, 'slippery road: the car can still change lane on all three');
+    check(a.ice.t > a.dry.t * 1.5, 'slippery road: a lane change takes clearly longer on ice (' + m1(a.ice.t / a.dry.t) + ' times the dry road\'s time)');
+    check(a.wet.t > a.dry.t * 1.5, 'slippery road: a lane change takes clearly longer on a main\'s water (' + m1(a.wet.t / a.dry.t) + ' times)');
+    check(a.ice.t < 2 && a.wet.t < 2, 'slippery road: and still no more than 2 s on either');
+    // from a standstill on each, the accelerator and the steering both still answer
+    const away = (at) => { start(at + 10, 4, 0); hold(); const from = P.lat; g.drive(1, Math.sign(lane(5, at) - lane(4, at))); g.run(3, () => { hold(); }); return P.speed > g.CONFIG.minSpeed && Math.abs(P.lat - from) > LW / 2; };
+    check(away(iceAt) && away(wetAt), 'slippery road: from a standstill on either, the car pulls away and steers');
+    // a ghost: nothing spares it the ice or the water (nor did anything before), so it must feel just the same
+    const gb = { ice: braking(iceAt, true), wet: braking(wetAt, true) }, ga = { ice: across(iceAt, true), wet: across(wetAt, true) };
+    console.log('         (a ghost: braking ' + m1(gb.ice.d) + ' m on ice and ' + m1(gb.wet.d) + ' m on water, a lane across in ' + s2(ga.ice.t) + ' s and ' + s2(ga.wet.t) + ' s)');
+    check(Math.abs(gb.ice.d - b.ice.d) < 0.5 && Math.abs(gb.wet.d - b.wet.d) < 0.5 && Math.abs(ga.ice.t - a.ice.t) < 0.05 && Math.abs(ga.wet.t - a.wet.t) < 0.05,
+      'slippery road: a ghost is on the ice and in the water like any car (no exemption, as before)');
+    g.select('gimmick-road-2');
+  }
   console.log(failures ? failures + ' FAILED' : 'all checks passed');
 } catch (e) {
   failures++;

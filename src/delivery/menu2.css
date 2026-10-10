@@ -199,42 +199,82 @@
 #startScreen .options .howto { grid-column: 1 / -1; }
 #startScreen .options .howto p { font-size: 13px; line-height: 1.55; color: #d5dbe5; columns: 2 320px; column-gap: 26px; }
 
-/* ---- a phone held upright, or a narrow window: one column (stage, strip, then the car and the side) ---- */
-@media (max-width: 760px) {
-  #startScreen { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr) auto auto;
-    grid-template-areas: "top" "groups" "stage" "strip" "side"; gap: 8px; padding: 10px 12px 12px; }
+/* ---- a phone held upright, or a narrow window: one column (stage, strip, then the car and the side). Not a
+   phone on its side (wider than 520, no taller than 520: the short window's two columns, below) ---- */
+@media (max-width: 760px) and (min-height: 521px), (max-width: 519px) {
+  /* The heights, added up (px; H = the screen's height): padding 8 + 10; four gaps of 6 = 24; the top 65 (the
+     title's line 30 at most, a gap of 6, the tabs 29); the groups 32; the strip 56; the car, the side and START 102
+     (6 + a row of 44 + 6 + START 40 + 6). 297 in all, so the stage gets H - 297: 323 at 360x620, 403 at 390x700,
+     463 at 430x760 (31 less on the Races tab, which has a row of its own). It was 65, 145 and 200, and its words
+     (about 200 tall, anchored to its foot) ran off its top. The stage is never less than 210: on a screen too
+     short for that the menu scrolls, where it would have cut START off */
+  #startScreen { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(210px, 1fr) auto auto;
+    grid-template-areas: "top" "groups" "stage" "strip" "side"; gap: 6px; padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+    bottom: auto; height: 100vh; height: 100dvh; overflow-y: auto; } /* (dvh: what is left of the screen with the browser's bars showing) */
   #startScreen .menu-keys { display: none; }
-  #startScreen .menu-top { flex-wrap: wrap; gap: 8px 10px; }
-  #startScreen h1 { font-size: 26px; }
+  /* the top: the title, the bank (the figure alone) and the options on one line, the tabs on the next */
+  #startScreen .menu-top { flex-wrap: wrap; gap: 6px 8px; }
+  #startScreen h1 { font-size: 22px; }
+  #startScreen #bank { font-size: 17px; }
+  #startScreen #bank small { display: none; }
+  #startScreen #optionsBtn { padding: 6px 10px; font-size: 12px; }
   #startScreen .menu-tabs { order: 5; flex: 0 0 100%; margin: 0; }
-  #startScreen .menu-tabs button { flex: 1 1 0; padding: 10px 8px 9px; text-align: center; }
-  #startScreen #optionsBtn { padding: 9px 12px; }
-  #startScreen .menu-groups button { padding: 9px 14px 8px; }
-  #startScreen .menu-stage .info { padding: 0 14px 12px; }
-  #startScreen .menu-stage .desc { font-size: 14px; }
+  #startScreen .menu-tabs button { flex: 1 1 0; padding: 7px 8px 6px; font-size: 16px; text-align: center; }
+  #startScreen .menu-groups button { padding: 7px 12px 6px; }
+  /* the stage: its words between the arrows, which are at the middle of its edges; the description three lines at most */
+  #startScreen .menu-stage .plate { padding: 6px 26px 5px 12px; }
+  #startScreen .menu-stage .plate b { font-size: 20px; }
+  #startScreen .menu-stage .ribbon { top: 6px; right: 6px; }
+  #startScreen .menu-stage .info { gap: 6px; padding: 0 32px 10px; }
+  #startScreen .menu-stage h2 { font-size: 28px; }
+  #startScreen .menu-stage .desc { font-size: 14px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+  #startScreen .menu-stage .facts { gap: 5px 6px; margin-top: 0; }
+  #startScreen .menu-stage .fact { flex-direction: row; align-items: baseline; gap: 6px; padding: 4px 9px; font-size: 15px; }
+  #startScreen .menu-stage .info .road { margin-top: 0; }
+  #startScreen .menu-stage .arrow { top: 50%; margin-top: -26px; width: 26px; height: 52px; font-size: 26px; }
+  #startScreen .menu-stage .arrow.prev { left: 0; border-radius: 0 8px 8px 0; }
+  #startScreen .menu-stage .arrow.next { right: 0; border-radius: 8px 0 0 8px; }
   #startScreen .menu-strip { gap: 6px; }
-  #startScreen .menu-strip .thumb { flex: 1 1 0; min-width: 0; height: 66px; }
+  #startScreen .menu-strip .thumb { flex: 1 1 0; min-width: 0; height: 50px; }
   #startScreen .menu-strip .thumb .name { left: 6px; right: 4px; font-size: 12px; }
-  #startScreen .menu-side { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); grid-template-areas: "car side" "race race" "start start"; gap: 8px; padding: 8px; }
-  #startScreen .car-card { grid-area: car; }
-  #startScreen .car-card .picture { flex: 0 0 64px; }
-  #startScreen #raceMenu { grid-area: race; }
-  #startScreen .side-box { grid-area: side; justify-content: center; }
-  #startScreen .side-switch { flex-direction: column; }
-  #startScreen .side-switch button { padding: 11px 6px 10px; }
-  #startScreen #startBtn { grid-area: start; padding: 15px 10px 13px; }
-  #startScreen .menu-sheet { padding: 8px; }
+  /* the car and the side: one row (the car a small button: its picture and its name; Good and Evil side by side;
+     no bars, no note), and START a slim bar under it */
+  #startScreen .menu-side { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-areas: "car side" "start start"; gap: 6px; padding: 6px; }
+  #startScreen.races .menu-side { grid-template-areas: "car side" "race race" "start start"; }
+  #startScreen .car-card { grid-area: car; flex-direction: row; align-items: center; gap: 8px; height: 44px; }
+  #startScreen .car-card .picture { flex: 0 0 64px; align-self: stretch; min-height: 0; box-shadow: none; }
+  #startScreen .car-card .words { flex: 1 1 0; min-width: 0; padding: 0 8px 0 0; }
+  #startScreen .car-card strong { font-size: 16px; line-height: 1.05; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+  #startScreen .car-card .stars { font-size: 11px; }
+  #startScreen .car-card .stat, #startScreen .car-card .go { display: none; }
+  #startScreen #raceMenu { grid-area: race; flex-wrap: nowrap; }
+  #startScreen #raceMenu .menu-chip { flex: 1 1 0; min-width: 0; display: block; padding: 6px 4px; font-size: 11px; line-height: 13px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #startScreen .side-box { grid-area: side; }
+  #startScreen .side-switch { flex: 1 1 auto; }
+  #startScreen .side-switch button { padding: 0 4px; font-size: 17px; }
+  #startScreen #sideNote { display: none; }
+  #startScreen #startBtn { grid-area: start; padding: 9px 10px 7px; font-size: 24px; }
+  #startScreen .menu-sheet { position: fixed; padding: 8px; } /* (fixed: over the screen even where the menu has scrolled) */
 }
-/* ---- a short window (a phone on its side): the two columns stay, everything closes up ---- */
-@media (max-height: 520px) and (min-width: 761px) {
-  #startScreen { gap: 6px 10px; padding-top: 6px; padding-bottom: 6px; grid-template-areas: "top top" "groups side" "stage side" "strip side"; grid-template-rows: auto auto minmax(0, 1fr) auto; }
+/* (a short phone: the description two lines; a narrow one: the options are their sign alone) */
+@media (max-width: 760px) and (max-height: 660px) {
+  #startScreen .menu-stage .desc { -webkit-line-clamp: 2; line-clamp: 2; }
+}
+@media (max-width: 400px) {
+  #startScreen #optionsBtn span { display: none; }
+}
+/* ---- a short window (a phone on its side): the two columns stay, everything closes up. At 740x360 (px): padding
+   6 + 6, three gaps of 6, the top 30, the groups 25, the strip 52: the stage gets 360 - 137 = 223, and the side
+   column 312 (the groups, the stage and the strip), of which the car has 210 ---- */
+@media (max-height: 520px) and (min-width: 520px) {
+  #startScreen { gap: 6px 10px; padding-top: 6px; padding-bottom: 6px; bottom: auto; height: 100vh; height: 100dvh; grid-template-areas: "top top" "groups side" "stage side" "strip side"; grid-template-rows: auto auto minmax(0, 1fr) auto; }
   #startScreen .menu-keys { display: none; }
   #startScreen h1 { font-size: 22px; }
   #startScreen .menu-tabs button { padding: 6px 18px 5px; font-size: 15px; }
   #startScreen .menu-groups button { padding: 4px 12px; font-size: 13px; }
   #startScreen .menu-stage h2 { font-size: 30px; }
   #startScreen .menu-stage .info { gap: 4px; padding-bottom: 8px; }
-  #startScreen .menu-stage .desc { font-size: 13px; line-height: 1.25; }
+  #startScreen .menu-stage .desc { font-size: 13px; line-height: 1.25; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   #startScreen .menu-stage .fact { padding: 3px 9px; font-size: 14px; }
   #startScreen .menu-stage .plate b { font-size: 20px; }
   #startScreen .menu-stage .info .road { position: absolute; right: 12px; bottom: 8px; }
