@@ -652,3 +652,30 @@ Market Town:
 - M5 the side road's three bends (size 10) start straight out of the nose: it wriggles beside the main road.
 - M6 the railway at 2000 is a flat brown band with trees on it.
 - M7 the whole level is one kind of house: no market, no town centre; nothing marks the level's name.
+
+## Agent 15: Good cargo, C1 to C20 (.claude/worktrees/delivery-cargo-good, delivery-cargo-good)
+
+Branch `delivery-cargo-good` (from `main` at 533c75b), never pushed. Stills only: nothing seen moving. Stills: scratchpad `shots-cargo-good/` (`sheet.png` is all twenty).
+
+- [x] C1 to C20 built, registered, on the cargo page: cc34343, then the globe and the checklist ticks in the commit after it. New file `render/cargoModelsGood2.js`; `render/cargoModels.js` +2 lines (import, `...GOOD2_MODELS`); `cargo.js` `CARGO.good` now 25 and reordered so all turn up by default; `cargopage.js` heading counts the items. No level JSON edited. `.cargo-check`, `.bundle-check`, `delivery-levels-check` pass.
+
+## Agent 16: Evil cargo, C21 to C40 (.claude/worktrees/delivery-cargo-evil, delivery-cargo-evil)
+
+- c8ba744: all twenty built, a first pass, in the new `render/cargoModelsEvil2.js` (state-free, its own helpers); 20 entries appended to `CARGO.evil` in `cargo.js`; in `render/cargoModels.js` one import line after the three.js import and one line `...EVIL2_MODELS,` at the end of `CARGO_MODELS`. Also `cargopage.js` (the section headings count the table instead of saying "five") and `.cargo-check.mjs` (a label: "every item turns up"). Both will clash trivially with the Good branch's mirror-image edits.
+- Ids: egg, cooker, flytrap, barrel, mirror, skunk, cannonball, mimic, fireworks, alien, teddy, bats, ice, snakes, genie, reactor, goose, jack, cloud, piranhas. No level JSON touched: the rotation hands them out (cargo-check lists who gets what).
+- Checks: `.cargo-check`, `.bundle-check`, `delivery-levels-check` pass. Seen: stills of the cargo page, every item in three states. In progress: HUD corner and kerb pictures, contact sheets.
+- 269134e: finished. Thundercloud darker, reactor arcs bolder, checklist ticked. Seen as well: mirror, genie and thundercloud in the HUD corner in all three states; mirror, goose and mimic furious at the kerb. Contact sheets: scratchpad `shots-cargo-evil/sheet-1.png`, `sheet-2.png`. Nothing seen moving; not pushed.
+
+### Part 2: boulders (done, 2050f4e)
+- Cause: a rock's waiting place and fall were measured from the ROAD's plane (`o.h` above `Track.toWorld(s, lat).y`, which is the road's height at s whatever lat is); the land is only known to the renderer. So every waiting rock hung 22 m (Stelvio 32 m) over road level, 14-18 m off the edge: in the sky over the valley, or 10-30 m over the slope.
+- Fix (render/items.js `rockWay` / `placeRock`, every level): each rock gets a way down over what is drawn. Terrain themes: it waits on the land (`landAt`, new export of render/road.js: the terrain grid as drawn, triangle by triangle), on the side the level names if that is uphill, else the other. A level that gives `height` (quarry-run's bench): a ledge that high. Flat land (gimmick-road; fjord's valley floor): a crag `height` tall built under it. It comes down over that ground in 4 bounds and rests on the road sunk 0.18 r with a dark patch. The game's side (`o.h`, `o.land`, when it can be hit) is unchanged but for a `ledge` flag.
+- Also: pines stand on the grid as drawn (they used the analytic height, metres off on a cliff); a quarry's blasted boulders (render/wreckage.js) had every second rock 0.6 m up on nothing: all on the road now.
+- Stelvio: rock stretches moved 40 m clear of hairpins (no slope there) and the summit one (1860-1980, no hillside) to 1345-1500; `height`/`out` removed.
+- Seen in shots: stelvio, mountain-pass, fjord, gimmick-road, quarry-run (`scratchpad/levelfix/t1`, `t2`).
+
+### Part 3: markings (done, 1d787fa)
+- Cause: a crossroads' arms were not in the list of roads scenery is kept off (`paved` in render/road.js held only side roads, flyovers and the expressway round an exit; with no exits it was empty and every check passed). So lots (lawn, drive, house, fence, trees) lay on the cross road and its lines showed and vanished under them. At the fork the pavement strip was cut row by row, leaving slivers in the wedge.
+- Fix: arms are roads 900+ in `paved` (and in the terrain's `others`): every theme's instances and side strips keep off them. `sideStrip(..., whole)`: full width or nothing, and with a number, only where that many m beyond are clear too. Suburb: pavement along side roads and arms (with corners), bridged round the outside of forks and merges; lots, lamps on side roads (never where another road's lot is); trees along arms. A camera's limit sign moves short of a box.
+- Market Town: exit `out` 90 -> 70, `bends` removed (it swung out twice: 7 changes of hand in 986 m; now 971 m, tightest 100 m); camera 1250 -> 1300.
+- Other levels looked at after: back-roads, quarry-run, ring-road forks, singapore crossroads: unchanged (`scratchpad/levelfix/t5`).
+- NOT done: no change to the fork geometry in track.js (the 130 m `shapeLead` before `out` starts is why a side road runs beside the road, then swings: left alone, other branches are in track.js); no give-way line where a side road meets a crossroads (no level has that); no spacing rule in the validator.

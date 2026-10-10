@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after the Good cargo merge (main; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 16 (Evil cargo), 17 (in-game UI), 18 (menu UI).
+Last updated: after `6fc32e2` (main, both cargo branches merged; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 17 (in-game UI), 18 (menu UI), 19 (road gimmicks, resumed).
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -130,10 +130,11 @@ Three agents at a time; the next item starts as each one finishes.
 - [x] Police pursuit redone as a plain traffic event: a getaway car and its interceptor come through from behind and drive on; nothing gained or lost by the player. Merged, `65478c1`; levels, schema, pursuit and hazards checks pass. Seen as two small stills and its Gimmicks card. For the owner: the pair now pass at 130% of the player's top speed; the getaway car is no longer an "evil" car; the helicopter was removed
 - [~] Car ideas lot: agent 13
 - [x] Twenty more Good cargo items (C1 to C20): agent 15, merged into `main` (`cc34343`, `533d5a2`); cargo, bundle and levels checks pass; seen on the Cargo page's contact sheet, sent to the owner. Weakest: sushi boat, tea set, globe. Nothing seen moving
-- [~] Twenty more Evil cargo items (C21 to C40): agent 16, branch `delivery-cargo-evil`
+- [x] Twenty more Evil cargo items (C21 to C40), three states each: agent 16, merged into `main` as `6fc32e2` (`c8ba744`, `269134e`; two small conflicts with the Good branch, both sides kept); cargo, bundle and levels checks pass; 50 items in all now. Seen on two contact sheets, sent to the owner. Weakest: the teddy bear's middle state, the cannonball's first two states, the reactor's last, the skunk asleep. Nothing seen moving
+- [ ] Cargo picked by hand for more levels (the pairs suggested under "More cargo"): not done; every level gets one by its place on the menu
 - [~] Menu UI rework (M1 to M3 in the section "Menu UI" at the end): agent 18, branch `delivery-menu`
 - [~] In-game UI improvements (U1 to U5): agent 17, branch `delivery-ui`. The owner asked what the "on fire" message was: there is none (the orchestrator had listed it without checking); the agent has been told to build the stay-on-screen list only from messages that exist
-- [ ] Next 1: road gimmicks, picking up the half-built ramp (H2), now saved on the branch `delivery-gimmicks-wip` (`4b617b5`) and no longer in the main checkout, then H8, H4, H5 and on down the kept G and H lists
+- [~] Road gimmicks, resumed from the saved ramp work: agent 19, branch `delivery-gimmicks` (a new worktree)
 - [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
 - [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
 - [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
@@ -795,6 +796,8 @@ Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `ren
 - [ ] R8. Checks: the unlock rules, the car rule on both sides, old saves, and that no player can be left with no way forward.
 
 ### What the spec does not settle (to be answered before it is built)
+
+**Answered by the owner (10-Oct): "Leave the Special and Amphibious levels outside of the progression system."** So the tiers are made of the 31 main levels only; specials and amphibious levels keep their own groups and have no ribbon rule or car rule. That settles most of 1 and 2 below. Still open: the races (assumed outside too, on their own tab); 31 levels make six tiers of five and one over, against ten tiers (gold 1 to 5, blue 1 to 5): which levels go in which tier, and what fills the blue tiers; 3 (owning a car of the tier); 4 (Blue 4 has no cars).
 
 1. **Which level goes in which place.** The game has 31 main levels, 9 specials, 5 amphibious
    levels and 6 races: 51 against 50 places. Do the races keep their own tab outside the tiers
