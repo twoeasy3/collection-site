@@ -1107,7 +1107,77 @@ pick ups and traffic."
       owner: the finale's blast takes both lanes; the right shoulder and the merge side are the way round.
       Not seen: the side roads from on them, the level as Evil, anything moving. Next there: 27 Hong Kong
       (before-pictures taken).
-- [~] **Audit C1 decided by the owner: "remove A"** (the undrawn round slick of `watermains.js`; the wet lane
+- **The owner, late on 10-Oct: "Halve the number of agents please. Don't assign new tasks to the ones that
+      finish now."** Ten were running. Five were told to finish only the piece in hand and stop (the
+      obstacles tidy-up; the gap fills' stills; the fog's colour and After Hours' picture; the mains
+      follow-up; the full checks and the built site looked at). Five carry on, each on one task: the nuclear
+      fallout theme, level names and descriptions into their own JSON, Market Town (25), Ring Road (24),
+      Spring Thaw. **Cancelled or parked until the owner says:** Stelvio (30), Tour de Coast (23), Night
+      Shift, the rest of Hong Kong (27, WIP `1b3a207` on `delivery-rework-b`), the README and HANDOVER
+      screenshot paragraphs, the five weak menu pictures. No new task goes to an agent that finishes.
+- [x] **`delivery-mains-2` merged into `main` as `01c4f19`, not pushed; its agent has stopped (nine running).** The
+      eight newer levels' mains all name a lane and carry no `every`; no leftover reference to the removed
+      system; six checks pass on 68 levels. A main's whole slippery length is now marked: a thin blue sheet
+      across the lane with pale foam edges, under the existing pools (`a90693c`); seen on Leaks, Mumbai and
+      the ice road at night from about 50 m, no close-up, the fade not seen. The ghost probe can drive an
+      amphibious level (`d53c354`). **Hong Kong parked:** `delivery-rework-b` at `97d52c9` (the level file
+      re-laid, WIP; no scenery written; where each set-piece should go is in that agent's last report:
+      shop fronts between 3.2 and 6 m on the city side, clock towers at the piers at 500, 1700 and 2900,
+      junks along the tide beyond 14 m on the sea side, the Peak about 330 m off the city side).
+- [~] **STARTED AT ONCE (the owner: "High priority"), a tenth agent, branch `delivery-fallout`: a new theme,
+      level and gimmick: nuclear fallout.** The owner's words: "Nuclear fallout level, near a powerplant/industrial area. Green
+      skies. Gimmick 1 is radiation areas, driving into radiated areas causes health to tick down slowly. A
+      unique radiation meter ticks up, and at full the player is permanently infected and the health ticks
+      down regardless. Gimmick 2 is infected cars. Traffic cars can spawn infected, or have a chance to get
+      infected while driving in radiation. An infected car will have a radius where they have the same
+      radiation gimmick. Infected cars don't tick down other infected cars. Contact with an infected car
+      will infect you. The shield will prevent radiation damage, and will prevent the player from getting
+      infected."
+  - For the builder to settle and report: how a radiated area and an infected car's radius are SEEN (they
+    must read at a glance: a green haze with a hard edge on the road, a glow and a Geiger tick on a car);
+    where the meter sits (the HUD's meters' corner; an icon once infected, as lasting conditions now are);
+    whether the meter falls again outside radiation before it is full; rates in `config.js`; that every
+    radiated stretch has a clean line or a shield before it (the owner's rule: a gamble, never an imposed
+    loss); what the shield does while it lasts for a player already infected; traffic health under
+    radiation (do infected cars wreck themselves); the level to the standard (27 to 37 cash, 8 to 15 rows,
+    themed obstacles through the theme's mapping); the theme reusable.
+- [x] **Level 22 Outback Express to the new standard: `delivery-rework-c` merged into `main` as `a57fb69`, not
+      pushed.** 21 segments for 9 (an S, a floodway dip, a rise; longest straight 400 m for 1000); crossings
+      3 to 4, each with a turbo before and cash past the rails so racing the train pays and easing off
+      works; cash 7 in 2 rows to 36 in 15 (five 20s on the right shoulder); eleven named places (roadhouse,
+      sidings, homesteads, the pub, the railhead) drawn from new sets in `render/themes/extras.js`, red
+      ranges on the skyline; kinds the same; clock 225 / 165 unchanged; cargo puppy / egg. All checks pass.
+      19 stills looked at; pictures sent to the owner. Menu picture: its camera's address given to the
+      screenshot agent. Not played; not seen as Evil; the Bathurst circuit not shot.
+- [~] **Level names and descriptions into a JSON of their own (owner, 10-Oct evening):** "Split the level names
+      and descriptions into its own JSON. Fallback to the level's file if not available. Descriptions to
+      change based on good or evil." Branch `delivery-level-text`, the Outback Express agent. Levels held
+      by open branches (Hong Kong, Tour de Coast, Ring Road, Market Town, Stelvio, and the four gap-fill
+      levels) keep their words in their files until those branches land.
+- [x] **Audit C1 done: `538320f`, `delivery-mains` merged into `main` as `58987d3`, not pushed.** The undrawn
+      round slick (`watermains.js`) is deleted with its drawing, config, sound and second doc entry; a
+      main's `lane` is now required; `every` dropped from the schema and from Flooded and Mumbai. The wet
+      lane, its fountain and pools are unchanged (before / after stills the same). What the player loses is
+      only junk: after a change of level, the old system drew another level's mains frozen in the wrong
+      places. Hazards, schema, levels, gimmicks3, road-card, descriptions and replay (15 levels) pass. Two
+      clean runs got faster and now match their written clocks (Dock Run, Twenty Thousand Leaks). Being
+      checked now against the eight levels merged since (`delivery-mains-2`), where the faint pools down
+      the lane are also being strengthened.
+- [~] **Level 27 Hong Kong (`delivery-rework-b`, WIP `1b3a207`):** the level file re-laid (3.7 km in 14
+      segments, two tunnels, four cameras, four tar stretches, seven chicanes, 36 cash in 16 rows, clock
+      225 / 165, cargo canary / genie), kinds unchanged, probed to the finish. Not done: its scenery sets,
+      menu picture, the full checks.
+- [~] **Delivery and Nerve: built on `delivery-stats` (`0161d71`), HELD, not merged, for the owner.** Found: a
+      thrown package only ever wrecks TRAFFIC, whose health is fixed by kind (commuter 45 ... semi 320) and
+      does not rise with level or tier. So Delivery rising by tier (1 + 0.14 a tier, vans and trucks +0.08,
+      two-seaters -0.08) makes higher tiers wreck traffic MORE easily (a semi: 13 packages at tier 1, 9 at
+      tier 5), against the owner's "harder to wreck higher tier cars overall". The social meter is a rate
+      (4% a gift, 1% a second drain), so it needs no per-level scaling. The danger meter allows 3 s (up to
+      double with full standing); a level's `shoulderTimer` is a switch, not a multiplier; Nerve multiplies
+      the allowance, band 0.8 to 1.3, cap 8 s, set by character and checked not to follow tier. No trait
+      overlapped. Shown in the garage, the comparison table and strip (nine cells fit 360 px), the car
+      card. New `.carstats-check.mjs`; balance check extended. Its agent is on Spring Thaw meanwhile.
+- The decision, for the record: **Audit C1 decided by the owner: "remove A"** (the undrawn round slick of `watermains.js`; the wet lane
       of `hazards.js` stays). Branch `delivery-mains`, the Quarry Run agent, before Hong Kong.
 - [x] **Lasting messages as icons: `06cd661`, merged into `main` as `7b482e0`, not pushed.** A lasting condition
       is said like any message for its normal 4 s, then leaves a round icon with a draining ring (eleven
@@ -1117,7 +1187,20 @@ pick ups and traffic."
       moving or on a real phone; a tap on an icon never fired in a browser; narrower than about 375 px the
       third icon of a row may reach the tank corner. Its agent is now on level 22, Outback Express
       (`delivery-rework-c`).
-- [~] **Themed obstacles, first pass: `d9f4696` on `delivery-obstacles`, NOT merged** (three of thirteen models
+- [x] **Themed obstacles: `delivery-obstacles` merged into `main` as `9e5e058`, not pushed.** 23 kinds on a
+      mapping per theme (and a second mapping for a kind when it is one of a level's drifters); all shown
+      close up on the Gimmicks page under "Road dressing" (`gimmicks.html?group=road-dressing`), which says
+      they are not gimmicks and is on no level's road card. Corrected after being seen: the director's chair
+      (DIRECTOR on its back), the chair stack, the camera dolly (side-on to the road), the rice baskets on a
+      carrying pole, the supply pod (legs, hatch, aerial), a brighter diving helmet. Added: a glowing lava
+      boulder for the volcano's rock, a toy drum, a café table, tumbleweeds for the Wild West's drifting
+      bales, a flag for the Moon's drifting cones, wheelie bins (The Hood), snowdrifts, sacks (Mumbai), a
+      beach ball (Hurricane), brimstone for hell's cones (one shared mesh). Cones that are roadworks stay
+      cones. Obstacles, levels, schema, bundle, road-card, hazards and replay checks pass; four clocks did
+      not move. Pictures sent to the owner. Weak: the Moon's flag and the snowdrift's stake at distance
+      (being fixed on `delivery-obstacles-2`); several final models not re-shot on their own roads. Its
+      agent then takes level 30, Stelvio (`delivery-rework-g`).
+- The first pass, for the record: [x] **`d9f4696` on `delivery-obstacles`** (three of thirteen models
       never seen, none seen close up; the agent is on that now). **The audit:** the crate is only on the
       newest levels (49 on 11 of levels 32 to 43); older levels use barrier, cone, sign and bale and things
       made for their place; 22 menu levels place no plain obstacle. **Mechanism:** a mapping on the theme
@@ -1233,16 +1316,40 @@ pick ups and traffic."
       more WebGL context for good); (2) traffic with police and an ambulance in a run (the game's light-bar
       code was moved, read only); (3) open and close the road card a few times, then start a run; (4) scroll
       the Gimmicks page on a phone.
-- [~] **Second levels, batch F (`delivery-themes-f`, NOT merged: none of it seen since; stills being taken).**
+- [x] **Second levels, batch F: `delivery-themes-f` merged into `main` as `4953abf`, not pushed.** After Hours
+      (49), Eruption Day (50) and Cattle Drive (51) each seen along its whole length; `main`'s menu now has
+      68 levels. Changed after looking: Eruption Day's six rocks on the black road could not be seen and
+      became crates as a stand-in (the obstacles agent is putting them back as glowing lava boulders); its
+      erupting look built (`229dd8d`: a larger mountain, a pulsing fountain, four times the embers; Cinder
+      Island unchanged, shown before and after). Menu pictures in both sizes for Eruption Day and Cattle
+      Drive; After Hours has only the small one. All 27 checks passed before the last merge of `main`;
+      fifteen re-run after it. Pictures sent to the owner. Not seen: either Cattle Drive side road or After
+      Hours' from on it. For the owner: Cattle Drive's one-lane bridge; After Hours' two drifters (trolleys,
+      crates in the tunnel). Next there (`delivery-themes-f2`): fog that takes its theme's colour (it is
+      pale grey everywhere, washing out night and volcano skies), then Night Shift on the port at night.
+- The entry as it was while unmerged: **Second levels, batch F (`delivery-themes-f`).**
       `4694b46` (main merged in), `3178fc4`, `3e37c87`, `1e28dc5`, `b5b162a`; all 26 checks pass bar the
       unseeded crosswind line of the gimmicks check. After Hours 34 cash / 15 rows / 150-110; Eruption Day
       37 / 15 / 250-190 (its two rock drifters replaced by fixed rocks); **Cattle Drive** (`cattle`, Wild
       West, new: 5.62 km, two side roads, a ford, a low trestle, three stampedes, two crossings) 36 / 15 /
       255-195. For the owner: Cattle Drive's bridge at 1280 narrows the player's side to one lane for
       190 m (the oncoming lane is the way past).
-- [~] **Levels 20 and 21 to the new standard: done on `delivery-rework-a` (tip `a83f948`), judged fit, MERGE
-      WAITING** on the screenshot agent committing its uncommitted `scripts/shots.mjs` in the main checkout
-      (the branch changes one `CINE` entry there). Speed Trap Alley: 12 stills, nothing to fix, 34 cash / 14
+- **Pushed on the owner's word ("Push what you have"): `main` at `8fa45a6` is on the remote and deploying**
+      (Quarry Run, the HUD's icons, batch E's five levels, the idea cars and Blue 4, levels 1 to 30's
+      pictures in two sizes). The full set of checks was not run on it first; the screenshot agent is doing
+      that now, with a production build looked at.
+- [x] **M4, two sizes of level picture: done.** `199e090`, `aed731b`, `b14e662`, `57c1d54`, `5f60de8` on `main`
+      (the last two not pushed yet): `--levels --write` takes each cine still once at 1920x854 and writes
+      `levelshots/large/<id>.jpg` and a 600x267 `levelshots/<id>.jpg`; all 65 menu levels have both (large
+      5.5 MB in all, small 1.05 MB); 29 levels given a camera place of their own in the script's `CINE`
+      table, since the old pictures' places were recorded nowhere. Weaker than the rest: marina-bay,
+      montreal, monza, singapore-night, battlefield (being retaken). Only a handful of the large ones were
+      looked at full size. The built site keeps each as a separate file.
+- [x] **Old screenshot folders deleted with the owner's leave:** eight `delivery-shots-*` folders, 342.7 MB.
+      The 710 `scoped_dir*`, 181 `msedge_*` and 24 74 MB `.tmp` files from before the fix are still in Temp
+      (not covered by that leave). Free disk: 28.4 GB.
+- [x] **Levels 20 and 21 to the new standard: `delivery-rework-a` merged into `main` as `a29522e`, not pushed.**
+      Sheets sent to the owner. Speed Trap Alley: 12 stills, nothing to fix, 34 cash / 14
       rows, clock 240 / 180, menu picture in both sizes. The suburb scenery seen on Suburbia, The Hood,
       Christmas Eve and Market Town: nothing on a road. Mountain Pass: 12 stills, nothing to fix, 32 cash /
       13 rows; clock 195 / 155 (`33a000f`: the old clean run's 142 s was ice the non-steering test driver
