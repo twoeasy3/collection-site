@@ -428,9 +428,12 @@ export const GROUPS = [
       const wrong = painted(vehicle('commuter', 0xffffff), 0x24242b), right = painted(vehicle('commuter', 0xffffff), 0x4fc3f7);
       wrong.position.set(2.2, 0, -3); wrong.rotation.y = Math.PI;
       right.position.set(-2.2, 0, 4);
-      const lamps = [-1, 1].map(side => box(v.hw * 0.8, 0.45, 0.1, glow(0xffffff), 2.2 + side * v.hw * 0.6, 0.7, -3 + v.hl + 0.1));
-      const amber = [-1, 1].map(side => box(0.2, 0.16, 0.1, glow(0xffa21a), 2.2 + side * (v.hw - 0.08), 0.7, -3 + v.hl + 0.12));
-      g.add(wrong, right, ...lamps, ...amber);
+      // (its lamps are the car's own, in the car's own terms: on its nose, local +z, whichever way it is turned.
+      // Placed in the card's terms they sat at -3 + hl: the tail of a car turned round to come at you)
+      const lamps = [-1, 1].map(side => box(v.hw * 0.8, 0.45, 0.1, glow(0xffffff), side * v.hw * 0.6, 0.7, v.hl + 0.1));
+      const amber = [-1, 1].map(side => box(0.2, 0.16, 0.1, glow(0xffa21a), side * (v.hw - 0.08), 0.7, v.hl + 0.12));
+      wrong.add(...lamps, ...amber);
+      g.add(wrong, right);
       return { model: g, tick: (t) => { const on = Math.floor(t * 7) % 2 === 0, blink = Math.floor(t * 3) % 2 === 0; lamps.forEach(l => { l.visible = on; }); amber.forEach(a => { a.visible = blink; }); } };
     } },
     { name: 'Traffic with quirks', color: 0xff9ec4, has: (l) => ['icecream', 'binlorry', 'learner', 'boyracer', 'caravan'].some(k => l.traffic?.[k] || l.trafficZones?.some(z => z.traffic[k])), rules: [

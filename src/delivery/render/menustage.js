@@ -25,6 +25,24 @@ const money = (amount) => '$' + amount.toFixed(2);
 export const LEVEL_SHOTS = Object.fromEntries(Object.entries(
   import.meta.glob('../levelshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
+// ...and its large one, where it has one (levelshots/large/<id>.jpg: the same picture, the same shape, 1920 x 854
+// against 600 x 267), for the stage alone: the stage stretches its picture to cover it, and at a desktop's size
+// the small one is blurred. Only their addresses are in the bundle: a picture is fetched when the stage shows it
+const LEVEL_SHOTS_LARGE = Object.fromEntries(Object.entries(
+  import.meta.glob('../levelshots/large/*.jpg', { eager: true, query: '?url', import: 'default' }))
+  .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
+const SHOT = { w: 600, h: 267, slack: 1.15 }; // (the small picture's size; and how far it may be stretched before the large one is wanted)
+// the stage's picture of a level: the small one, with the large one over it where there is one and the stage
+// draws its picture bigger than the small one is (in the screen's own pixels: a dense screen counts). The small
+// one is under it all the same: it shows until the large one has come, and if it never does
+const stageShot = (id) => {
+  const small = LEVEL_SHOTS[id], large = LEVEL_SHOTS_LARGE[id];
+  if (!small) return large ? `url("${large}")` : '';
+  const w = stage.clientWidth || window.innerWidth * 0.7, h = stage.clientHeight || window.innerHeight * 0.6;
+  const drawn = Math.max(w, h * SHOT.w / SHOT.h) * (window.devicePixelRatio || 1); // (covering the stage: as wide as it, or as tall)
+  const wanted = large && drawn > SHOT.w * SHOT.slack && !navigator.connection?.saveData;
+  return (wanted ? `url("${large}"), ` : '') + `url("${small}")`;
+};
 // each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car)
 const CAR_SHOTS = Object.fromEntries(Object.entries(
   import.meta.glob('../carshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
@@ -135,7 +153,8 @@ const drawStage = () => {
   const list = TABS[tab].list, at = list.indexOf(level);
   const key = level.id + (evil ? '/evil' : '/good'), sameLevel = !!drawn && drawn.split('/')[0] === level.id;
   const shot = (sameLevel && stage.querySelector('.shot')) || make('div', 'shot'); // (the same level drawn again keeps its picture, drifting as it was)
-  if (LEVEL_SHOTS[level.id]) shot.style.backgroundImage = `url("${LEVEL_SHOTS[level.id]}")`;
+  const picture = stageShot(level.id);
+  if (picture) shot.style.backgroundImage = picture; // (the large picture where the stage is big enough to want it)
   else shot.classList.add('none'); // (no picture of it yet)
   const plate = make('div', 'plate', make('small', '', kindOf(level)), make('b', '', label(level)));
   const ribbon = make('div', 'ribbon', ...(open ? (oneSided(level) ? [false] : [false, true]).map(side => ribbonHalf(level, side)) : []));
