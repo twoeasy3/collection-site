@@ -6,7 +6,7 @@ import { Player } from '../player.js';
 import { Traffic } from '../traffic.js';
 import { Mysteries } from '../mysteries.js';
 import { scene, tmp } from './scene.js';
-import { MODELS, AMBULANCE_BOX } from './models.js';
+import { MODELS, FIXED_PAINT, makeLightBar, placeLightBar, flashLightBar } from './models.js';
 import './trafficModels.js'; // (more of them, added to MODELS)
 import { makeCrashDummy } from './pickupModels.js';
 import { makeTractorModel, makeUfo } from './carExtras.js';
@@ -211,7 +211,6 @@ const PAINTS = {
   good: [0xffd23f, 0x4fc3f7, 0x7ee081, 0xff8fb1, 0xffffff, 0xff9f43],
   evil: [0x24242b, 0x3a1f4d, 0x4a1c1c, 0x1f3a3a, 0x3b3b1f, 0x1c2a4a],
 };
-const POLICE_PAINT = 0xf5f5f5;
 // an F1 car's livery, by its paint number: any colour at all (and a second: see models.js)
 export const F1_PAINTS = [0xd8262b, 0x1d3f9c, 0x18a35a, 0xff8a1a, 0x101010, 0xf4f4f4, 0x7a1fa8, 0x2fc4d8, 0xf2d21f, 0x8a1a2a, 0x2a6b3a, 0xff5fa8];
 // a GT car's: road car colours (silver, racing green, rosso, white, black, giallo, blue, orange,
@@ -229,18 +228,11 @@ const LIVERIES = Object.fromEntries([
 ]);
 export const trafficMeshes = Traffic.cars.map(() => {
   const mesh = makeCarMesh(PAINTS.good[0]);
-  // roof light bar, only shown (and flashing) on police cars
-  const bar = new THREE.Mesh(unitBox, new THREE.MeshBasicMaterial({ color: 0x2060ff }));
-  bar.scale.set(1.3, 0.22, 0.35);
-  bar.position.set(0, 1.85, -0.3);
+  // roof light bar, only shown (and flashing) on police cars and ambulances (the bar itself: render/models.js,
+  // which the menu's road card puts on its police car too)
+  const bar = makeLightBar();
   mesh.add(bar);
   mesh.userData.bar = bar;
-  // (an ambulance's sits on a dark housing, wider than the bar, so its white flash shows on the white roof)
-  const mount = new THREE.Mesh(unitBox, new THREE.MeshLambertMaterial({ color: 0x15171c }));
-  mount.scale.set(1.12, 0.5, 1.7);
-  mount.position.y = -0.55;
-  bar.add(mount);
-  mesh.userData.barMount = mount;
   mesh.userData.models = {};
   addLamps(mesh);
   return mesh;
@@ -273,20 +265,16 @@ export const syncTraffic = () => {
       mesh.rotation.x = car.spin > 0 ? 0 : -Math.atan(Track.grade(car.s)) * car.dir; // tilt with the slope
     }
     shapeCarMesh(mesh, car);
-    const police = car.kind === 'police';
     const paints = PAINTS[car.evil ? 'evil' : 'good'];
     const livery = LIVERIES[car.kind];
-    const ambulance = car.kind === 'ambulance';
-    const paint = car.colors ? car.colors[0] : car.kind === 'driveby' ? 0x3a1840 : police || ambulance ? POLICE_PAINT : RACE_PAINTS[car.kind] ? racePaint(car)
+    const paint = car.colors ? car.colors[0] : FIXED_PAINT[car.kind] !== undefined ? FIXED_PAINT[car.kind] : RACE_PAINTS[car.kind] ? racePaint(car)
       : livery ? livery[car.evil ? 'evil' : 'good'] : paints[car.paint % paints.length];
     mesh.userData.body.material.color.setHex(paint);
     const worn = car.toad ? 0 : damageShare(car); // (a damaged car's paint is scorched: see dents.js)
     scorch(mesh.userData.body.material.color, worn);
-    mesh.userData.bar.visible = police || ambulance;
-    mesh.userData.barMount.visible = ambulance;
     // (on the roof: an ambulance's at the front of its box's roof, just behind the cab, where it
     // shows in the mirror, so to speak)
-    mesh.userData.bar.position.set(0, car.height + 0.1, ambulance ? car.hl * AMBULANCE_BOX - 0.25 : -0.15);
+    placeLightBar(mesh.userData.bar, car.kind, car);
     // a vehicle with a model of its own shows that in place of the standard box car
     const own = ownModel(mesh, car);
     for (const kind in mesh.userData.models) mesh.userData.models[kind].visible = mesh.userData.models[kind] === own;
@@ -304,11 +292,7 @@ export const syncTraffic = () => {
     }
     mesh.userData.body.visible = mesh.userData.cabin.visible = !own;
     for (const part of [...mesh.userData.lights, ...mesh.userData.trim]) part.visible = !own;
-    if (police) {
-      mesh.userData.bar.material.color.setHex(Math.floor(performance.now() / 160 + i) % 2 ? 0xff2020 : 0x2060ff);
-    } else if (ambulance) {
-      mesh.userData.bar.material.color.setHex(Math.floor(performance.now() / 110 + i) % 2 ? 0xff2020 : 0xffffff);
-    }
+    flashLightBar(mesh.userData.bar, car.kind, performance.now(), i);
     // brake lights and indicators (not on a toad or a tractor). Which side of the model a signal
     // is on: the side nearer the road a little way across in the direction it is signalling
     const lit = !car.toad && car.kind !== 'tractor' && !CONFIG.vehicles[car.kind]?.boat; // (nor on a boat)

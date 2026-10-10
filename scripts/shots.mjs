@@ -5,14 +5,28 @@
 //   node scripts/shots.mjs shots --levels                    every level's menu picture (?cine), as <id>.png
 //   node scripts/shots.mjs shots --cars                      every garage car's (?cine=car), good and evil
 //   node scripts/shots.mjs shots --levels=quarry-run,ring-road   only those
-// Options: --size=1100x650 (Edge goes no narrower than about 500), --wait=7000 (ms of page time each
-// shot is given before the picture is taken), --evil (the levels' pictures as Evil), --browser=<path>.
-// A game address gets ?autostart added unless it names a mode of its own; add &ghost so nothing wrecks
-// the car, &at=<m> to start that far along, and &ff=<s> to run the game on before the first frame.
+//   node scripts/shots.mjs --levels=quarry-run --write       the menu's OWN pictures of it, in both sizes (below)
+// The menu's level pictures come in two sizes, both made from ONE frame taken at 1920x854: with --write,
+// --levels writes src/delivery/levelshots/large/<id>.jpg (1920x854, for the stage on a desktop) and
+// src/delivery/levelshots/<id>.jpg (600x267, for the strip, the album and a phone), JPEGs at --quality=80.
+// The small one is the large frame scaled down in the browser (halved, then to size: smooth, not jagged).
+// --write=<folder> puts the pair in <folder> and <folder>/large instead (to look at them first). Without
+// --write, --levels saves PNGs in the out-dir as before and never touches the menu's pictures. --size and
+// --scale are not used for a pair. Where the camera's usual place is no good, give the level one in CINE.
+// Options: --size=1100x650 (any size), --scale=2 (device pixels to a CSS pixel, as on a phone: the picture is
+// then twice the size each way; it is 1 unless asked), --wait=7000 (ms of page time each shot is given, once
+// its page has loaded, before the picture is taken), --evil (the levels' pictures as Evil), --browser=<path>.
+// A game address (one starting with ?) gets ?autostart added unless it names a mode of its own; add &ghost so
+// nothing wrecks the car, &at=<m> to start that far along, and &ff=<s> to run the game on before the first
+// frame. So a picture of the MENU is written index.html?... (or just index.html), not ?...
+// Each line says how long the picture took, and under it the page's console errors and warnings.
+// A run leaves nothing behind, and two runs at most take pictures at once (a third waits): see below. Its
+// folder in %LOCALAPPDATA%\Temp is delivery-shots-run-<pid>-<when>; a start removes those of dead runs, and
+// touches nothing else there (not the delivery-shots-XXXXXX folders of older versions of this script).
 import { createServer } from 'vite';
 import { logicServer } from './delivery-headless.mjs';
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -20,7 +34,10 @@ const args = process.argv.slice(2);
 const opt = (name, fallback) => { const a = args.find(x => x === '--' + name || x.startsWith('--' + name + '=')); return a === undefined ? fallback : a.includes('=') ? a.slice(name.length + 3) : true; };
 const out = resolve(args.find(a => !a.startsWith('--') && !a.includes('=')) || 'shots');
 const [width, height] = String(opt('size', '1100x650')).split('x').map(Number);
-const wait = Number(opt('wait', 7000));
+const wait = Number(opt('wait', 7000)), scale = Number(opt('scale', 1)) || 1;
+// the pair of menu pictures (--write): where they go, their sizes (one shape: 600:267), and the JPEGs' quality
+const PAIR = { folder: opt('write', false) === true ? resolve('src/delivery/levelshots') : opt('write', false) ? resolve(String(opt('write'))) : null,
+  large: [1920, 854], small: [600, 267], quality: Math.min(100, Math.max(1, Number(opt('quality', 80)) || 80)) / 100 };
 
 const browser = opt('browser', null) || [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
@@ -29,7 +46,7 @@ const browser = opt('browser', null) || [
 ].find(existsSync);
 if (!browser) { console.log('No Edge or Chrome found: name one with --browser=<path>'); process.exit(1); }
 
-// the shots: [name, address]
+// the shots: [name, address], and for one of the menu's pairs a third: true
 const shots = args.filter(a => !a.startsWith('--') && a.includes('=')).map(a => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]);
 if (opt('levels', false) || opt('cars', false)) {
   // (the level and car lists are the game's own: read the same way the headless scripts do)
@@ -44,7 +61,7 @@ if (opt('levels', false) || opt('cars', false)) {
   const CINE = { mumbai: '&cineout=-1&cineup=10&cineback=30', spa: '&cineside=left', 'albert-park': '&cineside=left' }; // (a block of flats; the pit building; a tree)
   if (opt('levels', false)) {
     levels.LEVELS.forEach((level, i) => {
-      if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine&ff=6${CINE[level.id] || ''}`]);
+      if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine&ff=6${CINE[level.id] || ''}`, !!PAIR.folder]);
     });
   }
   if (opt('cars', false)) {
@@ -67,22 +84,29 @@ if (!shots.length) { console.log('Nothing to shoot: node scripts/shots.mjs <out-
 //    for three minutes after each picture);
 //  - everything a run writes (Vite's cache, the browser's profile, the browser's TEMP) is in one folder of the
 //    run's, in the machine's own temp folder whatever TEMP says, removed however the run ends;
-//  - that folder holds the run's pid, kept fresh: a run starts by removing the folders (and ending the
-//    browsers) of runs that are dead, since a run that is killed outright removes nothing itself;
+//  - that folder's NAME is its marker, delivery-shots-run-<pid>-<when>: made in one step, so there is never a
+//    folder of a run's without it (a pid FILE was lost when the removing of a folder took it first and then met
+//    a file the browser still held). A run starts by ending the browsers and removing the folders of runs that
+//    are dead: those whose process is gone, or whose `alive` file (freshened every 15 s) is 15 minutes old.
+//    Only folders of exactly that name are ever touched: not the delivery-shots-XXXXXX of older versions of
+//    this script, nor anything else in the temp folder;
 //  - at most SLOTS runs take pictures at once on the machine: the rest wait their turn.
 const ROOT = process.env.LOCALAPPDATA && existsSync(join(process.env.LOCALAPPDATA, 'Temp')) ? join(process.env.LOCALAPPDATA, 'Temp') : tmpdir();
-const SLOTS = 2;             // runs taking pictures at once, on the whole machine
-const STALE = 5 * 60 * 1000; // ms without its pid file freshened (every 15 s) after which a run is taken for dead
+const SLOTS = 2;              // runs taking pictures at once, on the whole machine
+const STALE = 15 * 60 * 1000; // ms without a sign of life after which a run is taken for dead, whatever its pid says (pids are used again)
+const RUN = /^delivery-shots-run-(\d+)-[a-z0-9]+$/, SLOT = /^delivery-shots-slot-\d+$/;
 const WINDOWS = process.platform === 'win32', SYSTEM = join(process.env.SystemRoot || 'C:/Windows', 'System32');
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const pause = (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms); // (a wait where nothing may be awaited: on the way out)
 const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
-const remove = (path) => { try { rmSync(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch { /* (a file still held: a later run's sweep takes it) */ } };
-// a folder is a dead run's (or a dead run's slot) only if it holds a pid file of this script's, and that run is gone
-const dead = (folder) => {
-  try {
-    const pid = Number(readFileSync(join(folder, 'pid'), 'utf8'));
-    return pid > 0 && pid !== process.pid && (!alive(pid) || Date.now() - statSync(join(folder, 'pid')).mtimeMs > STALE);
-  } catch { return false; } // (no pid file: not provably ours, or a run just starting)
+const age = (path) => { try { return Date.now() - statSync(path).mtimeMs; } catch { return null; } };
+// Removing, tried again for `ms` while a browser that has just ended lets go of its files (Windows refuses a file
+// that is open: EBUSY, EPERM). Answers the error if it would not go.
+const remove = (path, ms = 12000) => {
+  for (const until = Date.now() + ms; ;) {
+    try { rmSync(path, { recursive: true, force: true }); return null; } catch (error) { if (Date.now() > until) return error; }
+    pause(250);
+  }
 };
 // every browser process started with that folder as its profile or TEMP: found by command line, not by tree
 // (the helpers of a browser whose parent is gone belong to no tree)
@@ -91,34 +115,52 @@ const endBrowsersOf = (folder) => {
     if (WINDOWS) {
       const exe = browser.replace(/\\/g, '/').split('/').pop().replace(/'/g, "''"), text = folder.replace(/'/g, "''");
       spawnSync(join(SYSTEM, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
-        `Get-CimInstance Win32_Process -Filter "Name='${exe}'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${text}') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`], { stdio: 'ignore', timeout: 30000 });
+        // (asked again until there are none: a browser ended as it starts has helpers still on their way up)
+        `for ($i = 0; $i -lt 12; $i++) { $found = @(Get-CimInstance Win32_Process -Filter "Name='${exe}'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${text}') }); if (-not $found) { break }; $found | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }; Start-Sleep -Milliseconds 300 }`], { stdio: 'ignore', timeout: 45000 });
     } else spawnSync('pkill', ['-9', '-f', folder], { stdio: 'ignore' });
   } catch { /* (none to end) */ }
+};
+// a run's folder and its browsers, twice over if need be; says so if something of it is still there
+const removeRun = (folder, browsers = true) => {
+  let error = null;
+  for (let round = 0; round < 2; round++) {
+    if (browsers) endBrowsersOf(folder);
+    if (!(error = remove(folder))) return;
+    browsers = true;
+  }
+  console.log('  (could not remove ' + folder + ' yet: ' + String(error && error.message || error).split('\n')[0] + '; the next run takes it)');
+};
+// dead: its process gone, or no sign of life for a long while. (A slot is a folder with its owner's pid in a file;
+// one with no pid yet is a run between making it and writing it, or one that died there.)
+const deadRun = (name) => { const pid = Number(RUN.exec(name)[1]), since = age(join(ROOT, name, 'alive')) ?? age(join(ROOT, name)); return pid !== process.pid && since !== null && (!alive(pid) || since > STALE); };
+const deadSlot = (folder) => {
+  let pid = 0;
+  try { pid = Number(readFileSync(join(folder, 'pid'), 'utf8')); } catch { const since = age(folder); return since !== null && since > 60000; }
+  const since = age(join(folder, 'pid'));
+  return pid !== process.pid && since !== null && (!(pid > 0) || !alive(pid) || since > STALE);
 };
 const sweep = () => {
   let names = [];
   try { names = readdirSync(ROOT); } catch { /* (no such folder) */ }
   for (const name of names) {
-    if (!name.startsWith('delivery-shots-') || !dead(join(ROOT, name))) continue;
-    if (!name.startsWith('delivery-shots-slot-')) { endBrowsersOf(join(ROOT, name)); console.log('  (removing what a dead run left: ' + name + ')'); }
-    remove(join(ROOT, name));
+    if (RUN.test(name) && deadRun(name)) { console.log('  (removing what a dead run left: ' + name + ')'); removeRun(join(ROOT, name)); }
+    else if (SLOT.test(name) && deadSlot(join(ROOT, name))) remove(join(ROOT, name), 2000);
   }
 };
 sweep();
-const own = mkdtempSync(join(ROOT, 'delivery-shots-'));
-writeFileSync(join(own, 'pid'), String(process.pid));
+const own = join(ROOT, 'delivery-shots-run-' + process.pid + '-' + Date.now().toString(36));
+mkdirSync(own); // (not recursive: it must be new)
 let slot = null, child = null, server = null, cleaned = false;
-const fresh = setInterval(() => { for (const folder of [own, slot]) { try { const now = new Date(); if (folder) utimesSync(join(folder, 'pid'), now, now); } catch { /* (gone) */ } } }, 15000);
-fresh.unref();
+const fresh = () => { try { writeFileSync(join(own, 'alive'), ''); if (slot) { const now = new Date(); utimesSync(join(slot, 'pid'), now, now); } } catch { /* (gone) */ } };
+fresh();
+setInterval(fresh, 15000).unref();
 const cleanup = () => { // (however the run ends, and all of it at once: an 'exit' handler cannot wait)
   if (cleaned) return;
   cleaned = true;
-  if (child) {
-    if (child.exitCode === null) { try { WINDOWS ? spawnSync(join(SYSTEM, 'taskkill.exe'), ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }) : child.kill('SIGKILL'); } catch { /* (gone already) */ } }
-    endBrowsersOf(own); // (a helper that outlived it would hold the profile, and be a process left behind)
-  }
-  if (slot) remove(slot);
-  remove(own);
+  if (child && child.exitCode === null) { try { WINDOWS ? spawnSync(join(SYSTEM, 'taskkill.exe'), ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }) : child.kill('SIGKILL'); } catch { /* (gone already) */ } }
+  if (slot) remove(slot, 2000);
+  // (a browser that closed by itself has no helpers left to end, and asking costs a second: only if its files will not go)
+  if (!child || remove(own, child.exitCode === null ? 0 : 3000)) removeRun(own, !!child);
 };
 process.on('exit', cleanup);
 for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) process.on(signal, () => { console.log('  (' + signal + ': cleaning up)'); cleanup(); process.exit(130); });
@@ -129,7 +171,7 @@ const takeSlot = async () => {
   for (let told = false; ; told = true) {
     for (let k = 1; k <= SLOTS; k++) {
       const folder = join(ROOT, 'delivery-shots-slot-' + k);
-      if (dead(folder)) remove(folder);
+      if (deadSlot(folder)) remove(folder, 2000);
       try { mkdirSync(folder); } catch { continue; } // (taken)
       writeFileSync(join(folder, 'pid'), String(process.pid));
       return folder;
@@ -189,7 +231,30 @@ const closeBrowser = async () => {
 // being fetched). The page time is given once the page has loaded: given before, it can run out part-way through
 // the loading and stop the page there, and then no picture is ever made of it.
 const LIMIT = 90000; // ms of real time a picture may take
-const shoot = async (url, file) => {
+// The pair of JPEGs from one frame (a PNG, in base 64), made by the browser in a blank page: the large one is the
+// frame itself, the small one the frame drawn smaller on a canvas: to half its size first, then to its own, each
+// step smoothed, so that a 3.2-fold reduction does not skip pixels and leave edges jagged. Answers both, in base 64.
+const pairOf = async (png) => {
+  const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
+  try {
+    const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+    const made = await send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+      const image = new Image();
+      image.src = 'data:image/png;base64,${png}';
+      await image.decode();
+      const drawn = (from, w, h) => { const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const pen = canvas.getContext('2d'); pen.imageSmoothingEnabled = true; pen.imageSmoothingQuality = 'high'; pen.drawImage(from, 0, 0, w, h); return canvas; };
+      const jpeg = (canvas) => canvas.toDataURL('image/jpeg', ${PAIR.quality}).split(',')[1];
+      const [W, H] = ${JSON.stringify(PAIR.large)}, [w, h] = ${JSON.stringify(PAIR.small)};
+      if (image.naturalWidth !== W || image.naturalHeight !== H) throw new Error('the frame is ' + image.naturalWidth + 'x' + image.naturalHeight + ', not ' + W + 'x' + H);
+      return { large: jpeg(drawn(image, W, H)), small: jpeg(drawn(drawn(image, Math.round(W / 2), Math.round(H / 2)), w, h)) };
+    })()` }, sessionId, 60000);
+    if (made.exceptionDetails) throw new Error('the pair of pictures: ' + (made.exceptionDetails.exception?.description || made.exceptionDetails.text));
+    return made.result.value;
+  } finally {
+    try { await send('Target.closeTarget', { targetId }, undefined, 5000); } catch { /* (gone with the browser) */ }
+  }
+};
+const shoot = async (url, file, pair) => {
   const notes = [];
   const note = (text) => { text = String(text).split('\n')[0].slice(0, 300); if (!notes.includes(text)) notes.push(text); };
   if (!socket || socket.readyState !== 1 || !child || child.exitCode !== null) { await closeBrowser(); await openBrowser(); }
@@ -207,7 +272,7 @@ const shoot = async (url, file) => {
     });
     const page = (method, params, timeout) => send(method, params, sessionId, timeout);
     await page('Page.enable'); await page('Runtime.enable'); await page('Log.enable');
-    await page('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false }); // (the picture's size exactly, and any size: a window goes no narrower than 500)
+    await page('Emulation.setDeviceMetricsOverride', pair ? { width: PAIR.large[0], height: PAIR.large[1], deviceScaleFactor: 1, mobile: false } : { width, height, deviceScaleFactor: scale, mobile: false }); // (the picture's size exactly, and any size: a window goes no narrower than 500)
     const went = await page('Page.navigate', { url }, LIMIT);
     if (went.errorText) note('error: ' + went.errorText);
     if (!await Promise.race([loaded, sleep(LIMIT)])) note('warning: not loaded after ' + LIMIT / 1000 + ' s: the picture is of the page as it stood');
@@ -221,8 +286,12 @@ const shoot = async (url, file) => {
       await page('Emulation.setVirtualTimePolicy', { policy: 'advance' });
       shot = await page('Page.captureScreenshot', { format: 'png' }, 30000);
     }
-    writeFileSync(file, Buffer.from(shot.data, 'base64'));
     listeners.delete(sessionId);
+    if (pair) { // (file: the small one; the large one beside it, in large/)
+      const both = await pairOf(shot.data);
+      writeFileSync(join(PAIR.folder, 'large', pair), Buffer.from(both.large, 'base64'));
+      writeFileSync(file, Buffer.from(both.small, 'base64'));
+    } else writeFileSync(file, Buffer.from(shot.data, 'base64'));
   } finally {
     try { await send('Target.closeTarget', { targetId }, undefined, 5000); } catch { /* (gone with the browser) */ }
   }
@@ -231,7 +300,8 @@ const shoot = async (url, file) => {
 
 let failed = 0;
 try {
-  mkdirSync(out, { recursive: true });
+  if (shots.some(shot => !shot[2])) mkdirSync(out, { recursive: true });
+  if (PAIR.folder) mkdirSync(join(PAIR.folder, 'large'), { recursive: true });
   slot = await takeSlot();
   // (The run's folder holds Vite's cache as well. Every worktree's node_modules is a junction to one folder, so the
   // usual cache, node_modules/.vite, is one for them all, and a server started from another worktree deletes it to
@@ -239,16 +309,17 @@ try {
   server = await createServer({ server: { port: 5199, strictPort: false, hmr: false }, cacheDir: join(own, 'vite'), logLevel: 'error' });
   await server.listen();
   const base = `http://localhost:${server.config.server.port}/delivery/`;
-  for (const [name, address] of shots) {
+  for (const [name, address, pair] of shots) {
     const game = address.startsWith('?') && !/[?&](autostart|hidden|test|edited|screensaver|racewatch|garage|album|milestones)\b/.test(address);
     const url = base + (game ? address.replace('?', '?autostart&') : address);
-    const file = join(out, name + '.png');
+    const file = pair ? join(PAIR.folder, name + '.jpg') : join(out, name + '.png');
     const began = Date.now();
     let notes = [], why = '';
-    try { rmSync(file, { force: true }); notes = await shoot(url, file); } catch (error) { why = '  ' + String(error && error.message || error); }
+    try { rmSync(file, { force: true }); notes = await shoot(url, file, pair && name + '.jpg'); } catch (error) { why = '  ' + String(error && error.message || error); }
     const ok = existsSync(file) && statSync(file).size > 2000;
     if (!ok) failed++;
-    console.log((ok ? '  ok    ' : '  FAIL  ') + name + '  ' + url + '  (' + ((Date.now() - began) / 1000).toFixed(1) + ' s)' + why);
+    const sizes = ok && pair ? '  ' + [file, join(PAIR.folder, 'large', name + '.jpg')].map(f => Math.round(statSync(f).size / 1024) + ' KB').join(' + ') : '';
+    console.log((ok ? '  ok    ' : '  FAIL  ') + name + '  ' + url + '  (' + ((Date.now() - began) / 1000).toFixed(1) + ' s)' + sizes + why);
     for (const text of notes) console.log('          ' + text); // (what the page said: its errors and warnings)
   }
 } finally {
@@ -256,5 +327,5 @@ try {
   try { if (server) await server.close(); } catch { /* (closed) */ }
   cleanup();
 }
-console.log(failed ? failed + ' failed' : shots.length + ' shot' + (shots.length === 1 ? '' : 's') + ' in ' + out);
+console.log(failed ? failed + ' failed' : shots.length + ' shot' + (shots.length === 1 ? '' : 's') + ' in ' + (shots.every(shot => shot[2]) ? PAIR.folder : out));
 process.exit(failed ? 1 : 0);

@@ -1423,7 +1423,8 @@ export const CONFIG = {
   // 1). In water no deeper than it wades it is slowed, to `fast` m/s in next to none and `slow` m/s at its limit;
   // in deeper it crawls at `crawl` m/s and loses `damage` health a second for each m out of its depth. (`bite`: m/s^2
   // the water takes speed off at.) Traffic goes through at `traffic` m/s. Said from `warn` m before the exit;
-  // boards `sign` m before the exit and at it
+  // boards `sign` m before the exit and at it. A ford with "fills": { to, over } is a flooded underpass: `depth` m
+  // deep as the run starts, rising to `to` m over `over` s; with "underpass": true a railway bridge is drawn over it
   ford: { depth: 0.5, shallow: 0.25, deepest: 1.0, fast: 30, slow: 13, crawl: 4.5, damage: 10, bite: 34, traffic: 8, warn: 260, sign: 200 },
   // speed cushions ("cushions": { from, to, every? }): a row across the road every `every` m (the stretch's own, or
   // this), a cushion `width` m wide and `long` m long in the middle of each lane, a gap on each lane line. A car
@@ -1462,6 +1463,16 @@ export const CONFIG = {
   // width and `spread` m more either side, widening by a metre to its far end. In it `most` of the view is gone
   // at its tail, less in proportion further back. A board `sign` m before
   spray: { height: 2.2, slowest: 4, length: 45, fullAt: 18, spread: 3.6, most: 0.92, sign: 120 },
+  // the low sun ("lowSun": { from, to }): over the stretch the sun is low and dead ahead: `most` of the view is gone
+  // (easing in and out over `edge` m at its ends), except in shadow: `shadow` m behind a vehicle for each m of its
+  // height, if it is `height` m tall or more and within its own width and `beside` m of the car's line; or under a
+  // bridge, in a tunnel, or under a shade's trees. A board `sign` m before; the sun is drawn `far` m ahead of the car, `up` m up
+  lowSun: { most: 0.88, edge: 40, height: 2.2, shadow: 9, beside: 0.5, sign: 120, far: 560, up: 46 },
+  // a dust trail ("dust": { from, to, wind }): a dry dirt stretch. Every vehicle moving on it (faster than `slowest`
+  // m/s) throws a plume `length` m long at fullAt m/s or more (shorter in proportion slower), its own width and
+  // `spread` m more either side, carried `drift` m to the side the wind blows to by its far end. In it `most` of
+  // the view is gone at its head, less in proportion further back. A board and a windsock `sign` m before
+  dust: { slowest: 4, length: 60, fullAt: 16, spread: 0.9, drift: 4.5, most: 0.9, sign: 120 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

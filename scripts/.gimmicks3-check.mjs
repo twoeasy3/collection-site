@@ -425,6 +425,39 @@ try {
     let fastest = 0;
     g.run(20, () => { P.speed = 0; P.s = 5500; if (van.active && van.s > 5670 && van.s < 5715) fastest = Math.max(fastest, van.vs); return !van.active || van.s > 5730; });
     check(fastest > 0 && fastest <= F.traffic + 0.5, 'ford: traffic wades it slowly (' + fastest.toFixed(1) + ' m/s in the water)');
+    // ---- the flooded underpass (7150 - 7230: 0.2 m as the run starts, 0.9 m after 240 s; the exit at 6800 goes over)
+    const under = () => Gambles.fords[1];
+    // through it (or over, by the exit) from 6650 to 7700 in `car`, coming to it `late` s into the run
+    const dip = (car, late, over = false) => {
+      start(6650, over ? 5 : 4, 26, { car });
+      G.time = late;
+      const health = P.health;
+      let wet = 0, side = false, slowest = 99, depth = 0;
+      const t = g.run(200, () => {
+        quiet();
+        P.speed = Math.min(P.speed, 26);
+        const main = T().isMain(P.s);
+        if (!main) side = true;
+        const want = over && main && P.s > 6800 - C.ramps.laneZone + 15 && P.s < 6810 ? lane(5, P.s) + C.laneWidth : main ? lane(over ? 5 : 4, P.s) : P.lat, d = want - P.lat;
+        g.drive(1, Math.abs(d) < 0.3 ? 0 : Math.sign(d));
+        if (Gambles.inFord) { wet += 1 / 60; depth = under().depth; }
+        slowest = Math.min(slowest, P.speed);
+        return (main && P.s > 7700) || G.wrecks > 0;
+      });
+      return { t, wet, side, slowest, depth, lost: health - P.health, wrecks: G.wrecks, busted: P.busted };
+    };
+    check(under().fills && under().exit && under().exit.exitAt === 6800 && Math.abs(Gambles.fordDepth(under(), 0) - 0.2) < 1e-9 && Math.abs(Gambles.fordDepth(under(), 120) - 0.55) < 1e-9 && Math.abs(Gambles.fordDepth(under(), 999) - 0.9) < 1e-9,
+      'underpass: 0.2 m deep as the run starts, 0.55 m after 120 s, 0.9 m from 240 s on; the exit at 6800 m goes over it');
+    const early = dip('lowrider', 5);
+    check(early.wet > 0 && early.lost === 0 && early.slowest > F.slow && early.depth < 0.3, 'underpass, early: the Lowrider (wades 0.36 m) goes through ' + early.depth.toFixed(2) + ' m of water unhurt, never under ' + Math.round(early.slowest * 3.6) + ' km/h (' + early.t.toFixed(1) + ' s)');
+    check(said('you can still wade it') && said('and rising'), 'underpass: it is told how deep it is now, and that it is rising');
+    const late = dip('lowrider', 230);
+    check(late.wet > 10 && late.lost > 5 && late.wrecks === 0 && late.slowest >= F.crawl - 0.01, 'underpass, late: the same car in ' + late.depth.toFixed(2) + ' m: it crawls across, ' + late.lost.toFixed(0) + ' health lost, never stopped (' + late.t.toFixed(1) + ' s)');
+    check(said('FLOODED too deep'), 'underpass: by then it is told it is too deep, before the exit');
+    const overIt = dip('lowrider', 230, true);
+    check(overIt.side && overIt.wet === 0 && overIt.lost === 0 && !overIt.busted && overIt.t < late.t, 'underpass, the safe line: over by the slip road, dry and unhurt (' + overIt.t.toFixed(1) + ' s: ' + (late.t - overIt.t).toFixed(1) + ' s quicker than wading it late, ' + (overIt.t - early.t).toFixed(1) + ' s slower than straight through early)');
+    const tall = dip('liftedtruck', 300);
+    check(tall.wet > 0 && tall.lost === 0, 'underpass: a car that wades 0.96 m still gets through it full (' + tall.depth.toFixed(2) + ' m)');
     real('fords', () => check(Gambles.fords.every(x => x.exit), '  its ford' + (Gambles.fords.length > 1 ? 's' : '') + ': ' + Gambles.fords.map(x => x.from + ' to ' + x.to + ' m, ' + x.depth + ' m deep, the bridge the exit at ' + x.exit?.exitAt).join('; ')));
   });
 
@@ -651,6 +684,71 @@ try {
     const past = behind('semi', -12, 1);
     check(past.veil === 0, 'spray: alongside the lorry and ahead of it the view is clear again');
     real('spray', () => check(Gambles.wets.length > 0, '  its wet road: ' + Gambles.wets.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
+  });
+
+  // ---- the low sun (6470 - 6690, to the finish)
+  await section('sun', async () => {
+    const L = C.lowSun;
+    // the player held at 6540 .. doing 15 m/s for 2.5 s, `back` m behind a vehicle of `kind` in lane 4 (none: alone),
+    // `over` lanes to its side
+    const view = (kind = null, back = 10, over = 0, at = 6540) => {
+      start(at - 40, 4, 15);
+      const lead = kind ? put(kind, at, lane(4, at), 15) : null;
+      let slowest = 99;
+      g.run(2.5, () => {
+        for (const c of g.Traffic.cars) if (c !== lead && !c.fixed) c.active = false;
+        if (lead) { lead.vs = 15; lead.lat = lane(4, lead.s); }
+        Object.assign(P, { s: lead ? lead.s - lead.hl - P.hl - back : P.s, lat: lane(4 + over, P.s), speed: 15 });
+        slowest = Math.min(slowest, P.speed);
+      });
+      return { veil: Gambles.veil, of: Gambles.veilOf, shadow: Gambles.shadow, health: P.health === P.maxHealth, slowest };
+    };
+    const open = view();
+    check(open.veil > L.most - 0.1 && open.of === 'sun' && !open.shadow, 'low sun, in the open: ' + Math.round(open.veil * 100) + '% of the view is gone');
+    check(open.health && open.slowest >= 15, 'low sun: nothing is done to the car itself (no damage, never slowed)');
+    check(said('Low sun'), 'low sun: it is announced');
+    const tucked = view('semi', 10);
+    check(tucked.veil === 0 && tucked.shadow, 'low sun, the safe line: 10 m behind a lorry, in its shadow, the view is clear (at the lorry\'s pace)');
+    const far = view('semi', L.shadow * 4 + 15);
+    check(far.veil > 0.5, 'low sun: ' + (L.shadow * 4 + 15) + ' m behind it is beyond its shadow (' + Math.round(far.veil * 100) + '% gone)');
+    const beside = view('semi', 10, 1);
+    check(beside.veil > 0.5, 'low sun: in the next lane there is no shadow: pulling out to pass is into the glare');
+    const low = view('commuter', 6);
+    check(low.veil > 0.5, 'low sun: a car is too low to shade anything');
+    const before = view(null, 0, 0, 6200);
+    check(before.veil === 0, 'low sun: none before the stretch');
+    real('lowSun', () => check(Gambles.suns.length > 0, '  its low sun: ' + Gambles.suns.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
+  });
+
+  // ---- the dust trail (920 - 1080, the wind blowing to the right)
+  await section('dust', async () => {
+    const D = C.dust;
+    // the player held `back` m behind the tail of a vehicle of `kind` doing 18 m/s in lane 4 (coming the other way
+    // in lane 1, if `oncoming`), `over` lanes to its side (+ = downwind, to the right), for 2.5 s
+    const behind = (kind, back, over = 0, at = 980) => {
+      start(at - 50, 4, 18);
+      const lead = put(kind, at, lane(4, at), 18);
+      let slowest = 99;
+      g.run(2.5, () => {
+        for (const c of g.Traffic.cars) if (c !== lead && !c.fixed) c.active = false;
+        lead.vs = 18; lead.lat = lane(4, lead.s);
+        Object.assign(P, { s: lead.s - lead.hl - back, lat: lane(4, lead.s) + over * C.laneWidth, speed: 18 });
+        slowest = Math.min(slowest, P.speed);
+      });
+      return { veil: Gambles.veil, of: Gambles.veilOf, health: P.health === P.maxHealth, slowest };
+    };
+    const inIt = behind('commuter', 8);
+    check(inIt.veil > 0.6 && inIt.of === 'dust', 'dust, the risk taken: 8 m behind a car on the dirt, ' + Math.round(inIt.veil * 100) + '% of the view is gone (any vehicle throws it up)');
+    check(inIt.health && inIt.slowest >= 18, 'dust: nothing is done to the car itself (no damage, never slowed)');
+    check(said('Dust'), 'dust: it is announced');
+    const upwind = behind('commuter', 8, -1), downwind = behind('commuter', 30, 1);
+    check(upwind.veil === 0, 'dust, the clear line: a lane upwind of it (to the left: the wind blows to the right) the view is clear');
+    check(downwind.veil > 0.2, 'dust: a lane downwind and 30 m back is in the plume, carried across (' + Math.round(downwind.veil * 100) + '% gone)');
+    const far = behind('commuter', D.length + 10);
+    check(far.veil === 0, 'dust, the safe line: hanging back ' + (D.length + 10) + ' m, beyond the plume, the view is clear');
+    const before = behind('commuter', 8, 0, 700);
+    check(before.veil === 0, 'dust: none on the tarmac before it');
+    real('dust', () => check(Gambles.dusts.length > 0, '  its dust: ' + Gambles.dusts.map(x => x.from + ' to ' + x.to + ' m, blown to the ' + (x.dir < 0 ? 'left' : 'right')).join('; ')));
   });
 
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)
