@@ -71,6 +71,8 @@
     "cushions": ["Speed cushions! Thread the gaps on the lane lines, or slow right down."],
     "cushionHit": ["THUMP!! Right over a cushion. The gaps are on the lines!"],
     "blackIce": ["Shade across the road: in this cold that's black ice. The sun's where the grip is."],
+    "ruts": ["Deep ruts ahead! Pick one now: climbing out again is a jolt."],
+    "rutOut": ["Out of the rut! Slow going in the mud between."],
     "washboard": ["Washboard dirt! Fast and it skims smooth, or crawl. Not in between."],
     "jamRamp": ["Up the transporter! Hope that was fast enough."],
     "jamAhead": ["Traffic jam ahead! The transporter's ramps are down..."],

@@ -1060,6 +1060,7 @@ const createTrack = () => {
       else if (z.side !== 'left' && z.side !== 'right') problems.push('shade at ' + z.from + ': side is left or right (the side what casts it stands on)');
       else if (z.lanes !== undefined && !(Number.isInteger(z.lanes) && z.lanes >= 1 && z.lanes <= 8)) problems.push('shade at ' + z.from + ': lanes is 1 to 8');
     }
+    for (const r of LEVEL.ruts || []) if (!mainStretch(r)) problems.push('ruts at ' + r.from + ': from before to, on the expressway');
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
       else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');

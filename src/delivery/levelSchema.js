@@ -258,6 +258,7 @@ export const FIELDS = {
     settings: { every: num('A row every (m)', { min: 15, max: 200, step: 5, default: C.cushion?.every }) } },
   shade: { shape: 'stretch', group: 'hazards', label: 'Black ice in the shade', span: 200, help: 'Trees on one side shade the nearest lanes, and the shade is black ice: nothing shows but the shadow. Traffic keeps to the sun.',
     settings: { side: pick('Shaded from the', SIDES, { required: true, init: 'right' }), lanes: int('Lanes in the shade', { min: 1, max: 8, default: C.shade?.lanes }) } },
+  ruts: { shape: 'stretch', group: 'hazards', label: 'Ruts', span: 250, help: 'Deep mud with a rut down each lane: fast and held to it in a rut, a jolt to climb out, slow in the mud between.' },
   washboards: { shape: 'stretch', group: 'hazards', label: 'Washboard dirt', span: 400, help: 'Corrugated dirt: at a middling speed the grip is shaken away; crawling, or at the skim speed or more, it is smooth.',
     settings: { skim: num('Skims from (m/s)', { min: (C.washboard?.calm ?? 9) + 4, max: 40, step: 0.5, default: C.washboard?.skim }) } },
   jamRamps: { shape: 'point', group: 'hazards', label: 'Ramp over the jam', rules: ['straight', 'level'], reach: () => (C.jamRamp?.run ?? 15) + 60, help: 'A car transporter with its ramps down at the back of a queue of stopped traffic: fast enough, the car flies the queue.',

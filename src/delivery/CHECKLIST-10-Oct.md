@@ -550,6 +550,18 @@ says what the gamble is. All are things that happen on real roads, as the eleven
 - [ ] H9. **Ruts**: tractors have left deep ruts in the mud. In a rut the car runs straight and
       fast; changing lane means climbing out, with a jolt and a wobble. _Gamble:_ pick the rut
       early and live with it. _Builds on:_ mud, tractors.
+      _Built (`gambles.js`, field `ruts: { from, to }`):_ deep mud with a rut down each lane. In a
+      rut the car runs at its own pace and is held to it; 0.45 s of steering against it gets it
+      out with a jolt (8 health, a fifth of its speed, a lurch) into the mud between, slow by how
+      badly the car crosses rough ground, until it drops into the next rut for nothing. On
+      Gimmick Road 3 (4830-5030: lane 4's rut has the big cash and then a barrier), Farm
+      (2810-2970, a bale down lane 3's) and Outback Express (2560-2860). Clocks not re-timed.
+      Verified by `.gimmicks3-check.mjs ruts` (the right rut held at full speed for nothing, a tap
+      of steering does not get out, the wrong rut kept runs into its barrier, out after the cash
+      with one jolt and past it, the Lowrider slower than the Lifted Truck in the mud, a ghost not
+      held, both real levels) and in stills (Gimmick Road 3, Farm, the card). Not verified: played
+      by hand; Outback Express on screen. Changing rut costs little time (0.2 s) as tuned: the
+      cost is the health.
 - [ ] H10. **Black ice in the shade**: ice lies only where a building, a cutting or the trees
       shade the road, so it can be read from the shadows before reaching it. _Gamble:_ brake
       before the shadow, or stay in the sunny lane with the traffic. _Builds on:_ ice, the

@@ -1436,6 +1436,12 @@ export const CONFIG = {
   // moves out of them from keepClear m before. Said from `warn` m before; a tree every `tree` m casts it
   // (On black ice steerLoss more of the steering's bite is gone, on top of what ice takes)
   shade: { lanes: 1, steerLoss: 0.9, keepClear: 150, warn: 160, tree: 11 },
+  // ruts ("ruts": { from, to }): deep mud over the stretch with a rut down the middle of each lane, `half` m either
+  // side of it. In one the car is held (drawn back to its middle at `hold` a second) until it has been steered
+  // against for `climb` s: then it is out, `damage` health and 1 - `keep` of its speed the worse, lurching that way
+  // at `lurch` m/s (`yaw`: rad/s its tail swings). Between ruts it is slowed to `mud` m/s (crossing 0) .. mudBest
+  // m/s (crossing 1), at `bite` m/s^2. Traffic keeps its lane, at `traffic` m/s. A board `sign` m before
+  rut: { half: 0.7, hold: 6, climb: 0.45, damage: 8, keep: 0.8, lurch: 2.5, yaw: 1.5, mud: 7, mudBest: 15, bite: 30, traffic: 10, sign: 110 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

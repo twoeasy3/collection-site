@@ -470,6 +470,48 @@ try {
     real('shade', () => check(Gambles.shades.length > 0, '  its shade: ' + Gambles.shades.map(x => x.from + ' to ' + x.to + ' m, lanes ' + x.first + ' to ' + x.last).join('; ')));
   });
 
+  // ---- ruts (4830 - 5030: a rut down each lane; a barrier in lane 4's at 5000, the bigger cash in it at 4925)
+  await section('ruts', async () => {
+    const R = C.rut;
+    // from 4790 at up to v in lane n; from `turn` m on, steering for lane `to`
+    const run = (v, n, to = n, turn = 0, car = 'sport') => {
+      start(4790, n, v, { car });
+      const health = P.health;
+      let slowest = 99, held = 0, mud = 0;
+      const t = g.run(90, () => {
+        quiet();
+        P.speed = Math.min(P.speed, v);
+        const d = lane(P.s >= turn ? to : n, P.s) - P.lat;
+        g.drive(1, Math.abs(d) < 0.2 ? 0 : Math.sign(d));
+        if (Gambles.rut) held += 1 / 60; else if (Gambles.rutted(P.s)) mud += 1 / 60;
+        slowest = Math.min(slowest, P.speed);
+        return P.s > 5060 || G.wrecks > 0;
+      });
+      return { t, held, mud, slowest, lost: health - P.health, jolts: Gambles.rutJolts, wrecks: G.wrecks, busted: P.busted };
+    };
+    const clear = run(30, 3);
+    check(clear.jolts === 0 && clear.lost === 0 && clear.mud === 0 && clear.slowest > 29, 'ruts, the right rut picked before the mud: held in it the whole way at ' + Math.round(clear.slowest * 3.6) + ' km/h, nothing lost (' + clear.t.toFixed(1) + ' s)');
+    check(said('Deep ruts'), 'ruts: they are announced');
+    // a tap of the steering does not get the car out; holding it does
+    start(4850, 3, 25);
+    g.run(0.5, () => { quiet(); P.speed = 25; g.drive(1, 0); });
+    g.run(R.climb - 0.15, () => { quiet(); P.speed = 25; g.drive(1, 1); });
+    g.run(0.6, () => { quiet(); P.speed = 25; g.drive(1, 0); });
+    check(Gambles.rut && Gambles.rutJolts === 0 && Math.abs(P.lat - lane(3, P.s)) < 0.3 && P.health === P.maxHealth, 'ruts: steered against for less than ' + R.climb + ' s, the rut holds the car (back to ' + Math.abs(P.lat - lane(3, P.s)).toFixed(2) + ' m from its middle, at no cost)');
+    const wrong = run(30, 4);
+    check(wrong.lost >= 25 && wrong.jolts === 0, 'ruts, the wrong rut picked and kept: lane 4 has the big cash and then a barrier: into it (' + (wrong.wrecks ? 'wrecked' : wrong.lost.toFixed(0) + ' health lost') + ')');
+    const out = run(30, 4, 3, 4935);
+    check(out.jolts === 1 && out.lost > 0 && out.lost < 15 && out.mud > 0 && out.slowest < 30 * R.keep + 0.5 && out.wrecks === 0, 'ruts, changing rut: out of lane 4 after its cash with one jolt (' + out.lost.toFixed(0) + ' health, down to ' + Math.round(out.slowest * 3.6) + ' km/h, ' + out.mud.toFixed(1) + ' s in the mud between) and into lane 3: past the barrier (' + out.t.toFixed(1) + ' s: ' + (out.t - clear.t).toFixed(1) + ' s slower than the right rut)');
+    check(said('Out of the rut'), 'ruts: climbing out is said');
+    // the mud between is slower for a car that crosses rough ground badly
+    const paceOf = (car) => { start(4850, 3, 25, { car }); P.lat = (lane(3, 4850) + lane(4, 4850)) / 2; let v = 99; g.run(2.5, () => { quiet(); g.drive(1, 0); P.lat = (lane(3, P.s) + lane(4, P.s)) / 2; v = P.speed; }); return v; };
+    const low = paceOf('lowrider'), high = paceOf('liftedtruck');
+    check(low < high && low > R.mud - 0.1 && high < R.mudBest + 0.1, 'ruts: kept on the mud between two, the Lowrider makes ' + Math.round(low * 3.6) + ' km/h and the Lifted Truck ' + Math.round(high * 3.6) + ' (never stopped)');
+    const ghost = (() => { start(4850, 4, 28, { ghost: true }); g.run(1, () => { quiet(); g.drive(1, 1); }); return !Gambles.rut && Gambles.rutJolts === 0; })();
+    check(ghost, 'ruts: a ghost is not held by them');
+    real('ruts', () => check(Gambles.ruts.length > 0, '  its ruts: ' + Gambles.ruts.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
+  });
+
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)
   await section('finish', async () => {
     start(0, 3, 20, { ghost: true, keep: true });
