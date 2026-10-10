@@ -293,6 +293,13 @@
       "evil": "A cannonball for the cattle baron. Split the herds, race the train, wade the ford and duck the old trestle: the trail is long and the fuse is not."
     }
   },
+  "thaw": {
+    "name": "Spring Thaw",
+    "description": {
+      "good": "The lake road in the thaw, by day: slush ruts, rippled ice, spray off the lorries and a meltwater ford. Pick a rut, skim the ripples, or take the bridge.",
+      "evil": "The ice is going and so is everyone's nerve. Fly the jam off the transporter, wade the ford for the big notes and leave the lorries blind in your spray."
+    }
+  },
   "all-heck": {
     "name": "All Heck",
     "description": {

@@ -1,12 +1,7 @@
 {
   "id": "thaw",
-  "name": "Spring Thaw",
-  "description": {
-    "good": "The lake road in the thaw, by day: slush ruts, rippled ice, spray off the lorries and a meltwater ford. Pick a rut, skim the ripples, or take the bridge.",
-    "evil": "The ice is going and so is everyone's nerve. Fly the jam off the transporter, wade the ford for the big notes and leave the lorries blind in your spray."
-  },
   "theme": "iceroadThaw",
-  "clock": { "good": 240, "evil": 180 },
+  "clock": { "good": 265, "evil": 205 },
   "tip": 340,
   "lanes": 4,
   "cargo": { "good": "puppy", "evil": "piranhas" },

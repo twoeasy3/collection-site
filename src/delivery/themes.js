@@ -202,7 +202,6 @@ const OBSTACLES = {
   backlot: { crate: 'directorChair', bale: 'cameraDolly' },
   venice: { crate: 'mooringPosts', cone: 'cafeTable' },
   iceroad: { crate: 'fuelDrum', cone: 'snowdrift' },
-  iceroadThaw: { crate: 'fuelDrum', cone: 'snowdrift' }, // (its day: the same things)
   themepark: { crate: 'popcornCart' },
   volcano: { rock: 'lavaRock' }, // (a grey-brown rock is lost on its black road)
   wildwest: { crate: 'barrel' },
