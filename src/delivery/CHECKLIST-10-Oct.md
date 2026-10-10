@@ -1206,10 +1206,12 @@ pick ups and traffic."
           nine earned cars, the ones built on a garage model: Hell Rod on the Hot Rod, Courier Special on
           the Sleeper, Showdown Muscle on the Muscle; the other six are level vehicles: to be confirmed by
           the builder which of them has a Super livery and kit.)
-    - [ ] Q40. "A car with no super variant should have a clamped 0% chance to get the super upgrade mystery
-          effect". (Today a tierless car that draws "souped up" gets a fallback, being made invincible:
-          that fallback goes; the effect is simply never drawn for such a car: the idea cars, the level
-          vehicles, anything `superOf` returns nothing for.)
+    - [ ] Q40. First: "A car with no super variant should have a clamped 0% chance to get the super upgrade
+          mystery effect". **Revised by the owner:** it should go: "We were gonna upgrade your car, but your
+          car has no super variant!" So the effect CAN still be drawn by a car with no Super variant (the
+          idea cars, the level vehicles, anything `superOf` returns nothing for); when it is, nothing is
+          upgraded and that line is said, in those words. The fallback of today (such a car is made
+          invincible) goes. The line lives in `messages.json` with the other mystery lines.
     - [ ] Q41. "A variant of the level file, all car names and strings should be compiled in one file. Then,
           all of then needs a short description for the \"What's on this road\" level card". (Read as: as
           `levelText.json` did for level names and descriptions, one words file for every car's name and
