@@ -33,31 +33,38 @@ body.in-garage #tankCorner { display: none !important; }
   pointer-events: none; font-size: 34px; font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); }
 #banner small { display: block; font-size: 15px; font-weight: 400; }
 /* the strip along the top of the screen, between the meters' corner and the speed's: in the sky, clear of the
-   horizon and the road ahead. From the top: the sticky messages, the two message lines, the speed camera's warning */
+   horizon and the road ahead. From the top: the two message lines, the speed camera's warning */
 #topStrip { position: fixed; top: max(8px, env(safe-area-inset-top)); left: calc(max(16px, env(safe-area-inset-left)) + 308px);
   right: max(224px, min(324px, 100vw - 850px)); display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; }
 /* a message (a powerup, a bust, a driver's reaction): two lines, a top one and a bottom one, see messages.js
    (room is kept for both, so what is under them doesn't jump about; smaller on a phone, either way up) */
 #messages { text-align: center; pointer-events: none; }
 #messages .line { min-height: 1.25em; line-height: 1.25; font-size: clamp(14px, min(2.4vw, 4.4vh), 22px); font-weight: 800; text-shadow: 0 2px 6px rgba(0,0,0,.8); opacity: 0; }
-/* a sticky message (see messages.js): a warning lamp and its words, up until what it warns of is over; a
-   condition that is being worked off (a tyre being changed) fills the bar under them */
-#sticky { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-#sticky .row { position: relative; display: flex; align-items: center; gap: 7px; padding: 3px 11px 4px 8px; border-radius: 9px; overflow: hidden;
-  background: rgba(14,18,26,.82); border: 1.5px solid rgba(255,176,58,.75); color: #ffb03a; font-size: 12.5px; font-weight: 800; line-height: 1.25;
-  text-align: left; text-shadow: none; }
-#sticky .row.hidden { display: none; }
-#sticky .lamp { flex: none; width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 12px solid #ffb03a;
-  animation: stickyLamp 1s steps(1) infinite; }
-#sticky .bar { position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: #ffb03a; }
-@keyframes stickyLamp { 50% { opacity: .3; } }
-@media (prefers-reduced-motion: reduce) { #sticky .lamp { animation: none; } }
-/* a short screen (a phone on its side): the sticky messages under the meters' corner instead, two at most,
-   so the strip over the road is no deeper than the message lines and the camera's warning */
+/* a sticky message (see messages.js) is said as any other, and then is an icon for as long as what it warns
+   of lasts: a round badge under the two gauges (in the meters' corner, off the road and the horizon), in rows
+   of a few; beside the gauges on a phone held upright. The ring round it drains as the condition runs out (a tyre being changed, an effect's time).
+   Its size, the gap and how many to a row are CONFIG.messageTimes.stickyIcons, by the screen's shape (render/hud.js
+   hands them over as --size-wide and so on); the pictures are render/hudIcons.js */
+#sticky { --size: var(--size-wide); --gap: var(--gap-wide); --across: var(--across-wide); --x: var(--shift-wide-x); --y: var(--shift-wide-y);
+  display: flex; flex-wrap: wrap; gap: var(--gap); width: max-content; max-width: calc(var(--across) * (var(--size) + var(--gap)));
+  margin-top: 6px; transform: translate(var(--x), var(--y)); }
+#sticky:empty { display: none; }
+#sticky .icon { flex: none; width: var(--size); height: var(--size); padding: 0; border: 0; border-radius: 50%; background: none; color: #ffb03a;
+  pointer-events: auto; touch-action: none; cursor: help; -webkit-tap-highlight-color: transparent; }
+#sticky .icon svg { display: block; width: 100%; height: 100%; overflow: visible; }
+#sticky .back { fill: rgba(14,18,26,.82); stroke: rgba(255,176,58,.3); stroke-width: 2.4; }
+#sticky .left { fill: none; stroke: #ffb03a; stroke-width: 2.4; }
+#sticky .art { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#sticky .art .f { fill: currentColor; stroke-width: 1; }
+#sticky .art .t { stroke-width: 3.2; }
+#sticky .art .x { stroke: #ff5a4f; stroke-width: 2.4; }
+@media (orientation: portrait) {
+  /* (a phone held upright: beside the gauges, in the sky, since under them is the horizon and the road) */
+  #sticky { --size: var(--size-portrait); --gap: var(--gap-portrait); --across: var(--across-portrait); --x: var(--shift-portrait-x); --y: var(--shift-portrait-y);
+    position: absolute; left: calc(100% + 10px); bottom: 14px; margin: 0; flex-wrap: wrap-reverse; }
+}
 @media (orientation: landscape) and (max-height: 480px) {
-  #sticky { position: fixed; top: calc(max(12px, env(safe-area-inset-top)) + 126px); left: max(16px, env(safe-area-inset-left)); max-width: 340px; align-items: flex-start; }
-  #sticky .row { font-size: 11.5px; }
-  #sticky .row:nth-child(n+3) { display: none; }
+  #sticky { --size: var(--size-short); --gap: var(--gap-short); --across: var(--across-short); --x: var(--shift-short-x); --y: var(--shift-short-y); }
 }
 #messages .reaction { color: #ffffff; }
 #messages .pickup { color: #ffd23f; }
@@ -165,6 +172,8 @@ body.touch-controls .throw { display: block; }
 #meters { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px 14px; width: 308px; }
 #meters .readouts { width: 150px; }
 #flat, #levelProblems { flex-basis: 100%; }
+/* (the two gauges, and with them the sticky messages' icons, whose rules are above) */
+#gaugeColumn { position: relative; width: 136px; }
 #gauges { display: flex; gap: 8px; margin-top: 2px; }
 .gauge { width: 64px; text-align: center; font-size: 9px; font-weight: 800; letter-spacing: .05em; line-height: 1.2; }
 .gauge svg { display: block; width: 64px; height: 64px; margin-bottom: 2px; }
@@ -203,8 +212,8 @@ body.touch-controls .throw { display: block; }
   #runButtons { bottom: auto; top: max(10px, env(safe-area-inset-top)); flex-wrap: nowrap; }
   body.touch-controls #runButtons { max-width: none; }
   #runButtons button { font-size: 11px; padding: 5px 8px; }
-  /* ...the sticky messages and the camera's warning under the corners, short of the cargo's window on the right */
-  #topStrip { top: calc(max(12px, env(safe-area-inset-top)) + 186px); left: max(16px, env(safe-area-inset-left)); right: calc(max(14px, env(safe-area-inset-right)) + 100px); }
+  /* ...the camera's warning under the corners (clear of the gauges' labels), short of the cargo's window on the right */
+  #topStrip { top: calc(max(12px, env(safe-area-inset-top)) + 212px); left: max(16px, env(safe-area-inset-left)); right: calc(max(14px, env(safe-area-inset-right)) + 100px); }
   /* ...and the message lines at the foot of the screen, on the road behind the car: above the on-screen
      controls and between the two THROW buttons, if those are up */
   #messages { position: fixed; left: 16px; right: 16px; bottom: calc(64px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; justify-content: flex-end; }
