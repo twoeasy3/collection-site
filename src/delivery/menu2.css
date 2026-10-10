@@ -275,11 +275,15 @@
   #startScreen .menu-tabs button { padding: 6px 18px 5px; font-size: 15px; }
   #startScreen .menu-groups button { padding: 4px 12px; font-size: 13px; }
   #startScreen .menu-stage h2 { font-size: 30px; }
-  #startScreen .menu-stage .info { gap: 4px; padding-bottom: 8px; }
+  #startScreen .menu-stage .info { gap: 4px; padding-right: 40px; padding-bottom: 8px; } /* (the arrow is above the figures here) */
   #startScreen .menu-stage .desc { font-size: 13px; line-height: 1.25; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   #startScreen .menu-stage .fact { padding: 3px 9px; font-size: 14px; }
   #startScreen .menu-stage .plate b { font-size: 20px; }
   #startScreen .menu-stage .info .road { position: absolute; right: 12px; bottom: 8px; }
+  /* (the figures a line each, the label beside the value, in two lines at most: clock, tip and cargo, then the best time
+     beside the chip, which is over the info's corner here. On a wide window the figures stop short of the chip) */
+  #startScreen .menu-stage .fact { flex-direction: row; align-items: baseline; gap: 5px; padding: 3px 7px; }
+  #startScreen .menu-stage .fact small { font-size: 9px; letter-spacing: .08em; }
   #startScreen .menu-strip .thumb { height: 46px; }
   #startScreen .menu-side { gap: 6px; padding: 7px; }
   #startScreen .car-card { gap: 4px; }
@@ -288,6 +292,9 @@
   #startScreen #sideNote { display: none; }
   #startScreen .side-switch button { padding: 6px; font-size: 16px; }
   #startScreen #startBtn { padding: 9px 10px 7px; font-size: 26px; }
+}
+@media (max-height: 520px) and (min-width: 860px) {
+  #startScreen .menu-stage .facts { max-width: calc(100% - 140px); }
 }
 @media (prefers-reduced-motion: reduce) {
   #startScreen .menu-backdrop i, #startScreen .menu-stage .shot, #startScreen #startBtn, #startScreen .menu-stage.enter *, #startScreen .menu-stage.flip *, #startScreen .sheet-box { animation: none !important; }

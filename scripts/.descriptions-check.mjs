@@ -19,15 +19,16 @@ try {
   let inFile = 0, inLevel = 0;
   for (const [id, words] of Object.entries(LEVEL_TEXT)) {
     if (!ids.has(id)) fail('levelText.json: "' + id + '" is no level');
-    for (const key of Object.keys(words)) if (key !== 'name' && key !== 'description') fail('levelText.json: ' + id + '.' + key + '?');
-    if (typeof words.name !== 'string' || !words.name.trim()) fail('levelText.json: ' + id + ' has no name');
+    // (an entry may be only the level's cargo, which scripts/.cargo-check.mjs checks; a name it has must be a name)
+    for (const key of Object.keys(words)) if (key !== 'name' && key !== 'description' && key !== 'cargo') fail('levelText.json: ' + id + '.' + key + '?');
+    if (words.name !== undefined && (typeof words.name !== 'string' || !words.name.trim())) fail('levelText.json: ' + id + ' has no name');
   }
   for (const level of every) {
     const filed = LEVEL_TEXT[level.id];
-    if (filed) inFile++; else inLevel++;
-    if (!filed && (typeof level.name !== 'string' || !level.name.trim())) fail(level.id + ': no name, in levelText.json or in its own file');
+    if (filed?.name || filed?.description) inFile++; else inLevel++;
+    if (!filed?.name && (typeof level.name !== 'string' || !level.name.trim())) fail(level.id + ': no name, in levelText.json or in its own file');
     if (!filed) continue;
-    if (level.name !== undefined && level.name !== filed.name) fail(level.id + ': its name is "' + filed.name + '" in levelText.json and "' + level.name + '" in its own file');
+    if (level.name !== undefined && filed.name !== undefined && level.name !== filed.name) fail(level.id + ': its name is "' + filed.name + '" in levelText.json and "' + level.name + '" in its own file');
     for (const side of ['good', 'evil']) {
       const a = filed.description?.[side], b = level.description?.[side];
       if (a !== undefined && b !== undefined && a !== b) fail(level.id + ': its ' + side + ' description differs between levelText.json and its own file');
