@@ -335,6 +335,50 @@ try {
     real('lowBridges', () => check(Gambles.bars.every(x => x.exit), '  its bar' + (Gambles.bars.length > 1 ? 's' : '') + ': ' + Gambles.bars.map(x => x.s + ' m, ' + x.clearance + ' m up, round by the exit at ' + x.exit?.exitAt).join('; ')));
   });
 
+  // ---- ford (5650 - 5720, 0.6 m deep; the exit at 5300 is the bridge, back at 6100)
+  await section('ford', async () => {
+    const F = C.ford, f = () => Gambles.fords[0];
+    // from 5150 to 6200 at up to v: straight through in lane n, or (bridge) over to the exit lane and round
+    const go = (car, v, n, bridge = false, ghost = false) => {
+      start(5150, n, v, { car, ghost });
+      const health = P.health, wades = Gambles.wades();
+      let slowest = 99, side = false, wet = 0;
+      const t = g.run(200, (now) => {
+        quiet();
+        P.speed = Math.min(P.speed, v);
+        const main = T().isMain(P.s);
+        if (!main) side = true;
+        const want = bridge && main && P.s > 5300 - C.ramps.laneZone + 15 && P.s < 5310 ? lane(5, P.s) + C.laneWidth : main ? lane(n, P.s) : P.lat, d = want - P.lat;
+        g.drive(1, Math.abs(d) < 0.3 ? 0 : Math.sign(d));
+        slowest = Math.min(slowest, P.speed);
+        if (Gambles.inFord) wet += 1 / 60;
+        return (main && P.s > 6200) || G.wrecks > 0;
+      });
+      return { t, lost: health - P.health, slowest, side, wet, wades, wrecks: G.wrecks, busted: P.busted };
+    };
+    check(f().exit && f().exit.exitAt === 5300, 'ford: ' + f().from + ' to ' + f().to + ' m, ' + f().depth + ' m deep, has the exit at 5300 m as its bridge');
+    check(Gambles.wades(0) === F.shallow && Gambles.wades(1) === F.deepest && Gambles.fordPace(0.3, 0.9) > Gambles.fordPace(0.8, 0.9) && Gambles.fordPace(0.9, 0.9) === F.slow && Gambles.fordPace(1, 0.9) === F.crawl,
+      'ford: a car wades ' + F.shallow + ' m (the worst) to ' + F.deepest + ' m (the best); the deeper for it the slower, down to ' + Math.round(F.slow * 3.6) + ' km/h at its limit, and ' + Math.round(F.crawl * 3.6) + ' km/h beyond it');
+    const good = go('liftedtruck', 28, 4);
+    check(good.wet > 0 && good.lost === 0 && good.slowest > F.slow && !good.side, 'ford, the risk taken in the right car (wades ' + good.wades.toFixed(2) + ' m): through unhurt, never under ' + Math.round(good.slowest * 3.6) + ' km/h (' + good.t.toFixed(1) + ' s)');
+    check(said('you can wade it') && said('0.6 m deep'), 'ford: it is told it can wade it, with the depth and what it wades');
+    const bad = go('lowrider', 28, 4);
+    check(bad.wet > 10 && bad.lost > 5 && bad.wrecks === 0 && bad.slowest >= F.crawl - 0.01, 'ford, the risk taken in the wrong car (wades ' + bad.wades.toFixed(2) + ' m): it crawls across, ' + bad.wet.toFixed(0) + ' s in the water and ' + bad.lost.toFixed(0) + ' health lost, never stopped (' + bad.t.toFixed(1) + ' s)');
+    check(said('too deep for this car') && said('Out of your depth'), 'ford: it is told it is too deep before the exit, and again in it');
+    const round = go('lowrider', 28, 5, true);
+    check(round.side && round.wet === 0 && round.lost === 0 && !round.busted && round.slowest > 15, 'ford, the safe line: the same car over the bridge (the exit): dry, unhurt, never under ' + Math.round(round.slowest * 3.6) + ' km/h (' + round.t.toFixed(1) + ' s: ' + (bad.t - round.t).toFixed(1) + ' s quicker than wading, ' + (round.t - good.t).toFixed(1) + ' s slower than the truck through the water)');
+    const ghost = go('lowrider', 28, 4, false, true);
+    check(ghost.wet === 0 && ghost.lost === 0 && ghost.slowest > 25, 'ford: a ghost goes over it untouched');
+    // traffic wades through slowly
+    start(5500, 3, 0);
+    const van = put('commuter', 5600, lane(4, 5600), 18);
+    van.fixed = false;
+    let fastest = 0;
+    g.run(20, () => { P.speed = 0; P.s = 5500; if (van.active && van.s > 5670 && van.s < 5715) fastest = Math.max(fastest, van.vs); return !van.active || van.s > 5730; });
+    check(fastest > 0 && fastest <= F.traffic + 0.5, 'ford: traffic wades it slowly (' + fastest.toFixed(1) + ' m/s in the water)');
+    real('fords', () => check(Gambles.fords.every(x => x.exit), '  its ford' + (Gambles.fords.length > 1 ? 's' : '') + ': ' + Gambles.fords.map(x => x.from + ' to ' + x.to + ' m, ' + x.depth + ' m deep, the bridge the exit at ' + x.exit?.exitAt).join('; ')));
+  });
+
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)
   await section('finish', async () => {
     start(0, 3, 20, { ghost: true, keep: true });

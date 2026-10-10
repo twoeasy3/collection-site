@@ -10,7 +10,7 @@ import { Traffic } from '../traffic.js';
 import { Gambles } from '../gambles.js';
 import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
-import { makeWindsock, makeSign, makeTransporter, makeHeightBar } from './gambleModels.js';
+import { makeWindsock, makeSign, makeTransporter, makeHeightBar, makeDepthPost } from './gambleModels.js';
 import { buildStrip } from './road.js';
 
 const flat = (color, offset) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
@@ -73,6 +73,22 @@ Game.onLoad.push(() => {
       if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign(text + (bar.exit ? '\nTALL: EXIT' : ''), '#fff', '#c1121f', 6, 2.6));
     }
     if (bar.s - 90 > 5) at(bar.s - 90, Track.lo(bar.s - 90) + 0.6).add(makeSign(text, '#fff', '#c1121f', 6, 1.6));
+  }
+  // ---- fords: the river across the road (wide of it on both sides), depth posts on its banks and down its
+  // sides, and boards before the exit that is its bridge and at it
+  for (const f of Gambles.fords) {
+    const F = CONFIG.ford;
+    // (on the right it stops short of the side road, its bridge, which stays dry)
+    const reach = (s) => { Track.toWorld(s, Track.hi(s), tmp); return Math.max(2, Math.min(60, Track.sideDistance(tmp.x, tmp.z) - 8)); };
+    const water = new THREE.Mesh(buildStrip(f.from, f.to, (s) => Track.lo(s) - 60, (s) => Track.hi(s) + reach(s), 0.05 + f.depth * 0.25, 4),
+      new THREE.MeshBasicMaterial({ color: 0x2f7fb8, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false }));
+    group.add(water);
+    for (const s of [f.from - 1.5, (f.from + f.to) / 2, f.to + 1.5]) for (const lat of [Track.hi(s) - 0.5, Track.lo(s) + 0.5]) at(s, lat).add(makeDepthPost(f.depth));
+    const text = 'FORD ' + f.depth.toFixed(1) + ' m DEEP';
+    for (const s of f.exit ? [f.exit.exitAt - F.sign, f.exit.exitAt - 30] : [f.from - F.sign]) {
+      if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign(text + (f.exit ? '\nBRIDGE: EXIT' : ''), '#1f6fb2', '#fff', 6, 2.6));
+    }
+    if (f.from - 90 > 5) at(f.from - 90, Track.lo(f.from - 90) + 0.6).add(makeSign(text, '#1f6fb2', '#fff', 6, 1.6));
   }
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {

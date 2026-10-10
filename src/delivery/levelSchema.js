@@ -248,6 +248,8 @@ export const FIELDS = {
       every: num('A gust every (s)', { min: 1, max: 60, step: 0.5, default: C.crosswind?.every }), length: num('A gust lasts (s)', { min: 0.5, max: 60, step: 0.1, default: C.crosswind?.length }) } },
   lowBridges: { shape: 'point', group: 'hazards', label: 'Low bridge', help: 'A height bar over the side the player drives on, between an exit and its merge: a car that fits goes under, a taller one takes the side road or the knock.',
     settings: { clearance: num('Clearance (m)', { min: 1, max: 5, step: 0.1, default: C.lowBridge?.clearance }) } },
+  fords: { shape: 'stretch', group: 'hazards', label: 'Ford', span: 70, help: 'The road through a river, between an exit and its merge (the side road is the bridge): a car is slowed by how well it wades, and one out of its depth crawls and is damaged.',
+    settings: { depth: num('Depth (m)', { min: 0.1, max: 1.5, step: 0.05, default: C.ford?.depth }) } },
   washboards: { shape: 'stretch', group: 'hazards', label: 'Washboard dirt', span: 400, help: 'Corrugated dirt: at a middling speed the grip is shaken away; crawling, or at the skim speed or more, it is smooth.',
     settings: { skim: num('Skims from (m/s)', { min: (C.washboard?.calm ?? 9) + 4, max: 40, step: 0.5, default: C.washboard?.skim }) } },
   jamRamps: { shape: 'point', group: 'hazards', label: 'Ramp over the jam', rules: ['straight', 'level'], reach: () => (C.jamRamp?.run ?? 15) + 60, help: 'A car transporter with its ramps down at the back of a queue of stopped traffic: fast enough, the car flies the queue.',

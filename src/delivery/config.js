@@ -1367,6 +1367,13 @@ export const CONFIG = {
   // from `warn` m before the exit; boards `sign` m before the exit and at it. Tall traffic takes the exit (one found
   // within `traffic` m of the bar, more than `unseen` m from the player, is taken off the road)
   lowBridge: { clearance: 2, damage: 30, perMetre: 25, keep: 0.4, warn: 260, sign: 200, traffic: 120, unseen: 140 },
+  // a ford ("fords": { from, to, depth? }): the road through a river `depth` m deep (the ford's own, or this), between
+  // an exit and its merge: the side road is the bridge. A car wades `shallow` m (crossing 0) to `deepest` m (crossing
+  // 1). In water no deeper than it wades it is slowed, to `fast` m/s in next to none and `slow` m/s at its limit;
+  // in deeper it crawls at `crawl` m/s and loses `damage` health a second for each m out of its depth. (`bite`: m/s^2
+  // the water takes speed off at.) Traffic goes through at `traffic` m/s. Said from `warn` m before the exit;
+  // boards `sign` m before the exit and at it
+  ford: { depth: 0.5, shallow: 0.25, deepest: 1.0, fast: 30, slow: 13, crawl: 4.5, damage: 10, bite: 34, traffic: 8, warn: 260, sign: 200 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

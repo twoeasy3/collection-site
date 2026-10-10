@@ -33,12 +33,12 @@
     { "s": 1750, "side": "left" },
     { "s": 460, "side": "right", "road": "side" }
   ],
-  "lowBridges": [
-    { "s": 1320 }
+  "fords": [
+    { "from": 1790, "to": 1850, "depth": 0.45 }
   ],
   "pickups": [
-    { "type": "cash10", "s": 1345, "lane": 2 },
-    { "type": "cash10", "s": 1345, "lane": 3 },
+    { "type": "cash10", "s": 1820, "lane": 2 },
+    { "type": "cash10", "s": 1820, "lane": 3 },
     { "type": "siren", "s": 60, "lane": 2 },
     { "type": "radarDetector", "s": 2200, "lane": 2 },
     { "type": "wrench", "s": 2370, "lane": 3 },

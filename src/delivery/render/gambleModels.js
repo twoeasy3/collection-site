@@ -56,6 +56,14 @@ export const makeHeightBar = (from, to, clearance = 2) => {
   return g;
 };
 
+// a depth post: a white post banded every quarter metre, red up to `depth` m (the water's level), `height` m tall
+export const makeDepthPost = (depth = 0.5, height = 2) => {
+  const g = new THREE.Group();
+  for (let y = 0; y < height; y += 0.25) add(g, box(0.28, 0.25, 0.28), glow(y + 0.125 < depth ? 0xd8262b : Math.round(y / 0.25) % 2 ? 0xf4f4f4 : 0x1b1d21), 0, y + 0.125, 0);
+  add(g, box(0.5, 0.08, 0.5), glow(0x2f9bd8), 0, depth, 0); // (a collar at the water's level)
+  return g;
+};
+
 // a car transporter with its ramps down: its deck a slope `run` m long (the model's +z) up to a lip `top` m high,
 // `half` m either side of its middle; its cab stands on beyond the lip, under it
 export const makeTransporter = (run = 15, top = 4.15, half = 1.5) => {

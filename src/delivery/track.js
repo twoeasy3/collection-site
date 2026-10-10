@@ -1045,6 +1045,12 @@ const createTrack = () => {
       else if (b.clearance !== undefined && !(b.clearance >= 1 && b.clearance <= 5)) problems.push(name + ': clearance is 1 to 5 m');
       else if (!exits.some(x => x.exitAt + 40 < b.s && x.mergeAt - 40 > b.s)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the way round for tall vehicles)');
     }
+    for (const f of LEVEL.fords || []) {
+      const name = 'ford at ' + f.from;
+      if (!mainStretch(f) || f.to - f.from > 300) problems.push(name + ': from before to, on the expressway, 300 m long at most');
+      else if (f.depth !== undefined && !(f.depth >= 0.1 && f.depth <= 1.5)) problems.push(name + ': depth is 0.1 to 1.5 m');
+      else if (!exits.some(x => x.exitAt + 40 < f.from && x.mergeAt - 40 > f.to)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the bridge)');
+    }
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
       else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');

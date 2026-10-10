@@ -25,7 +25,7 @@ import { makeCarriage } from './render/trainModel.js';
 import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
-import { makeWindsock, makeTransporter, makeHeightBar } from './render/gambleModels.js';
+import { makeWindsock, makeTransporter, makeHeightBar, makeDepthPost } from './render/gambleModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -70,7 +70,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -893,6 +893,18 @@ const GROUPS = [
       bar.position.z = 1;
       g.add(bar, low, tall);
       return { model: g, spin: false, tick: (t) => { const u = (t % 5) / 5; low.position.set(-2.4, 0, -7 + Math.min(1, u * 2.5) * 14); low.visible = u < 0.4; tall.visible = u >= 0.4; const v = (u - 0.4) / 0.6; tall.position.set(-2.4 + Math.max(0, v - 0.25) * 12, 0, -9 + Math.min(v, 0.55) * 12); } };
+    } },
+    { name: 'Ford', color: 0x2f7fb8, has: (l) => l.fords?.length, rules: [
+      'The road runs straight through a river, and the bridge is the exit before it: the side road, the longer way. Each ford is its own depth: the boards and the red on the depth posts show it.',
+      `What a car wades goes by how well it crosses rough ground: from ${GB.ford.shallow} m for the lowest to ${GB.ford.deepest} m for the best. On the way in you are told the depth and what your car wades.`,
+      `<strong>Within its depth a car is only slowed</strong>: hardly at all in a puddle, down to ${kmh(GB.ford.slow)} at its limit.`,
+      `Out of its depth it crawls across at ${kmh(GB.ford.crawl)} and loses ${GB.ford.damage} health a second for every metre too deep. It is never stopped. Cars that float do not care.`,
+    ], build: () => {
+      const g = road(9, 14), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      g.add(box(15, 0.12, 5, new THREE.MeshBasicMaterial({ color: 0x2f7fb8, transparent: true, opacity: 0.7 }), 0, 0.2, 0));
+      for (const x of [-4.2, 4.2]) for (const z of [-2.8, 2.8]) { const post = makeDepthPost(0.5, 1.75); post.position.set(x, 0, z); g.add(post); }
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4, z = u < 0.3 ? -7 + u / 0.3 * 4.5 : u < 0.8 ? -2.5 + (u - 0.3) / 0.5 * 5 : 2.5 + (u - 0.8) / 0.2 * 4.5; car.position.set(-2.2, Math.abs(z) < 2.5 ? -0.12 : 0, z); } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

@@ -8,6 +8,8 @@
 //   jamRamps     a car transporter with its ramps down at the back of a queue: fast enough, the car flies the queue
 //   lowBridges   a height bar over the player's side, the exit before it the tall vehicles' way round: under the
 //                bar a car that fits goes straight on; a taller one takes the knock
+//   fords        the road runs through a river, so deep, between an exit and its merge (the side road is the bridge):
+//                a car that wades that deep is only slowed; one that does not crawls through, and is damaged
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -22,6 +24,7 @@ import { Message } from './messages.js';
 import { hurt, sfx } from './physics.js';
 import { Game } from './game.js';
 import { Hazards } from './hazards.js';
+import { Water } from './water.js';
 
 const clamp01 = (u) => Math.max(0, Math.min(1, u));
 const smooth = (u) => { u = clamp01(u); return u * u * (3 - 2 * u); };
@@ -44,6 +47,8 @@ export const Gambles = {
   onRamp: null,   // the ramp the car is on
   up: 0,          // m the car is above the road, by this file's doing (on a ramp, in the air)
   bars: [],       // low bridges: { s, clearance (m), lo, hi (lat: what it spans), exit (the Track.exits entry that goes round it), hits (times the player's car has hit it this run) }
+  fords: [],      // { from, to, depth (m), exit (the Track.exits entry that is its bridge) }
+  inFord: null,   // the ford the player's car is in (null: none)
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
@@ -56,6 +61,7 @@ export const Gambles = {
     this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to, skim: b.skim ?? CONFIG.washboard.skim }));
     this.bars = (LEVEL.lowBridges || []).map((b) => ({ s: b.s, clearance: b.clearance ?? CONFIG.lowBridge.clearance, lo: Track.laneOffset(Track.laneRange(1, b.s)[0], b.s) - CONFIG.laneWidth / 2, hi: Track.hi(b.s),
       exit: Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null, hits: 0 }));
+    this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -95,6 +101,7 @@ export const Gambles = {
     Player.rampAhead = false;
     Player.shaken = this.rough = 0;
     this.barS = Player.s;
+    this.inFord = null;
     this.up = 0;
     this.onRamp = null;
     this.ground = null;
@@ -340,9 +347,46 @@ export const Gambles = {
     }
   },
 
+  // ---- fords ---------------------------------------------------------------------------------------------
+  // The road runs through a river, `depth` m deep, between an exit and its merge: the side road is the bridge.
+  // What a car wades is its `crossing` (cars.js): CONFIG.ford.shallow m for the worst, .deepest m for the best.
+  // In water no deeper than that it is only slowed, the less the shallower (to `fast` m/s in next to none, `slow`
+  // at its limit); in deeper it crawls (`crawl` m/s: never stopped) and is damaged for as long as it is in. A car
+  // that floats, a ghost and a tank are not troubled
+  wades(crossing = Player.crossing) { const F = CONFIG.ford; return F.shallow + (F.deepest - F.shallow) * crossing; },
+  ford(s) { return Track.isMain(s) ? this.fords.find(f => s >= f.from && s <= f.to) || null : null; },
+  // the fastest a car that wades `limit` m goes through water `depth` m deep (m/s)
+  fordPace(depth, limit) { const F = CONFIG.ford; return depth > limit ? F.crawl : F.fast + (F.slow - F.fast) * depth / limit; },
+  updateFords(dt) {
+    const F = CONFIG.ford, P = Player;
+    for (const f of this.fords) {
+      const from = (f.exit ? f.exit.exitAt : f.from) - F.warn;
+      if (P.active && Track.isMain(P.s) && P.s > from && P.s < f.from && !this.said['ford' + f.from]) {
+        this.said['ford' + f.from] = true;
+        const line = Message.say('events', f.depth <= this.wades() ? 'fordFits' : 'fordDeep');
+        if (line) line.text += ' (' + f.depth.toFixed(1) + ' m deep: this car wades ' + this.wades().toFixed(1) + ' m)';
+      }
+    }
+    for (const car of Traffic.cars) { // (the traffic wades through slowly)
+      if (car.active && !car.junction && this.ford(car.s) && Math.abs(car.vs) > F.traffic) car.vs = Math.sign(car.vs) * Math.max(F.traffic, Math.abs(car.vs) - F.bite * dt);
+    }
+    const f = P.active && !this.fly && !CAR.noWheels && !Water.floats(CAR) && P.ghost <= 0 && !(P.tank > 0) ? this.ford(P.s) : null;
+    if (f && !this.inFord) { sfx('waveCrash', Math.min(1, P.speed / 25)); Game.shake = Math.max(Game.shake, 0.5); }
+    this.inFord = f;
+    if (!f) return;
+    const limit = this.wades(), pace = this.fordPace(f.depth, limit);
+    if (P.speed > pace) P.speed = Math.max(pace, P.speed - F.bite * dt);
+    if (f.depth > limit) {
+      if (P.shield <= 0) P.health -= F.damage * (f.depth - limit) * P.damageScale * dt;
+      Game.shake = Math.max(Game.shake, 0.2);
+      this.once('fordStuck');
+    }
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
+    this.updateFords(dt);
     this.updateBars();
     this.updateBoards(dt);
     this.updateWinds(dt);

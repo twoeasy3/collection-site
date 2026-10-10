@@ -480,12 +480,12 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       that does not). A car that fits goes under; a taller one that goes at it loses 30 health and
       25 more per metre too tall, and 60% of its speed, and is through; the player is told on the
       way in what the car measures. Tall traffic takes the exit. On Gimmick Road 3 (4400; its first
-      side road pushed out to 150 m so the way round costs 4 s), Ring Road (1100) and Back Roads
-      (1320), cash under each. Clocks not re-timed. Verified by `.gimmicks3-check.mjs bridge` (a low
+      side road pushed out to 150 m so the way round costs 4 s), Ring Road (1100) and Quarry Run
+      (1510), cash under each. Clocks not re-timed. Verified by `.gimmicks3-check.mjs bridge` (a low
       car untouched, a 2.65 m truck takes the knock and is never stopped, the same truck round by
       the exit unhurt and 4 s slower, the oncoming side not barred, a bus takes the exit, both real
       levels have an exit round theirs) and in stills (the board, the bar, the card, Ring Road).
-      Not verified: played by hand; Back Roads on screen. Known gap: a tall traffic vehicle that
+      Not verified: played by hand. Known gap: a tall traffic vehicle that
       cannot get over to the exit lane is taken off the road if it is 140 m or more from the
       player, and otherwise drives through the bar. It is a bar, not a bridge: say if a real
       bridge over the whole road is wanted.
@@ -493,6 +493,19 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       posts show how deep it is today (it varies down the level). A car that wades well goes
       through; one that does not is slowed to a crawl or stalls. _Gamble:_ read the posts and
       know the car. _Builds on:_ the tide's wading (`crossing` in `cars.js`), side roads.
+      _Built (`gambles.js`, field `fords: { from, to, depth? }`, each ford its own fixed depth: it
+      does not change during a run):_ between an exit and its merge (the side road is the bridge;
+      the level reports a ford with none). A car wades 0.25 m (crossing 0) to 1 m (crossing 1):
+      within that it is slowed (to 47 km/h at its limit), beyond it it crawls at 16 km/h and loses
+      10 health a second per metre too deep; never stopped. The player is told the depth and what
+      the car wades before the exit. On Gimmick Road 3 (5650-5720, 0.6 m; its second side road
+      out to 150 m), Back Roads (1790-1850, 0.45 m) and Quarry Run (4060-4105, 0.7 m), cash in each.
+      (The low bridge moved from Back Roads to Quarry Run, 1510, so Back Roads has one of the two.)
+      Clocks not re-timed. Verified by `.gimmicks3-check.mjs ford` (a truck through unhurt and 3 s
+      quicker than the bridge, a lowrider crawling 13 s and 31 health, the same car over the bridge
+      dry and 9 s quicker, a ghost untouched, traffic wading slowly, both real levels) and in stills
+      (the board, the bank, in it, Back Roads, Quarry Run). Not verified: played by hand; the road
+      does not dip (the water lies on it); the card on screen.
 - [ ] H6. **Flooded underpass**: the same, in town in the rain: the main road dips under a
       railway and fills, and the slip road goes up and over. The water rises through the run.
       _Gamble:_ early on it is passable by anything; later only by some. _Builds on:_ tunnels,

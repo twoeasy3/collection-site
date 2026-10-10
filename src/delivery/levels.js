@@ -303,6 +303,11 @@
 //              bar (its `height` in cars.js) goes straight under; a taller one that goes at it loses health and most
 //              of its speed, and is through. Signed before the exit, with what the car measures. The level reports
 //              one that has no exit round it
+//   fords      { from, to, depth? }: a ford: over the stretch the expressway runs through a river `depth` m deep
+//              (CONFIG.ford.depth if not said), between an exit and its merge: the side road is the bridge. A car is
+//              slowed in it by how well it wades (its `crossing` in cars.js: see CONFIG.ford); in water deeper than
+//              it wades it crawls and is damaged, but is never stopped. Depth posts on its banks and boards before
+//              the exit show the depth, and the player is told what the car wades. Each ford its own depth
 //   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
 //              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
 //              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a

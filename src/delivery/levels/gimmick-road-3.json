@@ -34,7 +34,7 @@
   ],
   "exits": [
     { "exitAt": 4000, "mergeAt": 4800, "out": 150, "oncoming": false },
-    { "exitAt": 5300, "mergeAt": 6100, "out": 70, "oncoming": false }
+    { "exitAt": 5300, "mergeAt": 6100, "out": 150, "oncoming": false }
   ],
   "pickups": [
     { "type": "wrench", "s": 1000, "lane": 3 },
@@ -55,7 +55,11 @@
     { "type": "cash10", "s": 4425, "lane": 4 },
     { "type": "cash10", "s": 4425, "lane": 5 },
     { "type": "cash5", "s": 400, "lane": 1, "road": "side", "exit": 0 },
-    { "type": "wrench", "s": 5100, "lane": 3 }
+    { "type": "wrench", "s": 5100, "lane": 3 },
+    { "type": "cash10", "s": 5685, "lane": 3 },
+    { "type": "cash10", "s": 5685, "lane": 4 },
+    { "type": "cash20", "s": 5740, "lane": 4 },
+    { "type": "cash5", "s": 400, "lane": 1, "road": "side", "exit": 1 }
   ],
   "obstacles": [
     { "s": 1218, "lane": 4, "kind": "barrier" },
@@ -74,6 +78,9 @@
   ],
   "lowBridges": [
     { "s": 4400 }
+  ],
+  "fords": [
+    { "from": 5650, "to": 5720, "depth": 0.6 }
   ],
   "washboards": [
     { "from": 2950, "to": 3450 }
