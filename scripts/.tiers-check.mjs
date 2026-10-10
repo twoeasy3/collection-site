@@ -127,7 +127,7 @@ g.CONFIG.progression.tiers = false;
 check(!Tiers.on() && Tiers.restriction(a, false) === null, 'the switch off: no tier rule');
 g.select(second.id);
 cars.useLevelCar(null, false);
-check(g.Game.canStart === true && cars.CAR.id === 'commuter', 'the switch off: the old rule, any car');
+check(g.Game.canStart === true && cars.CAR.id === Progress.data.car, 'the switch off: the old rule, any car');
 console.log(failures ? failures + ' FAILED' : 'all checks passed');
 await g.close();
 process.exit(failures ? 1 : 0);
