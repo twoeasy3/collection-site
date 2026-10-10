@@ -5,7 +5,7 @@ Kept by the orchestrator; updated whenever an agent commits or the owner adds so
 the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPAD-10-Oct.md`.
 
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
-Nothing is pushed.
+**Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
 Last updated: after `5fe99da` (main, the editor merged). Agents 1 to 8 are finished and merged; agents 9, 10 and 11 are running.
 
@@ -118,6 +118,9 @@ whichever agent is free, without asking first.
 9. Queued after that, as slots free: menu pictures and clocks (the three circuits, the five themed levels, Super and 6-star cars); 28 liveries; 31 endless mode; the replay system's next step (`REPLAY-NOTES.md`); 51 performance on phones; 49 and 50 (test speed, lint and CI)
 
 - [x] Super cars screenshotted: all 35, Good and Evil (70 pictures, two contact sheets, sent to the owner). Every one has its livery, stripe and kit. To look at closer: the Super of the Super Lowrider (caught mid-hop, parts apart), the Dampervan (too big for the frame), the Tow Truck's wing beside its crane
+- [x] Super cars: the stripe stops at every screen and window; the kit rides the body's animation; an underglow under every Super car; vans and off-roaders get a wing, a bull bar, a snorkel and roof lamps. `136c0d5`, `35e0ac3`
+- [x] Menu pictures of the 35 Super cars, Good and Evil, in `carshots/` as `super-<id>-good.jpg` / `-evil.jpg`. `8d7ab8f`. Nothing shows them yet
+- [x] A car picked in the garage takes the side whose livery is showing; the garage opens in the livery of the side being played. `8a0bd79`. Seen in one screenshot ("Drive it as Evil"); not clicked
 
 ## Not assigned
 
