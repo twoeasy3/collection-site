@@ -45,7 +45,6 @@
     { "s": 330, "lane": 0, "r": 1, "road": "side" }
   ],
   "drifters": [
-    { "from": 520, "to": 720, "kind": "tyre", "count": 5, "pattern": "circle" },
     { "from": 4160, "to": 4360, "kind": "cone", "count": 7, "pattern": "figure8" }
   ],
   "iceCreamStops": [

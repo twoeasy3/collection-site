@@ -428,9 +428,12 @@ export const GROUPS = [
       const wrong = painted(vehicle('commuter', 0xffffff), 0x24242b), right = painted(vehicle('commuter', 0xffffff), 0x4fc3f7);
       wrong.position.set(2.2, 0, -3); wrong.rotation.y = Math.PI;
       right.position.set(-2.2, 0, 4);
-      const lamps = [-1, 1].map(side => box(v.hw * 0.8, 0.45, 0.1, glow(0xffffff), 2.2 + side * v.hw * 0.6, 0.7, -3 + v.hl + 0.1));
-      const amber = [-1, 1].map(side => box(0.2, 0.16, 0.1, glow(0xffa21a), 2.2 + side * (v.hw - 0.08), 0.7, -3 + v.hl + 0.12));
-      g.add(wrong, right, ...lamps, ...amber);
+      // (its lamps are the car's own, in the car's own terms: on its nose, local +z, whichever way it is turned.
+      // Placed in the card's terms they sat at -3 + hl: the tail of a car turned round to come at you)
+      const lamps = [-1, 1].map(side => box(v.hw * 0.8, 0.45, 0.1, glow(0xffffff), side * v.hw * 0.6, 0.7, v.hl + 0.1));
+      const amber = [-1, 1].map(side => box(0.2, 0.16, 0.1, glow(0xffa21a), side * (v.hw - 0.08), 0.7, v.hl + 0.12));
+      wrong.add(...lamps, ...amber);
+      g.add(wrong, right);
       return { model: g, tick: (t) => { const on = Math.floor(t * 7) % 2 === 0, blink = Math.floor(t * 3) % 2 === 0; lamps.forEach(l => { l.visible = on; }); amber.forEach(a => { a.visible = blink; }); } };
     } },
     { name: 'Traffic with quirks', color: 0xff9ec4, has: (l) => ['icecream', 'binlorry', 'learner', 'boyracer', 'caravan'].some(k => l.traffic?.[k] || l.trafficZones?.some(z => z.traffic[k])), rules: [
@@ -782,13 +785,13 @@ export const GROUPS = [
       return { model: g, tick: (t) => { const on = Math.floor(t * 6) % 2 === 0; lights.forEach((l, k) => { l.visible = (k % 2 === 0) === on; }); } };
     } },
     { name: 'Falling cargo', color: 0xb9834a, has: (l) => l.traffic?.cargotruck || l.trafficZones?.some(z => z.traffic.cargotruck), rules: [
-      `A cargo truck sheds its load: while one is within ${CG.near} m ahead of you, a crate, a bale or a tyre comes off the back every ${range(CG.every, ' s')}, in its lane or a little either side.`,
+      `A cargo truck sheds its load: while one is within ${CG.near} m ahead of you, a crate or a bale comes off the back every ${range(CG.every, ' s')}, in its lane or a little either side.`,
       `Each slides on down the road and stops where it lies: an obstacle, yours to hit (a crate: ${CONFIG.obstacleKinds.crate.damage} damage). The traffic drives through them.`,
       'Do not sit behind it. Get past, and nothing more falls.',
     ], build: () => {
       const g = road(9, 30), truck = vehicle('cargotruck', 0x2f6f9f);
       truck.position.set(2.2, 0, 6);
-      const loads = ['crate', 'tyre', 'bale'].map((kind, k) => { const o = ob(kind, { hw: 0.6, hl: 0.6, height: 1.1 }); o.position.set(2.2 + (k - 1) * 1.3, 0, -6 - k * 3.2); o.rotation.y = k * 0.7; return o; });
+      const loads = ['crate', 'bale', 'crate'].map((kind, k) => { const o = ob(kind, { hw: 0.6, hl: 0.6, height: 1.1 }); o.position.set(2.2 + (k - 1) * 1.3, 0, -6 - k * 3.2); o.rotation.y = k * 0.7; return o; });
       g.add(truck, ...loads);
       return { model: g, tick: (t) => truck.userData.animate?.(t) };
     } },

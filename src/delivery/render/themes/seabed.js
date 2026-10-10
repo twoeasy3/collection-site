@@ -1,5 +1,5 @@
 // ---- sea bed: an underwater tunnel. The road runs along the sea bed inside a glass tube: steel ribs over it every
-// 20 m, a stringer along its roof, a kerb of plate with a lamp at each rib's foot, and glass between, through which
+// 20 m, a stringer along its roof and one high on each shoulder, a kerb of plate with a lamp at each rib's foot, and glass between, through which
 // everything else is seen: sand and sea grass, rocks, coral in clumps (branches, brains, fans, tube sponges), kelp
 // standing tall, shoals of fish beside the tube and over it, columns of bubbles, shafts of light slanting down
 // from the surface; and one at a time down the road a whale, a shark, a turtle, jellyfish, a yellow submarine, a
@@ -12,7 +12,20 @@ import { makeWhale, makeShark, makeTurtle, makeJellyfish, makeSubmarine, makeWre
 
 const CORAL = [0xff6f8f, 0xff9a4a, 0xc86fe0, 0xffd24a, 0x4ad0c0, 0xf0507a];
 const FISH = [0xdfe8ee, 0xffc83a, 0xff7a3a, 0x4aa8ff, 0xf05a8a];
-const HEIGHT = 11.5; // m from the road to the crown of the tube
+// The tube is tall and full in the shoulder (a rounded arch: |2u|^3 + v^3 = 1, u across it from -0.5 to 0.5, v up
+// it from 0 to 1), so that the chase camera (CONFIG.camHeight: 11 m up, over whichever lane the car is in) is always
+// well inside the glass, with every member that runs along or across the tube well over its head: nothing but the
+// slim legs of the ribs, 20 m apart, stands lower than the camera's line to the road ahead. (It was a half ellipse
+// 11.5 m high: the camera was at its crown under the middle of the road and outside the glass over any other lane.)
+const HEIGHT = 19; // m from the road to the crown of the tube
+const BULGE = 2 / 3; // (2 / the power of the arch: 1 would be a half ellipse)
+const section = (t) => { // round the arch from one foot (t 0) to the other (pi): [u, v]
+  const c = Math.cos(t);
+  return [-Math.sign(c) * Math.abs(c) ** BULGE / 2, Math.sin(t) ** BULGE];
+};
+class Arch extends THREE.Curve {
+  getPoint(t, target = new THREE.Vector3()) { const [u, v] = section(Math.PI * t); return target.set(u, v, 0); }
+}
 
 export const seabed = ({ instances, offRoads, beside, inJunction, cube, tube, cone, levelGroup }) => {
   // (laid out the same every time: a seed of the level's own)
@@ -29,30 +42,30 @@ export const seabed = ({ instances, offRoads, beside, inJunction, cube, tube, co
     Track.toWorld(s, right(s), q);
     return offRoads(p.x, p.z, 1) && offRoads(q.x, q.z, 1);
   };
-  const ARCH = new THREE.TorusGeometry(0.5, 0.0085, 6, 22, Math.PI); // (half a ring, standing across the road: scaled to the tube)
+  const ARCH = new THREE.TubeGeometry(new Arch(), 48, 0.005, 6, false); // (a rib, standing across the road, 1 wide and 1 high: scaled to the tube. Slim: its legs are all that stands low down)
   const ribs = [], kerbs = [], lamps = [], stringers = [];
-  const STEP = 5, RIB = 20, ARC = 12;
+  const STEP = 5, RIB = 20, ARC = 20;
   const pos = [], idx = [];
   let before = false, n = 0;
   for (let s = Math.ceil(Track.start / STEP) * STEP; s <= Track.end; s += STEP) {
     const here = tubed(s), a = left(s), b = right(s), mid = (a + b) / 2, w = b - a;
     if (here) {
       for (let k = 0; k <= ARC; k++) {
-        const t = Math.PI * k / ARC;
-        Track.toWorld(s, mid - Math.cos(t) * w / 2, p);
-        pos.push(p.x, p.y + Math.sin(t) * HEIGHT, p.z);
+        const [u, v] = section(Math.PI * k / ARC);
+        Track.toWorld(s, mid + u * w, p);
+        pos.push(p.x, p.y + v * HEIGHT, p.z);
       }
       if (before) {
         for (let k = 0; k < ARC; k++) { const i = (n - 1) * (ARC + 1) + k, j = i + ARC + 1; idx.push(i, j, i + 1, i + 1, j, j + 1); }
         const a0 = left(s - STEP), b0 = right(s - STEP), m0 = (a0 + b0) / 2, w0 = b0 - a0;
         kerbs.push([s - STEP, a0, 0.45, 0.7, 0.9, 1, [s, a]], [s - STEP, b0, 0.45, 0.7, 0.9, 1, [s, b]]);
-        for (const [t, thick] of [[Math.PI / 2, 0.36], [Math.PI * 0.2, 0.13], [Math.PI * 0.8, 0.13]]) { // (the roof's stringer, and a glazing bar low down each side)
-          const c = Math.cos(t), y = Math.sin(t) * HEIGHT;
-          stringers.push([s - STEP, m0 - c * w0 / 2, y, thick, thick, 1, [s, mid - c * w / 2]]);
+        for (const [t, thick] of [[Math.PI / 2, 0.3], [Math.PI * 0.3, 0.16], [Math.PI * 0.7, 0.16]]) { // (the roof's stringer, and one high on each shoulder: 16.5 m up, none lower)
+          const [u, v] = section(t);
+          stringers.push([s - STEP, m0 + u * w0, v * HEIGHT, thick, thick, 1, [s, mid + u * w]]);
         }
       }
       if (s % RIB === 0) {
-        ribs.push([s, mid, 0, w, HEIGHT * 2, 30]);
+        ribs.push([s, mid, 0, w, HEIGHT, 50]);
         lamps.push([s, a + 0.5, 1.15, 0.5, 0.35, 0.9], [s, b - 0.5, 1.15, 0.5, 0.35, 0.9]);
       }
       n++;

@@ -61,7 +61,6 @@
     { "s": 540, "lane": 0, "r": 1.1, "road": "side" }
   ],
   "drifters": [
-    { "from": 600, "to": 840, "kind": "tyre", "count": 5, "pattern": "circle" },
     { "from": 2860, "to": 3100, "kind": "cone", "count": 6, "pattern": "zigzag" }
   ],
   "machinery": [

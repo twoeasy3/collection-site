@@ -82,6 +82,37 @@ const LAMP = new THREE.MeshBasicMaterial({ color: 0xfff3c4 }), TAIL = new THREE.
 // where an ambulance's box body starts, ahead of its middle, as a share of its half length (its light
 // bar sits on the front of the box's roof: render/cars.js)
 export const AMBULANCE_BOX = 0.36;
+// ---- what a police car and an ambulance wear on the road, whoever draws them (the game's traffic:
+// render/cars.js; the menu's road card: render/levelcard3d.js). Neither model has these of its own.
+// The paint a kind is always in, whoever drives it (a kind not here takes one of the traffic's paints, or its livery)
+export const FIXED_PAINT = { police: 0xf5f5f5, ambulance: 0xf5f5f5, driveby: 0x3a1840 };
+// The roof light bar: one lamp that flashes from colour to colour, on a dark housing (userData.mount) that
+// only an ambulance shows (wider than the lamp, so its white flash shows on the white roof)
+const barBox = new THREE.BoxGeometry(1, 1, 1);
+export const makeLightBar = () => {
+  const bar = new THREE.Mesh(barBox, new THREE.MeshBasicMaterial({ color: 0x2060ff }));
+  bar.scale.set(1.3, 0.22, 0.35);
+  bar.position.set(0, 1.85, -0.3);
+  const mount = new THREE.Mesh(barBox, new THREE.MeshLambertMaterial({ color: 0x15171c }));
+  mount.scale.set(1.12, 0.5, 1.7);
+  mount.position.y = -0.55;
+  bar.add(mount);
+  bar.userData.mount = mount;
+  return bar;
+};
+// ...put on the roof of a vehicle of `kind` (v: its { hl, height }), and shown only on a police car or an
+// ambulance (an ambulance's at the front of its box's roof, just behind the cab)
+export const placeLightBar = (bar, kind, v) => {
+  const ambulance = kind === 'ambulance';
+  bar.visible = kind === 'police' || ambulance;
+  bar.userData.mount.visible = ambulance;
+  bar.position.set(0, v.height + 0.1, ambulance ? v.hl * AMBULANCE_BOX - 0.25 : -0.15);
+};
+// ...and its colour at `ms` (n: a whole number of its own, so that no two cars flash together)
+export const flashLightBar = (bar, kind, ms, n = 0) => {
+  if (kind === 'police') bar.material.color.setHex(Math.floor(ms / 160 + n) % 2 ? 0xff2020 : 0x2060ff);
+  else if (kind === 'ambulance') bar.material.color.setHex(Math.floor(ms / 110 + n) % 2 ? 0xff2020 : 0xffffff);
+};
 
 // an outboard motor clamped to a transom at (x, y, z), hanging down over the back (facing dir: 1 = the
 // car's way): its cowling, its leg down into the water, and a propeller (returned, to be spun)

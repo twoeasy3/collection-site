@@ -261,7 +261,7 @@ export const Collision = (() => {
     trolley: [0.45, 0.6, 1.1], runner: [0.3, 0.3, 1.8], waterTable: [0.9, 0.5, 1.0], paceCar: [0.9, 2.0, 1.6],
     wideLoad: [3.2, 6.5, 3.6], escort: [0.95, 2.2, 1.7],
     // a parade's bandsman (see parades below); and falling cargo, shed off a truck (see Cargo)
-    marcher: [0.35, 0.35, 2.3], crate: [0.6, 0.6, 1.1], tyre: [0.5, 0.5, 0.35],
+    marcher: [0.35, 0.35, 2.3], crate: [0.6, 0.6, 1.1],
   };
   const obstacles = [];
   const loaders = []; // (others adding obstacles of their own as a level loads: each is called with add)
