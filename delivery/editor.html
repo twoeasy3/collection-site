@@ -18,6 +18,7 @@
       <button id="play" class="primary">Play it</button>
       <button id="playEvil">Play as Evil</button>
       <button id="playFrom" title="Then click the road: a run starts at that spot">Play from here</button>
+      <button id="workClock" title="Drives the level's clean run (a ghost, flat out, in the reference car) and sets its clock from it, as scripts/level-clocks.mjs does">Work out the clock</button>
     </div>
     <div class="buttons">
       <button id="load" title="Open a level's .json file from this computer (or drop one on the page)">Load .json</button>
@@ -39,6 +40,7 @@
       <div class="buttons"><button id="addSegment">+ Add a segment</button>
         <label class="check" title="When a segment's length changes (or one is removed), everything further along the road moves with it, and what is on that segment is stretched with it"><input type="checkbox" id="carry" checked><span>Move what comes after</span></label></div>
       <p class="note" id="loopNote"></p>
+      <div class="buttons"><button id="closeLoop" hidden title="Brings the road back to where it starts, facing the same way: a little taken off every bend, and two straights made longer or shorter">Close the loop</button></div>
     </section>
     <div id="roadFields"></div>
   </div>

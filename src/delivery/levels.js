@@ -170,7 +170,8 @@
 //              different: each sets the weights of the kinds it names over the level's "traffic" (0 takes
 //              a kind away), a later one over an earlier. With police only in such stretches, a police
 //              car stays on station at the edge of its stretch (The Hood)
-//   ice        { from, to, lane }  an ice patch on that lane (no lane: across the road) (see CONFIG.ice)
+//   ice        { from, to, lane }  an ice patch on that lane (no lane: across the road): on it the car brakes
+//              with a share of its brakes and changes lane more slowly (see CONFIG.ice: brakeGrip, steerGrip, laneSpeed)
 //   tide       { from, to, start, end, waves: { every: { min, max }, reach: { min, max } } }: a causeway
 //              the sea comes in over, on the player's side of the road only, from the kerb in. It
 //              floods `start` lane widths in from the pavement's edge (the shoulder counts as one)
@@ -246,7 +247,9 @@
 //   tunnels    { from, to }: a tunnel: the road under cover, dark but for its lamps, the player's headlights on
 //              and the engine echoing (see CONFIG.tunnel and render/tunnel.js). Clear of any exit's ramps
 //   waterMains { s, lane?, every? }: a burst water main in that lane (no lane: the centre line): now and then
-//              a geyser up out of the road, and while it sprays the road round it is as slippery as ice
+//              a geyser up out of the road, and while it sprays the road round it is as slippery as ice: on its
+//              water the car brakes with a share of its brakes and changes lane more slowly, by numbers of its
+//              own (CONFIG.waterMain: brakeGrip, steerGrip, laneSpeed)
 //              (see watermains.js and CONFIG.waterMain); every: { min, max } s between bursts, if not CONFIG's
 //   (a herd, "herds", with stay: true never leaves the road: it turns back at the lane lines, and never rests)
 //   parades    { s, speed? }: a street parade at s: a float in every lane of the player's side, abreast, a marching
@@ -280,6 +283,7 @@
 //   crossings and potholes can: { road: 'side', exit: n }, s then m along that side road)
 //   schoolCrossings { s }: a lollipop person stops the traffic for the children; running it is a bust
 //   waterMains { s, lane, length? }: a burst main: that stretch of the lane is as slippery as ice while it sprays
+//              (weaker brakes and slower lane changes on its water, by CONFIG.waterMain's own numbers)
 //   balloons   { s, lanes: [first, last] }: a hot-air balloon comes down on those lanes, sits, and lifts off again
 //   drawbridges { s }: bells, booms, and two leaves that lift: the car goes up the near one and jumps the gap if it
 //              came fast enough (a board gives the speed), or stops short, or drops in. On straight road

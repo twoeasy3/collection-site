@@ -1017,3 +1017,59 @@ pick ups and traffic."
 - To keep in mind while building: the level progression rework (the section above) will put
   levels in tiers of five with a two-halved ribbon on each and a car rule per tier; the new menu
   should have a place for those, though the rules themselves are a separate job.
+
+## Still more cargo: 20 ideas (draft, not assigned)
+
+Drafted by the orchestrator on 10-Oct at the owner's request ("I LOVE the delivery cargo ideas. Could you
+draft 20 more"). None is built. The game has 50 now (C1 to C40 above are built, on top of the first ten).
+
+The owner's new theme for Evil cargo, in their words: "malicious deliveries, like a crate of lawyers where
+you only see their hands holding a briefcase. They flail around and documents fly when agitated." So these
+are not monsters or bombs: they are deliveries that are bad news for whoever receives them, and mostly people
+or paperwork seen only in part: hands, a hat, a megaphone poking out of a box.
+
+### Evil: 14 malicious deliveries, three states each
+
+| # | Item | Calm | Agitated (half the clock left) | Furious (a fifth left) |
+|---|---|---|---|---|
+| C41 | Crate of lawyers (the owner's) | A slatted crate; three pairs of hands in suit cuffs hold briefcases out through the slats | The hands flail, briefcases bang on the slats, documents start to fly | Briefcases burst open, a blizzard of paper, one hand waving a writ, a gavel hammering on the lid |
+| C42 | Box of telemarketers | A cardboard box with headset microphones poking out, a murmur | Hands thrust phone handsets out of the flaps, cords tangling | A forest of ringing phones on springing cords, speech bubbles of "LIMITED OFFER" |
+| C43 | Sack of tax inspectors | A mail sack with a bowler hat on top and a calculator tape trailing out | Arms out with clipboards and magnifying glasses, the tape spooling | Rubber stamps hammering "AUDIT" on everything in reach, red tape flying in loops |
+| C44 | Crate of bailiffs | A crate with a clipboard chained to it and one sticker: SEIZED | Hands reach out slapping SEIZED stickers on the crate itself | Stickers on everything, a hand dragging the customer's garden gnome into the crate |
+| C45 | The in-laws' luggage | A neat stack of floral suitcases | Suitcases bulge; knitting needles, slippers and a framed photo poke out | Burst open: a rocking chair unfolds, a finger wags from behind a newspaper |
+| C46 | Marching band in a box | A drum-sized hatbox, a faint oompah | A trombone slide shoots in and out of the side, cymbals clap at the lid | The lid off: tuba bell, drumsticks, a twirling baton, notes pouring out |
+| C47 | Parking wardens in a van-shaped box | A tiny box with a peaked cap resting on it | A hand out of each side writing tickets | Tickets fired like confetti, a wheel clamp snapping at the air |
+| C48 | Chain letter | One envelope with a wax seal | It has become five, fanned out, shuffling | Dozens orbiting in a swarm, each sprouting another |
+| C49 | Glitter bomb | A cheerful gift tube with a bow | Shaking, puffs of glitter at the seams | Erupting like a fountain, glitter settling on the screen's corner |
+| C50 | Recorder class | A school satchel with six recorders sticking out | The recorders bob, sour notes drift off | All six shrieking, notes in jagged red, the satchel vibrating across the floor |
+| C51 | Crate of consultants | A crate labelled SYNERGY; a laser pointer's dot wanders about | Hands push out flip-charts and sticky notes | Sticky notes plastered over the crate, a pie chart spinning above it, an invoice unrolling |
+| C52 | Door-to-door salesman's case | A sample case, shut | The lid opens a crack: a foot wedges it, a hand offers a brush | Wide open: brushes, encyclopaedias and a vacuum hose spilling, the foot tapping |
+| C53 | The surprise party | A big plain box that says nothing | It whispers and giggles; a party hat pokes up and ducks | Hands burst out with streamers and a cake, a banner unrolls: SURPRISE |
+| C54 | Subpoena | A single long scroll, rolled and sealed | Unrolling by itself, growing | It has coiled round the crate like a snake, the seal for a head, still unrolling |
+
+### Good: 6 more, ordinary and kind
+
+| # | Item | Idle animation |
+|---|---|---|
+| C55 | Thank-you casserole | A dish under a tea towel; the lid lifts on the steam and settles |
+| C56 | Box of kittens | Ears and one paw over the rim; a paw bats at a dangling string |
+| C57 | Hand-knitted jumper | Folded on a hanger with one long sleeve; a ball of wool rolls back and forth |
+| C58 | Returned library books | A strapped stack; the top one's pages riffle and a bookmark waves |
+| C59 | New neighbour's fruit basket | The fruit shuffles; a pineapple's crown sways |
+| C60 | Grandad's repaired radio | A wooden wireless; the dial glows, the needle sweeps, a note floats off |
+
+### Notes for whoever builds them
+
+- **How the malicious ones should read:** the comedy is in what is kept out of sight. Show only hands, hats,
+  props and paper; never a whole person. Calm is a plain container with one tell; agitated is hands and
+  props coming out; furious is the container overwhelmed. Paper, tickets, stickers, notes and glitter are
+  the particles, as sparks and bees are for the existing ones.
+- **At the kerb**, a furious malicious delivery should do its thing to the customer's doorstep: the bailiffs
+  seize the gnome, the wardens ticket the player's own car, the surprise party goes off.
+- **Easiest first:** chain letter, glitter bomb, subpoena, recorder class (no hands to model). The hands are
+  one shared piece (a cuffed hand that can hold a prop and wave): build it once for C41, C42, C43, C44, C47,
+  C51, C52, C53.
+- **Pairs for levels:** casserole and in-laws (Suburbia); library books and tax inspectors (Canberra);
+  kittens and telemarketers (The Hood); radio and marching band (Christmas Eve); fruit basket and
+  door-to-door salesman (Market Town); jumper and surprise party (Back Roads).
+- With these the game would have 70: 31 Good and 39 Evil.
