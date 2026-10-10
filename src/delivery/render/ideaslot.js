@@ -1,5 +1,5 @@
 // ---- the garage's "Car ideas" lot ---------------------------------------------------------------------
-// A second parking lot, behind the garage's "Car ideas" tab: the thirty ideas of ideas.js (IDEA_CARS), each
+// A second parking lot, behind the garage's "Car ideas" tab: the ideas of ideas.js (IDEA_CARS), each
 // parked in a bay with its name painted in front of it, to look at, judge and try. They are not garage cars
 // yet (no tier, no price: free and always open, with placeholder figures), but one tapped can be driven: the
 // button under the words reads "Drive it" ("Drive it as Evil" in the Evil livery), and makes it the car in
@@ -28,7 +28,7 @@ const sizeOf = (car) => metres(car.hl * 2) + ' m long, ' + metres(car.hw * 2) + 
 // (one too wide for a lane is driven, and parked here, smaller than the real thing: ideas.js `real`, `scale`)
 const size = (car) => car.real ? sizeOf(car.real) + ' (driven at ' + Math.round(car.scale * 100) + '% of that, to fit a lane)' : sizeOf(car);
 // its placeholder figures, as the garage's line of stats
-const figures = (car) => 'Placeholder figures: top speed ' + Math.round(car.maxSpeed * 3.6) + ' km/h  |  acceleration ' + car.accel +
+const figures = (car) => 'Placeholder: ' + Math.round(car.maxSpeed * 3.6) + ' km/h  |  accel ' + car.accel +
   '  |  health ' + car.health + '  |  handling ' + Math.round((car.agility ?? 1) * 100) + '%  |  weight ' + Math.round((car.mass ?? 1) * 100) + '%  |  crossing ' + Math.round(car.crossing * 100) + '%';
 
 const scene = new THREE.Scene();

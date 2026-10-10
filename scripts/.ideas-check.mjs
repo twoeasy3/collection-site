@@ -21,7 +21,26 @@ try {
   const STORE = 'delivery_racer_progress_backup', cookieNow = () => document.cookie.split(';')[0], inCookie = () => JSON.parse(decodeURIComponent(cookieNow().split('=')[1]));
 
   // ---- what they are: thirty, tierless, free, placeholders, and none of them a garage car
-  check(IDEA_CARS.length === 30, IDEA_CARS.length + ' car ideas');
+  check(IDEA_CARS.length === 26, IDEA_CARS.length + ' car ideas');
+  // (four that were ideas are garage cars now: the Blue Stars at four stars. Bought, owned and saved as any other)
+  {
+    const four = ['gullwing', 'rearengine', 'snake', 'polytruck'].map(id => CARS.find(c => c.id === id));
+    check(four.every(c => c && c.tier === 4 && c.blue && !c.placeholder && !c.idea && c.price > 0 && stars(c).length === 4) && !IDEA_CARS.some(c => four.some(f => f.id === c.id)),
+      'the four Blue Stars at four stars are garage cars, and ideas no longer: ' + four.map(c => c && c.name + ' $' + c.price).join(', '));
+    const blue = (tier) => CARS.filter(c => c.blue && c.tier === tier), range = (list, key) => [Math.min(...list.map(c => c[key])), Math.max(...list.map(c => c[key]))];
+    check(CARS.filter(c => c.blue && c.tier === 4).length === 4 && ['maxSpeed', 'price'].every(key => range(four, key)[0] > range(blue(3), key)[1] && range(four, key)[1] < range(blue(5), key)[0]),
+      '...each quicker and dearer than every Blue Star of tier 3, slower and cheaper than every one of tier 5 (' + range(four, 'maxSpeed').join(' to ') + ' m/s, $' + range(four, 'price').join(' to $') + ')');
+    check(['accel', 'health'].every(key => range(four, key)[0] >= range(blue(3), key)[0] && range(four, key)[1] <= range(blue(5), key)[1]), '...their acceleration and health inside what the Blue Stars of tiers 3 and 5 span between them');
+    Progress.reset();
+    check(!Progress.owns('snake') && (selectCar('snake'), g.cars.CAR.id !== 'snake'), '...not owned until bought, nor to be picked');
+    Progress.data.money = 5000;
+    check(four.every(c => Progress.buy(c)) && four.every(c => Progress.data.cars.includes(c.id)) && Progress.data.money === 5000 - four.reduce((sum, c) => sum + c.price, 0), '...bought: in the save\'s list of cars, and paid for');
+    selectCar('polytruck');
+    Progress.reload();
+    useLevelCar(null);
+    check(g.cars.CAR.id === 'polytruck' && inCookie().cars.length === 5 && document.cookie.length <= 4096, '...and one in use is there after the save is read again (the cookie: ' + document.cookie.length + ' bytes)');
+    Progress.reset();
+  }
   const others = [...CARS, ...EARNED_CARS, ...Object.values(SECRET_CARS), ...Object.values(LEVEL_CARS)];
   check(new Set([...others, ...IDEA_CARS].map(c => c.id)).size === others.length + IDEA_CARS.length, 'every id its own, among the ideas and against every other car');
   check(IDEA_CARS.every(c => c.placeholder === true && c.idea === true), 'every one flagged a placeholder');

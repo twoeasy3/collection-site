@@ -1,5 +1,5 @@
 // ---- the car ideas' models -----------------------------------------------------------------------
-// Thirty vehicles drawn as ideas (ideas.js: IDEA_CARS), each after a real one, for the garage's "Car ideas"
+// Thirty vehicles drawn as ideas (ideas.js: IDEA_CARS; four have since become garage cars, cars.js), each after a real one, for the garage's "Car ideas"
 // lot (render/ideaslot.js). Built as the garage's own models are (render/models.js): each builder takes the
 // idea's entry and returns a group, front facing local +z, with
 //   userData.body     the mesh whose material is the paint (so the livery can be swapped)

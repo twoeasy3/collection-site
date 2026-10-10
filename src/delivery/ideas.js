@@ -1,5 +1,5 @@
 // ============================================================================
-// IDEA_CARS - thirty car ideas, on show in the garage's "Car ideas" lot (render/ideaslot.js). Each has a
+// IDEA_CARS - the car ideas, on show in the garage's "Car ideas" lot (render/ideaslot.js). Each has a
 // generic name and the real vehicle it is drawn from (see "Car ideas lot" in CHECKLIST-10-Oct.md).
 // They can be DRIVEN: picked in that lot ("Drive it") or with ?car=<id>, an idea is the car in use as any
 // garage car is, on any level a garage car may drive (cars.js looks here as well as in CARS). But they are
@@ -65,18 +65,9 @@ export const IDEA_CARS = [
   { id: 'splitwindow', name: 'Split-Window Coupe', basedOn: '1963 Chevrolet Corvette Sting Ray', model: 'splitwindow', color: 0xb9c2cc, evilColor: 0x7a1218,
     hw: 0.88, hl: 2.22, height: 1.26, note: 'A pointed nose, lamps that pop up, and a spine through its rear window.',
     maxSpeed: 43, accel: 15, agility: 1.2, crossing: 0.3, health: 150, mass: 1.3, sound: 'classicgt' },
-  { id: 'snake', name: 'Snake Roadster', basedOn: 'AC Cobra 427', model: 'snake', color: 0x1d3f96, evilColor: 0x17171b,
-    hw: 0.87, hl: 1.98, height: 1.2, note: 'Too much engine, an oval mouth and no roof.',
-    maxSpeed: 45, accel: 19, agility: 1.25, crossing: 0.25, health: 110, mass: 1.1, sound: 'hotrod' },
-  { id: 'rearengine', name: 'Rear-Engine Coupe', basedOn: 'Porsche 911 (classic)', model: 'rearengine', color: 0xd8dadf, evilColor: 0x1b1b20,
-    hw: 0.86, hl: 2.15, height: 1.32, note: 'A teardrop with its engine behind the back wheels and a whale tail on top.',
-    maxSpeed: 43, accel: 16, agility: 1.4, crossing: 0.35, health: 140, mass: 1.1, sound: 'classicgt' },
   { id: 'wedge', name: 'Wedge Supercar', basedOn: 'Lamborghini Countach', model: 'wedge', color: 0xd21f1f, evilColor: 0x131316,
     hw: 1.0, hl: 2.07, height: 1.07, note: 'The poster on the bedroom wall: a flat wedge, doors that go up and a huge wing.',
     maxSpeed: 47, accel: 17, agility: 1.3, crossing: 0.15, health: 130, mass: 1.2, sound: 'miata' },
-  { id: 'gullwing', name: 'Stainless Gullwing', basedOn: 'DeLorean DMC-12', model: 'gullwing', color: 0xb7bcc2, evilColor: 0x4b4e55,
-    hw: 0.93, hl: 2.13, height: 1.14, note: 'Bare brushed steel, and doors that open like wings.',
-    maxSpeed: 36, accel: 11, agility: 1.15, crossing: 0.3, health: 160, mass: 1.3, sound: 'sport' },
   { id: 'centreseat', name: 'Centre-Seat Hypercar', basedOn: 'McLaren F1', model: 'centreseat', color: 0xf07c1c, evilColor: 0x2c2140,
     hw: 0.91, hl: 2.14, height: 1.14, note: 'The driver sits in the middle, a passenger behind each shoulder.',
     maxSpeed: 48, accel: 20, agility: 1.45, crossing: 0.2, health: 140, mass: 1.1, sound: 'miata' },
@@ -95,9 +86,6 @@ export const IDEA_CARS = [
   { id: 'widetruck', name: 'Wide Truck', basedOn: 'AM General Hummer H1', model: 'widetruck', color: 0xc8b07a, evilColor: 0x1a1a1d,
     hw: 1.1, hl: 2.35, height: 1.9, note: 'Wider than a lane likes, and lower than it looks.',
     maxSpeed: 31, accel: 9, agility: 1, crossing: 1, health: 340, mass: 2.3, sound: 'liftedtruck' },
-  { id: 'polytruck', name: 'Polygon Truck', basedOn: 'Tesla Cybertruck', model: 'polytruck', color: 0xb4b8bd, evilColor: 0x26282c,
-    hw: 1.02, hl: 2.84, height: 1.8, note: 'One peaked triangle of flat steel, with a bar of light at each end.',
-    maxSpeed: 44, accel: 20, agility: 1, crossing: 0.85, health: 380, mass: 2.4, sound: 'evsaloon' },
   // (really 3.1 m wide, 5.5 m long and 3.2 m high: too wide for a lane, so it is driven, and shown, at 0.87 of that)
   { id: 'monster', name: 'Monster Truck', basedOn: 'Bigfoot (Ford F-250)', model: 'monster', color: 0x1f58c2, evilColor: 0x1c1c20,
     real: { hw: 1.55, hl: 2.75, height: 3.2 }, scale: 0.87,

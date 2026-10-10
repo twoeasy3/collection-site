@@ -2294,3 +2294,15 @@ Object.assign(MODELS, {
     return group;
   },
 });
+
+// Four garage cars (cars.js: the Blue Star cars at four stars) whose builders were drawn as car ideas and still
+// live with the ideas' (render/ideaModels.js, which knows nothing of the game): the same builder, by the same
+// name, with an animate as every model here has
+import { IDEA_MODELS } from './ideaModels.js';
+for (const name of ['gullwing', 'rearengine', 'snake', 'polytruck']) {
+  MODELS[name] = (car) => {
+    const model = IDEA_MODELS[name](car);
+    model.userData.animate = model.userData.animate || (() => {});
+    return model;
+  };
+}

@@ -244,7 +244,7 @@ ones, which are always open and open nothing.
   `carshots/<id>-evil.jpg`, taken with `?cine=car`. A vehicle that belongs to a level goes in
   `LEVEL_CARS`; one that should stay out of the garage goes in `SECRET_CARS`, with its own way
   in (the City Bus: type B U S on the start screen, or `?autostart&car=bus`).
-- **Car ideas lot:** the garage has a second tab, "Car ideas": a lot of thirty vehicles that are ideas
+- **Car ideas lot:** the garage has a second tab, "Car ideas": a lot of vehicles (twenty-six) that are ideas
   on show, not cars. Each is drawn after a real vehicle and has a generic name (the Bubble Car after the
   BMW Isetta, the Double Decker after the AEC Routemaster...); hovering or tapping one shows its name,
   what it is based on, its size and a line about it, and the Livery button shows its Good and Evil

@@ -39,7 +39,8 @@ Content now:
   6 (R1 to R6), three of them traced from real circuits (Monza, Spa-Francorchamps, Albert Park), always
   open. All are listed in the README. Five more are hidden (`testbed`, `grand-prix`, `gimmick-road`,
   `gimmick-road-2`, `gimmick-road-3`) and one is the screensaver's.
-- **37 garage cars:** 17 gold-star cars in five tiers, 14 Blue Star cars (a second season, open
+- **41 garage cars:** 17 gold-star cars in five tiers, 18 Blue Star cars (four at four stars since 2026-10-10:
+  the Stainless Gullwing, Rear-Engine Coupe, Snake Roadster and Polygon Truck, which were car ideas; a second season, open
   once level 20 is delivered), 5 amphibious cars, and the Tank.
 - **9 earned cars, the 6-star tier:** one for each special level and each of the first three races, owned
   once its level is delivered with enough time to spare (`EARNED_CARS` in `cars.js`; never bought).

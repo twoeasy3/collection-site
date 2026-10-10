@@ -356,7 +356,9 @@ export const Garage = {
     document.body.classList.add('in-garage');
     looking = null; // (the car in use's stats shown)
     IdeasLot.leave(); // (the garage always opens on its own lot)
-    scrollTo(order.find(car => car.id === Progress.data.car) || order[0]); // (the car in use in view)
+    // (the car in use in view. One with no bay here, a car idea or the City Bus, is not in `order`, and the search
+    // then runs on into the bays left empty, which are null: the first column)
+    scrollTo(order.find(car => car && car.id === Progress.data.car) || order[0]);
     fling = 0;
     refresh();
   },

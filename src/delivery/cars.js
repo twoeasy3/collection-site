@@ -136,6 +136,23 @@ export const CARS = [
     maxSpeed: 37, accel: 11, crossing: 0.9, health: 300, hw: 1.0, hl: 2.25, height: 1.8 },
   { id: 'miata', tier: 4, name: 'Sportscar', price: 500, color: 0xd8262b, evilColor: 0xffd21f, fixedLivery: true, model: 'miata',
     maxSpeed: 42, accel: 15, crossing: 0.25, health: 135, hw: 0.85, hl: 1.95, height: 1.1 },
+  // ---- tier 4, Blue Stars: four that were car ideas (ideas.js; their models are still built in
+  // render/ideaModels.js, and are in MODELS by the same names: see the end of render/models.js). Each sits
+  // between the Blue Stars of tier 3 (36 to 40 m/s, 10 to 14.8, 120 to 220) and of tier 5 (46.5 to 48, 13 to 18,
+  // 190 to 420), and under tier 5's gold cars at each of top speed, acceleration and health (46 / 22 / 360)
+  // (the sturdy one: bare steel. Slowest of the four off the line, and the most health)
+  { id: 'gullwing', tier: 4, blue: true, name: 'Stainless Gullwing', price: 920, color: 0xb7bcc2, evilColor: 0x4b4e55, fixedLivery: true, model: 'gullwing',
+    maxSpeed: 42.5, accel: 12, crossing: 0.35, health: 330, mass: 1.4, hw: 0.93, hl: 2.13, height: 1.14 },
+  // (the all-rounder: quick, good grip, no weakness)
+  { id: 'rearengine', tier: 4, blue: true, name: 'Rear-Engine Coupe', price: 960, color: 0xd8dadf, evilColor: 0x1b1b20, fixedLivery: true, model: 'rearengine',
+    maxSpeed: 44.5, accel: 15.5, agility: 1.4, crossing: 0.4, health: 175, hw: 0.86, hl: 2.15, height: 1.32 },
+  // (fast and fragile: the best acceleration of the four, and the least health)
+  { id: 'snake', tier: 4, blue: true, name: 'Snake Roadster', price: 1000, color: 0x1d3f96, evilColor: 0x17171b, fixedLivery: true, model: 'snake',
+    maxSpeed: 45, accel: 17, agility: 1.25, crossing: 0.25, health: 140, hw: 0.87, hl: 1.98, height: 1.2 },
+  // (the heavy one: tall and wide, strong in a straight line, good over rough ground and through water, and the
+  // slowest of any garage car to change lane)
+  { id: 'polytruck', tier: 4, blue: true, name: 'Polygon Truck', price: 1060, color: 0xb4b8bd, evilColor: 0x26282c, fixedLivery: true, model: 'polytruck',
+    maxSpeed: 44, accel: 14, agility: 0.9, crossing: 0.9, health: 290, mass: 2.3, hw: 1.02, hl: 2.84, height: 1.8 },
   // ---- tier 5
   // (a modern American muscle car: long, low and wide, heavy, a bonnet bulge and twin stripes)
   { id: 'muscle', tier: 5, name: 'Muscle Car', price: 650, color: 0xc81e1e, evilColor: 0x161616, fixedLivery: true, model: 'muscle',
@@ -332,7 +349,11 @@ export const SUPER_LIVERIES = {
   taxi: { good: [0xffc81a, 0x151515], evil: [0x6b7a2e, 0xffc81a] },                     // yellow with black / olive with yellow
   suv: { good: [0x1f3f8f, 0xd0d4da], evil: [0xf2f2f2, 0x1f3f8f], kit: { lights: true, bullbar: true, snorkel: true } }, // navy with silver / white with navy
   miata: { good: [0xd8262b, 0xf4f4f4], evil: [0xffd21f, 0x151515] },                    // red with white / yellow with black
-  muscle: { good: [0xc81e1e, 0xf4f4f4], evil: [0x101010, 0xc81e1e] },                   // red with white / black with red
+  gullwing: { good: [0xd9dde2, 0xf07c1c], evil: [0x33363c, 0x40e8ff] },                 // polished steel with orange / dark steel with cyan
+  rearengine: { good: [0xf4f4f4, 0xd8262b], evil: [0x151515, 0xe3b522], kit: { wing: false } }, // white with red / black with gold (it has a whale tail of its own)
+  snake: { good: [0x1d3f96, 0xf4f4f4], evil: [0x101010, 0xd8262b] },                    // blue with white stripes / black with red
+  polytruck: { good: [0xc9ccd2, 0x2a8cff], evil: [0x1a1c20, 0xf08a2a], kit: { wing: false, lights: true, bullbar: true } }, // steel with electric blue / black with orange
+  muscle: { good: [0xc81e1e, 0xf4f4f4], evil: [0x101010, 0xc81e1e] },                  // red with white / black with red
   fullsize: { good: [0x2f5a3a, 0xd4a52a], evil: [0x5a1f22, 0xf4e8c8] },                 // deep green with gold / wine with cream
   evsaloon: { good: [0xe8e4dc, 0x2a8cff], evil: [0x2b3440, 0x40e8ff] },                 // pearl with electric blue / slate with cyan
   superlowrider: { good: [0x1a3cff, 0xf0c030], evil: [0x5a0a2a, 0xd8d8d8] },            // blue with gold / wine with chrome
