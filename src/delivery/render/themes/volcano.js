@@ -4,6 +4,8 @@
 // puffing steam; the sea off to the right beyond a line of surf, dark hills inland; ash coming down, and a few
 // embers; and on the skyline the volcano, smoking, lava down its flanks, always there however far the road goes
 // (it keeps its place in the sky as a far mountain does: it is moved with the camera).
+// A theme with "erupting" (volcanoErupting: Eruption Day) has the mountain going up: bigger and nearer, a fountain
+// of lava standing out of its crater, pulsing, and four times the embers coming down.
 // (Its models: volcanoModels.js. What moves keeps its own time: sceneryClock.js. Only a sight, all of it.)
 import * as THREE from 'three';
 import { LEVEL } from '../../levels.js';
@@ -11,9 +13,10 @@ import { Track } from '../../track.js';
 import { everyFrame } from './sceneryClock.js';
 import { makeVolcano, FRONDS, BOULDER, PUFF } from './volcanoModels.js';
 
-export const volcano = ({ add, instances, sideStrip, buildStrip, offRoads, beside, inJunction, exits, cube, tube, cone, levelGroup }) => {
+export const volcano = ({ theme, add, instances, sideStrip, buildStrip, offRoads, beside, inJunction, exits, cube, tube, cone, levelGroup }) => {
   // (laid out the same every time: a seed of the level's own)
   let seed = 23 + (LEVEL.id || '').length * 613;
+  const erupting = !!theme.erupting;
   const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const p = {};
   const within = (list, s, pad, a = 'from', b = 'to') => (list || []).some(x => !x.road && s >= x[a] - pad && s <= x[b] + pad);
@@ -187,19 +190,33 @@ export const volcano = ({ add, instances, sideStrip, buildStrip, offRoads, besid
     const mat = new THREE.PointsMaterial({ color, size, transparent: true, opacity, depthWrite: false });
     return [0, 1].map(layer => { const fall = new THREE.Points(geo, mat); fall.frustumCulled = false; fall.userData = { layer, speed, BOX }; levelGroup.add(fall); return fall; });
   };
-  const falls = [...fallout(0x3a3437, 1300, 0.24, 2.6, 0.85), ...fallout(0xff8a2a, 170, 0.2, 1.4, 0.95)];
+  const falls = [...fallout(0x3a3437, 1300, 0.24, 2.6, 0.85), ...fallout(0xff8a2a, erupting ? 680 : 170, erupting ? 0.26 : 0.2, 1.4, 0.95)];
 
   // ---- the volcano on the skyline: off to the left of the way the road goes, taken as a whole
-  const mountain = makeVolcano(125, 78);
+  const HIGH = erupting ? 88 : 78;
+  const mountain = makeVolcano(erupting ? 150 : 125, HIGH);
+  // (erupting: the fountain over the crater, three cones one inside another, the hottest innermost, each its own beat)
+  const fountain = [];
+  if (erupting) {
+    for (const [color, wide, tall, beat] of [[0xff4a12, 21, 30, 2.3], [0xff8a1e, 13, 38, 3.1], [0xffd24a, 6, 45, 4.3]]) {
+      const jet = new THREE.Mesh(new THREE.ConeGeometry(wide, tall, 12, 1, true).translate(0, tall / 2, 0), new THREE.MeshBasicMaterial({ color, fog: false, side: THREE.DoubleSide, transparent: true, depthTest: false }));
+      jet.position.y = HIGH - 3;
+      jet.renderOrder = 6 + fountain.length; // (through its own smoke, which would hide it: the sky is all that is ever behind it)
+      jet.userData.beat = beat;
+      mountain.add(jet);
+      fountain.push(jet);
+    }
+  }
   mountain.userData.flat = true; // (a backdrop: never in any road's way)
   levelGroup.add(mountain);
   const a = {}, b = {};
   Track.toWorld(0, 0, a); Track.toWorld(Track.length, 0, b);
-  const bearing = Math.atan2(b.x - a.x, b.z - a.z) + 0.3, FAR = 540;
+  const bearing = Math.atan2(b.x - a.x, b.z - a.z) + 0.3, FAR = erupting ? 500 : 540;
 
   everyFrame(levelGroup, (t, x, y, z) => {
     mountain.position.set(x + Math.sin(bearing) * FAR, Math.max(0, y - 11) * 0.55 - 4, z + Math.cos(bearing) * FAR);
     mountain.userData.animate(t);
+    for (const jet of fountain) { const b = jet.userData.beat, up = 0.78 + 0.22 * Math.sin(t * b) + 0.1 * Math.sin(t * b * 2.7 + 1); jet.scale.set(1 + 0.12 * Math.sin(t * b * 1.9), up, 1 + 0.12 * Math.sin(t * b * 1.9)); }
     for (const fall of falls) {
       const { layer, speed, BOX } = fall.userData, down = (t * speed + layer * BOX) % (BOX * 2);
       fall.position.set(x + Math.sin(t / 3) * 3, y + BOX - down, z);

@@ -600,6 +600,34 @@ export const CONFIG = {
     marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
     // falling cargo (a shedding truck's load: see CONFIG.cargo): bales and crates
     crate: { damage: 18, speedKept: 0.75 },
+    // the themes' own (a theme's `obstacles` in themes.js): each a plain kind in another shape, so each costs
+    // exactly what the kind it stands in for costs (scripts/.obstacles-check.mjs holds them to it). For a crate:
+    toyBlock: { damage: 18, speedKept: 0.75 },      // the toy room's: alphabet blocks
+    divingHelmet: { damage: 18, speedKept: 0.75 },  // the sea bed's: a brass diving helmet
+    supplyPod: { damage: 18, speedKept: 0.75 },     // the Moon's: a supply pod on its legs
+    directorChair: { damage: 18, speedKept: 0.75 }, // the film studio's
+    mooringPosts: { damage: 18, speedKept: 0.75 },  // Venice's: three striped mooring posts
+    fuelDrum: { damage: 18, speedKept: 0.75 },      // the ice road's: a red drum under a cap of snow
+    popcornCart: { damage: 18, speedKept: 0.75 },   // the theme park's
+    barrel: { damage: 18, speedKept: 0.75 },        // the Wild West's
+    chairStack: { damage: 18, speedKept: 0.75 },    // the favela's: a stack of plastic chairs
+    riceBasket: { damage: 18, speedKept: 0.75 },    // the rice terraces': a basket heaped with rice
+    // ...for a bale:
+    cameraDolly: { damage: 20, speedKept: 0.75 },   // the film studio's: a camera on its dolly
+    present: { damage: 20, speedKept: 0.75 },       // Christmas Eve's: a wrapped present
+    toyDrum: { damage: 20, speedKept: 0.75 },       // the toy room's: a toy drum
+    sackStack: { damage: 20, speedKept: 0.75 },     // Mumbai's: a stack of jute sacks
+    beachBall: { damage: 20, speedKept: 0.75 },     // the beach's: a great beach ball (it rolls, as a bale does)
+    tumbleweed: { damage: 20, speedKept: 0.75 },    // the Wild West's, for a bale that drifts (it rolls too)
+    // ...for a cone:
+    skittle: { damage: 3, speedKept: 0.94, light: true }, // the toy room's (an orange cone is lost on its orange track)
+    cafeTable: { damage: 3, speedKept: 0.94, light: true },  // Venice's: a cafe table under its shut parasol
+    wheelieBin: { damage: 3, speedKept: 0.94, light: true }, // the hood's
+    snowdrift: { damage: 3, speedKept: 0.94, light: true },  // the snow's and the ice road's: a heap of snow with a stake in it
+    brimstone: { damage: 3, speedKept: 0.94, light: true },  // hell's: a glowing spike
+    flagStand: { damage: 3, speedKept: 0.94, light: true },  // the Moon's, for a cone that drifts: a flag on a stand
+    // ...for a rock (sized by its radius, as a rock is):
+    lavaRock: { damage: 25, speedKept: 0.6 },       // the volcano's: cooled lava, glowing in its cracks
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -1245,18 +1273,15 @@ export const CONFIG = {
     lampEvery: 12,         // m between the ceiling lamps
     echo: 0.45,            // how much of the engine comes back off the walls, well inside (0 = none)
   },
-  // a burst water main (a level's "waterMains": { s, lane?, every? }): a geyser out of the road, now and
-  // then, and while it sprays the road round it is as slippery as ice; a few seconds after it stops, dry
+  // a burst water main (a level's "waterMains": { s, lane, length? }, see Hazards): a fountain out of its lane for
+  // `on` s, then nothing for `off` s, over and over; while it sprays, `length` m of that lane beyond it is under
+  // water and as slippery as ice, and dry again as soon as it stops
   waterMain: {
-    spray: 5,              // s each burst lasts
-    every: { min: 6, max: 11 }, // s between bursts (a main can set its own: "every")
-    radius: 8,             // m along the road either way the water reaches...
-    half: 4.5,             // ...and m across, either side of the main
-    drain: 3,              // s after a burst the road stays slippery
-    warn: 150,             // m short of one spraying ahead that the player is warned
-    height: 9,             // m the geyser throws its water
-    spread: 1.4,           // s the puddle takes to spread out, as a burst begins (the look of it only)
-    on: 5, off: 4, length: 28, dry: 1.6, // (Gimmick Road 2's, see Hazards: s on and off, m of lane, and s its puddles take to shrink away)
+    on: 5, off: 4,         // s it sprays, and s between
+    length: 28,            // m of its lane the water covers (a main can set its own: "length")
+    warn: 150,             // m short of one ahead that the player is warned
+    spread: 1.4,           // s the pools take to spread down the lane as it begins to spray...
+    dry: 1.6,              // ...and to shrink away when it stops (the look of it only)
     // on its water the player's car brakes and steers with less grip, as on ice (CONFIG.ice) but by numbers of its own:
     brakeGrip: 0.35,       // share of its braking (or braking by itself for a car ahead) that works on the water
     steerGrip: 0.3,        // share of its steering's grip: of how quickly the car takes up the way it is steered...

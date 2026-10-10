@@ -46,7 +46,6 @@ import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
 import { syncMovers } from './render/movers.js';
 import { syncTunnel } from './render/tunnel.js';
-import { syncWaterMains } from './render/watermains.js';
 import { syncReversible } from './render/reversible.js';
 import { syncMysteries } from './render/mysteries.js';
 import './render/pursuit.js';
@@ -298,7 +297,6 @@ const frame = (now) => {
     syncHazards(now);
     syncGambles(now, dt); // (after the car and the traffic are placed: it leans and shakes them)
     syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
-    syncWaterMains(dt);
     syncReversible();
     syncBattle(dt);
     syncZones(dt);

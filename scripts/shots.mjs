@@ -31,12 +31,17 @@
 //                              node scripts/shots.mjs --levels=<id> --write           (the same, into src/delivery/levelshots)
 //   the menu on a phone:       node scripts/shots.mjs <dir> "menu=index.html" --size=390x844 --scale=3
 //   a reference page:          node scripts/shots.mjs <dir> "gimmicks=gimmicks.html" --size=1100x2400
+//   the BUILT site:            npx vite build --outDir <dir>/dist      (from PowerShell), then
+//                              node scripts/shots.mjs <dir> "menu=index.html" "run=?level=1&ghost&ff=4" --dist=<dir>/dist/client
+//                              (the folder that holds delivery/ and assets/ is served as it is, with no Vite: what
+//                              the page asks for and is not there is printed as a failed request)
 // Look at every picture made: a grey frame, the inside of a wall or a tree across it are the usual failures.
 import { createServer } from 'vite';
 import { logicServer } from './delivery-headless.mjs';
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
-import { resolve, join } from 'node:path';
+import { resolve, join, extname, normalize } from 'node:path';
+import { createServer as createHttpServer } from 'node:http';
 import { tmpdir } from 'node:os';
 
 const args = process.argv.slice(2);
@@ -335,9 +340,35 @@ try {
   // (The run's folder holds Vite's cache as well. Every worktree's node_modules is a junction to one folder, so the
   // usual cache, node_modules/.vite, is one for them all, and a server started from another worktree deletes it to
   // bundle the dependencies again: see delivery-headless.mjs. It costs a few seconds of bundling each run.)
-  server = await createServer({ server: { port: 5199, strictPort: false, hmr: false }, cacheDir: join(own, 'vite'), logLevel: 'error' });
-  await server.listen();
-  const base = `http://localhost:${server.config.server.port}/delivery/`;
+  const DIST = typeof opt('dist', false) === 'string' ? resolve(opt('dist')) : null;
+  let port;
+  if (DIST) {
+    // (the built site, served as plain files: --dist=<the folder that holds delivery/ and assets/>)
+    if (!existsSync(join(DIST, 'delivery', 'index.html'))) throw new Error('no delivery/index.html in ' + DIST + ': --dist is the folder that holds delivery/ and assets/ (dist/client)');
+    const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp', '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ico': 'image/x-icon', '.wasm': 'application/wasm', '.glb': 'model/gltf-binary' };
+    const http = createHttpServer((request, answer) => {
+      let path = decodeURIComponent(request.url.split('?')[0]);
+      if (path.endsWith('/')) path += 'index.html';
+      const file = normalize(join(DIST, path));
+      try {
+        if (!file.startsWith(DIST)) throw new Error('outside');
+        const data = readFileSync(file);
+        answer.writeHead(200, { 'Content-Type': TYPES[extname(file).toLowerCase()] || 'application/octet-stream' });
+        answer.end(data);
+      } catch { console.log('          failed request: ' + request.url + '  (not in the build)'); answer.writeHead(404); answer.end('not found'); }
+    });
+    for (port = 5199; ; port++) { // (the first free port from 5199 up)
+      const taken = await new Promise(done => { http.once('error', () => done(true)); http.listen(port, '127.0.0.1', () => done(false)); });
+      if (!taken) break;
+      if (port > 5260) throw new Error('no free port for the built site');
+    }
+    server = { close: () => new Promise(done => { http.closeAllConnections(); http.close(done); }) };
+  } else {
+    server = await createServer({ server: { port: 5199, strictPort: false, hmr: false }, cacheDir: join(own, 'vite'), logLevel: 'error' });
+    await server.listen();
+    port = server.config.server.port;
+  }
+  const base = `http://${DIST ? '127.0.0.1' : 'localhost'}:${port}/delivery/`;
   for (const [name, address, pair] of shots) {
     const game = address.startsWith('?') && !/[?&](autostart|hidden|test|edited|screensaver|racewatch|garage|album|milestones)\b/.test(address);
     const url = base + (game ? address.replace('?', '?autostart&') : address);

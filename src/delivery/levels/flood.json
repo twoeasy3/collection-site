@@ -34,9 +34,9 @@
   ],
   "waterMains": [
     { "s": 760, "lane": 1 },
-    { "s": 880, "lane": 2, "every": { "min": 3, "max": 6 } },
+    { "s": 880, "lane": 2 },
     { "s": 1850, "lane": 0 },
-    { "s": 2020, "lane": 1, "every": { "min": 3, "max": 6 } },
+    { "s": 2020, "lane": 1 },
     { "s": 2900, "lane": 2 }
   ],
   "potholes": [

@@ -14,11 +14,15 @@ const part = (parent, geometry, material, x, y, z, sx = 1, sy = 1, sz = 1) => {
 };
 const BOX = new THREE.BoxGeometry(1, 1, 1), ROD = new THREE.CylinderGeometry(0.5, 0.5, 1, 14), CONE = new THREE.ConeGeometry(0.5, 1, 16);
 const BALL = new THREE.SphereGeometry(0.5, 12, 8);
+// (at night, a theme with "night": the rides' bulbs, which are their own light)
+const glow = (color) => new THREE.MeshBasicMaterial({ color });
+const BULBS = [0xfff2b0, 0xff6fb1, 0x7fe8ff];
 export const PARK_COLOURS = [0xe23b3b, 0xf2c21c, 0x2f7fe0, 0x35a852, 0xf27d1a, 0x9a4fd0, 0xff6fb1, 0x19b8c4];
 
 // a Ferris wheel `r` m in radius, standing across local z (seen whole from along it): two rims, spokes, a gondola
-// at the end of each, hung so it stays upright as the wheel turns; an A-frame each side of the hub
-export const makeFerrisWheel = (r = 26) => {
+// at the end of each, hung so it stays upright as the wheel turns; an A-frame each side of the hub. lit: bulbs
+// round its rims and out along every other spoke
+export const makeFerrisWheel = (r = 26, lit = false) => {
   const g = new THREE.Group(), wheel = new THREE.Group();
   const white = lambert(0xf4f4f0), steel = lambert(0x8d97a6), hubMat = lambert(0xe23b3b);
   const hubY = r + 5, N = 16, gondolas = [];
@@ -44,6 +48,13 @@ export const makeFerrisWheel = (r = 26) => {
     gondolas.push(car);
   }
   part(wheel, ROD, hubMat, 0, 0, 0, 3.4, 5, 3.4).rotation.x = Math.PI / 2; // the hub
+  if (lit) {
+    const bulbs = BULBS.map(glow);
+    for (const z of [-2.2, 2.2]) {
+      for (let k = 0; k < 64; k++) { const a = k / 64 * Math.PI * 2; part(wheel, BALL, bulbs[k % 3], Math.cos(a) * r, Math.sin(a) * r, z, 0.8, 0.8, 0.8); }
+      for (let k = 0; k < N; k += 2) for (let d = r * 0.2; d < r * 0.95; d += r * 0.15) { const a = k / N * Math.PI * 2; part(wheel, BALL, bulbs[0], Math.cos(a) * d, Math.sin(a) * d, z, 0.6, 0.6, 0.6); }
+    }
+  }
   wheel.position.y = hubY;
   g.add(wheel);
   for (const z of [-3.2, 3.2]) for (const side of [-1, 1]) { // the legs: an A each side
@@ -62,7 +73,7 @@ export const makeFerrisWheel = (r = 26) => {
 
 // a carousel: a round deck under a striped canopy, horses going up and down on brass poles as it turns
 const [CANOPY_A, CANOPY_B] = striped(new THREE.ConeGeometry(0.5, 1, 16), 16);
-export const makeCarousel = () => {
+export const makeCarousel = (lit = false) => {
   const g = new THREE.Group(), turn = new THREE.Group();
   const red = lambert(0xd8262b), cream = lambert(0xfff3d6), gold = lambert(0xf2c21c), deck = lambert(0x8a5a8f);
   part(g, ROD, deck, 0, 0.35, 0, 15, 0.7, 15);
@@ -71,6 +82,11 @@ export const makeCarousel = () => {
   part(g, CANOPY_B, cream, 0, 8.6, 0, 16.4, 3.6, 16.4);
   part(g, ROD, gold, 0, 6.6, 0, 16.2, 0.7, 16.2);          // the valance round its edge
   part(g, BALL, gold, 0, 10.8, 0, 1.3, 1.3, 1.3);
+  if (lit) { // bulbs round the valance and up the centre drum
+    const bulbs = BULBS.map(glow);
+    for (let k = 0; k < 30; k++) { const a = k / 30 * Math.PI * 2; part(g, BALL, bulbs[k % 3], Math.cos(a) * 8.25, 6.6, Math.sin(a) * 8.25, 0.55, 0.55, 0.55); }
+    for (let k = 0; k < 8; k++) for (const y of [2, 3.6, 5.2]) { const a = k / 8 * Math.PI * 2; part(g, BALL, bulbs[0], Math.cos(a) * 1.25, y, Math.sin(a) * 1.25, 0.4, 0.4, 0.4); }
+  }
   const horses = [];
   for (let k = 0; k < 10; k++) {
     const a = k / 10 * Math.PI * 2, horse = new THREE.Group(), coat = lambert([0xffffff, 0x8a5a2b, 0x2a2a2a, 0xf2e0c0][k % 4]);
@@ -94,10 +110,10 @@ export const makeCarousel = () => {
 };
 
 // a fairy-tale castle for the skyline, some 110 m to the tip of its tallest spire at scale 1: pale walls, a keep,
-// round towers under blue cones, pennants; it faces local +z
-export const makeCastle = (scale = 1) => {
+// round towers under blue cones, pennants; it faces local +z. lit: its windows and its gate lit from inside
+export const makeCastle = (scale = 1, lit = false) => {
   const g = new THREE.Group();
-  const wall = lambert(0xf7e9ef), pale = lambert(0xffffff), roof = lambert(0x3d6fd6), pink = lambert(0xf2a7c6), dark = lambert(0x5b4a66), flag = lambert(0xe23b3b), gold = lambert(0xf2c21c);
+  const wall = lambert(0xf7e9ef), pale = lambert(0xffffff), roof = lambert(0x3d6fd6), pink = lambert(0xf2a7c6), dark = lit ? glow(0xffd76a) : lambert(0x5b4a66), flag = lambert(0xe23b3b), gold = lambert(0xf2c21c);
   const tower = (x, z, r, h, cap = roof) => {
     part(g, ROD, wall, x, h / 2, z, r * 2, h, r * 2);
     part(g, ROD, pale, x, h + 1, z, r * 2.3, 2, r * 2.3);           // a collar under the roof
