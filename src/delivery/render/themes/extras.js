@@ -200,4 +200,170 @@ const construction = (ctx) => {
   kit.draw();
 };
 
-export const THEME_EXTRAS = { construction };
+// ---- the bush road (the 'panorama' theme: road.js's bathurst scenery, roadside) as outback country: Outback
+// Express's places. Only where a level's own zones ask for one of the theme's sets (a level with no zones,
+// Panorama Avenue, gets nothing of this, and nor does the circuit):
+//   roadhouse   a forecourt on the right: the long low roadhouse with its veranda, a fuel canopy and two pumps, a
+//               tall sign, a tank on a stand and a windmill
+//   siding      at the zone's level crossing: three grain silos, an elevator and its conveyor on one side before
+//               the line, a station hut with its name board and a signal on the other, a tank on a stand after it
+//   floodway    depth posts down both edges, a warning board at each end, the creek's sand either side of the dip
+//   homestead   a tin-roofed house with a veranda, its rainwater tank, a shed, a windmill and a post-and-rail fence
+// and, on such a level, flat-topped ranges on the skyline. Everything stands on the land where it is (terrainAt),
+// within about 26 m of the road's edge; road.js keeps its gum trees out of each one's yard (outbackYard)
+const outbackPlaces = (theme) => {
+  const sets = theme.sets || [];
+  return (LEVEL.zones || []).filter(z => sets.includes(z.scenery)).map((z, k) => {
+    const crossing = (LEVEL.crossings || []).map(c => Track.place ? Track.place(c) : c.s).find(s => s >= z.from && s <= z.to);
+    return { set: z.scenery, from: z.from, to: z.to, k, at: z.scenery === 'siding' && crossing !== undefined ? crossing : (z.from + z.to) / 2,
+      side: z.scenery === 'roadhouse' ? 1 : k % 2 ? 1 : -1 };
+  });
+};
+// is a spot d m off the road's edge on that side, s m along, in one of those places' yards? (no tree there)
+export const outbackYard = (theme, s, side, d) => {
+  if (!theme.sets || theme.scenery !== 'bathurst' || !(LEVEL.zones || []).length) return false;
+  if (outbackYard.level !== LEVEL) { outbackYard.level = LEVEL; outbackYard.places = outbackPlaces(theme); }
+  return outbackYard.places.some(p => p.set === 'roadhouse' ? side === p.side && d < 36 && Math.abs(s - p.at) < 56
+    : p.set === 'siding' ? d < 28 && s > p.at - 92 && s < p.at + 56
+    : p.set === 'homestead' ? side === p.side && d < 32 && Math.abs(s - p.at) < 44
+    : d < 14 && s > p.from && s < p.to);
+};
+const bathurst = (ctx) => {
+  const { theme, add, flat, sideStrip, offRoads, beside, cube, tube, cone, terrainAt } = ctx;
+  const places = outbackPlaces(theme);
+  if (!places.length) return;
+  const kit = makeKit(ctx), rand = seeded(53);
+  const CREAM = 0xe6dcc3, TIN = 0x9aa3a8, RUST = 0x9c4a32, STEEL = 0x8a8f96, DARK = 0x2c3440, WOOD = 0x6b5a45, WHITE = 0xf4f4f4, TANK = 0xb9bcc0, RED = 0xd8262b;
+  // a thing standing on the land d m off the edge on that side, s m along, turned with the road: w across, h
+  // high, l along, its foot `up` m over the ground
+  const put = (color, s, side, d, w, h, l, up = 0, geometry = cube, glowing = false) => {
+    const q = kit.point(s, beside(side, s, d)), y = terrainAt ? Math.max(terrainAt(q.x, q.z), q.y - 1.5) : q.y;
+    return kit.at(color, geometry, q.x, y + up + h / 2, q.z, w, h, l, q.h, glowing, 1.5);
+  };
+  const spot = (s, side, d, up) => { const q = kit.point(s, beside(side, s, d)); q.y = (terrainAt ? Math.max(terrainAt(q.x, q.z), q.y - 1.5) : q.y) + up; return q; };
+  const legs = (color, s, side, d, half, h, t = 0.16) => { for (const [ds, dd] of [[-half, -half], [half, -half], [-half, half], [half, half]]) put(color, s + ds, side, d + dd, t, h, t); };
+  // a tank on a stand
+  const tankStand = (s, side, d) => {
+    legs(WOOD, s, side, d, 1.3, 4.2, 0.22);
+    put(WOOD, s, side, d, 3.4, 0.2, 3.4, 4.2);
+    put(TANK, s, side, d, 3.6, 2.6, 3.6, 4.4, tube);
+    put(TIN, s, side, d, 3.8, 0.7, 3.8, 7, cone);
+  };
+  // a windmill: a lattice mast, its wheel face on to the road, a tail vane
+  const windmill = (s, side, d) => {
+    legs(STEEL, s, side, d, 0.7, 8.6, 0.12);
+    for (const y of [2.6, 5.2, 7.8]) put(STEEL, s, side, d, 1.5, 0.08, 1.5, y);
+    const top = 9.4, r = 1.9;
+    for (let a = 0; a < 4; a++) {
+      const ca = Math.cos(a * Math.PI / 4) * r, sa = Math.sin(a * Math.PI / 4) * r;
+      kit.span(TANK, spot(s - ca, side, d, top - sa), spot(s + ca, side, d, top + sa), 0.5, 0.06);
+    }
+    put(DARK, s, side, d, 0.3, 0.3, 0.3, top - 0.15);
+    put(TANK, s, side, d + side * 0 + 1.6, 1.8, 0.9, 0.06, top - 0.45);
+  };
+  const roadhouse = (p) => {
+    const s = p.at, side = p.side;
+    put(0x9a9486, s - 4, side, 11.5, 17, 0.1, 62);                                    // the forecourt
+    put(CREAM, s + 12, side, 25, 9, 3.6, 24);                                          // the house
+    put(RUST, s + 12, side, 25, 10.6, 0.5, 25.6, 3.6);
+    put(RUST, s + 12, side, 18.8, 3.6, 0.18, 24, 2.9);                                 // its veranda
+    for (let k = 0; k < 5; k++) put(WOOD, s + 0.5 + k * 5.75, side, 17.2, 0.18, 2.9, 0.18);
+    put(DARK, s + 8, side, 20.4, 0.1, 1.3, 9, 1.1);
+    put(DARK, s + 19, side, 20.4, 0.1, 2.2, 1.4);
+    put(0xf2c21a, s + 12, side, 20, 0.3, 1, 12, 4.1);                                  // the board over the door
+    put(RED, s + 12, side, 19.8, 0.1, 0.36, 9, 4.42);
+    for (const ds of [-4.5, 4.5]) for (const dd of [-2.4, 2.4]) put(STEEL, s - 18 + ds, side, 10 + dd, 0.3, 4.8, 0.3); // the canopy
+    put(WHITE, s - 18, side, 10, 7.4, 0.5, 12, 4.8);
+    put(RED, s - 18, side, 10, 7.6, 0.24, 12.2, 4.9);
+    for (const ds of [-2.6, 2.6]) { put(RED, s - 18 + ds, side, 10, 0.8, 1.6, 1); put(WHITE, s - 18 + ds, side, 10, 0.84, 0.4, 1.04, 1.0); }
+    put(0xc9c2b2, s - 18, side, 10, 1.6, 0.25, 8.4);
+    put(STEEL, s - 44, side, 4.6, 0.34, 9.5, 0.34);                                    // the sign by the road
+    put(0xf2c21a, s - 44, side, 4.6, 3.6, 2.2, 0.3, 7.2);
+    put(RED, s - 44, side, 4.6, 3.6, 0.7, 0.34, 6.4, cube, true);
+    tankStand(s + 34, side, 24);
+    windmill(s + 44, side, 13);
+    for (let k = 0; k < 3; k++) put(k % 2 ? 0x3d6fa8 : RED, s + 28 + k * 1.2, side, 17, 0.9, 1.3, 0.9, 0, tube); // drums by the wall
+  };
+  const siding = (p) => {
+    const c = p.at, side = p.side, far = -side;
+    for (let k = 0; k < 3; k++) {                                                      // the silos
+      put(0xd9d6cc, c - 78 + k * 9.4, side, 17, 8, 15, 8, 0, tube);
+      put(TANK, c - 78 + k * 9.4, side, 17, 8.2, 2.6, 8.2, 15, cone);
+      put(STEEL, c - 78 + k * 9.4, side, 17, 8.15, 0.3, 8.15, 5, tube);
+      put(STEEL, c - 78 + k * 9.4, side, 17, 8.15, 0.3, 8.15, 10, tube);
+    }
+    put(0xc9c4b8, c - 46, side, 17, 4, 21, 4);                                         // the elevator, and its conveyor over the silos
+    put(RUST, c - 46, side, 17, 4.6, 0.5, 4.6, 21);
+    kit.span(STEEL, spot(c - 46, side, 17, 20), spot(c - 78, side, 17, 17.6), 1.2, 0.5);
+    put(0x9a9486, c - 60, side, 9, 6, 0.1, 44);
+    put(0xd8c9a2, c - 40, far, 9.5, 4.4, 3, 9);                                        // the station hut, its awning and its name board
+    put(RUST, c - 40, far, 9.5, 5.2, 0.4, 10, 3);
+    put(RUST, c - 40, far, 6.2, 2.4, 0.14, 9, 2.6);
+    put(DARK, c - 40, far, 7.25, 0.1, 1.9, 1.1);
+    for (const ds of [-2.2, 2.2]) put(WOOD, c - 52 + ds, far, 4.2, 0.16, 2.2, 0.16);
+    put(WHITE, c - 52, far, 4.2, 0.12, 0.9, 5, 1.5);
+    put(DARK, c - 52, far, 4.1, 0.1, 0.34, 3.6, 1.78);
+    put(STEEL, c - 24, far, 4, 0.24, 6.4, 0.24);                                       // the signal
+    put(RED, c - 24, far, 4.9, 2, 0.4, 0.12, 5.6);
+    put(WHITE, c - 24, far, 4.5, 0.5, 0.42, 0.14, 5.6);
+    put(RED, c - 24, far, 4, 0.36, 0.36, 0.36, 6.4, SPHERE, true);
+    tankStand(c + 36, far, 11);
+    for (let k = 0; k < 4; k++) put(0x4a3a2c, c + 30, side, 8 + k * 0.1, 2.6, 0.3 * (4 - k) / 4 + 0.3, 3 + k * 0.4, k * 0.3); // a stack of sleepers
+  };
+  const floodway = (p) => {
+    for (const side of [-1, 1]) {
+      add(sideStrip(p.from + 30, p.to - 30, (s) => beside(side, s, 1.7), (s) => beside(side, s, 11), 0.02, 6), flat(0xcdb07c)); // the creek's sand
+      for (let s = p.from + 20; s <= p.to - 20; s += 16) {
+        kit.of(WHITE).push([s, beside(side, s, 2.1), 1.2, 0.2, 2.4, 0.2]);
+        for (const y of [0.5, 1.0, 1.5]) kit.of(0x1c1c1c).push([s, beside(side, s, 2.1), y, 0.22, 0.1, 0.22]);
+        kit.of(RED).push([s, beside(side, s, 2.1), 2.3, 0.24, 0.3, 0.24]);
+      }
+    }
+    for (const [s, side] of [[p.from, 1], [p.to, -1]]) {                               // FLOODWAY boards
+      kit.of(STEEL).push([s, beside(side, s, 3), 1.1, 0.14, 2.2, 0.14]);
+      kit.of(0xf2c21a).push([s, beside(side, s, 3), 2.6, 2.2, 1.3, 0.1]);
+      kit.of(0x1c1c1c).push([s - side * 0.06, beside(side, s, 3), 2.6, 1.6, 0.24, 0.1]);
+    }
+    for (let k = 0; k < 10; k++) {                                                     // stones in the creek bed
+      const s = p.from + 40 + rand() * (p.to - p.from - 80), side = k % 2 ? 1 : -1, w = 0.8 + rand() * 1.4;
+      kit.of(0xb8915c, SPHERE).push([s, beside(side, s, 4 + rand() * 6), w * 0.2, w, w * 0.6, w * 1.2]);
+    }
+  };
+  const homestead = (p) => {
+    const s = p.at, side = p.side;
+    put(CREAM, s, side, 18, 9, 3, 13);                                                 // the house
+    put(TIN, s, side, 18, 11.6, 2.6, 15.6, 3, PYRAMID);
+    put(0x7f8a90, s, side, 12.2, 2.8, 0.14, 13, 2.5);                                  // the veranda
+    for (let k = 0; k < 4; k++) put(WOOD, s - 6.2 + k * 4.13, side, 11, 0.16, 2.5, 0.16);
+    put(DARK, s - 3.5, side, 13.45, 0.1, 1.2, 2.2, 1.1);
+    put(DARK, s + 3.5, side, 13.45, 0.1, 1.2, 2.2, 1.1);
+    put(RUST, s, side, 13.45, 0.1, 2.1, 1.1);
+    put(0x8b4a3a, s - 4, side, 20, 1, 5.6, 1);                                         // the chimney
+    put(TANK, s + 9.4, side, 19, 3.6, 3.2, 3.6, 0, tube);                              // the rainwater tank
+    put(TIN, s + 9.4, side, 19, 3.8, 0.6, 3.8, 3.2, cone);
+    put(RUST, s + 24, side, 21, 7, 3.6, 9);                                            // the shed
+    put(TIN, s + 24, side, 21, 7.8, 0.3, 9.8, 3.6);
+    put(DARK, s + 24, side, 17.45, 0.1, 2.8, 4);
+    windmill(s - 22, side, 14);
+    for (let q = s - 36; q < s + 36; q += 4) {                                         // the fence, a gap at the gate
+      kit.of(WOOD).push([q, beside(side, q, 5), 0.6, 0.16, 1.2, 0.16]);
+      if (Math.abs(q + 2 - s) < 3) continue;
+      for (const y of [0.45, 0.95]) kit.of(WOOD).push([q, beside(side, q, 5), y, 0.07, 0.1, 4, [q + 4, beside(side, q + 4, 5)]]);
+    }
+    put(RED, s - 3.6, side, 3.6, 0.4, 0.4, 0.6, 1.1);                                  // the mailbox
+    put(WOOD, s - 3.6, side, 3.6, 0.12, 1.1, 0.12);
+  };
+  const draw = { roadhouse, siding, floodway, homestead };
+  for (const p of places) draw[p.set](p);
+  // the ranges on the skyline: flat-topped, red, a long way off to either side all down the road
+  for (let k = 0; k < 12; k++) {
+    const s = (k + 0.5) / 12 * Track.length, side = k % 2 ? 1 : -1, r = 110 + rand() * 120, h = 50 + rand() * 50;
+    const q = kit.point(s, side * (400 + rand() * 220)), turn = rand() * 3;
+    if (!offRoads(q.x, q.z, r * 1.6 + 140)) continue;
+    kit.at(k % 3 ? 0xa5603c : 0xb4703f, tube, q.x, h / 2 - 6, q.z, r * 2, h, r * 2.6, turn, false, -1);
+    kit.at(0x8f5234, tube, q.x, h * 0.2 - 6, q.z, r * 2.5, h * 0.4, r * 3.1, turn, false, -1);
+  }
+  kit.draw();
+};
+
+export const THEME_EXTRAS = { construction, bathurst };

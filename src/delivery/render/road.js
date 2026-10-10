@@ -10,7 +10,7 @@ import { setHeadlights } from './headlights.js';
 import { THEMES } from '../themes.js';
 import { CIRCUITS } from './circuits/index.js';
 import { THEME_SCENERY } from './themes/index.js';
-import { THEME_EXTRAS } from './themes/extras.js';
+import { THEME_EXTRAS, outbackYard } from './themes/extras.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -2867,6 +2867,7 @@ const buildRoad = () => {
       for (const side of [-1, 1]) {
         if (Math.random() < 0.3) continue;
         const d = (theme.roadside ? 6 : 9) + Math.random() * 70;
+        if (outbackYard(theme, s, side, d)) continue; // (a roadhouse's forecourt, a siding, a homestead's yard: see themes/extras.js)
         Track.toWorld(s + Math.random() * 6, beside(side, s, d), p);
         if (Track.mainDistance(p.x, p.z) < roadHalf + (theme.roadside ? 4 : 7) || !offRoads(p.x, p.z, 3)) continue;
         const y = terrainAt(p.x, p.z), h = 9 + Math.random() * 9;

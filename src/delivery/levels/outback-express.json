@@ -2,7 +2,7 @@
   "id": "outback-express",
   "name": "Outback Express",
   "description": {
-    "good": "Dingo Flat roadhouse to the railhead: four crossings, a grain siding at each, roos in the Emu Creek floodway, washboard and ruts. The train always wins.",
+    "good": "Dingo Flat roadhouse to the railhead: four crossings, a grain siding at each, a pub in the S, roos in the Emu Creek floodway. The train always wins.",
     "evil": "Bells ringing, booms coming down, a wheat train due, a twenty lying just past the rails. You can make it. Probably. Leave the ruts to the caravans."
   },
   "theme": "panorama",
@@ -42,7 +42,9 @@
     { "id": "emuCreek", "from": 1380, "to": 1660, "scenery": "floodway" },
     { "id": "wheatSiding", "from": 2360, "to": 2650, "scenery": "siding" },
     { "id": "kurrajong", "from": 2880, "to": 3100, "scenery": "homestead" },
+    { "id": "saltbushPub", "from": 3380, "to": 3620, "scenery": "roadhouse" },
     { "id": "ghostGumSiding", "from": 3760, "to": 4060, "scenery": "siding" },
+    { "id": "ironbarkRidge", "from": 4400, "to": 4620, "scenery": "homestead" },
     { "id": "brolgaDowns", "from": 4660, "to": 4880, "scenery": "homestead" },
     { "id": "railhead", "from": 4900, "to": 5200, "scenery": "siding" }
   ],
