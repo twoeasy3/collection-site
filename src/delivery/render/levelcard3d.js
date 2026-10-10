@@ -86,7 +86,7 @@ export const showRoadCard = (box, level, close) => {
   const views = [];
   const evil = Game.evil && !level.battle && !level.alwaysGood;
   const cards = GROUPS.flatMap(g => g.cards).filter(card => card.has(level));
-  const gimmickTile = (card) => tile(views, standView(card.build(level), CLOSE), card.color, card.name, card.rules[0]); // (the level: a card may show this level's own things)
+  const gimmickTile = (card) => tile(views, standView(card.build(level), CLOSE), card.color, card.name, card.line?.(level) || card.rules[0]); // (the level: a card may show, and say, this level's own things)
 
   const gimmicks = cards.filter(card => !TRAFFIC_CARDS.has(card.name)).map(gimmickTile);
 

@@ -39,7 +39,17 @@ const ob = (kind, o = {}) => OBSTACLE_MODELS[kind](o);
 // the sizes the Drifting junk card builds its models at (the kinds that drift on some level; the themes' own take no size)
 const JUNK = { umbrella: { hw: 1.2, hl: 1.2, height: 3 }, surfboard: { hw: 0.6, hl: 0.25, height: 2.6 }, cooler: { hw: 0.8, hl: 0.6, height: 1.2 }, chair: { hw: 1, hl: 1, height: 3.4 },
   wreck: { hw: 1, hl: 2.1, height: 1.4 }, bale: { hw: 1.1, hl: 1.1, height: 1.5 }, crate: { hw: 0.6, hl: 0.6, height: 1.1 }, cone: {}, barrow: {}, trolley: {}, rock: { r: 1 },
-  toyBlock: {}, skittle: {}, divingHelmet: {}, supplyPod: {}, directorChair: {}, cameraDolly: {}, mooringPosts: {}, fuelDrum: {}, popcornCart: {}, barrel: {}, chairStack: {}, riceBasket: {}, present: {} };
+  toyBlock: {}, skittle: {}, divingHelmet: {}, supplyPod: {}, directorChair: {}, cameraDolly: {}, mooringPosts: {}, fuelDrum: {}, popcornCart: {}, barrel: {}, chairStack: {}, riceBasket: {}, present: {},
+  toyDrum: {}, cafeTable: {}, wheelieBin: {}, snowdrift: {}, sackStack: {}, beachBall: {}, tumbleweed: {}, flagStand: {}, brimstone: {}, lavaRock: { r: 1 } };
+// ...and what each is called, several of them, in the card's line about a level's own
+const JUNK_NAMES = { umbrella: 'beach umbrellas', surfboard: 'surfboards', cooler: 'ice boxes', chair: 'lifeguard chairs', wreck: 'wrecked cars', bale: 'hay bales', crate: 'crates',
+  cone: 'cones', barrow: 'wheelbarrows', trolley: 'shopping trolleys', rock: 'rocks', toyBlock: 'alphabet blocks', skittle: 'skittles', divingHelmet: 'diving helmets', supplyPod: 'supply pods',
+  directorChair: 'director\'s chairs', cameraDolly: 'camera dollies', mooringPosts: 'mooring posts', fuelDrum: 'fuel drums', popcornCart: 'popcorn carts', barrel: 'barrels',
+  chairStack: 'stacks of chairs', riceBasket: 'baskets of rice', present: 'presents', toyDrum: 'toy drums', cafeTable: 'cafe tables', wheelieBin: 'wheelie bins', snowdrift: 'heaps of snow',
+  sackStack: 'stacks of sacks', beachBall: 'beach balls', tumbleweed: 'tumbleweeds', flagStand: 'flags on stands', brimstone: 'spikes of brimstone', lavaRock: 'lava boulders' };
+// the kinds that drift on a level (not the darting ones: those are another card), as its theme has them
+const driftingKinds = (level) => [...new Set((level.drifters || []).filter(d => d.pattern !== 'dart').map(d => themedKind(level.theme, d.kind || 'cone', true)))].filter(k => JUNK[k]);
+const listed = (words) => words.length > 1 ? words.slice(0, -1).join(', ') + ' and ' + words[words.length - 1] : words[0];
 const vehicle = (kind, color) => MODELS[CONFIG.vehicles[kind].model]({ ...CONFIG.vehicles[kind], color });
 // a car's model painted (its body's material is its paint)
 const painted = (model, color) => { model.userData.body.material.color.setHex(color); return model; };
@@ -69,7 +79,8 @@ export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>$
   has(HIDDEN_LEVELS['gimmick-road-3']) ? '<span>Test</span> Gimmick Road 3 (?hidden=gimmick-road-3)' : null].filter(Boolean);
 
 // ---- every gimmick, by group ---------------------------------------------------------------------
-// { name, has: (level) => bool (the levels it is in), rules: [...], build: () => { model, tick?(t, dt) },
+// { name, has: (level) => bool (the levels it is in), rules: [...], build: (level?) => { model, tick?(t, dt) },
+//   line: (level) => the card's line on that level's own road card, if not rules[0] (null: rules[0]),
 //   spin: false (the model doesn't turn on its stand), color (its card's glow) }
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
@@ -231,8 +242,10 @@ export const GROUPS = [
     { name: 'Drifting junk', color: 0xe8c547, has: (l) => l.drifters?.some(d => d.pattern !== 'dart'), rules: [
       'Obstacles that won\'t keep still: a hurricane\'s beach junk (umbrellas, surfboards, coolers, lifeguard chairs, wrecks) or hay bales, moving about the road in circles, figures of eight, sweeps across and zigzags along it.',
       `Each wobbles off its pattern a little (${pct(D.wobble)}), so no two move quite alike. They hit like any obstacle of their kind.`,
-    ], build: (level) => { // (on a level's own card, the things that drift on that level, as its theme has them)
-      const own = level ? [...new Set(level.drifters.filter(d => d.pattern !== 'dart').map(d => themedKind(level.theme, d.kind || 'cone')))].filter(k => JUNK[k]).slice(0, 3) : [];
+    ], // (on a level's own card: the things that drift on that level, as its theme has them, in its line and its picture)
+    line: (level) => { const own = driftingKinds(level); return own.length ? `Obstacles that won't keep still: ${listed(own.map(k => JUNK_NAMES[k]))}, moving about the road in circles, figures of eight, sweeps across and zigzags along it.` : null; },
+    build: (level) => {
+      const own = level ? driftingKinds(level).slice(0, 3) : [];
       const junk = (own.length ? own : ['umbrella', 'surfboard', 'cooler']).map(k => ob(k, JUNK[k]));
       const g = group(...junk);
       return { model: g, spin: false, tick: (t) => {
@@ -1027,3 +1040,29 @@ export const GROUPS = [
     } },
   ] },
 ];
+
+// ---- road dressing: the themes' own obstacles ---------------------------------------------------------------
+// NOT gimmicks, and not in GROUPS (so on no level's road card, and in no count of a level's gimmicks): the plain
+// obstacles as each theme has them (themes.js: a theme's `obstacles` and `drifting`), each the kind it stands in
+// for in another shape. Here so they can all be seen in one place: the Gimmicks page shows them last, under a
+// heading of their own (gimmicks.html?group=road-dressing: them alone).
+const DRESS = [ // [kind, name, what it stands in for, where, the card's colour]
+  ['toyBlock', 'Alphabet blocks', 'crate', 'the toy room', 0x1f5fd0], ['toyDrum', 'Toy drum', 'bale', 'the toy room', 0x1f5fd0], ['skittle', 'Skittle', 'cone', 'the toy room', 0xf6f6f6],
+  ['divingHelmet', 'Diving helmet', 'crate', 'the sea bed', 0xe0a93a], ['supplyPod', 'Supply pod', 'crate', 'the Moon', 0xff6a00], ['flagStand', 'Flag on a stand', 'cone', 'the Moon, where it drifts', 0xe0261f],
+  ['directorChair', 'Director\'s chair', 'crate', 'the film studio', 0xd8262b], ['cameraDolly', 'Camera dolly', 'bale', 'the film studio', 0xffc928],
+  ['mooringPosts', 'Mooring posts', 'crate', 'Venice', 0xc81e1e], ['cafeTable', 'Cafe table', 'cone', 'Venice', 0xd8262b],
+  ['fuelDrum', 'Fuel drum', 'crate', 'the ice road', 0xe0261f], ['snowdrift', 'Heap of snow', 'cone', 'the ice road and the snow', 0xf6fbff],
+  ['popcornCart', 'Popcorn cart', 'crate', 'the theme park', 0xd8262b], ['lavaRock', 'Lava boulder', 'rock', 'the volcano', 0xff6a14],
+  ['barrel', 'Barrel', 'crate', 'the Wild West', 0x7a4520], ['tumbleweed', 'Tumbleweed', 'bale', 'the Wild West, where it drifts', 0x7a5526],
+  ['chairStack', 'Stack of chairs', 'crate', 'the favela', 0xe0261f], ['riceBasket', 'Basket of rice', 'crate', 'the rice terraces', 0xd9a546],
+  ['present', 'Present', 'bale', 'Christmas Eve', 0xd8262b], ['wheelieBin', 'Wheelie bin', 'cone', 'the hood', 0x2f9a48], ['sackStack', 'Stack of sacks', 'bale', 'Mumbai', 0xcfa868],
+  ['beachBall', 'Beach ball', 'bale', 'the beach', 0x1a6be6], ['brimstone', 'Spike of brimstone', 'cone', 'hell', 0xff8a1e],
+];
+// the kinds of plain obstacle a level's road has, as its theme has them
+const dressingKinds = (l) => new Set([...(l.obstacles || []).map(o => themedKind(l.theme, o.kind || 'barrier')), ...(l.shoulderRows || []).map(r => themedKind(l.theme, r.kind || 'cone')),
+  ...(l.drifters || []).map(d => themedKind(l.theme, d.kind || 'cone', true))]);
+export const DRESSING = { name: 'Road dressing', about: 'Not gimmicks: the plain obstacles, as each theme has them. Each is a crate, a bale, a cone or a rock in another shape: the same size, the same cost, standing where the level put it.',
+  cards: DRESS.map(([kind, name, like, place, color]) => ({ name, color, has: (l) => dressingKinds(l).has(kind), rules: [
+    `What a ${like} is in ${place}.`,
+    `It hits as a ${like} does: ${CONFIG.obstacleKinds[kind].damage} damage, and you keep ${pct(CONFIG.obstacleKinds[kind].speedKept)} of your speed.`,
+  ], build: () => ({ model: ob(kind, JUNK[kind]) }) })) };

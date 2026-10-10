@@ -267,10 +267,12 @@ export const Collision = (() => {
   // the themes' own obstacles (a theme's `obstacles`: see themes.js): each is the kind it stands in for in another
   // shape, so it has that kind's box, its height too (what the car clears in the air), whatever its model's
   for (const [kind, like] of Object.entries({ toyBlock: 'crate', divingHelmet: 'crate', supplyPod: 'crate', directorChair: 'crate', mooringPosts: 'crate',
-    fuelDrum: 'crate', popcornCart: 'crate', barrel: 'crate', chairStack: 'crate', riceBasket: 'crate', cameraDolly: 'bale', present: 'bale', skittle: 'cone' })) SIZE[kind] = SIZE[like];
+    fuelDrum: 'crate', popcornCart: 'crate', barrel: 'crate', chairStack: 'crate', riceBasket: 'crate', cameraDolly: 'bale', present: 'bale', toyDrum: 'bale', sackStack: 'bale',
+    beachBall: 'bale', tumbleweed: 'bale', skittle: 'cone', cafeTable: 'cone', wheelieBin: 'cone', snowdrift: 'cone', brimstone: 'cone', flagStand: 'cone', lavaRock: 'rock' })) SIZE[kind] = SIZE[like];
   // what a level's own obstacle of that kind is on its theme (its "obstacles", "shoulderRows" and "drifters"
   // only: what a gimmick puts out, a cargo truck's load among it, is what it always was)
-  const themed = (kind) => themedKind(LEVEL.theme, kind);
+  // (drifting: one of its "drifters", where a theme can have another thing again: a bale that drifts is a tumbleweed)
+  const themed = (kind, drifting) => themedKind(LEVEL.theme, kind, drifting);
   const obstacles = [];
   const loaders = []; // (others adding obstacles of their own as a level loads: each is called with add)
   // a rock or an asteroid is sized by its radius, which a rockfall or an asteroid field gives it with the rest of
@@ -282,7 +284,8 @@ export const Collision = (() => {
     return { loose: true, r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, h0: h, h, vLat: 0, bob: 0, period: 1, phase: 0, time: 0, spin: 0.5 };
   };
   const add = (kind, s, lat, extra) => {
-    if ((kind === 'rock' || kind === 'asteroid') && !(extra && extra.r > 0)) extra = { ...loose(kind, s), lat0: lat, ...extra };
+    if ((kind === 'rock' || kind === 'lavaRock' || kind === 'asteroid') && !(extra && extra.r > 0)) // (lavaRock: the volcano's rock, the same in all but looks)
+      extra = { ...loose(kind, s), lat0: lat, ...extra };
     const [hw, hl, height] = SIZE[kind];
     // h = height off the ground (frogs), face = which way the model points, in track space
     obstacles.push({ kind, s, lat, h: 0, yaw: 0, face: 0, hw, hl, height, gone: false, ...extra });
@@ -450,7 +453,7 @@ export const Collision = (() => {
       // each has a centre of its own along the stretch, spaced out, with the pattern's
       // reach along the road kept inside the stretch, and a rhythm of its own: its own
       // pace, and a second, unrelated wobble on top, so no two move quite alike
-      const { from, to } = stretch(z), count = z.count || 4, kind = themed(z.kind || 'cone');
+      const { from, to } = stretch(z), count = z.count || 4, kind = themed(z.kind || 'cone', true);
       const reach = Math.max(CONFIG.drifters.circleRadius, CONFIG.drifters.eightLength) + 5;
       for (let i = 0; i < count; i++) {
         const centre = from + reach + (count > 1 ? i / (count - 1) : 0.5) * (to - from - 2 * reach);
@@ -766,7 +769,7 @@ export const Collision = (() => {
       }
       // any touch blows the obstacle up: the car is damaged and loses speed, but drives on
       o.gone = true;
-      if (o.kind === 'rock' && CAR.trait === 'rocks') { // (the 6x6 ignores rockfall: the rock is smashed aside, at no cost)
+      if ((o.kind === 'rock' || o.kind === 'lavaRock') && CAR.trait === 'rocks') { // (the 6x6 ignores rockfall: the rock is smashed aside, at no cost)
         Game.shake = Math.max(Game.shake, 0.3);
         FxQueue.push({ type: 'explode', s: o.s, lat: o.lat, vs: Player.speed, big: false, scale: 0.6, smoke: 0.4 });
         continue;

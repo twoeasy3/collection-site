@@ -156,7 +156,10 @@
 //                                  shoulderRows and drifters too). Those kinds can be named outright as well:
 //                                  'toyBlock', 'skittle', 'divingHelmet', 'supplyPod', 'directorChair',
 //                                  'cameraDolly', 'mooringPosts', 'fuelDrum', 'popcornCart', 'barrel',
-//                                  'chairStack', 'riceBasket', 'present'
+//                                  'chairStack', 'riceBasket', 'present', 'toyDrum', 'sackStack', 'beachBall',
+//                                  'tumbleweed', 'cafeTable', 'wheelieBin', 'snowdrift', 'brimstone', 'flagStand',
+//                                  'lavaRock' (the volcano's rock). All of them are on the Gimmicks page, last,
+//                                  under Road dressing (gimmicks.html?group=road-dressing)
 //   dropBears  { from, to, count } drop bears up in the trees over that stretch, dropping onto the
 //              road as the player comes near (see CONFIG.dropBear)
 //   herds      { from, to, count, kind } animals wandering back and forth across that stretch: cows,

@@ -231,7 +231,11 @@ ones, which are always open and open nothing.
   in `obstacleKinds`, that kind's box in `collision.js` (the list under `SIZE`), a model in
   `render/obstacleModels.js` that reads on that theme's road from the chase camera (tall, a colour that stands
   off the road, a dark patch under it), and name it in the theme's line of `OBSTACLES` at the foot of
-  `themes.js`. `node scripts/.obstacles-check.mjs` holds each to costing and measuring what it replaces.
+  `themes.js` (`DRIFTING` beside it: what the kind is there when it is one of a level's drifters, if another
+  thing again: a bale that drifts in the Wild West is a tumbleweed). A cone that is roadworks stays a cone.
+  Add its line to `DRESS` at the foot of `gimmicks.js`, and it is on the Gimmicks page under Road dressing
+  (`gimmicks.html?group=road-dressing`: every one of them, to look at).
+  `node scripts/.obstacles-check.mjs` holds each to costing and measuring what it replaces.
 - **A gimmick:** a level field documented in `levels.js`, its logic in a file of its own here,
   its tuning in `config.js`, and its drawing in `render/`, called from the frame loop in
   `main.js`. Add it to `gimmicks.js` so it shows on the gimmicks page, and on the menu's road card for
