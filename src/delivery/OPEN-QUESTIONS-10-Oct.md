@@ -61,6 +61,10 @@ ANSWERED 11-Oct: 6 (small pictures on a phone), 7 (remove the finish-line milest
 tasks G8 and G9 of `CHECKLIST-11-Oct.md`. 8 ("Looks good to me"): the sea bed tube and the drawbridge stay
 as in the pictures sent.
 
+ANSWERED 11-Oct, last: 12 (half a ribbon on every stage of the blue tier), 5l (fog by theme stays as built),
+41 (one file per kind, named consistently), 44 (extra middle carriage), 32 (ideas: yes), 5c (not pressing).
+No questions are open. See `CHECKLIST-11-Oct.md`, section J.
+
 ANSWERED 11-Oct for 5c2 (traffic by the level's tier at the rebalance; stats held), 5c3, 5d, 5e (low bridges
 get an update), 5f, 5g (no car exceeds a lane, ever): see `CHECKLIST-11-Oct.md`, section G.
 

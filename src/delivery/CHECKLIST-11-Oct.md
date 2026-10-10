@@ -155,6 +155,50 @@ the orchestrator (on 11-Oct the owner said: "Just make the edits on the uncomitt
   shelve (`delivery-tow`, touches `cars.js`). Spring Thaw and Hot Zone both claim level place 52 in
   `INSERTED_AT` (`progress.js`): the second to merge renumbers.
 
+- [ ] **I7. The level progression rework: BUMPED UP by the owner, 11-Oct (first in the queue; starts at the
+      first free agent, five agents are running).** "Okay, bump up the progression update please." Inputs:
+      the spec in `CHECKLIST-10-Oct.md` ("Level progression rework", R1 to R8, with Q45) and the owner's
+      answers in section H above (current level order, 5 a tier; Blue 1 opens after level 5 of the five-star
+      tier; levels easy to rearrange among tiers, special levels may go in; tip-money calculation for a
+      rushed run; traffic by the level's tier at the rebalance). Question 12 (what opens an amphibious
+      level) is still open.
+- **Effort rule, 11-Oct:** "Let's stop using the High effort for new agents now": new agents run at Medium
+  (Fable for creative work as before).
+
+## J. The owner's last answers, 11-Oct
+
+- **Q12 (what opens an amphibious level):** "It unlocks after earning at least half a ribbon on every stage in
+  its corresponding blue star tier". Sent to the progression agent (I7).
+- **Q5l (fog colours):** "omg. I misread you. Do whatever the idea was with fog, the current version was the
+  most wrong." Fog's colour by theme stays as built (`ff21b9a`, merged): the first-guess shades for night,
+  the volcano and the sea bed stay as the owner's choice. Nothing more to build unless the owner says.
+- [ ] **J1. Q41, one words file per kind, named consistently.** "One per file, but let's name them
+      consistently." (A words file each for cars, traffic kinds, pickups, gimmicks, obstacles, cargo, beside
+      `levelText.json`, with one naming scheme, each thing's own table as the fallback and the words file
+      taking priority; then a short line per entry for its tile on the "What's on this road" card. Medium.)
+- [ ] **J2. Q44 and Q47, trains.** "Yes, The bullet (or other train, customly defined) gets an extra middle
+      carriage." (Breaking a crossing's boom no longer slows the car; the bullet train, or any train a
+      crossing defines, gets one more middle carriage; a crossing or theme names its own train model: a
+      steam train for High Noon and Cattle Drive. Fable for the steam train.)
+- [ ] **J3. Q32, ideas for showing Good or Evil in-game.** "Sure." (An agent writes ideas for the owner to
+      choose from; builds nothing.)
+- [ ] **J4. Q5c, the volcano rock against the lava boulder.** "Sure but this is not very pressing as I did
+      not see an issue personally". Low priority: a before/after still pair when an agent is free.
+
+- [ ] **J5. The quick smoke test, asked for by the owner, 11-Oct: "Run the quick smoke test and see".**
+      (The standing rule is never to run it unless asked: it was asked. An agent runs it on `main`'s tip in a
+      scratch worktree, alone, and reports.) Also 11-Oct: **"Push now"**: `main` pushed to `c5575c7` (51
+      commits); the washboard (`3600daf`) and later merges are local only.
+
+- [ ] **J6. Cargo in 3D on the menu, BUMPED UP, 11-Oct (sent to the Q22 agent).** "I want the cargo to be
+      displayed in 3D, rotating if on desktop. Bump this". **Corrected by the owner:** "I want the cargo to be
+      displayed in 3D, rotating if on desktop in the level card. Bump this" (the "What's on this road" card,
+      not the menu stage.)
+- Status, 11-Oct: all 32 check runs pass at `c5575c7` (lint 61 problems, 2 more than the first run's 59;
+  one new in `render/themes/fallout.js`). `main` pushed to `ceecc34` (washboard, 20 cargos, level cargo).
+  The quick smoke test fails (74 lines + a crash at `delivery-smoke.mjs:514`); the owner said to ignore it
+  for now; a bisect agent is finding out whether it is the game or a stale test.
+
 ## A. Delegated on 11-Oct (running)
 
 - [ ] **A1. Level 24, Ring Road: make `delivery-rework-e` mergeable and verify.** (Handover: "`delivery-rework-e`
