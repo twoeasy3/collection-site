@@ -476,6 +476,7 @@ import seaquake from './levels/seaquake.json';
 import farside from './levels/farside.json';
 import stunts from './levels/stunts.json';
 import ponti from './levels/ponti.json';
+import thaw from './levels/thaw.json';
 // (batch E's imports go above this line)
 import glow from './levels/glow.json';
 import erupt from './levels/erupt.json';
@@ -530,6 +531,7 @@ export const THEME_LEVELS = [
   glow,
   erupt,
   cattle,
+  thaw, // (batch E's last, the ice road's: written after batch F's three, so after them: its place in saved progress is 52)
   // (batch F: second levels on the theme park, volcano, port, Wild West, favela, rice terraces: new levels go above this line)
 ];
 export const MAIN_LEVELS = [...FIRST_LEVELS, ...THEME_LEVELS]; // (every numbered level: 1, 2, 3...)

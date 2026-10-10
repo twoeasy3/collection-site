@@ -92,6 +92,7 @@ if (opt('levels', false) || opt('cars', false) || shots.some(([, address]) => ad
     'market-town': '&at=900&ff=2&cineside=left', // (the market square, its stalls and clock tower: its level's agent's frame)
     'ring-road': '&at=4330&ff=1', // (the city centre's towers over the last stretch, the exit gantry ahead: its level's agent's frame)
     'albert-park': '&cineside=left&at=150' }); // (the tree again, further on)
+  Object.assign(CINE, { thaw: '&at=3020&ff=1&cineside=left' }); // (Spring Thaw: the ford's sign, the bend and the meltwater, the side road leaving; the start is mostly empty sky)
   if (opt('levels', false)) {
     levels.LEVELS.forEach((level, i) => {
       if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine${FF(level.id)}${CINE[level.id] || ''}`, !!PAIR.folder]);

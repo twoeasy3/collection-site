@@ -12,6 +12,8 @@ import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
 import { makeWindsock, makeSign, makeTransporter, makeHeightBar, makeDepthPost, makeCushion, makeShadeTree } from './gambleModels.js';
 import { buildStrip } from './road.js';
+import { THEMES } from '../themes.js';
+import { LEVEL } from '../levels.js';
 
 const flat = (color, offset) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
 // bars across the road from..to, one every `every` m, each `wide` m along it, as one mesh's geometry
@@ -132,13 +134,14 @@ Game.onLoad.push(() => {
     for (let s = z.from + 2; s < z.to; s += Z.tree) at(s, z.side > 0 ? Track.hi(s) + 4 + (k++ % 2) * 2.5 : Track.lo(s) - 4 - (k++ % 2) * 2.5).add(makeShadeTree(12 + (k * 7 % 4)));
   }
   // ---- ruts: the mud right across, the two wheel tracks of the rut down each lane, and a board before
+  const soft = THEMES[LEVEL.theme || 'city']?.soft || {}; // (a theme whose soft ground is not earth: the thaw's slush and rippled ice)
   for (const r of Gambles.ruts) {
     const R = CONFIG.rut;
-    group.add(new THREE.Mesh(buildStrip(r.from, r.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(0x6a4d31, -2)));
+    group.add(new THREE.Mesh(buildStrip(r.from, r.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(soft.mud ?? 0x6a4d31, -2)));
     for (let lane = 0; lane < Track.laneCount; lane++) {
       const mid = (r.from + r.to) / 2, c = Track.laneOffset(lane, mid);
       if (c < Track.laneLo(mid) || c > Track.laneHi(mid)) continue;
-      for (const x of [-0.72, 0.72]) group.add(new THREE.Mesh(buildStrip(r.from, r.to, (s) => Track.laneOffset(lane, s) + x - 0.24, (s) => Track.laneOffset(lane, s) + x + 0.24, 0.02, 3), flat(0x33241a, -4)));
+      for (const x of [-0.72, 0.72]) group.add(new THREE.Mesh(buildStrip(r.from, r.to, (s) => Track.laneOffset(lane, s) + x - 0.24, (s) => Track.laneOffset(lane, s) + x + 0.24, 0.02, 3), flat(soft.track ?? 0x33241a, -4)));
     }
     if (r.from - R.sign > 5) at(r.from - R.sign, Track.hi(r.from - R.sign) - 0.6).add(makeSign('DEEP RUTS\nPICK ONE', '#ffd23f', '#111', 5.4, 2.6));
   }
@@ -188,8 +191,8 @@ Game.onLoad.push(() => {
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {
     const B = CONFIG.washboard;
-    group.add(new THREE.Mesh(buildStrip(b.from, b.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(0xa9865a, -2)));
-    group.add(new THREE.Mesh(buildRipples(b.from, b.to, B.ripple, B.ripple * 0.42, 0.02), flat(0x7a5d3c, -4)));
+    group.add(new THREE.Mesh(buildStrip(b.from, b.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(soft.board ?? 0xa9865a, -2)));
+    group.add(new THREE.Mesh(buildRipples(b.from, b.to, B.ripple, B.ripple * 0.42, 0.02), flat(soft.ripple ?? 0x7a5d3c, -4)));
     for (const back of [B.sign, 20]) {
       if (b.from - back < 5) continue;
       for (const lat of [Track.hi(b.from - back) - 0.6, Track.lo(b.from - back) + 0.6]) at(b.from - back, lat).add(makeSign('WASHBOARD\n' + kmh(b.skim) + '+ OR CRAWL', '#ffd23f', '#111', 5.8, 2.6));
