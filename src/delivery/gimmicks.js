@@ -15,7 +15,7 @@ import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
 import './render/trafficModels.js';
 import './render/boatModels.js';
-import { makeRobber, makeCashBag } from './render/pursuitModels.js';
+import './render/pursuitModels.js';
 import { OBSTACLE_MODELS } from './render/obstacleModels.js';
 import { makeElephant } from './render/elephantModel.js';
 import { makeHippo } from './render/hippoModel.js';
@@ -68,7 +68,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const PS = CONFIG.pursuit, RO = CONFIG.robber; // (the road's other characters')
+const PS = CONFIG.pursuit; // (the road's other characters')
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -420,15 +420,6 @@ const GROUPS = [
       const cop = vehicle('interceptor', CONFIG.vehicles.interceptor.livery), robber = vehicle('getaway', CONFIG.vehicles.getaway.livery);
       cop.position.set(-1.25, 0, -1.2); robber.position.set(1.25, 0, 1.2);
       return { model: group(cop, robber), tick: (t) => { cop.userData.animate(t); robber.userData.animate(t); robber.rotation.y = Math.sin(t * 2) * 0.08; } };
-    } },
-    { name: 'Bank robber wants a lift', color: 0x58c36a, has: (l) => l.robbers?.length, rules: [
-      `A man with a bag stands on the right-hand shoulder with his thumb out, announced from ${RO.warn} m. Another turns up a little past wherever a pursuit's getaway car is wrecked. Drive over where he stands and he is aboard; drive by and nothing happens.`,
-      `<strong>Carry him:</strong> $${RO.rate} for every 100 m of a ${RO.ride} m lift ($${RO.rate * RO.ride / 100} in all). But every police car within ${RO.alert} m going your way comes after you, and another comes up from behind every ${range(RO.patrolEvery, ' s')}. One within ${RO.catch.along} m of you for ${RO.hold} s is a bust, and his money goes with him.`,
-      `<strong>Or hand him over:</strong> slow below ${kmh(RO.handOver)} beside any police car. No bust, you keep what he has paid, and a Good driver gains ${RO.standing} points of standing.`,
-    ], build: () => {
-      const man = makeRobber(), bag = makeCashBag();
-      bag.position.set(1.3, 0, 0.3); bag.scale.setScalar(0.8);
-      return { model: group(man, bag), tick: (t) => { man.userData.animate(t); bag.userData.animate(t); } };
     } },
     { name: 'Wrong-way drivers', color: 0xffd23f, has: (l) => !l.flow && l.exits?.some(x => !x.flyovers && x.oncoming !== false), rules: [
       'A side road with oncoming traffic and no flyover has nowhere to send it: where its lane meets the expressway, a car carries straight on into your right-hand lane, coming at you.',

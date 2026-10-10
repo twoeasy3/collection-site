@@ -32,7 +32,7 @@ import { Message } from './messages.js';
 import { CAR } from './cars.js';
 import { updateYaw, keepOnRoad, sfx, sfxAt } from './physics.js';
 
-export const between = (r) => r.min + Math.random() * (r.max - r.min);
+const between = (r) => r.min + Math.random() * (r.max - r.min);
 
 // ---- driving, for a car driven from here ---------------------------------------------------------------------
 // everything that can be in a car's way: the traffic on the road, and the player
@@ -81,7 +81,7 @@ const ahead = (car, partner) => {
 // One step of driving: `want` m/s, by whichever way across the road is clear longest (near `prefer`, if given;
 // or exactly at `exact`), braking for what is in its way as hard as its brakes allow, which may not be enough.
 // Returns what it is braking for: { o, d } or null
-export const drive = (car, dt, want, { prefer = null, exact = null, partner = null } = {}) => {
+const drive = (car, dt, want, { prefer = null, exact = null, partner = null } = {}) => {
   const D = CONFIG.pursuit.driving;
   if (car.stun > 0) { // (knocked about: it coasts, as any car does)
     car.stun = Math.max(0, car.stun - dt);
@@ -118,7 +118,7 @@ export const drive = (car, dt, want, { prefer = null, exact = null, partner = nu
 };
 // pulling over and stopping: onto the right-hand shoulder (or the kerb lane, where there is none), no further
 // than `stopAt` if that is given
-export const pullOver = (car, dt, stopAt = Infinity, out = 0) => {
+const pullOver = (car, dt, stopAt = Infinity, out = 0) => {
   const P = CONFIG.pursuit, s = car.s;
   if (car.parkedUp) { // (stopped, and staying: a shove moves it along, no more)
     car.vs -= car.vs * Math.min(1, dt * 3);
@@ -147,20 +147,6 @@ export const pullOver = (car, dt, stopAt = Infinity, out = 0) => {
   return car.parkedUp;
 };
 
-// a car of the traffic's, taken from those the level leaves unused, to be driven from here (going the player's way)
-export const takeCar = (kind, s, lane) => {
-  const car = Traffic.spare();
-  if (!car) return null;
-  car.dir = 1;
-  car.bound = 'north';
-  car.s = s;
-  Traffic.outfit(car, kind, lane);
-  if (car.toad) { Object.assign(car, car.toad); car.toad = null; } // (set off in TOAD RAGE: it stays what it is)
-  Object.assign(car, { evil: kind === 'getaway', defiant: false, viaSide: false, hesitant: false, emotion: 'neutral', mood: 0, showMood: false,
-    throwTimer: Infinity, aimLat: car.lat, rethink: 0, role: kind, parkedUp: false });
-  return car;
-};
-
 export const Pursuit = (() => {
   const P = CONFIG.pursuit;
   let next = Infinity; // s to the next one
@@ -172,7 +158,19 @@ export const Pursuit = (() => {
   const allowed = () => (!!LEVEL.pursuits || !!Pursuit.force?.anywhere) && !LEVEL.laps && !LEVEL.battle && !(LEVEL.grid && !LEVEL.grid.rival) &&
     Track.flow !== 'south' && Track.flow !== 'mixed';
 
-  const take = takeCar;
+  // a car of the traffic's, taken from those the level leaves unused, to be driven from here
+  const take = (kind, s, lane) => {
+    const car = Traffic.spare();
+    if (!car) return null;
+    car.dir = 1;
+    car.bound = 'north';
+    car.s = s;
+    Traffic.outfit(car, kind, lane);
+    if (car.toad) { Object.assign(car, car.toad); car.toad = null; } // (set off in TOAD RAGE: it stays what it is)
+    Object.assign(car, { evil: kind === 'getaway', defiant: false, viaSide: false, hesitant: false, emotion: 'neutral', mood: 0, showMood: false,
+      throwTimer: Infinity, aimLat: car.lat, rethink: 0, role: kind, parkedUp: false });
+    return car;
+  };
 
   // sets one off: the getaway car `behind` m behind the player and the interceptor `gap` m behind that. False
   // if there is no room for it just now

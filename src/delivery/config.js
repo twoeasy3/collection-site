@@ -900,24 +900,6 @@ export const CONFIG = {
     linger: 130,           // m behind the player at which what is left of it is cleared away
     heli: { height: 9, beam: 5 }, // the helicopter over the getaway car (render/pursuit.js): m up (low enough to be in the chase camera's view), m across its light
   },
-  // the bank robber who wants a lift (a level's "robbers": [{ s }]; robber.js): on the right-hand shoulder at s, and
-  // one more `beyondWreck` m past wherever a pursuit's getaway car is wrecked (`ahead` m ahead of the player at
-  // least), announced from `warn` m. Carried, he pays `rate` $ for every 100 m of a `ride` m lift.
-  robber: {
-    warn: 230, ride: 1000, rate: 15,
-    beyondWreck: 90, ahead: 170,
-    // the police: every police car within `alert` m going the player's way comes after the car, at up to `pace`
-    // of its top speed (`rush` m/s more from over `near` m behind); one that was ahead eases off by `easeOff`
-    // m/s (to `easeTo` at least) for it to come up; one left `giveUp` m behind gives up. (So a car flat out on
-    // a clear road is not caught: it is the traffic that gives them their chance.) And every patrolEvery s another
-    // from `behind` m behind, up to `patrols` of them after it at once.
-    alert: 320, pace: 0.97, rush: 14, near: 90, easeOff: 7, easeTo: 8, giveUp: 380,
-    patrolEvery: { min: 7, max: 12 }, patrols: 2, behind: 150,
-    // one within catch.along m along the road and catch.across m across it has caught the car: a bust after
-    // `hold` s of that; but with the car below `handOver` m/s beside any police car, he is handed over
-    // (a Good player: `standing` points)
-    catch: { along: 9, across: 3 }, hold: 1.4, handOver: 9, standing: 25,
-  },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
   lowriderHearing: 90,     // m from a lowrider in traffic within which its music is heard (the same way)

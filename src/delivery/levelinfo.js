@@ -68,7 +68,6 @@ const GIMMICKS = [
   ['Funerals', (l) => l.processions],
   ['Ambulances', (l) => l.emergencies],
   ['Police pursuit', (l) => l.pursuits],
-  ['Bank robber', (l) => some(l.robbers)],
   ['Fog', (l) => some(l.fog)],
   ['Ice', (l) => some(l.ice)],
   ['Mud', (l) => some(l.mud)],

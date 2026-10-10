@@ -9,7 +9,6 @@
   "oncomingCount": 8,
   "tip": 40,
   "pursuits": { "every": { "min": 30, "max": 50 } },
-  "robbers": [{ "s": 1300 }],
   "segments": [
     { "length": 400, "curve": 0 },
     { "length": 350, "curve": 0.003 },

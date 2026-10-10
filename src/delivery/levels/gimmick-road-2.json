@@ -5,7 +5,6 @@
   "clock": { "good": 420, "evil": 320 },
   "tip": 50,
   "pursuits": { "every": { "min": 25, "max": 45 } },
-  "robbers": [{ "s": 2700 }],
   "lanes": 6,
   "traffic": { "commuter": 0.25, "darkvan": 0.15, "wagon": 0.15, "van": 0.12, "taxi": 0.1, "pickup": 0.1, "police": 0.08, "minivan": 0.05, "icecream": 0.08, "binlorry": 0.08, "learner": 0.08, "boyracer": 0.08, "caravan": 0.08 },
   "trafficCount": 7,
