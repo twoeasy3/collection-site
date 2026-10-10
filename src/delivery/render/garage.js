@@ -14,6 +14,7 @@ import { MODELS } from './models.js';
 import { makeUfo } from './carExtras.js';
 import { GarageView, arrange, mountGarageView } from './garageview.js';
 import { showComparison } from './compare.js';
+import { IdeasLot } from './ideaslot.js';
 
 // The lot: three rows of bays, a long covered garage along the back, the cars parked strictly column by
 // column in order of their stars and price, cheapest first (one with no stars, the Tank, last), and in
@@ -166,6 +167,8 @@ const ringOf = (color) => {
 };
 const ring = ringOf(0xffd23f), lookRing = ringOf(0xffffff);
 let looking = null; // the car whose stats are shown (null: the one in use)
+// the garage's own lot is the one on show (not its "Car ideas" tab, which has its own: see render/ideaslot.js)
+const onLot = () => Garage.isOpen && !IdeasLot.on;
 
 // ---- interface ---------------------------------------------------------------------------------
 const ui = document.getElementById('garageUi');
@@ -217,6 +220,7 @@ const refresh = () => {
     if (car === inUse) ring.position.set(mesh.position.x, 0.12, mesh.position.z);
     if (car === looking) lookRing.position.set(mesh.position.x, 0.12, mesh.position.z);
   }
+  if (IdeasLot.on) IdeasLot.refresh(); // (the "Car ideas" tab: its own words, and its ideas in the livery on show)
 };
 
 // a car tapped: its stats shown, with the button to use it, or to buy it (locked or not, any car can be looked at)
@@ -259,12 +263,12 @@ const clampScroll = (x) => {
 const scrollTo = (car) => { const i = order.indexOf(car); if (i >= 0) scrollX = clampScroll(colX(Math.floor(i / ROWS))); };
 const perPixel = () => view.width / Math.max(1, renderer.domElement.clientWidth);
 renderer.domElement.addEventListener('pointerdown', (event) => {
-  if (!Garage.isOpen) return;
+  if (!onLot()) return;
   drag = { x: event.clientX, moved: 0, t: performance.now() };
   fling = 0;
 });
 renderer.domElement.addEventListener('pointermove', (event) => {
-  if (!Garage.isOpen) return;
+  if (!onLot()) return;
   if (drag) {
     const dx = event.clientX - drag.x, now = performance.now();
     drag.moved += Math.abs(dx);
@@ -284,17 +288,17 @@ const letGo = () => {
 renderer.domElement.addEventListener('pointerup', letGo);
 renderer.domElement.addEventListener('pointercancel', letGo);
 renderer.domElement.addEventListener('wheel', (event) => {
-  if (!Garage.isOpen) return;
+  if (!onLot()) return;
   scrollX = clampScroll(scrollX + (Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY) * perPixel());
   fling = 0;
 }, { passive: true });
 window.addEventListener('keydown', (event) => {
-  if (!Garage.isOpen || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
+  if (!onLot() || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) return;
   scrollX = clampScroll(scrollX + (event.key === 'ArrowRight' ? 1 : -1) * BAY_W);
   fling = 0;
 });
 renderer.domElement.addEventListener('click', (event) => {
-  if (!Garage.isOpen) return;
+  if (!onLot()) return;
   if (dragged) { dragged = false; return; } // (the end of a drag is no click)
   const mesh = carAt(event);
   if (mesh) pick(mesh); // (on touch there is no hover: the purchase prompt states the price)
@@ -311,6 +315,8 @@ mountGarageView(() => {
   hovered = null;
   refresh();
 });
+// the "Garage" and "Car ideas" tabs: the second lot is render/ideaslot.js's
+IdeasLot.mount({ evil: () => Garage.evil, back: refresh });
 document.getElementById('garageBackBtn').addEventListener('click', () => Garage.close());
 
 const anchor = new THREE.Vector3();
@@ -331,6 +337,7 @@ export const Garage = {
     startScreen.classList.add('hidden');
     document.body.classList.add('in-garage');
     looking = null; // (the car in use's stats shown)
+    IdeasLot.leave(); // (the garage always opens on its own lot)
     scrollTo(order.find(car => car.id === Progress.data.car) || order[0]); // (the car in use in view)
     fling = 0;
     refresh();
@@ -339,6 +346,7 @@ export const Garage = {
     // a different car: tell the rest of the game (the player gets into it when a run starts)
     if (CAR !== carAtOpen || Game.evil !== sideAtOpen) window.dispatchEvent(new Event('carchange')); // (or another side: the menu draws itself again)
     this.isOpen = false;
+    IdeasLot.leave();
     Game.inMenu = false;
     hovered = null;
     ui.classList.add('hidden');
@@ -347,16 +355,24 @@ export const Garage = {
     document.body.classList.remove('in-garage');
     renderer.domElement.style.cursor = '';
   },
+  // for testing: the tab to show ('ideas': the Car ideas lot; anything else: the garage's own)
+  tab(name) {
+    if (name === 'ideas') IdeasLot.enter();
+    else if (IdeasLot.on) { IdeasLot.leave(); refresh(); }
+  },
   // for testing: look at the car with this id, as if it had been tapped (its stats, and the comparison card)
   look(carId) {
+    if (IdeasLot.on) return IdeasLot.look(carId);
     const mesh = parked.find(m => m.userData.car.id === carId);
     if (mesh) { pick(mesh); scrollTo(mesh.userData.car); }
   },
   // for testing: show the tooltip of the car with this id as if the pointer were on it
   hover(carId) {
+    if (IdeasLot.on) return IdeasLot.hover(carId);
     hovered = parked.find(mesh => mesh.userData.car.id === carId) || null;
   },
   render(now) {
+    if (IdeasLot.on) return IdeasLot.render(now); // (the Car ideas tab draws its own lot)
     const canvas = renderer.domElement;
     const aspect = canvas.clientWidth / canvas.clientHeight;
     // (the three rows framed to the screen's height, whatever its shape: a wider screen just shows more columns)

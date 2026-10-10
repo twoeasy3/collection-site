@@ -275,6 +275,8 @@ export const Player = {
       if (others.length) this.takeCar(() => lendCar(others[Math.floor(Math.random() * others.length)]));
     }
   },
+  // the mystery effect running, in a word or two, for the pickup status (messages.json: mysteryNames); '' with none
+  get mysteryName() { return this.mystery ? Message.pick('mysteryNames', this.mystery) || this.mystery : ''; },
   endMystery() {
     if (this.mystery === 'toad') Traffic.toadify(false);
     if (this.mystery === 'rushHour') Traffic.rushHour(false);
@@ -557,3 +559,14 @@ export const Player = {
     }
   },
 };
+
+// what each sticky message lasts for (CONFIG.messageTimes.sticky names one of these for each: see Message.settle)
+Object.assign(Message.conditions, {
+  run: () => Game.state === 'playing' && Player.active && !Player.busted, // (none outlasts a wreck, a bust or the run)
+  puncture: { on: () => !!Player.puncture, progress: () => Math.min(1, Player.fixing / CONFIG.puncture.fixTime) }, // (its progress: the tyre being changed)
+  beached: { on: () => Player.beached > 0 },
+  badGas: { on: () => Player.badGas > 0 },
+  heavy: { on: () => Player.heavy > 0 },
+  butterfingers: { on: () => Player.butterfingers > 0 },
+  mystery: { on: (effect) => Player.mystery === effect }, // (the effect the message is for: the last of its path)
+});

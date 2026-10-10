@@ -780,6 +780,10 @@ export const CONFIG = {
     cargotruck: { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 20, max: 24 }, noSpin: true, sheds: true, special: true },
     // an ice-cream van (a level's "iceCreamStops": see CONFIG.iceCream), pink, in the one livery; never evil
     icecream: { hw: 1.0, hl: 2.4, height: 2.3, mass: 1.6, health: 120, speed: 0.9, special: true, model: 'deliveryvan', livery: 0xf7b6d2 },
+    // a police pursuit's two cars (a level's "pursuits": see CONFIG.pursuit and pursuit.js), never in a level's traffic list:
+    // the getaway car, and the interceptor, a model seen nowhere else (low and wide, a light bar, a push bar)
+    getaway: { hw: 0.95, hl: 2.3, height: 1.3, mass: 1.3, health: 220, speed: 1, special: true, model: 'getaway', livery: 0x7a1420, crit: 0.5 },
+    interceptor: { hw: 1.05, hl: 2.45, height: 1.15, mass: 1.7, health: 400, speed: 1, special: true, model: 'interceptor', livery: 0x1a2236, crit: 0, spin: 0 },
   },
   // an ice-cream van's stop (a level's "iceCreamStops": { s, lane, wait? }): the van stopped in its lane, its
   // jingle going, and the traffic behind it in a residential street brakes to a halt and waits, nobody
@@ -850,6 +854,23 @@ export const CONFIG = {
     wave: 160,             // m short of it a siren has the cars pulling aside
     aside: 3,              // m/s they move
     warn: 220,             // m short of it the player is warned
+  },
+  // a police pursuit (a level's "pursuits": { every: { min, max } }; pursuit.js), a traffic event: a getaway car and,
+  // `gap` m behind it (closing on that at `closing` m/s per m out), an interceptor, set off `behind` m behind the
+  // player, the interceptor's siren heard from `heard` m. The getaway car runs at `pace` times the player's car's
+  // top speed (between speed.min and speed.max), and `rush` m/s more while it is over `near` m from the player
+  // (so it comes up quickly, is a few seconds going by, and is gone).
+  pursuit: {
+    behind: 260, gap: 30, closing: 0.8, heard: 420,
+    pace: 1.3, speed: { min: 30, max: 75 }, rush: 24, near: 40,
+    clearOfEnd: 700,       // m short of the finish beyond which none sets off
+    retry: 2,              // s before it tries again, with no room for it
+    leftBehind: 450,       // m behind the player at which one that never got by is taken off
+    // how the two are driven: every `rethink` s, into the lane with the most clear road ahead (looking `look` s
+    // on; a car within `margin` m of its side is in the way; each metre across the road costs `drift` m of clear
+    // road, and the lane it is in already is worth `stick` m); `swerve` m/s sideways; and brakes that are not
+    // always enough (`brake` m/s^2, to `followGap` m behind what is in the way)
+    driving: { look: 3, rethink: 0.2, margin: 0.35, drift: 1.5, stick: 12, swerve: 8, accel: 9, brake: 15, followGap: 3 },
   },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)
@@ -1065,9 +1086,39 @@ export const CONFIG = {
 
 
   // messages (the wording is in messages.json)
-  messageTime: 2,          // s a message stays up (plus messageExtra for its kind)...
-  messageFade: 0.4,        // ...the last of which it spends fading away
-  messageExtra: { reaction: 0, pickup: 2, rage: 2, bust: 5 }, // s longer, by kind (see messages.js)
+  // Every time a message spends on the screen is in this one table (messages.js timeFor reads it; nothing
+  // else holds a time). A message's time is the first of these that names it: `keys` (its own path in
+  // messages.json: 'events.speedFine'), `groups` (its group there: 'zones'), `kinds` (its kind, which is
+  // also its colour: see messages.js kindOf), then `default`
+  messageTimes: {
+    default: 4,            // s a message stays up, where nothing below says otherwise...
+    fade: 0.4,             // ...the last of which it spends fading away
+    kinds: { reaction: 2, pickup: 4, rage: 4, bust: 7 }, // s, by kind: a driver's reaction, a pickup or an event, TANK RAGE and a car destroyed, a bust
+    groups: {},            // s, by group in messages.json, e.g. zones: 3, milestones: 6
+    keys: {},              // s, by the message's own path, e.g. 'events.speedFine': 6
+    // The sticky ones: a message about something that is still true of the player's car. It is said as any
+    // other, on the message lines, and then stays in a slot of its own in the meters' corner (ordinary
+    // messages never push it out) until the condition named here ends, or the car is wrecked or busted, or
+    // the run is over. path in messages.json: the condition it lasts for (see the foot of player.js:
+    // 'mystery' is "the mystery effect this message is for is running"). Take a line out and that message
+    // is an ordinary one again; add one, with a condition that player.js has
+    sticky: {
+      'events.puncture': 'puncture',                 // a flat tyre, until it is changed (its row shows the change going on)
+      'events.beached': 'beached',                   // stuck in the gravel, until the car digs itself out
+      'powerups.badGas': 'badGas',                   // the bad powerups: cheap fuel, for as long as it lasts
+      'powerups.heavyMass': 'heavy',                 // ...the extra weight
+      'powerups.butterfingers': 'butterfingers',     // ...and no throwing
+      'powerups.mystery.noBrakes': 'mystery',        // the mystery effects that are bad news, or change the rules: no brakes
+      'powerups.mystery.rickety': 'mystery',         // ...more damage from every knock
+      'powerups.mystery.jerk': 'mystery',            // ...every driver against the player
+      'powerups.mystery.swapSides': 'mystery',       // ...on the other side: the packages do something else
+      'powerups.mystery.blackout': 'mystery',        // ...the lights out
+      'powerups.mystery.earthquake': 'mystery',      // ...the road heaving
+      // (the good ones are left to the pickup status, which names them while they run: toad, angel,
+      // invincible, soupedUp, giant, magnet, trafficFreeze; and sundayDrivers, rushHour, carSwap, moodSwing)
+    },
+    stickyRows: 3,         // sticky messages shown at once, the newest first
+  },
 
   // night levels (theme "night"): the player's headlights, two spotlights riding on the car
   headlights: {

@@ -32,6 +32,7 @@ import { Collision } from './collision.js';
 import { Packages } from './packages.js';
 import { Pickups, Targets } from './pickups.js';
 import { Delivery } from './delivery.js';
+import { Pursuit } from './pursuit.js';
 
 // ============================================================================
 // GAME STATE
@@ -65,6 +66,8 @@ export const Game = {
 
   // how far through the run the player is, 0 .. 1 (on a lapped level, all its laps)
   get progress() { return LEVEL.laps ? (this.lap + Track.progress(Player.s)) / LEVEL.laps : Track.progress(Player.s); },
+  // ...and how many metres of it are left
+  get distanceLeft() { return (1 - this.progress) * Track.length * (LEVEL.laps || 1); },
   // seconds left on the clock; below zero is the tip countdown
   get remaining() { return this.allowed - this.time; },
   // the level's tip: whole until the clock hits zero, then draining to nothing over the tip countdown
@@ -208,6 +211,7 @@ export const Game = {
     Gambles.reset();
     Milestones.reset();
     WaterMains.reset();
+    Pursuit.reset();
     if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
     startScreen.classList.add('hidden');
@@ -298,6 +302,7 @@ export const Game = {
   },
   update(dt) {
     this.shake = Math.max(0, this.shake - dt / CONFIG.shakeTime);
+    Message.settle(); // (a sticky message goes as its condition ends)
     if (this.state === 'start' || this.paused) return;
     if (this.raceWatch) { // the race screensaver: only the race
       this.time += dt;
@@ -370,6 +375,7 @@ export const Game = {
     if (playing) WaterMains.update(dt);
     Traffic.update(dt);
     if (playing) SpeedCameras.update(dt);
+    if (playing) Pursuit.update(dt);
     UfoStrike.update(dt);
     BulletTrain.update(dt);
     if (playing) Tide.update(dt);

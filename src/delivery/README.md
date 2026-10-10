@@ -64,11 +64,14 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `?test` | The hidden test track (`?hidden=testbed`) |
 | `?edited` | The level as the editor left it |
 | `?garage`, `?garage=evil` | Opens the garage; `&hover=tank` shows that car's stats |
+| `?garage&tab=ideas` | The garage on its Car ideas tab; `&look=bug` looks at one, `&studio=bug,limo` (or `all`) shows those alone on a plain floor, for pictures (`&views=3` adds a side view) |
 | `?screensaver` | The traffic screensaver |
 | `?racewatch` | The race screensaver; `&camcheck` logs a check of its cameras |
 | `&touch` | Shows the on-screen controls on a desktop |
 | `&cargostate=2` | An Evil run's cargo in that state (0 calm, 1 agitated, 2 furious) whatever the clock says |
+| `&hudcheck` | Every part of the HUD showing at once and held there, for a picture: the shoulder's dial most of the way up, a flat tyre, a mystery running (`&mystery=` names it), two messages. With `&touch` and a level with a speed camera just ahead (`&level=20&at=760`) nothing is left out |
 | `&deliver=3.5` | Stops the delivery at the kerb that many seconds in, for a picture (with `&at=` just short of the finish and `&ff=14`) |
+| `&pursuit=3` | A police pursuit set off 3 s into the run, on any delivery level; `&pursuitbehind=60` starts it that far behind |
 | `?pick=41` | The menu with that level picked, every level open for the visit (a look at its card); `&start` presses Start Game too |
 
 An amphibious level started from the address with no amphibious car owned is driven in the Float Van for
@@ -201,13 +204,21 @@ Levels unlock in menu order, each by delivering the one before.
   `carshots/<id>-evil.jpg`, taken with `?cine=car`. A vehicle that belongs to a level goes in
   `LEVEL_CARS`; one that should stay out of the garage goes in `SECRET_CARS`, with its own way
   in (the City Bus: type B U S on the start screen, or `?autostart&car=bus`).
+- **Car ideas lot:** the garage has a second tab, "Car ideas": a lot of thirty vehicles that are ideas
+  on show, not cars. Each is drawn after a real vehicle and has a generic name (the Bubble Car after the
+  BMW Isetta, the Double Decker after the AEC Routemaster...); hovering or tapping one shows its name,
+  what it is based on, its size and a line about it, and the Livery button shows its Good and Evil
+  paint. They are listed in `IDEA_CARS` in `ideas.js` and built by `IDEA_MODELS` in
+  `render/ideaModels.js`; the lot is `render/ideaslot.js`. None is in `CARS` or `CONFIG.vehicles`:
+  nothing here is bought, saved, driven, in traffic or in a level, and no check counts them. To make
+  one a real car, give it an entry in `CARS` and move its builder into `MODELS`.
 - **A thing to deliver:** a model in `render/cargoModels.js` (a group about a metre tall with
   `userData.animate(t)`; an Evil one built with `stated`, which gives it `setState(0 | 1 | 2)`), its id
   and name in `CARGO` in `cargo.js`, and a level's `"cargo": { "good": id, "evil": id }` to carry it.
   `node scripts/.cargo-check.mjs` lists what every level carries and checks the ending.
 - **A sound:** drop a WAV in `sounds/` and name it in `SAMPLES` in `render/audio.js`. Game logic
   asks for it with `sfx()` or `sfxAt()` from `physics.js`.
-- **A message:** add its wording to `messages.json`.
+- **A message:** add its wording to `messages.json`. How long it stays up is in `CONFIG.messageTimes` (by its kind, its group or its own path), and so is the list of sticky ones, which stay until what they warn of is over; `node scripts/.hud-check.mjs` checks both, and the mystery effect's name in the pickup status (`mysteryNames` in `messages.json`).
 
 ## The start screen
 

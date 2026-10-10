@@ -48,6 +48,7 @@ import { syncTunnel } from './render/tunnel.js';
 import { syncWaterMains } from './render/watermains.js';
 import { syncReversible } from './render/reversible.js';
 import { syncMysteries } from './render/mysteries.js';
+import './render/pursuit.js';
 import { Mysteries } from './mysteries.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
@@ -60,6 +61,7 @@ import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
 import { Social } from './social.js';
 import { CAR, lendCar, superOf, ownedAmphibious } from './cars.js';
+import { Message } from './messages.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
 // ?test (or ?hidden=testbed) starts the hidden test track straight away (?test&evil: as Evil).
@@ -71,6 +73,7 @@ const params = new URLSearchParams(location.search);
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.open(params.get('garage') === 'evil');
+  if (params.get('tab')) Garage.tab(params.get('tab')); // (&tab=ideas: its Car ideas lot, where &look and &hover name an idea)
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
 }
@@ -161,6 +164,19 @@ const silence = () => {
   Sound.lowriders(0);
 };
 
+// ?hudcheck (with ?autostart): every part of the HUD showing at once and held there, for a picture of it:
+// the shoulder's danger most of the way up, a flat tyre, a mystery running (?mystery= names it, or the
+// earthquake), half a tank found, and two ordinary messages kept up (a long one and a bust's)
+const hudCheck = params.get('hudcheck') === null ? null : () => {
+  if (Game.state !== 'playing' || !Player.active || Game.screensaver) return;
+  if (!Player.mystery) { Player.nextMystery = params.get('mystery') || 'earthquake'; Player.collect('mystery'); }
+  if (!Player.puncture) Player.punctureTyre(1);
+  Player.danger = Social.dangerTime * 0.3;
+  Game.tankPieces = 2;
+  if (!Message.lines.some(line => line.kind === 'bust')) { Message.say('events', 'wideLoad'); Message.say('busts', 'seen'); }
+  for (const line of Message.lines) line.at = performance.now();
+};
+
 let last = performance.now();
 let prevState = Game.state;
 const frame = (now) => {
@@ -230,6 +246,7 @@ const frame = (now) => {
     syncMysteries(dt); // (after the camera: the earthquake bobs it)
     syncRaceWatch(now);
     syncEmotes(dt, now);
+    if (hudCheck) hudCheck();
     updateHud();
     // the engine note follows the speed; silent once the run is over or the car is gone
     // (and in the screensaver, where there is no car, or while paused)
@@ -244,8 +261,9 @@ const frame = (now) => {
     // ping as one comes near enough to bust you (nobody busts a tank)
     let copFar = Infinity;
     for (const c of Traffic.cars) {
-      if (!c.active || (c.kind !== 'police' && c.kind !== 'ambulance') || c.toad || c.junction) continue;
-      copFar = Math.min(copFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat));
+      if (!c.active || (c.kind !== 'police' && c.kind !== 'ambulance' && !c.sirenOn) || c.toad || c.junction) continue;
+      // (a pursuit's interceptor is heard from further off: before it is seen)
+      copFar = Math.min(copFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat) * (c.sirenOn ? CONFIG.sirenRange / CONFIG.pursuit.heard : 1));
     }
     const siren = Game.state === 'playing' && !Game.paused ? Math.max(0, 1 - copFar / CONFIG.sirenRange) : 0;
     // (the player's own siren, a pickup, at full blast)

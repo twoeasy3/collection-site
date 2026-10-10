@@ -4,6 +4,7 @@
   "theme": "city",
   "clock": { "good": 265, "evil": 200 },
   "tip": 200,
+  "pursuits": { "every": { "min": 40, "max": 70 } },
   "speedLimit": 90,
   "traffic": {
     "commuter": 0.25,
