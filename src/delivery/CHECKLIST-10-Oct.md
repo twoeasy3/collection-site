@@ -1000,11 +1000,11 @@ Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `ren
 
 - [ ] R1. Levels in tiers of five: gold 1, 2, 3, 4, 5, then blue 1, 2, 3, 4, 5. Ten tiers, fifty places. The menu's groups become the tiers, each headed by its stars.
 - [ ] R2. A ribbon on every level: the left half earned by beating it as Good, the right half as Evil. A level with no choice of side (the Battlefield, an "always Good" level) gives the whole ribbon at once. Shown on the level's card, and counted per tier.
-- [ ] R3. The car rule: on a level whose half-ribbon for the side being played is not yet earned, only a car of exactly that tier may be driven: same number of stars, same colour of stars. Once that half is earned, the level can be replayed on that side in any car.
-- [ ] R4. Unlocking inside a tier: levels 1 and 2 open with the tier; level 3 needs two half-ribbons in the tier; level 4 needs four; level 5 needs level 4 beaten on either side.
+- [ ] R3. The car rule: on a level whose medal for the side being played is not yet earned, only a car of exactly that tier may be driven: same number of stars, same colour of stars. Once that half is earned, the level can be replayed on that side in any car.
+- [ ] R4. Unlocking inside a tier: levels 1 and 2 open with the tier; level 3 needs two medals in the tier; level 4 needs four; level 5 needs level 4 beaten on either side.
 - [ ] R5. Beating level 5 on either side opens the next tier (its first two levels).
 - [ ] R6. Saved progress carried over: a best time already saved on a side becomes that half of the ribbon; tiers and levels open accordingly, so nobody loses what they had.
-- [ ] R7. The menu and garage say why: a locked level says what it needs ("2 more half-ribbons in this tier"); a level that restricts the car says which tier, and the garage marks the cars that qualify.
+- [ ] R7. The menu and garage say why: a locked level says what it needs ("2 more medals in this tier"); a level that restricts the car says which tier, and the garage marks the cars that qualify.
 - [ ] R8. Checks: the unlock rules, the car rule on both sides, old saves, and that no player can be left with no way forward.
 
 ### What the spec does not settle (to be answered before it is built)
@@ -1032,7 +1032,7 @@ Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `ren
    5's fifth level: assumed to replace the old rule.
 8. **Medals** (bronze, silver, gold by time to spare, added today) are kept beside the ribbons:
    assumed.
-9. **The half-ribbons that count** towards levels 3 and 4: assumed to be those earned in that
+9. **The medals that count** towards levels 3 and 4: assumed to be those earned in that
    tier only, not across the game.
 
 ## Menu UI (owner, 10-Oct; agent 18, branch `delivery-menu`)

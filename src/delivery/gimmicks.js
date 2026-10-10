@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
 import { levelName } from './levelText.js';
+import { nameOf, blurbOf, slug } from './words.js';
 import { themedKind } from './themes.js';
 import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
@@ -1052,10 +1053,10 @@ export const GROUPS = [
   // (the fallout: see radiation.js. A dose is slow, a touch is for the run; the armour is the answer to all of it)
   { name: 'Fallout', cards: [
     { name: 'Radiated areas', color: 0x7dff2a, has: (l) => l.radiation?.length, rules: [
-      `A stretch of some lanes, or of the whole road, under a green haze between bright edges and hazard bands, a board ${RD.sign} m before it. In it your health ticks down, ${pct(RD.tick)} of the car's full health a second, and the <strong>radiation meter</strong> fills: full in ${RD.meterTime} s of dosing. Out of it the meter falls back, slowly (${RD.meterFall} s to empty).`,
-      `A full meter <strong>infects you for the rest of the run</strong>: from then on the health ticks down everywhere, ${pct(RD.infectedTick)} a second, whatever you do. A wrench buys time; nothing cures it. A warning is said at ${pct(RD.high)}.`,
+      `A stretch of some lanes, or of the whole road, under a green haze between bright edges and hazard bands, a board ${RD.sign} m before it. In it your health ticks down, about ${pct(RD.tick * 8)} of the car's full health for each 8 s (a 200 m stretch at 25 m/s), and the <strong>radiation meter</strong> fills: full in ${RD.meterTime} s of dosing, so stay a dozen seconds and you are infected. Out of it the meter falls back, slowly (${RD.meterFall} s to empty): two stretches close together can fill it between them.`,
+      `A full meter <strong>infects you for the rest of the run</strong>: from then on the health ticks down everywhere, the whole car in about ${Math.round(1 / RD.infectedTick)} s, whatever you do. A wrench buys time (${Math.round(CONFIG.wrenchRepair / RD.infectedTick)} s each) and so does an armour; nothing cures it. A warning is said at ${pct(RD.high)}.`,
       'It is the middle of the car that counts: the lane beside the green is clean, and so are the shoulders where the haze stops short of them. The armour keeps every bit of it out while it lasts.',
-      'The gamble: the big cash is in the green. A short cut through costs a little health and some meter; a run down the whole of a long one costs a lot of both. Nothing in it stops the car.',
+      'The gamble: the big cash is in the green. A dash through costs a visible slice of health and over half the meter; a dwell in it infects you. Nothing in it stops the car.',
     ], build: () => {
       const g = road(9, 16), patch = makeAreaPatch(4.4, 12), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
       patch.position.x = -2.2;
@@ -1076,6 +1077,15 @@ export const GROUPS = [
     } },
   ] },
 ];
+// gimmickText.json comes first (words.js): each card is given its id (its name as written above, in lower case with
+// dashes: the file's key, and what the road card tells the cards apart by), and then the file's name; `blurb`, the
+// line of its tile on a level's road card, only where the file has one (else the card's `line`, else its first rule)
+for (const group of GROUPS) for (const card of group.cards) {
+  card.id = card.id || slug(card.name);
+  card.name = nameOf('gimmick', card.id, card.name);
+  const blurb = blurbOf('gimmick', card.id);
+  if (blurb) card.blurb = blurb;
+}
 
 // ---- road dressing: the themes' own obstacles ---------------------------------------------------------------
 // NOT gimmicks, and not in GROUPS (so on no level's road card, and in no count of a level's gimmicks): the plain
@@ -1099,7 +1109,7 @@ const DRESS = [ // [kind, name, what it stands in for, where, the card's colour]
 const dressingKinds = (l) => new Set([...(l.obstacles || []).map(o => themedKind(l.theme, o.kind || 'barrier')), ...(l.shoulderRows || []).map(r => themedKind(l.theme, r.kind || 'cone')),
   ...(l.drifters || []).map(d => themedKind(l.theme, d.kind || 'cone', true))]);
 export const DRESSING = { name: 'Road dressing', about: 'Not gimmicks: the plain obstacles, as each theme has them. Each is a crate, a bale, a cone or a rock in another shape: the same size, the same cost, standing where the level put it.',
-  cards: DRESS.map(([kind, name, like, place, color]) => ({ name, color, has: (l) => dressingKinds(l).has(kind), rules: [
+  cards: DRESS.map(([kind, name, like, place, color]) => ({ id: kind, name: nameOf('obstacle', kind, name), blurb: blurbOf('obstacle', kind) || undefined, color, has: (l) => dressingKinds(l).has(kind), rules: [
     `What a ${like} is in ${place}.`,
     `It hits as a ${like} does: ${CONFIG.obstacleKinds[kind].damage} damage, and you keep ${pct(CONFIG.obstacleKinds[kind].speedKept)} of your speed.`,
   ], build: () => ({ model: ob(kind, JUNK[kind]) }) })) };

@@ -6,7 +6,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { CAR, carInUse, selectCar, stars, starColour, STAR_COLOURS, blueStarsOpen, garageCars, restrictedTier } from '../cars.js';
-import { Tiers } from '../tiers.js';
+import { Tiers, tierStarsNode } from '../tiers.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { renderer } from './scene.js';
@@ -222,7 +222,7 @@ const refresh = () => {
   const inUse = carInUse();
   // (a level that restricts the car, tiers.js: the lot shows only the cars of its tier, and the bar says so)
   const only = GarageView.restrictTier;
-  bank.textContent = 'Bank ' + money(Progress.data.money) + (only ? '  |  Only ' + Tiers.tierName(only) + ' cars may be driven on this level' : '');
+  bank.replaceChildren('Bank ' + money(Progress.data.money), ...(only ? ['  |  Only ', tierStarsNode(only), ' cars may be driven on this level'] : []));
   for (const b of sideBtns) { const on = (b.dataset.side === 'evil') === Garage.evil; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }
   const shown = looking || inUse, owned = Progress.owns(shown.id);
   info.replaceChildren(...withStars(shown), '  -  ' + stats(shown));

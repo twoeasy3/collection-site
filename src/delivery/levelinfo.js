@@ -6,6 +6,7 @@
 // ============================================================================
 import { CONFIG } from './config.js';
 import { CARS, LEVEL_CARS } from './cars.js';
+import { nameOf, blurbOf } from './words.js';
 
 // The medal for delivering a level with `spare` s on the clock, on a side: 'gold', 'silver', 'bronze' (any
 // delivery on time), or null (not delivered). A level's clock is a clean run in the reference car times
@@ -143,8 +144,8 @@ export const levelTraffic = (level) => {
   return list;
 };
 // A vehicle kind's name and a line about it as traffic. The garage's cars (and the levels' own vehicles) are
-// named by cars.js; the rest, and whatever has a way of its own on the road, here (the wording follows
-// CONFIG.vehicles' notes)
+// named by cars.js (and carText.json); the rest, and whatever has a way of its own on the road, here (the wording
+// follows CONFIG.vehicles' notes). trafficText.json comes first for both (words.js): this table is its fallback
 const GARAGE_LINE = 'One of the garage\'s cars out as traffic: it cruises near its own top speed.';
 const AMPHIBIOUS_LINE = 'Amphibious traffic: down the slipway, across the water and out the far side, slower afloat.';
 const VEHICLES = {
@@ -180,12 +181,16 @@ const VEHICLES = {
   getaway: ['Getaway car', 'Flat out, with the law behind it.'],
   interceptor: ['Police interceptor', 'After the getaway car, siren going.'],
 };
+// every kind this table names (trafficText.json has one entry for each: scripts/.words-check.mjs)
+export const TRAFFIC_KINDS = Object.keys(VEHICLES);
 export const vehicleInfo = (kind, role = 'traffic') => {
   const car = LEVEL_CARS[kind] || CARS.find(c => c.id === kind), type = CONFIG.vehicles[kind], [name, line] = VEHICLES[kind] || [];
+  // (a garage car in traffic is told by its own line in carText.json; GARAGE_LINE only if it has none)
+  const own = line || (type?.amphibious ? AMPHIBIOUS_LINE : car ? blurbOf('car', car.id, GARAGE_LINE) : 'Traffic.');
   return {
-    name: name || car?.name || kind[0].toUpperCase() + kind.slice(1),
-    line: role === 'drive' ? 'What you drive on this level, whatever is in the garage.'
-      : line || (type?.amphibious ? AMPHIBIOUS_LINE : car ? GARAGE_LINE : 'Traffic.'),
+    name: nameOf('traffic', kind, name || car?.name || kind[0].toUpperCase() + kind.slice(1)),
+    // (what you drive here is a rule of the level, said whatever the thing's own line)
+    line: role === 'drive' ? 'What you drive on this level, whatever is in the garage.' : blurbOf('traffic', kind, own),
     // (its paint on a tile: the one livery it has, or the garage car's, or left to whoever draws it)
     color: type?.livery ?? car?.color ?? null,
   };

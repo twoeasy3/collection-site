@@ -199,6 +199,60 @@ the orchestrator (on 11-Oct the owner said: "Just make the edits on the uncomitt
   The quick smoke test fails (74 lines + a crash at `delivery-smoke.mjs:514`); the owner said to ignore it
   for now; a bisect agent is finding out whether it is the game or a stale test.
 
+## K. The owner's complaints and requests, 11-Oct, late
+
+- [ ] **K1. Balance the fallout gimmick.** "Balance the fallout level gimmick: The radiation damage is
+      neglible, and it is extremely hard to get radiated by staying in radiation. The player's car should
+      receive the same radiation glow if infected" (started: Sonnet, Medium, branch `delivery-radbalance`).
+- [ ] **K2. The new cargos are poor; rework them and drop three.** "The new cargos are nowhere near as good as
+      the previous ones.. I'm not sure what the previous agent was given." Notes 1 to 14 (kittens, jumper,
+      library books, fruit basket, lawyers, glitter bomb, recorders, telemarketers, tax inspectors,
+      bailiffs: "Axe it", consultants, in-laws' luggage, marching band, salesman and surprise party:
+      dropped) and "5a) The agent was really uninspired and just gave variations of the same concept,
+      executed poorly." (started: Fable, Medium, branch `delivery-cargofix`; the three drops are C44
+      bailiffs, C52 salesman, C53 party.)
+- [ ] **K3. Prank-related cargo items: a DRAFT OF IDEAS first.** "Let's improve these, drop the ones in 14)
+      and then let's do some prank-related items. I would want a draft of ideas now before I OK the
+      modelling. This was expensive for very poor effort". (Ideas only, for the owner to approve; nothing
+      modelled before the OK. Queued behind K1 and K2.)
+- [ ] **K2 note 15 (added, sent to the K2 agent):** "15.) The Chain Letter has the enevlope triangle rotated
+      the wrong way".
+- [ ] **K4. Tier UI: stars, not words.** "Don't call it \"Gold 1\", just render the stars..." (The
+      progression rework's menu, lock reasons and garage notes show a tier as stars in its colour, never the
+      words Gold or Blue. Sent to the progression agent.)
+- [ ] **K5. Q33 to Q37 BUMPED, 11-Oct: "Bump Q33 to Q37 now".** (The menu and garage requests: the Plop Up
+      sound on menu clicks; buying cars from an `alert()` to an in-game menu; sort and show as lists, hiding
+      empty options; Good/Evil livery with "Switch" and "Use"; stat lines blocking the cars on mobile.
+      Started: Sonnet, Medium, branch `delivery-garageui`. The smoke bisect was stopped to make room: the
+      owner had said to ignore the smoke test for now.)
+- [ ] **K6. BUG, under the tiers rework, 11-Oct:** "Bug: I select an Idea Car. The level G1-1 forces me to
+      select The Commuter. When the level ends, the animation plays with the Idea Car instead of The
+      Commuter". (The end-of-level animation uses the player's own pick, not the car of the run. Sent to the
+      progression agent, first in its queue; the tiers stay off by default so nothing live is affected.)
+- [ ] **K7. Half-ribbons become medals, 11-Oct.** "Let's stop calling everything half-ribbons and call them
+      medals instead. Delivering a level on good earns you 1 medal, instead of 1 half-ribbon. Re-word all
+      other text to reflect this". (The tiers rework's text and docs; watch for a clash with the existing
+      "medals kept beside ribbons" concept. Sent to the progression agent, queued after K6 and K4 and the
+      progress code.)
+      **K7 addition, same day:** "Nothing is called a ribbon anymore. Reword all lines. \"Deliver level 4 of
+      <STAR> on either side\" becomes \"Earn a medal on Level 4\"". (No user-facing text says ribbon or
+      half-ribbon; sent to the progression agent.)
+- [ ] **K8. J6 corrected AGAIN, 11-Oct: "No no no no no. The cargo is to spin ON the level card itself".**
+      (Not a tile in the "What's on this road" card, which is where `fcb3129` put it: the main level card
+      on the menu stage, in place of the name-only Cargo figure in the facts row; the road card's tile is
+      removed. Sent to the Q22 agent.) Also merged: J1 words files (`60765ac`); its cargoText.json entries
+      for the dropped cargos go with K2.
+- **STOP, 11-Oct (owner): "Stop the assignment of new tasks from now please".** No new agents and no new
+  tasks to agents that finish; running agents finish what they hold; finished work is merged locally and
+  reported. Nothing below is started until the owner lifts this: K3 (prank ideas draft), J4, the rest of
+  Q1 to Q51, Hong Kong, Stelvio, Tokyo, Mumbai, Night Shift, I2.
+- **Standing rule from K2:** a new model is looked at in stills from front, back, side and above, in every
+  state and at the level-card tile size, and must be distinct from every other model in concept; open-topped
+  things have no top face; no coplanar faces; no parts passing through each other. **Refined by the owner:**
+  "A black face as the top would be sufficient to indicate that it is open." (An open-topped container
+  needs only a flat black face across its opening, with the contents standing proud of it, not a modelled
+  interior; a closed one keeps a solid lid.)
+
 ## A. Delegated on 11-Oct (running)
 
 - [ ] **A1. Level 24, Ring Road: make `delivery-rework-e` mergeable and verify.** (Handover: "`delivery-rework-e`
@@ -429,7 +483,11 @@ The owner's words, as in `CHECKLIST-10-Oct.md`. Q52 and Q53 are done and left ou
   prints and checks it, `node scripts/tiers.mjs move <id> <tier|outside> [position]` moves a level. Rules and the
   amphibious rule (Q12: half a ribbon on every stage of its blue tier, ONE function, `Tiers.amphibiousOpens`) are in
   `tiers.js`. Switch: `CONFIG.progression.tiers` (false = the old rule); `?tiers=1` / `?tiers=0` for a visit.
-- Ribbons are the best times (nothing new saved); `tierBase` keeps a save's already-open levels open; `tierCars` keeps a
+- Medals are the best times (nothing new saved); `tierBase` keeps a save's already-open levels open; `tierCars` keeps a
   restricted level's car apart from the player's pick (Q45). Null car, disabled START and the filtered garage: done.
 - NOT built (5c, for the rebalance): traffic made of cars in the tier of its level.
 - `scripts/tier-money.mjs` is the rushed-run money table; `scripts/.tiers-check.mjs` checks the rules.
+- Wording (owner, 11-Oct): a half-ribbon is now a MEDAL. Delivering a level on Good earns 1 medal, on Evil 1 medal; a level's two
+  are its ribbon; a level with one side only gives both at once. The menu's existing bronze / silver / gold (time to spare)
+  is the GRADE of a medal, shown as before on each side's half: delivering on time is at least a bronze, so a side has a medal
+  exactly when it has a grade. Same word, one thing: see the report to the owner.
