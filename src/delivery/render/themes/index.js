@@ -11,6 +11,9 @@ import { toyroom } from './toyroom.js';
 import { seabed } from './seabed.js';
 import { moon } from './moon.js';
 // (batch A's imports go above this line)
+import { backlot } from './backlot.js';
+import { venice } from './venice.js';
+import { iceroad } from './iceroad.js';
 // (batch B's imports go above this line)
 import { themepark } from './themepark.js';
 import { volcano } from './volcano.js';
@@ -22,6 +25,9 @@ export const THEME_SCENERY = {
   seabed,
   moon,
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
+  backlot,
+  venice,
+  iceroad,
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   themepark,
   volcano,

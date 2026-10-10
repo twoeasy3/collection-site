@@ -50,6 +50,7 @@ export const MACHINERY_KINDS = ['bulldozer', 'excavator', 'dumpTruck', 'roller',
 export const SITE_KINDS = ['trench', 'excavator', 'workers', 'pipes'];
 export const BRIDGE_STYLES = ['harbour', 'seacliff'];
 export const ZONE_SCENERY = ['sydney', 'bush', 'ousley', 'seacliff', 'wollongong', 'shellharbour', 'kiama', 'marais', 'gois', 'noirmoutier', 'savanna', 'kopjes', 'river', 'plains'];
+ZONE_SCENERY.push(...Object.values(THEMES).flatMap(theme => theme.sets || [])); // (and the sets of a theme with a file of its own: its "sets" in themes.js)
 export const LANDMARK_KINDS = ['bay', 'flyer', 'mbs', 'esplanade', 'fullerton', 'merlion', 'padang', 'gardens', 'artscience', 'helix', 'float', 'cbd', 'suntec', 'gallery', 'domes',
   'river', 'basin', 'casino', 'biosphere', 'skyline', 'lake', 'oldStraight', 'stream', 'banking', 'hotel'];
 // ...and the ones it has: read from its own tables, never copied

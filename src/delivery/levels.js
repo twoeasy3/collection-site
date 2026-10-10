@@ -423,6 +423,9 @@ import toys from './levels/toys.json';
 import leaks from './levels/leaks.json';
 import moonbase from './levels/moon.json';
 // (batch A's imports go above this line)
+import backlot from './levels/backlot.json';
+import venice from './levels/venice.json';
+import iceroad from './levels/iceroad.json';
 // (batch B's imports go above this line)
 import park from './levels/park.json';
 import cinder from './levels/cinder.json';
@@ -456,6 +459,9 @@ export const THEME_LEVELS = [
   leaks,
   moonbase,
   // (batch A: toy room, underwater tunnel, moon base: new levels go above this line)
+  backlot,
+  venice,
+  iceroad,
   // (batch B: film studio, Venice, ice road: new levels go above this line)
   park,
   cinder,
