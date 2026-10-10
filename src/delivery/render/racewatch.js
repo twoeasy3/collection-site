@@ -6,6 +6,7 @@
 // watched car and the camera, and the news of the latest wreck.
 import * as THREE from 'three';
 import { LEVEL } from '../levels.js';
+import { levelName } from '../levelText.js';
 import { Track } from '../track.js';
 import { Game } from '../game.js';
 import { RaceWatch } from '../racewatch.js';
@@ -232,7 +233,7 @@ export const syncRaceWatch = (now) => {
   const order = RaceWatch.standings(), leader = order[0];
   if (!leader) return;
   const lap = Math.min(LEVEL.laps, (leader.laps || 0) + 1), done = RaceWatch.finished.length > 0;
-  const head = `<div class="head">${collapsed ? '' : plain(String(LEVEL.name).toUpperCase())}<span>${done ? 'FLAG' : 'LAP ' + lap + ' / ' + plain(LEVEL.laps)} ${collapsed ? '▸' : '▾'}</span></div>`;
+  const head = `<div class="head">${collapsed ? '' : plain(levelName(LEVEL).toUpperCase())}<span>${done ? 'FLAG' : 'LAP ' + lap + ' / ' + plain(LEVEL.laps)} ${collapsed ? '▸' : '▾'}</span></div>`;
   board.classList.toggle('collapsed', collapsed);
   if (collapsed) { // (just the order, in one column: position, colour, letters, and places gained or lost)
     board.innerHTML = head + '<div class="abbrs">' + order.map((c, i) => {

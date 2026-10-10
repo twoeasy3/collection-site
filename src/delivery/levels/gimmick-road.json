@@ -1,6 +1,5 @@
 {
   "id": "gimmick-road",
-  "name": "Gimmick Road",
   "car": "miata",
   "clock": { "good": 504, "evil": 357 },
   "tip": 50,

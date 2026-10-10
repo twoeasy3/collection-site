@@ -5,6 +5,7 @@
 // switches and buttons of the options sheet, the race controls, the secret bus, and the results screen's buttons.
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
+import { levelName } from '../levelText.js';
 import { CARS, SECRET_CARS, useLevelCar, selectCar, amphibiousCars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
@@ -60,7 +61,7 @@ const raceTrackBtn = document.getElementById('raceTrackBtn');
 const raceTracks = () => [...LEVELS.filter(l => l.laps).map(l => l.id), 'all'];
 const showRaceTrack = () => {
   const level = LEVELS.find(l => l.laps && l.id === Progress.data.raceTrack);
-  raceTrackBtn.textContent = 'Race track: ' + (level ? level.name : 'All in turn');
+  raceTrackBtn.textContent = 'Race track: ' + (level ? levelName(level) : 'All in turn');
 };
 raceTrackBtn.addEventListener('click', () => {
   const tracks = raceTracks(), at = tracks.indexOf(Progress.data.raceTrack);

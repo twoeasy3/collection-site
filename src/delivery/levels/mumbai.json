@@ -1,10 +1,5 @@
 {
   "id": "mumbai",
-  "name": "Mumbai Monsoon",
-  "description": {
-    "good": "Monsoon season. Rickshaws swarm, water mains burst through the road, a parade fills the street and cows go where they please. Be kind.",
-    "evil": "Rickshaws, potholes, geysers in the road and a parade with nowhere to hide. The monsoon is the least of their problems."
-  },
   "theme": "mumbai",
   "drive": "left",
   "clock": { "good": 230, "evil": 170 },

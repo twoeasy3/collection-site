@@ -1,10 +1,5 @@
 {
   "id": "suburbs",
-  "name": "Suburbia",
-  "description": {
-    "good": "School-run country. Pull over for the ambulances, pick the bonus clocks and leave the penalty ones, and merge politely where the lanes close.",
-    "evil": "Quiet streets, tidy lawns, SUVs with nowhere to be. Race the ambulance, grab the bonus seconds and wake the whole neighbourhood."
-  },
   "theme": "suburb",
   "clock": { "good": 35, "evil": 25 },
   "tip": 85,

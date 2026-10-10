@@ -1,10 +1,5 @@
 {
   "id": "stunts",
-  "name": "Stunt Double",
-  "description": {
-    "good": "Stunt day on the one-way backlot: rain machines, a ramp over the jam, a plane coming down and extras on parade. Coffees to the director, none spilt.",
-    "evil": "They are filming the big chase and you were not cast. Jump the queue, jump the drawbridge, drive through the explosion and steal the whole scene."
-  },
   "theme": "backlot",
   "clock": { "good": 150, "evil": 115 },
   "tip": 320,

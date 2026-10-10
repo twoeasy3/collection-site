@@ -1,10 +1,5 @@
 {
   "id": "erupt",
-  "name": "Eruption Day",
-  "description": {
-    "good": "A canary to the last boat out. The mountain has gone up: keep with the evacuation, mind the cattle on the road, and watch the sky for lava bombs.",
-    "evil": "An egg that likes the heat, through an island on the run. Fly the jam off the transporter, skim the washboard, and let the lava bombs sort out the queue."
-  },
   "theme": "volcanoErupting",
   "clock": { "good": 250, "evil": 190 },
   "tip": 320,

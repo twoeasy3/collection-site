@@ -119,7 +119,8 @@ const C = CONFIG;
 export const FIELDS = {
   // ---- the level ----
   id: { shape: 'text', group: 'basics', label: 'Id', required: true, help: 'Unique name: the level\'s key in saved progress. Keep it short.' },
-  name: { shape: 'text', group: 'basics', label: 'Name', required: true, help: 'The level\'s name on the menu.' },
+  name: { shape: 'text', group: 'basics', label: 'Name', required: true, help: 'The level\'s name on the menu. (A built-in level keeps its name and description in levelText.json; the editor opens it with them, and a level downloaded from here carries its own.)' },
+  // (required of a level as the editor holds it: one opened through levelText.js withWords. A built-in level's own file may leave name and description to levelText.json)
   description: { shape: 'object', group: 'basics', label: 'Description', help: 'A sentence or two about the level for the menu, one for each side (160 characters each at most). Good: a cheerful, careful courier\'s briefing. Evil: the same job, relished.',
     settings: { good: text('Good'), evil: text('Evil (left out on a level that is always Good)') } },
   clock: { shape: 'object', group: 'basics', label: 'Clock', required: true, help: 'Seconds on the clock for each side (scripts/level-clocks.mjs works them out from a clean run).',

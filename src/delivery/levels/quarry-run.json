@@ -1,7 +1,5 @@
 {
   "id": "quarry-run",
-  "name": "Quarry Run",
-  "description": { "good": "Blasting day at the quarry. Mind the stop / go men, creep through the mud, duck the low bridge or take the haul road, and heed the sirens.", "evil": "Sirens, blasts, boulders in the lanes, dump trucks crossing. Run the stop boards, wade the ford and be the second most dangerous thing in the quarry." },
   "theme": "construction",
   "clock": { "good": 215, "evil": 165 },
   "tip": 210,

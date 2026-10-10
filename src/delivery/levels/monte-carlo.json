@@ -1,10 +1,5 @@
 {
   "id": "monte-carlo",
-  "name": "Monte Carlo",
-  "description": {
-    "good": "A winter stage through the snow. Ice patches on the road and cars parked along it: gentle hands, early braking, warm delivery.",
-    "evil": "Snow, sheet ice and a row of parked cars that somebody loves. Slide wide, borrow the whole road and blame the conditions."
-  },
   "theme": "snow",
   "clock": { "good": 174, "evil": 123 },
   "tip": 120,

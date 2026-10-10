@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
+import { levelName } from '../levelText.js';
 import { Track } from '../track.js';
 import { houseAt, gangHouse, LOT } from '../gunfire.js';
 import { Game } from '../game.js';
@@ -3119,7 +3120,7 @@ const buildRoad = () => {
         ctx.fillStyle = '#f4ead2';
         ctx.textAlign = 'center';
         ctx.font = 'bold 58px sans-serif';
-        ctx.fillText(String(LEVEL.name || 'The pass').toUpperCase().slice(0, 16), 256, 92, 460);
+        ctx.fillText(String(levelName(LEVEL) || 'The pass').toUpperCase().slice(0, 16), 256, 92, 460);
         ctx.font = 'bold 40px sans-serif';
         ctx.fillText('SUMMIT  ' + Math.round(2000 + high * 6) + ' m', 256, 150, 460);
         const map = new THREE.CanvasTexture(canvas);

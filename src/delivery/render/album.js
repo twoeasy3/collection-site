@@ -4,6 +4,7 @@
 // corner with the side(s) it was delivered on and the best time to spare. Locked ones are grey blanks.
 // ?album opens it straight away; ?album&unlock shows every postcard as earned, for a look.
 import { LEVELS } from '../levels.js';
+import { levelName } from '../levelText.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime } from '../game.js';
 import { LEVEL_SHOTS } from './menu.js';
@@ -35,13 +36,13 @@ const build = (pretend) => {
     if (got && LEVEL_SHOTS[level.id]) photo.style.backgroundImage = `url("${LEVEL_SHOTS[level.id]}")`;
     card.appendChild(photo);
     if (got) {
-      const caption = el('div', 'caption', 'Greetings from ' + level.name);
+      const caption = el('div', 'caption', 'Greetings from ' + levelName(level));
       card.appendChild(caption);
       const stamp = el('div', 'stamp ' + got.side, got.label);
       stamp.appendChild(el('small', '', formatTime(got.spare) + ' to spare'));
       card.appendChild(stamp);
     } else {
-      card.appendChild(el('div', 'caption', 'Deliver ' + level.name + ' to earn this postcard'));
+      card.appendChild(el('div', 'caption', 'Deliver ' + levelName(level) + ' to earn this postcard'));
     }
     return card;
   });

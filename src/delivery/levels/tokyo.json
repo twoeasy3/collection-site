@@ -1,10 +1,5 @@
 {
   "id": "tokyo",
-  "name": "Tokyo Expressway",
-  "description": {
-    "good": "An expressway with rules: an 80 limit, a lane that reverses, a police roadblock and trucks shedding their loads. Kei trucks set the pace.",
-    "evil": "Tunnels, cameras, a roadblock and a lane about to fill with oncoming cars. The kei trucks are in for a memorable commute."
-  },
   "theme": "tokyo",
   "drive": "left",
   "clock": { "good": 190, "evil": 140 },

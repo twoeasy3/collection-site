@@ -1,10 +1,5 @@
 {
   "id": "seaquake",
-  "name": "Seaquake",
-  "description": {
-    "good": "A quake has shaken the tunnel: roof falls, buckled plates and a jam behind each. Go round the rubble, ease over the bumps and mind the wet tar.",
-    "evil": "The sea bed is shaking and everyone has stopped to look. Take the transporter's ramps over the jam and the big notes from under the falling roof."
-  },
   "theme": "seabed",
   "clock": { "good": 165, "evil": 120 },
   "tip": 320,

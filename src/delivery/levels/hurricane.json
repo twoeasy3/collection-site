@@ -1,10 +1,5 @@
 {
   "id": "hurricane",
-  "name": "Hurricane",
-  "description": {
-    "good": "The beach road in a hurricane. Deck chairs, umbrellas and loose signs slide across the lanes: hold steady in the crosswind and deliver dry.",
-    "evil": "A hurricane is throwing the beach at the road and cars through the air. For once you are not the worst thing out here. Fix that."
-  },
   "theme": "beach",
   "flow": "north",
   "clock": { "good": 282, "evil": 200 },

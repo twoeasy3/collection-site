@@ -1,10 +1,5 @@
 {
   "id": "derby",
-  "name": "Toy Box Derby",
-  "description": {
-    "good": "A four-lane slot track round the playroom, and two wind-up racers want your tip. Thread the bumps, hop the queue by the ramp and be first to the toy box.",
-    "evil": "Two clockwork couriers think this is their track. Fly the ramp over the traffic jam, flatten the farm set and leave them both under the bulldozer."
-  },
   "theme": "toyroom",
   "clock": { "good": 155, "evil": 120 },
   "tip": 300,

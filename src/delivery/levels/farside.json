@@ -1,10 +1,5 @@
 {
   "id": "farside",
-  "name": "Far Side",
-  "description": {
-    "good": "The long haul to the far-side observatory: washboard dust, rover ruts, switchbacks and a meteor storm. Pick a rut, hold it, and keep the telescope level.",
-    "evil": "Nobody can see the far side from Earth. Skim the washboard flat out, jump the queue off the transporter and race the meteors to the last crater rim."
-  },
   "theme": "moon",
   "clock": { "good": 265, "evil": 200 },
   "tip": 360,

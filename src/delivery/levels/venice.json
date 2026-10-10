@@ -1,7 +1,5 @@
 {
   "id": "venice",
-  "name": "Acqua Alta",
-  "description": { "good": "A gelato run down the quay: hop three humped bridges, jump the drawbridge, ease past the carnival and keep it dry when the tide comes in.", "evil": "A haunted mirror for a palazzo. Scatter the carnival, fly the bridges, and let the acqua alta take anyone too slow along the quay." },
   "theme": "venice",
   "clock": { "good": 185, "evil": 140 },
   "tip": 310,

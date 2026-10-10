@@ -1,10 +1,5 @@
 {
   "id": "showdown",
-  "name": "Showdown",
-  "description": {
-    "good": "Night, a little roadster, and three evil couriers racing you to the drop. Every one that gets there first takes a share of the tip.",
-    "evil": "Three rival villains, one tip, one dark road. They are every bit as bad as you are: be worse, and be first."
-  },
   "theme": "night",
   "car": "miata",
   "clock": { "good": 200, "evil": 190 },

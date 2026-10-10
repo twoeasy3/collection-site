@@ -1,10 +1,5 @@
 {
   "id": "airport",
-  "name": "Airport Apocalypse",
-  "description": {
-    "good": "The airport is having a very bad day. Tankers, hangars and an airliner are coming down on the perimeter road: deliver between the blasts.",
-    "evil": "Everything at the airport is exploding and none of it is your fault, yet. Thread the wreckage and add to the insurance claim."
-  },
   "theme": "airport",
   "flow": "north",
   "lanes": 4,
