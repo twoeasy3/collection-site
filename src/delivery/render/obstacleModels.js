@@ -888,6 +888,25 @@ OBSTACLE_MODELS.fuelDrum = () => {
   put(group, new THREE.SphereGeometry(0.58, 12, 8), lambert(0xf6fbff), 0, 1.24, 0).scale.y = 0.34;
   return grounded(group, 0.85);
 };
+// the fallout zone's: a drum of waste: a yellow drum, two black hoops round it, a black trefoil on its side (both sides)
+OBSTACLE_MODELS.wasteDrum = () => {
+  const group = new THREE.Group(), ink = lambert(0x16181c);
+  put(group, new THREE.CylinderGeometry(0.56, 0.56, 1.25, 14), lambert(0xffd23f), 0, 0.625, 0);
+  for (const y of [0.3, 0.95]) put(group, new THREE.CylinderGeometry(0.585, 0.585, 0.09, 14), ink, 0, y, 0);
+  put(group, new THREE.CylinderGeometry(0.5, 0.5, 0.06, 14), ink, 0, 1.27, 0);
+  for (const side of [-1, 1]) { // (the trefoil: a hub and three blades, flat on the drum's side, drawn in boxes and a disc)
+    const face = new THREE.Group();
+    put(face, new THREE.CircleGeometry(0.1, 10), ink, 0, 0, 0);
+    for (const a of [Math.PI / 2, Math.PI / 2 + Math.PI * 2 / 3, Math.PI / 2 - Math.PI * 2 / 3]) {
+      const blade = put(face, new THREE.BoxGeometry(0.17, 0.26, 0.02), ink, Math.cos(a) * 0.26, Math.sin(a) * 0.26, 0);
+      blade.rotation.z = a - Math.PI / 2;
+    }
+    face.position.set(0, 0.63, side * 0.575);
+    face.rotation.y = side > 0 ? 0 : Math.PI;
+    group.add(face);
+  }
+  return grounded(group, 0.85);
+};
 // the theme park's: a popcorn cart: a red cart on two white wheels, a box of popcorn behind glass posts, a striped roof
 OBSTACLE_MODELS.popcornCart = () => {
   const red = lambert(0xd8262b), white = lambert(0xf6f6f6);

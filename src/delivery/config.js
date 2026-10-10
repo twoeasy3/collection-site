@@ -612,6 +612,7 @@ export const CONFIG = {
     barrel: { damage: 18, speedKept: 0.75 },        // the Wild West's
     chairStack: { damage: 18, speedKept: 0.75 },    // the favela's: a stack of plastic chairs
     riceBasket: { damage: 18, speedKept: 0.75 },    // the rice terraces': a basket heaped with rice
+    wasteDrum: { damage: 18, speedKept: 0.75 },     // the fallout zone's: a yellow drum of waste, the trefoil on it
     // ...for a bale:
     cameraDolly: { damage: 20, speedKept: 0.75 },   // the film studio's: a camera on its dolly
     present: { damage: 20, speedKept: 0.75 },       // Christmas Eve's: a wrapped present

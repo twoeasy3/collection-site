@@ -182,6 +182,14 @@ export const THEMES = {
     target: { height: 4.2, beam: true },
     light: { sky: 0xd8e2e0, ground: 0x44503e, ambient: 1.1, sun: 0xe8f0ea, sunlight: 0.6 } },
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
+  // fallout: the exclusion zone round a power plant that has gone wrong (render/themes/fallout.js): a sick green sky and
+  // a green haze over dead grey land, the plant's cooling towers and reactor dome on the skyline, pylons marching
+  // across the land, pipe racks and a tank farm by the road, chain-link fences hung with trefoils, abandoned
+  // checkpoints, a dead village; ash drifting down. Its radiated stretches are the level's "radiation" (radiation.js).
+  // sets: what a zone's scenery can ask for: the plant itself, the pylons, the tank farm, a checkpoint, the village
+  fallout: { sky: 0x9cc06e, ground: 0x6b6852, road: 0x3a3c3e, scenery: 'fallout', fogColor: 0xa9cc78, sets: ['pylons', 'checkpoint', 'plant', 'tankfarm', 'village'],
+    target: { height: 4.2, beam: true }, // (up over the fence)
+    light: { sky: 0xe4ffb8, ground: 0x3a3a2c, ambient: 1.3, sun: 0xf2ffd0, sunlight: 0.9 } },
 };
 
 // ---- the themes' own obstacles ---------------------------------------------------------------------------
@@ -211,6 +219,7 @@ const OBSTACLES = {
   mumbai: { bale: 'sackStack' },
   beach: { bale: 'beachBall' },
   hell: { cone: 'brimstone' },
+  fallout: { crate: 'wasteDrum' }, // (a yellow drum of waste, the trefoil on it; the cones and barriers are a checkpoint's own)
   // (the port keeps its crates, the farm and the Wild West their bales: there they belong)
 };
 // drifting: the same, for the things of a level's "drifters" alone, where what moves about the road wants to be
