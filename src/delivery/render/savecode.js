@@ -4,6 +4,7 @@
 // swaps the progress here for it. Either way the rest of the menu hears of it by a 'progresschange' window
 // event (see render/menu.js), so nothing reloads.
 import '../menus.css';
+import { ask } from './dialog.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 
@@ -73,9 +74,9 @@ const copy = async () => {
     note.textContent = 'Could not copy it for you: it is selected, so copy it by hand.';
   }
 };
-const load = () => {
+const load = async () => {
   if (!box.value.trim()) return;
-  if (!confirm('Replace the progress in this browser with this save?')) return;
+  if (!await ask({ title: 'Replace progress', lines: ['Replace the progress in this browser with this save?'], ok: 'Replace', danger: true })) return;
   if (!Progress.importCode(box.value)) {
     note.textContent = 'That is not a save code. Nothing was changed.';
     return;
