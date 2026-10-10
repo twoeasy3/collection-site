@@ -40,6 +40,13 @@ const shade = new THREE.Color();
 const tint = (material, from, to, k) => material.color.setHex(from).lerp(shade.setHex(to), clamp01(k));
 // a shake that never repeats in step: -1 .. 1
 const jitter = (t, k = 0) => Math.sin(t * 37.1 + k * 5.3) * Math.sin(t * 23.3 + k * 2.1);
+// a chain of joints, each `step` up (or down) the last: a sleeve, a hose
+const chain = (parent, n, step, make) => {
+  const joints = [];
+  let p = parent;
+  for (let j = 0; j < n; j++) { const joint = sub(p, 0, j ? step : 0, 0); make(joint, j); joints.push(joint); p = joint; }
+  return joints;
+};
 // things that go round and round a cycle (sheets of paper, puffs of glitter): fn(mesh, 0 .. 1, k)
 const cycle = (list, t, rate, fn) => list.forEach((m, k) => fn(m, (((t * rate + k / list.length) % 1) + 1) % 1, k));
 // a word on a label (SEIZED, AUDIT, SURPRISE), as a material: plain `ground` where there is no canvas
@@ -1075,9 +1082,223 @@ const makeCasserole = () => {
   });
 };
 
+// ---- C56 a box of kittens: ears and one paw over the rim of a cardboard box; a paw bats at a string
+// dangling from the flap
+const makeKittens = () => {
+  const group = new THREE.Group();
+  const all = sub(group);
+  const W = 0.56, H = 0.34, D = 0.42;
+  part(all, box(W, H, D), CARD, 0, H / 2, 0);
+  part(all, box(W + 0.01, 0.05, D + 0.01), lambert(0xa0773c), 0, H * 0.45, 0);
+  const flap = sub(all, 0, H, -D / 2);
+  part(flap, box(W, 0.015, D / 2), CARD, 0, 0, -D / 4);
+  flap.rotation.x = 0.35;
+  const furs = [lambert(0xf0a050), lambert(0x4a4a50), lambert(0xf4f0e8)];
+  // a kitten: a head just over the rim, two ears, eyes; one has a paw up on the rim
+  const kitten = (x, z, fur, k) => {
+    const kit = sub(all, x, H - 0.03, z);
+    part(kit, sphere(0.085, 12, 10), fur, 0, 0, 0);
+    for (const d of [-1, 1]) { part(kit, cone(0.035, 0.07, 4), fur, d * 0.055, 0.085, 0, 0, 0.8, d * 0.3); part(kit, cone(0.018, 0.045, 4), lambert(0xffb0b0), d * 0.055, 0.082, 0.008, 0, 0.8, d * 0.3); }
+    for (const d of [-1, 1]) { part(kit, sphere(0.018, 8, 6), glow(0x4fd0a0), d * 0.035, 0.015, 0.072); part(kit, sphere(0.008, 6, 5), glow(0x101010), d * 0.035, 0.015, 0.088).scale.set(0.5, 1.2, 1); }
+    part(kit, sphere(0.012, 6, 5), lambert(0xff9aa8), 0, -0.02, 0.085);
+    for (const d of [-1, 1]) for (let n = 0; n < 2; n++) part(kit, box(0.09, 0.003, 0.003), glow(0xffffff), d * 0.07, -0.02 - n * 0.012, 0.075, 0, 0, d * (0.1 + n * 0.25));
+    kit.userData.k = k;
+    return kit;
+  };
+  const kits = [kitten(-0.14, 0.05, furs[0], 0), kitten(0.1, -0.02, furs[1], 1), kitten(0.0, 0.12, furs[2], 2)];
+  const paw = sub(all, -0.2, H + 0.02, D / 2 - 0.02);
+  part(paw, sphere(0.035, 8, 6), furs[0]).scale.set(1.1, 0.7, 1.2);
+  part(paw, cyl(0.03, 0.03, 0.1, 8), furs[0], 0, -0.05, -0.03, 0.4);
+  const batter = sub(all, 0.2, H + 0.02, D / 2 - 0.04); // (a paw up over the front rim, batting)
+  part(batter, cyl(0.028, 0.028, 0.14, 8), furs[1], 0, 0.07, 0);
+  part(batter, sphere(0.04, 8, 6), furs[1], 0, 0.15, 0.01).scale.set(1.2, 0.8, 1.2);
+  for (let n = 0; n < 3; n++) part(batter, sphere(0.012, 6, 5), lambert(0xffb0b0), -0.025 + n * 0.025, 0.14, 0.05);
+  // the string, from the flap's corner, with a knot: it swings as the paw bats it
+  const string = sub(all, 0.26, H + 0.3, D / 2 + 0.02);
+  part(string, cyl(0.006, 0.006, 0.36, 5), lambert(0xe8d8a0), 0, -0.18, 0);
+  part(string, sphere(0.028, 8, 6), lambert(0xd84a4a), 0, -0.38, 0);
+  part(all, cyl(0.008, 0.008, 0.42, 6), lambert(0x6a4a2a), 0.26, H + 0.1, D / 2 + 0.02); // (the stick it hangs from, poked in the box's corner)
+  return idle(group, (t) => {
+    kits.forEach((kit) => {
+      const k = kit.userData.k, bob = Math.sin(t * (1.1 + k * 0.3) + k * 2);
+      kit.position.y = H - 0.03 + Math.max(0, bob) * 0.05;
+      kit.rotation.set(-0.15 + bob * 0.08, Math.sin(t * 0.7 + k) * 0.35, 0);
+    });
+    const bat = Math.pow(Math.max(0, Math.sin(t * 2.2)), 2);
+    batter.rotation.set(0.6 + bat * 0.7, 0, 0.2 - bat * 0.4);
+    string.rotation.set(Math.sin(t * 2.2 - 0.4) * 0.35, 0, Math.sin(t * 1.3) * 0.15 + bat * 0.5);
+    paw.rotation.x = -0.3 + Math.sin(t * 1.4) * 0.1;
+  });
+};
+
+// ---- C57 a hand-knitted jumper: folded on a hanger, one sleeve far too long trailing to the floor;
+// a ball of wool rolls back and forth beside it
+const makeJumper = () => {
+  const group = new THREE.Group();
+  const all = sub(group);
+  const wool = lambert(0xd8503a), stripe = lambert(0xf4d35e), wire = lambert(0xb8b8c8), wood = lambert(0x9a6a3a);
+  // the stand: a rail on two feet, the hanger hooked over it
+  for (const x of [-0.28, 0.28]) part(all, box(0.16, 0.03, 0.16), wood, x, 0.015, 0);
+  for (const x of [-0.28, 0.28]) part(all, cyl(0.012, 0.012, 0.95, 8), wood, x, 0.49, 0);
+  part(all, cyl(0.014, 0.014, 0.62, 8), wood, 0, 0.96, 0, 0, 0, FLAT);
+  const hanger = sub(all, 0, 0.96, 0);
+  part(hanger, torus(0.035, 0.005, 10, Math.PI * 1.4), wire, 0, 0.0, 0, 0, 0, 0.6);
+  part(hanger, cyl(0.005, 0.005, 0.1, 6), wire, 0, -0.07, 0);
+  const body = sub(hanger, 0, -0.12, 0);
+  part(body, box(0.36, 0.015, 0.1), wood, 0, 0, 0); // (the hanger's bar)
+  // the jumper: a ribbed body, stripes across, and the two sleeves
+  part(body, box(0.4, 0.46, 0.14), wool, 0, -0.23, 0);
+  for (let k = 0; k < 3; k++) part(body, box(0.405, 0.04, 0.145), stripe, 0, -0.1 - k * 0.14, 0);
+  part(body, box(0.42, 0.05, 0.15), lambert(0xb83a2a), 0, -0.46, 0); // (the hem's rib)
+  part(body, torus(0.08, 0.025, 12, Math.PI), lambert(0xb83a2a), 0, 0.0, 0, 0, 0, Math.PI); // (the neck)
+  const short = part(body, cyl(0.055, 0.065, 0.3, 10), wool, 0.26, -0.15, 0, 0, 0, 0.7);
+  part(short, cyl(0.06, 0.06, 0.04, 10), lambert(0xb83a2a), 0, -0.15, 0);
+  // the long sleeve: a chain of segments, down to the floor and along it
+  const sleeve = sub(body, -0.22, -0.02, 0);
+  const segs = chain(sleeve, 9, -0.13, (joint, j) => { part(joint, cyl(0.055, 0.055, 0.14, 10), j % 3 === 2 ? stripe : wool, 0, -0.065, 0); });
+  part(segs[8], cyl(0.058, 0.058, 0.04, 10), lambert(0xb83a2a), 0, -0.13, 0);
+  // the ball of wool, rolling
+  const ball = sub(all, 0, 0.07, 0.22);
+  part(ball, sphere(0.07, 12, 10), wool);
+  for (let k = 0; k < 4; k++) part(ball, torus(0.07, 0.006, 16), lambert(0xe8604a), 0, 0, 0, k * 0.8, k * 0.5, 0);
+  const strandMat = lambert(0xe8604a);
+  const strand = part(all, cyl(0.005, 0.005, 0.5, 5), strandMat, 0, 0.02, 0.2, 0, 0, FLAT);
+  return idle(group, (t) => {
+    hanger.rotation.y = Math.sin(t * 0.6) * 0.15;
+    body.rotation.z = Math.sin(t * 1.1) * 0.03;
+    segs.forEach((seg, j) => { seg.rotation.z = j < 5 ? 0.05 + Math.sin(t * 1.5 + j) * 0.04 : 0.5 + Math.sin(t * 1.5 + j) * 0.08; seg.rotation.x = j > 5 ? 0.15 : 0; });
+    const roll = Math.sin(t * 0.9) * 0.22;
+    ball.position.x = roll;
+    ball.rotation.z = -roll / 0.07;
+    strand.position.set(roll / 2 - 0.1, 0.02, 0.2);
+    strand.scale.y = Math.max(0.1, (0.3 + roll) / 0.5);
+  });
+};
+
+// ---- C58 returned library books: a strapped stack, late; the top one's pages riffle and a bookmark waves
+const makeBooks = () => {
+  const group = new THREE.Group();
+  const all = sub(group);
+  const colours = [0x2a4a8a, 0x8a2a2a, 0x2a6a3a, 0x7a5a2a, 0x5a2a7a], pages = lambert(0xf4ead8), strap = lambert(0x3a2a20);
+  const sizes = [[0.46, 0.07, 0.34], [0.42, 0.06, 0.3], [0.44, 0.05, 0.32], [0.4, 0.06, 0.3]];
+  let y = 0;
+  sizes.forEach(([w, h, d], k) => {
+    const b = sub(all, (k % 2 ? 0.02 : -0.02), y, 0);
+    b.rotation.y = (k % 2 ? -0.08 : 0.06);
+    part(b, box(w, h, d), lambert(colours[k]), 0, h / 2, 0);
+    part(b, box(w - 0.03, h - 0.012, d - 0.02), pages, 0.015, h / 2, 0.012);
+    part(b, box(0.04, 0.012, d - 0.08), lambert(0xd4a94a), -0.12, h + 0.001, 0, 0, FLAT); // (a title on the cover)
+    y += h;
+  });
+  // the strap round the stack, with a buckle
+  part(all, box(0.06, y + 0.02, 0.37), strap, 0, (y + 0.02) / 2, 0);
+  part(all, box(0.07, 0.03, 0.03), lambert(0xd4a94a), 0, y + 0.015, 0.1);
+  // the top book: its cover and the pages that riffle, and a bookmark ribbon
+  const top = sub(all, 0.1, y, 0.02);
+  const [tw, th, td] = [0.42, 0.05, 0.3];
+  part(top, box(tw, 0.008, td), lambert(colours[4]), 0, 0.004, 0);
+  const leaves = Array.from({ length: 7 }, (_, k) => part(top, box(tw - 0.02, 0.004, td - 0.02), pages, -0.01, 0.01 + k * 0.004, 0.01));
+  const cover = sub(top, -tw / 2, 0.04, 0);
+  part(cover, box(tw, 0.008, td), lambert(colours[4]), tw / 2, 0, 0);
+  part(cover, box(0.2, 0.004, 0.06), lambert(0xd4a94a), tw / 2, 0.006, 0);
+  part(cover, plane(0.14, 0.05), lettered('OVERDUE', 0xffffff, 0xd81e2a, 192, 64), tw / 2 + 0.05, 0.007, 0.09, -FLAT);
+  const ribbon = sub(top, 0.1, 0.03, -td / 2);
+  part(ribbon, box(0.03, 0.002, 0.16), lambert(0xd81e2a), 0, 0, -0.08);
+  return idle(group, (t) => {
+    const breeze = Math.sin(t * 0.8);
+    cover.rotation.z = -0.15 - Math.max(0, breeze) * 0.5;
+    leaves.forEach((leaf, k) => { leaf.position.set(-0.01, 0.012 + k * 0.004, 0.01); leaf.rotation.z = -Math.max(0, Math.sin(t * 2.3 + k * 0.7)) * (0.06 + k * 0.03) * Math.max(0, breeze + 0.3); leaf.position.x = -tw / 2 + 0.01 + (tw - 0.02) / 2 * Math.cos(leaf.rotation.z); });
+    ribbon.rotation.set(0.2 + Math.sin(t * 2.5) * 0.3, Math.sin(t * 1.7) * 0.25, 0);
+    all.rotation.y = Math.sin(t * 0.4) * 0.05;
+  });
+};
+
+// ---- C59 the new neighbour's fruit basket: a wicker basket piled with fruit; it shuffles, and the
+// pineapple's crown sways
+const makeFruit = () => {
+  const group = new THREE.Group();
+  const all = sub(group);
+  const wicker = lambert(0xc49a5a), wickerDark = lambert(0x9a7238);
+  part(all, cyl(0.3, 0.22, 0.24, 18), wicker, 0, 0.12, 0);
+  for (let k = 0; k < 4; k++) part(all, torus(0.23 + k * 0.022, 0.012, 20), wickerDark, 0, 0.04 + k * 0.06, 0, FLAT);
+  part(all, torus(0.3, 0.02, 20), wickerDark, 0, 0.24, 0, FLAT);
+  part(all, torus(0.3, 0.018, 20, Math.PI), wickerDark, 0, 0.24, 0, 0, FLAT, 0); // (the handle, over the top)
+  const fruit = [];
+  const add = (mesh, k) => { mesh.userData.k = k; mesh.userData.at = mesh.position.clone(); fruit.push(mesh); return mesh; };
+  add(part(all, sphere(0.075, 12, 10), lambert(0xd83a2a), -0.14, 0.3, 0.08), 0); // apples
+  add(part(all, sphere(0.07, 12, 10), lambert(0x8ac83a), 0.12, 0.28, 0.12), 1);
+  add(part(all, sphere(0.08, 12, 10), lambert(0xff8a2a), 0.15, 0.3, -0.1), 2); // an orange
+  add(part(all, sphere(0.06, 12, 10), lambert(0xffd23f), -0.02, 0.27, 0.19), 3); // a lemon
+  fruit[3].scale.set(1.3, 0.9, 0.9);
+  const bunch = sub(all, -0.15, 0.3, -0.12); // (grapes)
+  for (let k = 0; k < 9; k++) part(bunch, sphere(0.03, 8, 6), lambert(0x6a3a8a), Math.sin(k * 2.4) * 0.05, (k % 3) * 0.04 - 0.02, Math.cos(k * 2.4) * 0.05);
+  add(bunch, 4);
+  const bananas = sub(all, 0.02, 0.33, -0.02);
+  for (let k = 0; k < 3; k++) part(bananas, torus(0.09, 0.02, 10, 2), lambert(0xf4d35e), k * 0.035, 0, k * 0.02, 0, 0.3, 0.5);
+  add(bananas, 5);
+  const pineapple = sub(all, 0.0, 0.32, 0);
+  part(pineapple, sphere(0.1, 12, 10), lambert(0xc8a040), 0, 0.1, 0).scale.set(1, 1.5, 1);
+  for (let k = 0; k < 10; k++) part(pineapple, sphere(0.02, 5, 4), lambert(0x8a6a20), Math.sin(k * 2.4) * 0.09, 0.02 + (k % 5) * 0.045, Math.cos(k * 2.4) * 0.09);
+  const crown = sub(pineapple, 0, 0.25, 0);
+  const leaves = Array.from({ length: 9 }, (_, k) => { const a = k * 0.7; const l = part(crown, cone(0.022, 0.2, 4), lambert(0x3f9b4b), Math.sin(a) * 0.03, 0.08, Math.cos(a) * 0.03, Math.cos(a) * (0.3 + (k % 3) * 0.2), 0, -Math.sin(a) * (0.3 + (k % 3) * 0.2)); l.userData.a = a; return l; });
+  return idle(group, (t) => {
+    fruit.forEach((f) => { // (a shuffle: each settles, now and then)
+      const k = f.userData.k, u = ((t * 0.5 + k / 6) % 1), hop = Math.pow(Math.max(0, Math.sin(u * Math.PI * 2)), 4);
+      f.position.set(f.userData.at.x + Math.sin(k) * hop * 0.02, f.userData.at.y + hop * 0.03, f.userData.at.z);
+      f.rotation.y = Math.sin(t * 0.7 + k) * 0.3;
+    });
+    crown.rotation.set(Math.sin(t * 1.3) * 0.15, 0, Math.cos(t * 1.1) * 0.15);
+    leaves.forEach((l, k) => { l.rotation.z = -Math.sin(l.userData.a) * (0.3 + (k % 3) * 0.2) + Math.sin(t * 2 + k) * 0.05; });
+    pineapple.rotation.y = Math.sin(t * 0.5) * 0.1;
+  });
+};
+
+// ---- C60 grandad's repaired radio: a wooden wireless; the dial glows, the needle sweeps along it and a
+// note floats off the grille
+const makeRadio = () => {
+  const group = new THREE.Group();
+  const all = sub(group);
+  const wood = lambert(0x7a4a22), woodDark = lambert(0x5a3416), cloth = lambert(0xd8c8a0), brass = lambert(0xd4a94a);
+  const body = sub(all);
+  part(body, box(0.6, 0.44, 0.3), wood, 0, 0.26, 0);
+  part(body, cyl(0.3, 0.3, 0.6, 20, 1, false, 0, Math.PI), wood, 0, 0.26, 0, 0, 0, FLAT).scale.set(0.6, 1, 0.48); // (its rounded top)
+  for (const x of [-0.24, 0.24]) part(body, cyl(0.025, 0.025, 0.03, 10), woodDark, x, 0.015, 0.1);
+  // the grille, with its ribs, and the dial window with its glow and the needle
+  part(body, box(0.26, 0.22, 0.02), cloth, -0.12, 0.26, 0.15);
+  for (let k = 0; k < 5; k++) part(body, box(0.02, 0.24, 0.025), woodDark, -0.22 + k * 0.05, 0.26, 0.152);
+  const dialMat = glow(0xffd98a);
+  const dial = part(body, box(0.2, 0.12, 0.01), dialMat, 0.15, 0.3, 0.152);
+  for (let k = 0; k < 7; k++) part(body, box(0.004, 0.03, 0.002), glow(0x6a4a10), 0.07 + k * 0.027, 0.33, 0.158);
+  const needle = part(body, box(0.006, 0.11, 0.004), glow(0xd81e2a), 0.15, 0.3, 0.159);
+  for (const x of [0.1, 0.2]) part(body, cyl(0.03, 0.03, 0.025, 12), brass, x, 0.15, 0.16, FLAT);
+  part(body, box(0.5, 0.02, 0.012), woodDark, 0, 0.09, 0.155);
+  const aerial = part(body, cyl(0.006, 0.006, 0.5, 6), lambert(0xb8b8c8), 0.22, 0.6, -0.08, 0, 0, -0.35);
+  const noteMat = glow(0x3a3a48);
+  const notes = Array.from({ length: 4 }, () => {
+    const n = sub(all);
+    part(n, sphere(0.024, 7, 5), noteMat).scale.set(1.2, 0.8, 1);
+    part(n, box(0.01, 0.09, 0.01), noteMat, 0.025, 0.04, 0);
+    part(n, box(0.04, 0.01, 0.01), noteMat, 0.04, 0.085, 0, 0, 0, -0.5);
+    return n;
+  });
+  return idle(group, (t) => {
+    const sweep = (Math.sin(t * 0.45) + 1) / 2;
+    needle.position.x = 0.07 + sweep * 0.16;
+    dialMat.color.setHex(0xffd98a).multiplyScalar(0.85 + Math.sin(t * 3) * 0.08 + Math.sin(t * 11) * 0.04);
+    body.rotation.z = Math.sin(t * 1.6) * 0.006; // (humming along)
+    aerial.rotation.z = -0.35 + Math.sin(t * 1.1) * 0.03;
+    cycle(notes, t, 0.35, (n, u, k) => {
+      n.position.set(-0.12 + Math.sin(t * 1.5 + k * 2) * 0.05, 0.36 + u * 0.5, 0.18 + u * 0.15);
+      n.rotation.z = Math.sin(t * 2 + k) * 0.25;
+      show(n, Math.min(1, u * 4) * (1 - u));
+    });
+  });
+};
+
 // these models, by their ids in cargo.js
 export const MORE_MODELS = {
   lawyers: makeLawyers, chainletter: makeChainletter, glitter: makeGlitter, recorders: makeRecorders, subpoena: makeSubpoena,
   telemarketers: makeTelemarketers, taxmen: makeTaxmen, bailiffs: makeBailiffs, wardens: makeWardens, consultants: makeConsultants,
   inlaws: makeInlaws, band: makeBand, salesman: makeSalesman, party: makeParty, casserole: makeCasserole,
+  kittens: makeKittens, jumper: makeJumper, books: makeBooks, fruit: makeFruit, radio: makeRadio,
 };

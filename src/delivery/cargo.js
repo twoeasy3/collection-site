@@ -37,6 +37,11 @@ export const CARGO = {
     { id: 'sundae', name: 'Ice-cream sundae' },
     { id: 'snowglobe', name: 'Snow globe' },
     { id: 'casserole', name: 'Thank-you casserole' },
+    { id: 'kittens', name: 'Box of kittens' },
+    { id: 'jumper', name: 'Hand-knitted jumper' },
+    { id: 'books', name: 'Returned library books' },
+    { id: 'fruit', name: "New neighbour's fruit basket" },
+    { id: 'radio', name: "Grandad's repaired radio" },
   ],
   evil: [
     { id: 'parcel', name: 'Ticking parcel', states: ['Ticking', 'Fuse lit', 'About to blow'] },
