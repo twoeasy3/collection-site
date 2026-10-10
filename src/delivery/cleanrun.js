@@ -17,8 +17,28 @@ import { FxQueue } from './physics.js';
 import { selectCar } from './cars.js';
 
 const LONGEST = 900; // s of driving before the run is given up
+// The dice for the run: the same every time for a given level (seeded from its id), so its clock is the same
+// every time it is worked out. A race's grid and the traffic are dealt by the dice, and left to Math.random a
+// circuit's clean run came out a second or two either way, enough to land on either side of a rounding step
+const seeded = (text) => {
+  let state = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) state = Math.imul(state ^ text.charCodeAt(i), 0x01000193) >>> 0; // (FNV-1a)
+  return () => { // (mulberry32, as the checks use)
+    state = (state + 0x6D2B79F5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+};
 // the level already picked (selectLevel / selectSpecial): { delivered, time, outcome, car, pluses, clock }
-export const cleanRun = () => {
+// (seed: text added to the level's id for other dice, scripts/level-clocks.mjs --seed=)
+export const cleanRun = (seed = '') => {
+  const dice = Math.random;
+  Math.random = seeded(String(LEVEL.id || '') + seed);
+  try { return driven(); } finally { Math.random = dice; }
+};
+const driven = () => {
   const level = LEVEL, C = CONFIG.clock, round = (t) => Math.max(C.round, Math.round(t / C.round) * C.round);
   const holdLane = !!level.water;
   Object.defineProperty(Input, 'throttle', { get: () => 1, configurable: true });
@@ -32,6 +52,7 @@ export const cleanRun = () => {
   const car = level.amphibious ? C.amphibious : C.car;
   selectCar(car); // (a level with a car of its own takes that when the run starts)
   Game.evil = false;
+  Game.loaded = null; // (the level built afresh, from these dice: what it builds would otherwise be whatever was there)
   Game.start();
   let t = 0;
   while (Game.state === 'playing' && t < LONGEST) {
