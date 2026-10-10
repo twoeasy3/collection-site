@@ -67,6 +67,11 @@ neither is a standing permission. Ask before deleting anything on the machine.
 6. `delivery-stats` (the Delivery and Nerve car stats): built and HELD for the owner's answer to question
    5c2. Do not merge without it.
 
+**Queued by the owner after the stand-down** (first two entries at the top of the checklist's evening block;
+not labelled to jump the queue): shelve the Tow Truck's wreck-clearing trait; change rubbernecking from
+"traffic slows where any wreck happened" to a fixed crash scene of two burning, damaged cars on a shoulder
+that traffic slows to look at, only on roads with two or more lanes each way.
+
 Not started: Stelvio (30), Tokyo (28), Mumbai (29), Night Shift and two more second levels, five weak menu
 pictures, moving nine levels' words into `levelText.json` as their branches land, the audit's performance
 and bloat work, the level progression rework (parked by the owner; three of its questions answered today).

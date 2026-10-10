@@ -1123,6 +1123,31 @@ pick ups and traffic."
       and the built site's look is still going. `main` is at `7a90971`, ten merges ahead of what is live
       (`8fa45a6`), not pushed. One stray process: `node` PID 26760 (a hung bundle check; the agent's kill
       was refused): for the owner to end.
+- [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
+  - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
+    truck gimmick for now." What it is: the car's trait `tow` (`cars.js:127-129`): driven into fallen
+    wreckage that has come to rest, it marks the wreckage cleared (`wreckage.js:163-171`; `towAfter`,
+    `towKept` in `CONFIG.wreckage`; message `events.towed`), and the wreckage simply turns invisible that
+    frame (`render/wreckage.js:201`): nothing is dragged. To do: take the trait and perk off the Tow Truck
+    (it stays a car, wrecked by wreckage like any other), keeping the code path dormant or removing it
+    cleanly, with the garage's perk text, `.traits-check.mjs` and the Gimmicks page brought into line. The
+    other three traits stay.
+  - **Rubbernecking becomes an obstacle-based gimmick.** The owner: "Let's change rubbernecking to an
+    obstacle-based gimmick. Randomly on the shoulder we put two cars (in damaged model condition) and on
+    fire. Rubbernecking happens at this zone. This should only happen on roads with more than 1 lane per
+    direction." Today (`CONFIG.rubberneck`, `traffic.js:540-560`, `Traffic.noteWreck` from
+    `collision.js:934`): for 25 s after ANY traffic wreck, traffic slows to 35% from 70 m short of the spot;
+    an evil driver held under 40% of its speed for 3.5 s goes up the shoulder for up to 12 s and is arrested
+    if police within 90 m see it. To do: the slowing no longer follows wrecks; instead a crash scene of two
+    cars with the game's dented, scorched look (the damage models of `fda617c`), burning, stands on a
+    shoulder, and traffic rubbernecks past it (the slowing, and the impatient evil driver, kept). Only where
+    the road has two or more lanes each way at that spot. **To settle with the owner or in the brief:**
+    "randomly" against the standing rule that level content sits at fixed positions, the same every run
+    (suggest: the place is picked by a seed from the level, so it is the same every run, on levels that
+    qualify, or a level names it); whether the two cars are solid obstacles to anyone using that shoulder
+    (shoulder cash and shoulder dodges now exist on many levels: the scene must not sit on one); the
+    gamble it gives (the lane beside the scene crawls, the far lane flows: cash in the crawl?); a card on
+    the Gimmicks page and the road card; a check; stills.
 - **Stood down on the owner's word ("Draft a handover for the next delegation agent, push and stand down").**
       `HANDOVER-orchestrator-10-Oct.md` is the handover for the next orchestrator. `main` pushed with it:
       everything merged on 10-Oct is on the remote and deploying. Not checked on `main` itself before it
