@@ -1374,6 +1374,14 @@ export const CONFIG = {
   // the water takes speed off at.) Traffic goes through at `traffic` m/s. Said from `warn` m before the exit;
   // boards `sign` m before the exit and at it
   ford: { depth: 0.5, shallow: 0.25, deepest: 1.0, fast: 30, slow: 13, crawl: 4.5, damage: 10, bite: 34, traffic: 8, warn: 260, sign: 200 },
+  // speed cushions ("cushions": { from, to, every? }): a row across the road every `every` m (the stretch's own, or
+  // this), a cushion `width` m wide and `long` m long in the middle of each lane, a gap on each lane line. A car
+  // whose middle is within `line` m of a lane line goes between two and feels nothing (less by each m its half
+  // width is over hwRef, never less than `least`). Over one at `soft` m/s or less it is a bump; faster, the car
+  // loses `damage` health and perSpeed more for each m/s over, keeps `keep` of its speed, and is thrown up at
+  // `throw` m/s for each m/s over (throwMost at most). Traffic takes the stretch at `traffic` m/s (slowing at
+  // `brake` m/s^2). Boards `sign` m before
+  cushion: { every: 45, width: 2.3, long: 3, line: 0.45, hwRef: 0.85, least: 0.2, soft: 8.3, damage: 3, perSpeed: 0.25, keep: 0.85, throw: 0.3, throwMost: 6, traffic: 8, brake: 12, sign: 110 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

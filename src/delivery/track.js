@@ -1051,6 +1051,10 @@ const createTrack = () => {
       else if (f.depth !== undefined && !(f.depth >= 0.1 && f.depth <= 1.5)) problems.push(name + ': depth is 0.1 to 1.5 m');
       else if (!exits.some(x => x.exitAt + 40 < f.from && x.mergeAt - 40 > f.to)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the bridge)');
     }
+    for (const c of LEVEL.cushions || []) {
+      if (!mainStretch(c)) problems.push('speed cushions at ' + c.from + ': from before to, on the expressway');
+      else if (c.every !== undefined && !(c.every >= 15 && c.every <= 200)) problems.push('speed cushions at ' + c.from + ': every is 15 to 200 m');
+    }
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
       else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');

@@ -379,6 +379,51 @@ try {
     real('fords', () => check(Gambles.fords.every(x => x.exit), '  its ford' + (Gambles.fords.length > 1 ? 's' : '') + ': ' + Gambles.fords.map(x => x.from + ' to ' + x.to + ' m, ' + x.depth + ' m deep, the bridge the exit at ' + x.exit?.exitAt).join('; ')));
   });
 
+  // ---- speed cushions (rows at 3520, 3565, 3610, 3655, 3700: a cushion in each lane, a gap on each lane line)
+  await section('cushions', async () => {
+    const K = C.cushion;
+    // from 3480 to 3740 held at v, on the line `lat` m from the road's middle (a function of s), or braking for each row
+    const over = (v, lat, { car = 'sport', brake = false } = {}) => {
+      start(3480, 3, v, { car });
+      P.lat = lat(3480);
+      const health = P.health;
+      let slowest = 99, air = 0;
+      const t = g.run(90, () => {
+        quiet();
+        const next = Gambles.rows.find(r => r.s > P.s), slow = brake && next && next.s - P.s < 22 && P.speed > K.soft - 0.5;
+        if (!brake) P.speed = Math.min(P.speed, v);
+        const d = lat(P.s) - P.lat;
+        g.drive(slow ? -1 : brake && P.speed > v ? 0 : 1, Math.abs(d) < 0.1 ? 0 : Math.sign(d));
+        slowest = Math.min(slowest, P.speed);
+        if (Gambles.fly) air += 1 / 60;
+        return P.s > 3740 || G.wrecks > 0;
+      });
+      return { t, lost: health - P.health, hits: Gambles.cushionHits, slowest, air, wrecks: G.wrecks, busted: P.busted };
+    };
+    const line = (s) => (lane(3, s) + lane(4, s)) / 2, middle = (s) => lane(4, s);
+    check(Gambles.rows.length === 5 && Gambles.onCushion(3520, middle(3520)) && !Gambles.onCushion(3520, line(3520)) && !Gambles.onCushion(3520, line(3520) + K.line - 0.05, K.hwRef) && Gambles.onCushion(3520, line(3520) + K.line + 0.05, K.hwRef),
+      'cushions: 5 rows; the middle of a lane is on one, a lane line is between two, with ' + K.line + ' m to spare either side for a car as wide as the Commuter');
+    check(Gambles.cushionRoom(1.12) < Gambles.cushionRoom(0.74) && Gambles.cushionRoom(1.4) === K.least, 'cushions: a wide car has less room in the gap (' + Gambles.cushionRoom(1.12).toFixed(2) + ' m against ' + Gambles.cushionRoom(0.74).toFixed(2) + ' m), never less than ' + K.least + ' m');
+    const fast = over(30, line);
+    check(fast.hits === 0 && fast.lost === 0 && fast.air === 0 && fast.slowest > 29, 'cushions, the risk taken and right: on the lane line at ' + Math.round(30 * 3.6) + ' km/h, through all five rows untouched (' + fast.t.toFixed(1) + ' s)');
+    check(said('Speed cushions'), 'cushions: they are announced');
+    const wrong = over(30, middle);
+    check(wrong.hits >= 3 && wrong.lost > 3 * K.damage && wrong.air > 0.5 && wrong.wrecks === 0, 'cushions, the risk taken and wrong: down the middle of the lane at the same speed: over ' + wrong.hits + ' of them, thrown up each time (' + wrong.air.toFixed(1) + ' s in the air), ' + wrong.lost.toFixed(0) + ' health lost (' + wrong.t.toFixed(1) + ' s)');
+    check(said('THUMP'), 'cushions: the first one hit is said');
+    const off = over(30, (s) => line(s) + 0.7);
+    check(off.hits >= 3, 'cushions: 0.7 m off the lane line is not in the gap (' + off.hits + ' hit)');
+    const slow = over(22, middle, { brake: true });
+    check(slow.hits === 0 && slow.lost === 0 && slow.wrecks === 0 && !slow.busted && slow.slowest > 5, 'cushions, the safe line: down the middle of the lane, braking to ' + Math.round(K.soft * 3.6) + ' km/h for each row: no damage, never under ' + Math.round(slow.slowest * 3.6) + ' km/h (' + slow.t.toFixed(1) + ' s: ' + (slow.t - fast.t).toFixed(1) + ' s slower than the line at speed)');
+    // traffic crawls over them
+    start(3300, 3, 0);
+    const van = put('commuter', 3400, lane(4, 3400), 20);
+    van.fixed = false;
+    let fastest = 0;
+    g.run(30, () => { P.speed = 0; P.s = 3300; if (van.active && van.s > 3530 && van.s < 3700) fastest = Math.max(fastest, van.vs); return !van.active || van.s > 3720; });
+    check(fastest > 0 && fastest <= K.traffic + 3, 'cushions: traffic takes them slowly (' + fastest.toFixed(1) + ' m/s at most between the rows)');
+    real('cushions', () => check(Gambles.rows.length > 0, '  its rows: ' + Gambles.rows.map(r => r.s).join(', ') + ' m'));
+  });
+
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)
   await section('finish', async () => {
     start(0, 3, 20, { ghost: true, keep: true });

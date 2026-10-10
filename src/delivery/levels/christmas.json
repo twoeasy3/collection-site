@@ -43,7 +43,13 @@
     { "s": 1800, "side": "right" },
     { "s": 2950, "side": "left" }
   ],
+  "cushions": [
+    { "from": 1480, "to": 1615 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 1502, "lane": 2 },
+    { "type": "cash10", "s": 1502, "lane": 3 },
+    { "type": "cash20", "s": 1592, "lane": 2 },
     { "type": "turbo", "s": 200, "lane": 3 },
     { "type": "wrench", "s": 550, "lane": 2 },
     { "type": "ghost", "s": 950, "lane": 3 },

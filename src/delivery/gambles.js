@@ -10,6 +10,8 @@
 //                bar a car that fits goes straight on; a taller one takes the knock
 //   fords        the road runs through a river, so deep, between an exit and its merge (the side road is the bridge):
 //                a car that wades that deep is only slowed; one that does not crawls through, and is damaged
+//   cushions     rows of speed cushions, one in the middle of each lane: on a lane line the car goes between two and
+//                feels nothing; over one at speed it is thrown up and knocked
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -49,6 +51,8 @@ export const Gambles = {
   bars: [],       // low bridges: { s, clearance (m), lo, hi (lat: what it spans), exit (the Track.exits entry that goes round it), hits (times the player's car has hit it this run) }
   fords: [],      // { from, to, depth (m), exit (the Track.exits entry that is its bridge) }
   inFord: null,   // the ford the player's car is in (null: none)
+  rows: [],       // speed cushions: { s (a row of them across the lanes), from, to (the stretch it is one of) }
+  cushionHits: 0, // how many the player's car has gone over at speed this run (for a check)
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
@@ -62,6 +66,8 @@ export const Gambles = {
     this.bars = (LEVEL.lowBridges || []).map((b) => ({ s: b.s, clearance: b.clearance ?? CONFIG.lowBridge.clearance, lo: Track.laneOffset(Track.laneRange(1, b.s)[0], b.s) - CONFIG.laneWidth / 2, hi: Track.hi(b.s),
       exit: Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null, hits: 0 }));
     this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
+    this.rows = [];
+    for (const c of LEVEL.cushions || []) for (let s = c.from; s <= c.to; s += c.every ?? CONFIG.cushion.every) this.rows.push({ s, from: c.from, to: c.to });
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -100,7 +106,8 @@ export const Gambles = {
     this.fly = null;
     Player.rampAhead = false;
     Player.shaken = this.rough = 0;
-    this.barS = Player.s;
+    this.barS = this.rowS = Player.s;
+    this.cushionHits = 0;
     this.inFord = null;
     this.up = 0;
     this.onRamp = null;
@@ -383,9 +390,50 @@ export const Gambles = {
     }
   },
 
+  // ---- speed cushions --------------------------------------------------------------------------------------
+  // A row across the road every so often, a cushion in the middle of each lane and a gap on each lane line (the
+  // shoulders have none: their own rules apply). A car whose middle is within its `line` of a lane line goes
+  // through a gap and feels nothing (a wider car has less room: see cushionRoom). Over a cushion at CONFIG
+  // .cushion.soft m/s or less it is a bump; faster, the car is thrown up (no steering until it is down: the
+  // flight above) and knocked, by how much faster. Traffic takes the stretch at a crawl
+  // how far (m) the car's middle may be from a lane line and still go between two cushions
+  cushionRoom(hw = Player.hw) { const K = CONFIG.cushion; return Math.max(K.least, K.line - (hw - K.hwRef)); },
+  // whether a car at lat, crossing a row at s, goes over a cushion (in a lane, not within its room of a lane line)
+  onCushion(s, lat, hw = Player.hw) {
+    if (lat < Track.laneLo(s) || lat > Track.laneHi(s)) return false; // (on a shoulder)
+    const centre = Track.laneOffset(Track.nearestLane(lat, s), s);
+    return CONFIG.laneWidth / 2 - Math.abs(lat - centre) > this.cushionRoom(hw);
+  },
+  cushioned(s) { return Track.isMain(s) && this.rows.some(r => s >= r.from - 20 && s <= r.to + 10); },
+  updateCushions(dt) {
+    const K = CONFIG.cushion, P = Player, was = this.rowS ?? P.s;
+    this.rowS = P.s;
+    if (!this.rows.length) return;
+    for (const car of Traffic.cars) { // (the traffic takes them slowly)
+      if (car.active && !car.junction && !car.emergency && Math.abs(car.vs) > K.traffic && this.cushioned(car.s)) car.vs = Math.sign(car.vs) * Math.max(K.traffic, Math.abs(car.vs) - K.brake * dt);
+    }
+    if (!P.active || !Track.isMain(P.s) || P.s - was > 30) return;
+    if (this.rows.some(r => P.s > r.from - K.sign && P.s < r.from)) this.once('cushions');
+    if (this.fly || CAR.noWheels || P.ghost > 0) return;
+    for (const row of this.rows) {
+      if (!(was < row.s && P.s >= row.s) || !this.onCushion(row.s, P.lat)) continue;
+      const over = P.speed - K.soft;
+      Game.shake = Math.max(Game.shake, over > 0 ? 0.8 : 0.25);
+      sfx('drop', over > 0 ? 0.9 : 0.3);
+      if (over <= 0 || P.tank > 0) continue;
+      this.cushionHits++;
+      if (P.shield <= 0) hurt(P, K.damage + K.perSpeed * over);
+      P.speed *= K.keep;
+      this.fly = { vy: Math.min(K.throwMost, K.throw * over), vx: P.speed, latVel: P.latVel, t: 0, top: 0 }; // (thrown up: no steering until it is down)
+      this.alt = this.roadY(P.s) + 0.01;
+      this.once('cushionHit');
+    }
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
+    this.updateCushions(dt);
     this.updateFords(dt);
     this.updateBars();
     this.updateBoards(dt);

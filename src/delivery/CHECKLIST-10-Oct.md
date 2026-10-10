@@ -562,6 +562,17 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       gap on exactly the right line and the car does not feel it; clip one at speed and it
       jumps and takes a knock. _Gamble:_ precision at speed against slowing. _Builds on:_
       potholes, the jump.
+      _Built (`gambles.js`, field `cushions: { from, to, every? }`):_ a row every 45 m, a cushion in
+      the middle of each lane and a gap on each lane line. Within 0.45 m of a lane line (less for a
+      wide car) the car goes between two at any speed; over one at 30 km/h or less it is a bump;
+      faster it is thrown up (no steering until down) and knocked, 3 health and more the faster.
+      Traffic takes them slowly. On Gimmick Road 3 (3520-3700), Suburbs (1460-1600), The Hood
+      (1460-1595) and Christmas (1480-1615), cash between the rows. Clocks not re-timed. Verified
+      by `.gimmicks3-check.mjs cushions` (the lane line at 108 km/h untouched, the middle of the
+      lane at that speed thrown at all five rows and 42 health, braking for each row unhurt and
+      11 s slower, 0.7 m off the line is not the gap, a wide car has less room, the three real
+      levels) and in stills (the rows, the card, Suburbs). Not verified: played by hand; how it
+      is among the slowed traffic; The Hood and Christmas on screen.
 - [ ] H20. **Blast window**: the quarry's siren goes and the road under the face is about to
       be showered; the haul road round the back is longer and rough. _Gamble:_ sprint under
       before it goes, or take the haul road. _Builds on:_ quarry blasts, side roads.

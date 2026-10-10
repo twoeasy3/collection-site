@@ -25,7 +25,7 @@ import { makeCarriage } from './render/trainModel.js';
 import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
-import { makeWindsock, makeTransporter, makeHeightBar, makeDepthPost } from './render/gambleModels.js';
+import { makeWindsock, makeTransporter, makeHeightBar, makeDepthPost, makeCushion } from './render/gambleModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -70,7 +70,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford, cushion: CONFIG.cushion }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -905,6 +905,18 @@ const GROUPS = [
       for (const x of [-4.2, 4.2]) for (const z of [-2.8, 2.8]) { const post = makeDepthPost(0.5, 1.75); post.position.set(x, 0, z); g.add(post); }
       g.add(car);
       return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4, z = u < 0.3 ? -7 + u / 0.3 * 4.5 : u < 0.8 ? -2.5 + (u - 0.3) / 0.5 * 5 : 2.5 + (u - 0.8) / 0.2 * 4.5; car.position.set(-2.2, Math.abs(z) < 2.5 ? -0.12 : 0, z); } };
+    } },
+    { name: 'Speed cushions', color: 0xb5482f, has: (l) => l.cushions?.length, rules: [
+      `A street with a row of speed cushions every ${GB.cushion.every} m or so: a cushion in the middle of each lane, and <strong>a gap on every lane line</strong>. The traffic crawls over them.`,
+      `Put the car on a lane line, within ${GB.cushion.line} m of it (a wide car gets less), and it goes between two cushions at any speed and feels nothing.`,
+      `Over a cushion at ${kmh(GB.cushion.soft)} or less it is only a bump. Faster, the car is thrown into the air (no steering until it is down) and knocked: ${GB.cushion.damage} health and more the faster, at every row.`,
+      'So: the line between the lanes at speed, with the slow traffic either side of it, or the brakes. The shoulders have no cushions, and their own rules.',
+    ], build: () => {
+      const g = road(9, 14), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      for (const z of [-3.5, 3.5]) for (const [x, w] of [[-3.4, 1.5], [0, 3.2], [3.4, 1.5]]) { const c = makeCushion(w, GB.cushion.long); c.position.set(x, 0, z); g.add(c); }
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 5) / 5, line = u < 0.5, v = line ? u * 2 : (u - 0.5) * 2, z = -7 + v * 14, near = Math.min(Math.abs(z + 3.5), Math.abs(z - 3.5));
+        car.position.set(line ? -2.25 : 0, line ? 0 : Math.max(0, 0.6 - near * 0.4), z); car.rotation.x = line ? 0 : (near < 1.5 ? (Math.abs(z + 3.5) < Math.abs(z - 3.5) ? z + 3.5 : z - 3.5) * -0.12 : 0); } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

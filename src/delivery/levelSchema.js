@@ -250,6 +250,8 @@ export const FIELDS = {
     settings: { clearance: num('Clearance (m)', { min: 1, max: 5, step: 0.1, default: C.lowBridge?.clearance }) } },
   fords: { shape: 'stretch', group: 'hazards', label: 'Ford', span: 70, help: 'The road through a river, between an exit and its merge (the side road is the bridge): a car is slowed by how well it wades, and one out of its depth crawls and is damaged.',
     settings: { depth: num('Depth (m)', { min: 0.1, max: 1.5, step: 0.05, default: C.ford?.depth }) } },
+  cushions: { shape: 'stretch', group: 'hazards', label: 'Speed cushions', span: 180, help: 'Rows of speed cushions, one in each lane with gaps on the lane lines: thread a gap, crawl over, or be thrown up and knocked.',
+    settings: { every: num('A row every (m)', { min: 15, max: 200, step: 5, default: C.cushion?.every }) } },
   washboards: { shape: 'stretch', group: 'hazards', label: 'Washboard dirt', span: 400, help: 'Corrugated dirt: at a middling speed the grip is shaken away; crawling, or at the skim speed or more, it is smooth.',
     settings: { skim: num('Skims from (m/s)', { min: (C.washboard?.calm ?? 9) + 4, max: 40, step: 0.5, default: C.washboard?.skim }) } },
   jamRamps: { shape: 'point', group: 'hazards', label: 'Ramp over the jam', rules: ['straight', 'level'], reach: () => (C.jamRamp?.run ?? 15) + 60, help: 'A car transporter with its ramps down at the back of a queue of stopped traffic: fast enough, the car flies the queue.',

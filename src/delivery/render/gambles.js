@@ -10,7 +10,7 @@ import { Traffic } from '../traffic.js';
 import { Gambles } from '../gambles.js';
 import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
-import { makeWindsock, makeSign, makeTransporter, makeHeightBar, makeDepthPost } from './gambleModels.js';
+import { makeWindsock, makeSign, makeTransporter, makeHeightBar, makeDepthPost, makeCushion } from './gambleModels.js';
 import { buildStrip } from './road.js';
 
 const flat = (color, offset) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
@@ -89,6 +89,17 @@ Game.onLoad.push(() => {
       if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign(text + (f.exit ? '\nBRIDGE: EXIT' : ''), '#1f6fb2', '#fff', 6, 2.6));
     }
     if (f.from - 90 > 5) at(f.from - 90, Track.lo(f.from - 90) + 0.6).add(makeSign(text, '#1f6fb2', '#fff', 6, 1.6));
+  }
+  // ---- speed cushions: one in the middle of every lane of each row, and a board before each stretch of them
+  const stretches = new Set();
+  for (const row of Gambles.rows) {
+    const K = CONFIG.cushion;
+    for (let lane = 0; lane < Track.laneCount; lane++) {
+      const lat = Track.laneOffset(lane, row.s);
+      if (lat >= Track.laneLo(row.s) && lat <= Track.laneHi(row.s)) at(row.s, lat).add(makeCushion(K.width, K.long));
+    }
+    if (!stretches.has(row.from) && row.from - K.sign > 5) at(row.from - K.sign, Track.hi(row.from - K.sign) - 0.6).add(makeSign('SPEED CUSHIONS\n' + kmh(K.soft) + ' OR THE LINES', '#ffd23f', '#111', 6.2, 2.6));
+    stretches.add(row.from);
   }
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {

@@ -50,6 +50,10 @@
     { "type": "cash20", "s": 3240, "lane": 4 },
     { "type": "cash10", "s": 3370, "lane": 3 },
     { "type": "cash10", "s": 3370, "lane": 5 },
+    { "type": "cash10", "s": 3588, "lane": 3 },
+    { "type": "cash10", "s": 3588, "lane": 4 },
+    { "type": "cash10", "s": 3678, "lane": 4 },
+    { "type": "cash10", "s": 3678, "lane": 5 },
     { "type": "wrench", "s": 3800, "lane": 3 },
     { "type": "cash10", "s": 4425, "lane": 3 },
     { "type": "cash10", "s": 4425, "lane": 4 },
@@ -81,6 +85,9 @@
   ],
   "fords": [
     { "from": 5650, "to": 5720, "depth": 0.6 }
+  ],
+  "cushions": [
+    { "from": 3520, "to": 3700 }
   ],
   "washboards": [
     { "from": 2950, "to": 3450 }

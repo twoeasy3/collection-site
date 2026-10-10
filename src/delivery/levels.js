@@ -308,6 +308,10 @@
 //              slowed in it by how well it wades (its `crossing` in cars.js: see CONFIG.ford); in water deeper than
 //              it wades it crawls and is damaged, but is never stopped. Depth posts on its banks and boards before
 //              the exit show the depth, and the player is told what the car wades. Each ford its own depth
+//   cushions   { from, to, every? }: speed cushions: over the stretch a row of them across the expressway every `every` m
+//              (CONFIG.cushion.every if not said), the first at `from`: a cushion in the middle of each lane, a gap
+//              on each lane line. A car on a lane line goes between two and feels nothing; over one slowly it is a
+//              bump; over one at speed it is thrown up and knocked. Traffic crawls over them (see CONFIG.cushion)
 //   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
 //              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
 //              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a

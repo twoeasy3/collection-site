@@ -68,6 +68,8 @@
     "fordFits": ["Ford ahead: you can wade it."],
     "fordDeep": ["FORD ahead, too deep for this car! The exit is the bridge."],
     "fordStuck": ["Out of your depth! Crawling, and the engine's drinking it."],
+    "cushions": ["Speed cushions! Thread the gaps on the lane lines, or slow right down."],
+    "cushionHit": ["THUMP!! Right over a cushion. The gaps are on the lines!"],
     "washboard": ["Washboard dirt! Fast and it skims smooth, or crawl. Not in between."],
     "jamRamp": ["Up the transporter! Hope that was fast enough."],
     "jamAhead": ["Traffic jam ahead! The transporter's ramps are down..."],

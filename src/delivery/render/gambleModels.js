@@ -56,6 +56,15 @@ export const makeHeightBar = (from, to, clearance = 2) => {
   return g;
 };
 
+// a speed cushion: a low flat-topped hump `width` m across and `long` m along the road, a white arrow on its ramp
+export const makeCushion = (width = 2.3, long = 3) => {
+  const g = new THREE.Group(), brick = lambert(0xb5482f);
+  add(g, box(width, 0.09, long), brick, 0, 0.045, 0);
+  add(g, box(width - 0.5, 0.07, long - 0.9), lambert(0xc65a3c), 0, 0.125, 0);
+  for (const x of [-0.5, 0.5]) add(g, box(0.28, 0.02, 0.8), glow(0xf4f4f4), x * (width - 1), 0.1, -long / 2 + 0.45);
+  return g;
+};
+
 // a depth post: a white post banded every quarter metre, red up to `depth` m (the water's level), `height` m tall
 export const makeDepthPost = (depth = 0.5, height = 2) => {
   const g = new THREE.Group();

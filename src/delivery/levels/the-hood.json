@@ -45,7 +45,13 @@
     { "s": 4650, "lane": 2, "kind": "cone" },
     { "s": 4662, "lane": 2, "kind": "cone" }
   ],
+  "cushions": [
+    { "from": 1460, "to": 1595 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 1482, "lane": 2 },
+    { "type": "cash10", "s": 1482, "lane": 3 },
+    { "type": "cash20", "s": 1572, "lane": 2 },
     { "type": "armour", "s": 600, "lane": 2 },
     { "type": "wrench", "s": 900, "lane": 3 },
     { "type": "wrench", "s": 1150, "lane": 2 },
