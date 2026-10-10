@@ -124,7 +124,7 @@ try {
     const semi = put('semi', 320, lane(5, 320), 20);
     semi.fixed = false;
     let off = 0;
-    g.run(20, () => { P.speed = 0; if (!semi.active) return true; if (semi.s > 340 && semi.s < 880) off = Math.max(off, lane(5, semi.s) - semi.lat); return semi.s > 880; });
+    g.run(20, () => { for (const c of g.Traffic.cars) if (c !== semi && !c.fixed) c.active = false; P.speed = 0; if (!semi.active) return true; if (semi.s > 340 && semi.s < 880) off = Math.max(off, lane(5, semi.s) - semi.lat); return semi.s > 880; });
     check(off > 0.2 && off < 1.2, 'crosswind: a semi in it drifts ' + off.toFixed(2) + ' m downwind in its lane, and stays in it');
     // the safe line: a low car in the right-hand lane (the windward one: the most room), its driver only correcting
     // once it is a metre off its line, never leaves that lane; and hands off for a whole gust it moves less than half a lane
