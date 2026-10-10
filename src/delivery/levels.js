@@ -316,7 +316,10 @@
 //              (CONFIG.ford.depth if not said), between an exit and its merge: the side road is the bridge. A car is
 //              slowed in it by how well it wades (its `crossing` in cars.js: see CONFIG.ford); in water deeper than
 //              it wades it crawls and is damaged, but is never stopped. Depth posts on its banks and boards before
-//              the exit show the depth, and the player is told what the car wades. Each ford its own depth
+//              the exit show the depth, and the player is told what the car wades. Each ford its own depth.
+//              A flooded underpass is a ford that fills: with fills: { to, over } its depth is `depth` as the run
+//              starts and rises to `to` m over `over` s (early on anything gets through, later only some); with
+//              underpass: true a railway bridge is drawn over it (the road is not lowered)
 //   cushions   { from, to, every? }: speed cushions: over the stretch a row of them across the expressway every `every` m
 //              (CONFIG.cushion.every if not said), the first at `from`: a cushion in the middle of each lane, a gap
 //              on each lane line. A car on a lane line goes between two and feels nothing; over one slowly it is a
@@ -337,6 +340,13 @@
 //   spray      { from, to }: truck spray: over the stretch the expressway is wet, and every tall vehicle moving on it
 //              (a van, a bus, a lorry) drags a cloud of spray behind it, as wide as its lane and the next each
 //              side: in the cloud the player sees next to nothing. Nothing is done to the car (see CONFIG.spray)
+//   lowSun     { from, to }: the low sun: over the stretch the expressway runs straight into a low sun and the picture
+//              washes out, except in the shadow of a tall vehicle just ahead, a bridge, a tunnel or a shade's trees.
+//              Nothing is done to the car (see CONFIG.lowSun). Best on a straight, by day
+//   dust       { from, to, wind }: a dust trail: over the stretch the expressway is dry dirt, and every vehicle moving on
+//              it throws a plume of dust, which the wind carries to the side it blows to ('left' | 'right'). In a
+//              plume the player sees next to nothing; a lane upwind of the vehicle is clear, which may be the
+//              oncoming one. Nothing is done to the car (see CONFIG.dust)
 //   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
 //              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
 //              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a
