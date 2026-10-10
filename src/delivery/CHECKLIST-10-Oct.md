@@ -115,13 +115,15 @@ $1. Largest step between neighbouring widths: Monza 47.5 m to 0, Spa 27.5 m to 0
 - [ ] 51. Performance on phones
 - [ ] Level clocks and menu pictures for Hong Kong, Tokyo, Mumbai, Stelvio, Christmas
 - [ ] More circuits: Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka
-- [ ] Level editor: full control over every feature and gimmick (itemised below)
+- [ ] Level editor: full control over every feature and gimmick (itemised below; built on `delivery-editor`: all but E1.4, E3.1, E6.2 done or partly done)
 - [ ] Gimmick Road 2's gimmicks used in real levels
 
-## Level editor: full control over every feature and gimmick (not assigned)
+## Level editor: full control over every feature and gimmick (Agent 8, branch `delivery-editor`)
 
 Asked for by the owner on 10-Oct; investigated by reading `editor.js` (757 lines),
-`delivery/editor.html` and the field list at the top of `levels.js`. Nothing built yet.
+`delivery/editor.html` and the field list at the top of `levels.js`. Built on 10-Oct (see each item):
+verified with `.schema-check.mjs`, `.bundle-check.mjs` and headless screenshots, with scripted clicks and
+drags from the address bar. **Nothing was clicked by hand.**
 
 **How it is today.** A level has about 90 documented fields. The editor has real controls for 13
 (`id`, `name`, `clock`, `tip`, `lanes` as one number, `theme`, `car`, `flow`, `traffic` as typed
@@ -135,96 +137,96 @@ the fact.
 
 ### E1. The foundation: one description of every level field
 
-- [ ] E1.1 A schema file (`levelSchema.js`, logic side, no rendering): for every field its shape
+- [x] E1.1 **Done (delivery-editor). `levelSchema.js`: 99 fields, 164 settings; `node scripts/.schema-check.mjs` passes on all 53 levels.** A schema file (`levelSchema.js`, logic side, no rendering): for every field its shape
       (flag, number, choice, stretch `from..to`, point `s`, timed `every {min,max}`, list of
       these, world-placed `x,z`), each setting's type, range, default and choices, which road it
       may be on, and a line of help. About 90 fields; the comments at the top of `levels.js` are
       the source.
-- [ ] E1.2 The editor builds its forms, place-buttons, map drawing and default entries from the
+- [x] E1.2 **Done (delivery-editor). Seen in screenshots; nothing clicked by hand.** The editor builds its forms, place-buttons, map drawing and default entries from the
       schema, in place of `FEATURE_TEMPLATES`, `EDITED` and the hand-written panels.
-- [ ] E1.3 Lists the editor hard-codes come from the game instead: obstacle kinds from
+- [x] E1.3 **Done (delivery-editor). Obstacles, vehicles, wreckage, themes, cars and cargo from the game's tables; pickup types, herd, drifter, dance, machinery, site, landmark and zone kinds had no table, so the schema is now it (pickups cross-checked with `render/pickupModels.js`).** Lists the editor hard-codes come from the game instead: obstacle kinds from
       `CONFIG.obstacleKinds`, traffic kinds from `CONFIG.vehicles`, herd, drifter, machinery,
       landmark and wreckage kinds from their own tables.
-- [ ] E1.4 The same schema checks a level when the game loads it, so the editor and
+- [ ] E1.4 **NOT DONE: the game does not check levels with the schema (`Game.start` rewrites a rival level's `grid` with keys of its own, and fields arriving from other branches would be reported until their entry is added); `.schema-check.mjs` does it headlessly instead. The README recipe has the step.** The same schema checks a level when the game loads it, so the editor and
       `Track.problems` cannot disagree, and a new gimmick is added to the editor by adding its
       schema entry (add this step to the README's "adding content" recipe).
-- [ ] E1.5 The raw JSON box stays, as an "advanced" fallback for anything the schema lacks.
+- [x] E1.5 **Done (delivery-editor). The JSON tab holds the whole level; every selected thing has an "As JSON" box.** The raw JSON box stays, as an "advanced" fallback for anything the schema lacks.
 
 ### E2. Level-wide settings that have no control today
 
-- [ ] E2.1 Road: `drive` (left / right), `lanes` as `{ north, south }` and odd counts, `median`,
+- [x] E2.1 **Done (delivery-editor). `laps` is under Race and rivals.** Road: `drive` (left / right), `lanes` as `{ north, south }` and odd counts, `median`,
       `shoulder`, `shoulderTimer`, `speedLimit`, `laps`.
-- [ ] E2.2 Traffic: the mix as a table with sliders in place of typed text; `trafficCount`,
+- [x] E2.2 **Done (delivery-editor).** Traffic: the mix as a table with sliders in place of typed text; `trafficCount`,
       `oncomingCount`, `trafficSpeed`, `drivers` (evil, happy, angry), `hesitation`.
-- [ ] E2.3 Timed events, each a switch with a min and max: `emergencies`, `processions`,
+- [x] E2.3 **Done (delivery-editor).** Timed events, each a switch with a min and max: `emergencies`, `processions`,
       `convoys` (size, kind), `railway`.
-- [ ] E2.4 Mode switches: `alwaysGood`, `noPackages`, `understeer`, `wallDamage`, `nudge`,
+- [x] E2.4 **Done (delivery-editor).** Mode switches: `alwaysGood`, `noPackages`, `understeer`, `wallDamage`, `nudge`,
       `helicopter`, `battle`, `pillboxes`.
-- [ ] E2.5 Race and rivals: `grid` (count, kind, gap, pace, from), `rival`, `rivals` (name, car,
+- [x] E2.5 **Done (delivery-editor).** Race and rivals: `grid` (count, kind, gap, pace, from), `rival`, `rivals` (name, car,
       colours, marker).
-- [ ] E2.6 Weather and look, where a theme allows it: `rain`, `snow`, `festive`, `elevated`.
+- [ ] E2.6 **PARTLY (delivery-editor): `rain`, `snow`, `festive`, `elevated` are properties of a theme, not level fields: the theme picker says what each theme brings; no switches.** Weather and look, where a theme allows it: `rain`, `snow`, `festive`, `elevated`.
 
 ### E3. The road itself
 
-- [ ] E3.1 Segments: draw and drag the road on the map (handles for a bend's length and angle),
+- [ ] E3.1 **NOT DONE: the road is still edited as the table (the bend column now keeps decimals).** Segments: draw and drag the road on the map (handles for a bend's length and angle),
       beside the table; show the gradient profile as a strip under the map.
-- [ ] E3.2 Side roads (`exits`): place the fork and merge by clicking, drag them, and edit `out`,
+- [x] E3.2 **Done (delivery-editor). Fork and merge placed by a click and dragged as a band; out, bends, own segments, lanes (a number or along the way), oncoming, oncomingFrom and flyovers in the form. Dragging not tried by hand.** Side roads (`exits`): place the fork and merge by clicking, drag them, and edit `out`,
       the side road's own `segments`, `lanes`, widenings and `flyovers` in a form. Today only
       "oncoming from here" has a tool.
-- [ ] E3.3 Crossroads (`junctions`): place, with `turn`, `forward`, `turnOff`.
-- [ ] E3.4 Stretch kinds that change the road, with forms: `narrows`, `splits`, `bridges`,
+- [x] E3.3 **Done (delivery-editor). From the schema (place, drag, form). The quarter bend still has to be made in the segments table.** Crossroads (`junctions`): place, with `turn`, `forward`, `turnOff`.
+- [x] E3.4 **Done (delivery-editor). Also `water`, `gravel`, `tide`; `runoff` with its taper (`end`).** Stretch kinds that change the road, with forms: `narrows`, `splits`, `bridges`,
       `tunnels`, `runoff`, `stands`, `runway`, `reversible`, `quietZones`, `trafficZones`, `zones`
       (scenery, ground, sky, sea).
-- [ ] E3.5 Circuits: closing a lapped road (show the gap and heading error, offer to close it),
+- [ ] E3.5 **PARTLY (delivery-editor): the Road tab says how far a road is from closing and by what angle; no "close it" button. Run-off and stands per side are in their forms.** Circuits: closing a lapped road (show the gap and heading error, offer to close it),
       and run-off and stands per side.
 
 ### E4. Gimmicks: a place-button and a form for each (most have neither)
 
-- [ ] E4.1 Stretch gimmicks: `fog`, `gunfire`, `asteroidFields`, `storm`, `migration`,
+- [x] E4.1 **Done (delivery-editor).** Stretch gimmicks: `fog`, `gunfire`, `asteroidFields`, `storm`, `migration`,
       `elephants`, `landmines`, `trolleys`, `stampedes`, `rockfall`, `quarries`, `tide` (with its
       waves), plus full forms for the ten that only have a button.
-- [ ] E4.2 Point gimmicks: `cameras`, `crossings`, `stopGo`, `potholes`, `potties`, `machinery`,
+- [x] E4.2 **Done (delivery-editor).** Point gimmicks: `cameras`, `crossings`, `stopGo`, `potholes`, `potties`, `machinery`,
       `siteWorks`, `waterMains`, `parades`, `roadblocks`, `iceCreamStops`, `schoolCrossings`,
       `balloons`, `drawbridges`, `wideLoads`, `marathons`, `pelotons`, `wreckage`, `tower`,
       `shoulderRows`, `parkedPlanes`.
-- [ ] E4.3 Gimmicks on a side road (`{ road: 'side', exit: n }`): the editor leaves these off the
+- [x] E4.3 **Done (delivery-editor). Seen: Gimmick Road 2's side-road camera, potholes, crossing and stampede drawn; a stampede placed on Expressway's side road by a scripted click.** Gimmicks on a side road (`{ road: 'side', exit: n }`): the editor leaves these off the
       map entirely today. Draw them, place them and drag them along the side road.
-- [ ] E4.4 Lane pickers that know the road at that spot (a narrowed stretch, an exit lane, a side
+- [x] E4.4 **Done (delivery-editor). Lanes offered are those of the road at that spot (closed ones marked; a side road's own); ranges for wide loads, balloons, wreckage.** Lane pickers that know the road at that spot (a narrowed stretch, an exit lane, a side
       road's own lanes), and lane ranges (`lanes: [first, last]`) for wide loads, balloons and
       wreckage.
-- [ ] E4.5 Triggers: for anything with `trigger` or `flipAt`, show on the map where the player
+- [x] E4.5 **Done (delivery-editor). A hollow arrowhead where the player sets it off, joined to the thing when selected.** Triggers: for anything with `trigger` or `flipAt`, show on the map where the player
       sets it off as well as where it happens.
-- [ ] E4.6 World-placed things (`landmarks`: `x, z, r, rot`): place and turn them on the map
+- [x] E4.6 **Done (delivery-editor). Rings in the world, a tick to turn them by; circuit `paths` drawn. Which way `rot` turns a model was not checked against the 3D view.** World-placed things (`landmarks`: `x, z, r, rot`): place and turn them on the map
       beside the road, not along it.
-- [ ] E4.7 Rules shown while editing, not after: straight road only (crossings, stop / go,
+- [x] E4.7 **Done (delivery-editor). Each form lists its rules with a tick or a cross; where a thing cannot go is tinted red on the road while it is being placed; a button whose level-wide rule fails is marked.** Rules shown while editing, not after: straight road only (crossings, stop / go,
       drawbridges), level road only (bridges), two-way only (stop / go, reversible), what cannot be
       combined with exits. The side roads cleanup in the queue will change some of these.
 
 ### E5. Keeping a level whole while it is edited
 
-- [ ] E5.1 Changing a segment's length moves or stretches everything after it (today "a change to
+- [x] E5.1 **Done (delivery-editor). "Move what comes after" (on by default), also when a segment is removed. Seen on Expressway: first segment 600 to 1200 m.** Changing a segment's length moves or stretches everything after it (today "a change to
       the road can leave them out of place").
-- [ ] E5.2 Undo and redo.
-- [ ] E5.3 Copy, paste and duplicate; select and move several things at once.
-- [ ] E5.4 Problems listed under the map link to the thing that causes them.
-- [ ] E5.5 Autosave of the level being edited, and Load a `.json` file (today only the built-in
+- [x] E5.2 **Done (delivery-editor). Buttons, Ctrl+Z, Ctrl+Y. Seen through a scripted drag and undo; not by hand.** Undo and redo.
+- [ ] E5.3 **PARTLY (delivery-editor): Duplicate (Ctrl+D), copy and paste (Ctrl+C / V) of one thing; no selecting several.** Copy, paste and duplicate; select and move several things at once.
+- [x] E5.4 **Done (delivery-editor). Each problem under the map is a button to its cause (the game's problems are traced by their wording: a new wording falls back to the list).** Problems listed under the map link to the thing that causes them.
+- [x] E5.5 **Done (delivery-editor). Autosave to local storage (not when the address names a level); Load .json by button or drop. Neither tried by hand.** Autosave of the level being edited, and Load a `.json` file (today only the built-in
       levels can be opened, and only Download saves).
 
 ### E6. Seeing and proving it
 
-- [ ] E6.1 The 3D view updates as you edit, and "Play from here" starts a run at the spot under
+- [ ] E6.1 **PARTLY (delivery-editor): "Play from here" (a tool, and a button on each thing) opens `?edited&at=`; the 3D view is still updated by its button.** The 3D view updates as you edit, and "Play from here" starts a run at the spot under
       the cursor (`?at=`).
-- [ ] E6.2 A "Work out the clock" button, doing what `scripts/level-clocks.mjs` does, in the page.
-- [ ] E6.3 Filters on the map (show only one kind, hide scenery bands) and a list of everything in
+- [ ] E6.2 **NOT DONE: not started.** A "Work out the clock" button, doing what `scripts/level-clocks.mjs` does, in the page.
+- [x] E6.3 **Done (delivery-editor).** Filters on the map (show only one kind, hide scenery bands) and a list of everything in
       the level to pick from.
-- [ ] E6.4 A headless check that the schema covers every field used by every level in `levels/`,
+- [x] E6.4 **Done (delivery-editor). `scripts/.schema-check.mjs`.** A headless check that the schema covers every field used by every level in `levels/`,
       and that each level passes through the editor's load and save unchanged.
 
 ### E7. To come from today's queue (add their fields once they exist)
 
-- [ ] E7.1 Water stages, boat traffic and "amphibious only" for the amphibious levels.
-- [ ] E7.2 The cargo a level carries, for each side.
-- [ ] E7.3 Whatever the side roads cleanup adds or lifts.
+- [x] E7.1 **Done (delivery-editor). `water` (place, drag, form, rules), `amphibious`; boats are kinds in the traffic mix.** Water stages, boat traffic and "amphibious only" for the amphibious levels.
+- [x] E7.2 **Done (delivery-editor).** The cargo a level carries, for each side.
+- [x] E7.3 **Done (delivery-editor). The side-road list of today's `levels.js` (`road: 'both'` on 22 fields).** Whatever the side roads cleanup adds or lifts.
 
 Order that makes sense: E1 first (everything else is built on it), then E4.1 to E4.3 and E2 (they
 fall out of the schema almost for free), then E3.2 and E5.1, then the rest. Removed today, so not

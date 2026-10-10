@@ -774,7 +774,7 @@ window.addEventListener('message', (e) => {
 });
 
 // ---- the selected thing's own form, over the map ------------------------------------------------------
-const select = (ref) => { sel = ref; renderInspector(); draw(); };
+const select = (ref) => { sel = ref; renderInspector(); if (!$('tab-list').hidden) renderList(); draw(); };
 const titleOf = (key, e, i) => {
   const def = FIELDS[key];
   return def.label + (def.sub && e[def.sub] ? ': ' + e[def.sub] : '') + (i >= 0 ? ' #' + (i + 1) : '');
@@ -889,7 +889,7 @@ const renderList = () => {
   });
   rows.sort((a, b) => a.road - b.road || a.pos - b.pos);
   $('listCount').textContent = rows.length + (rows.length > 500 ? ' (the first 500 listed)' : '');
-  fill($('everything'), ...rows.slice(0, 500).map(r => h('button', { class: 'row' + (same(r, sel) ? ' on' : ''), onclick: () => { select({ key: r.key, i: r.i }); centre(sel); renderList(); } },
+  fill($('everything'), ...rows.slice(0, 500).map(r => h('button', { class: 'row' + (same(r, sel) ? ' on' : ''), onclick: () => { select({ key: r.key, i: r.i }); centre(sel); } },
     h('span', { class: 'swatch', style: 'background:' + colour(r.key) }), h('span', { class: 'pos' }, r.text), h('span', { class: 'name' }, r.name), h('span', { class: 'cap' }, r.more))));
 };
 $('showAll').addEventListener('click', () => { hidden.clear(); renderList(); draw(); });
