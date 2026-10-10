@@ -2,15 +2,15 @@
   "id": "rice",
   "name": "Emerald Steps",
   "description": {
-    "good": "A bonsai for the village below the terraces. Up to the temple gate, then down the steps of the hill: mind the buffalo, the tractors and the ford.",
-    "evil": "One angry goose, a thousand paddies. Scatter the buffalo, jump the ridge, slide the hairpins through the spill and take the ford at full tilt."
+    "good": "A sushi boat for the village below the terraces. Up to the temple gate, then down the steps of the hill: mind the buffalo, the tractors and the ford.",
+    "evil": "A cage of bats, a thousand paddies. Scatter the buffalo, jump the ridge, slide the hairpins through the spill and take the ford at full tilt."
   },
   "theme": "rice",
   "clock": { "good": 205, "evil": 155 },
   "tip": 300,
   "lanes": { "north": 2, "south": 1 },
   "shoulder": 2.5,
-  "cargo": { "good": "bonsai", "evil": "goose" },
+  "cargo": { "good": "sushi", "evil": "bats" },
   "traffic": { "keitruck": 0.2, "rickshaw": 0.16, "commuter": 0.12, "pickup": 0.12, "van": 0.1, "lovebus": 0.08, "minivan": 0.08, "wagon": 0.07, "bus": 0.04, "police": 0.03 },
   "trafficCount": 8,
   "oncomingCount": 6,
