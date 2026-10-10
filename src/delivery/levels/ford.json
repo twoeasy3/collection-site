@@ -1,10 +1,5 @@
 {
   "id": "ford",
-  "name": "Hippo Ford",
-  "description": {
-    "good": "Five river crossings on safari. The hippos live here and the elephants are passing through: float quietly and give them the river.",
-    "evil": "Five fords, a river full of hippos and elephants on the bank. Whatever they flatten is one less car in your way."
-  },
   "theme": "safari",
   "flow": "north",
   "amphibious": true,

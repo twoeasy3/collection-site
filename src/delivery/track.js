@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
+import { levelName } from './levelText.js';
 
 // ============================================================================
 // TRACK - path sampled by distance along track (s) and lateral offset (lat)
@@ -1241,7 +1242,7 @@ const createTrack = () => {
         problems.push(name + ': at a junction');
       }
     }
-    for (const text of problems) console.warn('Level "' + LEVEL.name + '": ' + text);
+    for (const text of problems) console.warn('Level "' + levelName(LEVEL) + '": ' + text);
   }
 
   return {

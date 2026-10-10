@@ -1,10 +1,5 @@
 {
   "id": "farm",
-  "name": "Farm Lanes",
-  "description": {
-    "good": "Fresh air and country lanes. Give the cows room, be patient behind the tractors, and go round the hay bales, not through them.",
-    "evil": "Cows wander, tractors crawl and hay bales sit there asking for it. The countryside has never been delivered to this rudely."
-  },
   "cargo": { "good": "cactus", "evil": "bees" },
   "theme": "farm",
   "clock": { "good": 234, "evil": 166 },

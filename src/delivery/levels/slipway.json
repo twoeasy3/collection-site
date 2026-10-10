@@ -1,10 +1,5 @@
 {
   "id": "slipway",
-  "name": "Slipway Beach",
-  "description": {
-    "good": "Down the slipway and across the bay, twice. Your car floats: steer round the pedal boats and the barge, and wave at the balloon.",
-    "evil": "Beach traffic queues at the water's edge while you drive straight in. The pedal boats make excellent speed bumps."
-  },
   "theme": "beach",
   "amphibious": true,
   "clock": { "good": 165, "evil": 125 },

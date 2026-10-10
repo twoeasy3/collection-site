@@ -1257,7 +1257,11 @@ export const CONFIG = {
     far: 70,               // ...and where it is solid (the usual: 520)
     edge: 60,              // m it thickens over, at each end
     policeSight: 0.4,      // share of their usual sight the police have in it
-    color: 0xc4c9ce,
+    color: 0xc4c9ce,       // its colour under a bright sky. Under a dark one it is mostly the sky's own colour (see
+                           // render/roadside.js; a theme can name a "fogColor" of its own instead):
+    bright: 0.5,           // how bright a sky (0 .. 1) has fog of that colour and no other...
+    dark: 0.3,             // ...and how dark a one has fog that is only...
+    lit: 0.25,             // ...this share that colour, the rest the sky's
   },
   // a tunnel (a level's "tunnels": { from, to }): the road goes under cover: the sky and the ground gone, the
   // fog closed in to the tunnel's lamps, the player's headlights on, the engine echoing off the walls

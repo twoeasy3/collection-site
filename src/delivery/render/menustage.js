@@ -13,6 +13,7 @@
 // main.js); ?side=evil shows the Evil side for the visit; ?options opens the options; ?road the road card.
 import '../menu2.css';
 import { LEVELS, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace } from '../levels.js';
+import { levelName, levelDescription } from '../levelText.js';
 import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
@@ -170,10 +171,10 @@ const drawStage = () => {
   // (a special level's 6-star car, and the time to spare that earns it: see cars.js EARNED_CARS)
   const prizeLine = open && prize ? '6-star car: ' + prize.name + (Progress.earned(prize) ? ' (earned)'
     : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare') : null;
-  const words = level.description?.[evil ? 'evil' : 'good'] || level.description?.good || '';
+  const words = levelDescription(level, evil); // (for the side picked: see levelText.js)
   const best = Progress.bestTime(level.id, evil);
   const info = make('div', 'info',
-    make('h2', '', level.name),
+    make('h2', '', levelName(level)),
     open && words ? make('p', 'desc', words) : null,
     open ? make('div', 'facts',
       fact('Clock', formatTime(clockFor(level, evil)) + (oneSided(level) ? ' (always Good)' : '')),
@@ -204,10 +205,10 @@ const drawStrip = (first, last) => {
     const pips = make('span', 'pips', ...(open ? (oneSided(level) ? [false] : [false, true]).map(evil =>
       make('i', (evil ? 'evil ' : 'good ') + (medalFor(level, evil, Progress.bestTime(level.id, evil)) || 'none'))) : []));
     const thumb = make('button', 'thumb' + (level === cursor ? ' current' : '') + (open ? '' : ' locked'),
-      make('b', '', label(level)), pips, make('span', 'name', level.name));
+      make('b', '', label(level)), pips, make('span', 'name', levelName(level)));
     if (LEVEL_SHOTS[level.id]) thumb.style.backgroundImage = `url("${LEVEL_SHOTS[level.id]}")`;
     else thumb.classList.add('none');
-    thumb.title = open ? level.name : level.name + ': not open yet';
+    thumb.title = open ? levelName(level) : levelName(level) + ': not open yet';
     thumb.addEventListener('click', () => { if (level !== cursor) blip('menuMove'); show(level); });
     return thumb;
   }));
@@ -380,7 +381,7 @@ const roadLine = (level, words) => {
   const closeBtn = make('button', 'menu-chip', 'Close');
   closeBtn.addEventListener('click', closeSheet);
   roadBox.replaceChildren(make('div', 'sheet-box road',
-    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', label(level) + '  ' + level.name)), closeBtn),
+    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', label(level) + '  ' + levelName(level))), closeBtn),
     make('div', 'sheet-main', make('div', 'sheet-body', make('p', 'road-wait', words)))));
 };
 const roadCard = async (level) => {

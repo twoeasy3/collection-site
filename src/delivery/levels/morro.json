@@ -2,8 +2,8 @@
   "id": "morro",
   "name": "Favela Heights",
   "description": {
-    "good": "A record player for the party at the top. Up the hairpins past the carnival and the ice-cream van, over the ridge and down the far side, gently.",
-    "evil": "Fireworks for the hilltop, and the whole hill in the way. Round the parade, through the burst mains, fly the ridge and never mind who is on the stairs."
+    "good": "A record player for the party at the top. Up the hairpins and the bumps, past the carnival and the ice-cream van, over the ridge and down the far side, gently.",
+    "evil": "Fireworks for the hilltop, and the hill in the way. Round the parade, between the bumps, through burst mains, fly the ridge and never mind who is on the stairs."
   },
   "theme": "favela",
   "clock": { "good": 220, "evil": 165 },
@@ -97,6 +97,9 @@
   "crosswinds": [
     { "from": 3271, "to": 3511, "dir": "right" }
   ],
+  "cushions": [
+    { "from": 1490, "to": 1670 }
+  ],
   "parked": [
     { "s": 480, "side": "right" },
     { "s": 1805, "side": "right" },
@@ -125,8 +128,10 @@
     { "type": "cash10", "s": 1225, "lane": 2 },
     { "type": "timePlus", "s": 1310, "lane": 1 },
     { "type": "cash20", "s": 1413, "lane": 2 },
-    { "type": "cash10", "s": 1581, "lane": 1 },
-    { "type": "armour", "s": 1581, "lane": 2 },
+    { "type": "cash10", "s": 1512, "lane": 2 },
+    { "type": "cash10", "s": 1557, "lane": 1 },
+    { "type": "armour", "s": 1557, "lane": 2 },
+    { "type": "cash20", "s": 1602, "lane": "right" },
     { "type": "cash20", "s": 1728, "lane": 0 },
     { "type": "cash10", "s": 1905, "lane": 1 },
     { "type": "cash10", "s": 1905, "lane": 2 },

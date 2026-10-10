@@ -23,6 +23,7 @@
 import './editor.css';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel, selectSpecial } from './levels.js';
+import { levelName, withWords } from './levelText.js';
 import { buildTrack, Track } from './track.js';
 import { THEMES } from './themes.js';
 import { PICKUP_COLOR } from './render/pickupModels.js';
@@ -47,9 +48,11 @@ const ITEMS = PLACED.filter(k => FIELDS[k].group === 'items');
 const SPAN_RULES = ['straight', 'level', 'clearOfExits', 'clearOfEnds', 'noBridge', 'noFlyovers'];
 
 // ---- the level being edited ----------------------------------------------------------------------
+// (a built-in level is opened with its words in it, levelText.json's if they are kept there: withWords. So the
+// forms show them, and a level downloaded from here carries its own name and description: its file stands by itself)
 const sources = [
-  ...LEVELS.map((l, i) => [`${levelLabel(i)}. ${l.name}`, l]),
-  ...Object.entries(HIDDEN_LEVELS).map(([id, l]) => [`Hidden: ${l.name} (${id})`, l]),
+  ...LEVELS.map((l, i) => [`${levelLabel(i)}. ${levelName(l)}`, withWords(l)]),
+  ...Object.entries(HIDDEN_LEVELS).map(([id, l]) => [`Hidden: ${levelName(l)} (${id})`, withWords(l)]),
 ];
 const BLANK = { id: 'new-level', name: 'New Level', clock: { good: 150, evil: 115 }, tip: 50, lanes: 4,
   traffic: { darkvan: 0.4, commuter: 0.2, van: 0.2, bus: 0.1, police: 0.05 },

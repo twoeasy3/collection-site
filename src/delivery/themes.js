@@ -4,6 +4,8 @@
 // and the editor both read the one list. Any theme can go on any level (?theme=snow in the address tries one
 // on the level picked): what a theme's scenery makes of something a level may have of its own (a runway,
 // zones, landmarks, grandstands) it does without where the level has none.
+// fogColor: the colour of a fog bank (a level's "fog") in this theme, if not the one worked out from its sky (pale grey
+// under a bright sky, mostly the sky's own colour under a dark one: see CONFIG.fog and render/roadside.js).
 // channel: { shallow, deep, glint }: the colours of the water of a water stage (a level's "water": see
 // render/water.js) in this theme, if not CONFIG.water.colours: a harbour at night, a muddy river, a fjord, a flood.
 // river: the colour of what runs under a drawbridge in this theme (render/hazards.js), if not its channel's deep water,
@@ -57,7 +59,7 @@ export const THEMES = {
   hood: { sky: 0xbcc3c2, ground: 0x9a8d55, road: 0x46474a, scenery: 'suburb', rundown: true },
   // suburb: lawns, pavements, picket fences and houses in a row (sets: what a zone of a level can be there in place of
   // the houses: a row of shops, a market square, a retail park, a town park: see the suburb scenery in render/road.js)
-  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb', sets: ['highstreet', 'market', 'retail', 'park'] },
+  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb', sets: ['highstreet', 'market', 'retail', 'park', 'livestock'] },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
   // battlefield: a dirt track through a war (unmarked: only the ruts worn into it), churned mud under a smoky
   // sky, shell craters, sandbagged trenches, tank traps, barbed wire and shattered trees (and the pillboxes:
@@ -70,7 +72,7 @@ export const THEMES = {
   // panorama: the same mountain as an everyday road through the bush (Panorama Avenue: roadside: no circuit
   // walls, kerbs or stands, white guide posts along the edges and rocks in the grass), in the colours of
   // the Southern Highlands bushland (Sydney to Kiama's bush)
-  panorama: { sky: 0xb3d0e2, ground: 0x7d8a52, road: 0x4a4c50, scenery: 'bathurst', roadside: true, terrain: { gentle: 0x7d8a52, steep: 0x8f6e4c, rough: 0.35, flat: 10, rise: 60 } },
+  panorama: { sky: 0xb3d0e2, ground: 0x7d8a52, road: 0x4a4c50, scenery: 'bathurst', roadside: true, sets: ['roadhouse', 'siding', 'floodway', 'homestead'], terrain: { gentle: 0x7d8a52, steep: 0x8f6e4c, rough: 0.35, flat: 10, rise: 60 } },
   // montreal: Circuit Gilles-Villeneuve, on Île Notre-Dame in the St Lawrence: parkland, a summer sky
   montreal: { sky: 0xa6d2f2, ground: 0x5d9a4a, road: 0x3e4147, scenery: 'montreal', target: FENCE_TOP },
   // sea: open water everywhere, the way through it the same water, unmarked (water: no ruts either),
@@ -222,6 +224,12 @@ const DRIFTING = {
 };
 for (const [name, map] of Object.entries(OBSTACLES)) THEMES[name].obstacles = map;
 for (const [name, map] of Object.entries(DRIFTING)) THEMES[name].drifting = map;
+// a variant of a theme (themeparkNight, volcanoErupting, favelaRain...: a theme of another name drawn with that theme's
+// scenery) has that theme's obstacles, unless it is given some of its own above: so a new variant needs nothing here
+for (const T of Object.values(THEMES)) {
+  const parent = THEMES[T.scenery];
+  if (parent && parent !== T && !T.obstacles && !T.drifting) { T.obstacles = parent.obstacles; T.drifting = parent.drifting; }
+}
 // the kind a level's obstacle of `kind` is on a level of that theme (a level's "theme"); drifting: one of its drifters
 export const themedKind = (theme, kind, drifting = false) => {
   const T = THEMES[theme || 'city'];

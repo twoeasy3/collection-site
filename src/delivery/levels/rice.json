@@ -1,10 +1,5 @@
 {
   "id": "rice",
-  "name": "Emerald Steps",
-  "description": {
-    "good": "A sushi boat for the village below the terraces. Up to the temple gate, then down the steps of the hill: mind the buffalo, the tractors and the ford.",
-    "evil": "A cage of bats, a thousand paddies. Scatter the buffalo, jump the ridge, slide the hairpins through the spill and take the ford at full tilt."
-  },
   "theme": "rice",
   "clock": { "good": 205, "evil": 155 },
   "tip": 300,

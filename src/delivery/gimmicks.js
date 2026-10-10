@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
+import { levelName } from './levelText.js';
 import { themedKind } from './themes.js';
 import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
@@ -46,9 +47,12 @@ const JUNK_NAMES = { umbrella: 'beach umbrellas', surfboard: 'surfboards', coole
   cone: 'cones', barrow: 'wheelbarrows', trolley: 'shopping trolleys', rock: 'rocks', toyBlock: 'alphabet blocks', skittle: 'skittles', divingHelmet: 'diving helmets', supplyPod: 'supply pods',
   directorChair: 'director\'s chairs', cameraDolly: 'camera dollies', mooringPosts: 'mooring posts', fuelDrum: 'fuel drums', popcornCart: 'popcorn carts', barrel: 'barrels',
   chairStack: 'stacks of chairs', riceBasket: 'baskets of rice', present: 'presents', toyDrum: 'toy drums', cafeTable: 'cafe tables', wheelieBin: 'wheelie bins', snowdrift: 'heaps of snow',
-  sackStack: 'stacks of sacks', beachBall: 'beach balls', tumbleweed: 'tumbleweeds', flagStand: 'flags on stands', brimstone: 'spikes of brimstone', lavaRock: 'lava boulders' };
+  sackStack: 'stacks of sacks', beachBall: 'beach balls', tumbleweed: 'tumbleweeds', flagStand: 'flags on stands', brimstone: 'spikes of brimstone', lavaRock: 'lava boulders', mine: 'sea mines' };
 // the kinds that drift on a level (not the darting ones: those are another card), as its theme has them
 const driftingKinds = (level) => [...new Set((level.drifters || []).filter(d => d.pattern !== 'dart').map(d => themedKind(level.theme, d.kind || 'cone', true)))].filter(k => JUNK[k]);
+// ...and the kinds that dart about on it (a placed obstacle with drift: 'dart', or drifters of that pattern)
+const dartingKinds = (level) => [...new Set([...(level.obstacles || []).filter(o => o.drift === 'dart').map(o => themedKind(level.theme, o.kind || 'barrier')),
+  ...(level.drifters || []).filter(d => d.pattern === 'dart').map(d => themedKind(level.theme, d.kind || 'cone', true))])].filter(k => k === 'mine' || JUNK[k]);
 const listed = (words) => words.length > 1 ? words.slice(0, -1).join(', ') + ' and ' + words[words.length - 1] : words[0];
 const vehicle = (kind, color) => MODELS[CONFIG.vehicles[kind].model]({ ...CONFIG.vehicles[kind], color });
 // a car's model painted (its body's material is its paint)
@@ -73,7 +77,7 @@ const sign = (text, bg, fg = '#fff', w = 3.2, h = 1.4) => {
 };
 // where the levels are: every level (on the menu) that has it, by its number and name; and the test
 // level, Gimmick Road (off the menu: ?hidden=gimmick-road), where the newest are tried out first
-export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null),
+export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${levelName(level)}` : null),
   has(HIDDEN_LEVELS['gimmick-road']) ? '<span>Test</span> Gimmick Road (?hidden=gimmick-road)' : null,
   has(HIDDEN_LEVELS['gimmick-road-2']) ? '<span>Test</span> Gimmick Road 2 (?hidden=gimmick-road-2)' : null,
   has(HIDDEN_LEVELS['gimmick-road-3']) ? '<span>Test</span> Gimmick Road 3 (?hidden=gimmick-road-3)' : null].filter(Boolean);
@@ -255,8 +259,10 @@ export const GROUPS = [
     { name: 'Darting mines', color: 0xe0e0e0, has: (l) => l.obstacles?.some(o => o.drift === 'dart') || l.drifters?.some(d => d.pattern === 'dart'), rules: [
       `Sea mines that won't stay put: each sits ${range(D.dartRest, ' s')}, shivers for ${D.dartShiver} s (the only warning), then darts off at ${range(D.dartSpeed, ' m/s')}, up to ${D.dartAlong} m along and ${D.dartAcross} m across from its spot. Differently every run.`,
       `Hit one: ${CONFIG.obstacleKinds.mine.damage} damage, and you keep ${pct(CONFIG.obstacleKinds.mine.speedKept)} of your speed.`,
-    ], build: () => {
-      const m = ob('mine');
+    ], // (on a level's own card: what darts on that level, if not sea mines, in its line and its picture)
+    line: (level) => { const own = dartingKinds(level); return own.length && own[0] !== 'mine' ? `${listed(own.map(k => JUNK_NAMES[k])).replace(/^./, c => c.toUpperCase())} that won't stay put: each sits ${range(D.dartRest, ' s')}, shivers for ${D.dartShiver} s (the only warning), then darts off somewhere else. Differently every run.` : null; },
+    build: (level) => {
+      const own = level ? dartingKinds(level)[0] : null, m = own ? ob(own, JUNK[own]) : ob('mine');
       return { model: m, tick: (t) => {
         const from = Math.floor(t / 2.4) % 2 ? 1.6 : -1.6, u = t % 2.4;
         m.position.x = u < 1.5 ? from : u < 1.5 + D.dartShiver ? from + Math.sin(t * 70) * 0.1 : from - 2 * from * Math.min(1, (u - 1.5 - D.dartShiver) / 0.4);

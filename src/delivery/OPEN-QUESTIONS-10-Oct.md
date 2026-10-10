@@ -40,6 +40,19 @@ struck from here. Nothing below blocks the agents now at work unless it says so.
 
 ## Cars
 
+5c2. **Delivery: what is being wrecked? (BLOCKS the merge of the two new stats.)** A thrown package only ever
+    hits TRAFFIC, and a traffic vehicle's health is fixed by its kind (commuter 45, van 90, bus 180, semi
+    320); it does not rise with the level or the player's tier. So a Delivery stat that rises by tier makes
+    a higher-tier car wreck traffic MORE easily (a semi: 13 packages at tier 1, 9 at tier 5), the opposite
+    of "it should still be harder to wreck higher tier cars overall". Choose: (a) traffic gets tougher on
+    later levels or tiers, by more than Delivery rises, so packages-to-wreck climbs gently (this is the
+    rebalance); (b) Delivery stays flat across tiers for now, with only the small spread by body (vans up,
+    two-seaters down), until that rebalance; (c) merge as built and accept easier wrecking at high tiers
+    meanwhile. Pick: (b). Also to say: should Delivery scale a Good package's small damage (it does not
+    now); should the earned six-star cars sit one step above tier 5 (they do now) or at 1.
+5c3. **Nerve as built:** band 0.8 to 1.3 by the car's character (Tow Truck 1.3, EV Saloon 1.25, Post Van and
+    Taxi 1.2 ... Hot Rod 0.8), on a 3 s allowance, cap 8 s. Fine as first values?
+
 5d. **The Blue 4 cars' first figures** (not play-tested; inside the rule "under tier 5's gold best"):
     Stainless Gullwing 42.5 m/s, accel 12, health 330, $920; Rear-Engine Coupe 44.5, 15.5, 175, $960; Snake
     Roadster 45, 17, 140, $1000; Polygon Truck 44, 14, 290, mass 2.3, agility 0.9, $1060. Change any?

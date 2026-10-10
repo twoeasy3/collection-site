@@ -1,10 +1,5 @@
 {
   "id": "christmas",
-  "name": "Christmas Eve",
-  "description": {
-    "good": "The last round before Christmas, in a gale that lifts cars off the road. Icy streets, post vans, an ice-cream van out of season. Deliver the joy.",
-    "evil": "Snow, ice and a street of last-minute shoppers queuing behind an ice-cream van. Somebody is getting coal, and it is arriving at speed."
-  },
   "cargo": { "good": "cake", "evil": "doll" },
   "theme": "christmas",
   "clock": { "good": 180, "evil": 135 },

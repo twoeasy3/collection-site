@@ -20,6 +20,12 @@ try {
       check(!!K[from] && !!K[to] && same(K[from], K[to]), `${name}: a ${to} costs what a ${from} costs (${JSON.stringify(K[to])})`);
     }
   }
+  // a variant of a theme (another name, that theme's scenery) has that theme's obstacles
+  for (const [name, theme] of Object.entries(THEMES)) {
+    const parent = THEMES[theme.scenery];
+    if (!parent || parent === theme || !(parent.obstacles || parent.drifting)) continue;
+    check(same(theme.obstacles, parent.obstacles) && same(theme.drifting, parent.drifting), `${name}: a variant of ${theme.scenery}, with its obstacles (${JSON.stringify(theme.obstacles || {})}${theme.drifting ? ', drifting ' + JSON.stringify(theme.drifting) : ''})`);
+  }
   const snapshot = (level) => {
     g.select(level);
     G.loaded = null;
