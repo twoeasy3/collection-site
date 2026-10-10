@@ -735,6 +735,7 @@ Level fields added (shapes):
 - `cushions: [{ from, to, every? }]` (expressway; a row every 15 to 200 m, 45 if not said)
 - `shade: [{ from, to, side: 'left' | 'right', lanes? }]` (expressway; lanes of the player's side in shadow, 1 if not said)
 - `ruts: [{ from, to }]` (expressway)
+- `tarmac: [{ from, to, lane }]` (expressway; a lane of the player's side, which needs a second lane there)
 - `washboards: [{ from, to, skim? }]` (expressway; skim in m/s, 13 to 40, CONFIG.washboard.skim if not said)
 
 Progress:
@@ -747,7 +748,8 @@ Progress:
 - Vite cache fix `69b8ae1` cherry-picked (`c454f6e`); all checks pass after it.
 - main merged in again (`f6e0648`, one conflict in levels.js's field docs); "ready to merge" sent.
 - [x] H9 ruts: done, `c82ce9a`. On Gimmick Road 3 (4830-5030, a barrier at 5000 in lane 4), Farm (2810-2970, a bale at 2945), Outback Express (2560-2860). `gambles.js` now reads `Input.steer` (the rut is climbed out of by steering against it). `ruts` passes (12). Stills: `ruts-1`, `ruts-2-in`, `card-ruts`, `farm-ruts`.
-- Not started: H16, H17, H7, H11, H12, H13, G4, H3, H20, H14, H18, H6, H15, G10, G11, G25, G24, G26, G22, G18, G3.
+- [x] H16 fresh tarmac: done, `be36398`. On Gimmick Road 3 (1750-2050, lane 5), Hong Kong (2620-2920, lane 3), Tokyo (860-1140, lane 3). Traffic slowed by a gimmick (ford, cushions, ruts, tar queue) is now capped by one helper, `Gambles.crawl` (`CONFIG.gambleApproach`). `tarmac` passes (11). Stills: `tar-1`, `tar-2-queue`, `card-tar`, `hk-tar`.
+- Not started: H17, H7, H11, H12, H13, G4, H3, H20, H14, H18, H6, H15, G10, G11, G25, G24, G26, G22, G18, G3.
 
 For the owner:
 - H2: the queue fills the player's whole side, so the way round is the oncoming side or the shoulder (both a risk of their own), or the jump. Ring Road was wanted but has no 250 m clear of its exits' ramps.
@@ -810,5 +812,6 @@ For the owner:
 ## Agent 26: theme levels D: Wild West, favela, rice terraces (.claude/worktrees/delivery-city-levels, delivery-themes-d)
 - Markers for batch D below batch C's (f773f0d, faa20fe); cache fix cherry-picked (b359c19); main merged in (b9039f5).
 - Wild West DONE (017cb47, descriptions in the next commit): theme `wildwest` (render/themes/wildwest.js + wildwestModels.js), level `noon` "High Noon", 4.8 km, 37 cash pickups, 15 side-by-side rows, clock 205/155, levelshots/noon.jpg. Checks pass (levels, schema, bundle, save, targets, cargo, descriptions), ghost probe delivered. Shots: scratchpad/shots-themes/wildwest. Not played by hand.
-- Favela: in progress.
+- Favela DONE (7025f1c): theme `favela` (render/themes/favela.js + favelaModels.js, terrain), level `morro` "Favela Heights", 4.9 km, 8 hairpins, 35 cash pickups, 13 side-by-side rows, clock 220/165, levelshots/morro.jpg, descriptions in. All checks pass, ghost probe delivered. Shots: scratchpad/shots-themes/favela. Not played by hand.
+- Told by the coordinator: no INSERTED_AT entries on this branch (the orchestrator adds them at the merge).
 - Rice terraces: not started.

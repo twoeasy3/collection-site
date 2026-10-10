@@ -1202,6 +1202,11 @@ const createTrack = () => {
           else if (openLane(item.lane, x.side0 + item.s) !== item.lane) problems.push(name + ': the side road has no lane ' + item.lane + ' there (see its exit\'s "lanes"; only lane 1 on its ramps)');
         } else if (item.s < 0 || item.s > length) {
           problems.push(name + ': beyond the expressway');
+        } else if (item.lane === 'left' || item.lane === 'right') {
+          // (on that shoulder, as on a side road: laneOffset puts it there. It used to fall through to the test
+          // below, which knows only numbered lanes, and be reported "merged away")
+        } else if (!Number.isInteger(item.lane)) {
+          problems.push(name + ': its lane is a number, or left or right (a shoulder)');
         } else if (item.lane < 0 || item.lane >= LANES) {
           problems.push(name + ': no lane ' + item.lane);
         } else if (openLane(item.lane, item.s) !== item.lane) {

@@ -7,7 +7,15 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `88e87aa` (main; not pushed). 57 levels on the menu. Running: agent 19 (road gimmicks, from H9), 24 (known problems), 26 (theme levels D). Everything else is merged.
+Last updated: after `29e78ba` (main; not pushed). 57 levels on the menu. Running: agent 19 (road gimmicks, from H17), 24 (known problems), 26 (theme levels D). Everything else is merged.
+
+**Two checks fail on `main` right now:**
+- `.pursuit-check.mjs` (3 failures: the chase no longer gets past and away, and the player is hit). It passed before the road gimmicks were merged; agent 19 is finding which of its gimmicks did it.
+- `.cargo-check.mjs` ("every item turns up"): with 57 levels the rotation no longer reaches all 50 items. Agent 24 has it.
+
+**Merged since the last update:**
+- Known problems, first ten commits (`4b7421e`): audit C4 (the editor never writes a level's values into the page as HTML: the script injection is closed), C6 (a pasted save code keeps only a save's fields), C2 (a visit with an address switch, plain `?autostart` included, never writes the save), C5 (a bad edited level is refused with a reason; one that makes the track builder loop for ever still hangs), C3 (a traffic slot is wiped when dealt out), pickups and obstacles allowed on the main road's shoulders (the check was wrong, the docs right), duplicate config keys removed. **Replay: 53 of 53 levels replay exactly from a seed (it was 31 of 53).** Behaviour changes from the duplicate keys: traffic honks less (70 m, 5 s apart, as first written), and the ice-cream van is its own model with its tune again (a later duplicate had made it a pink delivery van and silenced it).
+- Road gimmicks, second lot (`29e78ba`): H9 ruts (Farm, Outback Express), H16 fresh tarmac (Hong Kong, Tokyo); the drawbridge's river takes the theme's colour (lava on Cinder Island, lagoon green on Venice, a blue ribbon on the toy carpet); rocks and asteroids put out as plain obstacles or drifters were built with no size (an error in the browser on Cinder Island): fixed.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 

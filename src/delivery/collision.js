@@ -804,6 +804,9 @@ export const Collision = (() => {
   };
   // back to how the level starts: everything standing, the movers somewhere in their stretches
   const resetObstacles = () => {
+    // (and the contacts of the run before forgotten: check() leaves these on whatever it touched, the player too)
+    tick = 0;
+    Player.sideTick = Player.hitBy = Player.hitAt = undefined;
     for (const o of obstacles) {
       o.gone = false;
       if (o.dance) { // back to the start of its dance

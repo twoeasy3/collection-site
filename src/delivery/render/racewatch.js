@@ -111,6 +111,7 @@ export const raceCamera = (dt) => {
 };
 
 const hex = (n) => '#' + n.toString(16).padStart(6, '0');
+const plain = (text) => String(text).replace(/[&<>"']/g, ch => '&#' + ch.charCodeAt(0) + ';'); // (a level's own words, safe to put into HTML: a level can come from a file)
 // ---- the minimap: the circuit from above, every racer a dot in its livery (the watched one ringed,
 // the leader outlined in white). North (the start's heading) up; on a left-hand level, as the
 // mirrored scene shows it.
@@ -231,7 +232,7 @@ export const syncRaceWatch = (now) => {
   const order = RaceWatch.standings(), leader = order[0];
   if (!leader) return;
   const lap = Math.min(LEVEL.laps, (leader.laps || 0) + 1), done = RaceWatch.finished.length > 0;
-  const head = `<div class="head">${collapsed ? '' : LEVEL.name.toUpperCase()}<span>${done ? 'FLAG' : 'LAP ' + lap + ' / ' + LEVEL.laps} ${collapsed ? '▸' : '▾'}</span></div>`;
+  const head = `<div class="head">${collapsed ? '' : plain(String(LEVEL.name).toUpperCase())}<span>${done ? 'FLAG' : 'LAP ' + lap + ' / ' + plain(LEVEL.laps)} ${collapsed ? '▸' : '▾'}</span></div>`;
   board.classList.toggle('collapsed', collapsed);
   if (collapsed) { // (just the order, in one column: position, colour, letters, and places gained or lost)
     board.innerHTML = head + '<div class="abbrs">' + order.map((c, i) => {
