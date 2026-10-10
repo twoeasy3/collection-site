@@ -249,6 +249,32 @@ const refresh = () => {
   if (IdeasLot.on) IdeasLot.refresh(); // (the "Car ideas" tab: its own words, and its ideas in the livery on show)
 };
 
+// the band of the screen the lot is drawn in: under the bar, over the words and buttons at the bottom. What is in
+// the flow of the bottom block counts (the comparison card of a wide screen floats at its corner and does not). Measured
+// again whenever either block changes size (the stats opened, the bar wrapping, a turn of the phone)
+const barEl = ui.querySelector('.bar'), pickEl = ui.querySelector('.pick');
+let measured = { top: 0, bottom: 0 }; // px from the top of the screen: the bar's foot, the block's head
+const measure = () => {
+  if (!Garage.isOpen) return;
+  const H = renderer.domElement.clientHeight;
+  let bottom = H;
+  for (const child of pickEl.children) {
+    if (child.style.display === 'none' || getComputedStyle(child).position === 'fixed') continue;
+    const r = child.getBoundingClientRect();
+    if (r.height > 0) bottom = Math.min(bottom, r.top);
+  }
+  measured = { top: Math.max(0, barEl.getBoundingClientRect().bottom + 4), bottom: Math.max(0, bottom - 4) };
+};
+const bandOf = (H) => {
+  let { top, bottom } = measured;
+  if (!bottom || bottom > H) bottom = H;
+  const min = Math.max(120, H * 0.38); // (never squeezed to nothing: a very short screen keeps its lot, and the words go over its foot)
+  if (bottom - top < min) bottom = Math.min(H, top + min);
+  return { top, height: bottom - top };
+};
+if (window.ResizeObserver) { const watch = new ResizeObserver(measure); watch.observe(barEl); watch.observe(pickEl); watch.observe(document.documentElement); }
+window.addEventListener('resize', measure);
+
 // a car tapped: its stats shown, with the button to use it, or to buy it (locked or not, any car can be looked at)
 const pick = (mesh) => {
   looking = mesh.userData.car;
@@ -296,6 +322,8 @@ const take = async (leave) => {
   refresh();
   if (leave) Garage.close(); // (to the menu: the car and its side go with it, as the garage's Back does)
 };
+// (on a phone the stats are one line, cut short, until the line is tapped: then all of them, below the lot, never over it)
+info.addEventListener('click', () => info.classList.toggle('open'));
 action.addEventListener('click', () => take(false));
 useBtn.addEventListener('click', () => take(true));
 // The side goes with the car: a car picked while the garage shows its Evil livery is driven as Evil, and one
@@ -406,6 +434,7 @@ export const Garage = {
     scrollTo(order.find(car => car && car.id === Progress.data.car) || order[0]);
     fling = 0;
     refresh();
+    measure();
   },
   close() {
     // a different car: tell the rest of the game (the player gets into it when a run starts)
@@ -439,7 +468,11 @@ export const Garage = {
   render(now) {
     if (IdeasLot.on) return IdeasLot.render(now); // (the Car ideas tab draws its own lot)
     const canvas = renderer.domElement;
-    const aspect = canvas.clientWidth / canvas.clientHeight;
+    // (the lot is drawn in the band between the bar and the words and buttons under it, never behind them: the
+    // camera's view is offset so that the rows are framed to the band, not to the screen's whole height)
+    const W = canvas.clientWidth, H = canvas.clientHeight, band = bandOf(H);
+    const aspect = W / band.height;
+    if (band.top || band.height < H) camera.setViewOffset(W, band.height, 0, -band.top, W, H); else camera.clearViewOffset();
     // (the three rows framed to the screen's height, whatever its shape: a wider screen just shows more columns)
     const back = 1;
     const dt = Math.min(0.05, (now - (Garage.last || now)) / 1000);

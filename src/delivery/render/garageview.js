@@ -96,7 +96,9 @@ export const mountGarageView = (cars, onChange) => {
         item.className = 'view-item' + (on ? ' on' : '');
         const name = document.createElement('span'), n = key === 'show' ? countOf(choice) : null;
         name.textContent = choice.name;
-        item.append(on ? '✓' : '', name);
+        const tick = document.createElement('span');
+        tick.textContent = on ? '✓' : '';
+        item.append(tick, name);
         if (n !== null) { const count = document.createElement('small'); count.textContent = String(n); item.append(count); }
         item.addEventListener('click', () => {
           close();
