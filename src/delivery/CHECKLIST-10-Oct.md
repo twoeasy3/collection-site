@@ -645,10 +645,32 @@ saved progress and the balance of the tiers are untouched.
 | 29 | `doubledecker` | Double Decker | AEC Routemaster | Two decks, open rear platform, half-cab beside the engine |
 | 30 | `fireengine` | Fire Engine | American LaFrance pumper | Red, ladder on top, hose reels and pump panel, light bar |
 
-- [ ] The 30 models, in a state-free file of their own
-- [ ] A table of the 30 (name, what it is based on, size, colours for Good and Evil, a line about it)
-- [ ] A "Car ideas" tab in the garage: a second lot where they are parked, to look at, with the Livery button working
-- [ ] A picture of each, looked at and corrected until it reads as what it is based on
+- [x] The 30 models, in a state-free file of their own: `render/ideaModels.js` (`IDEA_MODELS`), in the
+      conventions of `render/models.js` (it has helpers of its own: those of `models.js` are not exported).
+      Eleven move: the three-wheeler rocks, the tin snail sways, the two-stroke smokes, the milk float's crates
+      rattle, the split-window's and the panda's lamps pop up, the wedge's and the gullwing's doors open, the
+      monster truck rocks with its flags flying, the food truck's vent spins, the school bus's stop arm swings
+      out and its lamps flash, the fire engine's lights flash. Checked: `node --check`, `.bundle-check.mjs`.
+- [x] A table of the 30 (name, what it is based on, size, colours for Good and Evil, a line about it):
+      `ideas.js` (`IDEA_CARS`), no rendering imports. Sizes are the real vehicle's (the monster truck is 3.1 m
+      wide, the school bus 10.8 m long). None is in `CARS` or `CONFIG.vehicles`; no check script counts them.
+- [x] A "Car ideas" tab in the garage: a second lot where they are parked, to look at, with the Livery button
+      working: `render/ideaslot.js`, with small edits in `render/garage.js`, `main.js` (one line),
+      `delivery/index.html` (the "Garage" title is now two tab buttons) and `menus.css`. Three rows of ten
+      bays (the ten longest in a deeper back row), each idea's name painted in front of its bay, a hoarding
+      and CAR IDEAS signs behind; hover or tap for name, "Based on", size and note; Sort, Show, the bank and
+      the comparison card are hidden on this tab; the button reads "An idea, not a car yet" and is disabled.
+      The garage always opens on its own lot. `?garage&tab=ideas&look=<id>` / `&hover=<id>`. Seen in stills
+      (desktop, Evil livery, a 520 px wide phone shape, and the garage's own lot unchanged). NOT verified:
+      nothing clicked, dragged or tapped by hand: the tab buttons, scrolling and the pointer's hover are
+      untested beyond their address-bar equivalents.
+- [x] A picture of each, looked at and corrected until it reads as what it is based on: every model looked
+      at from three sides (`&studio=<ids>&views=3`), then again singly; corrected after looking: the bubble
+      car (rebuilt as an egg with a flat door), the bug (wings, lamps, windscreen), the two-stroke (rear
+      pillars), the pony car (nose), the split-window (nose and tail drawn to blades), the motorhome (its W
+      was an M). Weakest: the Split-Window Coupe (reads as a sixties sports coupe, not unmistakably a Sting
+      Ray), the Midnight Coupe (a boxy coupe with a wing until its tail lamps are seen) and the Two-Stroke
+      Saloon (a generic little saloon). Evil liveries seen once each, not tuned.
 
 ## More cargo: 40 ideas (draft, not assigned)
 

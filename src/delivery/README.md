@@ -64,6 +64,7 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `?test` | The hidden test track (`?hidden=testbed`) |
 | `?edited` | The level as the editor left it |
 | `?garage`, `?garage=evil` | Opens the garage; `&hover=tank` shows that car's stats |
+| `?garage&tab=ideas` | The garage on its Car ideas tab; `&look=bug` looks at one, `&studio=bug,limo` (or `all`) shows those alone on a plain floor, for pictures (`&views=3` adds a side view) |
 | `?screensaver` | The traffic screensaver |
 | `?racewatch` | The race screensaver; `&camcheck` logs a check of its cameras |
 | `&touch` | Shows the on-screen controls on a desktop |
@@ -202,6 +203,14 @@ Levels unlock in menu order, each by delivering the one before.
   `carshots/<id>-evil.jpg`, taken with `?cine=car`. A vehicle that belongs to a level goes in
   `LEVEL_CARS`; one that should stay out of the garage goes in `SECRET_CARS`, with its own way
   in (the City Bus: type B U S on the start screen, or `?autostart&car=bus`).
+- **Car ideas lot:** the garage has a second tab, "Car ideas": a lot of thirty vehicles that are ideas
+  on show, not cars. Each is drawn after a real vehicle and has a generic name (the Bubble Car after the
+  BMW Isetta, the Double Decker after the AEC Routemaster...); hovering or tapping one shows its name,
+  what it is based on, its size and a line about it, and the Livery button shows its Good and Evil
+  paint. They are listed in `IDEA_CARS` in `ideas.js` and built by `IDEA_MODELS` in
+  `render/ideaModels.js`; the lot is `render/ideaslot.js`. None is in `CARS` or `CONFIG.vehicles`:
+  nothing here is bought, saved, driven, in traffic or in a level, and no check counts them. To make
+  one a real car, give it an entry in `CARS` and move its builder into `MODELS`.
 - **A thing to deliver:** a model in `render/cargoModels.js` (a group about a metre tall with
   `userData.animate(t)`; an Evil one built with `stated`, which gives it `setState(0 | 1 | 2)`), its id
   and name in `CARGO` in `cargo.js`, and a level's `"cargo": { "good": id, "evil": id }` to carry it.
