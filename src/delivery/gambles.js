@@ -5,6 +5,16 @@
 //   crosswinds   a wind across an exposed stretch: tall cars are pushed harder, a tall vehicle gives shelter
 //   crests       (no field: the road's own profile, a segment's grade and ease) a crest sharp enough that a fast
 //                car leaves the ground over it: no steering in the air, and it lands on whatever is over the top
+//   jamRamps     a car transporter with its ramps down at the back of a queue: fast enough, the car flies the queue
+//   lowBridges   a height bar over the player's side, the exit before it the tall vehicles' way round: under the
+//                bar a car that fits goes straight on; a taller one takes the knock
+//   fords        the road runs through a river, so deep, between an exit and its merge (the side road is the bridge):
+//                a car that wades that deep is only slowed; one that does not crawls through, and is damaged
+//   cushions     rows of speed cushions, one in the middle of each lane: on a lane line the car goes between two and
+//                feels nothing; over one at speed it is thrown up and knocked
+//   shade        black ice, which cannot be seen, lies only in the shadow of what stands beside the road: the shaded
+//                lanes are empty and icy, the sunny one has the traffic
+//   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
 // ============================================================================
@@ -18,6 +28,7 @@ import { Message } from './messages.js';
 import { hurt, sfx } from './physics.js';
 import { Game } from './game.js';
 import { Hazards } from './hazards.js';
+import { Water } from './water.js';
 
 const clamp01 = (u) => Math.max(0, Math.min(1, u));
 const smooth = (u) => { u = clamp01(u); return u * u * (3 - 2 * u); };
@@ -36,6 +47,17 @@ export const Gambles = {
   slope: 0,       // ...and its slope (rise per m), and where the car was
   lastS: 0,
   flights: 0,     // how many times the car has left the ground this run (for a check)
+  ramps: [],      // { s (the foot of its ramps), lane, lat, run, top (m: its lip), queue, lanes: [first, last], last (s of the last car of its queue), clear (s the car must land beyond), speed (m/s that does) }
+  onRamp: null,   // the ramp the car is on
+  up: 0,          // m the car is above the road, by this file's doing (on a ramp, in the air)
+  bars: [],       // low bridges: { s, clearance (m), lo, hi (lat: what it spans), exit (the Track.exits entry that goes round it), hits (times the player's car has hit it this run) }
+  fords: [],      // { from, to, depth (m), exit (the Track.exits entry that is its bridge) }
+  inFord: null,   // the ford the player's car is in (null: none)
+  rows: [],       // speed cushions: { s (a row of them across the lanes), from, to (the stretch it is one of) }
+  cushionHits: 0, // how many the player's car has gone over at speed this run (for a check)
+  shades: [],     // black ice in the shade: { from, to, side (-1 left, 1 right), first, last (the player's lanes in shadow), lo, hi (lat: the shadow, which is the ice), slick (its entry in Track.slicks) }
+  boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
+  rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
   // the level's lists (as a level loads, for the drawing, and again as each run starts)
   build() {
@@ -43,6 +65,47 @@ export const Gambles = {
     this.winds = (LEVEL.crosswinds || []).map(w => ({ from: w.from, to: w.to, dir: w.dir === 'left' ? -1 : 1,
       strength: w.strength ?? W.strength, every: w.every ?? W.every, length: w.length ?? W.length }));
     this.buildCrests();
+    this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to, skim: b.skim ?? CONFIG.washboard.skim }));
+    this.bars = (LEVEL.lowBridges || []).map((b) => ({ s: b.s, clearance: b.clearance ?? CONFIG.lowBridge.clearance, lo: Track.laneOffset(Track.laneRange(1, b.s)[0], b.s) - CONFIG.laneWidth / 2, hi: Track.hi(b.s),
+      exit: Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null, hits: 0 }));
+    this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
+    this.rows = [];
+    for (const c of LEVEL.cushions || []) for (let s = c.from; s <= c.to; s += c.every ?? CONFIG.cushion.every) this.rows.push({ s, from: c.from, to: c.to });
+    this.shades = (LEVEL.shade || []).map((z) => {
+      const mid = (z.from + z.to) / 2, [first, last] = Track.laneRange(1, mid), side = z.side === 'left' ? -1 : 1, n = Math.min(last - first + 1, z.lanes ?? CONFIG.shade.lanes), LW = CONFIG.laneWidth;
+      const a = side > 0 ? last - n + 1 : first, b = side > 0 ? last : first + n - 1;
+      const lo = side > 0 ? Track.laneOffset(a, mid) - LW / 2 : Track.lo(mid), hi = side > 0 ? Track.hi(mid) : Track.laneOffset(b, mid) + LW / 2;
+      return { from: z.from, to: z.to, side, first: a, last: b, lo, hi, slick: { from: z.from, to: z.to, lat: (lo + hi) / 2, half: (hi - lo) / 2, shade: true } };
+    });
+    this.ramps = (LEVEL.jamRamps || []).map((r) => {
+      const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
+      const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
+      ramp.last = r.s + R.run + R.gap + (queue - 1) * R.spacing;
+      ramp.clear = ramp.last + R.margin;
+      ramp.speed = this.rampSpeed(ramp);
+      return ramp;
+    });
+  },
+  // where a ramp's queue stands: [{ s, lane }], the last of each lane first (Traffic puts a stopped car at each)
+  queueSpots(ramp) {
+    const R = CONFIG.jamRamp, spots = [];
+    for (let lane = ramp.lanes[0]; lane <= ramp.lanes[1]; lane++) {
+      const from = lane === ramp.lane ? ramp.s + R.run + R.gap - 1 : ramp.s;
+      for (let s = ramp.last; s >= from; s -= R.spacing) spots.push({ s, lane });
+    }
+    return spots;
+  },
+  // the speed (m/s) at the foot of a ramp that, hands off, lands the car beyond its queue
+  rampSpeed(ramp) {
+    const R = CONFIG.jamRamp, g = CONFIG.crest.gravity, sin = Math.sin(R.angle), dt = 1 / 120;
+    for (let v0 = 8; v0 < 90; v0 += 0.25) {
+      let v = v0, x = 0;
+      while (x < ramp.run && v > 0) { v -= g * sin * dt; x += v * dt; }
+      if (v <= 0) continue;
+      const vy = v * Math.tan(R.angle), t = (vy + Math.sqrt(vy * vy + 2 * g * ramp.top)) / g;
+      if (ramp.s + ramp.run + v * t >= ramp.clear) return v0;
+    }
+    return 90;
   },
   reset() {
     this.build();
@@ -50,6 +113,13 @@ export const Gambles = {
     this.windNow = 0;
     this.said = {};
     this.fly = null;
+    Player.rampAhead = false;
+    Player.shaken = this.rough = 0;
+    this.barS = this.rowS = Player.s;
+    this.cushionHits = 0;
+    this.inFord = null;
+    this.up = 0;
+    this.onRamp = null;
     this.ground = null;
     this.flights = 0;
     this.lastS = Player.s;
@@ -116,8 +186,38 @@ export const Gambles = {
   // the road's height at s (m, in the world), and its slope there (rise per m, over the 4 m about s)
   roadY(s) { Track.toWorld(s, 0, spot); return spot.y; },
   roadSlope(s) { return (this.roadY(s + 2) - this.roadY(s - 2)) / 4; },
-  // what stands on the road at (s, lat) to be driven up: { y: m above the road, slope }
-  extra() { return FLAT; },
+  // what stands on the road at (s, lat) to be driven up: { y: m above the road, slope }: the ramp the car is on
+  extra(s) {
+    const r = this.onRamp;
+    return r && s >= r.s && s < r.s + r.run ? { y: (s - r.s) * r.top / r.run, slope: r.top / r.run } : FLAT;
+  },
+  // a transporter's ramps: on at their foot, in line with them; off the lip at the top, or off the side. Beside
+  // it, the car is kept out of its trailer (pushed aside: no damage)
+  rideRamps() {
+    const P = Player, R = CONFIG.jamRamp;
+    if (this.onRamp && (P.s < this.onRamp.s || P.s >= this.onRamp.s + this.onRamp.run || Math.abs(P.lat - this.onRamp.lat) > R.half + 0.4)) this.onRamp = null;
+    P.rampAhead = !!this.onRamp || !!this.fly;
+    for (const r of this.ramps) {
+      if (P.active && P.s > r.s - R.sign * 1.6 && P.s < r.s) this.once('jamAhead');
+      if (P.s > r.s - R.commit && P.s < r.s + R.foot && Math.abs(P.lat - r.lat) <= R.half) P.rampAhead = true;
+      if (P.s < r.s || P.s > r.s + r.run + R.cab || this.onRamp === r) continue;
+      const across = P.lat - r.lat;
+      if (!this.fly && P.s < r.s + R.foot && Math.abs(across) <= R.half) { this.onRamp = r; this.once('jamRamp'); }
+      else if (this.up < 0.6 && Math.abs(across) < R.half + P.hw) { P.lat = r.lat + (across < 0 ? -1 : 1) * (R.half + P.hw); P.latVel = 0; }
+    }
+    // (nothing queues behind it: traffic coming up its lane moves over well before, so its ramps stay clear)
+    for (const r of this.ramps) {
+      if (Math.abs(r.s - P.s) > 700) continue;
+      for (const car of Traffic.cars) {
+        if (!car.active || car.fixed || car.dir < 0 || car.lane !== r.lane || car.s > r.s + r.run || car.s < r.s - R.keepClear || !Track.isMain(car.s)) continue;
+        const [first, last] = Track.laneRange(1, car.s), other = r.lane > first ? r.lane - 1 : r.lane + 1;
+        if (other > last) continue;
+        car.lane = other;
+        car.pendingLane = null;
+        car.signal = other - r.lane;
+      }
+    }
+  },
   // the crests of the loaded level: every place where the road falls away fast enough that a car at
   // CONFIG.crest.fastest or less would leave the ground, with the speed that does it
   buildCrests() {
@@ -162,6 +262,9 @@ export const Gambles = {
       P.lat = Math.max(Track.lo(P.s) + P.hw, Math.min(Track.hi(P.s) - P.hw, P.lat + (F.latVel - P.latVel) * dt));
       P.latVel = F.latVel;
     }
+    const wasOn = this.onRamp;
+    this.rideRamps();
+    if (wasOn && !this.onRamp) this.up = 9; // (off its lip, or its side, this step: up in the air until the flight below says otherwise)
     const road = this.roadY(P.s), ex = this.extra(P.s, P.lat), slope = this.roadSlope(P.s) + ex.slope, ground = road + ex.y;
     const live = P.shield <= 0 && P.ghost <= 0 && P.tank <= 0;
     // off the ground: where the slope has dropped away since the last step by more than gravity makes up for
@@ -176,7 +279,7 @@ export const Gambles = {
       this.alt += F.vy * dt;
       F.t += dt;
       if (this.alt > ground) {
-        P.air = this.alt - road;
+        P.air = this.up = this.alt - road;
         P.pitch = Math.atan2(F.vy, Math.max(P.speed, 6)) - Math.atan(Track.grade(P.s)); // (its nose the way it is flying: main.js adds the road's own slope)
         if (F.top <= C.hop && this.alt - ground > C.hop) this.flights++;
         F.top = Math.max(F.top, this.alt - ground);
@@ -194,12 +297,181 @@ export const Gambles = {
     }
     this.ground = ground;
     this.slope = slope;
-    if (ex.y || ex.slope) { P.air = ex.y; P.pitch = Math.atan(ex.slope); }
+    this.up = ex.y;
+    if (ex.y || ex.slope) { // (up a ramp: the climb takes some of its speed)
+      P.air = ex.y;
+      P.pitch = Math.atan(ex.slope);
+      P.speed = Math.max(CONFIG.jamRamp.crawl, P.speed - C.gravity * Math.sin(P.pitch) * dt); // (never to a stand on it: the slowest car still crawls off its lip)
+    }
+  },
+
+  // ---- washboard dirt ------------------------------------------------------------------------------------
+  // Corrugations right across the road. Crawling over them (CONFIG.washboard.calm m/s or less) the car rides each
+  // one; at its `skim` speed or more it skims their tops and runs smooth. Between the two the wheels hop: the
+  // steering hardly takes (Player.shaken: see Player's steering), the car wanders, and in a bend it is carried
+  // to the outside. Worst in the middle of that band
+  board(s) { return Track.isMain(s) ? this.boards.find(b => s >= b.from && s <= b.to) || null : null; },
+  // how rough a washboard that skims at `skim` is at v m/s: 0 (crawling, or skimming) .. 1
+  roughness(v, skim = CONFIG.washboard.skim) {
+    const calm = CONFIG.washboard.calm;
+    return v <= calm || v >= skim ? 0 : Math.sin(Math.PI * (v - calm) / (skim - calm)) ** CONFIG.washboard.shape;
+  },
+  updateBoards(dt) {
+    const B = CONFIG.washboard, P = Player;
+    const b = P.active && !this.fly && !CAR.noWheels && P.ghost <= 0 && !(P.tank > 0) ? this.board(P.s) : null;
+    if (P.active && this.board(P.s)) this.once('washboard');
+    this.rough = b ? this.roughness(P.speed, b.skim) : 0;
+    P.shaken = B.steerLoss * this.rough;
+    if (!this.rough || P.busted) return;
+    const t = Game.time, r = this.rough;
+    P.latVel += B.wander * r * (Math.sin(t * 2.3) + Math.sin(t * 3.9 + 1.7)) * dt; // (hopping about)
+    P.latVel -= Math.sign(Track.bend(P.s)) * Math.min(B.slideMost, Math.abs(Track.bend(P.s)) * P.speed * P.speed * B.slide) * r * dt; // (and wide in a bend)
+    Game.shake = Math.max(Game.shake, B.shake * r);
+    if ((this.boardSound = (this.boardSound || 0) - dt) <= 0) { this.boardSound = B.soundEvery; sfx('gravel', 0.5 * r); }
+  },
+
+  // ---- low bridges ---------------------------------------------------------------------------------------
+  // A height bar across the player's side of the road (and its shoulder), `clearance` m off it, between an exit
+  // and its merge: the side road is the tall vehicles' way round, and tall traffic takes it. A car no taller
+  // than the bar goes under; a taller one that goes at it anyway takes the knock (health, by how much too tall,
+  // and most of its speed) and is through: it is never stopped. The oncoming side is not barred
+  fits(bar, height = Player.height) { return height <= bar.clearance; },
+  updateBars() {
+    const L = CONFIG.lowBridge, P = Player, was = this.barS ?? P.s;
+    this.barS = P.s;
+    for (const bar of this.bars) {
+      const from = (bar.exit ? bar.exit.exitAt : bar.s) - L.warn;
+      if (P.active && Track.isMain(P.s) && P.s > from && P.s < bar.s && !this.said['bar' + bar.s]) {
+        this.said['bar' + bar.s] = true;
+        const line = Message.say('events', this.fits(bar) ? 'lowBridgeFits' : 'lowBridgeTall');
+        if (line) line.text += ' (' + P.height.toFixed(1) + ' m under ' + bar.clearance.toFixed(1) + ' m)';
+      }
+      // tall traffic goes round by the exit (and one that turns up beyond the exit, far from the player, is taken away)
+      for (const car of Traffic.cars) {
+        if (!car.active || car.dir < 0 || car.fixed || car.height <= bar.clearance || !Track.isMain(car.s) || car.s > bar.s) continue;
+        if (bar.exit && car.s < bar.exit.exitAt) car.viaSide = true;
+        else if (car.s > bar.s - L.traffic && Math.abs(car.s - P.s) > L.unseen) car.active = false;
+      }
+      if (!P.active || !Track.isMain(P.s) || !(was < bar.s && P.s >= bar.s) || P.s - was > 30) continue;
+      if (P.lat + P.hw < bar.lo || P.lat - P.hw > bar.hi || this.fits(bar, P.height + P.air) || P.ghost > 0) continue;
+      bar.hits++;
+      if (P.tank > 0) { sfx('crash', 0.6); continue; } // (a tank takes the bar with it)
+      if (P.shield <= 0) hurt(P, L.damage + L.perMetre * (P.height + P.air - bar.clearance));
+      P.speed *= L.keep;
+      Game.shake = 1;
+      sfx('crash', 1);
+      Message.say('events', 'lowBridgeHit');
+    }
+  },
+
+  // ---- fords ---------------------------------------------------------------------------------------------
+  // The road runs through a river, `depth` m deep, between an exit and its merge: the side road is the bridge.
+  // What a car wades is its `crossing` (cars.js): CONFIG.ford.shallow m for the worst, .deepest m for the best.
+  // In water no deeper than that it is only slowed, the less the shallower (to `fast` m/s in next to none, `slow`
+  // at its limit); in deeper it crawls (`crawl` m/s: never stopped) and is damaged for as long as it is in. A car
+  // that floats, a ghost and a tank are not troubled
+  wades(crossing = Player.crossing) { const F = CONFIG.ford; return F.shallow + (F.deepest - F.shallow) * crossing; },
+  ford(s) { return Track.isMain(s) ? this.fords.find(f => s >= f.from && s <= f.to) || null : null; },
+  // the fastest a car that wades `limit` m goes through water `depth` m deep (m/s)
+  fordPace(depth, limit) { const F = CONFIG.ford; return depth > limit ? F.crawl : F.fast + (F.slow - F.fast) * depth / limit; },
+  updateFords(dt) {
+    const F = CONFIG.ford, P = Player;
+    for (const f of this.fords) {
+      const from = (f.exit ? f.exit.exitAt : f.from) - F.warn;
+      if (P.active && Track.isMain(P.s) && P.s > from && P.s < f.from && !this.said['ford' + f.from]) {
+        this.said['ford' + f.from] = true;
+        const line = Message.say('events', f.depth <= this.wades() ? 'fordFits' : 'fordDeep');
+        if (line) line.text += ' (' + f.depth.toFixed(1) + ' m deep: this car wades ' + this.wades().toFixed(1) + ' m)';
+      }
+    }
+    for (const car of Traffic.cars) { // (the traffic wades through slowly)
+      if (car.active && !car.junction && this.ford(car.s) && Math.abs(car.vs) > F.traffic) car.vs = Math.sign(car.vs) * Math.max(F.traffic, Math.abs(car.vs) - F.bite * dt);
+    }
+    const f = P.active && !this.fly && !CAR.noWheels && !Water.floats(CAR) && P.ghost <= 0 && !(P.tank > 0) ? this.ford(P.s) : null;
+    if (f && !this.inFord) { sfx('waveCrash', Math.min(1, P.speed / 25)); Game.shake = Math.max(Game.shake, 0.5); }
+    this.inFord = f;
+    if (!f) return;
+    const limit = this.wades(), pace = this.fordPace(f.depth, limit);
+    if (P.speed > pace) P.speed = Math.max(pace, P.speed - F.bite * dt);
+    if (f.depth > limit) {
+      if (P.shield <= 0) P.health -= F.damage * (f.depth - limit) * P.damageScale * dt;
+      Game.shake = Math.max(Game.shake, 0.2);
+      this.once('fordStuck');
+    }
+  },
+
+  // ---- speed cushions --------------------------------------------------------------------------------------
+  // A row across the road every so often, a cushion in the middle of each lane and a gap on each lane line (the
+  // shoulders have none: their own rules apply). A car whose middle is within its `line` of a lane line goes
+  // through a gap and feels nothing (a wider car has less room: see cushionRoom). Over a cushion at CONFIG
+  // .cushion.soft m/s or less it is a bump; faster, the car is thrown up (no steering until it is down: the
+  // flight above) and knocked, by how much faster. Traffic takes the stretch at a crawl
+  // how far (m) the car's middle may be from a lane line and still go between two cushions
+  cushionRoom(hw = Player.hw) { const K = CONFIG.cushion; return Math.max(K.least, K.line - (hw - K.hwRef)); },
+  // whether a car at lat, crossing a row at s, goes over a cushion (in a lane, not within its room of a lane line)
+  onCushion(s, lat, hw = Player.hw) {
+    if (lat < Track.laneLo(s) || lat > Track.laneHi(s)) return false; // (on a shoulder)
+    const centre = Track.laneOffset(Track.nearestLane(lat, s), s);
+    return CONFIG.laneWidth / 2 - Math.abs(lat - centre) > this.cushionRoom(hw);
+  },
+  cushioned(s) { return Track.isMain(s) && this.rows.some(r => s >= r.from - 20 && s <= r.to + 10); },
+  updateCushions(dt) {
+    const K = CONFIG.cushion, P = Player, was = this.rowS ?? P.s;
+    this.rowS = P.s;
+    if (!this.rows.length) return;
+    for (const car of Traffic.cars) { // (the traffic takes them slowly)
+      if (car.active && !car.junction && !car.emergency && Math.abs(car.vs) > K.traffic && this.cushioned(car.s)) car.vs = Math.sign(car.vs) * Math.max(K.traffic, Math.abs(car.vs) - K.brake * dt);
+    }
+    if (!P.active || !Track.isMain(P.s) || P.s - was > 30) return;
+    if (this.rows.some(r => P.s > r.from - K.sign && P.s < r.from)) this.once('cushions');
+    if (this.fly || CAR.noWheels || P.ghost > 0) return;
+    for (const row of this.rows) {
+      if (!(was < row.s && P.s >= row.s) || !this.onCushion(row.s, P.lat)) continue;
+      const over = P.speed - K.soft;
+      Game.shake = Math.max(Game.shake, over > 0 ? 0.8 : 0.25);
+      sfx('drop', over > 0 ? 0.9 : 0.3);
+      if (over <= 0 || P.tank > 0) continue;
+      this.cushionHits++;
+      if (P.shield <= 0) hurt(P, K.damage + K.perSpeed * over);
+      P.speed *= K.keep;
+      this.fly = { vy: Math.min(K.throwMost, K.throw * over), vx: P.speed, latVel: P.latVel, t: 0, top: 0 }; // (thrown up: no steering until it is down)
+      this.alt = this.roadY(P.s) + 0.01;
+      this.once('cushionHit');
+    }
+  },
+
+  // ---- black ice in the shade -----------------------------------------------------------------------------
+  // Where something tall beside the road shades it, the lanes in its shadow are black ice: nothing of the ice
+  // is drawn, only the shadow, and it is ice in every way (see CONFIG.ice and Track.icy: its patch is one of
+  // Track.slicks). Traffic knows, and moves out of the shaded lanes into the sun before it where it can: the
+  // shade is empty, the sunny lane is where the queue is
+  shadeAt(s, lat) { return Track.isMain(s) ? this.shades.find(z => s >= z.from && s <= z.to && lat >= z.lo && lat <= z.hi) || null : null; },
+  updateShade() {
+    const Z = CONFIG.shade, P = Player;
+    for (const z of this.shades) {
+      if (!Track.slicks.includes(z.slick)) Track.slicks.push(z.slick); // (the water mains clear that list as a run starts)
+      if (P.active && Track.isMain(P.s) && P.s > z.from - Z.warn && P.s < z.from) this.once('blackIce');
+      if (P.onIce && this.shadeAt(P.s, P.lat) === z) P.shaken = Math.max(P.shaken, Z.steerLoss); // (black ice: less to steer with even than on ice that shows)
+      if (Math.abs(z.from - P.s) > 700) continue;
+      const [first, last] = Track.laneRange(1, (z.from + z.to) / 2), sunny = z.side > 0 ? z.first - 1 : z.last + 1;
+      if (sunny < first || sunny > last) continue; // (every lane is in the shade)
+      for (const car of Traffic.cars) {
+        if (!car.active || car.fixed || car.dir < 0 || car.lane < z.first || car.lane > z.last || car.s > z.to || car.s < z.from - Z.keepClear || !Track.isMain(car.s)) continue;
+        car.signal = sunny - car.lane;
+        car.lane = sunny;
+        car.pendingLane = null;
+      }
+    }
   },
 
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
+    this.updateCushions(dt);
+    this.updateFords(dt);
+    this.updateBars();
+    this.updateBoards(dt);
+    this.updateShade(); // (after the washboard's: both have a say in Player.shaken)
     this.updateWinds(dt);
   },
 };

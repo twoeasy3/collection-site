@@ -24,7 +24,7 @@ import { makeCarriage } from './render/trainModel.js';
 import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
-import { makeWindsock } from './render/gambleModels.js';
+import { makeWindsock, makeTransporter, makeHeightBar, makeDepthPost, makeCushion, makeShadeTree } from './render/gambleModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -69,7 +69,7 @@ export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>$
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford, cushion: CONFIG.cushion, shade: CONFIG.shade }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 export const GROUPS = [
   { name: 'The road itself', cards: [
@@ -854,6 +854,80 @@ export const GROUPS = [
       sock.position.set(-5.4, 0, 2); bus.position.set(-2.2, 0, 0);
       g.add(sock, bus);
       return { model: g, spin: false, tick: (t) => { const u = t % GB.wind.every, level = GB.wind.lull + (1 - GB.wind.lull) * Math.max(0, Math.min(1, Math.min(u, GB.wind.length - u) / GB.wind.rise)); sock.userData.set(level, 1, t); bus.rotation.z = -level * 0.08; bus.userData.animate?.(t); } };
+    } },
+    { name: 'Ramp over the jam', color: 0xc23b22, has: (l) => l.jamRamps?.length, rules: [
+      `A traffic jam: stopped cars across your side of the road, and at the back of it a car transporter with its ramps down, a ${GB.ramp.run} m slope up to a lip ${(GB.ramp.run * Math.tan(GB.ramp.angle)).toFixed(1)} m high. A board on the way in names its lane and the speed that clears the queue.`,
+      '<strong>Line up with the ramps and keep your foot in</strong>: the car goes up them (the climb takes a little speed), off the lip, and over the queue. No steering in the air. The landing costs some health.',
+      'Too slow and it comes down among the stopped cars: usually a wreck. A slow car cannot make it at all without a turbo: the speed on the board is the gamble, made in the garage and again at the sign.',
+      'The way round is whatever the level has left open: the oncoming side, or the shoulder (its rules apply). Traffic coming up the transporter\'s lane moves over, so the ramps are always clear.',
+    ], build: () => {
+      const g = road(11, 44), truck = makeTransporter(GB.ramp.run, GB.ramp.run * Math.tan(GB.ramp.angle), GB.ramp.half), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      truck.position.set(0, 0, -14);
+      const paints = [0x4fc3f7, 0xf2c21c, 0xd8262b, 0x9be37a, 0xf28cc0, 0xe8e8e8];
+      const queue = [0, 1, 2].flatMap((k) => [-3.6, 0, 3.6].filter((x) => x || k > 0).map((x, i) => { const c = painted(vehicle('commuter', 0xffffff), paints[(k * 3 + i) % 6]); c.position.set(x, 0, (x ? -8 : 1) + k * 6.5); return c; }));
+      g.add(truck, car, ...queue);
+      const top = GB.ramp.run * Math.tan(GB.ramp.angle);
+      return { model: g, spin: false, tick: (t) => { const u = (t % 3.4) / 3.4, z = -21 + u * 44, on = z + 14;
+        const y = on < 0 ? 0 : on < GB.ramp.run ? on * top / GB.ramp.run : Math.max(0, top + (on - GB.ramp.run) * 0.28 - 0.016 * (on - GB.ramp.run) ** 2);
+        car.position.set(0, y, z); car.rotation.x = on > 0 && on < GB.ramp.run ? -GB.ramp.angle : y > 0 ? -0.28 + 0.032 * (on - GB.ramp.run) : 0; } };
+    } },
+    { name: 'Washboard dirt', color: 0xa9865a, has: (l) => l.washboards?.length, rules: [
+      `A dirt road worn into corrugations right across. A board before it gives its speed: at ${kmh(GB.board.skim)} or more the car <strong>skims the tops</strong> and it runs smooth, with all its steering.`,
+      `Crawling (${kmh(GB.board.calm)} or less) it rides each one, and steers as ever. That always works, and it is slow.`,
+      `In between, the wheels hop: ${pct(GB.board.steerLoss)} of the steering is gone at the worst of it, the car wanders, and in a bend it is carried to the outside. Braking for something on the dirt drops you right into it.`,
+      'So come in fast and stay fast, round whatever is in the way, or come in slow. The cash is on the line that needs steering.',
+    ], build: () => {
+      const g = road(9, 16, 0xa9865a), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      for (let z = -7.5; z < 8; z += 1.1) g.add(box(9, 0.06, 0.45, lambert(0x7a5d3c), 0, 0.03, z));
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4, slow = u < 0.5; car.position.set(slow ? Math.sin(t * 9) * 0.5 : 0, slow ? Math.abs(Math.sin(t * 22)) * 0.16 : 0.05, -7 + ((slow ? u * 2 : (u - 0.5) * 2)) * 14); car.rotation.z = slow ? Math.sin(t * 17) * 0.08 : 0; } };
+    } },
+    { name: 'Low bridge', color: 0xc1121f, has: (l) => l.lowBridges?.length, rules: [
+      `A height bar across your side of the road, ${GB.bar.clearance.toFixed(1)} m up unless its board says otherwise, with an exit before it: the side road is the tall vehicles' way round, and the tall traffic takes it.`,
+      'On the way in you are told what your car measures against it. <strong>A car that fits goes straight under</strong>: the short way, with the road to itself.',
+      `A car that is too tall can take the exit and lose the time, or go at the bar anyway: it costs ${GB.bar.damage} health and ${GB.bar.perMetre} more for every metre too tall, and ${pct(1 - GB.bar.keep)} of its speed. It is never stopped.`,
+      'The gamble is made in the garage, and again at the sign. (The oncoming side has no bar.)',
+    ], build: () => {
+      const g = road(9, 14), bar = makeHeightBar(-4.5, 0, 2), low = painted(vehicle('sport', 0xffffff), 0x39ff14), tall = vehicle('bus', 0xd8262b);
+      bar.position.z = 1;
+      g.add(bar, low, tall);
+      return { model: g, spin: false, tick: (t) => { const u = (t % 5) / 5; low.position.set(-2.4, 0, -7 + Math.min(1, u * 2.5) * 14); low.visible = u < 0.4; tall.visible = u >= 0.4; const v = (u - 0.4) / 0.6; tall.position.set(-2.4 + Math.max(0, v - 0.25) * 12, 0, -9 + Math.min(v, 0.55) * 12); } };
+    } },
+    { name: 'Ford', color: 0x2f7fb8, has: (l) => l.fords?.length, rules: [
+      'The road runs straight through a river, and the bridge is the exit before it: the side road, the longer way. Each ford is its own depth: the boards and the red on the depth posts show it.',
+      `What a car wades goes by how well it crosses rough ground: from ${GB.ford.shallow} m for the lowest to ${GB.ford.deepest} m for the best. On the way in you are told the depth and what your car wades.`,
+      `<strong>Within its depth a car is only slowed</strong>: hardly at all in a puddle, down to ${kmh(GB.ford.slow)} at its limit.`,
+      `Out of its depth it crawls across at ${kmh(GB.ford.crawl)} and loses ${GB.ford.damage} health a second for every metre too deep. It is never stopped. Cars that float do not care.`,
+    ], build: () => {
+      const g = road(9, 14), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      g.add(box(15, 0.12, 5, new THREE.MeshBasicMaterial({ color: 0x2f7fb8, transparent: true, opacity: 0.7 }), 0, 0.2, 0));
+      for (const x of [-4.2, 4.2]) for (const z of [-2.8, 2.8]) { const post = makeDepthPost(0.5, 1.75); post.position.set(x, 0, z); g.add(post); }
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4, z = u < 0.3 ? -7 + u / 0.3 * 4.5 : u < 0.8 ? -2.5 + (u - 0.3) / 0.5 * 5 : 2.5 + (u - 0.8) / 0.2 * 4.5; car.position.set(-2.2, Math.abs(z) < 2.5 ? -0.12 : 0, z); } };
+    } },
+    { name: 'Speed cushions', color: 0xb5482f, has: (l) => l.cushions?.length, rules: [
+      `A street with a row of speed cushions every ${GB.cushion.every} m or so: a cushion in the middle of each lane, and <strong>a gap on every lane line</strong>. The traffic crawls over them.`,
+      `Put the car on a lane line, within ${GB.cushion.line} m of it (a wide car gets less), and it goes between two cushions at any speed and feels nothing.`,
+      `Over a cushion at ${kmh(GB.cushion.soft)} or less it is only a bump. Faster, the car is thrown into the air (no steering until it is down) and knocked: ${GB.cushion.damage} health and more the faster, at every row.`,
+      'So: the line between the lanes at speed, with the slow traffic either side of it, or the brakes. The shoulders have no cushions, and their own rules.',
+    ], build: () => {
+      const g = road(9, 14), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      for (const z of [-3.5, 3.5]) for (const [x, w] of [[-3.4, 1.5], [0, 3.2], [3.4, 1.5]]) { const c = makeCushion(w, GB.cushion.long); c.position.set(x, 0, z); g.add(c); }
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 5) / 5, line = u < 0.5, v = line ? u * 2 : (u - 0.5) * 2, z = -7 + v * 14, near = Math.min(Math.abs(z + 3.5), Math.abs(z - 3.5));
+        car.position.set(line ? -2.25 : 0, line ? 0 : Math.max(0, 0.6 - near * 0.4), z); car.rotation.x = line ? 0 : (near < 1.5 ? (Math.abs(z + 3.5) < Math.abs(z - 3.5) ? z + 3.5 : z - 3.5) * -0.12 : 0); } };
+    } },
+    { name: 'Black ice in the shade', color: 0x5d7fa8, has: (l) => l.shade?.length, rules: [
+      'On a cold road the ice lies only where the sun has not reached: in the shadow of a row of tall trees. <strong>Black ice cannot be seen. The shadow can.</strong>',
+      `In the shade it is ice like any other: ${pct(IC.steerGrip)} of the steering, ${pct(IC.brakeGrip)} of the brakes, and in a bend the car is carried to the outside.`,
+      'The traffic knows, and moves over into the sun before it: the shaded lane is empty, and the sunny one is where the queue is.',
+      'Straight through the shade at speed costs nothing. Having to steer or brake in it is what costs: look at what is in the shadow before you go in, or stay in the sun.',
+    ], build: () => {
+      const g = road(9, 14), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      g.add(box(4.5, 0.02, 14, new THREE.MeshBasicMaterial({ color: 0x05070c, transparent: true, opacity: 0.5 }), -2.25, 0.02, 0));
+      for (let z = -5.5; z < 7; z += 3.6) { const tree = makeShadeTree(6); tree.position.set(-6, 0, z); g.add(tree); }
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4; car.position.set(-2.25 + (u > 0.45 ? Math.min(1, (u - 0.45) * 3) * 1.6 : 0), 0, -7 + u * 14); car.rotation.y = u > 0.45 ? Math.sin((u - 0.45) * 14) * 0.5 : 0; } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

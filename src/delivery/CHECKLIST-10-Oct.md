@@ -476,10 +476,19 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       no steering in the air, the safe line under the board's speed, faster by 2.4 s, a hard landing
       costs, no other level has a crest by accident) and in stills (the hidden far side, the car in the
       air, the card). Not verified: played by hand; the two real crests on screen; sound.
-- [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
+- [x] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
       in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
       slow and it lands in it. _Gamble:_ the jump or the slow way round. _Builds on:_ drawbridge
       jump, rubbernecking queues, convoys.
+      _Built (`gambles.js`, field `jamRamps: { s, lane, queue?, lanes? }`):_ on Gimmick Road 3 (2400,
+      lane 4, 115 km/h), Night (2250, a queue of 2: 85 km/h, a turbo before it) and Speed Trap Alley
+      (2860, a queue of 3: 100 km/h, just past the camera at 2750). The queue is real stopped traffic
+      (small vehicles, the same every run); cash beyond it. The way round is the oncoming side or the
+      shoulder. Verified by `.gimmicks3-check.mjs ramp` (over at the board's speed, into the queue
+      8 m/s under it, round by the oncoming lane unhurt, kept out of the trailer from beside, traffic
+      moves over, never stood still on the ramp, both real levels load with their whole queue) and
+      in stills (the board, the foot, in the air, the card, Night). Not verified: played by hand;
+      Speed Trap Alley on screen; whether the cash beyond is picked up on landing.
 - [ ] H3. **Tram lane**: the median's rails are an empty lane, and a tram is coming along them
       somewhere. Fast and clear, slippery in the rain, and the tram does not swerve. _Gamble:_
       how long to stay on the rails. _Builds on:_ the railway median, Hong Kong's trams, ice.
@@ -487,10 +496,37 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       long way round. A low car goes straight under; a van or the bus must take the detour, or
       lose its roof rack, lights and some health trying. _Gamble:_ made in the garage, and again
       at the sign. _Builds on:_ side roads, tunnels, car heights already in `cars.js`.
+      _Built (`gambles.js`, field `lowBridges: { s, clearance? }`, as a height bar over the player's
+      side, 2 m unless said):_ it must stand between an exit and its merge (the level reports one
+      that does not). A car that fits goes under; a taller one that goes at it loses 30 health and
+      25 more per metre too tall, and 60% of its speed, and is through; the player is told on the
+      way in what the car measures. Tall traffic takes the exit. On Gimmick Road 3 (4400; its first
+      side road pushed out to 150 m so the way round costs 4 s), Ring Road (1100) and Quarry Run
+      (1510), cash under each. Clocks not re-timed. Verified by `.gimmicks3-check.mjs bridge` (a low
+      car untouched, a 2.65 m truck takes the knock and is never stopped, the same truck round by
+      the exit unhurt and 4 s slower, the oncoming side not barred, a bus takes the exit, both real
+      levels have an exit round theirs) and in stills (the board, the bar, the card, Ring Road).
+      Not verified: played by hand. Known gap: a tall traffic vehicle that
+      cannot get over to the exit lane is taken off the road if it is 140 m or more from the
+      player, and otherwise drives through the bar. It is a bar, not a bridge: say if a real
+      bridge over the whole road is wanted.
 - [ ] H5. **Ford**: the road dips through a river, with the bridge a little further round. Depth
       posts show how deep it is today (it varies down the level). A car that wades well goes
       through; one that does not is slowed to a crawl or stalls. _Gamble:_ read the posts and
       know the car. _Builds on:_ the tide's wading (`crossing` in `cars.js`), side roads.
+      _Built (`gambles.js`, field `fords: { from, to, depth? }`, each ford its own fixed depth: it
+      does not change during a run):_ between an exit and its merge (the side road is the bridge;
+      the level reports a ford with none). A car wades 0.25 m (crossing 0) to 1 m (crossing 1):
+      within that it is slowed (to 47 km/h at its limit), beyond it it crawls at 16 km/h and loses
+      10 health a second per metre too deep; never stopped. The player is told the depth and what
+      the car wades before the exit. On Gimmick Road 3 (5650-5720, 0.6 m; its second side road
+      out to 150 m), Back Roads (1790-1850, 0.45 m) and Quarry Run (4060-4105, 0.7 m), cash in each.
+      (The low bridge moved from Back Roads to Quarry Run, 1510, so Back Roads has one of the two.)
+      Clocks not re-timed. Verified by `.gimmicks3-check.mjs ford` (a truck through unhurt and 3 s
+      quicker than the bridge, a lowrider crawling 13 s and 31 health, the same car over the bridge
+      dry and 9 s quicker, a ghost untouched, traffic wading slowly, both real levels) and in stills
+      (the board, the bank, in it, Back Roads, Quarry Run). Not verified: played by hand; the road
+      does not dip (the water lies on it); the card on screen.
 - [ ] H6. **Flooded underpass**: the same, in town in the rain: the main road dips under a
       railway and fills, and the slip road goes up and over. The water rises through the run.
       _Gamble:_ early on it is passable by anything; later only by some. _Builds on:_ tunnels,
@@ -499,9 +535,18 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       It saves the whole bend, shakes the car, costs health, and rejoins across the traffic.
       _Gamble:_ seconds against damage and a blind rejoin. _Builds on:_ Stelvio's hairpins, mud,
       side roads.
-- [ ] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
+- [x] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
       certain speed the car skims the tops and it goes smooth. _Gamble:_ commit to the speed
       before the bend, or crawl. _Builds on:_ potholes, mud, the safari's dirt road.
+      _Built (`gambles.js`, field `washboards: { from, to, skim? }`):_ smooth at 32 km/h or less and
+      at 72 km/h or more; between, 88% of the steering goes, the car wanders and runs wide in bends
+      (worst half way). On Gimmick Road 3 (2950-3450, three barriers to steer round), Safari
+      (2520-2980) and Outback Express (3960-4380), cash on the lines that need steering. Clocks not
+      re-timed (skimming costs no time). Verified by `.gimmicks3-check.mjs washboard` (skimming
+      round the barriers unhurt, the same steering at 52 km/h hits one, crawling unhurt and 41 s
+      slower, braking on it drops into the rough, every garage car can reach the speed, both real
+      levels load) and in stills (the boards, on it, the card, Safari). Not verified: played by
+      hand; how it feels behind slow traffic; Outback Express on screen; sound.
 - [ ] H9. **Ruts**: tractors have left deep ruts in the mud. In a rut the car runs straight and
       fast; changing lane means climbing out, with a jolt and a wobble. _Gamble:_ pick the rut
       early and live with it. _Builds on:_ mud, tractors.
@@ -509,6 +554,19 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       shade the road, so it can be read from the shadows before reaching it. _Gamble:_ brake
       before the shadow, or stay in the sunny lane with the traffic. _Builds on:_ ice, the
       scenery already casting the shade.
+      _Built (`gambles.js`, field `shade: { from, to, side, lanes? }`):_ a row of tall trees of its
+      own on that side (not the theme's scenery) shades the nearest lane or lanes, and the shadow
+      is ice (the game's own, through `Track.slicks`) with 90% more of the steering gone; nothing
+      is drawn but the shadow. Traffic moves into the sun before it. On Gimmick Road 3 (6250-6450,
+      a barrier in the shade at 6410, the bigger cash in the shade), Mountain Pass (2370-2450, the
+      braking for the hairpin) and Fjord (1340-1470, the shaded lane the way past the barriers).
+      Not on Christmas: it is a night level, with no sun to be out of. Clocks not re-timed.
+      Verified by `.gimmicks3-check.mjs shade` (the sunny lane never ice, out of the shade early
+      unhurt, a move 25 m before the barrier hits on the ice and clears with the ice taken away,
+      slowly it clears, a van moves into the sun, both real levels) and in stills (Gimmick Road 3,
+      Mountain Pass, Fjord). Not verified: played by hand; the card on screen. Weak point: the
+      game's ice costs nothing in a straight line, so a shade needs a bend, a hazard or a braking
+      point in it to be a gamble at all.
 - [ ] H11. **Truck spray**: in rain every lorry drags a cloud of spray: nothing can be seen
       behind one. _Gamble:_ hang back and see, or overtake blind. _Builds on:_ rain, fog.
 - [ ] H12. **Low sun**: one stretch runs straight into the sun and the screen washes out,
@@ -538,6 +596,17 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       gap on exactly the right line and the car does not feel it; clip one at speed and it
       jumps and takes a knock. _Gamble:_ precision at speed against slowing. _Builds on:_
       potholes, the jump.
+      _Built (`gambles.js`, field `cushions: { from, to, every? }`):_ a row every 45 m, a cushion in
+      the middle of each lane and a gap on each lane line. Within 0.45 m of a lane line (less for a
+      wide car) the car goes between two at any speed; over one at 30 km/h or less it is a bump;
+      faster it is thrown up (no steering until down) and knocked, 3 health and more the faster.
+      Traffic takes them slowly. On Gimmick Road 3 (3520-3700), Suburbs (1460-1600), The Hood
+      (1460-1595) and Christmas (1480-1615), cash between the rows. Clocks not re-timed. Verified
+      by `.gimmicks3-check.mjs cushions` (the lane line at 108 km/h untouched, the middle of the
+      lane at that speed thrown at all five rows and 42 health, braking for each row unhurt and
+      11 s slower, 0.7 m off the line is not the gap, a wide car has less room, the three real
+      levels) and in stills (the rows, the card, Suburbs). Not verified: played by hand; how it
+      is among the slowed traffic; The Hood and Christmas on screen.
 - [ ] H20. **Blast window**: the quarry's siren goes and the road under the face is about to
       be showered; the haul road round the back is longer and rough. _Gamble:_ sprint under
       before it goes, or take the haul road. _Builds on:_ quarry blasts, side roads.

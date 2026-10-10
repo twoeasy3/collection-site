@@ -296,6 +296,36 @@
 //              `length` s (CONFIG.crosswind's if not said; strength: m/s^2 on a car as tall as the Commuter). A taller
 //              car is pushed harder; beside a tall vehicle on the windward side there is shelter, and a shove on
 //              clearing it. Windsocks before it and along it show which way and how hard, as it gusts
+//   jamRamps   { s, lane, queue?, lanes? }: a ramp over the jam: a car transporter stopped in that lane (one on the
+//              player's side), its ramps down, the foot of them at s, at the back of a queue of stopped traffic:
+//              `queue` cars beyond it in its lane (CONFIG.jamRamp.queue if not said) and as far in every lane of
+//              `lanes` ([first, last]: the player's whole side if not said). Driven up at the speed on its board or
+//              more, the car flies the queue; slower, it comes down in it. The way round is whatever the level leaves
+//              open: a lane, the shoulder (its rules apply), the oncoming side. On straight, level road
+//   lowBridges { s, clearance? }: a low bridge: a height bar across the player's side of the expressway and its shoulder,
+//              `clearance` m off the road (CONFIG.lowBridge.clearance if not said), between an exit and its merge:
+//              the side road is the way round for tall vehicles, and tall traffic takes it. A car no taller than the
+//              bar (its `height` in cars.js) goes straight under; a taller one that goes at it loses health and most
+//              of its speed, and is through. Signed before the exit, with what the car measures. The level reports
+//              one that has no exit round it
+//   fords      { from, to, depth? }: a ford: over the stretch the expressway runs through a river `depth` m deep
+//              (CONFIG.ford.depth if not said), between an exit and its merge: the side road is the bridge. A car is
+//              slowed in it by how well it wades (its `crossing` in cars.js: see CONFIG.ford); in water deeper than
+//              it wades it crawls and is damaged, but is never stopped. Depth posts on its banks and boards before
+//              the exit show the depth, and the player is told what the car wades. Each ford its own depth
+//   cushions   { from, to, every? }: speed cushions: over the stretch a row of them across the expressway every `every` m
+//              (CONFIG.cushion.every if not said), the first at `from`: a cushion in the middle of each lane, a gap
+//              on each lane line. A car on a lane line goes between two and feels nothing; over one slowly it is a
+//              bump; over one at speed it is thrown up and knocked. Traffic crawls over them (see CONFIG.cushion)
+//   shade      { from, to, side, lanes? }: black ice in the shade: over the stretch a row of tall trees on that side
+//              ('left' | 'right') shades the `lanes` lanes of the player's side nearest it (CONFIG.shade.lanes if
+//              not said; on the right, the shoulder too), and those are ice (CONFIG.ice), with nothing drawn of it
+//              but the shadow. Traffic moves into the sun before it where there is a sunny lane. Put it on a bend,
+//              or put something in the shade to be steered round: ice in a straight line costs nothing
+//   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
+//              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
+//              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a
+//              bend it is carried wide. Boards before it give the speed. Put something in it to be steered round
 //   pelotons  { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind
