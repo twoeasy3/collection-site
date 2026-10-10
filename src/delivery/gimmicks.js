@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
 import { levelName } from './levelText.js';
+import { nameOf, blurbOf, slug } from './words.js';
 import { themedKind } from './themes.js';
 import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
@@ -1076,6 +1077,15 @@ export const GROUPS = [
     } },
   ] },
 ];
+// gimmickText.json comes first (words.js): each card is given its id (its name as written above, in lower case with
+// dashes: the file's key, and what the road card tells the cards apart by), and then the file's name; `blurb`, the
+// line of its tile on a level's road card, only where the file has one (else the card's `line`, else its first rule)
+for (const group of GROUPS) for (const card of group.cards) {
+  card.id = card.id || slug(card.name);
+  card.name = nameOf('gimmick', card.id, card.name);
+  const blurb = blurbOf('gimmick', card.id);
+  if (blurb) card.blurb = blurb;
+}
 
 // ---- road dressing: the themes' own obstacles ---------------------------------------------------------------
 // NOT gimmicks, and not in GROUPS (so on no level's road card, and in no count of a level's gimmicks): the plain
@@ -1099,7 +1109,7 @@ const DRESS = [ // [kind, name, what it stands in for, where, the card's colour]
 const dressingKinds = (l) => new Set([...(l.obstacles || []).map(o => themedKind(l.theme, o.kind || 'barrier')), ...(l.shoulderRows || []).map(r => themedKind(l.theme, r.kind || 'cone')),
   ...(l.drifters || []).map(d => themedKind(l.theme, d.kind || 'cone', true))]);
 export const DRESSING = { name: 'Road dressing', about: 'Not gimmicks: the plain obstacles, as each theme has them. Each is a crate, a bale, a cone or a rock in another shape: the same size, the same cost, standing where the level put it.',
-  cards: DRESS.map(([kind, name, like, place, color]) => ({ name, color, has: (l) => dressingKinds(l).has(kind), rules: [
+  cards: DRESS.map(([kind, name, like, place, color]) => ({ id: kind, name: nameOf('obstacle', kind, name), blurb: blurbOf('obstacle', kind) || undefined, color, has: (l) => dressingKinds(l).has(kind), rules: [
     `What a ${like} is in ${place}.`,
     `It hits as a ${like} does: ${CONFIG.obstacleKinds[kind].damage} damage, and you keep ${pct(CONFIG.obstacleKinds[kind].speedKept)} of your speed.`,
   ], build: () => ({ model: ob(kind, JUNK[kind]) }) })) };

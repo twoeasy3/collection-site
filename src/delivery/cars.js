@@ -36,6 +36,7 @@
 import { Progress } from './progress.js';
 import { CONFIG } from './config.js';
 import { IDEA_CARS } from './ideas.js';
+import { applyNames } from './words.js';
 
 // The car ideas (ideas.js IDEA_CARS: thirty placeholders, tierless and free) are driven as garage cars are,
 // but kept out of CARS, which traffic, Car Swap, "Unlock everything", the garage's lot and its filters, the
@@ -260,6 +261,10 @@ export const LEVEL_CARS = {
     cannon: { range: 72, cooldown: 1.1, direct: 2.6, splash: 7, damage: 40, scale: 0.8 },
     maxSpeed: 32, accel: 9, crossing: 1, agility: 0.9, health: 240, mass: 3, hw: 1.35, hl: 3.4, height: 2.5 },
 };
+// the garage's cars and the levels' own vehicles take their names (and a perk line) from carText.json, the table's
+// own being the fallback (words.js); the spreads below (EARNED_CARS) then carry them
+applyNames('car', CARS);
+applyNames('car', Object.values(LEVEL_CARS));
 
 // Secret vehicles: never parked in the garage or for sale, but once owned they are driven
 // like any other car, and the garage can swap back to a normal car. The way into each:
