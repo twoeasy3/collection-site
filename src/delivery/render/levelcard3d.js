@@ -6,8 +6,9 @@
 // what a mystery can be) and its TRAFFIC (what it is driven in, the grid, every vehicle kind in its mix and
 // its zones, and the Gimmicks page's cards about vehicles: ambulances, the police pursuit, convoys...). Each
 // tile has the model its page shows, a name, and the first line of what its page says.
-// Drawn cheaply: ONE WebGL renderer for the whole card, on a canvas laid over the tiles and drawn into patch
-// by patch (render/modelviews.js, as the pages do), made when the card opens and let go when it closes.
+// Drawn cheaply: ONE WebGL renderer for the whole card, on a canvas off the page, its picture of each tile
+// copied into the tile's own small canvas (render/modelviews.js, as the pages do: the models scroll with
+// their tiles), made when the card opens and let go when it closes.
 // Nothing of the level is built, and the game's own scene is not touched.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
@@ -97,26 +98,24 @@ export const showRoadCard = (box, level, close) => {
   const traffic = [...cards.filter(card => ['The UFO', 'The jetboat', 'Your 8x8'].includes(card.name)).map(gimmickTile), ...vehicles,
     ...cards.filter(card => TRAFFIC_CARDS.has(card.name) && !['The UFO', 'The jetboat', 'Your 8x8'].includes(card.name)).map(gimmickTile)];
 
-  const canvas = make('canvas', 'road-canvas');
   const closeBtn = make('button', 'menu-chip', 'Close');
   closeBtn.addEventListener('click', close);
   const notes = levelNotes(level);
+  const body = make('div', 'sheet-body',
+    notes.length ? make('p', 'road-notes', notes.map(note => make('em', '', note))) : null,
+    group('Gimmicks', 'gimmicks.html', 'All the gimmicks', gimmicks, 'Nothing but the road, the traffic and the clock.'),
+    group('Pickups', 'powerups.html', 'All the power-ups', pickups, 'None on this level.'),
+    group('Traffic', 'gimmicks.html#vehicles', 'More about vehicles', traffic, 'No traffic at all.'));
   box.replaceChildren(make('div', 'sheet-box road',
     make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', levelLabel(LEVELS.indexOf(level)) + '  ' + level.name)), closeBtn),
-    make('div', 'sheet-main',
-      make('div', 'sheet-body',
-        notes.length ? make('p', 'road-notes', notes.map(note => make('em', '', note))) : null,
-        group('Gimmicks', 'gimmicks.html', 'All the gimmicks', gimmicks, 'Nothing but the road, the traffic and the clock.'),
-        group('Pickups', 'powerups.html', 'All the power-ups', pickups, 'None on this level.'),
-        group('Traffic', 'gimmicks.html#vehicles', 'More about vehicles', traffic, 'No traffic at all.')),
-      canvas)));
+    make('div', 'sheet-main', body)));
 
-  const renderer = viewRenderer(canvas);
+  const renderer = viewRenderer();
   let last = performance.now(), frame = 0;
   const draw = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    drawViews(renderer, views, now / 1000, dt);
+    drawViews(renderer, views, now / 1000, dt, body); // (only the tiles scrolled into sight in the sheet)
     frame = requestAnimationFrame(draw);
   };
   frame = requestAnimationFrame(draw);

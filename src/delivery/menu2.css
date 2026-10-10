@@ -251,12 +251,10 @@
   #startScreen .menu-backdrop i, #startScreen .menu-stage .shot, #startScreen #startBtn, #startScreen .menu-stage.enter *, #startScreen .menu-stage.flip *, #startScreen .sheet-box { animation: none !important; }
 }
 
-/* ---- "what's on this road" (render/levelcard3d.js): three groups of tiles, each tile a model and a line. The
-   models are drawn by one canvas laid over the tiles (it scrolls with nothing: each frame it draws every tile's
-   patch where the tile is now) ---- */
+/* ---- "what's on this road" (render/levelcard3d.js): three groups of tiles, each tile a model and a line. Each
+   model is drawn in a small canvas of its own in the tile's .view (render/modelviews.js), so it scrolls with it ---- */
 #startScreen .sheet-main { position: relative; flex: 1 1 auto; min-height: 0; display: flex; }
 #startScreen .sheet-main .sheet-body { flex: 1 1 auto; }
-#startScreen .road-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; }
 #startScreen .road-notes { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 #startScreen .road-notes em, #startScreen .tile .pool em { font-style: normal; font-size: 12px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent); }
 #startScreen .road-group + .road-group { margin-top: 16px; }

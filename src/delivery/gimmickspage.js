@@ -1,7 +1,7 @@
 // ============================================================================
 // THE GIMMICKS PAGE (delivery/gimmicks.html): every gimmick in gimmicks.js, by group: its model, what it
-// does, and the levels it turns up in. One renderer draws every card: a canvas over the whole window, drawn
-// into patch by patch (each card's .view), and left clear everywhere else (render/modelviews.js).
+// does, and the levels it turns up in. One renderer draws every card's model, each into a small canvas of
+// its own in the card's .view, so it scrolls with the page (render/modelviews.js).
 // ============================================================================
 import './powerups.css';
 import './gimmicks.css';
@@ -41,7 +41,7 @@ for (const g of GROUPS.filter(g => !only || slug(g.name) === only).map(g => only
 }
 
 // ---- drawing ------------------------------------------------------------------------------------
-const renderer = viewRenderer(document.getElementById('stage'));
+const renderer = viewRenderer();
 let last = performance.now();
 const frame = (now) => {
   const dt = Math.min(0.05, (now - last) / 1000);
