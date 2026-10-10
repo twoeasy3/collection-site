@@ -1,6 +1,10 @@
 {
   "id": "toys",
   "name": "Toy Room",
+  "description": {
+    "good": "A plastic track across the playroom carpet: a toy train at the crossing, a drawbridge to hop and a cardboard-box tunnel. Mind the dominoes.",
+    "evil": "Somebody left their toys out. Scatter the cones, jump the drawbridge flat out and take the banknotes in the lane that just turned round."
+  },
   "theme": "toyroom",
   "clock": { "good": 215, "evil": 165 },
   "tip": 280,

@@ -105,27 +105,77 @@
   <div class="pad pedals" data-hold="brake,gas"><button>&#9660;</button><button>&#9650;</button></div>
 </div>
 
+<!-- the start screen: one composed screen, nothing scrolls (render/menu.js, render/menustage.js, menu2.css).
+     Across the top the title, the tabs, the bank and the way into the options; under it the tab's level groups;
+     then the stage (the level picked, large), the strip (the other levels of its group), and beside them the
+     car, the side and START. The options and the "what's on this road" card are sheets over it. -->
 <div id="startScreen" class="overlay menu">
-  <h1>Delivery Run</h1>
-  <div id="bank"></div>
-  <div id="tabs" class="groups"><button id="tabDelivery" class="level current">Deliveries</button><button id="tabRaces" class="level">Races</button></div>
-  <div id="levelGroups" class="groups"></div>
-  <div id="levels" class="cards"></div>
-  <div id="raceMenu">
-    <button id="raceWatchBtn" class="level">Race screensaver</button>
-    <button id="raceClassBtn" class="level">Race cars: F1</button>
-    <button id="raceTrackBtn" class="level">Race track: Marina Bay</button>
-    <a class="level" href="?racewatch" title="Opens the race screensaver straight away: bookmark it or share it">Race screensaver link</a>
-  </div>
-  <h2>Car</h2>
-  <div class="car-row">
-    <div id="shop" class="cards"></div>
-    <button id="sideBtn" class="side-btn"><strong id="sideName">Good</strong><span id="sideNote"></span><small>Tap to switch</small></button>
-  </div>
-  <button id="startBtn">Start Game</button>
-  <details>
-  <summary>How to play</summary>
-  <p>Hold Left / Right (A / D) or drag sideways: steer<br>
+  <div class="menu-backdrop" aria-hidden="true"><i></i><i></i></div>
+  <header class="menu-top">
+    <h1>Delivery <em>Run</em></h1>
+    <div id="tabs" class="menu-tabs"><button id="tabDelivery" class="current">Deliveries</button><button id="tabRaces">Races</button></div>
+    <div id="bank"></div>
+    <button id="optionsBtn" class="menu-chip" title="Options and extras (O)"><i>&#9776;</i><span>Options</span></button>
+  </header>
+  <nav id="levelGroups" class="menu-groups"></nav>
+  <section id="stage" class="menu-stage"></section>
+  <div id="levels" class="menu-strip"></div>
+  <aside class="menu-side">
+    <button id="shop" class="car-card"></button>
+    <div id="raceMenu">
+      <button id="raceClassBtn" class="menu-chip">Race cars: F1</button>
+      <button id="raceTrackBtn" class="menu-chip">Race track: Marina Bay</button>
+      <button id="raceWatchBtn" class="menu-chip">Race screensaver</button>
+    </div>
+    <div class="side-box">
+      <div id="sideBtn" class="side-switch" role="group" aria-label="The side to play on">
+        <button data-side="good">Good</button><button data-side="evil">Evil</button>
+      </div>
+      <p id="sideNote"></p>
+    </div>
+    <button id="startBtn"><span>Start</span></button>
+  </aside>
+  <footer id="menuKeys" class="menu-keys"></footer>
+
+  <!-- the options and extras: everything that is not picking a level, a car or a side -->
+  <div id="menuOptions" class="menu-sheet hidden">
+    <div class="sheet-box">
+      <div class="sheet-bar"><h2>Options &amp; extras</h2><button id="optionsCloseBtn" class="menu-chip">Close</button></div>
+      <div class="sheet-body options">
+        <section>
+          <h3>Settings</h3>
+          <button id="muteBtn" class="menu-chip">Sound: on</button>
+          <button id="touchBtn" class="menu-chip">On-screen controls: off</button>
+          <button id="autoGasBtn" class="menu-chip">Auto accelerate: off</button>
+        </section>
+        <section>
+          <h3>Extras</h3>
+          <button id="albumBtn" class="menu-chip">Postcards</button>
+          <button id="milestonesBtn" class="menu-chip">Milestones</button>
+          <button id="screensaverBtn" class="menu-chip">Screensaver</button>
+          <button id="raceWatchBtn2" class="menu-chip">Race screensaver</button>
+          <a id="screensaverLink" class="menu-chip" href="?screensaver" title="Opens the screensaver straight away: bookmark it or share it">Screensaver link</a>
+          <a class="menu-chip" href="?racewatch" title="Opens the race screensaver straight away: bookmark it or share it">Race screensaver link</a>
+        </section>
+        <section>
+          <h3>Guide</h3>
+          <a class="menu-chip" href="powerups.html">Power-ups</a>
+          <a class="menu-chip" href="gimmicks.html">Gimmicks</a>
+          <a class="menu-chip" href="cargo.html">Cargo</a>
+          <a class="menu-chip" href="sides.html">Good &amp; Evil</a>
+          <a class="menu-chip" href="police.html">Police</a>
+          <a class="menu-chip" href="editor.html">Level editor</a>
+        </section>
+        <section>
+          <h3>Save</h3>
+          <button id="exportBtn" class="menu-chip" title="Your progress as a code, to take to another browser">Export save</button>
+          <button id="importBtn" class="menu-chip" title="Bring in a save code from another browser">Import save</button>
+          <button id="completeBtn" class="menu-chip">Unlock everything</button>
+          <button id="resetBtn" class="menu-chip danger">Reset progress</button>
+        </section>
+        <section class="howto">
+          <h3>How to play</h3>
+          <p>Hold Left / Right (A / D) or drag sideways: steer<br>
      Hold Up / Down (W / S) or drag up / down: accelerate / brake<br>
      Space or THROW: a package at the nearest car (one behind you has to be a lot nearer than one ahead).<br>
      On a phone or tablet there are on-screen buttons for all of it (the menu can switch them on or off).<br>
@@ -149,30 +199,12 @@
      All Heck everything comes at you.<br>
      In Hurricane the cars blown through the air can't touch you; the junk sliding about the
      road can.</p>
-  </details>
-  <div>
-    <button id="muteBtn" class="level">Sound: on</button>
-    <button id="touchBtn" class="level">On-screen controls: off</button>
-    <button id="autoGasBtn" class="level">Auto accelerate: off</button>
-    <button id="screensaverBtn" class="level">Screensaver</button>
-    <button id="albumBtn" class="level">Postcards</button>
-    <button id="milestonesBtn" class="level">Milestones</button>
-    <button id="raceWatchBtn" class="level">Race screensaver</button>
-    <button id="raceClassBtn" class="level">Race cars: F1</button>
-    <button id="raceTrackBtn" class="level">Race track: Marina Bay</button>
-    <a class="level" href="powerups.html">Power-ups</a>
-    <a class="level" href="gimmicks.html">Gimmicks</a>
-    <a class="level" href="cargo.html">Cargo</a>
-    <a class="level" href="sides.html">Good &amp; Evil</a>
-    <a class="level" href="police.html">Police</a>
-    <a class="level" href="editor.html">Level editor</a>
-    <a id="screensaverLink" class="level" href="?screensaver" title="Opens the screensaver straight away: bookmark it or share it">Screensaver link</a>
-    <a class="level" href="?racewatch" title="Opens the race screensaver straight away: bookmark it or share it">Race screensaver link</a>
-    <button id="exportBtn" class="level" title="Your progress as a code, to take to another browser">Export save</button>
-    <button id="importBtn" class="level" title="Bring in a save code from another browser">Import save</button>
-    <button id="completeBtn" class="level">Unlock everything</button>
-    <button id="resetBtn" class="level">Reset progress</button>
+        </section>
+      </div>
+    </div>
   </div>
+  <!-- what's on this road: the picked level's gimmicks, pickups and traffic, each with its model (render/levelcard3d.js builds it) -->
+  <div id="roadCard" class="menu-sheet hidden"></div>
 </div>
 
 <div id="garageUi" class="hidden">

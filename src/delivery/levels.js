@@ -313,6 +313,10 @@
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
 //   id         unique name, used as the level's key in saved progress
 //   name       the level's name on the menu
+//   description  { good, evil }: a sentence or two about the level, shown on the menu's stage for the side picked
+//              (160 characters each at most; scripts/.descriptions-check.mjs). Good's is a cheerful, careful
+//              courier's briefing; Evil's the same job, relished. A level played on one side only (alwaysGood,
+//              battle) has only "good"
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
 //              How a target stands is the level's theme's (a theme's "target": see themes.js and CONFIG.target),
 //              and one target can have its own where a stretch has sides of its own (an elevated road, a

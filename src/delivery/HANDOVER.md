@@ -185,6 +185,12 @@ unverified unless the owner says otherwise. From the original list:
   Tokyo and All Heck). Not seen moving, not heard (the tick as an Evil item changes state, the thump
   as it lands), not tried on a real phone, and the kerb camera was not looked at on every level: a
   finish inside a tunnel, on a bridge, or with something standing on the shoulder may sit badly.
+- **The start screen as a game's menu** (2026-10-10; `render/menustage.js`, `menu2.css`, the road card
+  `render/levelcard3d.js`): seen only in headless-browser stills at 1100x650, 1400x900, 520x900 and 900x420,
+  and worked only by made-up key presses, clicks and one swipe from the address (`?do=`). Nobody has clicked,
+  tapped or swiped it by hand, on a desktop or a phone; its two sounds (a step, a choice) have not been heard;
+  its animations (the stage sliding in, the backdrop, START's pulse) have not been seen moving. The level
+  descriptions were written from the level files, not from playing the levels.
 - **Performance on phones**: the heavy levels (Asteroid Run's asteroids, All Heck's cones, the
   long JSON of Oh Mine!).
 

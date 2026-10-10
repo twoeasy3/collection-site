@@ -1,6 +1,10 @@
 {
   "id": "singapore-night",
   "name": "Singapore II",
+  "description": {
+    "good": "Singapore after dark: more junctions, two bridges and boy racers sitting on your bumper. Let them by and keep the parcel level.",
+    "evil": "Neon, bridges and boy racers who think this is their street. Show them whose it is, one flaming parcel at a time."
+  },
   "theme": "singaporeNight",
   "drive": "left",
   "clock": { "good": 210, "evil": 149 },

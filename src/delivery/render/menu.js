@@ -1,166 +1,29 @@
-// ---- start screen: bank, level select, the way into the garage -------------------------------------------
+// ---- start screen: the options and extras, and what happens round the menu -------------------------------
 // The start screen is only a menu. Picking a level just marks it; the level is built when
 // a run starts (Game.start). Nothing here reloads the page.
+// The level select, the car and the side are render/menustage.js (which draws them: `draw`); this file has the
+// switches and buttons of the options sheet, the race controls, the secret bus, and the results screen's buttons.
 import { CONFIG } from '../config.js';
-import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, THEME_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
-import { CARS, CAR, SECRET_CARS, useLevelCar, selectCar, earnedFor, amphibiousCars } from '../cars.js';
+import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
+import { CARS, SECRET_CARS, useLevelCar, selectCar, amphibiousCars } from '../cars.js';
 import { Progress } from '../progress.js';
-import { Game, formatTime, clockFor } from '../game.js';
-import { Garage, withStars } from './garage.js';
+import { Game } from '../game.js';
+import { Garage } from './garage.js';
 import { Sound } from './audio.js';
 import { Input } from '../input.js';
-import { decorateLevelCard } from './levelcards.js';
+import { draw, MenuStage } from './menustage.js';
+export { LEVEL_SHOTS } from './menustage.js'; // (the postcard album's pictures: render/album.js)
 
-const money = (amount) => '$' + amount.toFixed(2);
-
-// a card is a button with a title and a few lines of small print
-// each level's still for its card, by level id (taken with ?cine: see main.js)
-export const LEVEL_SHOTS = Object.fromEntries(Object.entries( // (the postcard album uses them too: render/album.js)
-  import.meta.glob('../levelshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
-  .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
-
-// (with an image: the picture across the top of the card, clear of the words, which go below it)
-// each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car)
-const CAR_SHOTS = Object.fromEntries(Object.entries(
-  import.meta.glob('../carshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
-  .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
-
-const card = (title, lines, { current = false, disabled = false, onPick, image } = {}) => {
-  const button = document.createElement('button');
-  button.className = 'card' + (current ? ' current' : '') + (image ? ' shot' : '');
-  button.disabled = disabled;
-  let words = button;
-  if (image) {
-    const picture = document.createElement('span');
-    picture.className = 'thumb';
-    picture.style.backgroundImage = `url("${image}")`;
-    words = document.createElement('span');
-    words.className = 'words';
-    button.append(picture, words);
-  }
-  const heading = document.createElement('strong');
-  heading.replaceChildren(...[].concat(title)); // (words, or nodes: a car's name with its coloured stars)
-  words.appendChild(heading);
-  for (const text of lines) {
-    const line = document.createElement('span');
-    line.textContent = text;
-    words.appendChild(line);
-  }
-  if (onPick) button.addEventListener('click', onPick);
-  return button;
-};
-
-const bank = document.getElementById('bank');
-// Good or Evil: picked here (and remembered), played by Start Game
-const sideBtn = document.getElementById('sideBtn');
-const sideName = document.getElementById('sideName'), sideNote = document.getElementById('sideNote');
-Game.evil = !!Progress.data.evil;
-const pickSide = (evil) => {
-  Game.evil = evil;
-  Progress.data.evil = evil;
-  Progress.save();
-  draw();
-};
-sideBtn.addEventListener('click', () => pickSide(!Game.evil));
-const levelBox = document.getElementById('levels'), groupBox = document.getElementById('levelGroups');
-// Two tabs: the deliveries, and the races (the circuits: see RACE_LEVELS). On each, the levels in groups: the
-// main delivery levels five at a time, then the special ones five at a time; the races five at a time. A button
-// for each group; below them, the levels of the group shown (to begin with, the one with the level picked)
-const TABS = { delivery: { list: DELIVERY_LEVELS, groups: [] }, race: { list: RACE_LEVELS, groups: [] } };
-for (let i = 0; i < MAIN_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(MAIN_LEVELS.length, i + 5)]);
-{ // (the special levels five at a time, then the amphibious ones, a group of their own)
-  // (...and after them the themed ones, five at a time, groups of their own too)
-  const themed = DELIVERY_LEVELS.length - THEME_LEVELS.length, specials = themed - AMPHIBIOUS_LEVELS.length;
-  for (let i = MAIN_LEVELS.length; i < specials; i += 5) TABS.delivery.groups.push([i, Math.min(specials, i + 5)]);
-  for (let i = specials; i < themed; i += 5) TABS.delivery.groups.push([i, Math.min(themed, i + 5)]);
-  for (let i = themed; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
-}
-for (let i = 0; i < RACE_LEVELS.length; i += 5) TABS.race.groups.push([i, Math.min(RACE_LEVELS.length, i + 5)]);
-let tab = isRace(LEVEL) ? 'race' : 'delivery'; // (the tab shown: the one with the level picked, to begin with)
-if (new URLSearchParams(location.search).get('tab') === 'races') tab = 'race'; // (?tab=races: the menu opens on the races, for a check)
-const groupOf = (k) => Math.max(0, TABS[tab].groups.findIndex(([a, b]) => k >= a && k < b));
-let shownGroup = null; // (null: the group with the level picked)
-// a race is always open; a delivery level once the one before it has been delivered
-const isOpen = (level) => isRace(level) || LEVELS.indexOf(level) < Progress.data.unlocked;
-const startScreen = document.getElementById('startScreen');
-const tabBtns = { delivery: document.getElementById('tabDelivery'), race: document.getElementById('tabRaces') };
-for (const [name, button] of Object.entries(tabBtns)) button.addEventListener('click', () => { tab = name; shownGroup = null; draw(); });
-const shopBox = document.getElementById('shop');
-// the amphibious car to point a player with none at: the cheapest
-const cheapestAmphibious = () => amphibiousCars().sort((a, b) => a.price - b.price)[0];
-
-const draw = () => {
-  bank.textContent = 'Bank ' + money(Progress.data.money);
-
-  for (const [name, button] of Object.entries(tabBtns)) button.classList.toggle('current', name === tab);
-  startScreen.classList.toggle('races', tab === 'race');
-  const { list, groups: GROUPS } = TABS[tab], picked = list.indexOf(LEVEL); // (-1: the level picked is on the other tab)
-  const shown = shownGroup ?? groupOf(picked), [first, last] = GROUPS[shown];
-  const label = (level) => levelLabel(LEVELS.indexOf(level));
-  groupBox.replaceChildren(...GROUPS.map(([a, b], g) => {
-    const button = document.createElement('button');
-    button.className = 'level' + (g === shown ? ' current' : '') + (isOpen(list[a]) ? '' : ' locked');
-    button.textContent = label(list[a]) + (b - a > 1 ? '–' + label(list[b - 1]) : '');
-    button.title = isOpen(list[a]) ? '' : 'Not open yet';
-    button.addEventListener('click', () => { shownGroup = g; draw(); });
-    return button;
-  }));
-  levelBox.replaceChildren(...list.slice(first, last).map((level, k) => {
-    const i = LEVELS.indexOf(level), open = isOpen(level);
-    // (the most time to spare delivering it, on each side)
-    const good = Progress.bestTime(level.id, false), evil = Progress.bestTime(level.id, true);
-    const spare = (t) => t === undefined ? '-' : formatTime(t);
-    const onlyGood = level.battle || level.alwaysGood, prize = earnedFor(level.id);
-    // (and on the card once made: its best times' medals, and the level's gimmicks. See render/levelcards.js)
-    return decorateLevelCard(card(label(level) + '. ' + level.name, open ? [
-      'Tip ' + money(level.tip) + (level.amphibious ? '  |  Amphibious cars only' : ''),
-      onlyGood ? 'Clock ' + formatTime(clockFor(level, false)) + ' (always Good)' // (the Battlefield: the player is always in the green army)
-        : 'Clock ' + formatTime(clockFor(level, false)) + ' Good / ' + formatTime(clockFor(level, true)) + ' Evil',
-      onlyGood ? (good === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good))
-        : good === undefined && evil === undefined ? 'Not delivered yet' : 'Best to spare ' + spare(good) + ' Good / ' + spare(evil) + ' Evil',
-      // (a special level's 6-star car, and the time to spare that earns it: see cars.js EARNED_CARS)
-      ...(prize ? ['6-star car: ' + prize.name + (Progress.earned(prize) ? ' (earned)'
-        : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare')] : []),
-    ] : ['Locked', 'Deliver level ' + label(list[first + k - 1]) + ' on time to open it'], {
-      current: level === LEVEL,
-      disabled: !open,
-      onPick: () => { selectLevel(i); useLevelCar(level.car, level.amphibious); shownGroup = null; draw(); }, // (the groups follow the level picked; an amphibious level puts the player in their amphibious car)
-      image: LEVEL_SHOTS[level.id],
-    }), level, open);
-  }));
-  // (where the levels are a row to swipe along, the one picked is brought to the middle)
-  if (levelBox.scrollWidth > levelBox.clientWidth) {
-    const picked = levelBox.querySelector('.current');
-    if (picked) levelBox.scrollTo({ left: picked.offsetLeft - (levelBox.clientWidth - picked.offsetWidth) / 2, behavior: 'smooth' });
-  }
-
-  shopBox.replaceChildren(card(withStars(CAR), [
-    'Top speed ' + Math.round(CAR.maxSpeed * 3.6) + ' km/h',
-    'Acceleration ' + CAR.accel + '  |  Health ' + CAR.health,
-    LEVEL.car ? 'You must use this vehicle on this level. The garage car returns on other levels.'
-      : !LEVEL.amphibious ? 'Open the garage to change or buy cars'
-      // (an amphibious level: the player's amphibious car, picked for them if another car is in use; or, with none
-      // owned, which one to get: the cheapest, and where it is. Start Game opens the garage at it: see onRefused)
-      : CAR.amphibious ? 'An amphibious level: you drive your ' + CAR.name + '. Others are in the garage’s Amphibious section'
-        : 'This level needs an amphibious car. Get the ' + cheapestAmphibious().name + ' (' + money(cheapestAmphibious().price) + ') in the garage’s Amphibious section',
-  ], { current: true, onPick: () => Garage.open(), image: CAR_SHOTS[CAR.id + (Game.evil && !LEVEL.battle && !LEVEL.alwaysGood ? '-evil' : '-good')] }));
-  // the side picked, and what it means
-  sideBtn.className = 'side-btn ' + (Game.evil ? 'evil' : 'good');
-  sideName.textContent = Game.evil ? 'Evil' : 'Good';
-  sideNote.textContent = Game.evil
-    ? 'Less time. Flaming packages do real damage, and the police bust you for them.'
-    : 'More time. Care packages increase your social standing and gains you benefits.';
-};
 draw();
 // a car picked in the garage shows on its card (unless the level has a vehicle of its own; and on an amphibious
 // level only if it is an amphibious one: otherwise the player's amphibious car stays)
 window.addEventListener('carchange', () => { useLevelCar(LEVEL.car, LEVEL.amphibious); draw(); });
-// Start Game on an amphibious level with no amphibious car owned (see Game.start): nothing starts, and the
+// Start on an amphibious level with no amphibious car owned (see Game.start): nothing starts, and the
 // garage opens at the one to get, to look at and buy (still a menu: no level is built, nothing reloads)
 Game.onRefused.push(() => {
   draw();
   Garage.open();
-  Garage.look(cheapestAmphibious().id);
+  Garage.look(amphibiousCars().sort((a, b) => a.price - b.price)[0].id); // (the cheapest)
 });
 
 // sound on / off: this button, or the M key at any time
@@ -250,39 +113,38 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   window.dispatchEvent(new Event('carchange')); // (the car in use may have been one that was bought)
   showAutoGas(); // (a reset forgets the choice)
   showRaceClass();
-  draw();
+  MenuStage.follow();
 });
 
 // a save brought in by its code (render/savecode.js): everything the menu shows is the new save's
 window.addEventListener('progresschange', () => {
   Game.evil = !!Progress.data.evil;
   selectLevel(Math.min(Math.max(0, LEVEL_INDEX), Progress.data.unlocked - 1)); // (never left on a level it has not opened)
-  shownGroup = null;
   selectCar(Progress.data.car);
   window.dispatchEvent(new Event('carchange'));
   Sound.toggleMute(); toggleMute(); // (twice, so as it was saved: this sets the volume by it, and the button's words)
   showAutoGas();
   showRaceClass();
   showRaceTrack();
-  draw();
+  MenuStage.follow();
 });
 
 // the screensaver: the chaos level with no player car, round and round until Exit
 document.getElementById('screensaverBtn').addEventListener('click', () => Game.startScreensaver());
-// ...and the race screensaver: a race round a circuit, watched
-document.getElementById('raceWatchBtn').addEventListener('click', () => Game.startRaceWatch());
+// ...and the race screensaver: a race round a circuit, watched (a button beside the race controls, and one among the extras)
+for (const id of ['raceWatchBtn', 'raceWatchBtn2']) document.getElementById(id).addEventListener('click', () => Game.startRaceWatch());
 // pause and exit, during a run or the screensaver
 document.getElementById('pauseBtn').addEventListener('click', () => Game.togglePause());
 document.getElementById('exitBtn').addEventListener('click', () => Game.exit());
 
 // results screen buttons
 const next = document.getElementById('nextBtn');
-document.getElementById('menuBtn').addEventListener('click', () => { Game.toMenu(); draw(); });
+document.getElementById('menuBtn').addEventListener('click', () => { Game.toMenu(); MenuStage.follow(); });
 next.addEventListener('click', () => Game.nextLevel());
 // when a run ends: the bank and the unlocked levels may have changed, and "Next level"
-// is only offered if there is one
+// is only offered if there is one. (The menu comes back on the level just run, and so on its tab)
 Game.onFinish.push(() => {
   next.style.display = LEVEL_INDEX >= 0 && nextOnTab(LEVEL) ? '' : 'none';
-  tab = isRace(LEVEL) ? 'race' : 'delivery'; // (the menu comes back on the tab of the level just run)
-  draw();
+  if (LEVEL_INDEX >= 0) MenuStage.follow();
+  else draw();
 });
