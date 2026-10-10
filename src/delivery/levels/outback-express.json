@@ -2,72 +2,142 @@
   "id": "outback-express",
   "name": "Outback Express",
   "description": {
-    "good": "Three level crossings on a long outback road. When the bells ring, stop: the train always wins. Mind the kangaroos in the fog.",
-    "evil": "Lights flashing, booms coming down, a train on its way. You can make it. Probably. The caravans behind you can't."
+    "good": "Dingo Flat roadhouse to the railhead: four crossings, a grain siding at each, a pub in the S, roos in the Emu Creek floodway. The train always wins.",
+    "evil": "Bells ringing, booms coming down, a wheat train due, a twenty lying just past the rails. You can make it. Probably. Leave the ruts to the caravans."
   },
   "theme": "panorama",
   "clock": { "good": 225, "evil": 170 },
   "tip": 180,
-  "traffic": { "semi": 0.35, "pickup": 0.2, "wagon": 0.15, "van": 0.12, "commuter": 0.1, "police": 0.03, "caravan": 0.07 },
+  "cargo": { "good": "puppy", "evil": "egg" },
+  "traffic": { "semi": 0.3, "pickup": 0.2, "jeep": 0.1, "wagon": 0.1, "caravan": 0.08, "junker": 0.07, "van": 0.07, "commuter": 0.05, "police": 0.03 },
   "trafficCount": 8,
   "oncomingCount": 8,
   "segments": [
-    { "length": 500, "curve": 0 },
-    { "length": 300, "curve": 0.002 },
-    { "length": 900, "curve": 0 },
+    { "length": 300, "curve": 0 },
+    { "length": 250, "curve": 0.002 },
+    { "length": 350, "curve": 0 },
+    { "length": 200, "curve": -0.003 },
+    { "length": 300, "curve": 0.0025 },
+    { "length": 120, "curve": 0, "grade": -0.04 },
+    { "length": 120, "curve": 0, "grade": 0.04 },
+    { "length": 360, "curve": 0 },
     { "length": 300, "curve": -0.0025 },
-    { "length": 1000, "curve": 0 },
-    { "length": 250, "curve": 0.003 },
-    { "length": 1000, "curve": 0 },
-    { "length": 300, "curve": -0.002 },
-    { "length": 650, "curve": 0 }
+    { "length": 380, "curve": 0 },
+    { "length": 200, "curve": 0.002 },
+    { "length": 220, "curve": 0 },
+    { "length": 150, "curve": -0.004 },
+    { "length": 300, "curve": 0.004 },
+    { "length": 150, "curve": -0.004 },
+    { "length": 400, "curve": 0 },
+    { "length": 250, "curve": -0.003 },
+    { "length": 150, "curve": 0, "grade": 0.035 },
+    { "length": 150, "curve": 0, "grade": -0.035 },
+    { "length": 250, "curve": 0.0025 },
+    { "length": 300, "curve": 0 }
+  ],
+  "zones": [
+    { "id": "dingoFlat", "from": 0, "to": 300, "scenery": "roadhouse" },
+    { "id": "mulgaSiding", "from": 620, "to": 900, "scenery": "siding" },
+    { "id": "coolabah", "from": 1000, "to": 1250, "scenery": "homestead" },
+    { "id": "emuCreek", "from": 1380, "to": 1660, "scenery": "floodway" },
+    { "id": "wheatSiding", "from": 2360, "to": 2650, "scenery": "siding" },
+    { "id": "kurrajong", "from": 2880, "to": 3100, "scenery": "homestead" },
+    { "id": "saltbushPub", "from": 3380, "to": 3620, "scenery": "roadhouse" },
+    { "id": "ghostGumSiding", "from": 3760, "to": 4060, "scenery": "siding" },
+    { "id": "ironbarkRidge", "from": 4400, "to": 4620, "scenery": "homestead" },
+    { "id": "brolgaDowns", "from": 4660, "to": 4880, "scenery": "homestead" },
+    { "id": "railhead", "from": 4900, "to": 5200, "scenery": "siding" }
   ],
   "narrows": [
-    { "from": 1300, "to": 2300, "lanesPerSide": 1 }
+    { "from": 1700, "to": 2300, "lanesPerSide": 1 },
+    { "from": 4100, "to": 4350, "lanesPerSide": 1 }
   ],
   "crossings": [
-    { "s": 1200 },
+    { "s": 760 },
     { "s": 2500 },
-    { "s": 3750 }
+    { "s": 3900 },
+    { "s": 5020 }
   ],
   "herds": [
-    { "from": 300, "to": 700, "count": 5, "kind": "kangaroo" },
-    { "from": 2050, "to": 2400, "count": 6, "kind": "kangaroo" },
-    { "from": 4600, "to": 5000, "count": 5, "kind": "kangaroo" }
+    { "from": 250, "to": 560, "count": 5, "kind": "kangaroo" },
+    { "from": 1420, "to": 1640, "count": 6, "kind": "kangaroo" },
+    { "from": 2900, "to": 3100, "count": 5, "kind": "kangaroo" },
+    { "from": 4700, "to": 4900, "count": 6, "kind": "kangaroo" }
   ],
   "dropBears": [
-    { "from": 1750, "to": 1950, "count": 4 },
-    { "from": 3300, "to": 3550, "count": 4 }
+    { "from": 950, "to": 1200, "count": 4 },
+    { "from": 2250, "to": 2420, "count": 4 },
+    { "from": 4100, "to": 4330, "count": 5 }
   ],
   "fog": [
-    { "from": 3550, "to": 3950 }
-  ],
-  "targets": [
-    { "s": 1000, "side": "right" },
-    { "s": 4400, "side": "left" }
+    { "from": 1900, "to": 2200 },
+    { "from": 3720, "to": 4000 }
   ],
   "washboards": [
-    { "from": 3960, "to": 4380 }
+    { "from": 1250, "to": 1400 },
+    { "from": 3250, "to": 3600 },
+    { "from": 4660, "to": 4880 }
   ],
   "ruts": [
-    { "from": 2560, "to": 2860 }
+    { "from": 2560, "to": 2860 },
+    { "from": 4370, "to": 4640 }
+  ],
+  "targets": [
+    { "s": 620, "side": "right" },
+    { "s": 1700, "side": "left" },
+    { "s": 3050, "side": "right" },
+    { "s": 4500, "side": "left" }
   ],
   "pickups": [
-    { "type": "cash10", "s": 2650, "lane": 2 },
-    { "type": "cash10", "s": 2650, "lane": 3 },
-    { "type": "cash20", "s": 2800, "lane": 2 },
-    { "type": "cash10", "s": 4040, "lane": 2 },
-    { "type": "cash10", "s": 4040, "lane": 3 },
-    { "type": "cash5", "s": 4200, "lane": 2 },
-    { "type": "cash20", "s": 4320, "lane": 3 },
-    { "type": "turbo", "s": 400, "lane": 2 },
-    { "type": "timePlus", "s": 900, "lane": 3 },
-    { "type": "turbo", "s": 1050, "lane": 3 },
-    { "type": "wrench", "s": 2450, "lane": 2 },
-    { "type": "passenger", "s": 2900, "lane": 3 },
-    { "type": "ghost", "s": 3200, "lane": 2 },
-    { "type": "turbo", "s": 3600, "lane": 2 },
-    { "type": "wrench", "s": 4100, "lane": 3 },
-    { "type": "timePlus", "s": 4700, "lane": 2 }
+    { "type": "cash5", "s": 100, "lane": 2 },
+    { "type": "cash5", "s": 100, "lane": 3 },
+    { "type": "turbo", "s": 200, "lane": 2 },
+    { "type": "cash10", "s": 400, "lane": 2 },
+    { "type": "cash10", "s": 400, "lane": 3 },
+    { "type": "cash20", "s": 400, "lane": "right" },
+    { "type": "timePlus", "s": 640, "lane": 3 },
+    { "type": "turbo", "s": 700, "lane": 3 },
+    { "type": "cash10", "s": 790, "lane": 2 },
+    { "type": "cash20", "s": 790, "lane": 3 },
+    { "type": "cash20", "s": 1080, "lane": 1 },
+    { "type": "cash10", "s": 1300, "lane": 2 },
+    { "type": "cash10", "s": 1300, "lane": 3 },
+    { "type": "cash20", "s": 1300, "lane": "right" },
+    { "type": "wrench", "s": 1500, "lane": 2 },
+    { "type": "cash10", "s": 1580, "lane": 2 },
+    { "type": "cash20", "s": 1580, "lane": 3 },
+    { "type": "passenger", "s": 1680, "lane": 2 },
+    { "type": "cash20", "s": 1850, "lane": 1 },
+    { "type": "cash10", "s": 1850, "lane": 2 },
+    { "type": "cash20", "s": 2050, "lane": 1 },
+    { "type": "ghost", "s": 2120, "lane": 2 },
+    { "type": "cash10", "s": 2400, "lane": 2 },
+    { "type": "cash10", "s": 2400, "lane": 3 },
+    { "type": "wrench", "s": 2440, "lane": 2 },
+    { "type": "turbo", "s": 2450, "lane": 3 },
+    { "type": "cash20", "s": 2540, "lane": 2 },
+    { "type": "cash10", "s": 2640, "lane": 2 },
+    { "type": "cash10", "s": 2640, "lane": 3 },
+    { "type": "turbo", "s": 3080, "lane": 2 },
+    { "type": "cash10", "s": 3300, "lane": 2 },
+    { "type": "cash10", "s": 3300, "lane": 3 },
+    { "type": "cash20", "s": 3420, "lane": "right" },
+    { "type": "mystery", "s": 3620, "lane": 3 },
+    { "type": "timePlus", "s": 3680, "lane": 2 },
+    { "type": "cash20", "s": 3930, "lane": 2 },
+    { "type": "cash10", "s": 3930, "lane": 3 },
+    { "type": "wrench", "s": 4050, "lane": 3 },
+    { "type": "cash20", "s": 4180, "lane": 1 },
+    { "type": "cash10", "s": 4180, "lane": 2 },
+    { "type": "ghost", "s": 4300, "lane": 2 },
+    { "type": "cash10", "s": 4420, "lane": 2 },
+    { "type": "cash10", "s": 4420, "lane": 3 },
+    { "type": "cash20", "s": 4560, "lane": 3 },
+    { "type": "cash20", "s": 4560, "lane": "right" },
+    { "type": "cash10", "s": 4800, "lane": 3 },
+    { "type": "cash20", "s": 4800, "lane": "right" },
+    { "type": "turbo", "s": 4940, "lane": 2 },
+    { "type": "cash20", "s": 5050, "lane": 2 },
+    { "type": "cash20", "s": 5050, "lane": 3 }
   ]
 }

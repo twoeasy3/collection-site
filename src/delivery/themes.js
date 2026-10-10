@@ -70,7 +70,7 @@ export const THEMES = {
   // panorama: the same mountain as an everyday road through the bush (Panorama Avenue: roadside: no circuit
   // walls, kerbs or stands, white guide posts along the edges and rocks in the grass), in the colours of
   // the Southern Highlands bushland (Sydney to Kiama's bush)
-  panorama: { sky: 0xb3d0e2, ground: 0x7d8a52, road: 0x4a4c50, scenery: 'bathurst', roadside: true, terrain: { gentle: 0x7d8a52, steep: 0x8f6e4c, rough: 0.35, flat: 10, rise: 60 } },
+  panorama: { sky: 0xb3d0e2, ground: 0x7d8a52, road: 0x4a4c50, scenery: 'bathurst', roadside: true, sets: ['roadhouse', 'siding', 'floodway', 'homestead'], terrain: { gentle: 0x7d8a52, steep: 0x8f6e4c, rough: 0.35, flat: 10, rise: 60 } },
   // montreal: Circuit Gilles-Villeneuve, on Île Notre-Dame in the St Lawrence: parkland, a summer sky
   montreal: { sky: 0xa6d2f2, ground: 0x5d9a4a, road: 0x3e4147, scenery: 'montreal', target: FENCE_TOP },
   // sea: open water everywhere, the way through it the same water, unmarked (water: no ruts either),
