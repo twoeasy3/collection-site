@@ -7,11 +7,19 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `29e78ba` (main; not pushed). 57 levels on the menu. Running: agent 19 (road gimmicks, from H17), 24 (known problems), 26 (theme levels D). Everything else is merged.
+**Pushed again on the owner's word ("Push the new menu please"): `main` at `b132c15` is on the remote and deploying.** The production build passed; 23 of 25 headless checks pass; the smoke test was not run. Known when pushed: the police pursuit misbehaves (below).
+
+Last updated: after `b132c15` (main, pushed). 60 levels on the menu. Running: agent 19 (the pursuit regression, then road gimmicks from H17), 24 (the UFO check, the save cookie's cap, the editor's leftovers). Everything else is merged.
 
 **Two checks fail on `main` right now:**
-- `.pursuit-check.mjs` (3 failures: the chase no longer gets past and away, and the player is hit). It passed before the road gimmicks were merged; agent 19 is finding which of its gimmicks did it.
-- `.cargo-check.mjs` ("every item turns up"): with 57 levels the rotation no longer reaches all 50 items. Agent 24 has it.
+- `.pursuit-check.mjs` (3 failures: the chase no longer gets past and away, and the player is hit). It passed before the road gimmicks were merged; agent 19 is finding which of its gimmicks did it. **This is live.**
+- `.ufo-check.mjs` dies with a Node error before any check runs, as it has all day. Agent 24 has it.
+
+**Merged in the last round:**
+- Theme levels D (agent 26): **41 High Noon** (the Wild West: false-front towns, a railway, mesas), **42 Favela Heights** (a hillside of stacked houses, hairpins, a cable car), **43 Emerald Steps** (rice terraces, palms, gates). 35 to 37 cash pickups, 13 to 15 rows each. Seen as their menu pictures. Not played.
+- Known problems, second lot (`172d923`): the Gimmicks page's console error (the bullet train's card); HANDOVER and README up to date; a menu picture for every level (seven had none); cargo dealt so that all 50 items turn up (33 levels changed cargo; none that names its own).
+- The save cookie was 3882 of 4096 bytes with 60 levels. **Fixed, merged as `d58ce08`, NOT yet pushed:** local storage holds the whole save with no cap; the cookie keeps only money, levels open, cars, the car in use, tank pieces and switches (956 bytes now; 100 levels and 80 cars checked). An old cookie holding everything is still read. Consequence: if a browser's local storage is lost, best times (so medals and earned 6-star cars) and milestone counters go with it; what is open, the bank and the cars come back from the cookie. Headless only: not tried in a browser.
+- The UFO check runs again (`3a7b1da`): the check was at fault, not the game.
 
 **Merged since the last update:**
 - Known problems, first ten commits (`4b7421e`): audit C4 (the editor never writes a level's values into the page as HTML: the script injection is closed), C6 (a pasted save code keeps only a save's fields), C2 (a visit with an address switch, plain `?autostart` included, never writes the save), C5 (a bad edited level is refused with a reason; one that makes the track builder loop for ever still hangs), C3 (a traffic slot is wiped when dealt out), pickups and obstacles allowed on the main road's shoulders (the check was wrong, the docs right), duplicate config keys removed. **Replay: 53 of 53 levels replay exactly from a seed (it was 31 of 53).** Behaviour changes from the duplicate keys: traffic honks less (70 m, 5 s apart, as first written), and the ice-cream van is its own model with its tune again (a later duplicate had made it a pink delivery van and silenced it).
@@ -361,7 +369,10 @@ Build the theme first, then the level. Make sure the theme is reusable
 - [ ] T8. **Autumn countryside**: orange and red forest, stone walls, covered bridges, a village
       with a harvest fair. Gimmick: wet leaves in the bends (slick only off the racing line),
       a hay-cart convoy, a low sun straight ahead on one stretch. Reuses: farm, ice, convoys.
-- [ ] T9. **Favela hillside**: a steep switchback road between stacked houses in every colour,
+- [x] T9. **Favela hillside** (done as theme `favela` and level "Favela Heights", `levels/morro.json`, with the game's existing
+      gimmicks: a parade for the carnival, burst mains, an ice-cream van, trolleys, a fun run, cyclists, a balloon, a tunnel and a
+      crest on the ridge. NO bouncing balls or filtering motorbike taxis of its own. Verified: the checks, a ghost probe to the
+      end, screenshots along it. Not played by hand): a steep switchback road between stacked houses in every colour,
       stairs, cable cars overhead, a football pitch on a roof. Gimmick: balls bouncing down the
       stairs onto the road, motorbike taxis that filter between lanes. Reuses: Stelvio's
       hairpins, drifters, the rickshaw's agility.
@@ -392,11 +403,16 @@ Build the theme first, then the level. Make sure the theme is reusable
       of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a glass tube on the sea bed: whales and shoals outside, a
       leaking stretch, an air-lock at each end. Gimmick: leaks that flood a lane until a pump
       catches up; a section with the lights out. Reuses: tunnels, water mains, blackout.
-- [ ] T16. **Old Wild West**: a dirt main street, saloon, water tower, a steam railway beside the
+- [x] T16. **Old Wild West** (done as theme `wildwest` and level "High Noon", `levels/noon.json`, with the game's existing
+      gimmicks: stampedes for the cattle drive, a level crossing, a mine tunnel, three crests, pursuits for the posse. NO train
+      robbery or duel of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a dirt main street, saloon, water tower, a steam railway beside the
       road, cactus. Gimmick: a train robbery (riders alongside the train, across the road), a
       cattle drive, a duel at noon that stops the traffic. Reuses: railway, stampedes, gunfire,
       the safari's unmarked dirt road.
-- [ ] T17. **Rice terraces**: a narrow road stepping down green terraces, water buffalo, a
+- [x] T17. **Rice terraces** (done as theme `rice` and level "Emerald Steps", `levels/rice.json`, with the game's existing
+      gimmicks: a ford with its side road for the bridge, burst mains and mud for the spill, herds for the buffalo, tractors,
+      speed cushions, cyclists, fog in the valley, a crest and a crosswind on the ridge. NO flooding terraces or ducks of its
+      own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a narrow road stepping down green terraces, water buffalo, a
       temple gate over the road, kites. Gimmick: the terraces flood in turn, spilling across the
       road as moving slick patches; ducks crossing in a line. Reuses: terrain, water mains'
       slicks, herds.
