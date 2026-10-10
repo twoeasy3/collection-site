@@ -40,9 +40,11 @@ if (opt('levels', false) || opt('cars', false)) {
   const levels = await reader.ssrLoadModule('/src/delivery/levels.js'), cars = await reader.ssrLoadModule('/src/delivery/cars.js');
   const side = opt('evil', false) ? '=evil' : '';
   const only = (value) => typeof value === 'string' ? value.split(',') : null;
+  // (where the usual place for the camera, 9 m off the right-hand edge, is inside a wall, a stand or a building)
+  const CINE = { mumbai: '&cineout=-1&cineup=10&cineback=30', spa: '&cineside=left', 'albert-park': '&cineside=left' }; // (a block of flats; the pit building; a tree)
   if (opt('levels', false)) {
     levels.LEVELS.forEach((level, i) => {
-      if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine&ff=6`]);
+      if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine&ff=6${CINE[level.id] || ''}`]);
     });
   }
   if (opt('cars', false)) {

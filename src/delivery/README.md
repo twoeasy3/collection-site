@@ -2,7 +2,8 @@
 
 A lane-based 3D delivery racer, built with three.js and Vite. Drive a parcel to the drop before
 the clock runs out, as Good or as Evil, through traffic that has moods and holds grudges. It has
-48 levels on the menu, 37 cars in the garage (five of them amphibious), circuit races, two screensavers and a level editor.
+57 levels on the menu (51 deliveries and 6 races), 37 cars in the garage (five of them amphibious), nine more to be
+earned, two screensavers and a level editor.
 
 `HANDOVER.md` beside this file covers how the game is put together, how the owner likes changes
 made, and what is not verified. `CHECKLIST.md` is the working list of ideas.
@@ -22,6 +23,10 @@ npm run test:delivery:quick  # the same, without driving every level to the fini
 
 The test is seeded, so a run is repeatable (`--seed=n` for another run of the dice). It loads the
 game's source live through Vite: don't edit `src/delivery` while it is going.
+
+Quicker checks, each of one thing, are `scripts/delivery-levels-check.mjs` (every level builds and starts) and
+the `scripts/.*-check.mjs` files (`ls -a scripts`): run one with `node`. They are all built on
+`scripts/delivery-headless.mjs`, and any number can run at once, from any worktree.
 
 Controls: arrows or W A S D to steer, accelerate and brake, Space to throw a package, P to pause,
 Enter to confirm. On a phone or tablet the on-screen controls come on by themselves.
@@ -44,7 +49,9 @@ The five reference pages read their numbers from `config.js` and their wording f
 
 ## Address-bar shortcuts
 
-All on `/delivery/`. Nothing below saves progress unless it says so.
+All on `/delivery/`. Nothing below saves progress: a visit with `?autostart`, `?hidden`, `?test`, `?edited`,
+`?pick`, `?car`, `?ghost`, `?mystery` or `?theme` in its address writes nothing to the save at all, whatever is
+delivered, bought or counted in it (`Progress.noSave`).
 
 | In the address | What it does |
 |---|---|
@@ -59,10 +66,10 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `&mystery=toad` | Every mystery pickup is that one |
 | `&gt`, `&lmp` | Every race in GT cars or Le Mans prototypes |
 | `&fly` | Freezes the level and gives a free camera (`render/fly.js`) |
-| `&cine`, `&cine=car` | A still for the menu: the level, or the car alone on white |
+| `&cine`, `&cine=car` | A still for the menu: the level, or the car alone on white. The level's camera can be moved: `&cineside=left`, `&cineout=2` (m beyond the road's edge; below 0, over the road), `&cineup=12`, `&cineback=40` |
 | `?hidden=gimmick-road` | A hidden level, by id (see below); `&evil` plays it as Evil |
 | `?test` | The hidden test track (`?hidden=testbed`) |
-| `?edited` | The level as the editor left it |
+| `?edited` | The level as the editor left it (one that cannot be built is not started: the menu, with a line saying why) |
 | `?garage`, `?garage=evil` | Opens the garage; `&hover=tank` shows that car's stats |
 | `?garage&tab=ideas` | The garage on its Car ideas tab; `&look=bug` looks at one, `&studio=bug,limo` (or `all`) shows those alone on a plain floor, for pictures (`&views=3` adds a side view) |
 | `?screensaver` | The traffic screensaver |
@@ -150,26 +157,36 @@ Rendering and the rest:
 | `levelSchema.js`, `editorForms.js` | Every level field's shape, settings, rules and help (what the editor is built from, and `scripts/.schema-check.mjs` checks levels against); the editor's form controls |
 | `sounds/`, `levelshots/`, `carshots/` | WAVs, and the menu's pictures of levels and cars |
 | `scripts/delivery-smoke.mjs` | The headless test |
+| `scripts/delivery-headless.mjs` | The game's logic loaded without a browser, for a check or a probe (`boot()`); `logicServer()` is its Vite server, which shares nothing with any other run |
+| `scripts/shots.mjs` | Screenshots through headless Edge or Chrome: of any address, of every level's menu picture (`--levels`), of every car's (`--cars`) |
 | `scripts/level-clocks.mjs` | Works out a level's clock from a clean run |
 
 ## The levels
 
 Levels unlock in menu order, each by delivering the one before.
 
-- **Main levels (1 to 26):** Expressway, Back Roads, Farm Lanes, Big Business, Hurricane, Night
+The menu has two tabs. Deliveries holds the numbered, special and amphibious levels; Races holds the lapped
+ones, which are always open and open nothing.
+
+- **Main levels (1 to 40):** Expressway, Back Roads, Farm Lanes, Big Business, Hurricane, Night
   Drive, Mystery Meadows, Suburbia, Canberra, Monte Carlo, Singapore, Singapore II, Sydney to
   Kiama, Passage du Gois, Safari, Airport Apocalypse, Construction Site, The Hood, Panorama
   Avenue, Speed Trap Alley, Mountain Pass, Outback Express, Tour de Coast, Ring Road, Market
-  Town, Quarry Run.
-- **Special levels (S1 to S9):** All Heck, Asteroid Run, Marina Bay, Oh Mine!, Montreal, Mount
-  Panorama, Rival Run, Showdown, Battlefield. These include the circuit races and the levels
-  driven in a vehicle of their own (UFO, race car, jetboat, 8x8).
+  Town, Quarry Run, Hong Kong Harbour, Tokyo Expressway, Mumbai Monsoon, Stelvio Pass, Christmas Eve; and the
+  levels kept in `THEME_LEVELS`, each in a theme built for it (they are ordinary numbered levels like the
+  rest, opened in order: only the list they are kept in is their own): Toy Room, Twenty Thousand Leaks, Tranquility
+  Base, Quiet on Set, Acqua Alta, Northern Lights, Thrill Park, Cinder Island, Dock Run.
+- **Special levels (S1 to S6):** All Heck, Asteroid Run, Oh Mine!, Rival Run, Showdown, Battlefield: some driven
+  in a vehicle of their own (UFO, jetboat, 8x8). Delivering one well enough earns a 6-star car (`EARNED_CARS`).
+- **Races (R1 to R6):** Marina Bay, Montreal, Mount Panorama (in `SPECIAL_LEVELS` with the six above, by their
+  place in the list), and the circuits traced from the real ones, Monza, Spa-Francorchamps and Albert Park
+  (`CIRCUIT_LEVELS`; `CIRCUITS-HANDOVER.md` has how they were made).
 - **Amphibious levels (A1 to A5):** Slipway Beach, Harbour Lights, High Water, Hippo Ford, Fjord Crossing.
   Each has water stages (its `water`) and is only started in an amphibious car (its `amphibious`). They
   are `AMPHIBIOUS_LEVELS` in `levels.js`, after the special levels and before the circuits, and open
-  in order like the rest, the first by delivering S9.
-- **Hidden levels** (`?hidden=<id>`): `testbed`, `grand-prix`, `gimmick-road`. A run on one banks
-  nothing.
+  in order like the rest, the first by delivering the last special level.
+- **Hidden levels** (`?hidden=<id>`): `testbed`, `grand-prix`, and three that try gimmicks out before a real
+  level has them: `gimmick-road`, `gimmick-road-2`, `gimmick-road-3`. A run on one banks nothing.
 - **The screensaver's level** is `chaos.json` (Pile-Up Parade), which is not on the menu.
 
 ## Adding content
@@ -178,21 +195,28 @@ Levels unlock in menu order, each by delivering the one before.
   to `MAIN_LEVELS` or `SPECIAL_LEVELS`. Problems with the data are shown in the HUD when the
   level loads. Then:
   - Saved progress counts unlocked levels by position. A level put in among those already there
-    needs its position added to `INSERTED_AT` in `progress.js`, so returning players keep what
+    needs its position added to `INSERTED_AT` in `progress.js` (so does every level added to `THEME_LEVELS`,
+    which sits ahead of the special levels), so returning players keep what
     they had open.
   - `node scripts/level-clocks.mjs <id> --write` works out its clock and writes it into the file (an
     amphibious level is timed in `CONFIG.clock.amphibious`, the Float Van, holding its lane).
   - An amphibious level goes at the end of `AMPHIBIOUS_LEVELS`, which needs no entry in `INSERTED_AT`
     (the circuits after it are races, always open). `node scripts/.water-check.mjs` drives every
     amphibious level and checks the water's rules on it. Keep ids short: the save is a cookie
-    (`node scripts/.save-check.mjs`: 3382 of 4096 bytes with 48 levels and 38 cars).
-  - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`. (Eight levels have none yet, and show
-    a plate of stripes: Hong Kong Harbour, Tokyo Expressway, Mumbai Monsoon, Stelvio Pass, Christmas Eve, Monza,
-    Spa-Francorchamps, Albert Park.)
+    (`node scripts/.save-check.mjs`: 3760 of 4096 bytes with 57 levels and 38 cars: about eight more
+    levels' worth of room).
+  - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`:
+    `node scripts/shots.mjs <folder> --levels=<id>` saves it as a PNG, to be scaled to 600x267 and saved as a
+    JPEG. A level with none shows a plate of stripes (every level on the menu has one now). Where the camera's
+    usual place is inside a building or behind a wall, give the level a place of its own in `CINE` in `shots.mjs`.
   - Its `description`: a sentence or two for the menu's stage, one as Good and one as Evil, 160 characters each at
     most (`node scripts/.descriptions-check.mjs`; `--list` prints them all).
   - `node scripts/.roadcard-check.mjs --list` prints what the menu's "what's on this road" card will list for it.
-- **A theme:** add it to `themes.js`; its scenery is drawn in `render/road.js`.
+- **A row of pickups:** pickups with the same `s`, one a lane. A pickup's (or an obstacle's) `lane` can also be
+  `'left'` or `'right'`, a shoulder, so a row can be four across on a two-lane road
+  (`node scripts/.shoulder-items-check.mjs`).
+- **A theme:** add it to `themes.js`; its scenery is drawn in `render/road.js`, or in a file of its own in
+  `render/themes/` for the themed levels' themes.
 - **A traffic vehicle:** add it to `vehicles` in `config.js` (give it a `model` to draw it as one
   of the models in `render/models.js`), then list it in a level's `traffic`. On a level with water
   stages, `amphibious: true` lets it drive into the water and out; `boat: true` keeps it on the water;

@@ -71,15 +71,29 @@ const find = (side, id) => CARGO[side].find(c => c.id === id);
 // whether a level has a delivery to make at all: not a race, the Battlefield, or a level without packages
 export const carriesCargo = (level) => !!level && !level.laps && !level.battle && !level.noPackages;
 // what a level carries for a side: { id, name, states? }, or null on a level with nothing to deliver.
-// Its own "cargo" if it names one; if not, by its place among the levels (a level off the menu: by its id)
+// Its own "cargo" if it names one. The levels on the menu that name none are dealt the items that no level
+// names, in the list's order, down the menu, and after those the whole list, round and round: so every item turns up
+// somewhere, however many levels there are and whatever they name (a rotation by a level's place on the menu
+// stopped reaching them all once enough levels named their own). A level off the menu: by its id
+const dealt = { good: null, evil: null };
+const deal = (side) => {
+  const list = CARGO[side], carrying = LEVELS.filter(carriesCargo);
+  const taken = new Set(carrying.map(level => level.cargo?.[side]).filter(id => find(side, id)));
+  const free = list.filter(item => !taken.has(item.id)), shift = side === 'evil' ? 2 : 0;
+  const map = new Map();
+  // (the Evil side starts two along, so a level's pair is not the same place in both lists)
+  carrying.filter(level => !find(side, level.cargo?.[side])).forEach((level, i) => map.set(level, i < free.length ? free[(i + shift) % free.length] : list[(i - free.length + shift) % list.length]));
+  return map;
+};
 export const cargoFor = (level, evil) => {
   if (!carriesCargo(level)) return null;
   const side = evil ? 'evil' : 'good', list = CARGO[side];
   const named = find(side, level.cargo?.[side]);
   if (named) return named;
-  let n = LEVELS.indexOf(level);
-  if (n < 0) n = [...String(level.id || '')].reduce((sum, c) => sum + c.charCodeAt(0), 0);
-  return list[(n + (evil ? 2 + Math.floor(n / list.length) : 0)) % list.length]; // (the two sides drift out of step, so the pairs vary down the menu)
+  dealt[side] = dealt[side] || deal(side);
+  if (dealt[side].has(level)) return dealt[side].get(level);
+  const n = [...String(level.id || '')].reduce((sum, c) => sum + c.charCodeAt(0), 0);
+  return list[(n + (evil ? 2 + Math.floor(n / list.length) : 0)) % list.length];
 };
 // a level's "cargo" checked: the problems with it, as text (scripts/.cargo-check.mjs goes through every level's)
 export const cargoProblems = (level) => {
