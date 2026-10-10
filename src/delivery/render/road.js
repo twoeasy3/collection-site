@@ -1373,6 +1373,8 @@ const buildRoad = () => {
       geo.setIndex(idx);
       levelGroup.add(new THREE.Mesh(geo, bank));
     }
+    // (a lit theme's land and banks need to know which way they face, as `add` sees to for the strips: without, they are black)
+    if (theme.lit) levelGroup.traverse((o) => { if (o.isMesh && o.geometry.attributes.position && !o.geometry.attributes.normal) o.geometry.computeVertexNormals(); });
     // where the land stops at each end of a bridge, an embankment down to the water, right across
     // the land and its banks, so that it never ends in the air
     for (const b of LEVEL.bridges || []) {
