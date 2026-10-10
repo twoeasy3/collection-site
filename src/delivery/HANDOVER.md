@@ -287,8 +287,9 @@ Known limits:
 - A level handed over with `?edited` is refused if it has no road or cannot be built, but one whose other
   fields send the track builder round for ever (an exit with no place) still hangs the page: the game does
   not load the schema to check it.
-- Seven levels have no menu picture and show a plate of stripes: Hong Kong Harbour, Tokyo Expressway, Mumbai
-  Monsoon, Christmas Eve, Monza, Spa-Francorchamps, Albert Park.
+- A level's menu picture is taken from 9 m off the road's right-hand edge. Where a building, a wall or a stand
+  is there the picture is of its back: `scripts/shots.mjs` keeps another place for the camera for such a
+  level (`CINE`: Mumbai, Spa, Albert Park).
 
 ## Likely next steps
 

@@ -66,7 +66,7 @@ delivered, bought or counted in it (`Progress.noSave`).
 | `&mystery=toad` | Every mystery pickup is that one |
 | `&gt`, `&lmp` | Every race in GT cars or Le Mans prototypes |
 | `&fly` | Freezes the level and gives a free camera (`render/fly.js`) |
-| `&cine`, `&cine=car` | A still for the menu: the level, or the car alone on white |
+| `&cine`, `&cine=car` | A still for the menu: the level, or the car alone on white. The level's camera can be moved: `&cineside=left`, `&cineout=2` (m beyond the road's edge; below 0, over the road), `&cineup=12`, `&cineback=40` |
 | `?hidden=gimmick-road` | A hidden level, by id (see below); `&evil` plays it as Evil |
 | `?test` | The hidden test track (`?hidden=testbed`) |
 | `?edited` | The level as the editor left it (one that cannot be built is not started: the menu, with a line saying why) |
@@ -205,7 +205,8 @@ ones, which are always open and open nothing.
     levels' worth of room).
   - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`:
     `node scripts/shots.mjs <folder> --levels=<id>` saves it as a PNG, to be scaled to 600x267 and saved as a
-    JPEG. A level with none shows a plate of stripes.
+    JPEG. A level with none shows a plate of stripes (every level on the menu has one now). Where the camera's
+    usual place is inside a building or behind a wall, give the level a place of its own in `CINE` in `shots.mjs`.
   - Its `description`: a sentence or two for the menu's stage, one as Good and one as Evil, 160 characters each at
     most (`node scripts/.descriptions-check.mjs`; `--list` prints them all).
   - `node scripts/.roadcard-check.mjs --list` prints what the menu's "what's on this road" card will list for it.
