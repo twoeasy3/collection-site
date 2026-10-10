@@ -1,6 +1,10 @@
 {
   "id": "leaks",
   "name": "Twenty Thousand Leaks",
+  "description": {
+    "good": "A glass tube along the sea bed, and it drips. Steer round the leaks, take the crest gently, and keep to your lane in the dark stretch.",
+    "evil": "The tunnel is leaking and the best money sits right in the puddles. Fly the crest past the camera and let the whale be the only witness."
+  },
   "theme": "seabed",
   "clock": { "good": 210, "evil": 160 },
   "tip": 300,
