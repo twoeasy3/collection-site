@@ -17,7 +17,8 @@
 // drop into ./levels. The level is kept in local storage as it is edited (autosave), with undo and redo.
 // For a picture of it (scripts/shots.mjs), the address can say what to show: editor.html?level=<id>&tab=place
 // &q=<search>&tool=<field>[:<kind>]&click=<m>[:<lat>]&sideclick=<exit>:<m>&sel=<field>:<n>&zoom=<m>:<px a metre>&hide=a,b
-// and, to try the mouse and the history without one: &drag=<field>:<n>:<grab p|a|b|move>:<m to move it> &seglen=<segment>:<m> &undo=<times> &redo=<times>
+// and, to try the mouse and the history without one: &drag=<field>:<n>:<grab p|a|b|move>:<m to move it> &seglen=<segment>:<m>
+// &bend=<segment>:<m on>:<m to the right> &undo=<times> &redo=<times>
 // ============================================================================
 import './editor.css';
 import { CONFIG } from './config.js';
@@ -458,6 +459,46 @@ const drawEntry = (key, e, i) => {
     if (on) { pen.fillStyle = colour(key); pen.fillText('set off here', tx + 10, ty + 4); }
   }
 };
+// the road dragged on the map (the Road tab): each segment's end is a handle. Dragged along the road it makes the
+// segment longer or shorter; dragged across it, it bends it: the segment is the arc from where it starts to the handle
+const roadTab = () => !$('tab-road').hidden;
+const segmentEnds = () => { let s = 0; return (level.segments || []).map(seg => { s += seg.length; return points[clamp(Math.round(s / STEP), 0, points.length - 1)]; }); };
+const bendTo = (i, mx, my, from) => {
+  level = loadLevel(JSON.parse(from)); // (from the level as it was when the handle was picked up, each time: nothing adds up)
+  build();
+  const p0 = points[clamp(Math.round(segmentStart(i) / STEP), 0, points.length - 1)], seg = level.segments[i];
+  const fwd = (mx - p0.x) * Math.sin(p0.h) + (my - p0.y) * Math.cos(p0.h), lat = (mx - p0.x) * Math.cos(p0.h) - (my - p0.y) * Math.sin(p0.h);
+  let turn = clamp(2 * Math.atan2(lat, Math.max(fwd, 0.001)), -Math.PI * 1.5, Math.PI * 1.5);
+  if (Math.abs(turn) < 0.035) turn = 0; // (within a couple of degrees of straight: straight)
+  const chord = Math.hypot(fwd, lat), L = Math.max(10, Math.round(turn ? chord * (turn / 2) / Math.sin(turn / 2) : chord));
+  resize(i, L);
+  seg.curve = Math.round(turn / L * 1e6) / 1e6 || 0;
+  build();
+};
+// the road's rise and fall, as a strip along the bottom of the map (only on a road with a slope somewhere): the
+// height along it, the segments marked, and where the selected thing is
+const profile = () => {
+  const segs = level.segments || [];
+  if (!segs.some(seg => seg.grade)) return;
+  const W = canvas.width, H = 64, top = canvas.height - H, L = length() || 1, heights = [0];
+  let y = 0, lo = 0, hi = 0;
+  for (const seg of segs) { y += (seg.grade || 0) * seg.length; heights.push(y); lo = Math.min(lo, y); hi = Math.max(hi, y); }
+  const X = (s) => 50 + s / L * (W - 70), Y = (v) => top + H - 10 - (v - lo) / (hi - lo || 1) * (H - 26);
+  pen.fillStyle = 'rgba(21,26,34,.88)'; pen.fillRect(0, top, W, H);
+  pen.beginPath();
+  let s = 0;
+  pen.moveTo(X(0), Y(0));
+  segs.forEach((seg, i) => { s += seg.length; pen.lineTo(X(s), Y(heights[i + 1])); });
+  pen.strokeStyle = '#7fd69a'; pen.lineWidth = 2; pen.stroke();
+  pen.lineTo(X(L), top + H); pen.lineTo(X(0), top + H); pen.closePath(); pen.fillStyle = 'rgba(127,214,154,.14)'; pen.fill();
+  s = 0;
+  pen.strokeStyle = 'rgba(255,255,255,.25)'; pen.lineWidth = 1;
+  for (const seg of segs) { s += seg.length; pen.beginPath(); pen.moveTo(X(s), top + 14); pen.lineTo(X(s), top + H); pen.stroke(); }
+  pen.fillStyle = '#aab3c2'; pen.font = '11px system-ui';
+  pen.fillText(`Rise and fall: ${Math.round(lo)} m to ${Math.round(hi)} m (the finish at ${Math.round(y)} m)`, 8, top + 12);
+  const e = sel && entry(sel), span = e && e.road !== 'side' && isPlaced(FIELDS[sel.key]) ? spanOf(FIELDS[sel.key], e) : null;
+  if (span) { pen.fillStyle = colour(sel.key, 0.6); pen.fillRect(X(clamp(span[0], 0, L)) - 1, top + 14, Math.max(3, X(clamp(span[1], 0, L)) - X(clamp(span[0], 0, L))), H - 14); }
+};
 const draw = () => {
   size();
   pen.fillStyle = '#151a22';
@@ -485,10 +526,18 @@ const draw = () => {
   }
   across(0, '#3ddc68', 3);                                                    // start
   across(length(), '#ffffff', 3);                                             // finish
+  if (roadTab()) for (const [n, q] of segmentEnds().entries()) { // (the Road tab: a handle at the end of each segment, to drag)
+    const [sx, sy] = toScreen(q.x, q.y), on = drag && drag.segment === n;
+    pen.beginPath(); pen.rect(sx - 6, sy - 6, 12, 12);
+    pen.fillStyle = on ? '#ffd23f' : '#f2f4f7'; pen.fill();
+    pen.strokeStyle = '#11151c'; pen.lineWidth = 1.5; pen.stroke();
+    pen.fillStyle = '#f2f4f7'; pen.font = '11px system-ui'; pen.fillText(String(n + 1), sx + 9, sy - 8);
+  }
   // everything placed: the bands and markers first, the pickups, obstacles and targets over them
   for (const key of [...PLACED.filter(k => !ITEMS.includes(k)), ...ITEMS]) {
     if (!hidden.has(key)) each(key, (e, i) => { if ((placeOf(FIELDS[key], e) || {}).type !== 'paths') drawEntry(key, e, i); });
   }
+  profile();
 };
 
 // ---- history: undo, redo and the autosave ------------------------------------------------------------
@@ -736,6 +785,7 @@ const hint = () => {
     : tool.kind === 'oncomingFrom' ? 'Click a side road: its lane 0 is oncoming from there on. Esc to cancel.'
     : def ? `Click ${def.shape === 'world' ? 'anywhere on the map' : def.road === 'both' ? 'the road or a side road' : 'the road'} to place: ${def.label}${tool.sub ? ' (' + tool.sub + ')' : ''}. ` +
       ((def.rules || []).length ? def.rules.map(id => RULES[id].text).join('; ') + (forbidden(tool.key).length ? ' (red: not there). ' : '. ') : '') + 'Esc to stop placing.'
+    : roadTab() ? 'Drag a numbered handle: along the road makes its segment longer or shorter, across it bends it · scroll to zoom · drag the map to pan · Ctrl+Z undoes'
     : 'Scroll to zoom · drag the map to pan · click a thing to select it · drag it (or a band\'s end) to move it · Delete removes it · Ctrl+Z undoes · Ctrl+D duplicates';
 };
 const setTool = (t) => {
@@ -861,6 +911,7 @@ const showTab = (name) => {
   if (name === 'list') renderList();
   if (name === 'place') renderTools();
   if (name === 'json') jsonBox();
+  if (level) { hint(); draw(); } // (the Road tab's handles on the map come and go with it)
 };
 $('tabs').addEventListener('click', (e) => { if (e.target.dataset.tab) showTab(e.target.dataset.tab); });
 const goTo = (ref) => {
@@ -1001,6 +1052,10 @@ const press = (px, py) => {
     return Math.hypot(hx - px, hy - py) < 10;
   });
   const onSide = nearestSide(mx, my);
+  if (roadTab() && tool.kind === 'select') { // (a segment's end, picked up: see bendTo)
+    const n = segmentEnds().findIndex(q => { const [sx, sy] = toScreen(q.x, q.y); return Math.hypot(sx - px, sy - py) < 10; });
+    if (n >= 0) { clearTimeout(pending); record(); drag = { segment: n, from: snapshot() }; draw(); return; }
+  }
   const got = tool.kind === 'select' || tool.kind === 'place' ? hit(px, py) : null;
   if (tool.kind === 'oncomingFrom' ? onSide && onSide.off < 12 : handle && !(got && got.grab === 'p')) {
     const i = tool.kind === 'oncomingFrom' ? onSide.road.i : handle.i;
@@ -1024,7 +1079,12 @@ canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.point
 const moveTo = (px, py) => {
   if (!drag) return;
   const [mx, my] = toMap(px, py);
-  if (drag.oncoming !== undefined) {
+  if (drag.segment !== undefined) {
+    bendTo(drag.segment, mx, my, drag.from);
+    drag.moved = true;
+    const seg = level.segments[drag.segment];
+    $('hint').textContent = `Segment ${drag.segment + 1}: ${seg.length} m, bending ${(seg.curve * seg.length * 180 / Math.PI).toFixed(1)}°`;
+  } else if (drag.oncoming !== undefined) {
     const n = nearestSide(mx, my, drag.oncoming);
     if (n) setOncomingFrom(drag.oncoming, n.d);
   } else if (drag.pan) {
@@ -1056,6 +1116,7 @@ const moveTo = (px, py) => {
   draw();
 };
 const release = () => {
+  if (drag && drag.segment !== undefined) { segmentRows(); hint(); }
   if (drag && (drag.moved || drag.oncoming !== undefined)) { renderInspector(); changed(); } // (the form and the game catch up with the drag)
   drag = null;
 };
@@ -1191,6 +1252,12 @@ for (const d of params.getAll('drag')) { // (a thing picked up where it is and l
   release();
 }
 if (params.get('seglen')) { const [i, to] = params.get('seglen').split(':').map(Number); resize(i, to); segmentRows(); renderInspector(); changed(); }
+if (params.get('bend')) { // (a segment's handle dragged to that far on from where the segment starts, and that far to the right)
+  const [i, fwd, lat] = params.get('bend').split(':').map(Number), end = segmentEnds()[i], p0 = points[clamp(Math.round(segmentStart(i) / STEP), 0, points.length - 1)];
+  press(...toScreen(end.x, end.y));
+  moveTo(...toScreen(p0.x + Math.sin(p0.h) * fwd + Math.cos(p0.h) * lat, p0.y + Math.cos(p0.h) * fwd - Math.sin(p0.h) * lat));
+  release();
+}
 if (params.get('undo') || params.get('redo')) { clearTimeout(pending); record(); for (let n = 0; n < Number(params.get('undo')); n++) undo(); for (let n = 0; n < Number(params.get('redo')); n++) redo(); }
 if (params.get('zoom')) { const [s, k] = params.get('zoom').split(':').map(Number), q = at(s, 0); view.ox = q.x; view.oy = q.y; view.k = k || 1; }
 else if (sel && params.get('sel')) centre(sel);

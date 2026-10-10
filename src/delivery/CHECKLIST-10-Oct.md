@@ -115,7 +115,7 @@ $1. Largest step between neighbouring widths: Monza 47.5 m to 0, Spa 27.5 m to 0
 - [ ] 51. Performance on phones
 - [ ] Level clocks and menu pictures for Hong Kong, Tokyo, Mumbai, Stelvio, Christmas
 - [ ] More circuits: Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka
-- [ ] Level editor: full control over every feature and gimmick (itemised below; built on `delivery-editor`: all but E1.4, E3.1, E6.2 done or partly done)
+- [ ] Level editor: full control over every feature and gimmick (itemised below; built on `delivery-editor`: all but E1.4 and E6.2 done or partly done)
 - [ ] Gimmick Road 2's gimmicks used in real levels
 
 ## Level editor: full control over every feature and gimmick (Agent 8, branch `delivery-editor`)
@@ -168,7 +168,7 @@ the fact.
 
 ### E3. The road itself
 
-- [ ] E3.1 **NOT DONE: the road is still edited as the table (the bend column now keeps decimals).** Segments: draw and drag the road on the map (handles for a bend's length and angle),
+- [x] E3.1 **Done (delivery-editor). On the Road tab each segment's end is a handle: dragged along the road it changes the length, across it the bend (one handle for both); the rise and fall is a strip along the bottom of the map on a road with a slope. Seen through a scripted drag (a blank level's third segment bent 53 degrees) and on Stelvio; not dragged by hand.** Segments: draw and drag the road on the map (handles for a bend's length and angle),
       beside the table; show the gradient profile as a strip under the map.
 - [x] E3.2 **Done (delivery-editor). Fork and merge placed by a click and dragged as a band; out, bends, own segments, lanes (a number or along the way), oncoming, oncomingFrom and flyovers in the form. Dragging not tried by hand.** Side roads (`exits`): place the fork and merge by clicking, drag them, and edit `out`,
       the side road's own `segments`, `lanes`, widenings and `flyovers` in a form. Today only
