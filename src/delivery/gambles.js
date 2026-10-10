@@ -5,6 +5,7 @@
 //   crosswinds   a wind across an exposed stretch: tall cars are pushed harder, a tall vehicle gives shelter
 //   crests       (no field: the road's own profile, a segment's grade and ease) a crest sharp enough that a fast
 //                car leaves the ground over it: no steering in the air, and it lands on whatever is over the top
+//   jamRamps     a car transporter with its ramps down at the back of a queue: fast enough, the car flies the queue
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
 // ============================================================================
@@ -36,6 +37,9 @@ export const Gambles = {
   slope: 0,       // ...and its slope (rise per m), and where the car was
   lastS: 0,
   flights: 0,     // how many times the car has left the ground this run (for a check)
+  ramps: [],      // { s (the foot of its ramps), lane, lat, run, top (m: its lip), queue, lanes: [first, last], last (s of the last car of its queue), clear (s the car must land beyond), speed (m/s that does) }
+  onRamp: null,   // the ramp the car is on
+  up: 0,          // m the car is above the road, by this file's doing (on a ramp, in the air)
 
   // the level's lists (as a level loads, for the drawing, and again as each run starts)
   build() {
@@ -43,6 +47,35 @@ export const Gambles = {
     this.winds = (LEVEL.crosswinds || []).map(w => ({ from: w.from, to: w.to, dir: w.dir === 'left' ? -1 : 1,
       strength: w.strength ?? W.strength, every: w.every ?? W.every, length: w.length ?? W.length }));
     this.buildCrests();
+    this.ramps = (LEVEL.jamRamps || []).map((r) => {
+      const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
+      const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
+      ramp.last = r.s + R.run + R.gap + (queue - 1) * R.spacing;
+      ramp.clear = ramp.last + R.margin;
+      ramp.speed = this.rampSpeed(ramp);
+      return ramp;
+    });
+  },
+  // where a ramp's queue stands: [{ s, lane }], the last of each lane first (Traffic puts a stopped car at each)
+  queueSpots(ramp) {
+    const R = CONFIG.jamRamp, spots = [];
+    for (let lane = ramp.lanes[0]; lane <= ramp.lanes[1]; lane++) {
+      const from = lane === ramp.lane ? ramp.s + R.run + R.gap - 1 : ramp.s;
+      for (let s = ramp.last; s >= from; s -= R.spacing) spots.push({ s, lane });
+    }
+    return spots;
+  },
+  // the speed (m/s) at the foot of a ramp that, hands off, lands the car beyond its queue
+  rampSpeed(ramp) {
+    const R = CONFIG.jamRamp, g = CONFIG.crest.gravity, sin = Math.sin(R.angle), dt = 1 / 120;
+    for (let v0 = 8; v0 < 90; v0 += 0.25) {
+      let v = v0, x = 0;
+      while (x < ramp.run && v > 0) { v -= g * sin * dt; x += v * dt; }
+      if (v <= 0) continue;
+      const vy = v * Math.tan(R.angle), t = (vy + Math.sqrt(vy * vy + 2 * g * ramp.top)) / g;
+      if (ramp.s + ramp.run + v * t >= ramp.clear) return v0;
+    }
+    return 90;
   },
   reset() {
     this.build();
@@ -50,6 +83,9 @@ export const Gambles = {
     this.windNow = 0;
     this.said = {};
     this.fly = null;
+    Player.rampAhead = false;
+    this.up = 0;
+    this.onRamp = null;
     this.ground = null;
     this.flights = 0;
     this.lastS = Player.s;
@@ -116,8 +152,38 @@ export const Gambles = {
   // the road's height at s (m, in the world), and its slope there (rise per m, over the 4 m about s)
   roadY(s) { Track.toWorld(s, 0, spot); return spot.y; },
   roadSlope(s) { return (this.roadY(s + 2) - this.roadY(s - 2)) / 4; },
-  // what stands on the road at (s, lat) to be driven up: { y: m above the road, slope }
-  extra() { return FLAT; },
+  // what stands on the road at (s, lat) to be driven up: { y: m above the road, slope }: the ramp the car is on
+  extra(s) {
+    const r = this.onRamp;
+    return r && s >= r.s && s < r.s + r.run ? { y: (s - r.s) * r.top / r.run, slope: r.top / r.run } : FLAT;
+  },
+  // a transporter's ramps: on at their foot, in line with them; off the lip at the top, or off the side. Beside
+  // it, the car is kept out of its trailer (pushed aside: no damage)
+  rideRamps() {
+    const P = Player, R = CONFIG.jamRamp;
+    if (this.onRamp && (P.s < this.onRamp.s || P.s >= this.onRamp.s + this.onRamp.run || Math.abs(P.lat - this.onRamp.lat) > R.half + 0.4)) this.onRamp = null;
+    P.rampAhead = !!this.onRamp || !!this.fly;
+    for (const r of this.ramps) {
+      if (P.active && P.s > r.s - R.sign * 1.6 && P.s < r.s) this.once('jamAhead');
+      if (P.s > r.s - R.commit && P.s < r.s + R.foot && Math.abs(P.lat - r.lat) <= R.half) P.rampAhead = true;
+      if (P.s < r.s || P.s > r.s + r.run + R.cab || this.onRamp === r) continue;
+      const across = P.lat - r.lat;
+      if (!this.fly && P.s < r.s + R.foot && Math.abs(across) <= R.half) { this.onRamp = r; this.once('jamRamp'); }
+      else if (this.up < 0.6 && Math.abs(across) < R.half + P.hw) { P.lat = r.lat + (across < 0 ? -1 : 1) * (R.half + P.hw); P.latVel = 0; }
+    }
+    // (nothing queues behind it: traffic coming up its lane moves over well before, so its ramps stay clear)
+    for (const r of this.ramps) {
+      if (Math.abs(r.s - P.s) > 700) continue;
+      for (const car of Traffic.cars) {
+        if (!car.active || car.fixed || car.dir < 0 || car.lane !== r.lane || car.s > r.s + r.run || car.s < r.s - R.keepClear || !Track.isMain(car.s)) continue;
+        const [first, last] = Track.laneRange(1, car.s), other = r.lane > first ? r.lane - 1 : r.lane + 1;
+        if (other > last) continue;
+        car.lane = other;
+        car.pendingLane = null;
+        car.signal = other - r.lane;
+      }
+    }
+  },
   // the crests of the loaded level: every place where the road falls away fast enough that a car at
   // CONFIG.crest.fastest or less would leave the ground, with the speed that does it
   buildCrests() {
@@ -162,6 +228,9 @@ export const Gambles = {
       P.lat = Math.max(Track.lo(P.s) + P.hw, Math.min(Track.hi(P.s) - P.hw, P.lat + (F.latVel - P.latVel) * dt));
       P.latVel = F.latVel;
     }
+    const wasOn = this.onRamp;
+    this.rideRamps();
+    if (wasOn && !this.onRamp) this.up = 9; // (off its lip, or its side, this step: up in the air until the flight below says otherwise)
     const road = this.roadY(P.s), ex = this.extra(P.s, P.lat), slope = this.roadSlope(P.s) + ex.slope, ground = road + ex.y;
     const live = P.shield <= 0 && P.ghost <= 0 && P.tank <= 0;
     // off the ground: where the slope has dropped away since the last step by more than gravity makes up for
@@ -176,7 +245,7 @@ export const Gambles = {
       this.alt += F.vy * dt;
       F.t += dt;
       if (this.alt > ground) {
-        P.air = this.alt - road;
+        P.air = this.up = this.alt - road;
         P.pitch = Math.atan2(F.vy, Math.max(P.speed, 6)) - Math.atan(Track.grade(P.s)); // (its nose the way it is flying: main.js adds the road's own slope)
         if (F.top <= C.hop && this.alt - ground > C.hop) this.flights++;
         F.top = Math.max(F.top, this.alt - ground);
@@ -194,7 +263,12 @@ export const Gambles = {
     }
     this.ground = ground;
     this.slope = slope;
-    if (ex.y || ex.slope) { P.air = ex.y; P.pitch = Math.atan(ex.slope); }
+    this.up = ex.y;
+    if (ex.y || ex.slope) { // (up a ramp: the climb takes some of its speed)
+      P.air = ex.y;
+      P.pitch = Math.atan(ex.slope);
+      P.speed = Math.max(0, P.speed - C.gravity * Math.sin(P.pitch) * dt);
+    }
   },
 
   update(dt) {

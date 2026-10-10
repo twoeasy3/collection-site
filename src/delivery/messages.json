@@ -61,6 +61,8 @@
     "stampede": ["STAMPEDE!! They're coming down the road at you!"],
     "crosswind": ["Crosswind! Watch the windsocks: it gusts."],
     "airborne": ["Airborne! No steering up here."],
+    "jamRamp": ["Up the transporter! Hope that was fast enough."],
+    "jamAhead": ["Traffic jam ahead! The transporter's ramps are down..."],
     "wrongWay": ["WRONG-WAY DRIVER!! Coming at you in the right-hand lane!"],
     "tunnel": ["Tunnel! Lights on."],
     "parade": ["Street parade ahead! The whole road's taken."],

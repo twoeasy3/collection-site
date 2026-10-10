@@ -182,6 +182,55 @@ try {
     check(!others.length, 'crest: no level without an "ease" of its own has a crest a car could fly' + (others.length ? ': ' + others.join('; ') : ''));
   });
 
+  // ---- ramp over the jam (the foot of its ramps at 2400, lane 4; a queue of 4 beyond it, and in lanes 3 and 5;
+  // barriers close the right shoulder: the way round is the oncoming side)
+  await section('ramp', async () => {
+    const J = C.jamRamp, r = () => Gambles.ramps[0];
+    start(2200, 4, 20);
+    const queue = () => g.Traffic.cars.filter(c => c.active && c.jam);
+    const need = r().speed;
+    check(queue().length === Gambles.queueSpots(r()).length && queue().every(c => Math.abs(c.vs) < 0.01), 'ramp: its queue is real traffic, stopped (' + queue().length + ' cars in lanes ' + r().lanes.join(' to ') + ', the last at ' + r().last + ' m)');
+    check(need > g.cars.CARS[0].maxSpeed && need < 40, 'ramp: clearing the queue takes ' + Math.round(need * 3.6) + ' km/h at its foot (more than the Commuter has: ' + Math.round(g.cars.CARS[0].maxSpeed * 3.6) + ')');
+    // at it at a speed, in a lane (held to that speed up to its foot, hands off from there)
+    const at = (v, n, { car = 'sport', steer = null } = {}) => {
+      start(2250, n, v, { car, keep: false });
+      let top = 0, on = false, slowest = 99;
+      const health = P.health;
+      const t = g.run(40, () => {
+        for (const c of g.Traffic.cars) if (!c.fixed) c.active = false;
+        if (P.s < 2400) P.speed = v; else if (!steer) g.drive(0, 0);
+        if (steer) g.drive(1, steer());
+        if (Gambles.onRamp) on = true;
+        if (Gambles.fly) top = Math.max(top, P.air);
+        slowest = Math.min(slowest, P.speed);
+        return P.s > 2560 || G.wrecks > 0 || P.busted;
+      });
+      return { t, top, on, lost: health - P.health, wrecks: G.wrecks, slowest, busted: P.busted, s: P.s, hit: queue().filter(c => c.health < c.maxHealth).length };
+    };
+    const over = at(Math.ceil(need * 3.6 / 5) * 5 / 3.6, 4);
+    check(over.on && over.top > r().top && over.wrecks === 0 && over.hit === 0 && over.s > 2560, 'ramp, the risk taken and right: at the speed on its board (' + Math.round(Math.ceil(need * 3.6 / 5) * 5) + ' km/h), hands off, the car goes up it (' + over.top.toFixed(1) + ' m up), over the whole queue, and lands (' + over.lost.toFixed(0) + ' health for the landing)');
+    const short = at(need - 8, 4);
+    check(short.on && (short.wrecks > 0 || short.lost > 25) && short.hit > 0, 'ramp, the risk taken and wrong: ' + Math.round((need - 8) * 3.6) + ' km/h is too slow: it comes down in the queue (' + (short.wrecks ? 'wrecked' : short.lost.toFixed(0) + ' health lost') + ', ' + short.hit + ' of the queue hit)');
+    // the way round: the oncoming side, with nothing coming (the level's barriers close the shoulder)
+    const round = at(22, 3, { steer: () => { const want = P.s > 2330 && P.s < 2470 ? lane(2, P.s) : lane(3, P.s); return Math.abs(want - P.lat) < 0.2 ? 0 : Math.sign(want - P.lat); } });
+    check(round.wrecks === 0 && round.lost === 0 && !round.busted && round.slowest > 15 && round.s > 2560, 'ramp, the safe line: round the queue by the lane beyond the centre line, nothing coming: no damage, no bust, never under ' + Math.round(round.slowest * 3.6) + ' km/h');
+    // beside the transporter, the car is kept out of it; and traffic coming up its lane moves over
+    // (with the queue beside it taken away, to try the trailer alone)
+    start(2380, 4, 15);
+    for (const c of queue()) c.active = false;
+    Object.assign(P, { s: 2405, lat: r().lat + 2.2, speed: 6 });
+    let inside = false;
+    g.run(1.2, () => { g.drive(0, -1); P.speed = 6; if (!Gambles.onRamp && Math.abs(P.lat - r().lat) < J.half + P.hw - 0.01) inside = true; });
+    check(!inside && !Gambles.onRamp && P.health === P.maxHealth, 'ramp: steered at from beside it, the car is kept out of the trailer, at no cost');
+    start(2000, 3, 0);
+    g.drive(-1, 0);
+    const van = put('van', 2200, lane(4, 2200), 18);
+    van.fixed = false;
+    let wentUp = false;
+    g.run(14, () => { P.speed = 0; P.s = 2000; if (van.active && van.s > 2400 && van.s < 2415 && Math.abs(van.lat - r().lat) < 1) wentUp = true; return !van.active; });
+    check(!wentUp && van.lane !== 4, 'ramp: a van coming up its lane moved over (to lane ' + van.lane + ') and never reached its ramps (it stopped at ' + Math.round(van.s) + ' m, doing ' + Math.abs(van.vs).toFixed(1) + ' m/s)');
+  });
+
   console.log(failures ? failures + ' FAILED' : 'all checks passed');
 } catch (e) {
   failures++;

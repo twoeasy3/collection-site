@@ -1327,6 +1327,17 @@ export const CONFIG = {
   // one that flies at signUnder m/s or less gets a board with that speed `sign` m before it, and from camFrom m
   // before it to its top the camera comes down to camHeight m and in to camBack m behind the car (easing over
   // camEase m), so the far side is hidden until the car is over. "Airborne" is said after sayAfter s in the air
+  // a ramp over the jam ("jamRamps": { s, lane, queue?, lanes? }): a car transporter stopped in that lane, the foot
+  // of its ramps at s, its deck a slope `run` m long at `angle` rad up to its lip, with a queue of stopped traffic
+  // from there on: `queue` cars in its own lane beyond its cab (the first `gap` m past the lip, then one every
+  // `spacing` m), and in each of the level's `lanes` ([first, last]; the player's whole side if not said) from
+  // beside its ramps to as far. In line with the ramps (within `half` m) at their foot (the first `foot` m), the
+  // car goes up them (the climb takes speed, as up a drawbridge's leaf) and off the lip, on the arc of a crest's
+  // flight: over the queue if it came fast enough, landing `margin` m or more past the last car (a board `sign` m
+  // before gives the speed that does it hands off), or down into the queue. Beside it the car is kept out of the
+  // trailer and its cab (`cab` m past the lip). Traffic coming up its lane moves over from keepClear m before.
+  // (From `commit` m before its foot, in line with it, the car no longer brakes by itself for the queue beyond)
+  jamRamp: { run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
   crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it

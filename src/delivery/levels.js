@@ -288,6 +288,12 @@
 //              `length` s (CONFIG.crosswind's if not said; strength: m/s^2 on a car as tall as the Commuter). A taller
 //              car is pushed harder; beside a tall vehicle on the windward side there is shelter, and a shove on
 //              clearing it. Windsocks before it and along it show which way and how hard, as it gusts
+//   jamRamps   { s, lane, queue?, lanes? }: a ramp over the jam: a car transporter stopped in that lane (one on the
+//              player's side), its ramps down, the foot of them at s, at the back of a queue of stopped traffic:
+//              `queue` cars beyond it in its lane (CONFIG.jamRamp.queue if not said) and as far in every lane of
+//              `lanes` ([first, last]: the player's whole side if not said). Driven up at the speed on its board or
+//              more, the car flies the queue; slower, it comes down in it. The way round is whatever the level leaves
+//              open: a lane, the shoulder (its rules apply), the oncoming side. On straight, level road
 //   pelotons   { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind

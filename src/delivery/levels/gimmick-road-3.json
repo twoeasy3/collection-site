@@ -47,6 +47,12 @@
     { "s": 1518, "lane": 3, "kind": "barrier" },
     { "s": 1518, "lane": 5, "kind": "barrier" }
   ],
+  "jamRamps": [
+    { "s": 2400, "lane": 4 }
+  ],
+  "shoulderRows": [
+    { "kind": "barrier", "from": 2390, "to": 2470, "every": 10, "side": "right" }
+  ],
   "crosswinds": [
     { "from": 300, "to": 900, "dir": "left" }
   ],

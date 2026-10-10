@@ -1033,6 +1033,18 @@ const createTrack = () => {
       else if (w.dir !== 'left' && w.dir !== 'right') problems.push('crosswind at ' + w.from + ': dir is left or right (the side it blows to)');
       else if ([w.strength, w.every, w.length].some(v => v !== undefined && !(v > 0)) || (w.every ?? CONFIG.crosswind.every) < (w.length ?? CONFIG.crosswind.length)) problems.push('crosswind at ' + w.from + ': strength, every and length are more than 0, a gust no longer than the time between gusts');
     }
+    for (const r of LEVEL.jamRamps || []) {
+      const J = CONFIG.jamRamp, far = r.s + J.run + J.gap + (r.queue ?? J.queue) * J.spacing + 40, name = 'ramp over the jam at ' + r.s;
+      if (r.road === 'side' || !(r.s >= 60 && far <= length)) { problems.push(name + ': on the expressway, 60 m from the start, room for its queue before the finish'); continue; }
+      const [first, last] = laneRange(1, r.s);
+      let sloped = false;
+      for (let s = r.s - 40; s <= far; s += STEP) if (Math.abs(grade(s)) > 0.002) sloped = true;
+      if (!(Number.isInteger(r.lane) && r.lane >= first && r.lane <= last)) problems.push(name + ': lane is one on the player\'s side (' + first + ' to ' + last + ')');
+      else if (r.lanes !== undefined && !(Array.isArray(r.lanes) && r.lanes[0] >= first && r.lanes[1] <= last && r.lanes[0] <= r.lane && r.lanes[1] >= r.lane)) problems.push(name + ': lanes [first, last] on the player\'s side, its own among them');
+      else if (r.queue !== undefined && !(Number.isInteger(r.queue) && r.queue >= 1 && r.queue <= 10)) problems.push(name + ': a queue of 1 to 10 cars');
+      else if (!straight(r.s - 40, far) || sloped) problems.push(name + ': the road must run straight and level through it');
+      else for (const x of exits) if (overlaps(r.s - 40, far, x.exitAt - X.laneZone, x.exitAt + 20) || overlaps(r.s - 40, far, x.mergeAt - 20, x.mergeAt + X.laneZone)) problems.push(name + ': an exit\'s ramps are in it');
+    }
     LEVEL.segments.forEach((seg, i) => { if (seg.ease !== undefined && !(seg.ease >= 2 && seg.ease <= 200)) problems.push('segment ' + (i + 1) + ': ease is 2 to 200 m'); });
     for (const e of LEVEL.wreckage || []) {
       const name = 'wreckage at ' + e.at;

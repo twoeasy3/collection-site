@@ -54,6 +54,7 @@ export const Player = {
   nextMystery: '',     // the effect the next mystery will be, if not left to chance (?mystery= in the URL)
   air: 0,              // m the car is above the road (on a drawbridge's raised leaf, or jumping its gap: see Hazards)
   pitch: 0,            // ...and rad its nose is up by (the leaf's slope; in the air, the way it is flying)
+  rampAhead: false,    // lined up with a ramp over the jam close ahead, on it, or in the air (see Gambles): no braking by itself for the queue
   testGhost: false,    // a ghost for the whole run, whatever happens (?ghost in the URL: screenshots and tests)
   tank: 0,             // 1 once TANK RAGE has started; it lasts for the rest of the level
   danger: CONFIG.dangerTime, // s of shoulder driving left before the police come (see Social.dangerTime)
@@ -292,6 +293,7 @@ export const Player = {
   // nearest slower car in our path that we are closing on too fast, if any
   carAhead() {
     if (this.ghost > 0 || this.tank > 0) return null; // a ghost drives through, a tank ploughs through
+    if (this.rampAhead) return null; // (lined up with a ramp over the jam, or on it: it is going over the queue, not braking for it. See Gambles)
     let lead = null, leadGap = Infinity;
     for (const car of Traffic.cars) {
       if (!car.active || car.dir < 0 || car.junction) continue; // braking won't save you from oncoming cars

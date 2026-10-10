@@ -24,7 +24,7 @@ import { makeCarriage } from './render/trainModel.js';
 import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
-import { makeWindsock } from './render/gambleModels.js';
+import { makeWindsock, makeTransporter } from './render/gambleModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -69,7 +69,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -846,6 +846,22 @@ const GROUPS = [
       sock.position.set(-5.4, 0, 2); bus.position.set(-2.2, 0, 0);
       g.add(sock, bus);
       return { model: g, spin: false, tick: (t) => { const u = t % GB.wind.every, level = GB.wind.lull + (1 - GB.wind.lull) * Math.max(0, Math.min(1, Math.min(u, GB.wind.length - u) / GB.wind.rise)); sock.userData.set(level, 1, t); bus.rotation.z = -level * 0.08; bus.userData.animate?.(t); } };
+    } },
+    { name: 'Ramp over the jam', color: 0xc23b22, has: (l) => l.jamRamps?.length, rules: [
+      `A traffic jam: stopped cars across your side of the road, and at the back of it a car transporter with its ramps down, a ${GB.ramp.run} m slope up to a lip ${(GB.ramp.run * Math.tan(GB.ramp.angle)).toFixed(1)} m high. A board on the way in names its lane and the speed that clears the queue.`,
+      '<strong>Line up with the ramps and keep your foot in</strong>: the car goes up them (the climb takes a little speed), off the lip, and over the queue. No steering in the air. The landing costs some health.',
+      'Too slow and it comes down among the stopped cars: usually a wreck. A slow car cannot make it at all without a turbo: the speed on the board is the gamble, made in the garage and again at the sign.',
+      'The way round is whatever the level has left open: the oncoming side, or the shoulder (its rules apply). Traffic coming up the transporter\'s lane moves over, so the ramps are always clear.',
+    ], build: () => {
+      const g = road(11, 44), truck = makeTransporter(GB.ramp.run, GB.ramp.run * Math.tan(GB.ramp.angle), GB.ramp.half), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      truck.position.set(0, 0, -14);
+      const paints = [0x4fc3f7, 0xf2c21c, 0xd8262b, 0x9be37a, 0xf28cc0, 0xe8e8e8];
+      const queue = [0, 1, 2].flatMap((k) => [-3.6, 0, 3.6].filter((x) => x || k > 0).map((x, i) => { const c = painted(vehicle('commuter', 0xffffff), paints[(k * 3 + i) % 6]); c.position.set(x, 0, (x ? -8 : 1) + k * 6.5); return c; }));
+      g.add(truck, car, ...queue);
+      const top = GB.ramp.run * Math.tan(GB.ramp.angle);
+      return { model: g, spin: false, tick: (t) => { const u = (t % 3.4) / 3.4, z = -21 + u * 44, on = z + 14;
+        const y = on < 0 ? 0 : on < GB.ramp.run ? on * top / GB.ramp.run : Math.max(0, top + (on - GB.ramp.run) * 0.28 - 0.016 * (on - GB.ramp.run) ** 2);
+        car.position.set(0, y, z); car.rotation.x = on > 0 && on < GB.ramp.run ? -GB.ramp.angle : y > 0 ? -0.28 + 0.032 * (on - GB.ramp.run) : 0; } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

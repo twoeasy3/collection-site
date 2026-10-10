@@ -10,7 +10,7 @@ import { Traffic } from '../traffic.js';
 import { Gambles } from '../gambles.js';
 import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
-import { makeWindsock, makeSign } from './gambleModels.js';
+import { makeWindsock, makeSign, makeTransporter } from './gambleModels.js';
 
 const group = new THREE.Group();
 scene.add(group);
@@ -38,6 +38,15 @@ Game.onLoad.push(() => {
     const s = c.from - CONFIG.crest.sign;
     if (s < 5) continue;
     for (const lat of [Track.hi(s) - 0.6, Track.lo(s) + 0.6]) at(s, lat).add(makeSign('CREST\n' + kmh(c.speed) + '+ FLIES', '#ffd23f', '#111', 5.4, 2.6));
+  }
+  // ---- ramps over the jam: the transporter, and a board with the speed that clears its queue
+  for (const r of Gambles.ramps) {
+    const J = CONFIG.jamRamp;
+    at(r.s, r.lat).add(makeTransporter(r.run, r.top, J.half));
+    for (const back of [J.sign, J.sign / 2]) {
+      if (r.s - back < 5) continue;
+      at(r.s - back, Track.hi(r.s - back) - 0.6).add(makeSign('JAM: RAMP IN LANE ' + (r.lane - Track.laneRange(1, r.s)[0] + 1) + '\nJUMP ' + kmh(r.speed) + '+', '#ffd23f', '#111', 6.4, 2.6));
+    }
   }
   // ---- crosswinds: windsocks
   Gambles.winds.forEach((w, k) => {

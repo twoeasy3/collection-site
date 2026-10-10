@@ -40,6 +40,29 @@ export const makeSign = (text, bg = '#ffd23f', fg = '#111', w = 5.4, h = 1.8, po
   return g;
 };
 
+// a car transporter with its ramps down: its deck a slope `run` m long (the model's +z) up to a lip `top` m high,
+// `half` m either side of its middle; its cab stands on beyond the lip, under it
+export const makeTransporter = (run = 15, top = 4.15, half = 1.5) => {
+  const g = new THREE.Group(), steel = lambert(0xc23b22), dark = lambert(0x2b2f38), plate = lambert(0x8a9096), a = Math.atan(top / run), L = Math.hypot(run, top);
+  for (const x of [-1, 1]) { // (two tracks to drive up, a rail outside each, the first few metres of them the ramps let down)
+    const track = add(g, box(0.95, 0.12, L), plate, x * (half - 0.55), top / 2, run / 2);
+    track.rotation.x = -a;
+    const rail = add(g, box(0.14, 0.3, L), steel, x * (half + 0.02), top / 2 + 0.12, run / 2);
+    rail.rotation.x = -a;
+    for (let z = 4.5; z < run; z += 3.4) add(g, box(0.16, z * top / run, 0.16), steel, x * (half - 0.05), z * top / run / 2, z); // (posts)
+  }
+  for (let z = 1; z < run; z += 1.5) { const rung = add(g, box(2 * half - 0.9, 0.08, 0.2), dark, 0, z * top / run - 0.05, z); rung.rotation.x = -a; }
+  add(g, box(2 * half - 0.2, 0.3, run - 4.5), dark, 0, 1.05, 4.5 + (run - 4.5) / 2); // (the trailer's bed, under the deck)
+  for (const z of [5.4, 6.7, run - 2.2]) for (const x of [-1, 1]) add(g, new THREE.CylinderGeometry(0.5, 0.5, 0.36, 12).rotateZ(Math.PI / 2), dark, x * (half - 0.25), 0.5, z);
+  for (const [x, z] of [[-1, 0.3], [1, 0.3]]) add(g, box(0.5, 0.05, 0.5), glow(0xffd23f), x * (half - 0.55), 0.04, z); // (the feet of the ramps, marked)
+  // the cab, beyond the lip and lower than it
+  add(g, box(2 * half - 0.3, 2.3, 2.5), steel, 0, 1.75, run + 1.35);
+  add(g, box(2 * half - 0.5, 0.9, 0.1), lambert(0x9fd3ff), 0, 2.2, run + 2.62);
+  for (const x of [-1, 1]) add(g, new THREE.CylinderGeometry(0.5, 0.5, 0.36, 12).rotateZ(Math.PI / 2), dark, x * (half - 0.25), 0.5, run + 1.6);
+  for (const x of [-1, 1]) add(g, box(0.3, 0.2, 0.08), glow(0xff8a1a), x * (half - 0.3), top + 0.05, run - 0.1); // (lamps on the lip)
+  return g;
+};
+
 // a windsock on its pole: `sock`, hinged at the top, reaches out along its local +x (see syncGambles)
 const POLE = lambert(0xd9dde2), RING = lambert(0x30343a), SOCK = [lambert(0xff6a1a, { side: THREE.DoubleSide }), lambert(0xf4f4f4, { side: THREE.DoubleSide })];
 export const makeWindsock = (height = 7.5, length = 4.2) => {
