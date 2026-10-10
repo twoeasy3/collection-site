@@ -31,6 +31,7 @@ import { Collision } from './collision.js';
 import { Packages } from './packages.js';
 import { Pickups, Targets } from './pickups.js';
 import { Delivery } from './delivery.js';
+import { Characters } from './characters.js';
 
 // ============================================================================
 // GAME STATE
@@ -206,6 +207,7 @@ export const Game = {
     Hazards.reset();
     Milestones.reset();
     WaterMains.reset();
+    Characters.reset(); // (the road's other characters: a police pursuit, ...)
     if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
     startScreen.classList.add('hidden');
@@ -368,6 +370,7 @@ export const Game = {
     if (playing) WaterMains.update(dt);
     Traffic.update(dt);
     if (playing) SpeedCameras.update(dt);
+    if (playing) Characters.update(dt);
     UfoStrike.update(dt);
     BulletTrain.update(dt);
     if (playing) Tide.update(dt);

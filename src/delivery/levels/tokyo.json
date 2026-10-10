@@ -5,6 +5,7 @@
   "drive": "left",
   "clock": { "good": 190, "evil": 140 },
   "tip": 200,
+  "pursuits": { "every": { "min": 40, "max": 70 } },
   "lanes": 4,
   "speedLimit": 80,
   "traffic": { "keitruck": 0.32, "taxi": 0.16, "commuter": 0.14, "darkvan": 0.1, "semi": 0.06, "cargotruck": 0.06, "sport": 0.08, "miata": 0.06, "police": 0.04 },

@@ -130,6 +130,9 @@
 //   trafficSpeed  { min, max } m/s the traffic cruises at (default CONFIG.trafficMin/MaxSpeed)
 //   emergencies  { every: { min, max } }: now and then (every min-max s) an ambulance comes
 //              through, siren going, either way (see CONFIG.emergency)
+//   pursuits   { every: { min, max } }: now and then (every min-max s) a police pursuit comes through from behind:
+//              a getaway car flat out and an interceptor after it, to help, hinder or keep clear of (see
+//              CONFIG.pursuit and pursuit.js). Not on a race, the Battlefield, or an all-oncoming road
 //   hesitation false = traffic too fast for the player never hesitates, and none comes up from
 //              behind (see CONFIG.hesitation)
 //   asteroidFields  { from, to, count, moving, seed }: `count` asteroids of assorted sizes
