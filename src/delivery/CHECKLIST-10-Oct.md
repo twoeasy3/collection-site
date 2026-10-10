@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `65478c1` (main, the pursuit merged; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 15 and 16 (cargo, Good and Evil), 17 (in-game UI).
+Last updated: after the Good cargo merge (main; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 16 (Evil cargo), 17 (in-game UI), 18 (menu UI).
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -129,7 +129,9 @@ Three agents at a time; the next item starts as each one finishes.
 - [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
 - [x] Police pursuit redone as a plain traffic event: a getaway car and its interceptor come through from behind and drive on; nothing gained or lost by the player. Merged, `65478c1`; levels, schema, pursuit and hazards checks pass. Seen as two small stills and its Gimmicks card. For the owner: the pair now pass at 130% of the player's top speed; the getaway car is no longer an "evil" car; the helicopter was removed
 - [~] Car ideas lot: agent 13
-- [~] Forty more cargo items: agent 15 (Good, C1 to C20, branch `delivery-cargo-good`) and agent 16 (Evil, C21 to C40, branch `delivery-cargo-evil`). Five agents running, on the owner's word ("Get a couple of agents on these")
+- [x] Twenty more Good cargo items (C1 to C20): agent 15, merged into `main` (`cc34343`, `533d5a2`); cargo, bundle and levels checks pass; seen on the Cargo page's contact sheet, sent to the owner. Weakest: sushi boat, tea set, globe. Nothing seen moving
+- [~] Twenty more Evil cargo items (C21 to C40): agent 16, branch `delivery-cargo-evil`
+- [~] Menu UI rework (M1 to M3 in the section "Menu UI" at the end): agent 18, branch `delivery-menu`
 - [~] In-game UI improvements (U1 to U5): agent 17, branch `delivery-ui`. The owner asked what the "on fire" message was: there is none (the orchestrator had listed it without checking); the agent has been told to build the stay-on-screen list only from messages that exist
 - [ ] Next 1: road gimmicks, picking up the half-built ramp (H2), now saved on the branch `delivery-gimmicks-wip` (`4b617b5`) and no longer in the main checkout, then H8, H4, H5 and on down the kept G and H lists
 - [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
@@ -809,3 +811,24 @@ Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `ren
    assumed.
 9. **The half-ribbons that count** towards levels 3 and 4: assumed to be those earned in that
    tier only, not across the game.
+
+## Menu UI (owner, 10-Oct; agent 18, branch `delivery-menu`)
+
+The owner's words: "Rework the UI to be more game like than a webpage. Have a place for a level
+description, unique for both Good and Evil. The gimmicks list should be moved to a button where
+clicking it gives you a card showing the 3d models (gimmicks page) of all the gimmicks in the level,
+pick ups and traffic."
+
+- [ ] M1. The start screen reworked to feel like a game's menu, not a web page: a composed screen
+      (a level-select stage with the picked level shown large, the car and side as part of the
+      scene, proper game buttons with states and sound, movement between screens), in place of a
+      scrolling page of cards and rows of grey buttons. Works with mouse, keyboard and touch, on
+      desktop and on a phone. It stays strictly a menu, with no page reloads.
+- [ ] M2. A level description on the menu, written twice for every level: one for Good, one for
+      Evil, each in that side's voice, shown for the side picked.
+- [ ] M3. The gimmick chips leave the level card; a button opens a card for the level showing the
+      3D models (the ones the Gimmicks page draws) of everything in it: its gimmicks, its
+      pickups and its traffic, each named, with a line on what it does.
+- To keep in mind while building: the level progression rework (the section above) will put
+  levels in tiers of five with a two-halved ribbon on each and a car rule per tier; the new menu
+  should have a place for those, though the rules themselves are a separate job.
