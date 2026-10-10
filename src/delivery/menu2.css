@@ -74,7 +74,7 @@
 #startScreen .menu-stage .shot.none::after { content: ""; position: absolute; left: 50%; top: 8%; bottom: 30%; width: 8px; margin-left: -4px; background: repeating-linear-gradient(180deg, var(--accent) 0 34px, transparent 34px 70px); opacity: .5; transform: perspective(300px) rotateX(50deg); }
 @keyframes stage-drift { from { transform: scale(1.03) translateX(-.8%); } to { transform: scale(1.09) translateX(.8%); } }
 #startScreen .menu-stage.enter .shot { animation: stage-shot-in .28s ease-out, stage-drift 24s ease-in-out .28s infinite alternate; }
-#startScreen .menu-stage.enter .info, #startScreen .menu-stage.enter .plate, #startScreen .menu-stage.enter .ribbon { animation: stage-in .24s ease-out; }
+#startScreen .menu-stage.enter .info, #startScreen .menu-stage.enter .plate, #startScreen .menu-stage.enter .ribbon, #startScreen .menu-stage.enter .cargo3d { animation: stage-in .24s ease-out; }
 #startScreen .menu-stage.flip .desc, #startScreen .menu-stage.flip .facts { animation: stage-in .2s ease-out; }
 @keyframes stage-in { from { opacity: 0; transform: translateX(18px); } }
 @keyframes stage-shot-in { from { opacity: .2; transform: scale(1.12); } }
@@ -96,6 +96,11 @@
 #startScreen .menu-stage .ribbon .gold .medal, #startScreen .pips i.gold { background: radial-gradient(circle at 35% 30%, #fff3b0, var(--gold) 55%, #b98a00); box-shadow: 0 0 8px rgba(255, 207, 58, .6); }
 #startScreen .menu-stage .ribbon .silver .medal, #startScreen .pips i.silver { background: radial-gradient(circle at 35% 30%, #fff, var(--silver) 55%, #7d8794); box-shadow: none; }
 #startScreen .menu-stage .ribbon .bronze .medal, #startScreen .pips i.bronze { background: radial-gradient(circle at 35% 30%, #f3c39b, var(--bronze) 55%, #7a4420); box-shadow: none; }
+/* its cargo: the HUD's round window (cargohud.css: the rim, the glass), its name under it, below the ribbon */
+#startScreen .menu-stage .cargo3d { position: absolute; top: 60px; right: 62px; width: 128px; display: flex; flex-direction: column; align-items: center; gap: 5px; pointer-events: none; }
+#startScreen .menu-stage .cargo3d .ring { display: block; width: 104px; height: 104px; box-sizing: border-box; border-radius: 50%; overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, .8); background: rgba(10, 14, 20, .5); box-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+#startScreen .menu-stage .cargo3d .cargo-name { font: 800 11px/1.15 system-ui, sans-serif; letter-spacing: .04em; text-transform: uppercase; text-align: center; text-shadow: 0 1px 3px rgba(0, 0, 0, .9); }
 /* its name, its description for the side picked, its figures */
 #startScreen .menu-stage .info { position: relative; display: flex; flex-direction: column; gap: 7px; padding: 0 58px 14px 20px; }
 #startScreen .menu-stage h2 { margin: 0; opacity: 1; font: italic 800 clamp(28px, 4.4vw, 58px)/.95 var(--display); font-stretch: condensed; letter-spacing: .01em; text-transform: uppercase;
@@ -224,6 +229,8 @@
   #startScreen .menu-tabs button { flex: 1 1 0; padding: 7px 8px 6px; font-size: 16px; text-align: center; }
   #startScreen .menu-groups button { padding: 7px 12px 6px; }
   /* the stage: its words between the arrows, which are at the middle of its edges; the description three lines at most */
+  #startScreen .menu-stage .cargo3d { top: 54px; right: 14px; width: 104px; }
+  #startScreen .menu-stage .cargo3d .ring { width: 80px; height: 80px; }
   #startScreen .menu-stage .plate { padding: 6px 26px 5px 12px; }
   #startScreen .menu-stage .plate b { font-size: 20px; }
   #startScreen .menu-stage .ribbon { top: 6px; right: 6px; }
@@ -280,6 +287,8 @@
   #startScreen .menu-stage .fact { padding: 3px 9px; font-size: 14px; }
   #startScreen .menu-stage .plate b { font-size: 20px; }
   #startScreen .menu-stage .info .road { position: absolute; right: 12px; bottom: 8px; }
+  #startScreen .menu-stage .cargo3d { top: 54px; right: 58px; width: 116px; }
+  #startScreen .menu-stage .cargo3d .ring { width: 84px; height: 84px; }
   /* (the figures a line each, the label beside the value, in two lines at most: clock, tip and cargo, then the best time
      beside the chip, which is over the info's corner here. On a wide window the figures stop short of the chip) */
   #startScreen .menu-stage .fact { flex-direction: row; align-items: baseline; gap: 5px; padding: 3px 7px; }
@@ -293,7 +302,13 @@
   #startScreen .side-switch button { padding: 6px; font-size: 16px; }
   #startScreen #startBtn { padding: 9px 10px 7px; font-size: 26px; }
 }
-@media (max-height: 520px) and (min-width: 860px) {
+/* (a very short window, a phone on its side: the circle small, its name beside it, clear of the title and the arrow) */
+@media (max-height: 420px) and (min-width: 520px) {
+  #startScreen .menu-stage .cargo3d { top: 52px; right: 50px; width: 140px; flex-direction: row; justify-content: flex-end; gap: 6px; }
+  #startScreen .menu-stage .cargo3d .ring { flex: 0 0 auto; width: 48px; height: 48px; }
+  #startScreen .menu-stage .cargo3d .cargo-name { font-size: 10px; text-align: left; }
+}
+@media (max-height: 520px) and (min-width: 860px), (max-height: 420px) and (min-width: 520px) {
   #startScreen .menu-stage .facts { max-width: calc(100% - 140px); }
 }
 @media (prefers-reduced-motion: reduce) {

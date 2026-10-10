@@ -1,7 +1,7 @@
-// ---- "what's on this road": a level's cargo, gimmicks, pickups and traffic, each with its model turning ---
+// ---- "what's on this road": a level's gimmicks, pickups and traffic, each with its model turning ---------
 // A card over the start screen for the level on the stage (render/menustage.js opens it, and brings this file
 // in only when it is first asked for: it carries the reference pages' catalogues and models). Three groups of
-// tiles: the level's CARGO (what it is delivering, for the side picked: cargo.js, a tile of its own at the top; a race has none), the level's GIMMICKS (the Gimmicks page's cards that the level has: gimmicks.js, each card's own
+// tiles: the level's GIMMICKS (the Gimmicks page's cards that the level has: gimmicks.js, each card's own
 // `has`), its PICKUPS (the types laid out on it, levelinfo.js; the power-ups page's wording, powerups.js; and
 // what a mystery can be) and its TRAFFIC (what it is driven in, the grid, every vehicle kind in its mix and
 // its zones, and the Gimmicks page's cards about vehicles: ambulances, the police pursuit, convoys...). Each
@@ -17,9 +17,6 @@ import { LEVELS, levelLabel } from '../levels.js';
 import { levelName } from '../levelText.js';
 import { CARS, LEVEL_CARS } from '../cars.js';
 import { Game } from '../game.js';
-import { cargoFor } from '../cargo.js';
-import { blurbOf } from '../words.js';
-import { makeCargoModel } from './cargoModels.js';
 import { levelNotes, levelPickups, mysteryPool, levelTraffic, vehicleInfo } from '../levelinfo.js';
 import { GROUPS } from '../gimmicks.js';
 import { CARDS } from '../powerups.js';
@@ -95,24 +92,6 @@ export const showRoadCard = (box, level, close) => {
   const gimmickTile = (card) => tile(views, standView(card.build(level), CLOSE), card.color, card.name, card.blurb || card.line?.(level) || card.rules[0]); // (the words file's blurb first: gimmickText.json; the level: a card may show, and say, this level's own things)
   const gimmicks = cards.filter(card => !TRAFFIC_CARDS.has(card.id)).map(gimmickTile);
 
-  // the cargo: its model for the side picked, turning on its stand like the rest, with its name. An Evil one is
-  // shown calm (the state the tile keeps to: framed on that, played through, so that it fills its patch and not
-  // the room a furious one would need), with its three states named under it. Nothing to carry (a race), or a
-  // model that cannot be built: no tile, and no group, never a crash
-  const cargoTiles = [];
-  try {
-    const item = cargoFor(level, evil);
-    if (item) {
-      const model = makeCargoModel(item.id);
-      model.userData.setState?.(0, true);
-      const view = standView({ model, tick: (t) => model.userData.animate?.(t) }, 1);
-      const states = item.states ? make('span', 'pool', item.states.map(name => make('em', '', name))) : null;
-      // (its line: the item's own blurb, cargoText.json; failing that, what its side's cargo does)
-      const own = evil ? 'It gets more worked up as the clock runs down. Only a sight.' : 'Set down at the kerb when you deliver it. Only a sight.';
-      cargoTiles.push(tile(views, view, evil ? 0xff6a5a : 0xffd23f, item.name, blurbOf('cargo', item.id, own), states));
-    }
-  } catch (error) { console.warn('No cargo tile: ' + (error?.message || error)); }
-
   // (the mystery last of the pickups but for the target: its tile is a row to itself)
   const types = levelPickups(level), order = [...types.filter(t => t !== 'mystery' && t !== 'target'), ...types.filter(t => t === 'mystery'), ...types.filter(t => t === 'target')];
   const pickups = order.map((type) => {
@@ -139,7 +118,6 @@ export const showRoadCard = (box, level, close) => {
   const notes = levelNotes(level);
   const body = make('div', 'sheet-body',
     notes.length ? make('p', 'road-notes', notes.map(note => make('em', '', note))) : null,
-    cargoTiles.length ? group('Cargo', 'cargo.html', 'All the cargo', cargoTiles, '') : null,
     group('Gimmicks', 'gimmicks.html', 'All the gimmicks', gimmicks, 'Nothing but the road, the traffic and the clock.'),
     group('Pickups', 'powerups.html', 'All the power-ups', pickups, 'None on this level.'),
     group('Traffic', 'gimmicks.html#vehicles', 'More about vehicles', traffic, 'No traffic at all.'));

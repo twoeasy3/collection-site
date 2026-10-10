@@ -28,6 +28,7 @@ import { Sound } from './audio.js';
 import { carMesh } from './cars.js';
 import { Particles, Smoke, rnd } from './effects.js';
 import { makeCargoModel } from './cargoModels.js';
+import { cornerFrames, addCornerLights, placeCornerCamera } from './cargoview.js';
 
 const C = CONFIG.consignment, E = C.ending;
 const params = new URLSearchParams(location.search);
@@ -44,17 +45,8 @@ const modelFor = (id) => {
   if (models.has(id)) return models.get(id);
   const model = makeCargoModel(id);
   // framed on what it takes up in each state (played through a few seconds), so a calm one is not lost
-  // in the room a furious one needs
-  const frames = [0, 1, 2].map((state) => {
-    if (state && !model.userData.setState) return null;
-    model.userData.setState?.(state, true);
-    const bounds = new THREE.Box3();
-    for (let t = 0; t < 5; t += 0.31) { model.userData.animate(t); model.updateMatrixWorld(true); bounds.union(new THREE.Box3().setFromObject(model)); }
-    const size = bounds.getSize(new THREE.Vector3());
-    return { mid: bounds.getCenter(new THREE.Vector3()).y, radius: Math.max(size.x, size.y, size.z) * 0.56 };
-  });
-  model.userData.setState?.(0, true);
-  model.userData.frames = frames.map(f => f || frames[0]);
+  // in the room a furious one needs (cargoview.js: the menu's level card frames its item the same way)
+  model.userData.frames = cornerFrames(model);
   models.set(id, model);
   return model;
 };
@@ -62,10 +54,7 @@ const modelFor = (id) => {
 // ---- the corner ---------------------------------------------------------------------------------
 const box = document.getElementById('cargoCorner'), label = document.getElementById('cargoLabel');
 const cornerScene = new THREE.Scene();
-cornerScene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2.2));
-const cornerSun = new THREE.DirectionalLight(0xffffff, 1.5);
-cornerSun.position.set(3, 6, 5);
-cornerScene.add(cornerSun);
+addCornerLights(cornerScene);
 const turntable = new THREE.Group();
 cornerScene.add(turntable);
 const cornerCamera = new THREE.PerspectiveCamera(C.corner.fov, 1, 0.1, 60);
@@ -120,9 +109,7 @@ export const drawCargoCorner = (dt, now) => {
   const want = model.userData.frames[state], k = Math.min(1, dt * 4);
   frame.mid += (want.mid - frame.mid) * k;
   frame.radius += (want.radius - frame.radius) * k;
-  const far = frame.radius / Math.sin(THREE.MathUtils.degToRad(C.corner.fov / 2));
-  cornerCamera.position.set(0, frame.mid + far * 0.3, far * 0.95);
-  cornerCamera.lookAt(0, frame.mid, 0);
+  placeCornerCamera(cornerCamera, frame);
   // drawn over that patch of the frame: the glass, then (in front of everything) the item
   renderer.getSize(size);
   renderer.getViewport(view);

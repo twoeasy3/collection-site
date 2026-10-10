@@ -1,6 +1,6 @@
 // ---- the start screen's level select, car and side: the game's front end ---------------------------------
 // One screen, nothing scrolls. The level picked is the STAGE: its picture large, its number and name, its
-// description for the side picked, its clock, tip, cargo and best times with their medals. Under it the STRIP: the
+// description for the side picked, its clock, tip and best times with their medals, and (in the HUD's round window) the cargo it carries. Under it the STRIP: the
 // levels of its group, to step through; over it the groups, and over those the tabs (Deliveries, Races): the
 // same control one level up each time. Beside the stage the car (a way into the garage), the side (Good or
 // Evil: Evil recolours the screen) and START.
@@ -15,6 +15,7 @@ import '../menu2.css';
 import { LEVELS, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace } from '../levels.js';
 import { levelName, levelDescription } from '../levelText.js';
 import { cargoFor } from '../cargo.js';
+import { cargoCircleView } from './cargoview.js';
 import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Tiers, tierStarsNode, richTiers } from '../tiers.js';
@@ -196,17 +197,19 @@ const drawStage = () => {
     : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare') : null;
   const words = levelDescription(level, evil); // (for the side picked: see levelText.js)
   const best = Progress.bestTime(level.id, evil);
-  // what is being delivered, for the side picked (cargo.js: levelText.json's, whatever is wrong with it; null on a race)
-  const carried = cargoFor(level, evil);
-  const cargoFact = carried ? fact('Cargo', carried.name) : null;
-  if (cargoFact) cargoFact.title = (evil ? 'What you are delivering as Evil' : 'What you are delivering as Good');
+  // what is being delivered, for the side picked (cargo.js: levelText.json's, whatever is wrong with it; null on a
+  // race), in the HUD's own round window, turning, with its name under it: nothing on a level not open
+  const carried = open ? cargoFor(level, evil) : null;
+  const ring = carried ? make('span', 'ring') : null;
+  const cargo = carried ? make('div', 'cargo3d', ring, make('span', 'cargo-name', carried.name)) : null;
+  if (cargo) cargo.title = (evil ? 'What you are delivering as Evil: ' : 'What you are delivering as Good: ') + carried.name;
+  wantCargo(carried, ring);
   const info = make('div', 'info',
     make('h2', '', levelName(level)),
     open && words ? make('p', 'desc', words) : null,
     open ? make('div', 'facts',
       fact('Clock', formatTime(clockFor(level, evil)) + (oneSided(level) ? ' (always Good)' : '')),
       fact('Tip', money(level.tip)),
-      cargoFact,
       fact('Best to spare', best === undefined ? 'Not delivered yet' : formatTime(best))) : null,
     needs ? make('p', 'needs' + (open && !Game.canStart ? ' warn' : ''), ...richTiers(needs)) : null,
     open && place ? make('p', 'prize', tierStarsNode(place.tier), ' medals ' + Tiers.tierMedals(place.tier) + '/' + Tiers.tiers[place.tier - 1].length * 2) : null,
@@ -220,7 +223,7 @@ const drawStage = () => {
   arrows[1].title = 'The next level (right)';
   arrows[0].addEventListener('click', () => step(-1));
   arrows[1].addEventListener('click', () => step(1));
-  stage.replaceChildren(shot, plate, ribbon, info, ...arrows);
+  stage.replaceChildren(shot, plate, ribbon, cargo, info, ...arrows);
   // (a new level slides in; the other side only swaps the words)
   stage.className = 'menu-stage' + (open ? '' : ' locked') + (drawn && !sameLevel ? ' enter' : drawn && drawn !== key ? ' flip' : '');
   drawn = key;
@@ -300,12 +303,59 @@ const showCarModel = (evil) => {
     requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    if (!carView || !menuUp() || Garage.isOpen) return;
-    const live = drawViews(sharedRenderer(), [carView], now / 1000, dt);
-    if (live !== carLive) { carLive = live; syncPicture(); }
+    if (!menuUp()) { dropCargo(); return; } // (a run has started: what the circle took is given back)
+    if (Garage.isOpen) return;
+    if (!cargoView && cargoWant) buildCargo(); // (the menu is back, and the stage has not been drawn again)
+    const views = [carView, cargoView && cargoDue(cargoView) ? cargoView : null].filter(Boolean);
+    if (!views.length) return;
+    const live = drawViews(sharedRenderer(), views, now / 1000, dt);
+    if (carView && live !== carLive) { carLive = live; syncPicture(); }
   };
   requestAnimationFrame(frame);
 }
+// The cargo: the HUD corner's round window (render/cargoview.js), in the stage's corner. Its model is drawn by the same
+// one renderer as the car's, into a canvas in its circle (no WebGL context of its own), turning at the corner's own
+// speed on a desktop; on a phone (a touch screen, a narrow window: see phone()) it stands at a three-quarter angle
+// and is drawn once, and under prefers-reduced-motion it is stilled as the car is (modelviews.js drawViews).
+// Built when the item (or the way it is shown) changes, not when the stage is drawn again; given back when the
+// item changes, when no level on show carries one, and when the menu is left (the frame below). The stage's
+// own nodes are made afresh each time it is drawn, so the view is moved into the new circle.
+let cargoView = null;   // { id, still, el, scene, camera, step, stand, canvas, ctx }
+let cargoWant = null;   // { item, el }: what the stage last asked for (built again if the menu comes back)
+const dropCargo = () => {
+  if (!cargoView) return;
+  cargoView.canvas?.remove();
+  disposeViews([cargoView]);
+  cargoView = null;
+};
+const buildCargo = () => {
+  const item = cargoWant?.item;
+  if (!item || !cargoWant.el) return dropCargo();
+  const still = phone();
+  try {
+    if (cargoView && (cargoView.id !== item.id || cargoView.still !== still)) dropCargo();
+    if (!cargoView) {
+      if (!sharedRenderer()) return; // (no renderer to be had: the name under the circle stands alone)
+      cargoView = { id: item.id, still, ...cargoCircleView(item.id, { spin: !still }) };
+    }
+  } catch (error) { // (never a crash: the circle stays empty, with the name)
+    console.warn('No model for the cargo card: ' + (error?.message || error));
+    dropCargo();
+    return;
+  }
+  cargoView.canvas?.remove(); // (a new circle: the old one's canvas went with its node)
+  cargoView.canvas = cargoView.ctx = null;
+  cargoView.stillAt = undefined;
+  cargoView.el = cargoWant.el;
+};
+const wantCargo = (item, el) => { cargoWant = item ? { item, el } : null; buildCargo(); };
+// a still one is drawn when its circle is new or has changed size, a turning one every frame
+const cargoDue = (v) => {
+  if (!v.still) return true;
+  const r = v.el.getBoundingClientRect(), ratio = Math.min(window.devicePixelRatio || 1, 2);
+  if (!r.width || !r.height) return false;
+  return !v.canvas || v.canvas.width !== Math.round(r.width * ratio) || v.canvas.height !== Math.round(r.height * ratio);
+};
 const drawCar = () => {
   const evil = Game.evil && !oneSided(cursor);
   showCarModel(evil);
