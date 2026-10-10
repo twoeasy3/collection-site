@@ -475,6 +475,20 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       long way round. A low car goes straight under; a van or the bus must take the detour, or
       lose its roof rack, lights and some health trying. _Gamble:_ made in the garage, and again
       at the sign. _Builds on:_ side roads, tunnels, car heights already in `cars.js`.
+      _Built (`gambles.js`, field `lowBridges: { s, clearance? }`, as a height bar over the player's
+      side, 2 m unless said):_ it must stand between an exit and its merge (the level reports one
+      that does not). A car that fits goes under; a taller one that goes at it loses 30 health and
+      25 more per metre too tall, and 60% of its speed, and is through; the player is told on the
+      way in what the car measures. Tall traffic takes the exit. On Gimmick Road 3 (4400; its first
+      side road pushed out to 150 m so the way round costs 4 s), Ring Road (1100) and Back Roads
+      (1320), cash under each. Clocks not re-timed. Verified by `.gimmicks3-check.mjs bridge` (a low
+      car untouched, a 2.65 m truck takes the knock and is never stopped, the same truck round by
+      the exit unhurt and 4 s slower, the oncoming side not barred, a bus takes the exit, both real
+      levels have an exit round theirs) and in stills (the board, the bar, the card, Ring Road).
+      Not verified: played by hand; Back Roads on screen. Known gap: a tall traffic vehicle that
+      cannot get over to the exit lane is taken off the road if it is 140 m or more from the
+      player, and otherwise drives through the bar. It is a bar, not a bridge: say if a real
+      bridge over the whole road is wanted.
 - [ ] H5. **Ford**: the road dips through a river, with the bridge a little further round. Depth
       posts show how deep it is today (it varies down the level). A car that wades well goes
       through; one that does not is slowed to a crawl or stalls. _Gamble:_ read the posts and

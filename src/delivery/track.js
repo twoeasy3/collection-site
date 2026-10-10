@@ -1039,6 +1039,12 @@ const createTrack = () => {
       else if (w.dir !== 'left' && w.dir !== 'right') problems.push('crosswind at ' + w.from + ': dir is left or right (the side it blows to)');
       else if ([w.strength, w.every, w.length].some(v => v !== undefined && !(v > 0)) || (w.every ?? CONFIG.crosswind.every) < (w.length ?? CONFIG.crosswind.length)) problems.push('crosswind at ' + w.from + ': strength, every and length are more than 0, a gust no longer than the time between gusts');
     }
+    for (const b of LEVEL.lowBridges || []) {
+      const name = 'low bridge at ' + b.s;
+      if (b.road === 'side' || !(b.s >= 60 && b.s <= length - 30)) problems.push(name + ': on the expressway, 60 m from the start, 30 m from the finish');
+      else if (b.clearance !== undefined && !(b.clearance >= 1 && b.clearance <= 5)) problems.push(name + ': clearance is 1 to 5 m');
+      else if (!exits.some(x => x.exitAt + 40 < b.s && x.mergeAt - 40 > b.s)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the way round for tall vehicles)');
+    }
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
       else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');

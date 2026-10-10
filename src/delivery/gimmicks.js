@@ -25,7 +25,7 @@ import { makeCarriage } from './render/trainModel.js';
 import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
-import { makeWindsock, makeTransporter } from './render/gambleModels.js';
+import { makeWindsock, makeTransporter, makeHeightBar } from './render/gambleModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -70,7 +70,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -882,6 +882,17 @@ const GROUPS = [
       for (let z = -7.5; z < 8; z += 1.1) g.add(box(9, 0.06, 0.45, lambert(0x7a5d3c), 0, 0.03, z));
       g.add(car);
       return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4, slow = u < 0.5; car.position.set(slow ? Math.sin(t * 9) * 0.5 : 0, slow ? Math.abs(Math.sin(t * 22)) * 0.16 : 0.05, -7 + ((slow ? u * 2 : (u - 0.5) * 2)) * 14); car.rotation.z = slow ? Math.sin(t * 17) * 0.08 : 0; } };
+    } },
+    { name: 'Low bridge', color: 0xc1121f, has: (l) => l.lowBridges?.length, rules: [
+      `A height bar across your side of the road, ${GB.bar.clearance.toFixed(1)} m up unless its board says otherwise, with an exit before it: the side road is the tall vehicles' way round, and the tall traffic takes it.`,
+      'On the way in you are told what your car measures against it. <strong>A car that fits goes straight under</strong>: the short way, with the road to itself.',
+      `A car that is too tall can take the exit and lose the time, or go at the bar anyway: it costs ${GB.bar.damage} health and ${GB.bar.perMetre} more for every metre too tall, and ${pct(1 - GB.bar.keep)} of its speed. It is never stopped.`,
+      'The gamble is made in the garage, and again at the sign. (The oncoming side has no bar.)',
+    ], build: () => {
+      const g = road(9, 14), bar = makeHeightBar(-4.5, 0, 2), low = painted(vehicle('sport', 0xffffff), 0x39ff14), tall = vehicle('bus', 0xd8262b);
+      bar.position.z = 1;
+      g.add(bar, low, tall);
+      return { model: g, spin: false, tick: (t) => { const u = (t % 5) / 5; low.position.set(-2.4, 0, -7 + Math.min(1, u * 2.5) * 14); low.visible = u < 0.4; tall.visible = u >= 0.4; const v = (u - 0.4) / 0.6; tall.position.set(-2.4 + Math.max(0, v - 0.25) * 12, 0, -9 + Math.min(v, 0.55) * 12); } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

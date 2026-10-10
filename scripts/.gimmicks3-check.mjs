@@ -292,6 +292,49 @@ try {
     real('washboards', () => check(Gambles.boards.length > 0, '  its washboard: ' + Gambles.boards.map(x => x.from + ' to ' + x.to + ' m, skims at ' + Math.round(x.skim * 3.6) + ' km/h').join('; ')));
   });
 
+  // ---- low bridge (the bar at 4400, 2 m; the exit at 4000 goes round it, back at 4800)
+  await section('bridge', async () => {
+    const L = C.lowBridge, bar = () => Gambles.bars[0];
+    // from 3850 to 4900 at up to v: straight on in lane n, or (exit) over to the exit lane and round by the side road
+    const go = (car, v, n, exit = false) => {
+      start(3850, n, v, { car });
+      const health = P.health;
+      let slowest = 99, side = false, after = 0;
+      const t = g.run(120, () => {
+        quiet();
+        P.speed = Math.min(P.speed, v);
+        const main = T().isMain(P.s);
+        if (!main) side = true;
+        const want = exit && main && P.s > 4000 - C.ramps.laneZone + 15 && P.s < 4010 ? lane(5, P.s) + C.laneWidth : main ? lane(n, P.s) : P.lat, d = want - P.lat;
+        g.drive(1, Math.abs(d) < 0.3 ? 0 : Math.sign(d));
+        slowest = Math.min(slowest, P.speed);
+        if (main && P.s > 4400 && !after) after = P.speed;
+        return (main && P.s > 4900) || G.wrecks > 0;
+      });
+      return { t, lost: health - P.health, slowest, side, after, hits: bar().hits, wrecks: G.wrecks, busted: P.busted, height: P.height };
+    };
+    check(bar().exit && bar().exit.exitAt === 4000, 'low bridge: the bar at ' + bar().s + ' m, ' + bar().clearance + ' m up, has the exit at 4000 m round it');
+    const low = go('sport', 28, 4);
+    check(low.hits === 0 && low.lost === 0 && !low.side && low.slowest > 27, 'low bridge, a car that fits (' + low.height + ' m): straight under, untouched, never slowed (' + low.t.toFixed(1) + ' s)');
+    check(said('you fit under') && said(low.height.toFixed(1) + ' m under'), 'low bridge: it is told that it fits, and what it measures');
+    const hit = go('liftedtruck', 28, 4);
+    check(hit.hits === 1 && hit.lost >= L.damage && hit.wrecks === 0 && hit.after < 28 * L.keep + 1 && hit.slowest > 5, 'low bridge, the risk taken by a car too tall (' + hit.height + ' m): it takes the knock (' + hit.lost.toFixed(0) + ' health, down to ' + Math.round(hit.after * 3.6) + ' km/h) and is through, never stopped (' + hit.t.toFixed(1) + ' s)');
+    check(said('too tall') && said('CLANG'), 'low bridge: it is told it is too tall before the exit, and the knock is said');
+    const round = go('liftedtruck', 28, 5, true);
+    check(round.side && round.hits === 0 && round.lost === 0 && !round.busted && round.slowest > 15, 'low bridge, the safe line: the tall car takes the exit and comes back unhurt, never under ' + Math.round(round.slowest * 3.6) + ' km/h (' + round.t.toFixed(1) + ' s: ' + (round.t - low.t).toFixed(1) + ' s longer than under the bar)');
+    // the oncoming side has no bar; a ghost goes through it
+    const across = go('liftedtruck', 28, 2);
+    check(across.hits === 0 && across.lost === 0, 'low bridge: the oncoming side is not barred');
+    // tall traffic takes the exit
+    start(3700, 3, 0);
+    const bus = put('bus', 3800, lane(5, 3800), 18), van = put('commuter', 3800, lane(4, 3800), 18);
+    bus.fixed = van.fixed = false; bus.viaSide = van.viaSide = false;
+    let under = false;
+    g.run(40, () => { for (const c of g.Traffic.cars) if (c !== bus && c !== van && !c.fixed) c.active = false; P.speed = 0; P.s = 3700; if (bus.active && T().isMain(bus.s) && bus.s > 4390 && bus.s < 4410) under = true; return !bus.active || (!T().isMain(bus.s)) || bus.s > 4500; });
+    check(!under && bus.active && !T().isMain(bus.s) && !van.viaSide, 'low bridge: a bus coming up to it, with room to move over, takes the exit (a car that fits is left to choose)');
+    real('lowBridges', () => check(Gambles.bars.every(x => x.exit), '  its bar' + (Gambles.bars.length > 1 ? 's' : '') + ': ' + Gambles.bars.map(x => x.s + ' m, ' + x.clearance + ' m up, round by the exit at ' + x.exit?.exitAt).join('; ')));
+  });
+
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)
   await section('finish', async () => {
     start(0, 3, 20, { ghost: true, keep: true });

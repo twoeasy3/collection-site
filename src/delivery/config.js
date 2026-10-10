@@ -1361,6 +1361,12 @@ export const CONFIG = {
   // on the ramps it is never slower than `crawl` m/s, so nothing comes to a stand on them)
   // (The queue is the level's ordinary traffic no longer than `longest` m (half its length) or taller than `tallest` m)
   jamRamp: { crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
+  // a low bridge ("lowBridges": { s, clearance? }): a height bar across the player's side and its shoulder, `clearance`
+  // m off the road (the bridge's own, or this), between an exit and its merge. A car taller than that which goes at
+  // it loses `damage` health and perMetre more for each m too tall, keeps `keep` of its speed, and is through. Said
+  // from `warn` m before the exit; boards `sign` m before the exit and at it. Tall traffic takes the exit (one found
+  // within `traffic` m of the bar, more than `unseen` m from the player, is taken off the road)
+  lowBridge: { clearance: 2, damage: 30, perMetre: 25, keep: 0.4, warn: 260, sign: 200, traffic: 120, unseen: 140 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

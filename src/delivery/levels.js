@@ -297,6 +297,12 @@
 //              `lanes` ([first, last]: the player's whole side if not said). Driven up at the speed on its board or
 //              more, the car flies the queue; slower, it comes down in it. The way round is whatever the level leaves
 //              open: a lane, the shoulder (its rules apply), the oncoming side. On straight, level road
+//   lowBridges { s, clearance? }: a low bridge: a height bar across the player's side of the expressway and its shoulder,
+//              `clearance` m off the road (CONFIG.lowBridge.clearance if not said), between an exit and its merge:
+//              the side road is the way round for tall vehicles, and tall traffic takes it. A car no taller than the
+//              bar (its `height` in cars.js) goes straight under; a taller one that goes at it loses health and most
+//              of its speed, and is through. Signed before the exit, with what the car measures. The level reports
+//              one that has no exit round it
 //   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
 //              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
 //              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a

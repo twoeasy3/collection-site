@@ -10,7 +10,7 @@ import { Traffic } from '../traffic.js';
 import { Gambles } from '../gambles.js';
 import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
-import { makeWindsock, makeSign, makeTransporter } from './gambleModels.js';
+import { makeWindsock, makeSign, makeTransporter, makeHeightBar } from './gambleModels.js';
 import { buildStrip } from './road.js';
 
 const flat = (color, offset) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
@@ -63,6 +63,16 @@ Game.onLoad.push(() => {
       if (r.s - back < 5) continue;
       at(r.s - back, Track.hi(r.s - back) - 0.6).add(makeSign('JAM RAMP\n' + kmh(r.speed) + '+', '#ffd23f', '#111', 5.4, 2.6));
     }
+  }
+  // ---- low bridges: the bar over the player's side, and boards before the exit that goes round it and at it
+  for (const bar of Gambles.bars) {
+    const L = CONFIG.lowBridge;
+    at(bar.s, 0).add(makeHeightBar(-bar.hi, -bar.lo, bar.clearance)); // (the group's +x is the road's left)
+    const text = 'LOW BRIDGE ' + bar.clearance.toFixed(1) + ' m';
+    for (const s of bar.exit ? [bar.exit.exitAt - L.sign, bar.exit.exitAt - 30] : [bar.s - L.sign]) {
+      if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign(text + (bar.exit ? '\nTALL: EXIT' : ''), '#fff', '#c1121f', 6, 2.6));
+    }
+    if (bar.s - 90 > 5) at(bar.s - 90, Track.lo(bar.s - 90) + 0.6).add(makeSign(text, '#fff', '#c1121f', 6, 1.6));
   }
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {

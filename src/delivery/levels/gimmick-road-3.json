@@ -33,7 +33,7 @@
     { "length": 600, "curve": 0 }
   ],
   "exits": [
-    { "exitAt": 4000, "mergeAt": 4800, "out": 70, "oncoming": false },
+    { "exitAt": 4000, "mergeAt": 4800, "out": 150, "oncoming": false },
     { "exitAt": 5300, "mergeAt": 6100, "out": 70, "oncoming": false }
   ],
   "pickups": [
@@ -51,6 +51,10 @@
     { "type": "cash10", "s": 3370, "lane": 3 },
     { "type": "cash10", "s": 3370, "lane": 5 },
     { "type": "wrench", "s": 3800, "lane": 3 },
+    { "type": "cash10", "s": 4425, "lane": 3 },
+    { "type": "cash10", "s": 4425, "lane": 4 },
+    { "type": "cash10", "s": 4425, "lane": 5 },
+    { "type": "cash5", "s": 400, "lane": 1, "road": "side", "exit": 0 },
     { "type": "wrench", "s": 5100, "lane": 3 }
   ],
   "obstacles": [
@@ -67,6 +71,9 @@
   ],
   "shoulderRows": [
     { "kind": "barrier", "from": 2390, "to": 2470, "every": 10, "side": "right" }
+  ],
+  "lowBridges": [
+    { "s": 4400 }
   ],
   "washboards": [
     { "from": 2950, "to": 3450 }

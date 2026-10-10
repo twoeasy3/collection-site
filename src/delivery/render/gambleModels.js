@@ -40,6 +40,22 @@ export const makeSign = (text, bg = '#ffd23f', fg = '#111', w = 5.4, h = 1.8, po
   return g;
 };
 
+// a height bar: a striped beam `clearance` m off the ground from x = `from` to x = `to` (m, the model's x), hung
+// from a gantry on a post at each end, with its limit on a roundel in the middle (facing the model's -z)
+export const makeHeightBar = (from, to, clearance = 2) => {
+  const g = new THREE.Group(), steel = lambert(0x6d737b), w = to - from, mid = (from + to) / 2, top = clearance + 1.5;
+  for (const x of [from - 0.3, to + 0.3]) add(g, box(0.4, top, 0.4), steel, x, top / 2, 0);
+  add(g, box(w + 1, 0.3, 0.4), steel, mid, top, 0);
+  const n = Math.max(4, Math.round(w / 1.2));
+  for (let k = 0; k < n; k++) add(g, box(w / n, 0.42, 0.3), glow(k % 2 ? 0x16181c : 0xffd23f), from + (k + 0.5) * w / n, clearance + 0.21, 0); // (the bar itself, its underside at the limit)
+  for (let x = from + 0.4; x < to; x += Math.max(1.5, (w - 0.8) / 4)) add(g, box(0.06, top - clearance - 0.4, 0.06), steel, x, (top + clearance + 0.4) / 2, 0); // (hangers)
+  const plate = makeBoard(clearance.toFixed(1) + ' m', '#fff', '#c1121f', 2.2, 1.3);
+  plate.position.set(mid, top + 0.85, -0.25);
+  plate.rotation.y = Math.PI;
+  g.add(plate);
+  return g;
+};
+
 // a car transporter with its ramps down: its deck a slope `run` m long (the model's +z) up to a lip `top` m high,
 // `half` m either side of its middle; its cab stands on beyond the lip, under it
 export const makeTransporter = (run = 15, top = 4.15, half = 1.5) => {

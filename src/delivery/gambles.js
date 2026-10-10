@@ -6,6 +6,8 @@
 //   crests       (no field: the road's own profile, a segment's grade and ease) a crest sharp enough that a fast
 //                car leaves the ground over it: no steering in the air, and it lands on whatever is over the top
 //   jamRamps     a car transporter with its ramps down at the back of a queue: fast enough, the car flies the queue
+//   lowBridges   a height bar over the player's side, the exit before it the tall vehicles' way round: under the
+//                bar a car that fits goes straight on; a taller one takes the knock
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -41,6 +43,7 @@ export const Gambles = {
   ramps: [],      // { s (the foot of its ramps), lane, lat, run, top (m: its lip), queue, lanes: [first, last], last (s of the last car of its queue), clear (s the car must land beyond), speed (m/s that does) }
   onRamp: null,   // the ramp the car is on
   up: 0,          // m the car is above the road, by this file's doing (on a ramp, in the air)
+  bars: [],       // low bridges: { s, clearance (m), lo, hi (lat: what it spans), exit (the Track.exits entry that goes round it), hits (times the player's car has hit it this run) }
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
@@ -51,6 +54,8 @@ export const Gambles = {
       strength: w.strength ?? W.strength, every: w.every ?? W.every, length: w.length ?? W.length }));
     this.buildCrests();
     this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to, skim: b.skim ?? CONFIG.washboard.skim }));
+    this.bars = (LEVEL.lowBridges || []).map((b) => ({ s: b.s, clearance: b.clearance ?? CONFIG.lowBridge.clearance, lo: Track.laneOffset(Track.laneRange(1, b.s)[0], b.s) - CONFIG.laneWidth / 2, hi: Track.hi(b.s),
+      exit: Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null, hits: 0 }));
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -89,6 +94,7 @@ export const Gambles = {
     this.fly = null;
     Player.rampAhead = false;
     Player.shaken = this.rough = 0;
+    this.barS = Player.s;
     this.up = 0;
     this.onRamp = null;
     this.ground = null;
@@ -300,9 +306,44 @@ export const Gambles = {
     if ((this.boardSound = (this.boardSound || 0) - dt) <= 0) { this.boardSound = B.soundEvery; sfx('gravel', 0.5 * r); }
   },
 
+  // ---- low bridges ---------------------------------------------------------------------------------------
+  // A height bar across the player's side of the road (and its shoulder), `clearance` m off it, between an exit
+  // and its merge: the side road is the tall vehicles' way round, and tall traffic takes it. A car no taller
+  // than the bar goes under; a taller one that goes at it anyway takes the knock (health, by how much too tall,
+  // and most of its speed) and is through: it is never stopped. The oncoming side is not barred
+  fits(bar, height = Player.height) { return height <= bar.clearance; },
+  updateBars() {
+    const L = CONFIG.lowBridge, P = Player, was = this.barS ?? P.s;
+    this.barS = P.s;
+    for (const bar of this.bars) {
+      const from = (bar.exit ? bar.exit.exitAt : bar.s) - L.warn;
+      if (P.active && Track.isMain(P.s) && P.s > from && P.s < bar.s && !this.said['bar' + bar.s]) {
+        this.said['bar' + bar.s] = true;
+        const line = Message.say('events', this.fits(bar) ? 'lowBridgeFits' : 'lowBridgeTall');
+        if (line) line.text += ' (' + P.height.toFixed(1) + ' m under ' + bar.clearance.toFixed(1) + ' m)';
+      }
+      // tall traffic goes round by the exit (and one that turns up beyond the exit, far from the player, is taken away)
+      for (const car of Traffic.cars) {
+        if (!car.active || car.dir < 0 || car.fixed || car.height <= bar.clearance || !Track.isMain(car.s) || car.s > bar.s) continue;
+        if (bar.exit && car.s < bar.exit.exitAt) car.viaSide = true;
+        else if (car.s > bar.s - L.traffic && Math.abs(car.s - P.s) > L.unseen) car.active = false;
+      }
+      if (!P.active || !Track.isMain(P.s) || !(was < bar.s && P.s >= bar.s) || P.s - was > 30) continue;
+      if (P.lat + P.hw < bar.lo || P.lat - P.hw > bar.hi || this.fits(bar, P.height + P.air) || P.ghost > 0) continue;
+      bar.hits++;
+      if (P.tank > 0) { sfx('crash', 0.6); continue; } // (a tank takes the bar with it)
+      if (P.shield <= 0) hurt(P, L.damage + L.perMetre * (P.height + P.air - bar.clearance));
+      P.speed *= L.keep;
+      Game.shake = 1;
+      sfx('crash', 1);
+      Message.say('events', 'lowBridgeHit');
+    }
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
+    this.updateBars();
     this.updateBoards(dt);
     this.updateWinds(dt);
   },
