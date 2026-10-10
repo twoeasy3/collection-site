@@ -444,6 +444,80 @@ export const makeValue = (key) => {
   return isList(def) ? [] : makeEntry(key);
 };
 
+// ---- a lapped road closed: the segments changed as little as will bring the road back to where it starts ----
+// Where a road of these segments ends, as the game lays it out (track.js: the bend looked up by the metre, the
+// road stepped 2 m at a time, the last point read off at the road's length): { x, y, h }, from a start at
+// 0, 0 facing h = 0. The game calls a loop closed when that is within 1 m and 0.01 rad of the start
+export const roadEnd = (segments) => {
+  const length = segments.reduce((sum, seg) => sum + seg.length, 0), curves = new Float64Array(Math.max(1, Math.ceil(length)));
+  { let at = 0; for (const seg of segments) { for (let i = 0; i < seg.length; i++) curves[at + i] = seg.curve || 0; at += seg.length; } }
+  const curveAt = (s) => (s < 0 || s >= length ? 0 : curves[Math.floor(s)]);
+  let x = 0, y = 0, h = 0, px = 0, py = 0, last = 0;
+  for (let s = 0; s + 2 <= length; s += 2) {
+    px = x; py = y; last = s + 2;
+    h -= curveAt(s + 1) * 2;
+    x += Math.sin(h) * 2;
+    y += Math.cos(h) * 2;
+  }
+  const t = (length - (last - 2)) / 2; // (a length that is not even: read off past the last point, on the line of the last step)
+  return last ? { x: px + (x - px) * t, y: py + (y - py) * t, h } : { x: 0, y: 0, h: 0 };
+};
+// The segments of a loop that closes, or { problem }. Two things are put right, turn and turn about:
+//   the turn: the road must come round a whole number of times (the nearest to what it does now). What it is
+//             out by is taken off every bend, each by its share of the bending: no bend changes much
+//   the gap:  a segment made longer or shorter, bending as far as it did, moves the end of the road along that
+//             segment's own line (its chord), so two that run different ways can bring the end back to the
+//             start. Lengths are whole metres, so of the longest segments' pairs and their roundings the one
+//             that leaves the smallest gap, as the game will measure it, is taken
+// Returns { segments (copies), gap (m), turned (rad taken off the bends), moved: [{ i, from, to }] }
+export const closeLoop = (segments) => {
+  const S = segments.map(seg => ({ ...seg })), TURN = 2 * Math.PI;
+  if (!S.some(seg => seg.curve)) return { problem: 'the road has no bends to come round by' };
+  const offBy = (h) => h - (Math.round(h / TURN) || (h < 0 ? -1 : 1)) * TURN;
+  let turned = 0;
+  const squareUp = () => { // (the turn; twice, as the game's stepping makes it not quite the sum of the bends)
+    for (let pass = 0; pass < 3; pass++) {
+      const off = offBy(-roadEnd(S).h), bending = S.reduce((sum, seg) => sum + Math.abs((seg.curve || 0) * seg.length), 0);
+      if (Math.abs(off) < 1e-9) break;
+      turned += off;
+      for (const seg of S) if (seg.curve) seg.curve -= off * Math.abs(seg.curve * seg.length) / bending / seg.length;
+    }
+  };
+  const resized = (seg, to) => ({ ...seg, length: to, curve: (seg.curve || 0) * seg.length / to || 0 }); // (bending as far as it did)
+  const first = S.map(seg => seg.length);
+  squareUp();
+  for (let round = 0; round < 3; round++) {
+    const end = roadEnd(S);
+    if (Math.hypot(end.x, end.y) < 0.3) break;
+    // each candidate: the longest segments, with the line its end moves along as it grows, a metre for a metre
+    const lines = [];
+    { let h = 0; S.forEach((seg, i) => { const bend = (seg.curve || 0) * seg.length, mid = h - bend / 2, k = bend ? Math.sin(bend / 2) / (bend / 2) : 1; lines.push({ i, length: seg.length, x: Math.sin(mid) * k, y: Math.cos(mid) * k }); h -= bend; }); }
+    const longest = lines.filter(l => l.length >= 12).sort((p, q) => q.length - p.length).slice(0, 14), pairs = [];
+    for (let a = 0; a < longest.length; a++) for (let b = a + 1; b < longest.length; b++) {
+      const A = longest[a], B = longest[b], det = A.x * B.y - A.y * B.x;
+      if (Math.abs(det) < 0.25) continue; // (too nearly parallel: a small gap would take a great length)
+      const da = (-end.x * B.y + end.y * B.x) / det, db = (-A.x * end.y + A.y * end.x) / det;
+      if (A.length + da < 6 || B.length + db < 6) continue;
+      pairs.push({ A, B, da, db, change: Math.abs(da) + Math.abs(db) });
+    }
+    if (!pairs.length) return { problem: 'closing it needs two long segments that run different ways' };
+    let best = null;
+    for (const { A, B, da, db } of pairs.sort((p, q) => p.change - q.change).slice(0, 10)) {
+      for (let ra = Math.floor(da) - 1; ra <= Math.ceil(da) + 1; ra++) for (let rb = Math.floor(db) - 1; rb <= Math.ceil(db) + 1; rb++) {
+        if (A.length + ra < 4 || B.length + rb < 4) continue;
+        const tried = S.map((seg, i) => (i === A.i ? resized(seg, A.length + ra) : i === B.i ? resized(seg, B.length + rb) : seg)), at = roadEnd(tried), gap = Math.hypot(at.x, at.y);
+        if (!best || gap < best.gap - 0.02 || (Math.abs(gap - best.gap) <= 0.02 && Math.abs(ra) + Math.abs(rb) < best.change)) best = { gap, change: Math.abs(ra) + Math.abs(rb), tried };
+      }
+    }
+    if (!best) return { problem: 'closing it needs two long segments that run different ways' };
+    best.tried.forEach((seg, i) => { S[i] = seg; });
+    squareUp();
+  }
+  const after = roadEnd(S), gap = Math.hypot(after.x, after.y);
+  if (gap > 1 || Math.abs(offBy(-after.h)) > 0.01) return { problem: 'it could not be brought within a metre (' + gap.toFixed(1) + ' m left): move a segment by hand first' };
+  return { segments: S, gap, turned, moved: S.map((seg, i) => ({ i, from: first[i], to: seg.length })).filter(m => m.to !== m.from) };
+};
+
 // ---- the facts of a level's road, from its own data (as track.js works them out), for the rules -------------
 export const roadFacts = (level) => {
   const segments = Array.isArray(level.segments) ? level.segments : [];
@@ -480,7 +554,9 @@ export const roadFacts = (level) => {
     segAt, curveAt: (s) => (s < 0 || s >= length ? 0 : segAt(s).curve || 0), gradeAt: (s) => (s < 0 || s >= length ? 0 : segAt(s).grade || 0),
     straight: (a, b) => !some(Math.max(0, a), Math.min(length, b) + 0.001, seg => !!seg.curve),
     sloped: (a, b) => some(Math.max(0, a), Math.min(length, b) + 0.001, seg => Math.abs(seg.grade || 0) > 0.002),
-    closed: Math.hypot(x, z) < 1 && Math.abs(turns - Math.round(turns)) < 0.002 && Math.round(turns) >= 1,
+    // (as the game measures it, stepping the road as track.js does: the exact arcs above can differ from that by a
+    // metre on a long circuit, and it is the game's word that counts)
+    closed: (() => { const end = roadEnd(segments.filter(seg => seg && seg.length > 0)), round = end.h / (2 * Math.PI); return Math.hypot(end.x, end.y) <= 1 && Math.abs(round - Math.round(round)) * 2 * Math.PI <= 0.01 && Math.abs(Math.round(round)) >= 1; })(),
   };
 };
 // the rules an entry (or a level-wide field) breaks: [text]
