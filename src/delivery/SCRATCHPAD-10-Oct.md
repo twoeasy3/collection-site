@@ -724,10 +724,12 @@ The saved H2 work (`4b617b5`) was sound: main merged in cleanly (`d0538f8`), and
 
 Level fields added (shapes):
 - `jamRamps: [{ s, lane, queue?, lanes?: [first, last] }]` (expressway, straight and level, clear of exits' ramps)
+- `washboards: [{ from, to, skim? }]` (expressway; skim in m/s, 13 to 40, CONFIG.washboard.skim if not said)
 
 Progress:
 - [x] H2 ramp over the jam: done, `72a0765`. On Gimmick Road 3 (2400), Night (2250, queue 2, a turbo at 2110), Speed Trap Alley (2860, queue 3). Clocks not re-timed. Cash beyond each queue, two side by side. `.gimmicks3-check.mjs ramp` passes (14), `finish` added (a whole run, hands off). Stills: `shots-gimmicks3/ramp-1-sign`, `ramp-2-foot`, `ramp-3-air`, `card-ramp`, `night-ramp`.
-- [ ] H8 washboard dirt: in progress.
+- [x] H8 washboard dirt: done, `61e67dc`. Field below. On Gimmick Road 3 (2950-3450, barriers at 3120, 3200, 3330), Safari (2520-2980), Outback Express (3960-4380), cash on each. Clocks not re-timed. One additive line in `player.js` (the steering's response times `1 - steerLoss * shaken`). `washboard` passes (12). Stills: `wash-1-sign`, `wash-2-on`, `card-wash`, `safari-wash`. A board's long line is now squeezed to fit (`makeBoard`).
+- [ ] H4 low bridge: in progress.
 
 For the owner:
 - H2: the queue fills the player's whole side, so the way round is the oncoming side or the shoulder (both a risk of their own), or the jump. Ring Road was wanted but has no 250 m clear of its exits' ramps.
@@ -741,3 +743,10 @@ For the owner:
 - T14 Toy Room: level `toys` (T1), 4600 m, done. Checks, ghost probe and screenshots only; not played by hand.
 - T15 underwater tunnel: started.
 - T18 moon base: not started.
+
+### Cash and rows (the owner's new rule; done, ff83536) and part 5
+- Stelvio: 20 cash pickups, 8 rows of two across (340, 880, 1420, 1700, 2260, 2800, 3320, 3850). Market Town: 17 on the road + 8 on the side road, 10 rows (350, 990, 1600, 1800, 2350, 3100, 3600; side 200, 420 three across, 700). Clocks untouched.
+- A row at one `s` draws and collects properly (`scratchpad/levelfix/rows.mjs`): in a lane the car takes that lane's only; astride the line between two lanes it takes both at once.
+- Engine gap found, NOT fixed: on the expressway a pickup's `lane: 'left' | 'right'` (the shoulder) fails the level check ("lane right is merged away there", track.js ~1155: only a side road's shoulders pass), though levels.js says a pickup can be on a shoulder. So on a 2-lane road a row is two across at most; three only on a side road.
+- Part 5: 81 "after" shots in `scratchpad/shots-levelfix/after` (the 68 of "before" plus rocks, summit, hairpin, market, rows); contact sheets `scratchpad/levelfix/sheets/b-*.jpg` (before) and `a-*.jpg` (after). The 68 were taken before the cash went in. Menu pictures: `levelshots/stelvio.jpg` (new: it had none), `market-town.jpg` (retaken).
+- All commits on `delivery-levelfix`: 2050f4e, 1d787fa, c513726, ff83536. Not pushed, not merged. Checks run after the last: levels-check all good, schema passed (hazards and bundle checks last run at c513726; only level JSON and two JPEGs since).

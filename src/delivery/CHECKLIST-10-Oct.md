@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `1d94f0e` (main, the in-game UI merged; not pushed). Running: agent 14 (Stelvio and Market Town), 18 (menu UI), 19 (road gimmicks), 20, 21, 22 (theme levels A, B, C), 23 (Tank Rage).
+Last updated: after `f9303ee` (main, Stelvio and Market Town merged; not pushed). Running: agent 18 (menu UI), 19 (road gimmicks), 20, 21, 22 (theme levels A, B, C), 23 (Tank Rage), 24 (known problems).
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -126,7 +126,12 @@ whichever agent is free, without asking first.
 
 Three agents at a time; the next item starts as each one finishes.
 
-- [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
+- [x] **Stelvio and Market Town**: agent 14, merged into `main` as `f9303ee` (`2050f4e`, `1d787fa`, `c513726`, `ff83536`); levels, schema, bundle, hazards and HUD checks pass. Seen: Stelvio's hairpin and Market Town's crossroads, before and after, sent to the owner
+  - [x] Boulders: a rock's waiting place and fall were measured from the road's plane, not the land, so it hung in the sky. Now each waits on the land and lands a little sunk, on every level
+  - [x] Markings: a crossroads' arms were not counted as roads, so houses and lawns lay over the cross road and hid its lines. Arms are roads now, for every theme; the suburb gets pavements, lots and trees along side roads and cross roads
+  - [x] Stelvio: stone walls and red and white bands round the hairpins, snow poles, a summit hut and sign, a crosswind over the top, 20 cash pickups in 8 rows
+  - [x] Market Town: a calmer side road, market umbrellas, a burst main, 25 cash pickups in 10 rows
+  - [ ] Still wrong: the face between Stelvio's legs is a ramp on a coarse grid; no valley view; Market Town's railway is a flat band; the cross road has no houses; a pickup on a shoulder of the main road fails the level check (so rows are two across at most on a two-lane road)
 - [x] Police pursuit redone as a plain traffic event: a getaway car and its interceptor come through from behind and drive on; nothing gained or lost by the player. Merged, `65478c1`; levels, schema, pursuit and hazards checks pass. Seen as two small stills and its Gimmicks card. For the owner: the pair now pass at 130% of the player's top speed; the getaway car is no longer an "evil" car; the helicopter was removed
 - [x] Car ideas lot: all 30 models, the table and the garage's "Car ideas" tab, on `main` (`18125cb`, `9ce0665`, `657beea`, `303bdb7`). Contact sheet sent to the owner. Weakest: Split-Window Coupe, Midnight Coupe, Two-Stroke Saloon. Nothing clicked by hand
 - [x] Twenty more Good cargo items (C1 to C20): agent 15, merged into `main` (`cc34343`, `533d5a2`); cargo, bundle and levels checks pass; seen on the Cargo page's contact sheet, sent to the owner. Weakest: sushi boat, tea set, globe. Nothing seen moving
@@ -142,8 +147,8 @@ Three agents at a time; the next item starts as each one finishes.
 - **Standing rule for level content (owner, 10-Oct):** "add more Cash bonus pickups on the level from now, and have parts of the level where two or more pickups are side by side." Given to the theme agents, the Stelvio and Market Town agent and the gimmicks agent. Older levels have between none and four cash pickups
 - [~] Tank Rage (owner, 10-Oct): "Make the Tank Rage markers configurable by theme. Some themes have walls next to the road and therefore the tank rage marker isn't visible. The Mumbai and HK levels for example." and "Make a special amphibious tank exclusively for amphibious tank rage levels." Agent 23, branch `delivery-tank`
 - **The level progression rework waits:** the owner will do "a full rebalance later"
-- [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
-- [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
+- [ ] Next 3: clocks for the five themed levels; Gimmick Road 2's gimmicks into real levels (menu pictures moved to the known-problems agent)
+- [~] Known problems: agent 24, branch `delivery-fixes`: the flaky headless checks first (suspected: every worktree shares one Vite cache through its `node_modules` junction), pickups on shoulders, the Gimmicks page's console errors, the replay failures, duplicate config keys, stale notes and HANDOVER, the editor's leftovers (E6.2, E3.5, E6.1), the missing menu pictures
 - [ ] Next 5: 28 liveries, 31 endless mode, replay in the browser
 - [ ] Next 6: 51 phone performance, 49 parallel smoke test, 50 lint and CI
 - [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
