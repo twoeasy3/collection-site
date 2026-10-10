@@ -1,6 +1,7 @@
 {
   "id": "iceroad",
   "name": "Northern Lights",
+  "description": { "good": "A snow globe across the frozen lake under the northern lights. Easy on the glare ice, hold your line in the wind, and give the trucks room.", "evil": "A block of ice that must not thaw, a lake of glare ice, and truck convoys to bully. Take the ridge flat out and let the wind sort the rest." },
   "theme": "iceroad",
   "clock": { "good": 200, "evil": 150 },
   "tip": 320,
