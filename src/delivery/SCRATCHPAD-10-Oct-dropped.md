@@ -121,10 +121,10 @@ the morning's handover (architecture pointers, the earlier agents' notes and tra
 
 - **Where:** branch `delivery-themes-e2`, worktree `.claude/worktrees/delivery-city-levels`, tree clean,
   `main` merged in once (`a31b8f7`); not merged into `main`.
-- **A stray process to clear first:** `node scripts/.bundle-check.mjs`, PID 26760 (started 20:26:56 on
-  10-Oct), hung; the agent's kill was refused by the permission system. A background shell of that agent
-  waits on it and would start a six-picture screenshot run if it ever unblocks. The owner must end it (kill
-  26760's tree), or it will be gone after a restart.
+- **No stray process is left.** A hung `node scripts/.bundle-check.mjs` (PID 26760) was ended by the
+  orchestrator on the owner's explicit word; the agent's waiting shell then took six pictures (640, 1060,
+  4200, 2180, 3660, 5200, over the earlier files of those names) and finished cleanly. Nothing in the repo
+  changed.
 - **Commits:** `f4acf3b` WIP: `levels/thaw.json`, the day theme `iceroadThaw` in `themes.js`, the stars,
   moon and aurora drawn only at night in `render/themes/iceroad.js`, its place in `levels.js` (last in
   `THEME_LEVELS`, level 52) and `INSERTED_AT` entry 52 in `progress.js`. `c19807d`: a theme can set `soft`
@@ -258,8 +258,12 @@ the morning's handover (architecture pointers, the earlier agents' notes and tra
 - **Two more second levels were never started** (ideas in `SCRATCHPAD-10-Oct.md`, "Agent 30"): the favela
   descent on `favelaRain`, and "Monsoon" on `riceMonsoon`.
 
-## 5. Docs that describe the old screenshot script: CANCELLED
+## 5. Docs that describe the old screenshot script: DONE after all (`d5b157e`, committed before the cancel reached its agent)
 
+The README's level-picture paragraph and HANDOVER's screenshot paragraph and two "Things that bit" lines
+are up to date. Also new in the script: `--dist=<dist/client>` shoots the BUILT site with no Vite
+(`50af06e`), and an address may name its level by id, `"a=@monza&ghost&cine&ff=6&at=300"` (`6409bb9`),
+since level numbers shift as levels are merged. What this section used to ask for, kept for reference:
 `src/delivery/README.md` about lines 208 to 210 still say `--levels` saves a PNG to be scaled by hand;
 `HANDOVER.md`'s paragraph "Screenshots are taken by ..." and its "Things that bit" lines still describe the
 old leak and Edge's 500 px limit. To be brought up to date with the script as it is (`5929c09`, `a175592`,
@@ -272,6 +276,9 @@ a time, `--size` exact, `--scale`, `--levels --write` writing both sizes, the `C
   `&cineout`, `&cineback`): `marina-bay` (a stand's wall over the right third), `montreal` (a large tree
   on the left), `monza` (a tree upper left), `singapore-night` (a tree mid-frame where the old picture had
   a bridge), `battlefield` (an explosion over the left of the frame).
+- Trial frames from the cancelled attempt are in `...\scratchpad\shots-test\weak`: for `singapore-night`,
+  `&at=2450&cineside=left` gives a good frame with both bridges; the second set of trial frames for the
+  other four exists and was not looked at (the first set under those names was of the wrong levels).
 - Only a handful of the 65 large pictures were looked at full size. Look at ten across themes (a night
   one, a snowy one, a busy city one): sharp, no banding in skies at JPEG quality 80, no HUD or debug text.
 - Levels whose menu picture is missing or stale: `stunts` and `outback-express` were given `CINE` entries

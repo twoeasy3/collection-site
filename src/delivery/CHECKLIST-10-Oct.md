@@ -1123,6 +1123,19 @@ pick ups and traffic."
       and the built site's look is still going. `main` is at `7a90971`, ten merges ahead of what is live
       (`8fa45a6`), not pushed. One stray process: `node` PID 26760 (a hung bundle check; the agent's kill
       was refused): for the owner to end.
+- [x] **The last agent has stopped: NO agent is running.** Its results:
+  - **All 28 checks pass at `a29522e`** (what is live, `8fa45a6`, plus Speed Trap Alley, Mountain Pass and
+    the suburb scenery). At `6409bb9` (that plus the themed obstacles, batch F, one burst-main system,
+    Outback Express): levels, schema, bundle, hazards, obstacles and road-card checks pass, and the replay
+    check passes over ALL 68 levels; the other 22 were not re-run there. **Nothing after `6409bb9` has had
+    a check run on `main` itself:** the gap fills and seeded check, the level-text file, fog by theme,
+    Market Town, the mains follow-up, the obstacles tidy-up (each passed its own checks on its branch).
+  - **The built site was looked at for the first time** (a production build of `a29522e`, stills, no
+    console errors or failed requests): the start screen with a sharp large picture and the live car, the
+    Car ideas lot, a run on Toy Box Derby at two places, the Gimmicks page. Stills only.
+  - Menu pictures for Outback Express (`6409bb9`) and Market Town (`3a65b31`) from their agents' frames,
+    both sizes looked at. The README and HANDOVER screenshot paragraphs are up to date (`d5b157e`). The
+    script can shoot a built site (`--dist`) and name a level by id (`@id`).
 - [x] **Level 25 Market Town to the new standard: `delivery-rework-f` merged into `main` as `7a90971`, not
       pushed; its agent has stopped (four running: fallout, Ring Road, Spring Thaw, the full checks).** 16
       segments for 9 (two S-bends, a hump, a late S; longest straight 650 m through both crossroads); five
