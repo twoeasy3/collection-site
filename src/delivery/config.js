@@ -295,9 +295,12 @@ export const CONFIG = {
   // (only the look of it: yaw never changes where a car goes), brakes and steers with less grip,
   // and in a bend it understeers: it slides to the outside, the more so the faster, heavier and
   // less agile it is. A traffic car hitting it may spin out (and blow up), the likelier the faster.
+  // (The brakes and the steering are the player's car's only: traffic on ice brakes and changes lane as ever.
+  // A burst main's water is ice in every way but those two and laneSpeed, which it has of its own: see waterMain.)
   ice: {
     brakeGrip: 0.35,       // share of its braking (or braking by itself for a car ahead) that works on ice
-    steerGrip: 0.3,        // share of its steering's grip
+    steerGrip: 0.3,        // share of its steering's grip: of how quickly the car takes up the way it is steered...
+    laneSpeed: 0.55,       // ...and share of the speed it moves across the road at, steered (so a lane change takes about twice as long)
     grip: 6,               // m/s^2 of cornering the tyres still hold on ice; beyond it...
     understeer: 0.4,       // ...this share of the rest pushes the car to the outside of the bend
     weightRef: 2.28,       // hw x hl x height of a car that weighs 1 (the Commuter); a car's weight goes
@@ -1243,6 +1246,10 @@ export const CONFIG = {
     height: 9,             // m the geyser throws its water
     spread: 1.4,           // s the puddle takes to spread out, as a burst begins (the look of it only)
     on: 5, off: 4, length: 28, dry: 1.6, // (Gimmick Road 2's, see Hazards: s on and off, m of lane, and s its puddles take to shrink away)
+    // on its water the player's car brakes and steers with less grip, as on ice (CONFIG.ice) but by numbers of its own:
+    brakeGrip: 0.35,       // share of its braking (or braking by itself for a car ahead) that works on the water
+    steerGrip: 0.3,        // share of its steering's grip: of how quickly the car takes up the way it is steered...
+    laneSpeed: 0.55,       // ...and share of the speed it moves across the road at, steered
   },
   // rockfall (a level's "rockfall": { from, to, count, side }): rocks tumbling down from that side
   // onto the road as the player comes near. Obstacles: only the player can hit them
