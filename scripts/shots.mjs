@@ -5,6 +5,14 @@
 //   node scripts/shots.mjs shots --levels                    every level's menu picture (?cine), as <id>.png
 //   node scripts/shots.mjs shots --cars                      every garage car's (?cine=car), good and evil
 //   node scripts/shots.mjs shots --levels=quarry-run,ring-road   only those
+//   node scripts/shots.mjs --levels=quarry-run --write       the menu's OWN pictures of it, in both sizes (below)
+// The menu's level pictures come in two sizes, both made from ONE frame taken at 1920x854: with --write,
+// --levels writes src/delivery/levelshots/large/<id>.jpg (1920x854, for the stage on a desktop) and
+// src/delivery/levelshots/<id>.jpg (600x267, for the strip, the album and a phone), JPEGs at --quality=80.
+// The small one is the large frame scaled down in the browser (halved, then to size: smooth, not jagged).
+// --write=<folder> puts the pair in <folder> and <folder>/large instead (to look at them first). Without
+// --write, --levels saves PNGs in the out-dir as before and never touches the menu's pictures. --size and
+// --scale are not used for a pair. Where the camera's usual place is no good, give the level one in CINE.
 // Options: --size=1100x650 (any size), --scale=2 (device pixels to a CSS pixel, as on a phone: the picture is
 // then twice the size each way; it is 1 unless asked), --wait=7000 (ms of page time each shot is given, once
 // its page has loaded, before the picture is taken), --evil (the levels' pictures as Evil), --browser=<path>.
@@ -27,6 +35,9 @@ const opt = (name, fallback) => { const a = args.find(x => x === '--' + name || 
 const out = resolve(args.find(a => !a.startsWith('--') && !a.includes('=')) || 'shots');
 const [width, height] = String(opt('size', '1100x650')).split('x').map(Number);
 const wait = Number(opt('wait', 7000)), scale = Number(opt('scale', 1)) || 1;
+// the pair of menu pictures (--write): where they go, their sizes (one shape: 600:267), and the JPEGs' quality
+const PAIR = { folder: opt('write', false) === true ? resolve('src/delivery/levelshots') : opt('write', false) ? resolve(String(opt('write'))) : null,
+  large: [1920, 854], small: [600, 267], quality: Math.min(100, Math.max(1, Number(opt('quality', 80)) || 80)) / 100 };
 
 const browser = opt('browser', null) || [
   'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe', 'C:/Program Files/Microsoft/Edge/Application/msedge.exe',
@@ -35,7 +46,7 @@ const browser = opt('browser', null) || [
 ].find(existsSync);
 if (!browser) { console.log('No Edge or Chrome found: name one with --browser=<path>'); process.exit(1); }
 
-// the shots: [name, address]
+// the shots: [name, address], and for one of the menu's pairs a third: true
 const shots = args.filter(a => !a.startsWith('--') && a.includes('=')).map(a => [a.slice(0, a.indexOf('=')), a.slice(a.indexOf('=') + 1)]);
 if (opt('levels', false) || opt('cars', false)) {
   // (the level and car lists are the game's own: read the same way the headless scripts do)
@@ -50,7 +61,7 @@ if (opt('levels', false) || opt('cars', false)) {
   const CINE = { mumbai: '&cineout=-1&cineup=10&cineback=30', spa: '&cineside=left', 'albert-park': '&cineside=left' }; // (a block of flats; the pit building; a tree)
   if (opt('levels', false)) {
     levels.LEVELS.forEach((level, i) => {
-      if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine&ff=6${CINE[level.id] || ''}`]);
+      if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine&ff=6${CINE[level.id] || ''}`, !!PAIR.folder]);
     });
   }
   if (opt('cars', false)) {
@@ -220,7 +231,30 @@ const closeBrowser = async () => {
 // being fetched). The page time is given once the page has loaded: given before, it can run out part-way through
 // the loading and stop the page there, and then no picture is ever made of it.
 const LIMIT = 90000; // ms of real time a picture may take
-const shoot = async (url, file) => {
+// The pair of JPEGs from one frame (a PNG, in base 64), made by the browser in a blank page: the large one is the
+// frame itself, the small one the frame drawn smaller on a canvas: to half its size first, then to its own, each
+// step smoothed, so that a 3.2-fold reduction does not skip pixels and leave edges jagged. Answers both, in base 64.
+const pairOf = async (png) => {
+  const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
+  try {
+    const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+    const made = await send('Runtime.evaluate', { awaitPromise: true, returnByValue: true, expression: `(async () => {
+      const image = new Image();
+      image.src = 'data:image/png;base64,${png}';
+      await image.decode();
+      const drawn = (from, w, h) => { const canvas = document.createElement('canvas'); canvas.width = w; canvas.height = h; const pen = canvas.getContext('2d'); pen.imageSmoothingEnabled = true; pen.imageSmoothingQuality = 'high'; pen.drawImage(from, 0, 0, w, h); return canvas; };
+      const jpeg = (canvas) => canvas.toDataURL('image/jpeg', ${PAIR.quality}).split(',')[1];
+      const [W, H] = ${JSON.stringify(PAIR.large)}, [w, h] = ${JSON.stringify(PAIR.small)};
+      if (image.naturalWidth !== W || image.naturalHeight !== H) throw new Error('the frame is ' + image.naturalWidth + 'x' + image.naturalHeight + ', not ' + W + 'x' + H);
+      return { large: jpeg(drawn(image, W, H)), small: jpeg(drawn(drawn(image, Math.round(W / 2), Math.round(H / 2)), w, h)) };
+    })()` }, sessionId, 60000);
+    if (made.exceptionDetails) throw new Error('the pair of pictures: ' + (made.exceptionDetails.exception?.description || made.exceptionDetails.text));
+    return made.result.value;
+  } finally {
+    try { await send('Target.closeTarget', { targetId }, undefined, 5000); } catch { /* (gone with the browser) */ }
+  }
+};
+const shoot = async (url, file, pair) => {
   const notes = [];
   const note = (text) => { text = String(text).split('\n')[0].slice(0, 300); if (!notes.includes(text)) notes.push(text); };
   if (!socket || socket.readyState !== 1 || !child || child.exitCode !== null) { await closeBrowser(); await openBrowser(); }
@@ -238,7 +272,7 @@ const shoot = async (url, file) => {
     });
     const page = (method, params, timeout) => send(method, params, sessionId, timeout);
     await page('Page.enable'); await page('Runtime.enable'); await page('Log.enable');
-    await page('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: scale, mobile: false }); // (the picture's size exactly, and any size: a window goes no narrower than 500)
+    await page('Emulation.setDeviceMetricsOverride', pair ? { width: PAIR.large[0], height: PAIR.large[1], deviceScaleFactor: 1, mobile: false } : { width, height, deviceScaleFactor: scale, mobile: false }); // (the picture's size exactly, and any size: a window goes no narrower than 500)
     const went = await page('Page.navigate', { url }, LIMIT);
     if (went.errorText) note('error: ' + went.errorText);
     if (!await Promise.race([loaded, sleep(LIMIT)])) note('warning: not loaded after ' + LIMIT / 1000 + ' s: the picture is of the page as it stood');
@@ -252,8 +286,12 @@ const shoot = async (url, file) => {
       await page('Emulation.setVirtualTimePolicy', { policy: 'advance' });
       shot = await page('Page.captureScreenshot', { format: 'png' }, 30000);
     }
-    writeFileSync(file, Buffer.from(shot.data, 'base64'));
     listeners.delete(sessionId);
+    if (pair) { // (file: the small one; the large one beside it, in large/)
+      const both = await pairOf(shot.data);
+      writeFileSync(join(PAIR.folder, 'large', pair), Buffer.from(both.large, 'base64'));
+      writeFileSync(file, Buffer.from(both.small, 'base64'));
+    } else writeFileSync(file, Buffer.from(shot.data, 'base64'));
   } finally {
     try { await send('Target.closeTarget', { targetId }, undefined, 5000); } catch { /* (gone with the browser) */ }
   }
@@ -262,7 +300,8 @@ const shoot = async (url, file) => {
 
 let failed = 0;
 try {
-  mkdirSync(out, { recursive: true });
+  if (shots.some(shot => !shot[2])) mkdirSync(out, { recursive: true });
+  if (PAIR.folder) mkdirSync(join(PAIR.folder, 'large'), { recursive: true });
   slot = await takeSlot();
   // (The run's folder holds Vite's cache as well. Every worktree's node_modules is a junction to one folder, so the
   // usual cache, node_modules/.vite, is one for them all, and a server started from another worktree deletes it to
@@ -270,16 +309,17 @@ try {
   server = await createServer({ server: { port: 5199, strictPort: false, hmr: false }, cacheDir: join(own, 'vite'), logLevel: 'error' });
   await server.listen();
   const base = `http://localhost:${server.config.server.port}/delivery/`;
-  for (const [name, address] of shots) {
+  for (const [name, address, pair] of shots) {
     const game = address.startsWith('?') && !/[?&](autostart|hidden|test|edited|screensaver|racewatch|garage|album|milestones)\b/.test(address);
     const url = base + (game ? address.replace('?', '?autostart&') : address);
-    const file = join(out, name + '.png');
+    const file = pair ? join(PAIR.folder, name + '.jpg') : join(out, name + '.png');
     const began = Date.now();
     let notes = [], why = '';
-    try { rmSync(file, { force: true }); notes = await shoot(url, file); } catch (error) { why = '  ' + String(error && error.message || error); }
+    try { rmSync(file, { force: true }); notes = await shoot(url, file, pair && name + '.jpg'); } catch (error) { why = '  ' + String(error && error.message || error); }
     const ok = existsSync(file) && statSync(file).size > 2000;
     if (!ok) failed++;
-    console.log((ok ? '  ok    ' : '  FAIL  ') + name + '  ' + url + '  (' + ((Date.now() - began) / 1000).toFixed(1) + ' s)' + why);
+    const sizes = ok && pair ? '  ' + [file, join(PAIR.folder, 'large', name + '.jpg')].map(f => Math.round(statSync(f).size / 1024) + ' KB').join(' + ') : '';
+    console.log((ok ? '  ok    ' : '  FAIL  ') + name + '  ' + url + '  (' + ((Date.now() - began) / 1000).toFixed(1) + ' s)' + sizes + why);
     for (const text of notes) console.log('          ' + text); // (what the page said: its errors and warnings)
   }
 } finally {
@@ -287,5 +327,5 @@ try {
   try { if (server) await server.close(); } catch { /* (closed) */ }
   cleanup();
 }
-console.log(failed ? failed + ' failed' : shots.length + ' shot' + (shots.length === 1 ? '' : 's') + ' in ' + out);
+console.log(failed ? failed + ' failed' : shots.length + ' shot' + (shots.length === 1 ? '' : 's') + ' in ' + (shots.every(shot => shot[2]) ? PAIR.folder : out));
 process.exit(failed ? 1 : 0);
