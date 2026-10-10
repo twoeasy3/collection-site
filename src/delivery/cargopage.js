@@ -1,4 +1,4 @@
-// The cargo page (delivery/cargo.html): the ten things there are to deliver, the Evil ones in each of
+// The cargo page (delivery/cargo.html): the things there are to deliver, the Evil ones in each of
 // their three states, and which levels carry what. The names and the levels come from cargo.js and the
 // numbers from config.js, so the page stays true as those change.
 // As the power-ups page: one renderer draws every picture, a canvas over the whole window, drawn into
@@ -70,7 +70,7 @@ const section = (title, id) => {
 };
 for (const side of ['good', 'evil']) {
   if (params.get('side') && params.get('side') !== side) continue; // (?side=evil: only that side's)
-  section(side === 'good' ? 'Good: five things worth getting there in one piece' : 'Evil: five things nobody should be driving about with', side);
+  section((side === 'good' ? 'Good: # things worth getting there in one piece' : 'Evil: # things nobody should be driving about with').replace('#', CARGO[side].length), side);
   for (const item of CARGO[side]) {
     if (params.get('only') && !params.get('only').split(',').includes(item.id)) continue; // (?only=doll,bees: only those)
     const levels = where(side, item.id);
