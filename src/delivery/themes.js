@@ -102,6 +102,8 @@ export const THEMES = {
   toyroom: { sky: 0xf1e3c8, ground: 0x6f8fb8, road: 0xff7a1a, scenery: 'toyroom', line: 0xffffff, centre: 0x1f6fd0,
     tunnel: { wall: 0xb98a55, tiles: 0xd9b077, roof: 0xa87c4a, face: 0xc49a66, lamp: 0xfff3d0 } },
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
+  // backlot: a film studio's backlot (render/themes/backlot.js): one street that is several sets in turn, by the level's zones (sets: what a zone's scenery can be there): the lot and its soundstages, a Western town, a New York street of propped-up flats, painted skies on scaffolding; a tunnel is a soundstage with a spaceship's corridor inside (tunnel)
+  backlot: { sky: 0x8fc4ee, ground: 0xbdb7a8, road: 0x3f4146, scenery: 'backlot', sets: ['studioLot', 'western', 'soundstage', 'newyork', 'skies'], tunnel: { wall: 0xe4eaf0, tiles: 0x39d8ff, roof: 0xb4bec8, face: 0xd8cdb4, lamp: 0x9ff0ff } },
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // (batch C: theme park, volcano island, container port: new themes go above this line)
 };
