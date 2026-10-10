@@ -2,13 +2,20 @@
   "id": "market-town",
   "name": "Market Town",
   "description": {
-    "good": "Market day. Bin lorries stop, learners wobble, a funeral passes and the ice-cream van takes its time. Patience delivers the parcel.",
-    "evil": "A learner, a bin lorry, a funeral and a level crossing between you and the drop. The town will be talking about this for years."
+    "good": "Market day: the square, the level crossing by the station, roadworks on the bypass and the cattle market. Race the train or wave it through.",
+    "evil": "A learner, a funeral, a burst main and two trains between you and the drop. Beat them over the crossings; the cattle market will talk of it for years."
   },
   "theme": "suburb",
-  "clock": { "good": 185, "evil": 140 },
+  "clock": {
+    "good": 185,
+    "evil": 140
+  },
   "tip": 170,
   "lanes": 2,
+  "cargo": {
+    "good": "puppy",
+    "evil": "goose"
+  },
   "traffic": {
     "commuter": 0.28,
     "wagon": 0.2,
@@ -32,23 +39,45 @@
   },
   "segments": [
     {
-      "length": 300,
+      "length": 200,
       "curve": 0
     },
     {
-      "length": 300,
-      "curve": 0.0025
+      "length": 150,
+      "curve": 0.004
     },
     {
-      "length": 800,
+      "length": 150,
+      "curve": -0.004
+    },
+    {
+      "length": 100,
       "curve": 0
     },
     {
-      "length": 300,
-      "curve": -0.0025
+      "length": 650,
+      "curve": 0
     },
     {
-      "length": 600,
+      "length": 150,
+      "curve": -0.004
+    },
+    {
+      "length": 150,
+      "curve": 0.004
+    },
+    {
+      "length": 150,
+      "curve": 0,
+      "grade": 0.04
+    },
+    {
+      "length": 150,
+      "curve": -0.003,
+      "grade": -0.04
+    },
+    {
+      "length": 450,
       "curve": 0
     },
     {
@@ -56,8 +85,16 @@
       "curve": 0.002
     },
     {
-      "length": 700,
+      "length": 400,
       "curve": 0
+    },
+    {
+      "length": 150,
+      "curve": 0.003
+    },
+    {
+      "length": 150,
+      "curve": -0.003
     },
     {
       "length": 300,
@@ -68,6 +105,38 @@
       "curve": 0
     }
   ],
+  "zones": [
+    {
+      "id": "cornStreet",
+      "from": 500,
+      "to": 760,
+      "scenery": "highstreet"
+    },
+    {
+      "id": "marketSquare",
+      "from": 840,
+      "to": 1140,
+      "scenery": "market"
+    },
+    {
+      "id": "churchRow",
+      "from": 1220,
+      "to": 1420,
+      "scenery": "highstreet"
+    },
+    {
+      "id": "townPark",
+      "from": 2120,
+      "to": 2420,
+      "scenery": "park"
+    },
+    {
+      "id": "cattleMarket",
+      "from": 3520,
+      "to": 3770,
+      "scenery": "livestock"
+    }
+  ],
   "cameras": [
     {
       "s": 1000,
@@ -76,6 +145,16 @@
     },
     {
       "s": 1300,
+      "side": "left",
+      "limit": 60
+    },
+    {
+      "s": 2180,
+      "side": "right",
+      "limit": 60
+    },
+    {
+      "s": 3700,
       "side": "left",
       "limit": 60
     }
@@ -133,7 +212,7 @@
   ],
   "pelotons": [
     {
-      "s": 700,
+      "s": 640,
       "count": 6
     },
     {
@@ -141,7 +220,7 @@
       "count": 8
     },
     {
-      "s": 3000,
+      "s": 3060,
       "count": 6
     },
     {
@@ -166,17 +245,38 @@
       "from": 930,
       "to": 1060,
       "every": 10
+    },
+    {
+      "kind": "umbrella",
+      "from": 3560,
+      "to": 3640,
+      "every": 10
     }
   ],
   "waterMains": [
     {
+      "s": 560,
+      "lane": 0
+    },
+    {
       "s": 1600,
       "lane": 1
+    },
+    {
+      "s": 2390,
+      "lane": 1
+    },
+    {
+      "s": 3240,
+      "lane": 0
     }
   ],
   "crossings": [
     {
       "s": 2000
+    },
+    {
+      "s": 3820
     }
   ],
   "stopGo": [
@@ -199,6 +299,10 @@
       "side": "left"
     },
     {
+      "s": 2240,
+      "side": "left"
+    },
+    {
       "s": 3700,
       "side": "right"
     },
@@ -216,32 +320,37 @@
     },
     {
       "type": "radarDetector",
-      "s": 500,
+      "s": 880,
       "lane": 1
     },
     {
       "type": "wrench",
-      "s": 1550,
+      "s": 1500,
       "lane": 1
     },
     {
       "type": "ghost",
-      "s": 1800,
+      "s": 1880,
       "lane": 1
     },
     {
       "type": "timePlus",
-      "s": 2350,
+      "s": 2300,
+      "lane": 1
+    },
+    {
+      "type": "wrench",
+      "s": 2620,
       "lane": 1
     },
     {
       "type": "turbo",
-      "s": 3100,
+      "s": 3180,
       "lane": 1
     },
     {
       "type": "mystery",
-      "s": 3800,
+      "s": 3700,
       "lane": 1
     },
     {
@@ -257,24 +366,44 @@
       "road": "side"
     },
     {
-      "type": "cash5",
-      "s": 120,
+      "type": "cash10",
+      "s": 260,
       "lane": 1
     },
     {
       "type": "cash5",
-      "s": 350,
-      "lane": 1
+      "s": 260,
+      "lane": "right"
     },
     {
       "type": "cash10",
-      "s": 350,
+      "s": 430,
       "lane": 0
     },
     {
       "type": "cash5",
-      "s": 620,
+      "s": 430,
       "lane": 1
+    },
+    {
+      "type": "cash20",
+      "s": 560,
+      "lane": 0
+    },
+    {
+      "type": "cash5",
+      "s": 700,
+      "lane": 1
+    },
+    {
+      "type": "cash10",
+      "s": 700,
+      "lane": "right"
+    },
+    {
+      "type": "cash20",
+      "s": 990,
+      "lane": 0
     },
     {
       "type": "cash10",
@@ -284,12 +413,7 @@
     {
       "type": "cash20",
       "s": 990,
-      "lane": 0
-    },
-    {
-      "type": "cash5",
-      "s": 1420,
-      "lane": 1
+      "lane": "right"
     },
     {
       "type": "cash10",
@@ -302,13 +426,23 @@
       "lane": 0
     },
     {
+      "type": "cash20",
+      "s": 1600,
+      "lane": "right"
+    },
+    {
       "type": "cash10",
-      "s": 1800,
+      "s": 1950,
+      "lane": 1
+    },
+    {
+      "type": "cash20",
+      "s": 2012,
       "lane": 0
     },
     {
-      "type": "cash5",
-      "s": 2150,
+      "type": "cash10",
+      "s": 2012,
       "lane": 1
     },
     {
@@ -318,13 +452,33 @@
     },
     {
       "type": "cash5",
-      "s": 2650,
+      "s": 2350,
+      "lane": 1
+    },
+    {
+      "type": "cash10",
+      "s": 2800,
+      "lane": 1
+    },
+    {
+      "type": "cash20",
+      "s": 2800,
+      "lane": "right"
+    },
+    {
+      "type": "cash20",
+      "s": 2900,
       "lane": 1
     },
     {
       "type": "cash20",
       "s": 3100,
       "lane": 0
+    },
+    {
+      "type": "cash5",
+      "s": 3100,
+      "lane": 1
     },
     {
       "type": "cash5",
@@ -337,8 +491,18 @@
       "lane": 0
     },
     {
-      "type": "cash5",
-      "s": 3900,
+      "type": "cash20",
+      "s": 3600,
+      "lane": "right"
+    },
+    {
+      "type": "cash20",
+      "s": 3835,
+      "lane": 0
+    },
+    {
+      "type": "cash10",
+      "s": 3835,
       "lane": 1
     },
     {
