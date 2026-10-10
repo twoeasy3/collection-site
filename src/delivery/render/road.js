@@ -10,6 +10,7 @@ import { setHeadlights } from './headlights.js';
 import { THEMES } from '../themes.js';
 import { CIRCUITS } from './circuits/index.js';
 import { THEME_SCENERY } from './themes/index.js';
+import { THEME_EXTRAS } from './themes/extras.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -3487,6 +3488,8 @@ const buildRoad = () => {
     // ---- a theme with a file of its own (render/themes/<scenery>.js): given what stands things beside a road here
     THEME_SCENERY[theme.scenery]({ theme, add, flat, instances, sideStrip, buildStrip, offRoads, standsClear, clearOfRoads, beside, inJunction, exits, cube, tube, cone, levelGroup, elevatedRoad });
   }
+  // (what the older themes were given since, beside what is drawn for them above: render/themes/extras.js)
+  if (THEME_EXTRAS[theme.scenery]) THEME_EXTRAS[theme.scenery]({ theme, add, flat, instances, sideStrip, buildStrip, offRoads, standsClear, clearOfRoads, beside, inJunction, exits, cube, tube, cone, levelGroup, terrainAt, litTowers });
   if (theme.snow && theme.scenery !== 'alpine') snowfall();
   if (theme.rain) rainfall();
   if (theme.elevated && theme.scenery !== 'tokyo') elevatedRoad(theme.elevated);

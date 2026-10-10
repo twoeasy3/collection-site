@@ -210,11 +210,34 @@ const silence = () => {
 
 // ?hudcheck (with ?autostart): every part of the HUD showing at once and held there, for a picture of it:
 // the shoulder's danger most of the way up, a flat tyre, a mystery running (?mystery= names it, or the
-// earthquake), half a tank found, and two ordinary messages kept up (a long one and a bust's)
+// earthquake), half a tank found, and two ordinary messages kept up (a long one and a bust's).
+// ?hudcheck=many: bad gas, the extra weight, butterfingers and the gravel as well, so six sticky icons.
+// ?hudcheck=one: only the flat tyre, its message held as it is when just said; ?hudcheck=later: the same, said
+// the once and left to go as any message does (so a picture some seconds on has the icon alone);
+// ?hudcheck=icons: all the sticky messages there are, for their icons
 const hudCheck = params.get('hudcheck') === null ? null : () => {
   if (Game.state !== 'playing' || !Player.active || Game.screensaver) return;
+  const mode = params.get('hudcheck'), held = (path) => Message.sticky.some(h => h.path === path);
+  if (mode === 'one' || mode === 'later') {
+    if (!Player.puncture) Player.punctureTyre(1);
+    if (mode === 'one') for (const h of Message.sticky) h.line.at = performance.now();
+    return;
+  }
   if (!Player.mystery) { Player.nextMystery = params.get('mystery') || 'earthquake'; Player.collect('mystery'); }
   if (!Player.puncture) Player.punctureTyre(1);
+  if (mode === 'many' || mode === 'icons') {
+    // (in play only one powerup runs at a time, so never more than three icons: these are put on by hand)
+    for (const [type, timer] of [['badGas', 'badGas'], ['heavyMass', 'heavy'], ['butterfingers', 'butterfingers']]) {
+      if (!(Player[timer] > 0)) Player[timer] = CONFIG[type].time;
+      if (!held('powerups.' + type)) Message.say('powerups', type);
+    }
+    if (!(Player.beached > 0.5)) Player.beached = CONFIG.gravel.beachTime;
+    if (!held('events.beached')) Message.say('events', 'beached');
+  }
+  if (mode === 'icons') { // (only one mystery runs at a time: the others' messages are held here for the picture)
+    Message.conditions.mystery.on = () => true;
+    for (const [path, condition] of Object.entries(CONFIG.messageTimes.sticky)) if (condition === 'mystery' && !held(path)) Message.say(...path.split('.'));
+  }
   Player.danger = Social.dangerTime * 0.3;
   Game.tankPieces = 2;
   if (!Message.lines.some(line => line.kind === 'bust')) { Message.say('events', 'wideLoad'); Message.say('busts', 'seen'); }

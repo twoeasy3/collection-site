@@ -199,8 +199,8 @@ picture and `&cine=car` the one for a car's. A page's console errors and warning
   ground over, a transporter's ramps over a queue, low bridges, fords. Each has a fast line that pays and a
   slow one that always works. A police pursuit (`pursuit.js`) is a chase that comes through from behind.
 - **The HUD** (`render/hud.js`): a ring for the level's distance, a dial for the shoulder's danger, messages
-  kept off the horizon with their times in `CONFIG.messageTimes`, sticky ones that stay until what they warn
-  of is over, and the running mystery's name in the pickup status.
+  kept off the horizon with their times in `CONFIG.messageTimes`, sticky ones that are said as any other and then stay as a small icon by the gauges until what they warn
+  of is over (`render/hudIcons.js`), and the running mystery's name in the pickup status.
 - **The start screen** is `render/menustage.js` and `render/menu.js`: a stage for the level picked, a strip
   of its group, the car, the side and START; the README describes it.
 

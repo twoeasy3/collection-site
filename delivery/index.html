@@ -22,6 +22,7 @@
       <div id="busts"></div>
       <div id="social">SOCIAL STANDING<div class="bar"><div id="socialFill"></div></div></div>
     </div>
+    <div id="gaugeColumn">
     <div id="gauges">
       <!-- the level: a ring that fills clockwise round to the flag at the top, the distance left in its middle -->
       <div id="progress" class="gauge">
@@ -56,6 +57,9 @@
         <span>SHOULDER</span>
       </div>
     </div>
+    <!-- the sticky messages' icons: one for each condition still on (see CONFIG.messageTimes.sticky; render/hud.js) -->
+    <div id="sticky"></div>
+    </div>
     <div id="levelProblems"></div>
     <div id="flat">FLAT TYRE - STOP TO CHANGE<div class="bar"><div id="flatFill"></div></div></div>
   </div>
@@ -72,11 +76,9 @@
 <div id="deliveryHint"></div>
 <div id="fade"></div>
 <div id="banner">PAUSED<small>Resume, or press P</small></div>
-<!-- the strip along the top, between the two corners and clear of the horizon: the sticky messages (one
-     about something still true of the car: see CONFIG.messageTimes.sticky), the two message lines (at the
+<!-- the strip along the top, between the two corners and clear of the horizon: the two message lines (at the
      foot of the screen instead on a phone held upright: see style.css) and the speed camera's warning -->
 <div id="topStrip">
-<div id="sticky"></div>
 <div id="messages"><div class="line"></div><div class="line"></div></div>
 <div id="camAlert" class="hidden">
   <div class="cam-disc"><span id="camLimit">80</span></div>
