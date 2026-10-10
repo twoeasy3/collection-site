@@ -361,7 +361,9 @@ Build the theme first, then the level. Make sure the theme is reusable
       a painted sky on a flat, with cameras on cranes and a director's chair. Gimmick: stunt
       cars that crash on cue (scripted wreckage) and a "cut!" that freezes traffic. Reuses:
       zones (a look per stretch), wreckage, the traffic-freeze mystery.
-- [ ] T14. **Toy room**: the whole level at toy scale: a road of plastic track across a carpet,
+- [x] T14. **Toy room** (done as level T1 "Toy Room", `levels/toys.json`, with the game's existing gimmicks, not the
+      three below: those are unfinished on branch `delivery-themes-toys-wip`. Verified: the level's checks, a ghost
+      probe to the end, screenshots along it. Not played by hand): the whole level at toy scale: a road of plastic track across a carpet,
       building blocks, a train set, a sleeping cat. Gimmick: marbles rolling down the track, the
       cat's paw as a hazard, a ramp-and-loop jump. Reuses: drifters, drawbridge jump, the models
       are already toy-like.
