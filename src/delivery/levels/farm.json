@@ -29,6 +29,7 @@
   "bridges": [],
   "exits": [],
   "obstacles": [
+    { "s": 2945, "lane": 3, "kind": "bale" },
     { "s": 180, "lane": 3, "kind": "bale" },
     { "s": 460, "lane": 2, "kind": "bale" },
     { "s": 700, "lane": 1, "kind": "bale" },
@@ -61,7 +62,12 @@
     { "s": 900, "side": "right" },
     { "s": 2200, "side": "left" }
   ],
+  "ruts": [
+    { "from": 2810, "to": 2970 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 2860, "lane": 2 },
+    { "type": "cash20", "s": 2860, "lane": 3 },
     { "type": "wrench", "s": 2720, "lane": 2 },
     { "type": "wrench", "s": 1350, "lane": 3 },
     { "type": "turbo", "s": 120, "lane": 2 },

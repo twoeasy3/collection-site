@@ -1060,6 +1060,14 @@ const createTrack = () => {
       else if (z.side !== 'left' && z.side !== 'right') problems.push('shade at ' + z.from + ': side is left or right (the side what casts it stands on)');
       else if (z.lanes !== undefined && !(Number.isInteger(z.lanes) && z.lanes >= 1 && z.lanes <= 8)) problems.push('shade at ' + z.from + ': lanes is 1 to 8');
     }
+    for (const r of LEVEL.ruts || []) if (!mainStretch(r)) problems.push('ruts at ' + r.from + ': from before to, on the expressway');
+    for (const z of LEVEL.tarmac || []) {
+      const name = 'fresh tarmac at ' + z.from;
+      if (!mainStretch(z)) { problems.push(name + ': from before to, on the expressway'); continue; }
+      const [first, last] = laneRange(1, (z.from + z.to) / 2);
+      if (!(Number.isInteger(z.lane) && z.lane >= first && z.lane <= last)) problems.push(name + ': lane is one on the player\'s side (' + first + ' to ' + last + ')');
+      else if (last === first) problems.push(name + ': the player\'s side needs a second lane there, for the queue');
+    }
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
       else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');
@@ -1193,6 +1201,11 @@ const createTrack = () => {
           else if (openLane(item.lane, x.side0 + item.s) !== item.lane) problems.push(name + ': the side road has no lane ' + item.lane + ' there (see its exit\'s "lanes"; only lane 1 on its ramps)');
         } else if (item.s < 0 || item.s > length) {
           problems.push(name + ': beyond the expressway');
+        } else if (item.lane === 'left' || item.lane === 'right') {
+          // (on that shoulder, as on a side road: laneOffset puts it there. It used to fall through to the test
+          // below, which knows only numbered lanes, and be reported "merged away")
+        } else if (!Number.isInteger(item.lane)) {
+          problems.push(name + ': its lane is a number, or left or right (a shoulder)');
         } else if (item.lane < 0 || item.lane >= LANES) {
           problems.push(name + ': no lane ' + item.lane);
         } else if (openLane(item.lane, item.s) !== item.lane) {

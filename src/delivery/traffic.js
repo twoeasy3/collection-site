@@ -40,6 +40,15 @@ export const Traffic = (() => {
       health: 1, maxHealth: 1, smoke: 0, hw: 1, hl: 2.1, height: 1.4,
       braking: false, signal: 0, hazards: false, pendingLane: null, hesitant: false, fromBehind: false });
   }
+  // A slot dealt out again is a new vehicle, and a new run starts with new slots. Dozens of things are set on a
+  // vehicle as they are first used, here and in other files (hunt, shoulderRun, oncoming, boosts, spinIce, hitBy,
+  // a pursuit's aimLat...), and a list of them kept by hand in outfit() was always one behind: a car dealt out of
+  // a wrecked hunter's slot started out hunting, and two runs from one seed differed. So blank() puts back
+  // EVERYTHING a slot carries, whoever set it: to what a new slot has, or to nothing (as on a new slot, where it
+  // was never set). Only what the dealer sets before outfit() is kept: where it is and which way it goes.
+  const DEALT = ['active', 'unused', 'dir', 'bound', 's', 'rush'];
+  const BLANK = Object.fromEntries(Object.entries({ ...cars[0], respawnIn: 0, fixed: false }).filter(([key]) => !DEALT.includes(key)));
+  const blank = (car) => { for (const key in car) if (!DEALT.includes(key)) car[key] = BLANK[key]; };
 
   // ramps: the expressway's shoulder is the exit / merge lane there, lane index -1 on the
   // left and laneCount on the right. Returns the lane this car should be heading for.
@@ -235,6 +244,7 @@ export const Traffic = (() => {
 
   // makes the car a vehicle of that kind, in that lane at car.s, fresh off the line
   const outfit = (car, kind, lane) => {
+    blank(car);
     car.fixed = false;
     car.viaSide = Math.random() < CONFIG.ramps.trafficShare; // will take a ramp / flyover if it meets one
     car.kind = kind;
@@ -1579,6 +1589,7 @@ export const Traffic = (() => {
   };
 
   const reset = () => {
+    Water.reset(); // (before any vehicle is dealt out: see Water.allows)
     // how many are about, each way: the level's counts, or the usual ones
     const count = LEVEL.trafficCount !== undefined ? LEVEL.trafficCount : CONFIG.trafficCount;
     const oncoming = LEVEL.oncomingCount !== undefined ? LEVEL.oncomingCount : CONFIG.oncomingCount;
@@ -1592,6 +1603,7 @@ export const Traffic = (() => {
       car.unused = i >= count + oncoming + sideOnly; // (never spawned on this level)
       car.fixed = false;
       // (and nothing left over from the last run, on a car that may not be dealt out again for a while)
+      blank(car);
       Object.assign(car, { junction: null, parked: false, stalled: false, halted: 0, racer: false, slideVel: 0, respawnIn: 0, shield: 0, emergency: false, hesitant: false, pulledOver: false, pulledFor: null, rival: null, toad: null, rush: false, swung: false });
     });
     placeFixed();
@@ -2330,8 +2342,8 @@ export const Traffic = (() => {
           if (car.binStop > 0) { car.binStop -= dt; target = 0; }
           else if ((car.binWait -= dt) <= 0) { car.binWait = between(quirk.stops.every); car.binStop = between(quirk.stops.time); }
         }
-        // (and an ice cream van's tune, near the player)
-        if (quirk.jingle && Math.abs(car.s - Player.s) < CONFIG.hornRange * 2 && (car.jingleWait -= dt) <= 0) { car.jingleWait = quirk.jingle; sfxAt('jingle', car.s, 0.8); }
+        // (and an ice cream van's tune, near the player; one at a stop has that tune's own timing: see CONFIG.iceCream)
+        if (quirk.jingle && !car.icecream && Math.abs(car.s - Player.s) < CONFIG.hornRange * 2 && (car.jingleWait -= dt) <= 0) { car.jingleWait = quirk.jingle; sfxAt('jingle', car.s, 0.8); }
         target = Math.min(target, hold, cyclists.hold);
         if (Player.mystery === 'sundayDrivers' && !car.racer && !car.emergency) target *= CONFIG.mystery.sundayPace; // (Sunday Drivers, a mystery: pottering along)
         if (car.racer) target = Math.min(target, racingLine(car) * ceding);

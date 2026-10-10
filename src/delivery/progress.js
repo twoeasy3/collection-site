@@ -69,9 +69,9 @@ const savedCopies = () => {
 };
 const read = () => {
   try {
-    const saved = savedCopies()[0];
-    if (!saved) return fresh();
-    return restore(saved);
+    // (each copy in turn: one that reads as JSON but cannot be restored does not hide a good one behind it)
+    for (const saved of savedCopies()) { try { return restore(saved); } catch { /* (the next copy) */ } }
+    return fresh();
   } catch {
     return fresh(); // an unreadable cookie counts as no progress
   }
@@ -111,21 +111,30 @@ const saveText = (data) => JSON.stringify({
 // save and Import save: see render/savecode.js). CODE_MARK says what it is and which version of the code
 const CODE_MARK = 'DR1.';
 // a save out of a code is not trusted: only what a save can hold is kept, each thing checked for what it is
+// (it is built from nothing, key by key: whatever else the code holds is dropped, not saved for ever)
+const CODE_LONGEST = 20000; // characters: a full save's code is about 4,000
 const tidy = (saved) => {
   const number = (v, least) => typeof v === 'number' && isFinite(v) ? Math.max(least, v) : undefined;
-  const clean = { ...saved };
+  const word = (v) => typeof v === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(v);
+  const clean = {};
   clean.money = number(saved.money, 0) ?? 0;
   clean.unlocked = Math.floor(number(saved.unlocked, 1) ?? 1);
   clean.levelOrder = Math.floor(number(saved.levelOrder, 1) ?? 1);
   clean.tankPieces = Math.floor(number(saved.tankPieces, 0) ?? 0);
-  clean.cars = [...new Set(['commuter', ...(Array.isArray(saved.cars) ? saved.cars : []).filter(id => typeof id === 'string')])];
-  clean.car = typeof saved.car === 'string' ? saved.car : 'commuter';
+  clean.cars = [...new Set(['commuter', ...(Array.isArray(saved.cars) ? saved.cars : []).filter(word)])].slice(0, 200);
+  clean.car = word(saved.car) ? saved.car : 'commuter';
   clean.bestTime = {};
-  for (const side of ['good', 'evil']) {
+  for (const side of ['good', 'evil']) { // (a time for a level there is, and no other)
     const times = saved.bestTime && typeof saved.bestTime === 'object' ? saved.bestTime[side] : null;
     clean.bestTime[side] = Object.fromEntries(Object.entries(times && typeof times === 'object' ? times : {})
-      .filter(([, t]) => typeof t === 'number' && isFinite(t)));
+      .filter(([id, t]) => typeof t === 'number' && isFinite(t) && LEVELS.some(level => level.id === id)));
   }
+  for (const key of ['muted', 'autoGas', 'evil']) if (typeof saved[key] === 'boolean') clean[key] = saved[key];
+  if (typeof saved.touch === 'boolean') clean.touch = saved.touch;
+  for (const key of ['raceClass', 'raceTrack']) if (word(saved[key])) clean[key] = saved[key];
+  // (the counters: numbers by name, and no more of them than there could be)
+  clean.stats = Object.fromEntries(Object.entries(saved.stats && typeof saved.stats === 'object' && !Array.isArray(saved.stats) ? saved.stats : {})
+    .filter(([key, n]) => word(key) && typeof n === 'number' && isFinite(n) && n >= 0).slice(0, 100));
   return clean;
 };
 
@@ -143,20 +152,26 @@ export const Progress = {
   importCode(code) {
     try {
       const text = String(code).replace(/\s+/g, '');
-      if (!text.startsWith(CODE_MARK)) return false;
+      if (!text.startsWith(CODE_MARK) || text.length > CODE_LONGEST) return false;
       const bytes = Uint8Array.from(atob(text.slice(CODE_MARK.length)), c => c.charCodeAt(0));
       const saved = JSON.parse(new TextDecoder().decode(bytes));
       if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return false;
       if (typeof saved.unlocked !== 'number' || !Array.isArray(saved.cars)) return false; // (some other JSON)
       this.data = restore(tidy(saved));
+      this.noSave = false; // (a save brought in replaces everything such a visit lent)
       this.save();
       return true;
     } catch {
       return false; // (not base64, or not JSON)
     }
   },
+  // True on a visit that began from one of the address bar's test switches (?autostart, ?pick, ?car, a hidden
+  // level...: main.js sets it). Such a visit lends cars and opens levels by writing them into `data`, so nothing
+  // of it is written down: not by a counter, a delivery, the garage or anything else
+  noSave: false,
   save() {
     this.countDirty = false;
+    if (this.noSave) return;
     const text = this.saved();
     document.cookie = COOKIE + '=' + encodeURIComponent(text) + '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
     try { localStorage.setItem(BACKUP, text); } catch { /* (no storage: the cookie alone) */ }
@@ -224,6 +239,7 @@ export const Progress = {
   },
   reset() {
     this.data = fresh();
+    this.noSave = false; // (nothing lent is left in it)
     this.save(); // (the backup too: a reset is meant)
   },
 };

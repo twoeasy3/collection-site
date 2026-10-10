@@ -108,6 +108,25 @@ Game.onLoad.push(() => {
     let k = 0;
     for (let s = z.from + 2; s < z.to; s += Z.tree) at(s, z.side > 0 ? Track.hi(s) + 4 + (k++ % 2) * 2.5 : Track.lo(s) - 4 - (k++ % 2) * 2.5).add(makeShadeTree(12 + (k * 7 % 4)));
   }
+  // ---- ruts: the mud right across, the two wheel tracks of the rut down each lane, and a board before
+  for (const r of Gambles.ruts) {
+    const R = CONFIG.rut;
+    group.add(new THREE.Mesh(buildStrip(r.from, r.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(0x6a4d31, -2)));
+    for (let lane = 0; lane < Track.laneCount; lane++) {
+      const mid = (r.from + r.to) / 2, c = Track.laneOffset(lane, mid);
+      if (c < Track.laneLo(mid) || c > Track.laneHi(mid)) continue;
+      for (const x of [-0.72, 0.72]) group.add(new THREE.Mesh(buildStrip(r.from, r.to, (s) => Track.laneOffset(lane, s) + x - 0.24, (s) => Track.laneOffset(lane, s) + x + 0.24, 0.02, 3), flat(0x33241a, -4)));
+    }
+    if (r.from - R.sign > 5) at(r.from - R.sign, Track.hi(r.from - R.sign) - 0.6).add(makeSign('DEEP RUTS\nPICK ONE', '#ffd23f', '#111', 5.4, 2.6));
+  }
+  // ---- fresh tarmac: the lane black and unmarked, cones down the line beside it, a board before
+  for (const z of Gambles.tars) {
+    const T = CONFIG.tarmac, LW = CONFIG.laneWidth, cone = (s, lat) => { const c = at(s, lat); c.add(new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.75, 8).translate(0, 0.375, 0), new THREE.MeshLambertMaterial({ color: 0xff6a1a }))); };
+    group.add(new THREE.Mesh(buildStrip(z.from, z.to, (s) => Track.laneOffset(z.lane, s) - LW / 2, (s) => Track.laneOffset(z.lane, s) + LW / 2, 0.025, 3), flat(0x07080a, -5)));
+    const [first] = Track.laneRange(1, (z.from + z.to) / 2), side = z.lane > first ? -1 : 1; // (the cones on the side the queue is)
+    for (let s = z.from; s <= z.to; s += T.cone) cone(s, Track.laneOffset(z.lane, s) + side * LW / 2);
+    if (z.from - T.sign > 5) at(z.from - T.sign, Track.hi(z.from - T.sign) - 0.6).add(makeSign('FRESH TAR\nSTICKY', '#ff8a1a', '#111', 5.4, 2.6));
+  }
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {
     const B = CONFIG.washboard;

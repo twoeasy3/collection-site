@@ -373,7 +373,7 @@ const buildItems = () => {
     const mesh = place(OBSTACLE_MODELS[o.kind](o));
     mesh.rotation.y = Track.toWorld(o.s, o.lat, tmp);
     mesh.position.copy(tmp);
-    if (o.kind === 'rock') { mesh.userData.way = rockWay(o); placeRock(o, mesh); }
+    if (o.kind === 'rock' && !o.loose) { mesh.userData.way = rockWay(o); placeRock(o, mesh); } // (a rockfall's: a loose rock is just a rock on the road)
     return mesh;
   });
   pickupMeshes = Pickups.items.map((p) => place(makePickup(p)));
@@ -421,7 +421,7 @@ export const syncPickups = (dt) => {
       mesh.position.set(tmp.x, tmp.y + o.h + (mesh.userData.bob ? Math.sin(performance.now() / 1000 * 2.2 + i) * 0.06 : 0), tmp.z);
     }
     if (o.roll && mesh.userData.roller) mesh.userData.roller.rotation.z = -o.roll.dir * (o.spun || 0); // (a pipe rolling across)
-    if (o.kind === 'rock') { // (tumbling down the hillside: over the land, not the game's own straight drop)
+    if (o.kind === 'rock' && !o.loose) { // (tumbling down the hillside: over the land, not the game's own straight drop)
       mesh.userData.rock.rotation.x = o.spin || 0;
       placeRock(o, mesh);
     }

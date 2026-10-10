@@ -30,6 +30,9 @@ export const Water = {
   cars: [],    // the traffic, as last marshalled (for the wakes: see push)
   queues: {},  // how many are waiting at each edge, by stageKey
   get on() { return !!Track && Track.waters.length > 0; },
+  // a new run: nobody is waiting anywhere yet. (The queues were kept from the last step of the run before, and
+  // allows() reads them as the traffic is first dealt out, so a second run began with other vehicles than a first)
+  reset() { this.cars = []; this.queues = {}; },
   depth: (s) => Track.water(s),
   // the stage s is in (with `margin` m either end), if any
   at(s, margin = 0) { return Track.isMain(s) ? Track.waters.find(w => s > w.from - margin && s < w.to + margin) || null : null; },
