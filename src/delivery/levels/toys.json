@@ -2,8 +2,8 @@
   "id": "toys",
   "name": "Toy Room",
   "description": {
-    "good": "A plastic track across the playroom carpet: a toy train at the crossing, a drawbridge to hop and a cardboard-box tunnel. Mind the dominoes.",
-    "evil": "Somebody left their toys out. Scatter the cones, jump the drawbridge flat out and take the banknotes in the lane that just turned round."
+    "good": "A plastic track across the playroom carpet: corrugated card, a toy train at the crossing, a drawbridge to hop and a box tunnel. Mind the dominoes.",
+    "evil": "Somebody left their toys out. Skim the card, scatter the cones, jump the drawbridge flat out and take the banknotes in the lane that just turned round."
   },
   "theme": "toyroom",
   "clock": { "good": 215, "evil": 165 },
@@ -79,6 +79,9 @@
     { "s": 700, "lane": 4 },
     { "s": 2850, "lane": 2 }
   ],
+  "washboards": [
+    { "from": 440, "to": 660 }
+  ],
   "parked": [
     { "s": 400, "side": "right" },
     { "s": 3640, "side": "right" }
@@ -93,8 +96,11 @@
     { "type": "turbo", "s": 190, "lane": 3 },
     { "type": "cash5", "s": 190, "lane": 4 },
     { "type": "cash10", "s": 345, "lane": 4 },
+    { "type": "cash10", "s": 470, "lane": 2 },
+    { "type": "cash10", "s": 470, "lane": 3 },
     { "type": "cash10", "s": 620, "lane": 3 },
     { "type": "cash5", "s": 620, "lane": 4 },
+    { "type": "cash20", "s": 620, "lane": "right" },
     { "type": "cash10", "s": 905, "lane": 3 },
     { "type": "timePlus", "s": 1040, "lane": 2 },
     { "type": "cash20", "s": 1098, "lane": 3 },
@@ -124,6 +130,8 @@
     { "type": "mystery", "s": 4470, "lane": 3 }
   ],
   "obstacles": [
+    { "s": 530, "lane": 4, "kind": "crate" },
+    { "s": 575, "lane": 3, "kind": "crate" },
     { "s": 1905, "lane": 3, "kind": "crate" },
     { "s": 1930, "lane": 2, "kind": "crate" },
     { "s": 520, "lane": 1, "kind": "crate", "road": "side" },
