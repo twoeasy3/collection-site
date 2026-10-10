@@ -49,14 +49,14 @@
     }
   },
   "suburbs": {
-    "name": "Suburbia",
+    "name": "City Suburbs",
     "description": {
       "good": "School-run country. Pull over for the ambulances, pick the bonus clocks and leave the penalty ones, and merge politely where the lanes close.",
       "evil": "Quiet streets, tidy lawns, SUVs with nowhere to be. Race the ambulance, grab the bonus seconds and wake the whole neighbourhood."
     }
   },
   "canberra": {
-    "name": "Canberra",
+    "name": "Australian Capital Territory",
     "description": {
       "good": "The capital's grand avenues, with a median to keep things civil. A bullet train shares the route: do look both ways.",
       "evil": "Wide avenues, slow public servants and a bullet train that takes no prisoners. Be on the right side of it and enjoy the view."
@@ -70,16 +70,16 @@
     }
   },
   "singapore": {
-    "name": "Singapore",
+    "name": "Garden City",
     "description": {
       "good": "City streets, driving on the left. Ten junctions turn the route this way and that: follow the chevrons and wait your turn at the box.",
       "evil": "Ten junctions full of taxis waiting their turn. You are not waiting for yours. Keep left, mostly."
     }
   },
   "singapore-night": {
-    "name": "Singapore II",
+    "name": "Jewel of the East",
     "description": {
-      "good": "Singapore after dark: more junctions, two bridges and boy racers sitting on your bumper. Let them by and keep the parcel level.",
+      "good": "The Lion City after dark: more junctions, two bridges and boy racers sitting on your bumper. Let them by and keep the parcel level.",
       "evil": "Neon, bridges and boy racers who think this is their street. Show them whose it is, one flaming parcel at a time."
     }
   },
