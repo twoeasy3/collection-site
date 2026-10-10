@@ -1,8 +1,8 @@
-import { createServer } from 'vite';
+import { logicServer } from './delivery-headless.mjs'; // (a Vite server that shares no cache with any other run)
 const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
 globalThis.window = { addEventListener() {} };
 globalThis.document = { getElementById: element, body: element(), cookie: '' };
-const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+const server = await logicServer();
 try {
   const L = (p) => server.ssrLoadModule(p);
   const levels = await L('/src/delivery/levels.js');

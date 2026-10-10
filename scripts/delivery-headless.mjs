@@ -2,6 +2,23 @@
 // quick look at one thing: a probe of a level, a new gimmick tried out. Not a test suite: see delivery-probe.mjs.
 //   const g = await boot();  ...  await g.close();
 import { createServer } from 'vite';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+// A Vite server that only loads the game's logic (ssrLoadModule). It shares nothing with any other run:
+// every worktree's node_modules is a junction to one folder, so they all had one cache at
+// node_modules/.vite, and since a server's root is part of that cache's key, each start from another
+// worktree deleted it and bundled the site's dependencies (React, Leaflet, three) again, none of which the
+// logic uses: two starts close together and one died with EPERM, unlinking a file the other had open. So:
+// no config file (the site's plugins are not wanted here), no dependency bundling, a cache folder to
+// itself (never written, as nothing is bundled), and no websocket (its one fixed port was fought over too)
+// or file watcher.
+export const logicServer = () => createServer({
+  configFile: false, appType: 'custom', logLevel: 'error',
+  server: { middlewareMode: true, ws: false, hmr: false, watch: null },
+  optimizeDeps: { noDiscovery: true, include: [] },
+  cacheDir: join(tmpdir(), 'delivery-vite-' + process.pid + '-' + Date.now().toString(36)),
+});
 
 export const boot = async ({ cars = ['commuter', 'sport', 'floatvan'] } = {}) => { // (floatvan: an amphibious car, for the amphibious levels)
   // the game logic touches the DOM only to show / hide screens
@@ -9,7 +26,7 @@ export const boot = async ({ cars = ['commuter', 'sport', 'floatvan'] } = {}) =>
   globalThis.window = globalThis.window || { addEventListener() {}, dispatchEvent() {} };
   const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars }));
   globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: 'delivery_racer_progress=' + allOpen };
-  const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+  const server = await logicServer();
   const load = (path) => server.ssrLoadModule('/src/delivery/' + path);
   const levels = await load('levels.js');
   const g = {
