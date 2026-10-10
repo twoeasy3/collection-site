@@ -218,7 +218,8 @@ const raceDay = (ctx) => {
     const lo = beside(-1, s, 1.3), hi = beside(1, s, 1.3), mid = (lo + hi) / 2;
     for (const lat of [lo, hi]) kit.of(color, tube).push([s, lat, 3.3, 1.2, 6.6, 1.2]);
     kit.of(color).push([s, mid, 7.1, hi - lo + 1.2, 1.3, 1.2]);
-    kit.of(trim).push([s - 0.7, mid, 6.1, (hi - lo) * 0.55, 0.8, 0.15]);
+    kit.of(trim).push([s - 0.7, mid, 5.7, (hi - lo) * 0.62, 1.8, 0.15]);
+    kit.of(color).push([s - 0.82, mid, 5.7, (hi - lo) * 0.5, 0.55, 0.1]);
   };
   // crowd barriers along a verge, a banner on every one, and people behind them (share: how many of the places are taken)
   const crowd = (from, to, side, share) => {
@@ -335,7 +336,7 @@ const raceDay = (ctx) => {
           kit.of(WHITE, cone).push([ys - 1.3, lat, 4.6, 0.12, 6, 2.4]);
         }
       }
-      lighthouse(z.from + 880, 1, out + 80, 13, 0x2f7d5a);
+      lighthouse(z.to - 150, 1, out + 80, 18, 0x2f7d5a); // (out on the water at the end of the finishing straight, in sight from the arch before it)
     }
   }
   kit.draw();
