@@ -13,7 +13,7 @@ import { Player } from '../player.js';
 import { Traffic } from '../traffic.js';
 import { Radiation } from '../radiation.js';
 import { scene, tmp } from './scene.js';
-import { trafficMeshes } from './cars.js';
+import { trafficMeshes, carMesh } from './cars.js';
 import { buildStrip } from './road.js';
 import { RAD, makeRadiationBoard, makeTrefoilPlate, makeInfection, hazardStripes } from './radiationModels.js';
 
@@ -109,6 +109,26 @@ const auraFor = (i, car) => {
   return a;
 };
 
+// ---- the player's own: an infected player's car wears the same shell, trefoil and ring as an infected car, built
+// once for the car's size (and again for another car), dimmed while the shield keeps the radiation out
+let playerAura = null, playerKey = '';
+const playerGlow = (t, show) => {
+  const P = Player, key = [P.hw, P.hl, P.height].join('/');
+  if (playerAura && key !== playerKey) { auraGroup.remove(playerAura); playerAura = null; }
+  if (!playerAura && show) {
+    playerAura = makeInfection(P.hw, P.hl, P.height, CONFIG.radiation.radius);
+    playerKey = key;
+    auraGroup.add(playerAura);
+  }
+  if (!playerAura) return;
+  playerAura.visible = show;
+  if (!show) return;
+  playerAura.position.copy(carMesh.position);
+  playerAura.rotation.y = carMesh.rotation.y;
+  playerAura.userData.body.rotation.x = carMesh.rotation.x;
+  playerAura.userData.pulse(t, Radiation.kept ? 0.4 : 1);
+};
+
 // ---- the veil over the picture: a green vignette, under the HUD, with a clear middle round the car
 const veil = document.createElement('div');
 veil.style.cssText = 'position:fixed;inset:0;pointer-events:none;opacity:0;z-index:0;background:radial-gradient(ellipse 72% 64% at 50% 62%, rgba(125,255,42,0) 48%, rgba(125,255,42,.62) 100%)';
@@ -120,6 +140,7 @@ export const syncRadiation = (now, dt) => {
   if (!Radiation.on) {
     if (veilNow > 0) { veilNow = 0; veil.style.opacity = '0'; }
     for (const a of auras) if (a) a.visible = false;
+    playerGlow(t, false);
     return;
   }
   // the haze breathes, the bands crawl
@@ -137,6 +158,8 @@ export const syncRadiation = (now, dt) => {
     a.userData.body.rotation.x = mesh.rotation.x;
     a.userData.pulse(t + i * 0.7);
   }
+  // the player's car, once infected (not in the garage, a cinematic's still or a fly-through: wherever the car is not drawn)
+  playerGlow(t, Radiation.infected && Player.active && Game.state === 'playing' && !Game.screensaver && carMesh.visible);
   // the veil: deeper the fuller the meter while a dose is being taken; a slow throb once infected; nothing under the shield
   const playing = Game.state === 'playing' && Player.active && !Game.screensaver;
   const target = !playing ? 0 : Radiation.source && !Radiation.kept ? 0.3 + 0.45 * Radiation.meter : Radiation.infected && !Radiation.kept ? 0.2 + 0.1 * Math.sin(t * 2.2) : 0;

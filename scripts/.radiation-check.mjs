@@ -115,7 +115,20 @@ try {
     start(280, LANE);
     g.run(20, () => { quiet(); P.lat = lane(LANE, P.s); P.speed = 25; return P.s > 520; });
     console.log('  (a 200 m area crossed at 25 m/s: ' + (lost() * 100).toFixed(1) + '% of the car\'s health, ' + (Radiation.meter * 100).toFixed(0) + '% of the meter)');
-    check(lost() > 0.02 && lost() < 0.12 && Radiation.meter > 0.1 && Radiation.meter < 0.35, 'a 200 m area at speed is a pressure, not a sentence');
+    check(lost() > 0.12 && lost() < 0.19 && Radiation.meter > 0.45 && Radiation.meter < 0.75, 'a 200 m area at speed costs a visible slice of health (12 - 19%) and over half the meter, but is not a sentence');
+    // staying in it: infected within 12 - 15 s
+    start(400, LANE);
+    let fullAt = null;
+    hold(400, LANE, 25, (t) => { if (Radiation.infected) { fullAt = t; return true; } });
+    check(fullAt !== null && fullAt >= 11 && fullAt <= 15, 'staying in an area: infected after ' + (fullAt === null ? 'never' : fullAt.toFixed(1) + ' s') + ' (12 - 15 s)');
+    // two stretches in a row: the meter falls only slowly between them
+    start(280, LANE);
+    g.run(20, () => { quiet(); P.lat = lane(LANE, P.s); P.speed = 25; return P.s > 520; });
+    const first = Radiation.meter;
+    hold(600, LANE, 19);
+    const between = Radiation.meter;
+    check(between > first * 0.6 && between < first, 'between two stretches 480 m apart the meter has fallen only a little (' + first.toFixed(2) + ' to ' + between.toFixed(2) + ')');
+    check(between + (200 / 25) / R.meterTime >= 1 - 0.05, '...so a second 200 m crossing at 25 m/s all but fills it (' + (between + (200 / 25) / R.meterTime).toFixed(2) + ')');
   });
 
   section('meter', () => {
@@ -137,6 +150,7 @@ try {
     hold(400, LANE, 5);
     check(near((health - P.health) / P.maxHealth, Math.max(R.tick, R.infectedTick) * 5, R.tick * 0.1), 'infected and in an area: the greater of the two rates, not both');
     console.log('  (an infected car at full health lasts ' + (1 / R.infectedTick).toFixed(0) + ' s with no wrench; a wrench gives back ' + (C.wrenchRepair * 100) + '%: ' + (C.wrenchRepair / R.infectedTick).toFixed(0) + ' s more)');
+    check(1 / R.infectedTick >= 60 && 1 / R.infectedTick <= 100, 'infected, a whole car lasts ' + (1 / R.infectedTick).toFixed(0) + ' s (a minute to a minute and a half)');
     // a wreck does not cure it (CONFIG.radiation.wreckCures), and its icon comes back with the new car
     P.health = 0;
     g.run(C.respawnTime + C.respawnShield + 1.5, () => { quiet(); });
@@ -213,7 +227,7 @@ try {
     check(Radiation.infected && Radiation.meter === 1, 'touching an infected car infects the player at once, whatever the meter read');
     check(said('INFECTED'), '...and it is said');
     ram(() => { P.armour = 60; });
-    check(!Radiation.infected && Radiation.meter === 0, 'touching one through the armour: not infected');
+    check(!Radiation.infected && Radiation.meter < 0.1, 'touching one through the armour: not infected');  // (a little meter may come from a moment's dose after a pickup on the way cuts the armour short)
     ram(() => { P.ghost = 60; });
     check(!Radiation.infected, 'a ghost drives through one: not infected');
     ram((car) => { car.infected = false; });

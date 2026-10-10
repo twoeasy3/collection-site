@@ -1053,10 +1053,10 @@ export const GROUPS = [
   // (the fallout: see radiation.js. A dose is slow, a touch is for the run; the armour is the answer to all of it)
   { name: 'Fallout', cards: [
     { name: 'Radiated areas', color: 0x7dff2a, has: (l) => l.radiation?.length, rules: [
-      `A stretch of some lanes, or of the whole road, under a green haze between bright edges and hazard bands, a board ${RD.sign} m before it. In it your health ticks down, ${pct(RD.tick)} of the car's full health a second, and the <strong>radiation meter</strong> fills: full in ${RD.meterTime} s of dosing. Out of it the meter falls back, slowly (${RD.meterFall} s to empty).`,
-      `A full meter <strong>infects you for the rest of the run</strong>: from then on the health ticks down everywhere, ${pct(RD.infectedTick)} a second, whatever you do. A wrench buys time; nothing cures it. A warning is said at ${pct(RD.high)}.`,
+      `A stretch of some lanes, or of the whole road, under a green haze between bright edges and hazard bands, a board ${RD.sign} m before it. In it your health ticks down, about ${pct(RD.tick * 8)} of the car's full health for each 8 s (a 200 m stretch at 25 m/s), and the <strong>radiation meter</strong> fills: full in ${RD.meterTime} s of dosing, so stay a dozen seconds and you are infected. Out of it the meter falls back, slowly (${RD.meterFall} s to empty): two stretches close together can fill it between them.`,
+      `A full meter <strong>infects you for the rest of the run</strong>: from then on the health ticks down everywhere, the whole car in about ${Math.round(1 / RD.infectedTick)} s, whatever you do. A wrench buys time (${Math.round(CONFIG.wrenchRepair / RD.infectedTick)} s each) and so does an armour; nothing cures it. A warning is said at ${pct(RD.high)}.`,
       'It is the middle of the car that counts: the lane beside the green is clean, and so are the shoulders where the haze stops short of them. The armour keeps every bit of it out while it lasts.',
-      'The gamble: the big cash is in the green. A short cut through costs a little health and some meter; a run down the whole of a long one costs a lot of both. Nothing in it stops the car.',
+      'The gamble: the big cash is in the green. A dash through costs a visible slice of health and over half the meter; a dwell in it infects you. Nothing in it stops the car.',
     ], build: () => {
       const g = road(9, 16), patch = makeAreaPatch(4.4, 12), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
       patch.position.x = -2.2;
