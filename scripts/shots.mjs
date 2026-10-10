@@ -11,8 +11,8 @@
 // the car, &at=<m> to start that far along, and &ff=<s> to run the game on before the first frame.
 import { createServer } from 'vite';
 import { logicServer } from './delivery-headless.mjs';
-import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, statSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { tmpdir } from 'node:os';
 
@@ -57,40 +57,204 @@ if (opt('levels', false) || opt('cars', false)) {
 }
 if (!shots.length) { console.log('Nothing to shoot: node scripts/shots.mjs <out-dir> name=<address> ... (or --levels, --cars)'); process.exit(1); }
 
-const launch = (file, list, timeout) => new Promise((done) => {
-  const child = spawn(file, list, { stdio: ['ignore', 'ignore', 'pipe'] });
-  let stderr = '';
-  child.stderr.on('data', (d) => { stderr += d; });
-  const timer = setTimeout(() => child.kill(), timeout);
-  child.on('close', () => { clearTimeout(timer); done({ stderr }); });
-  child.on('error', (e) => { clearTimeout(timer); done({ stderr: String(e) }); });
+
+// ---- what a run leaves behind, and how many run at once -------------------------------------------------
+// A run leaves NOTHING on the disk, and only two take pictures at a time. On 10-Oct thirty agents' runs filled a
+// 475 GB disk: every start of the browser wrote a scoped_dir (up to 394 MB) and a 74 MB <guid>.tmp into TEMP
+// and never removed them, and there was a start for every picture. So:
+//  - ONE browser takes all of a run's pictures, driven over the DevTools protocol and closed by it at the end
+//    (ended from outside, its helpers kept hold of the profile; left to itself with a TEMP of its own, it sat
+//    for three minutes after each picture);
+//  - everything a run writes (Vite's cache, the browser's profile, the browser's TEMP) is in one folder of the
+//    run's, in the machine's own temp folder whatever TEMP says, removed however the run ends;
+//  - that folder holds the run's pid, kept fresh: a run starts by removing the folders (and ending the
+//    browsers) of runs that are dead, since a run that is killed outright removes nothing itself;
+//  - at most SLOTS runs take pictures at once on the machine: the rest wait their turn.
+const ROOT = process.env.LOCALAPPDATA && existsSync(join(process.env.LOCALAPPDATA, 'Temp')) ? join(process.env.LOCALAPPDATA, 'Temp') : tmpdir();
+const SLOTS = 2;             // runs taking pictures at once, on the whole machine
+const STALE = 5 * 60 * 1000; // ms without its pid file freshened (every 15 s) after which a run is taken for dead
+const WINDOWS = process.platform === 'win32', SYSTEM = join(process.env.SystemRoot || 'C:/Windows', 'System32');
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const alive = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
+const remove = (path) => { try { rmSync(path, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }); } catch { /* (a file still held: a later run's sweep takes it) */ } };
+// a folder is a dead run's (or a dead run's slot) only if it holds a pid file of this script's, and that run is gone
+const dead = (folder) => {
+  try {
+    const pid = Number(readFileSync(join(folder, 'pid'), 'utf8'));
+    return pid > 0 && pid !== process.pid && (!alive(pid) || Date.now() - statSync(join(folder, 'pid')).mtimeMs > STALE);
+  } catch { return false; } // (no pid file: not provably ours, or a run just starting)
+};
+// every browser process started with that folder as its profile or TEMP: found by command line, not by tree
+// (the helpers of a browser whose parent is gone belong to no tree)
+const endBrowsersOf = (folder) => {
+  try {
+    if (WINDOWS) {
+      const exe = browser.replace(/\\/g, '/').split('/').pop().replace(/'/g, "''"), text = folder.replace(/'/g, "''");
+      spawnSync(join(SYSTEM, 'WindowsPowerShell/v1.0/powershell.exe'), ['-NoProfile', '-NonInteractive', '-Command',
+        `Get-CimInstance Win32_Process -Filter "Name='${exe}'" | Where-Object { $_.CommandLine -and $_.CommandLine.Contains('${text}') } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }`], { stdio: 'ignore', timeout: 30000 });
+    } else spawnSync('pkill', ['-9', '-f', folder], { stdio: 'ignore' });
+  } catch { /* (none to end) */ }
+};
+const sweep = () => {
+  let names = [];
+  try { names = readdirSync(ROOT); } catch { /* (no such folder) */ }
+  for (const name of names) {
+    if (!name.startsWith('delivery-shots-') || !dead(join(ROOT, name))) continue;
+    if (!name.startsWith('delivery-shots-slot-')) { endBrowsersOf(join(ROOT, name)); console.log('  (removing what a dead run left: ' + name + ')'); }
+    remove(join(ROOT, name));
+  }
+};
+sweep();
+const own = mkdtempSync(join(ROOT, 'delivery-shots-'));
+writeFileSync(join(own, 'pid'), String(process.pid));
+let slot = null, child = null, server = null, cleaned = false;
+const fresh = setInterval(() => { for (const folder of [own, slot]) { try { const now = new Date(); if (folder) utimesSync(join(folder, 'pid'), now, now); } catch { /* (gone) */ } } }, 15000);
+fresh.unref();
+const cleanup = () => { // (however the run ends, and all of it at once: an 'exit' handler cannot wait)
+  if (cleaned) return;
+  cleaned = true;
+  if (child) {
+    if (child.exitCode === null) { try { WINDOWS ? spawnSync(join(SYSTEM, 'taskkill.exe'), ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' }) : child.kill('SIGKILL'); } catch { /* (gone already) */ } }
+    endBrowsersOf(own); // (a helper that outlived it would hold the profile, and be a process left behind)
+  }
+  if (slot) remove(slot);
+  remove(own);
+};
+process.on('exit', cleanup);
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP', 'SIGBREAK']) process.on(signal, () => { console.log('  (' + signal + ': cleaning up)'); cleanup(); process.exit(130); });
+process.on('uncaughtException', (error) => { console.log(String(error && error.stack || error)); cleanup(); process.exit(1); });
+process.on('unhandledRejection', (error) => { console.log(String(error && error.stack || error)); cleanup(); process.exit(1); });
+// a slot: a folder made in one step (so two runs cannot both make it), with its owner's pid in it
+const takeSlot = async () => {
+  for (let told = false; ; told = true) {
+    for (let k = 1; k <= SLOTS; k++) {
+      const folder = join(ROOT, 'delivery-shots-slot-' + k);
+      if (dead(folder)) remove(folder);
+      try { mkdirSync(folder); } catch { continue; } // (taken)
+      writeFileSync(join(folder, 'pid'), String(process.pid));
+      return folder;
+    }
+    if (!told) console.log('  waiting for a free screenshot slot (' + SLOTS + ' runs at a time on this machine)');
+    await sleep(1000);
+  }
+};
+
+// ---- the browser: one for the run, driven over the DevTools protocol ------------------------------------
+let socket = null, calls = 0, opened = 0;
+const waiting = new Map(), listeners = new Map(); // (answers awaited, by call number; a page's events, by session)
+const send = (method, params = {}, sessionId, timeout = 30000) => new Promise((done, fail) => {
+  if (!socket || socket.readyState !== 1) return fail(new Error('the browser is gone'));
+  const id = ++calls;
+  const timer = setTimeout(() => { waiting.delete(id); fail(new Error('no answer to ' + method)); }, timeout);
+  waiting.set(id, (message) => { clearTimeout(timer); message.error ? fail(new Error(method + ': ' + message.error.message)) : done(message.result); });
+  socket.send(JSON.stringify(sessionId ? { id, method, params, sessionId } : { id, method, params }));
 });
-mkdirSync(out, { recursive: true });
-// A folder of this run's own for Vite's cache and the browser's profile. Every worktree's node_modules is a
-// junction to one folder, so the usual cache (node_modules/.vite) is one for them all, and a server started
-// from another worktree deletes it to bundle the dependencies again (see delivery-headless.mjs); and one
-// profile in TEMP had two runs' browsers in it at once. It costs a few seconds of bundling each run.
-const own = mkdtempSync(join(tmpdir(), 'delivery-shots-'));
-const server = await createServer({ server: { port: 5199, strictPort: false, hmr: false }, cacheDir: join(own, 'vite'), logLevel: 'error' });
-await server.listen();
-const base = `http://localhost:${server.config.server.port}/delivery/`;
+const openBrowser = async () => {
+  // (a profile for each start: the last one's files may be held a moment yet)
+  const profile = join(own, 'profile-' + (++opened)), temp = join(own, 'tmp');
+  mkdirSync(profile, { recursive: true });
+  mkdirSync(temp, { recursive: true });
+  const mine = child = spawn(browser, ['--headless=new', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--hide-scrollbars', '--mute-audio', '--no-first-run', '--disable-extensions', '--disable-component-extensions-with-background-pages',
+    '--disable-component-update', '--disable-background-networking', // (no 74 MB of components fetched for a profile that lasts a minute)
+    '--user-data-dir=' + profile, // (a profile of its own: with the everyday one, a browser already open takes the address and no picture is made)
+    '--remote-debugging-port=0', `--window-size=${Math.max(500, width)},${height}`, 'about:blank'],
+  { stdio: 'ignore', env: { ...process.env, TEMP: temp, TMP: temp, TMPDIR: temp } }); // (its scoped_dir and .tmp go in the run's folder, not the machine's)
+  mine.on('error', () => {});
+  // (the port it chose, and the path of its socket, are written into the profile)
+  let where = null;
+  for (let i = 0; i < 300 && !where && mine.exitCode === null; i++) {
+    await sleep(100);
+    try { const lines = readFileSync(join(profile, 'DevToolsActivePort'), 'utf8').split('\n'); if (lines.length > 1 && lines[1].trim()) where = `ws://127.0.0.1:${lines[0].trim()}${lines[1].trim()}`; } catch { /* (not up yet) */ }
+  }
+  if (!where) throw new Error('the browser did not start: ' + browser);
+  socket = new WebSocket(where);
+  await new Promise((done, fail) => { socket.addEventListener('open', done); socket.addEventListener('error', () => fail(new Error('no DevTools connection to the browser'))); });
+  socket.addEventListener('message', (m) => {
+    const message = JSON.parse(m.data);
+    if (message.id) { const answer = waiting.get(message.id); waiting.delete(message.id); if (answer) answer(message); }
+    else if (message.sessionId && listeners.has(message.sessionId)) listeners.get(message.sessionId)(message);
+  });
+};
+// closed by its own protocol, and waited for: only then are its files let go
+const closeBrowser = async () => {
+  const mine = child;
+  if (!mine) return;
+  const gone = new Promise(done => { if (mine.exitCode !== null || mine.signalCode !== null) done(); else mine.once('exit', done); });
+  try { await send('Browser.close', {}, undefined, 5000); } catch { /* (gone, or deaf: ended below) */ }
+  await Promise.race([gone, sleep(10000)]);
+  try { socket && socket.close(); } catch { /* (closed) */ }
+  socket = null;
+};
+// One picture: a page of its own, loaded, then given `wait` ms of page time (which stands still while anything is
+// being fetched). The page time is given once the page has loaded: given before, it can run out part-way through
+// the loading and stop the page there, and then no picture is ever made of it.
+const LIMIT = 90000; // ms of real time a picture may take
+const shoot = async (url, file) => {
+  const notes = [];
+  const note = (text) => { text = String(text).split('\n')[0].slice(0, 300); if (!notes.includes(text)) notes.push(text); };
+  if (!socket || socket.readyState !== 1 || !child || child.exitCode !== null) { await closeBrowser(); await openBrowser(); }
+  const { targetId } = await send('Target.createTarget', { url: 'about:blank' });
+  try {
+    const { sessionId } = await send('Target.attachToTarget', { targetId, flatten: true });
+    let timeUp, isLoaded;
+    const expired = new Promise(done => { timeUp = done; }), loaded = new Promise(done => { isLoaded = done; });
+    listeners.set(sessionId, ({ method, params }) => {
+      if (method === 'Emulation.virtualTimeBudgetExpired') timeUp(true);
+      else if (method === 'Page.loadEventFired') isLoaded(true);
+      else if (method === 'Runtime.exceptionThrown') note('exception: ' + (params.exceptionDetails.exception?.description || params.exceptionDetails.text));
+      else if (method === 'Runtime.consoleAPICalled' && ['error', 'warning', 'assert'].includes(params.type)) note(params.type + ': ' + params.args.map(a => a.value ?? a.description ?? a.type).join(' '));
+      else if (method === 'Log.entryAdded' && ['error', 'warning'].includes(params.entry.level)) note(params.entry.level + ': ' + params.entry.text + (params.entry.url ? '  ' + params.entry.url : ''));
+    });
+    const page = (method, params, timeout) => send(method, params, sessionId, timeout);
+    await page('Page.enable'); await page('Runtime.enable'); await page('Log.enable');
+    await page('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false }); // (the picture's size exactly, and any size: a window goes no narrower than 500)
+    const went = await page('Page.navigate', { url }, LIMIT);
+    if (went.errorText) note('error: ' + went.errorText);
+    if (!await Promise.race([loaded, sleep(LIMIT)])) note('warning: not loaded after ' + LIMIT / 1000 + ' s: the picture is of the page as it stood');
+    else {
+      await page('Emulation.setVirtualTimePolicy', { policy: 'pauseIfNetworkFetchesPending', budget: wait });
+      if (!await Promise.race([expired, sleep(LIMIT)])) note('warning: its ' + wait + ' ms of page time were not up after ' + LIMIT / 1000 + ' s: the picture is of the page as it stood');
+    }
+    let shot;
+    try { shot = await page('Page.captureScreenshot', { format: 'png' }, 15000); } catch {
+      // (a page stopped in the middle of something draws no frame: let its time run, and ask again)
+      await page('Emulation.setVirtualTimePolicy', { policy: 'advance' });
+      shot = await page('Page.captureScreenshot', { format: 'png' }, 30000);
+    }
+    writeFileSync(file, Buffer.from(shot.data, 'base64'));
+    listeners.delete(sessionId);
+  } finally {
+    try { await send('Target.closeTarget', { targetId }, undefined, 5000); } catch { /* (gone with the browser) */ }
+  }
+  return notes;
+};
+
 let failed = 0;
 try {
+  mkdirSync(out, { recursive: true });
+  slot = await takeSlot();
+  // (The run's folder holds Vite's cache as well. Every worktree's node_modules is a junction to one folder, so the
+  // usual cache, node_modules/.vite, is one for them all, and a server started from another worktree deletes it to
+  // bundle the dependencies again: see delivery-headless.mjs. It costs a few seconds of bundling each run.)
+  server = await createServer({ server: { port: 5199, strictPort: false, hmr: false }, cacheDir: join(own, 'vite'), logLevel: 'error' });
+  await server.listen();
+  const base = `http://localhost:${server.config.server.port}/delivery/`;
   for (const [name, address] of shots) {
     const game = address.startsWith('?') && !/[?&](autostart|hidden|test|edited|screensaver|racewatch|garage|album|milestones)\b/.test(address);
     const url = base + (game ? address.replace('?', '?autostart&') : address);
     const file = join(out, name + '.png');
-    // (not spawnSync: the server answering the browser is in this process, and has to keep running meanwhile)
-    const run = await launch(browser, ['--headless=new', '--enable-unsafe-swiftshader', '--use-angle=swiftshader', '--hide-scrollbars', '--mute-audio', '--no-first-run', '--disable-extensions', '--disable-component-extensions-with-background-pages',
-      '--user-data-dir=' + join(own, 'profile'), // (a profile of its own: with the everyday one, a browser already open takes the address and no picture is made)
-      `--window-size=${width},${height}`, `--virtual-time-budget=${wait}`, `--screenshot=${file}`, url], 180000);
+    const began = Date.now();
+    let notes = [], why = '';
+    try { rmSync(file, { force: true }); notes = await shoot(url, file); } catch (error) { why = '  ' + String(error && error.message || error); }
     const ok = existsSync(file) && statSync(file).size > 2000;
     if (!ok) failed++;
-    console.log((ok ? '  ok    ' : '  FAIL  ') + name + '  ' + url + (ok ? '' : '  ' + (run.stderr || '').split('\n').slice(-3).join(' ')));
+    console.log((ok ? '  ok    ' : '  FAIL  ') + name + '  ' + url + '  (' + ((Date.now() - began) / 1000).toFixed(1) + ' s)' + why);
+    for (const text of notes) console.log('          ' + text); // (what the page said: its errors and warnings)
   }
 } finally {
-  await server.close();
-  try { rmSync(own, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 }); } catch { /* (the browser may still hold a file; it is in TEMP) */ }
+  try { await closeBrowser(); } catch { /* (ended in cleanup) */ }
+  try { if (server) await server.close(); } catch { /* (closed) */ }
+  cleanup();
 }
 console.log(failed ? failed + ' failed' : shots.length + ' shot' + (shots.length === 1 ? '' : 's') + ' in ' + out);
 process.exit(failed ? 1 : 0);

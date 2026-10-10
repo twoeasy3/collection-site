@@ -44,3 +44,24 @@ body.ideas-studio #garageUi, body.ideas-studio #garageTip { display: none !impor
 #garageUi .compare td.better { color: #6fe08a; font-weight: 700; }
 #garageUi .compare td.worse { color: #ff7a6b; font-weight: 700; }
 #garageUi .compare td.same { opacity: .5; }
+/* (on a phone, at the same narrow width: not the table but one short strip over the stats, a cell a stat: a word,
+   a bar, the difference. px: padding 5 + 6, a line of 11 for the two names, 3, and the cells 30 (10 + 2 + 3 + 2 +
+   13): 55 tall, where the table was 200 to 230: under a tenth of 360x620, 390x700 and 430x760, 15% of 740x360.
+   As wide as the screen less the garage's padding, 420 at most; taps and drags pass through it) */
+#garageUi .compare .mini { display: none; }
+@media (max-width: 760px) {
+  #garageUi .compare { width: 100%; max-width: 420px; padding: 5px 8px 6px; border-radius: 8px; font-size: 11px; }
+  #garageUi .compare > strong, #garageUi .compare > table { display: none; }
+  #garageUi .compare .mini { display: flex; flex-direction: column; gap: 3px; }
+  #garageUi .compare .mini em { font: 700 9px/11px system-ui, sans-serif; letter-spacing: .04em; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #garageUi .compare .cells { display: flex; gap: 4px; }
+  #garageUi .compare .cell { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  #garageUi .compare .cell small { font: 700 9px/10px system-ui, sans-serif; text-transform: uppercase; opacity: .8; white-space: nowrap; overflow: hidden; }
+  #garageUi .compare .cell .track { height: 3px; border-radius: 2px; background: rgba(255, 255, 255, .16); overflow: hidden; }
+  #garageUi .compare .cell .track i { display: block; height: 100%; background: #cfd6df; }
+  #garageUi .compare .cell b { font: 700 12px/13px system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; opacity: .5; }
+  #garageUi .compare .cell.better b { color: #6fe08a; opacity: 1; }
+  #garageUi .compare .cell.worse b { color: #ff7a6b; opacity: 1; }
+  #garageUi .compare .cell.better .track i { background: #6fe08a; }
+  #garageUi .compare .cell.worse .track i { background: #ff7a6b; }
+}
