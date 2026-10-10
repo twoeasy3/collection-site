@@ -82,6 +82,26 @@
     { "type": "timePlus", "s": 880, "lane": 0 },
     { "type": "turbo", "s": 1700, "lane": 0 },
     { "type": "passenger", "s": 2260, "lane": 0 },
-    { "type": "timePlus", "s": 3320, "lane": 0 }
+    { "type": "timePlus", "s": 3320, "lane": 0 },
+    { "type": "cash5", "s": 120, "lane": 1 },
+    { "type": "cash5", "s": 340, "lane": 1 },
+    { "type": "cash10", "s": 340, "lane": 0 },
+    { "type": "cash5", "s": 640, "lane": 1 },
+    { "type": "cash5", "s": 880, "lane": 1 },
+    { "type": "cash10", "s": 1160, "lane": 1 },
+    { "type": "cash10", "s": 1420, "lane": 0 },
+    { "type": "cash5", "s": 1420, "lane": 1 },
+    { "type": "cash5", "s": 1700, "lane": 1 },
+    { "type": "cash5", "s": 2020, "lane": 1 },
+    { "type": "cash10", "s": 2260, "lane": 1 },
+    { "type": "cash20", "s": 2380, "lane": 0 },
+    { "type": "cash10", "s": 2590, "lane": 1 },
+    { "type": "cash20", "s": 2800, "lane": 0 },
+    { "type": "cash10", "s": 3080, "lane": 0 },
+    { "type": "cash5", "s": 3320, "lane": 1 },
+    { "type": "cash20", "s": 3500, "lane": 0 },
+    { "type": "cash5", "s": 3850, "lane": 1 },
+    { "type": "cash10", "s": 3850, "lane": 0 },
+    { "type": "cash5", "s": 4120, "lane": 1 }
   ]
 }
