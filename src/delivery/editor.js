@@ -1262,4 +1262,5 @@ if (params.get('undo') || params.get('redo')) { clearTimeout(pending); record();
 if (params.get('zoom')) { const [s, k] = params.get('zoom').split(':').map(Number), q = at(s, 0); view.ox = q.x; view.oy = q.y; view.k = k || 1; }
 else if (sel && params.get('sel')) centre(sel);
 if (params.get('scroll')) $('side').scrollTop = Number(params.get('scroll'));
+if (params.get('view') === '3d') show3d(true); // (&view=3d: the 3D view open)
 draw();
