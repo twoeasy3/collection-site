@@ -130,8 +130,9 @@ const makeEgg = () => {
   const jaw = sub(head, 0, -0.08, 0.06);
   part(jaw, box(0.13, 0.03, 0.18), hide, 0, 0, 0.09);
   const flame = sub(head, 0, -0.05, 0.26);
-  part(flame, cone(0.09, 0.4, 7), glow(0xff7a1a), 0, 0, 0.2, FLAT);
-  part(flame, cone(0.05, 0.26, 6), glow(0xfff2a0), 0, 0, 0.14, FLAT);
+  // (a cone's tip is +y: turned -FLAT it points back into the mouth, so the flame is narrow there and widens going out)
+  part(flame, cone(0.09, 0.4, 7), glow(0xff7a1a), 0, 0, 0.2, -FLAT);
+  part(flame, cone(0.05, 0.26, 6), glow(0xfff2a0), 0, 0, 0.14, -FLAT);
   const wings = [1, -1].map(d => {
     const root = sub(dragon, d * 0.13, 0.22, -0.06);
     root.rotation.y = d > 0 ? 0 : Math.PI;
