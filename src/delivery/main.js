@@ -61,6 +61,7 @@ import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
 import { Social } from './social.js';
 import { CAR, lendCar, superOf, ownedAmphibious } from './cars.js';
+import { Message } from './messages.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
 // ?test (or ?hidden=testbed) starts the hidden test track straight away (?test&evil: as Evil).
@@ -163,6 +164,19 @@ const silence = () => {
   Sound.lowriders(0);
 };
 
+// ?hudcheck (with ?autostart): every part of the HUD showing at once and held there, for a picture of it:
+// the shoulder's danger most of the way up, a flat tyre, a mystery running (?mystery= names it, or the
+// earthquake), half a tank found, and two ordinary messages kept up (a long one and a bust's)
+const hudCheck = params.get('hudcheck') === null ? null : () => {
+  if (Game.state !== 'playing' || !Player.active || Game.screensaver) return;
+  if (!Player.mystery) { Player.nextMystery = params.get('mystery') || 'earthquake'; Player.collect('mystery'); }
+  if (!Player.puncture) Player.punctureTyre(1);
+  Player.danger = Social.dangerTime * 0.3;
+  Game.tankPieces = 2;
+  if (!Message.lines.some(line => line.kind === 'bust')) { Message.say('events', 'wideLoad'); Message.say('busts', 'seen'); }
+  for (const line of Message.lines) line.at = performance.now();
+};
+
 let last = performance.now();
 let prevState = Game.state;
 const frame = (now) => {
@@ -232,6 +246,7 @@ const frame = (now) => {
     syncMysteries(dt); // (after the camera: the earthquake bobs it)
     syncRaceWatch(now);
     syncEmotes(dt, now);
+    if (hudCheck) hudCheck();
     updateHud();
     // the engine note follows the speed; silent once the run is over or the car is gone
     // (and in the screensaver, where there is no car, or while paused)

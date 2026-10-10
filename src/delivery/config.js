@@ -1086,9 +1086,39 @@ export const CONFIG = {
 
 
   // messages (the wording is in messages.json)
-  messageTime: 2,          // s a message stays up (plus messageExtra for its kind)...
-  messageFade: 0.4,        // ...the last of which it spends fading away
-  messageExtra: { reaction: 0, pickup: 2, rage: 2, bust: 5 }, // s longer, by kind (see messages.js)
+  // Every time a message spends on the screen is in this one table (messages.js timeFor reads it; nothing
+  // else holds a time). A message's time is the first of these that names it: `keys` (its own path in
+  // messages.json: 'events.speedFine'), `groups` (its group there: 'zones'), `kinds` (its kind, which is
+  // also its colour: see messages.js kindOf), then `default`
+  messageTimes: {
+    default: 4,            // s a message stays up, where nothing below says otherwise...
+    fade: 0.4,             // ...the last of which it spends fading away
+    kinds: { reaction: 2, pickup: 4, rage: 4, bust: 7 }, // s, by kind: a driver's reaction, a pickup or an event, TANK RAGE and a car destroyed, a bust
+    groups: {},            // s, by group in messages.json, e.g. zones: 3, milestones: 6
+    keys: {},              // s, by the message's own path, e.g. 'events.speedFine': 6
+    // The sticky ones: a message about something that is still true of the player's car. It is said as any
+    // other, on the message lines, and then stays in a slot of its own in the meters' corner (ordinary
+    // messages never push it out) until the condition named here ends, or the car is wrecked or busted, or
+    // the run is over. path in messages.json: the condition it lasts for (see the foot of player.js:
+    // 'mystery' is "the mystery effect this message is for is running"). Take a line out and that message
+    // is an ordinary one again; add one, with a condition that player.js has
+    sticky: {
+      'events.puncture': 'puncture',                 // a flat tyre, until it is changed (its row shows the change going on)
+      'events.beached': 'beached',                   // stuck in the gravel, until the car digs itself out
+      'powerups.badGas': 'badGas',                   // the bad powerups: cheap fuel, for as long as it lasts
+      'powerups.heavyMass': 'heavy',                 // ...the extra weight
+      'powerups.butterfingers': 'butterfingers',     // ...and no throwing
+      'powerups.mystery.noBrakes': 'mystery',        // the mystery effects that are bad news, or change the rules: no brakes
+      'powerups.mystery.rickety': 'mystery',         // ...more damage from every knock
+      'powerups.mystery.jerk': 'mystery',            // ...every driver against the player
+      'powerups.mystery.swapSides': 'mystery',       // ...on the other side: the packages do something else
+      'powerups.mystery.blackout': 'mystery',        // ...the lights out
+      'powerups.mystery.earthquake': 'mystery',      // ...the road heaving
+      // (the good ones are left to the pickup status, which names them while they run: toad, angel,
+      // invincible, soupedUp, giant, magnet, trafficFreeze; and sundayDrivers, rushHour, carSwap, moodSwing)
+    },
+    stickyRows: 3,         // sticky messages shown at once, the newest first
+  },
 
   // night levels (theme "night"): the player's headlights, two spotlights riding on the car
   headlights: {
