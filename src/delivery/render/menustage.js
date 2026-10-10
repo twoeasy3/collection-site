@@ -1,6 +1,6 @@
 // ---- the start screen's level select, car and side: the game's front end ---------------------------------
 // One screen, nothing scrolls. The level picked is the STAGE: its picture large, its number and name, its
-// description for the side picked, its clock, tip and best times with their medals. Under it the STRIP: the
+// description for the side picked, its clock, tip, cargo and best times with their medals. Under it the STRIP: the
 // levels of its group, to step through; over it the groups, and over those the tabs (Deliveries, Races): the
 // same control one level up each time. Beside the stage the car (a way into the garage), the side (Good or
 // Evil: Evil recolours the screen) and START.
@@ -14,6 +14,7 @@
 import '../menu2.css';
 import { LEVELS, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace } from '../levels.js';
 import { levelName, levelDescription } from '../levelText.js';
+import { cargoFor } from '../cargo.js';
 import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
@@ -176,12 +177,17 @@ const drawStage = () => {
     : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare') : null;
   const words = levelDescription(level, evil); // (for the side picked: see levelText.js)
   const best = Progress.bestTime(level.id, evil);
+  // what is being delivered, for the side picked (cargo.js: levelText.json's, whatever is wrong with it; null on a race)
+  const carried = cargoFor(level, evil);
+  const cargoFact = carried ? fact('Cargo', carried.name) : null;
+  if (cargoFact) cargoFact.title = (evil ? 'What you are delivering as Evil' : 'What you are delivering as Good');
   const info = make('div', 'info',
     make('h2', '', levelName(level)),
     open && words ? make('p', 'desc', words) : null,
     open ? make('div', 'facts',
       fact('Clock', formatTime(clockFor(level, evil)) + (oneSided(level) ? ' (always Good)' : '')),
       fact('Tip', money(level.tip)),
+      cargoFact,
       fact('Best to spare', best === undefined ? 'Not delivered yet' : formatTime(best))) : null,
     needs ? make('p', 'needs' + (open && !Game.canStart ? ' warn' : ''), needs) : null,
     prizeLine ? make('p', 'prize', prizeLine) : null,
