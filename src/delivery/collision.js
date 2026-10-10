@@ -267,7 +267,7 @@ export const Collision = (() => {
   // the themes' own obstacles (a theme's `obstacles`: see themes.js): each is the kind it stands in for in another
   // shape, so it has that kind's box, its height too (what the car clears in the air), whatever its model's
   for (const [kind, like] of Object.entries({ toyBlock: 'crate', divingHelmet: 'crate', supplyPod: 'crate', directorChair: 'crate', mooringPosts: 'crate',
-    fuelDrum: 'crate', popcornCart: 'crate', barrel: 'crate', chairStack: 'crate', riceBasket: 'crate', cameraDolly: 'bale', present: 'bale', toyDrum: 'bale', sackStack: 'bale',
+    fuelDrum: 'crate', popcornCart: 'crate', barrel: 'crate', chairStack: 'crate', riceBasket: 'crate', wasteDrum: 'crate', cameraDolly: 'bale', present: 'bale', toyDrum: 'bale', sackStack: 'bale',
     beachBall: 'bale', tumbleweed: 'bale', skittle: 'cone', cafeTable: 'cone', wheelieBin: 'cone', snowdrift: 'cone', brimstone: 'cone', flagStand: 'cone', lavaRock: 'rock' })) SIZE[kind] = SIZE[like];
   // what a level's own obstacle of that kind is on its theme (its "obstacles", "shoulderRows" and "drifters"
   // only: what a gimmick puts out, a cargo truck's load among it, is what it always was)

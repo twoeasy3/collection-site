@@ -342,6 +342,19 @@ body.screensaver #behind, body.cinematic #behind { display: none !important; }
 #flat .bar { width: 150px; max-width: 40vw; height: 8px; margin-top: 3px; background: rgba(0,0,0,.4); border-radius: 4px; overflow: hidden; }
 #flatFill { height: 100%; width: 0; background: #ffb03a; }
 /* a good player's social standing (see social.js): gold, and glowing once it protects the player */
+/* the radiation meter (radiation.js): a trefoil, the word, and a bar that fills green to yellow to red; shown only
+   on a level with radiation. .dosed: filling now (it glows); .infected: full for the run (red, the word INFECTED);
+   .kept: the armour is keeping it out (blue) */
+#radiation { display: none; margin-top: 8px; font-size: 12px; font-weight: 700; color: #b8ff5a; text-shadow: 0 1px 2px #000; }
+#radiation svg { display: inline-block; width: 13px; height: 13px; margin-right: 4px; vertical-align: -2px; fill: currentColor; }
+#radiation .bar { width: 150px; max-width: 40vw; height: 8px; margin-top: 3px; background: rgba(0,0,0,.4); border-radius: 4px; overflow: hidden; }
+#radiationFill { height: 100%; width: 0; background: linear-gradient(90deg, #7dff2a, #ffd23f 60%, #ff3b30); transition: width .1s linear; }
+#radiation.dosed { color: #d6ff5a; }
+#radiation.dosed .bar { box-shadow: 0 0 8px rgba(125,255,42,.8); }
+#radiation.infected { color: #ff6a5a; }
+#radiation.infected #radiationFill { background: #ff3b30; }
+#radiation.kept { color: #8fd0ff; }
+#radiation.kept .bar { box-shadow: 0 0 8px rgba(80,160,255,.8); }
 #social { display: none; margin-top: 8px; font-size: 12px; font-weight: 700; }
 #social .bar { width: 150px; max-width: 40vw; height: 8px; margin-top: 3px; background: rgba(0,0,0,.4); border-radius: 4px; overflow: hidden; }
 #socialFill { height: 100%; width: 0; background: #ffd23f; }

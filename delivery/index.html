@@ -21,6 +21,8 @@
       <div id="health"><div id="healthFill"></div></div>
       <div id="busts"></div>
       <div id="social">SOCIAL STANDING<div class="bar"><div id="socialFill"></div></div></div>
+      <!-- the radiation meter (render/hud.js; what fills it: radiation.js): only on a level with radiation -->
+      <div id="radiation"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.9"/><path d="M9.75 8.1L7.25 3.77a9.5 9.5 0 0 1 9.5 0L14.25 8.1a4.5 4.5 0 0 0-4.5 0zM16.5 12h5a9.5 9.5 0 0 1-4.75 8.23l-2.5-4.33A4.5 4.5 0 0 0 16.5 12zM9.75 15.9l-2.5 4.33A9.5 9.5 0 0 1 2.5 12h5a4.5 4.5 0 0 0 2.25 3.9z"/></svg><span id="radiationLabel">RADIATION</span><div class="bar"><div id="radiationFill"></div></div></div>
     </div>
     <div id="gaugeColumn">
     <div id="gauges">
@@ -183,24 +185,10 @@
      On a phone or tablet there are on-screen buttons for all of it (the menu can switch them on or off).<br>
      Reach the finish before the clock hits zero to keep the tip. After zero the tip drains
      for 10 seconds, and the level is failed.<br>
-     Hit a spinning green target beside the road with a package for TANK RAGE: you wreck
-     whatever you touch, and Space fires the cannon.<br>
+     Hitting anything damages your car, and if your health drops to zero your car is wrecked. Head-on collisions wreck you instantly.<br>
      The shoulders are free of traffic, but stay too long and the police lift you off.<br>
-     Police cars (white, flashing lights) bust you for bumping them, or for shoulder driving
+     Police cars bust you for bumping them, or for shoulder driving
      while they are near. Three busts and it's over.<br>
-     In Asteroid Run the ghosts come one after another: catch each before the last runs out
-     and you pass straight through the rocks.<br>
-     Pickups: cyan turbo, white ghost (drive through things), orange wrench (repair),
-     pink inflatable passenger (shoulders are legal).<br>
-     Giant frogs hop about on parts of the road; hitting one is like hitting a barrier.<br>
-     On the bridge the shoulders are solid steel: arrive on the shoulder and you are wrecked.<br>
-     A signed exit leaves from the right shoulder onto a two-lane side road with oncoming
-     traffic; it rejoins the expressway further on.<br>
-     Left lanes are oncoming traffic. A head-on wrecks you, and a new car costs time.<br>
-     Some levels are one-way: in Big Business and Hurricane everything goes your way, and in
-     All Heck everything comes at you.<br>
-     In Hurricane the cars blown through the air can't touch you; the junk sliding about the
-     road can.</p>
         </section>
       </div>
     </div>

@@ -56,6 +56,7 @@ export const Player = {
   air: 0,              // m the car is above the road (on a drawbridge's raised leaf, or jumping its gap: see Hazards)
   pitch: 0,            // ...and rad its nose is up by (the leaf's slope; in the air, the way it is flying)
   shaken: 0,           // the share of its steering's bite a washboard, or black ice, is taking away (0 .. 1: see Gambles)
+  corrugated: 0,       // 1 on washboard dirt (see Gambles): held to CONFIG.washboard.most, and slowed down to that
   rampAhead: false,    // lined up with a ramp over the jam close ahead, on it, or in the air (see Gambles): no braking by itself for the queue
   testGhost: false,    // a ghost for the whole run, whatever happens (?ghost in the URL: screenshots and tests)
   tank: 0,             // 1 once TANK RAGE has started; it lasts for the rest of the level
@@ -390,6 +391,9 @@ export const Player = {
       top *= R.slowest + (1 - R.slowest) * crossing;
       if (crossing < 1) Game.shake = Math.max(Game.shake, 0.12 * (1 - crossing));
     }
+    // on washboard dirt (see CONFIG.washboard and Gambles, which says when): held to its `most`, dragged down to that
+    const B = CONFIG.washboard, board = this.corrugated > 0;
+    if (board) top = Math.min(top, B.most);
     // in the tide's water, slowed the same way, only more so (see CONFIG.tide)
     const wet = this.wading > CONFIG.tide.wet;
     if (wet) top *= Math.max(CONFIG.tide.slowest, 1 - CONFIG.tide.crossing * (1 - R.slowest) * (1 - crossing));
@@ -409,7 +413,8 @@ export const Player = {
       // turbo ran out (or bad gas or the weight came on): ease back down to the top speed
       // (or on a railway track: slowed down to it hard)
       // (or driving into the water: it ploughs in and is slowed to its pace afloat, never stopped)
-      this.speed = Math.max(top, this.speed - (rails || wet || mud ? R.bite : afloat ? CONFIG.water.drag : CONFIG.brake * 0.5) * dt);
+      // (or on washboard dirt: dragged down to its `most`)
+      this.speed = Math.max(top, this.speed - (rails || wet || mud ? R.bite : afloat ? CONFIG.water.drag : board ? B.drag : CONFIG.brake * 0.5) * dt);
     } else if (drive > 0) {
       this.speed = Math.min(top, this.speed + drive * (boosted ? CONFIG.turboAccel : CAR.accel * (held ? held.accel : 1)) * (this.puncture ? CONFIG.puncture.accel : 1) * seaAccel * dt);
     } else if (drive < 0 && this.puncture) { // (a flat tyre: hard, and all the way down to a stop)

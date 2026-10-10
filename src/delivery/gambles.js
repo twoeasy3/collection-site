@@ -23,7 +23,7 @@
 //                just ahead, a bridge, a tunnel or a row of trees
 //   dust         a dry dirt stretch where every vehicle throws a plume that the wind carries to one side: blind in
 //                it, clear a lane upwind of it
-//   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
+//   washboards   corrugated dirt: at any speed the wheels hop, the steering shakes and the car is slowed (the faster, the worse)
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
 // ============================================================================
@@ -77,8 +77,8 @@ export const Gambles = {
   shadow: null,   // the vehicle whose shadow the player is in, in the low sun (null: none; true: a bridge's, a tunnel's, the trees')
   veil: 0,        // how much of the view is gone just now (0 clear .. 1), eased; and what took it: 'spray' | 'sun' | 'dust' | null
   veilOf: null,
-  boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
-  rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
+  boards: [],     // washboards: { from, to }
+  rough: 0,       // how rough the washboard under the player's car is just now (0 .. 1: by its speed; 0 off one)
 
   // the level's lists (as a level loads, for the drawing, and again as each run starts)
   build() {
@@ -86,7 +86,7 @@ export const Gambles = {
     this.winds = (LEVEL.crosswinds || []).map(w => ({ from: w.from, to: w.to, dir: w.dir === 'left' ? -1 : 1,
       strength: w.strength ?? W.strength, every: w.every ?? W.every, length: w.length ?? W.length }));
     this.buildCrests();
-    this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to, skim: b.skim ?? CONFIG.washboard.skim }));
+    this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to }));
     this.bars = (LEVEL.lowBridges || []).map((b) => ({ s: b.s, clearance: b.clearance ?? CONFIG.lowBridge.clearance, lo: Track.laneOffset(Track.laneRange(1, b.s)[0], b.s) - CONFIG.laneWidth / 2, hi: Track.hi(b.s),
       exit: Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null, hits: 0 }));
     // (a ford that `fills` is a flooded underpass: its depth is `depth` as the run starts and rises to fills.to over fills.over s)
@@ -141,7 +141,7 @@ export const Gambles = {
     this.said = {};
     this.fly = null;
     Player.rampAhead = false;
-    Player.shaken = this.rough = 0;
+    Player.shaken = Player.corrugated = this.rough = 0;
     this.barS = this.rowS = Player.s;
     this.rut = null;
     this.rutJolts = 0;
@@ -371,21 +371,23 @@ export const Gambles = {
   },
 
   // ---- washboard dirt ------------------------------------------------------------------------------------
-  // Corrugations right across the road. Crawling over them (CONFIG.washboard.calm m/s or less) the car rides each
-  // one; at its `skim` speed or more it skims their tops and runs smooth. Between the two the wheels hop: the
-  // steering hardly takes (Player.shaken: see Player's steering), the car wanders, and in a bend it is carried
-  // to the outside. Worst in the middle of that band
+  // Corrugations right across the road. On them the wheels hop, at any speed and the faster the worse: the steering
+  // takes less (Player.shaken: see Player's steering), the car wanders, in a bend it is carried to the outside; and
+  // the car is slowed (Player.corrugated: Player's updateSpeed holds it to CONFIG.washboard.most and drags a faster
+  // one down to that). Never stopped. The gamble: straight across costs speed and some say over the line, a lane or
+  // shoulder it does not reach (or the way round) costs the time
   board(s) { return Track.isMain(s) ? this.boards.find(b => s >= b.from && s <= b.to) || null : null; },
-  // how rough a washboard that skims at `skim` is at v m/s: 0 (crawling, or skimming) .. 1
-  roughness(v, skim = CONFIG.washboard.skim) {
-    const calm = CONFIG.washboard.calm;
-    return v <= calm || v >= skim ? 0 : Math.sin(Math.PI * (v - calm) / (skim - calm)) ** CONFIG.washboard.shape;
+  // how rough a washboard is at v m/s: 0 (standing still) .. 1 (at CONFIG.washboard.full or more)
+  roughness(v) {
+    const B = CONFIG.washboard;
+    return v <= 0 ? 0 : Math.min(1, v / B.full) ** B.shape;
   },
   updateBoards(dt) {
     const B = CONFIG.washboard, P = Player;
     const b = P.active && !this.fly && !CAR.noWheels && P.ghost <= 0 && !(P.tank > 0) ? this.board(P.s) : null;
     if (P.active && this.board(P.s)) this.once('washboard');
-    this.rough = b ? this.roughness(P.speed, b.skim) : 0;
+    this.rough = b ? this.roughness(P.speed) : 0;
+    P.corrugated = b ? 1 : 0;
     P.shaken = B.steerLoss * this.rough;
     if (!this.rough || P.busted) return;
     const t = Game.time, r = this.rough;

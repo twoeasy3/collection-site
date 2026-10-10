@@ -25,7 +25,7 @@ const HILL = new THREE.ConeGeometry(0.5, 1, 9);
 // lists of road-placed things by colour and shape ([s, lat, y, sx, sy, sz, to?]: see instances in road.js), each
 // drawn as one mesh; and world-placed ones (a point, a size, a turn; or a beam from one point to another), each
 // checked against every road as it is put down
-const makeKit = ({ instances, offRoads, levelGroup, cube }) => {
+export const makeKit = ({ instances, offRoads, levelGroup, cube }) => { // (exported: the fallout zone, a theme with a file of its own, builds with it too)
   const road = new Map(), world = new Map(), o = new THREE.Object3D(), va = new THREE.Vector3(), vb = new THREE.Vector3(), p = {};
   const key = (map, color, geometry, glowing) => {
     const k = geometry.uuid + ':' + color + ':' + (glowing ? 1 : 0);
@@ -66,7 +66,7 @@ const makeKit = ({ instances, offRoads, levelGroup, cube }) => {
 };
 // a level's zones for a theme with sets: [{ set, from, to }], the level's own (each zone's `scenery`, if it is one
 // of the theme's sets) or, on a level with none, the sets end to end in equal shares
-const setsOf = (theme) => {
+export const setsOf = (theme) => {
   const sets = theme.sets || [], own = (LEVEL.zones || []).filter(z => sets.includes(z.scenery));
   if (own.length) return own.map(z => ({ set: z.scenery, from: z.from, to: z.to }));
   return sets.map((set, i) => ({ set, from: Math.round(Track.length * i / sets.length), to: Math.round(Track.length * (i + 1) / sets.length) }));
