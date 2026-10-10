@@ -1123,6 +1123,83 @@ pick ups and traffic."
       and the built site's look is still going. `main` is at `7a90971`, ten merges ahead of what is live
       (`8fa45a6`), not pushed. One stray process: `node` PID 26760 (a hung bundle check; the agent's kill
       was refused): for the owner to end.
+- [ ] **QUEUED for the next session: the owner's list of 10-Oct, about 9 pm ("Add to the list"). None started,
+      none labelled to jump the queue. The owner's words are kept; a note follows only where one is needed.**
+  - **Gimmicks: how they play**
+    - [ ] Q1. "The washboard gimmick does very little. It's not an interesting obstacle."
+    - [ ] Q2. "The truck spray gimmick looks ugly and does even less. What exactly was it meant to do?"
+          (Answered in chat: H11: every tall vehicle on a wet stretch drags a cloud nothing can be seen
+          through, so the choice is to hang back and see or overtake blind; it does nothing to the car and
+          the cloud is a plain translucent box. To rework or drop: the owner's call.)
+    - [ ] Q3. "Seaquake has scripted wreckage from the sky, but it is supposed to be indoor."
+    - [ ] Q4. "There should be a difference between ice and water - ice only affects you while on it, water
+          continues to affect for a set distance after". (Wet tyres after a burst main; mains water already
+          has its own numbers in `CONFIG.waterMain`.)
+    - [ ] Q5. "Supercharger should increase the car's top speed around bends proportionally".
+    - [ ] Q6. "The tram on the Hong Kong level does nothing. It should work like Canberra's, incoming only,
+          guranteed destruction except for vehicles that survive a head-on collision (Tank)".
+    - [ ] Q7. "Drop bears should take into account player speed. Most 4 or 5 star cars outrun it".
+    - [ ] Q8. "Kangaroos are too hard to see on the road. Make them larger and brighter."
+    - [ ] Q9. "The blasting gimmick on the airport is mechanically a wreckage, but a Blast in Quarry Run. Move
+          all blasts into the blasting gimmick."
+    - [ ] Q10. "The puncture gimmick is not updated for new ways to get a puncture."
+    - [ ] Q11. "Assaulting the police in pursuit should be a bust, but everything else they will let you go as
+          they are busy,"
+    - [ ] Q12. "The wrong way driver gimmick warns a player sometimes for a car that doesn't actually affect
+          the player at all. This is a complex fix. A lane that becomes oncoming in a side road should not
+          spawn a traffic vehicle such that the player will meet one before the oncoming lane starts. This
+          wrong way driver gimmick should be used to send a random driver the wrong way like the Bullet
+          train gimmick."
+    - [ ] Q13. "A convoy and a Funeral Procession are too similar. Make it such that crashing a funeral
+          procession triggers the Jerk mechanic for 10s."
+    - [ ] Q14. "Crosswinds should be in thematic levels. It has no place in the movie set or a fevela. It also
+          is not really relevant most of the time, it needs tuning."
+    - [ ] Q15. "Low bridges are very cheap to ignore. It should deal massive damage, and be placed on both
+          sides (not at the same level, so players can slalom around them). If a tall traffic car spawns in
+          its path it should just go through with no penalty."
+    - [ ] Q16. "The learner driver's L should be a flipped writing element, and it is far too slow. It should
+          also wobble in its lane."
+    - [ ] Q17. "\"Side Road Gimmicks\" is not really a gimmick on its own".
+  - **Damage and balance**
+    - [ ] Q18. "Speed plays too big of a role in damage dealt in a crash. There should be a cap because fast
+          fragile cars are oneshotting low star cars in a rear-end."
+    - [ ] Q19. "Rebalance all the obstacles that explode on contact. They should take health away roughly equal
+          to how big they are. The construction equipment do not cause nearly enough damage."
+  - **Levels**
+    - [ ] Q20. "Some amphibious stages don't make sense as the water is just inbetween land. They should either
+          be obviously a canal, a river or it should transition into the sea or a river."
+    - [ ] Q21. "The level agents are very found of recent gimmicks. Burst water mains and potholes and tunnels
+          appear almost every level. It should be thematic." (A rule for every level brief from now on, and
+          an audit of the levels written or reworked on 10-Oct.)
+    - [ ] Q22. "Show the cargo being delivered on the menu screen per level and the level cargo should be set
+          in the same way as the level name and description." (Into `levelText.json` or a file like it,
+          with the level's own file as the fallback.)
+    - [ ] Q23. "When writing a level or taking a screenshot, note the coordinates where the screenshot was
+          taken. It will help with re-taking the shots." (A rule for every brief; the menu pictures' places
+          are already in the script's `CINE` table.)
+  - **Signs, models and the reference pages**
+    - [ ] Q24. "The newer signs do not reverse for flipped levels". (Lettered boards mirrored on `drive: left`
+          levels; one was already seen on Hong Kong's FRESH TAR board.)
+    - [ ] Q25. "The lanes closing model on the gimmick page is not accurate to what it actually looks like".
+    - [ ] Q26. "The reversible lanes model in the gimmick page is showing a reversing car."
+    - [ ] Q27. "The low bridge animation's bus crab walks away."
+    - [ ] Q28. "All models in the gimmick page should be spinning".
+    - [ ] Q29. "The tyres from explosions should gain some upwards velocity and bounce".
+    - [ ] Q30. "The Stainless Gullwing's doors should only animate in the garage".
+  - **Cars and how they look**
+    - [ ] Q31. "The non-normal star cars (blue stars, amphibious etc) have very boring and dark Evil palettes.
+          Darker in general, but not every car needs to be black."
+    - [ ] Q32. "Think of how we can indicate in-game subtly whether a car is good or evil". (Ideas wanted
+          first, for the owner to choose from; nothing to be built before that.)
+  - **Menu and garage**
+    - [ ] Q33. "Use the Plop Up sound for each click on the menu".
+    - [ ] Q34. "Migrate buying the cars from a .alert() to a ingame menu."
+    - [ ] Q35. "Change the sort and show toggles to a list rather than a cycle, and hide if the list returns 0
+          cars."
+    - [ ] Q36. "In the garage, Livery: Good should just be Good/Evil, and \"Use this car as Good\" should be
+          \"Switch\" and \"Use\". Switch is current behaviour, Use sets the car and goes to the menu."
+    - [ ] Q37. "The stat lines still block the cars in the mobile view." (After the comparison strip of
+          `9af18d1`: the garage's stats text, now three lines on a phone with Delivery and Nerve pending.)
 - [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
   - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
     truck gimmick for now." What it is: the car's trait `tow` (`cars.js:127-129`): driven into fallen

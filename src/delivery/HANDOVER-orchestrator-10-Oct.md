@@ -72,6 +72,12 @@ not labelled to jump the queue): shelve the Tow Truck's wreck-clearing trait; ch
 "traffic slows where any wreck happened" to a fixed crash scene of two burning, damaged cars on a shoulder
 that traffic slows to look at, only on roads with two or more lanes each way.
 
+**And a list of 37 more from the owner, about 9 pm** (Q1 to Q37 at the very top of the checklist's evening
+block, in the owner's words, grouped: gimmicks, damage and balance, levels, signs and models, cars, menu
+and garage). None started. Two of them are rules for every level brief from now on: gimmicks must suit the
+level's theme, not be the recent favourites (burst mains, potholes and tunnels are on almost every level);
+and note where each still was taken.
+
 Not started: Stelvio (30), Tokyo (28), Mumbai (29), Night Shift and two more second levels, five weak menu
 pictures, moving nine levels' words into `levelText.json` as their branches land, the audit's performance
 and bloat work, the level progression rework (parked by the owner; three of its questions answered today).
