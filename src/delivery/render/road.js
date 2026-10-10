@@ -10,7 +10,7 @@ import { setHeadlights } from './headlights.js';
 import { THEMES } from '../themes.js';
 import { CIRCUITS } from './circuits/index.js';
 import { THEME_SCENERY } from './themes/index.js';
-import { THEME_EXTRAS } from './themes/extras.js';
+import { THEME_EXTRAS, cityKeepsClear } from './themes/extras.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -1761,6 +1761,7 @@ const buildRoad = () => {
           const s = s0 + Math.random() * 10;
           const w = 6 + Math.random() * 10, h = 5 + Math.random() * 22, d = 6 + Math.random() * 12;
           const far = 8 + w / 2 + Math.random() * 30;
+          if (cityKeepsClear(s, side)) continue; // (a set-piece of a zone stands there: themes/extras.js. The dice are thrown all the same, so the rest is laid out as ever)
           blocks.push([s, side < 0 ? Track.lo(s) - far : Track.hi(s) + far, h / 2, w, h, d]);
         }
       }
