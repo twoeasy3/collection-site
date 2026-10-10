@@ -19,11 +19,12 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // Order 26 put the five amphibious levels in at 41 to 45: after every delivery level there was, ahead only of the
 // circuits, which are races and always open. A save from before that counted past 40 had delivered the last
 // special level, and so has the first amphibious level open and no more: it is held at 41 ({ cap }).
-// Order 27 put the themed levels (the toy room and on: THEME_LEVELS) in from 46: after the amphibious levels, again
-// ahead only of the circuits. A save from before that counted past 45 had delivered the last amphibious level, and so
-// has the first themed level open and no more: it is held at 46. (Themed levels added since go at the end of
-// their list, which needs nothing here.)
-const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, { cap: 46 }]; // (for orders 2, 3, ...)
+// Orders 27 to 29 put the first levels of the new themes (Toy Room, Twenty Thousand Leaks, Tranquility Base:
+// THEME_LEVELS) in at 32 to 34: they are ordinary numbered levels, after the last of the old ones and ahead of the
+// special levels. EVERY level added to THEME_LEVELS needs its place added here, one order each (35, 36...).
+// (Order 27 was, for a few hours on 10-Oct and never on the live site, a cap at 46 with those levels after the
+// amphibious ones: no save was made with it outside a developer's machine.)
+const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 // races (the lapped levels, on the menu's Races tab) are always open, and never hold up the delivery levels: the
