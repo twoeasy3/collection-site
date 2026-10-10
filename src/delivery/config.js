@@ -1308,6 +1308,17 @@ export const CONFIG = {
   // within `trigger` m of the stretch, each at its own `speed`, weaving `weave` m
   // (gone `past` m behind the player, or `run` m down the road from where they waited)
   stampede: { trigger: 240, speed: { min: 9, max: 14 }, weave: 0.8, past: 70, run: 400 },
+  // ---- Gimmick Road 3's: the road gambles (gambles.js; each a field in the level, named below) ----
+  // a crosswind ("crosswinds": { from, to, dir, strength?, every?, length? }): over the stretch a car is pushed
+  // sideways at `strength` m/s^2 times (its height / heightRef) ^ heightPower: `lull` of that all the time, all of
+  // it in a gust: every `every` s, for `length` s, building and dying over `rise` s. (The steering answers at
+  // CONFIG.steerResponse, so a steady push of a m/s^2 is a drift of about a / steerResponse m/s: a tap now and then
+  // holds the lane.) Beside a vehicle at least leeHeight m tall (and no shorter than the car), on the windward side
+  // and within leeReach m, the car feels only `lee` of it; as it clears that vehicle the wind is back at once, with
+  // a shove of `shove` m/s on top. Traffic feels `traffic` of the push (it drifts in its lane, and leans `lean`
+  // rad per m/s^2). Windsocks stand `ahead` m before the stretch and every sockEvery m along it
+  crosswind: { strength: 7, lull: 0.3, every: 6, length: 2.6, rise: 0.6, heightRef: 1.45, heightPower: 1.5, leeHeight: 2, leeReach: 5.5, lee: 0.1, shove: 2.4,
+    traffic: 0.35, lean: 0.006, ahead: 90, sockEvery: 150 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it
   // and start.pitch up (rad); it comes no nearer than `near` nor goes further than `far`, between `low` and `high`

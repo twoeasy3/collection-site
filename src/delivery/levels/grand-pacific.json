@@ -61,6 +61,9 @@
     { "from": 4300, "to": 4440, "count": 2, "kind": "kangaroo" },
     { "from": 9850, "to": 10010, "count": 3, "kind": "kangaroo" }
   ],
+  "crosswinds": [
+    { "from": 6080, "to": 6520, "dir": "left" }
+  ],
   "targets": [
     { "s": 1000, "side": "left" },
     { "s": 3000, "side": "right" },

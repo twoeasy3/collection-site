@@ -144,6 +144,9 @@
     { "s": 4708, "lane": 3, "kind": "sign" },
     { "s": 4718, "lane": 1, "kind": "cooler" }
   ],
+  "crosswinds": [
+    { "from": 1900, "to": 2400, "dir": "right", "strength": 9, "every": 5 }
+  ],
   "targets": [
     { "s": 720, "side": "right" },
     { "s": 2220, "side": "left" },

@@ -34,6 +34,7 @@ import { syncGunfire } from './render/gunfire.js';
 import { syncSite } from './render/site.js';
 import { syncRoadside } from './render/roadside.js';
 import { syncHazards } from './render/hazards.js';
+import { syncGambles } from './render/gambles.js';
 import { syncBattle } from './render/battle.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
@@ -204,6 +205,7 @@ const frame = (now) => {
     syncSite();
     syncRoadside(dt);
     syncHazards(now);
+    syncGambles(now, dt); // (after the car and the traffic are placed: it leans and shakes them)
     syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
     syncWaterMains(dt);
     syncReversible();

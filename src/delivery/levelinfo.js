@@ -64,6 +64,7 @@ const GIMMICKS = [
   ['Marathon', (l) => some(l.marathons)],
   ['Trolleys', (l) => some(l.trolleys)],
   ['Stampede', (l) => some(l.stampedes)],
+  ['Crosswind', (l) => some(l.crosswinds)],
   ['Cyclists', (l) => some(l.pelotons)],
   ['Funerals', (l) => l.processions],
   ['Ambulances', (l) => l.emergencies],
