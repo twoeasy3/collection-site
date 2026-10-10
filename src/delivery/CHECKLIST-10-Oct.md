@@ -710,6 +710,14 @@ at thumbnail size, calm at the start, agitated at half the clock, furious for th
 | C39 | Thundercloud in a jar | A small grey cloud | Dark, rumbling, flickers of light | Lightning cracking the glass, rain inside | Hurricane, Mumbai |
 | C40 | Piranha tank | Fish idling | Circling fast, the water churning | Leaping out, snapping, water everywhere | Passage du Gois, the amphibious levels |
 
+- [x] **C21 to C40 built** (agent 16, branch `delivery-cargo-evil`): all twenty, in
+  `render/cargoModelsEvil2.js`, listed in `CARGO.evil` (ids egg, cooker, flytrap, barrel, mirror,
+  skunk, cannonball, mimic, fireworks, alien, teddy, bats, ice, snakes, genie, reactor, goose, jack,
+  cloud, piranhas). The egg hatches a dragon; the ice holds a yeti cub. No level names one yet: the
+  rotation by menu position hands them out. Looked at: every one in all three states as stills of the
+  cargo page (two moments each), and the mirror, genie and thundercloud in the HUD corner. Nothing
+  was seen moving.
+
 ### Notes for whoever builds them
 
 - **Pairs that suit a level** (one Good, one Evil, as each level carries): snow globe and ice block
