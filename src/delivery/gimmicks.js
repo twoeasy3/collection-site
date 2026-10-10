@@ -27,6 +27,7 @@ import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
 import { makeWindsock, makeTransporter, makeHeightBar, makeDepthPost, makeCushion, makeShadeTree } from './render/gambleModels.js';
+import { makeAreaPatch, makeInfection } from './render/radiationModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -89,6 +90,7 @@ export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>$
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
+const RD = CONFIG.radiation; // (the fallout's: radiation.js)
 const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford, cushion: CONFIG.cushion, shade: CONFIG.shade, rut: CONFIG.rut, tar: CONFIG.tarmac, spray: CONFIG.spray, sun: CONFIG.lowSun, dust: CONFIG.dust }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 export const GROUPS = [
@@ -1043,6 +1045,32 @@ export const GROUPS = [
       g.add(up, down, car, block, box(7, 0.1, 3, tar, 0, -0.05, -9.2), box(7, 0.1, 3, tar, 0, -0.05, 9.2));
       return { model: g, spin: false, tick: (t) => { const u = (t % 3) / 3, z = -9 + u * 20, hill = 1.55 - Math.abs(z) * 0.19, arc = z > -0.5 && z < 7 ? 1.6 + (z + 0.5) * 0.19 - 0.075 * (z + 0.5) * (z + 0.5) * 0.6 : 0;
         car.position.set(-1.6, Math.max(Math.max(0, hill), arc + 0.1), z); car.rotation.x = z < -0.5 && hill > 0 ? -0.19 : z > 7 && hill > 0 ? 0.19 : arc > hill ? (z - 2.5) * 0.06 : 0; car.userData.animate?.(t); } };
+    } },
+  ] },
+  // (the fallout: see radiation.js. A dose is slow, a touch is for the run; the armour is the answer to all of it)
+  { name: 'Fallout', cards: [
+    { name: 'Radiated areas', color: 0x7dff2a, has: (l) => l.radiation?.length, rules: [
+      `A stretch of some lanes, or of the whole road, under a green haze between bright edges and hazard bands, a board ${RD.sign} m before it. In it your health ticks down, ${pct(RD.tick)} of the car's full health a second, and the <strong>radiation meter</strong> fills: full in ${RD.meterTime} s of dosing. Out of it the meter falls back, slowly (${RD.meterFall} s to empty).`,
+      `A full meter <strong>infects you for the rest of the run</strong>: from then on the health ticks down everywhere, ${pct(RD.infectedTick)} a second, whatever you do. A wrench buys time; nothing cures it. A warning is said at ${pct(RD.high)}.`,
+      'It is the middle of the car that counts: the lane beside the green is clean, and so are the shoulders where the haze stops short of them. The armour keeps every bit of it out while it lasts.',
+      'The gamble: the big cash is in the green. A short cut through costs a little health and some meter; a run down the whole of a long one costs a lot of both. Nothing in it stops the car.',
+    ], build: () => {
+      const g = road(9, 16), patch = makeAreaPatch(4.4, 12), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      patch.position.x = -2.2;
+      g.add(patch, car);
+      return { model: g, spin: false, tick: (t) => { const u = (t % 6) / 6, inside = u >= 0.5, v = (u % 0.5) * 2; car.position.set(inside ? -2.2 : 2.2, 0, -8 + v * 16); car.userData.animate?.(t); } };
+    } },
+    { name: 'Infected cars', color: 0xc8ff3a, has: (l) => l.radiation?.length || l.infectedTraffic > 0, rules: [
+      `A traffic car wearing a green glow, a trefoil over it and a ring on the road ${RD.radius} m out: within the ring you are dosed just as in a radiated area, and the meter fills. On a radiated level ${pct(RD.share)} of the traffic comes that way unless the level says otherwise, and a clean car driving in the green can catch it (${pct(RD.catch)} a second). ${RD.most} at most are about at once.`,
+      '<strong>Touching one infects you at once</strong>, whatever the meter reads: for the rest of the run. A ghost, a tank, or a car in the air over it does not touch it.',
+      'An infected car is not harmed by it, nor by another infected car, and drives as it always did: it does not come for you. The police, an ambulance, a pursuit, a convoy, a racer: never infected.',
+      'The armour keeps it out: no dose in the ring, and a touch does nothing. The gamble: pass it wide and lose the line, or thread the ring for the cash beside it and take a little meter.',
+    ], build: () => {
+      const g = road(9, 14), V = CONFIG.vehicles.commuter, sick = painted(vehicle('commuter', 0xffffff), 0x5a7a2a), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      const aura = makeInfection(V.hw, V.hl, V.height, 3.6);
+      sick.position.set(-2.2, 0, 0); aura.position.copy(sick.position);
+      g.add(sick, aura, car);
+      return { model: g, spin: false, tick: (t) => { aura.userData.pulse(t); car.position.set(2.6, 0, -7 + ((t * 3.5) % 14)); car.userData.animate?.(t); sick.userData.animate?.(t); } };
     } },
   ] },
 ];
