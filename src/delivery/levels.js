@@ -454,6 +454,7 @@ import derby from './levels/derby.json';
 import seaquake from './levels/seaquake.json';
 import farside from './levels/farside.json';
 import stunts from './levels/stunts.json';
+import ponti from './levels/ponti.json';
 // (batch E's imports go above this line)
 // (batch F's imports go above this line)
 
@@ -500,6 +501,7 @@ export const THEME_LEVELS = [
   seaquake,
   farside,
   stunts,
+  ponti,
   // (batch E: second levels on the toy room, sea bed, moon, backlot, Venice, ice road: new levels go above this line)
   // (batch F: second levels on the theme park, volcano, port, Wild West, favela, rice terraces: new levels go above this line)
 ];
