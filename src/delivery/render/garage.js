@@ -196,6 +196,8 @@ const bank = document.getElementById('garageBank');
 const liveryBtn = document.getElementById('liveryBtn'); // (a Good / Evil pair of buttons: see index.html)
 const sideBtns = [...liveryBtn.querySelectorAll('button')];
 const action = document.getElementById('garageAction');
+const ruleBanner = document.getElementById('garageRule');
+const whyEl = document.getElementById('garageWhy');
 const useBtn = document.getElementById('garageUse');
 const startScreen = document.getElementById('startScreen');
 const money = (amount) => '$' + amount.toFixed(2);
@@ -221,11 +223,23 @@ const refresh = () => {
   // (a secret vehicle in use has no bay, so no ring; nor has a car idea in this lot: its ring is in the Car ideas lot's)
   const inUse = carInUse();
   // (a level that restricts the car, tiers.js: the lot shows only the cars of its tier, and the bar says so)
-  const only = GarageView.restrictTier;
-  bank.replaceChildren('Bank ' + money(Progress.data.money), ...(only ? ['  |  Only ', tierStarsNode(only), ' cars may be driven on this level'] : []));
+  bank.replaceChildren('Bank ' + money(Progress.data.money));
+  // (the level's car rule on the side on show, said once above the lot: the side and the reason)
+  const sideNow = Garage.evil, sideWord = sideNow ? 'Evil' : 'Good', ruleNow = restrictedTier(sideNow) ?? null, ruleOther = restrictedTier(!sideNow) ?? null;
+  ruleBanner.classList.toggle('hidden', ruleNow === null && ruleOther === null);
+  ruleBanner.classList.toggle('restricted', ruleNow !== null);
+  ruleBanner.replaceChildren(...(ruleNow !== null
+    ? [sideWord + ': only ', tierStarsNode(ruleNow), ' cars until you earn a medal on this level on ' + sideWord]
+    : [sideWord + ': any car (medal earned)']));
   for (const b of sideBtns) { const on = (b.dataset.side === 'evil') === Garage.evil; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }
   const shown = looking || inUse, owned = Progress.owns(shown.id);
-  info.replaceChildren(...withStars(shown), '  -  ' + stats(shown));
+  const needs = restrictedTier(Garage.evil) ?? null;
+  const notAllowed = !IdeasLot.on && (shown.silhouette || (owned && !carAllowedOn(shown, Garage.evil)));
+  const reasonNode = () => needs !== null ? ['Not allowed on this level: needs ', tierStarsNode(needs)] : ['Not allowed on this level'];
+  const badge = document.createElement('span');
+  badge.className = 'notallowed';
+  badge.replaceChildren(...(shown.silhouette ? ['No car of this tier owned: buy one in the lot'] : reasonNode()));
+  info.replaceChildren(...withStars(shown), ...(notAllowed ? [' - ', badge] : []), '  -  ' + stats(shown));
   showComparison(inUse, shown); // (the car in use against the one looked at: see render/compare.js)
   // the button under the stats: what can be done with the car shown
   // (the car in use, looked at in the other side's livery: the button takes that side)
@@ -235,8 +249,10 @@ const refresh = () => {
   action.disabled = (shown === inUse && !otherSide) || (!owned && Progress.data.money < shown.price);
   // (the level's car rule on the side on show: a car not allowed there cannot be used, and "Use" is off with it)
   const barred = shown.silhouette || (owned && !IdeasLot.on && !carAllowedOn(shown, Garage.evil));
-  if (barred) { action.textContent = shown.silhouette ? 'No car of this tier owned' : 'Not allowed on this level'; action.disabled = true; }
+  if (barred) { action.textContent = shown.silhouette ? 'Buy a car in the lot' : 'Not allowed here'; action.disabled = true; }
   useBtn.disabled = !!barred;
+  whyEl.classList.toggle('hidden', !barred);
+  whyEl.replaceChildren(...(barred ? (shown.silhouette ? ['No car of this tier owned: tap a car in the lot to buy one'] : reasonNode()) : []));
   action.title = owned ? 'Drive the ' + shown.name + ' as ' + sideName() + ', and stay in the garage' : '';
   // (Use: the same, and back to the menu with it; a car not yet bought has none, only its Buy)
   useBtn.style.display = owned ? '' : 'none';
@@ -409,7 +425,7 @@ mountGarageView(() => garageCars(), () => {
 });
 // the "Garage" and "Car ideas" tabs: the second lot is render/ideaslot.js's
 // (inUse: the id of the car in use; side: true when Evil is the side being played)
-IdeasLot.mount({ evil: () => Garage.evil, back: refresh, inUse: () => Progress.data.car, side: () => Game.evil });
+IdeasLot.mount({ barred: () => { const t = restrictedTier(Garage.evil) ?? null; return t === null ? null : t; }, evil: () => Garage.evil, back: refresh, inUse: () => Progress.data.car, side: () => Game.evil });
 document.getElementById('garageBackBtn').addEventListener('click', () => Garage.close());
 
 const anchor = new THREE.Vector3();

@@ -87,6 +87,15 @@ if (params.get('beaten')) {
 if (params.get('owns')) for (const id of params.get('owns').split(',')) if (!Progress.data.cars.includes(id)) Progress.data.cars.push(id);
 if (params.get('money')) Progress.data.money = Number(params.get('money')) || 0;
 if (params.get('beaten') || params.get('owns') || params.get('money')) window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
+// (before ?garage, so a garage opened with &pick is the picked level's) ?pick=41 shows the menu with that level picked, open or not (for a look at its card: nothing starts; the levels
+// are all open for this visit); with &start, Start Game is pressed too (an amphibious level with no amphibious car)
+if (params.get('pick')) {
+  Progress.data.unlocked = Math.max(Progress.data.unlocked, LEVELS.length);
+  Progress.data.tierBase = Math.max(Progress.data.tierBase || 0, LEVELS.length); // (the tiers, tiers.js: all open too)
+  selectLevel(Number(params.get('pick')) - 1);
+  window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
+  if (params.get('start') !== null) Game.start();
+}
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.open(params.get('garage') === 'evil');
@@ -96,15 +105,6 @@ if (params.get('garage') !== null) {
   // &click=<selector>: that control pressed once the garage is up (&click=%23garageAction on an unowned car: its buy
   // sheet; &click=.view-pick%20.view-btn: the Sort list), for a picture of what it opens
   if (params.get('click')) params.get('click').split('|').forEach((selector, i) => setTimeout(() => document.querySelector(selector)?.click(), 50 + i * 50)); // (several, with | between)
-}
-// ?pick=41 shows the menu with that level picked, open or not (for a look at its card: nothing starts; the levels
-// are all open for this visit); with &start, Start Game is pressed too (an amphibious level with no amphibious car)
-if (params.get('pick')) {
-  Progress.data.unlocked = Math.max(Progress.data.unlocked, LEVELS.length);
-  Progress.data.tierBase = Math.max(Progress.data.tierBase || 0, LEVELS.length); // (the tiers, tiers.js: all open too)
-  selectLevel(Number(params.get('pick')) - 1);
-  window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
-  if (params.get('start') !== null) Game.start();
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
