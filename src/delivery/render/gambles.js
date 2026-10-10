@@ -45,7 +45,7 @@ Game.onLoad.push(() => {
     at(r.s, r.lat).add(makeTransporter(r.run, r.top, J.half));
     for (const back of [J.sign, J.sign / 2]) {
       if (r.s - back < 5) continue;
-      at(r.s - back, Track.hi(r.s - back) - 0.6).add(makeSign('JAM: RAMP IN LANE ' + (r.lane - Track.laneRange(1, r.s)[0] + 1) + '\nJUMP ' + kmh(r.speed) + '+', '#ffd23f', '#111', 6.4, 2.6));
+      at(r.s - back, Track.hi(r.s - back) - 0.6).add(makeSign('JAM RAMP\n' + kmh(r.speed) + '+', '#ffd23f', '#111', 5.4, 2.6));
     }
   }
   // ---- crosswinds: windsocks

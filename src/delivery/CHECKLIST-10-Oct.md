@@ -455,10 +455,19 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       no steering in the air, the safe line under the board's speed, faster by 2.4 s, a hard landing
       costs, no other level has a crest by accident) and in stills (the hidden far side, the car in the
       air, the card). Not verified: played by hand; the two real crests on screen; sound.
-- [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
+- [x] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
       in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
       slow and it lands in it. _Gamble:_ the jump or the slow way round. _Builds on:_ drawbridge
       jump, rubbernecking queues, convoys.
+      _Built (`gambles.js`, field `jamRamps: { s, lane, queue?, lanes? }`):_ on Gimmick Road 3 (2400,
+      lane 4, 115 km/h), Night (2250, a queue of 2: 85 km/h, a turbo before it) and Speed Trap Alley
+      (2860, a queue of 3: 100 km/h, just past the camera at 2750). The queue is real stopped traffic
+      (small vehicles, the same every run); cash beyond it. The way round is the oncoming side or the
+      shoulder. Verified by `.gimmicks3-check.mjs ramp` (over at the board's speed, into the queue
+      8 m/s under it, round by the oncoming lane unhurt, kept out of the trailer from beside, traffic
+      moves over, never stood still on the ramp, both real levels load with their whole queue) and
+      in stills (the board, the foot, in the air, the card, Night). Not verified: played by hand;
+      Speed Trap Alley on screen; whether the cash beyond is picked up on landing.
 - [ ] H3. **Tram lane**: the median's rails are an empty lane, and a tram is coming along them
       somewhere. Fast and clear, slippery in the rain, and the tram does not swerve. _Gamble:_
       how long to stay on the rails. _Builds on:_ the railway median, Hong Kong's trams, ice.

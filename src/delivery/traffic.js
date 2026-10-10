@@ -434,17 +434,17 @@ export const Traffic = (() => {
     // ...and the queue at a ramp over the jam (a level's "jamRamps": see Gambles and CONFIG.jamRamp): stopped cars,
     // brake lights on, that never move off
     for (const ramp of Gambles.ramps) {
-      for (const spot of Gambles.queueSpots(ramp)) {
+      // (cars and vans only, the same ones every run: nothing in it too long or too tall to be flown over)
+      const small = ordinary.map(([kind]) => kind).filter((kind) => CONFIG.vehicles[kind].hl <= CONFIG.jamRamp.longest && CONFIG.vehicles[kind].height <= CONFIG.jamRamp.tallest);
+      Gambles.queueSpots(ramp).forEach((spot, k) => {
         const car = spareNorth();
-        if (!car) break;
+        if (!car) return;
         car.dir = 1;
         car.bound = 'north';
         car.s = spot.s;
-        let r = Math.random() * ordinary.reduce((sum, [, rate]) => sum + rate, 0), kind = 'commuter';
-        for (const [k, rate] of ordinary) if ((r -= rate) < 0) { kind = k; break; }
-        outfit(car, kind, spot.lane);
+        outfit(car, small.length ? small[(k * 7 + spot.lane) % small.length] : 'commuter', spot.lane);
         Object.assign(car, { fixed: true, jam: true, viaSide: false, evil: false, defiant: false, hesitant: false, baseSpeed: 0, vs: 0, showMood: false });
-      }
+      });
     }
     // ...and a police roadblock's cars (a level's "roadblocks": see CONFIG.roadblock): one across every lane of
     // the player's side at s but the gap (the roadblock's own, or one at random each run), lights going

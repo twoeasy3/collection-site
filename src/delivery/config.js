@@ -1357,8 +1357,10 @@ export const CONFIG = {
   // flight: over the queue if it came fast enough, landing `margin` m or more past the last car (a board `sign` m
   // before gives the speed that does it hands off), or down into the queue. Beside it the car is kept out of the
   // trailer and its cab (`cab` m past the lip). Traffic coming up its lane moves over from keepClear m before.
-  // (From `commit` m before its foot, in line with it, the car no longer brakes by itself for the queue beyond)
-  jamRamp: { run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
+  // (From `commit` m before its foot, in line with it, the car no longer brakes by itself for the queue beyond;
+  // on the ramps it is never slower than `crawl` m/s, so nothing comes to a stand on them)
+  // (The queue is the level's ordinary traffic no longer than `longest` m (half its length) or taller than `tallest` m)
+  jamRamp: { crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
   crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it

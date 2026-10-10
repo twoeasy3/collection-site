@@ -267,7 +267,7 @@ export const Gambles = {
     if (ex.y || ex.slope) { // (up a ramp: the climb takes some of its speed)
       P.air = ex.y;
       P.pitch = Math.atan(ex.slope);
-      P.speed = Math.max(0, P.speed - C.gravity * Math.sin(P.pitch) * dt);
+      P.speed = Math.max(CONFIG.jamRamp.crawl, P.speed - C.gravity * Math.sin(P.pitch) * dt); // (never to a stand on it: the slowest car still crawls off its lip)
     }
   },
 

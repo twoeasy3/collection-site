@@ -42,6 +42,17 @@ try {
       health: type.health, maxHealth: type.health, latVel: 0, yaw: 0, spin: 0, stun: 0, junction: null, parked: false, viaSide: false, evil: false });
     return car;
   };
+  // each real level that has `field`: loaded and started (it must load without problems), then back to Gimmick Road 3
+  const real = (field, each) => {
+    const found = g.levels.LEVELS.filter(l => Array.isArray(l[field]) ? l[field].length : l[field]);
+    check(found.length >= 2, field + ': on ' + found.length + ' real levels (' + found.map(l => l.id).join(', ') + ')');
+    for (const l of found) {
+      g.select(l); Progress.data.car = 'sport'; G.start();
+      check(!T().problems.length, l.id + ': loads without problems' + (T().problems.length ? ': ' + T().problems.join(' | ') : ''));
+      each(l);
+    }
+    g.select('gimmick-road-3');
+  };
   start(100, 3, 20);
   console.log('Level problems: ' + (T().problems.join(' | ') || 'none'));
   check(!T().problems.length, 'the level loads without problems');
@@ -194,18 +205,18 @@ try {
     // at it at a speed, in a lane (held to that speed up to its foot, hands off from there)
     const at = (v, n, { car = 'sport', steer = null } = {}) => {
       start(2250, n, v, { car, keep: false });
-      let top = 0, on = false, slowest = 99;
+      let top = 0, on = false, slowest = 99, slowestOn = 99;
       const health = P.health;
       const t = g.run(40, () => {
         for (const c of g.Traffic.cars) if (!c.fixed) c.active = false;
         if (P.s < 2400) P.speed = v; else if (!steer) g.drive(0, 0);
         if (steer) g.drive(1, steer());
-        if (Gambles.onRamp) on = true;
+        if (Gambles.onRamp) { on = true; slowestOn = Math.min(slowestOn, P.speed); }
         if (Gambles.fly) top = Math.max(top, P.air);
         slowest = Math.min(slowest, P.speed);
         return P.s > 2560 || G.wrecks > 0 || P.busted;
       });
-      return { t, top, on, lost: health - P.health, wrecks: G.wrecks, slowest, busted: P.busted, s: P.s, hit: queue().filter(c => c.health < c.maxHealth).length };
+      return { t, top, on, lost: health - P.health, wrecks: G.wrecks, slowest, slowestOn, busted: P.busted, s: P.s, hit: queue().filter(c => c.health < c.maxHealth).length };
     };
     const over = at(Math.ceil(need * 3.6 / 5) * 5 / 3.6, 4);
     check(over.on && over.top > r().top && over.wrecks === 0 && over.hit === 0 && over.s > 2560, 'ramp, the risk taken and right: at the speed on its board (' + Math.round(Math.ceil(need * 3.6 / 5) * 5) + ' km/h), hands off, the car goes up it (' + over.top.toFixed(1) + ' m up), over the whole queue, and lands (' + over.lost.toFixed(0) + ' health for the landing)');
@@ -218,7 +229,7 @@ try {
     // (with the queue beside it taken away, to try the trailer alone)
     start(2380, 4, 15);
     for (const c of queue()) c.active = false;
-    Object.assign(P, { s: 2405, lat: r().lat + 2.2, speed: 6 });
+    Object.assign(P, { s: 2405, lat: r().lat + 3, speed: 6 });
     let inside = false;
     g.run(1.2, () => { g.drive(0, -1); P.speed = 6; if (!Gambles.onRamp && Math.abs(P.lat - r().lat) < J.half + P.hw - 0.01) inside = true; });
     check(!inside && !Gambles.onRamp && P.health === P.maxHealth, 'ramp: steered at from beside it, the car is kept out of the trailer, at no cost');
@@ -229,6 +240,22 @@ try {
     let wentUp = false;
     g.run(14, () => { P.speed = 0; P.s = 2000; if (van.active && van.s > 2400 && van.s < 2415 && Math.abs(van.lat - r().lat) < 1) wentUp = true; return !van.active; });
     check(!wentUp && van.lane !== 4, 'ramp: a van coming up its lane moved over (to lane ' + van.lane + ') and never reached its ramps (it stopped at ' + Math.round(van.s) + ' m, doing ' + Math.abs(van.vs).toFixed(1) + ' m/s)');
+    // the slowest car, crawling onto it, never comes to a stand on it: it goes off the lip into the queue
+    const crawl = at(6, 4, { car: 'commuter' });
+    check(crawl.on && crawl.slowestOn >= J.crawl - 0.01 && crawl.s > 2415, 'ramp: the Commuter at ' + Math.round(6 * 3.6) + ' km/h is never brought to a stand on it (slowest ' + crawl.slowestOn.toFixed(1) + ' m/s; it got to ' + Math.round(crawl.s) + ' m)');
+    // on the real levels
+    real('jamRamps', (l) => {
+      const rr = Gambles.ramps[0], q = g.Traffic.cars.filter(c => c.active && c.jam).length, [first, last] = T().laneRange(1, rr.s);
+      check(q === Gambles.queueSpots(rr).length && rr.speed < 34, l.id + ': the ramp at ' + rr.s + ' m, lane ' + rr.lane + ' of ' + first + ' to ' + last + ': its whole queue is out (' + q + ' cars), clearing it takes ' + Math.round(rr.speed * 3.6) + ' km/h');
+    });
+  });
+
+  // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)
+  await section('finish', async () => {
+    start(0, 3, 20, { ghost: true, keep: true });
+    let slowest = 99;
+    const t = g.run(400, () => { if (P.s > 200) slowest = Math.min(slowest, P.speed); return G.state !== 'playing'; });
+    check(G.state !== 'playing' && !P.busted && slowest > 5, 'a run finishes: ' + G.state + ' after ' + t.toFixed(0) + ' s, never under ' + Math.round(slowest * 3.6) + ' km/h after the start');
   });
 
   console.log(failures ? failures + ' FAILED' : 'all checks passed');

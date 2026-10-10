@@ -38,6 +38,12 @@
   ],
   "pickups": [
     { "type": "wrench", "s": 1000, "lane": 3 },
+    { "type": "cash5", "s": 660, "lane": 5 },
+    { "type": "cash10", "s": 1235, "lane": 3 },
+    { "type": "cash10", "s": 1235, "lane": 5 },
+    { "type": "cash20", "s": 2462, "lane": 4 },
+    { "type": "cash10", "s": 2480, "lane": 3 },
+    { "type": "cash10", "s": 2480, "lane": 5 },
     { "type": "wrench", "s": 2700, "lane": 3 },
     { "type": "wrench", "s": 3800, "lane": 3 },
     { "type": "wrench", "s": 5100, "lane": 3 }
