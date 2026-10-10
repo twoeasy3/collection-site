@@ -1,5 +1,5 @@
 // ============================================================================
-// CARS - what the garage sells. Add an entry to put another car in it (it has 20 bays).
+// CARS - what the garage sells. Add an entry to put another car in it (its lot grows to hold them all).
 //   price      in tip money; 0 = owned from the start. Buying a car buys both liveries.
 //   color      body colour when playing Good
 //   evilColor  body colour when playing Evil
