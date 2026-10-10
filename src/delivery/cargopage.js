@@ -70,7 +70,7 @@ const section = (title, id) => {
 };
 for (const side of ['good', 'evil']) {
   if (params.get('side') && params.get('side') !== side) continue; // (?side=evil: only that side's)
-  section(side === 'good' ? 'Good: five things worth getting there in one piece' : 'Evil: five things nobody should be driving about with', side);
+  section((side === 'good' ? 'Good: ' : 'Evil: ') + CARGO[side].length + (side === 'good' ? ' things worth getting there in one piece' : ' things nobody should be driving about with'), side);
   for (const item of CARGO[side]) {
     if (params.get('only') && !params.get('only').split(',').includes(item.id)) continue; // (?only=doll,bees: only those)
     const levels = where(side, item.id);

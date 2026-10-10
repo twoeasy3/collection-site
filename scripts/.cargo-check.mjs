@@ -23,7 +23,7 @@ try {
     console.log('  ' + level.id.padEnd(18) + (good ? good.id.padEnd(10) + evil.id + (level.cargo ? '   (its own)' : '') : '-'));
   }
   ok('every level\'s "cargo" names items there are', !bad.length, bad.join(' | '));
-  ok('all ten items turn up', seen.good.size === CARGO.good.length && seen.evil.size === CARGO.evil.length, [...seen.good, ...seen.evil].join(' '));
+  ok('every item turns up', seen.good.size === CARGO.good.length && seen.evil.size === CARGO.evil.length, [...seen.good, ...seen.evil].join(' '));
   ok('races and the Battlefield carry nothing', all.filter(l => l.laps || l.battle).every(l => !cargoFor(l, false)));
 
   ok('state: calm with most of the clock left', cargoState(100, 100) === 0 && cargoState(100 * C.agitated + 0.1, 100) === 0);
