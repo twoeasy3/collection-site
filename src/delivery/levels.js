@@ -377,6 +377,7 @@ import fjord from './levels/fjord.json';
 import toys from './levels/toys.json';
 // (batch A's imports go above this line)
 import backlot from './levels/backlot.json';
+import venice from './levels/venice.json';
 // (batch B's imports go above this line)
 // (batch C's imports go above this line)
 
@@ -403,6 +404,7 @@ export const THEME_LEVELS = [
   toys,
   // (batch A: toy room, underwater tunnel, moon base: new levels go above this line)
   backlot,
+  venice,
   // (batch B: film studio, Venice, ice road: new levels go above this line)
   // (batch C: theme park, volcano island, container port: new levels go above this line)
 ];
