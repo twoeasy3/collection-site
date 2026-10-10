@@ -28,6 +28,8 @@ export const STICKY_ICONS = {
   blackout: '<path d="M9 16.4c-2-1.3-3.2-3.2-3.2-5.5a6.2 6.2 0 0 1 12.4 0c0 2.3-1.2 4.2-3.2 5.5zM9.6 19h4.8M10.6 21.5h2.8"/><path class="x" d="M4 20L20 4"/>',
   // earthquake: the needle's trace
   earthquake: '<path d="M1.5 12.5h3l2-5 3 11L13 4.5l3.2 12.5 2-4.5h4.3"/>',
+  // infected: the radiation trefoil
+  infected: '<circle class="f" cx="12" cy="12" r="1.9"/><path class="f" d="M9.75 8.1L7.25 3.77a9.5 9.5 0 0 1 9.5 0L14.25 8.1a4.5 4.5 0 0 0-4.5 0zM16.5 12h5a9.5 9.5 0 0 1-4.75 8.23l-2.5-4.33A4.5 4.5 0 0 0 16.5 12zM9.75 15.9l-2.5 4.33A9.5 9.5 0 0 1 2.5 12h5a4.5 4.5 0 0 0 2.25 3.9z"/>',
   // (any other: a warning triangle, so a line added to the table is never without one)
   other: '<path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 9.5v5M12 17.4v.1"/>',
 };

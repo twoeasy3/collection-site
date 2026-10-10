@@ -7,6 +7,7 @@ import { Game, formatTime, clockFor } from '../game.js';
 import { Message } from '../messages.js';
 import { Traffic } from '../traffic.js';
 import { SpeedCameras } from '../cameras.js';
+import { Radiation } from '../radiation.js';
 import { stickyIcon } from './hudIcons.js';
 
 // ---- HUD -------------------------------------------------------------------
@@ -41,6 +42,19 @@ const hudCopWatch = document.getElementById('copWatch');
 const hudCopGlow = document.getElementById('copGlow');
 const hudTowing = document.getElementById('towing'), hudTowFill = document.getElementById('towFill'), hudTowLabel = document.getElementById('towLabel');
 const hudSocial = document.getElementById('social'), hudSocialFill = document.getElementById('socialFill');
+// the radiation meter (radiation.js): on a level with radiation only; the word says what it is doing
+const hudRadiation = document.getElementById('radiation'), hudRadiationFill = document.getElementById('radiationFill'), hudRadiationLabel = document.getElementById('radiationLabel');
+const syncRadiationMeter = () => {
+  const shown = Game.state === 'playing' && Player.active && !Game.screensaver && Radiation.on;
+  hudRadiation.style.display = shown ? 'block' : 'none';
+  if (!shown) return;
+  hudRadiationFill.style.width = (Radiation.meter * 100).toFixed(1) + '%';
+  hudRadiation.classList.toggle('infected', Radiation.infected);
+  hudRadiation.classList.toggle('dosed', !!Radiation.source && !Radiation.infected);
+  hudRadiation.classList.toggle('kept', Radiation.kept);
+  const label = Radiation.kept ? 'RADIATION KEPT OUT' : Radiation.infected ? 'INFECTED' : Radiation.source ? 'RADIATION: DOSING' : 'RADIATION';
+  if (hudRadiationLabel.textContent !== label) hudRadiationLabel.textContent = label;
+};
 const hudBusts = document.getElementById('busts');
 // (racing a rival courier, the player's busts, as on any delivery level)
 const rivalLine = () => '\nBUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts; // (on a line of its own: see style.css, #busts)
@@ -286,6 +300,7 @@ export const updateHud = () => {
     hudSocialFill.style.width = Social.level * 100 + '%';
     hudSocial.classList.toggle('protected', Social.protected);
   }
+  syncRadiationMeter();
   // the shoulder's dial: 0 on the road, up to the bust on the shoulder (always there; dim where no shoulder rule applies)
   const danger = Player.active ? Math.max(0, Math.min(1, 1 - Player.danger / Social.dangerTime)) : 0;
   hudDangerNeedle.setAttribute('transform', `rotate(${(-120 + danger * 240).toFixed(1)} 28 28)`);
