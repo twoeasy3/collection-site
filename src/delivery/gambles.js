@@ -89,7 +89,8 @@ export const Gambles = {
     this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to, skim: b.skim ?? CONFIG.washboard.skim }));
     this.bars = (LEVEL.lowBridges || []).map((b) => ({ s: b.s, clearance: b.clearance ?? CONFIG.lowBridge.clearance, lo: Track.laneOffset(Track.laneRange(1, b.s)[0], b.s) - CONFIG.laneWidth / 2, hi: Track.hi(b.s),
       exit: Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null, hits: 0 }));
-    this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
+    // (a ford that `fills` is a flooded underpass: its depth is `depth` as the run starts and rises to fills.to over fills.over s)
+    this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, dry: f.depth ?? CONFIG.ford.depth, fills: f.fills || null, underpass: !!f.underpass, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
     this.rows = [];
     for (const c of LEVEL.cushions || []) for (let s = c.from; s <= c.to; s += c.every ?? CONFIG.cushion.every) this.rows.push({ s, from: c.from, to: c.to });
     this.shades = (LEVEL.shade || []).map((z) => {
@@ -438,14 +439,17 @@ export const Gambles = {
   ford(s) { return Track.isMain(s) ? this.fords.find(f => s >= f.from && s <= f.to) || null : null; },
   // the fastest a car that wades `limit` m goes through water `depth` m deep (m/s)
   fordPace(depth, limit) { const F = CONFIG.ford; return depth > limit ? F.crawl : F.fast + (F.slow - F.fast) * depth / limit; },
+  // how deep a ford is `time` s into the run: its own depth, or, filling, on its way up to fills.to
+  fordDepth(f, time = Game.time) { return f.fills ? f.dry + (f.fills.to - f.dry) * clamp01(time / f.fills.over) : f.dry; },
   updateFords(dt) {
     const F = CONFIG.ford, P = Player;
     for (const f of this.fords) {
+      f.depth = this.fordDepth(f);
       const from = (f.exit ? f.exit.exitAt : f.from) - F.warn;
       if (P.active && Track.isMain(P.s) && P.s > from && P.s < f.from && !this.said['ford' + f.from]) {
         this.said['ford' + f.from] = true;
-        const line = Message.say('events', f.depth <= this.wades() ? 'fordFits' : 'fordDeep');
-        if (line) line.text += ' (' + f.depth.toFixed(1) + ' m deep: this car wades ' + this.wades().toFixed(1) + ' m)';
+        const line = Message.say('events', (f.fills ? 'flood' : 'ford') + (f.depth <= this.wades() ? 'Fits' : 'Deep'));
+        if (line) line.text += ' (' + f.depth.toFixed(1) + ' m deep' + (f.fills && f.depth < f.fills.to ? ' and rising' : '') + ': this car wades ' + this.wades().toFixed(1) + ' m)';
       }
     }
     for (const car of Traffic.cars) { // (the traffic wades through slowly)

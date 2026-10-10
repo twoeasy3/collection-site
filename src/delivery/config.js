@@ -1417,7 +1417,8 @@ export const CONFIG = {
   // 1). In water no deeper than it wades it is slowed, to `fast` m/s in next to none and `slow` m/s at its limit;
   // in deeper it crawls at `crawl` m/s and loses `damage` health a second for each m out of its depth. (`bite`: m/s^2
   // the water takes speed off at.) Traffic goes through at `traffic` m/s. Said from `warn` m before the exit;
-  // boards `sign` m before the exit and at it
+  // boards `sign` m before the exit and at it. A ford with "fills": { to, over } is a flooded underpass: `depth` m
+  // deep as the run starts, rising to `to` m over `over` s; with "underpass": true a railway bridge is drawn over it
   ford: { depth: 0.5, shallow: 0.25, deepest: 1.0, fast: 30, slow: 13, crawl: 4.5, damage: 10, bite: 34, traffic: 8, warn: 260, sign: 200 },
   // speed cushions ("cushions": { from, to, every? }): a row across the road every `every` m (the stretch's own, or
   // this), a cushion `width` m wide and `long` m long in the middle of each lane, a gap on each lane line. A car

@@ -39,7 +39,12 @@
     { "s": 2350, "side": "left" },
     { "s": 450, "side": "right", "road": "side" }
   ],
+  "fords": [
+    { "from": 2400, "to": 2470, "depth": 0.1, "fills": { "to": 0.7, "over": 180 }, "underpass": true }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 2435, "lane": 2 },
+    { "type": "cash10", "s": 2435, "lane": 3 },
     { "type": "siren", "s": 480, "lane": 2 },
     { "type": "radarDetector", "s": 2000, "lane": 3 },
     { "type": "wrench", "s": 2720, "lane": 3 },

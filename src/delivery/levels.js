@@ -312,7 +312,10 @@
 //              (CONFIG.ford.depth if not said), between an exit and its merge: the side road is the bridge. A car is
 //              slowed in it by how well it wades (its `crossing` in cars.js: see CONFIG.ford); in water deeper than
 //              it wades it crawls and is damaged, but is never stopped. Depth posts on its banks and boards before
-//              the exit show the depth, and the player is told what the car wades. Each ford its own depth
+//              the exit show the depth, and the player is told what the car wades. Each ford its own depth.
+//              A flooded underpass is a ford that fills: with fills: { to, over } its depth is `depth` as the run
+//              starts and rises to `to` m over `over` s (early on anything gets through, later only some); with
+//              underpass: true a railway bridge is drawn over it (the road is not lowered)
 //   cushions   { from, to, every? }: speed cushions: over the stretch a row of them across the expressway every `every` m
 //              (CONFIG.cushion.every if not said), the first at `from`: a cushion in the middle of each lane, a gap
 //              on each lane line. A car on a lane line goes between two and feels nothing; over one slowly it is a

@@ -67,6 +67,8 @@
     "lowBridgeHit": ["CLANG!! Too tall. There goes the roof rack."],
     "fordFits": ["Ford ahead: you can wade it."],
     "fordDeep": ["FORD ahead, too deep for this car! The exit is the bridge."],
+    "floodFits": ["Flooded underpass ahead: you can still wade it."],
+    "floodDeep": ["The UNDERPASS IS FLOODED too deep for this car! The slip road goes over."],
     "fordStuck": ["Out of your depth! Crawling, and the engine's drinking it."],
     "cushions": ["Speed cushions! Thread the gaps on the lane lines, or slow right down."],
     "cushionHit": ["THUMP!! Right over a cushion. The gaps are on the lines!"],

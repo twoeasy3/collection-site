@@ -1049,6 +1049,7 @@ const createTrack = () => {
       const name = 'ford at ' + f.from;
       if (!mainStretch(f) || f.to - f.from > 300) problems.push(name + ': from before to, on the expressway, 300 m long at most');
       else if (f.depth !== undefined && !(f.depth >= 0.1 && f.depth <= 1.5)) problems.push(name + ': depth is 0.1 to 1.5 m');
+      else if (f.fills !== undefined && !(f.fills && f.fills.to >= (f.depth ?? CONFIG.ford.depth) && f.fills.to <= 1.5 && f.fills.over > 0)) problems.push(name + ': fills is { to, over }: a depth from its own to 1.5 m, over more than 0 s');
       else if (!exits.some(x => x.exitAt + 40 < f.from && x.mergeAt - 40 > f.to)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the bridge)');
     }
     for (const c of LEVEL.cushions || []) {

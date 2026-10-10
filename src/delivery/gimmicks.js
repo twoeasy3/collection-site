@@ -893,7 +893,7 @@ export const GROUPS = [
       g.add(bar, low, tall);
       return { model: g, spin: false, tick: (t) => { const u = (t % 5) / 5; low.position.set(-2.4, 0, -7 + Math.min(1, u * 2.5) * 14); low.visible = u < 0.4; tall.visible = u >= 0.4; const v = (u - 0.4) / 0.6; tall.position.set(-2.4 + Math.max(0, v - 0.25) * 12, 0, -9 + Math.min(v, 0.55) * 12); } };
     } },
-    { name: 'Ford', color: 0x2f7fb8, has: (l) => l.fords?.length, rules: [
+    { name: 'Ford', color: 0x2f7fb8, has: (l) => l.fords?.some(f => !f.fills), rules: [
       'The road runs straight through a river, and the bridge is the exit before it: the side road, the longer way. Each ford is its own depth: the boards and the red on the depth posts show it.',
       `What a car wades goes by how well it crosses rough ground: from ${GB.ford.shallow} m for the lowest to ${GB.ford.deepest} m for the best. On the way in you are told the depth and what your car wades.`,
       `<strong>Within its depth a car is only slowed</strong>: hardly at all in a puddle, down to ${kmh(GB.ford.slow)} at its limit.`,
@@ -987,6 +987,19 @@ export const GROUPS = [
       lead.position.set(0, 0, 4.5);
       g.add(lead, car, plume);
       return { model: g, spin: true, tick: (t) => { const u = (t % 6) / 6; car.position.set(u < 0.5 ? 1.6 : -2.6, 0, -6 + Math.sin(t * 1.3) * 0.6); plume.material.opacity = 0.44 + 0.08 * Math.sin(t * 4); } };
+    } },
+    { name: 'Flooded underpass', color: 0x3a6f9a, has: (l) => l.fords?.some(f => f.fills), rules: [
+      'In town, in the rain: the main road goes under the railway and the dip is filling with water. The slip road (the exit before it) goes up and over, the longer way.',
+      '<strong>The water rises all through the run.</strong> Early on anything gets through; the later you come to it, the fewer cars can. On the way in you are told how deep it is now, and what your car wades.',
+      `It is a ford in every other way: within its depth a car is slowed (to ${kmh(GB.ford.slow)} at its limit), out of its depth it crawls across at ${kmh(GB.ford.crawl)} and is damaged. It is never stopped.`,
+      'So getting there fast is worth more than the seconds: it is the difference between straight through and the long way round.',
+    ], build: () => {
+      const g = road(9, 14), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      const water = box(15, 0.12, 6, new THREE.MeshBasicMaterial({ color: 0x2f7fb8, transparent: true, opacity: 0.7 }), 0, 0.2, 0);
+      g.add(water, box(15, 0.8, 3, lambert(0x4a4f57), 0, 3.4, 0), box(1.2, 3, 3, lambert(0x8a8378), -6.2, 1.5, 0), box(1.2, 3, 3, lambert(0x8a8378), 6.2, 1.5, 0));
+      for (const x of [-4.2, 4.2]) { const post = makeDepthPost(0.9, 1.75); post.position.set(x, 0, -3.4); g.add(post); }
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 8) / 8; water.position.y = 0.1 + u * 0.7; car.position.set(-2.2, 0, -7 + ((t * 0.5) % 1) * 14); } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

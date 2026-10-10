@@ -51,6 +51,7 @@ const cloudGroup = new THREE.Group();
 scene.add(cloudGroup);
 const CLOUD = new THREE.BoxGeometry(1, 1, 1), cloudMats = { spray: new THREE.MeshBasicMaterial({ color: 0xdfe6ea, transparent: true, opacity: 0.4, depthWrite: false }), dust: new THREE.MeshBasicMaterial({ color: 0xc9aa7c, transparent: true, opacity: 0.5, depthWrite: false }) };
 let clouds = [];
+let floods = [];   // the fords that fill: { f, water, collars, y0 } (the water and the posts' collars rise with it)
 let sunDiscs = []; // the low sun's: { z (its stretch), sun (the model), x, zz (the way the stretch runs, in the world) }
 let leaned = 0;   // (the roll given the player's car last frame, taken off again before the next is put on)
 
@@ -86,6 +87,7 @@ Game.onLoad.push(() => {
     }
     if (bar.s - 90 > 5) at(bar.s - 90, Track.lo(bar.s - 90) + 0.6).add(makeSign(text, '#fff', '#c1121f', 6, 1.6));
   }
+  floods = [];
   // ---- fords: the river across the road (wide of it on both sides), depth posts on its banks and down its
   // sides, and boards before the exit that is its bridge and at it
   for (const f of Gambles.fords) {
@@ -95,8 +97,17 @@ Game.onLoad.push(() => {
     const water = new THREE.Mesh(buildStrip(f.from, f.to, (s) => Track.lo(s) - 60, (s) => Track.hi(s) + reach(s), 0.05 + f.depth * 0.25, 4),
       new THREE.MeshBasicMaterial({ color: 0x2f7fb8, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false }));
     group.add(water);
-    for (const s of [f.from - 1.5, (f.from + f.to) / 2, f.to + 1.5]) for (const lat of [Track.hi(s) - 0.5, Track.lo(s) + 0.5]) at(s, lat).add(makeDepthPost(f.depth));
-    const text = 'FORD ' + f.depth.toFixed(1) + ' m DEEP';
+    const posts = [];
+    for (const s of [f.from - 1.5, (f.from + f.to) / 2, f.to + 1.5]) for (const lat of [Track.hi(s) - 0.5, Track.lo(s) + 0.5]) { const post = makeDepthPost(f.fills ? f.fills.to : f.depth); at(s, lat).add(post); posts.push(post); }
+    if (f.fills) floods.push({ f, water, collars: posts.map(p => p.children.at(-1)), top: f.fills.to, at: f.depth });
+    if (f.underpass) { // (the railway over it: a girder deck across on a pier each side, rails on top)
+      const mid = (f.from + f.to) / 2, lo = Track.lo(mid) - 3, hi = Track.hi(mid) + 3, deck = at(mid, 0), steel = new THREE.MeshLambertMaterial({ color: 0x4a4f57 }), stone = new THREE.MeshLambertMaterial({ color: 0x8a8378 });
+      const part = (w, h, d, mat, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, 0); deck.add(m); };
+      part(hi - lo + 4, 1.2, 9, steel, -(lo + hi) / 2, 6.1);
+      for (const lat of [lo, hi]) part(2.2, 5.5, 9, stone, -lat, 2.75);
+      for (const z of [-1.6, 1.6]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(hi - lo + 4, 0.2, 0.2), new THREE.MeshLambertMaterial({ color: 0x1b1d21 })); rail.position.set(-(lo + hi) / 2, 6.85, z); deck.add(rail); }
+    }
+    const text = f.fills ? 'UNDERPASS FLOODING' : 'FORD ' + f.depth.toFixed(1) + ' m DEEP';
     for (const s of f.exit ? [f.exit.exitAt - F.sign, f.exit.exitAt - 30] : [f.from - F.sign]) {
       if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign(text + (f.exit ? '\nBRIDGE: EXIT' : ''), '#1f6fb2', '#fff', 6, 2.6));
     }
@@ -208,6 +219,10 @@ export const syncGambles = (now) => {
     veil.style.background = 'radial-gradient(ellipse 70% 60% at 50% 74%, rgba(' + c + ',0) ' + V.hole * 100 + '%, rgba(' + c + ',1) ' + V.full * 100 + '%)';
   }
   veil.style.opacity = Game.state === 'playing' ? Gambles.veil.toFixed(3) : '0';
+  for (const fl of floods) { // (a flooded underpass: the water and the collars on its posts rise with its depth)
+    fl.water.position.y = (fl.f.depth - fl.at) * 0.25;
+    for (const c of fl.collars) c.position.y = fl.f.depth;
+  }
   for (const d of sunDiscs) {
     const L = CONFIG.lowSun;
     d.sun.visible = Player.active && Track.isMain(Player.s) && Player.s > d.z.from - 2 * L.sign && Player.s < d.z.to;

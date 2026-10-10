@@ -555,7 +555,17 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       dry and 9 s quicker, a ghost untouched, traffic wading slowly, both real levels) and in stills
       (the board, the bank, in it, Back Roads, Quarry Run). Not verified: played by hand; the road
       does not dip (the water lies on it); the card on screen.
-- [ ] H6. **Flooded underpass**: the same, in town in the rain: the main road dips under a
+- [x] H6. **Flooded underpass** (_built by agent 19 as a ford that fills: `fords: { from, to, depth,
+      fills: { to, over }, underpass: true }`. Its depth rises from `depth` to `fills.to` over
+      `fills.over` s of the run; the exit before it is the slip road over; a railway bridge is
+      drawn over it (the road is not lowered). On Gimmick Road 3 (7150-7230, 0.2 to 0.9 m over
+      240 s; the level 1200 m longer for it, with a third side road), Big Business (1670-1735,
+      0.15 to 0.85 m over 140 s) and Expressway (2400-2470, 0.1 to 0.7 m over 180 s: never too
+      deep for the first car). Clocks not re-timed. Verified by `.gimmicks3-check.mjs ford`: the
+      Lowrider through early unhurt, crawling and 82 health late, over by the slip road dry and
+      10 s quicker than that, a truck through it full; told the depth now and that it is rising.
+      One still (Big Business). Not verified: played by hand; the water seen rising; Expressway
+      on screen_): the same, in town in the rain: the main road dips under a
       railway and fills, and the slip road goes up and over. The water rises through the run.
       _Gamble:_ early on it is passable by anything; later only by some. _Builds on:_ tunnels,
       Mumbai's rain, burst water mains.
