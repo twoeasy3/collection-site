@@ -69,7 +69,7 @@ export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>$
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford, cushion: CONFIG.cushion, shade: CONFIG.shade, rut: CONFIG.rut, tar: CONFIG.tarmac, spray: CONFIG.spray, sun: CONFIG.lowSun }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford, cushion: CONFIG.cushion, shade: CONFIG.shade, rut: CONFIG.rut, tar: CONFIG.tarmac, spray: CONFIG.spray, sun: CONFIG.lowSun, dust: CONFIG.dust }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 export const GROUPS = [
   { name: 'The road itself', cards: [
@@ -975,6 +975,18 @@ export const GROUPS = [
       truck.position.set(-2.25, 0, 4);
       g.add(truck, car, sun, shade);
       return { model: g, spin: false, tick: (t) => { const u = (t % 6) / 6, out = u > 0.5; car.position.set(out ? 2.25 : -2.25, 0, -6 + Math.sin(t * 1.3) * 0.8); } };
+    } },
+    { name: 'Dust trail', color: 0xc9aa7c, has: (l) => l.dust?.length, rules: [
+      `A dry dirt road. Everything moving on it throws a plume of dust ${GB.dust.length} m long, and the wind (the windsock before it shows which way) carries the plume across the road as it goes.`,
+      'In a plume <strong>you see your own car and almost nothing else</strong>. Nothing is done to the car itself.',
+      'A lane upwind of whatever is throwing it is clear. That may be the oncoming lane. Or hang back beyond the plume, at the pace of what is in front.',
+    ], build: () => {
+      const g = road(9, 16, 0xb08d5e), lead = painted(vehicle('pickup', 0xffffff), 0xd8262b), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      const plume = box(3, 2.2, 9, new THREE.MeshBasicMaterial({ color: 0xc9aa7c, transparent: true, opacity: 0.5, depthWrite: false }), 1.2, 1.1, -2.5);
+      plume.rotation.y = -0.28;
+      lead.position.set(0, 0, 4.5);
+      g.add(lead, car, plume);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 6) / 6; car.position.set(u < 0.5 ? 1.6 : -2.6, 0, -6 + Math.sin(t * 1.3) * 0.6); plume.material.opacity = 0.44 + 0.08 * Math.sin(t * 4); } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

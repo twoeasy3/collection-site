@@ -1070,6 +1070,10 @@ const createTrack = () => {
     }
     for (const z of LEVEL.spray || []) if (!mainStretch(z)) problems.push('spray at ' + z.from + ': from before to, on the expressway');
     for (const z of LEVEL.lowSun || []) if (!mainStretch(z)) problems.push('low sun at ' + z.from + ': from before to, on the expressway');
+    for (const z of LEVEL.dust || []) {
+      if (!mainStretch(z)) problems.push('dust at ' + z.from + ': from before to, on the expressway');
+      else if (z.wind !== 'left' && z.wind !== 'right') problems.push('dust at ' + z.from + ': wind is left or right (the side it blows to)');
+    }
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
       else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');

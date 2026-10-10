@@ -639,6 +639,37 @@ try {
     real('lowSun', () => check(Gambles.suns.length > 0, '  its low sun: ' + Gambles.suns.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
   });
 
+  // ---- the dust trail (920 - 1080, the wind blowing to the right)
+  await section('dust', async () => {
+    const D = C.dust;
+    // the player held `back` m behind the tail of a vehicle of `kind` doing 18 m/s in lane 4 (coming the other way
+    // in lane 1, if `oncoming`), `over` lanes to its side (+ = downwind, to the right), for 2.5 s
+    const behind = (kind, back, over = 0, at = 980) => {
+      start(at - 50, 4, 18);
+      const lead = put(kind, at, lane(4, at), 18);
+      let slowest = 99;
+      g.run(2.5, () => {
+        for (const c of g.Traffic.cars) if (c !== lead && !c.fixed) c.active = false;
+        lead.vs = 18; lead.lat = lane(4, lead.s);
+        Object.assign(P, { s: lead.s - lead.hl - back, lat: lane(4, lead.s) + over * C.laneWidth, speed: 18 });
+        slowest = Math.min(slowest, P.speed);
+      });
+      return { veil: Gambles.veil, of: Gambles.veilOf, health: P.health === P.maxHealth, slowest };
+    };
+    const inIt = behind('commuter', 8);
+    check(inIt.veil > 0.6 && inIt.of === 'dust', 'dust, the risk taken: 8 m behind a car on the dirt, ' + Math.round(inIt.veil * 100) + '% of the view is gone (any vehicle throws it up)');
+    check(inIt.health && inIt.slowest >= 18, 'dust: nothing is done to the car itself (no damage, never slowed)');
+    check(said('Dust'), 'dust: it is announced');
+    const upwind = behind('commuter', 8, -1), downwind = behind('commuter', 30, 1);
+    check(upwind.veil === 0, 'dust, the clear line: a lane upwind of it (to the left: the wind blows to the right) the view is clear');
+    check(downwind.veil > 0.2, 'dust: a lane downwind and 30 m back is in the plume, carried across (' + Math.round(downwind.veil * 100) + '% gone)');
+    const far = behind('commuter', D.length + 10);
+    check(far.veil === 0, 'dust, the safe line: hanging back ' + (D.length + 10) + ' m, beyond the plume, the view is clear');
+    const before = behind('commuter', 8, 0, 700);
+    check(before.veil === 0, 'dust: none on the tarmac before it');
+    real('dust', () => check(Gambles.dusts.length > 0, '  its dust: ' + Gambles.dusts.map(x => x.from + ' to ' + x.to + ' m, blown to the ' + (x.dir < 0 ? 'left' : 'right')).join('; ')));
+  });
+
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)
   await section('finish', async () => {
     start(0, 3, 20, { ghost: true, keep: true });

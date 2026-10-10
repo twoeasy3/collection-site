@@ -1461,6 +1461,11 @@ export const CONFIG = {
   // height, if it is `height` m tall or more and within its own width and `beside` m of the car's line; or under a
   // bridge, in a tunnel, or under a shade's trees. A board `sign` m before; the sun is drawn `far` m ahead of the car, `up` m up
   lowSun: { most: 0.88, edge: 40, height: 2.2, shadow: 9, beside: 0.5, sign: 120, far: 560, up: 46 },
+  // a dust trail ("dust": { from, to, wind }): a dry dirt stretch. Every vehicle moving on it (faster than `slowest`
+  // m/s) throws a plume `length` m long at fullAt m/s or more (shorter in proportion slower), its own width and
+  // `spread` m more either side, carried `drift` m to the side the wind blows to by its far end. In it `most` of
+  // the view is gone at its head, less in proportion further back. A board and a windsock `sign` m before
+  dust: { slowest: 4, length: 60, fullAt: 16, spread: 0.9, drift: 4.5, most: 0.9, sign: 120 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

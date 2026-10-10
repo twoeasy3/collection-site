@@ -21,6 +21,8 @@
 //   spray        a wet stretch where every tall vehicle drags a cloud of spray: in it the player sees next to nothing
 //   lowSun       a stretch straight into a low sun: the picture washes out, except in the shadow of a tall vehicle
 //                just ahead, a bridge, a tunnel or a row of trees
+//   dust         a dry dirt stretch where every vehicle throws a plume that the wind carries to one side: blind in
+//                it, clear a lane upwind of it
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -71,6 +73,7 @@ export const Gambles = {
   tar: 0,         // how much of it is on the player's tyres (0 clean .. 1 as much as they hold)
   wets: [],       // truck spray: { from, to }
   suns: [],       // the low sun: { from, to }
+  dusts: [],      // dust trails: { from, to, dir (-1: the wind carries it to the left, 1: to the right) }
   shadow: null,   // the vehicle whose shadow the player is in, in the low sun (null: none; true: a bridge's, a tunnel's, the trees')
   veil: 0,        // how much of the view is gone just now (0 clear .. 1), eased; and what took it: 'spray' | 'sun' | 'dust' | null
   veilOf: null,
@@ -99,6 +102,7 @@ export const Gambles = {
     this.tars = (LEVEL.tarmac || []).map((z) => { const c = Track.laneOffset(z.lane, (z.from + z.to) / 2); return { from: z.from, to: z.to, lane: z.lane, lo: c - CONFIG.laneWidth / 2, hi: c + CONFIG.laneWidth / 2 }; });
     this.wets = (LEVEL.spray || []).map(z => ({ from: z.from, to: z.to }));
     this.suns = (LEVEL.lowSun || []).map(z => ({ from: z.from, to: z.to }));
+    this.dusts = (LEVEL.dust || []).map(z => ({ from: z.from, to: z.to, dir: z.wind === 'left' ? -1 : 1 }));
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -630,6 +634,11 @@ export const Gambles = {
     }
     return null;
   },
+  // a dusty stretch: every moving vehicle, whatever its size and whichever way it is going, throws a plume
+  // CONFIG.dust.length m long at speed, which the wind carries `drift` m to its side by its far end
+  dusty(s) { return Track.isMain(s) ? this.dusts.find(z => s >= z.from && s <= z.to) || null : null; },
+  plumes(car) { return car.active && !car.junction && !car.noWheels && Math.abs(car.vs) > CONFIG.dust.slowest ? this.dusty(car.s) : null; },
+  plumeLength(car) { return CONFIG.dust.length * Math.min(1, Math.abs(car.vs) / CONFIG.dust.fullAt); },
   wet(s) { return Track.isMain(s) ? this.wets.find(z => s >= z.from && s <= z.to) || null : null; },
   // a wet stretch: every vehicle CONFIG.spray.height m tall or more that is moving drags a cloud of spray, as
   // long as CONFIG.spray.length m at speed. In it the view is gone, the nearer its tail the more
@@ -654,6 +663,17 @@ export const Gambles = {
       if (sun && !this.shadow) {
         const L = CONFIG.lowSun, glare = L.most * Math.min(1, (P.s - sun.from) / L.edge, (sun.to - P.s) / L.edge);
         if (glare > want) { want = glare; of = 'sun'; }
+      }
+      // dust: in the plume of anything ahead (or of anything that has just gone by the other way)
+      if (this.dusts.some(z => P.s > z.from - CONFIG.dust.sign && P.s < z.to)) this.once('dust');
+      if (this.dusts.length && this.dusty(P.s)) {
+        const D = CONFIG.dust;
+        for (const car of Traffic.cars) {
+          const z = this.plumes(car);
+          if (!z) continue;
+          const deep = this.cloud(car, P.s, P.lat, this.plumeLength(car), car.hw + D.spread, z.dir * D.drift) * D.most;
+          if (deep > want) { want = deep; of = 'dust'; }
+        }
       }
     } else this.shadow = null;
     if (want > 0) this.veilOf = of;

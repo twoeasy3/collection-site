@@ -71,6 +71,7 @@ const GIMMICKS = [
   ['Washboard dirt', (l) => some(l.washboards)],
   ['Low bridge', (l) => some(l.lowBridges)],
   ['Ford', (l) => some(l.fords)],
+  ['Dust trail', (l) => some(l.dust)],
   ['Low sun', (l) => some(l.lowSun)],
   ['Truck spray', (l) => some(l.spray)],
   ['Fresh tarmac', (l) => some(l.tarmac)],

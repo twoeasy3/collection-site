@@ -38,6 +38,8 @@
   ],
   "pickups": [
     { "type": "wrench", "s": 1000, "lane": 3 },
+    { "type": "cash10", "s": 1040, "lane": 4 },
+    { "type": "cash10", "s": 1040, "lane": 5 },
     { "type": "cash5", "s": 660, "lane": 5 },
     { "type": "cash10", "s": 1235, "lane": 3 },
     { "type": "cash10", "s": 1235, "lane": 5 },
@@ -123,6 +125,9 @@
   ],
   "lowSun": [
     { "from": 6470, "to": 6690 }
+  ],
+  "dust": [
+    { "from": 920, "to": 1080, "wind": "right" }
   ],
   "washboards": [
     { "from": 2950, "to": 3450 }

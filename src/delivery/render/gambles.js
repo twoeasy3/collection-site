@@ -41,7 +41,7 @@ const at = (s, lat, y = 0) => {
 
 let socks = [];   // { wind (its index in Gambles.winds), model }
 // the veil over the picture (Gambles.veil): a sheet over the canvas, under the HUD, with a hole round the car
-const VEILS = { spray: '214, 222, 228', sun: '255, 238, 196' };
+const VEILS = { spray: '214, 222, 228', sun: '255, 238, 196', dust: '201, 170, 124' };
 const veil = document.createElement('div');
 veil.style.cssText = 'position:fixed;inset:0;pointer-events:none;opacity:0;z-index:0';
 document.getElementById('game')?.insertAdjacentElement('afterend', veil);
@@ -49,7 +49,7 @@ let veilOf = null;
 // the clouds the traffic drags (one a vehicle, drawn only where it has one)
 const cloudGroup = new THREE.Group();
 scene.add(cloudGroup);
-const CLOUD = new THREE.BoxGeometry(1, 1, 1), cloudMats = { spray: new THREE.MeshBasicMaterial({ color: 0xdfe6ea, transparent: true, opacity: 0.4, depthWrite: false }) };
+const CLOUD = new THREE.BoxGeometry(1, 1, 1), cloudMats = { spray: new THREE.MeshBasicMaterial({ color: 0xdfe6ea, transparent: true, opacity: 0.4, depthWrite: false }), dust: new THREE.MeshBasicMaterial({ color: 0xc9aa7c, transparent: true, opacity: 0.5, depthWrite: false }) };
 let clouds = [];
 let sunDiscs = []; // the low sun's: { z (its stretch), sun (the model), x, zz (the way the stretch runs, in the world) }
 let leaned = 0;   // (the roll given the player's car last frame, taken off again before the next is put on)
@@ -148,6 +148,16 @@ Game.onLoad.push(() => {
   cloudGroup.clear();
   clouds = [];
   sunDiscs = [];
+  // ---- dust trails: the road dry dirt, and before it a board and a windsock held out the way the wind blows
+  for (const z of Gambles.dusts) {
+    group.add(new THREE.Mesh(buildStrip(z.from, z.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(0xb08d5e, -2)));
+    const s = z.from - CONFIG.dust.sign;
+    if (s < 5) continue;
+    at(s, Track.hi(s) - 0.6).add(makeSign('DUST', '#ffd23f', '#111', 4.4, 1.6));
+    const sock = makeWindsock();
+    sock.userData.set(0.8, z.dir, 0);
+    at(z.from - 10, Track.hi(z.from - 10) - 0.5).add(sock);
+  }
   // ---- the low sun: the sun itself, low over the road beyond the stretch's end, and a board before
   for (const z of Gambles.suns) {
     const L = CONFIG.lowSun, a = {}, b = {};
@@ -205,17 +215,19 @@ export const syncGambles = (now) => {
     Track.toWorld(Player.s, Player.lat, tmp);
     d.sun.position.set(tmp.x + d.x * L.far, tmp.y + L.up, tmp.z + d.zz * L.far);
   }
-  if (Gambles.wets.length) {
-    const S = CONFIG.spray;
+  if (Gambles.wets.length || Gambles.dusts.length) {
+    const S = CONFIG.spray, D = CONFIG.dust;
     for (let i = 0; i < Traffic.cars.length; i++) {
-      const car = Traffic.cars[i], on = Gambles.sprays(car);
+      const car = Traffic.cars[i], dusty = Gambles.dusts.length ? Gambles.plumes(car) : null, on = dusty || Gambles.sprays(car);
       if (!on) { if (clouds[i]) clouds[i].visible = false; continue; }
       const mesh = clouds[i] || (clouds[i] = cloudGroup.add(new THREE.Mesh(CLOUD, cloudMats.spray)).children.at(-1));
-      const length = Gambles.sprayLength(car), half = car.hw + S.spread * 0.6;
+      const length = dusty ? Gambles.plumeLength(car) : Gambles.sprayLength(car), half = dusty ? car.hw + D.spread : car.hw + S.spread * 0.6;
+      const drift = dusty ? dusty.dir * D.drift : 0; // (a plume is carried across by its far end: the box is laid along that line)
       mesh.visible = true;
-      mesh.rotation.y = Track.toWorld(car.s - car.dir * (car.hl + length / 2), car.lat, tmp);
+      mesh.material = dusty ? cloudMats.dust : cloudMats.spray;
+      mesh.rotation.y = Track.toWorld(car.s - car.dir * (car.hl + length / 2), car.lat + drift / 2, tmp) + Math.atan2(drift, length) * (Track.mirrored ? 1 : -1) * car.dir;
       mesh.position.set(tmp.x, tmp.y + 1.1 + 0.15 * Math.sin(t * 5 + i), tmp.z);
-      mesh.scale.set(2 * half, 2.2, length);
+      mesh.scale.set(2 * half, dusty ? 2.6 : 2.2, Math.hypot(length, drift));
     }
   }
   for (const sock of socks) {

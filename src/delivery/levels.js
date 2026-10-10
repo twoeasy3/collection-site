@@ -336,6 +336,10 @@
 //   lowSun     { from, to }: the low sun: over the stretch the expressway runs straight into a low sun and the picture
 //              washes out, except in the shadow of a tall vehicle just ahead, a bridge, a tunnel or a shade's trees.
 //              Nothing is done to the car (see CONFIG.lowSun). Best on a straight, by day
+//   dust       { from, to, wind }: a dust trail: over the stretch the expressway is dry dirt, and every vehicle moving on
+//              it throws a plume of dust, which the wind carries to the side it blows to ('left' | 'right'). In a
+//              plume the player sees next to nothing; a lane upwind of the vehicle is clear, which may be the
+//              oncoming one. Nothing is done to the car (see CONFIG.dust)
 //   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
 //              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
 //              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a
