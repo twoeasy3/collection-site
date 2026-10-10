@@ -1,6 +1,10 @@
 {
   "id": "marina-bay",
   "name": "Marina Bay",
+  "description": {
+    "good": "Three laps of the street circuit under the lights. The walls bite, the pack does not wait, and wrenches are the only help. Race clean.",
+    "evil": "Three laps between concrete walls with a full grid to lean on. No packages here: use the car. Less time, more elbows."
+  },
   "theme": "singaporeNight",
   "car": "f1",
   "flow": "north",

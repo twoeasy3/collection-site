@@ -1,6 +1,10 @@
 {
   "id": "ufo",
   "name": "Asteroid Run",
+  "description": {
+    "good": "Your delivery van is a flying saucer and the road runs through asteroid fields. Chain the ghost pickups and glide through the rocks.",
+    "evil": "A saucer, three asteroid fields and no traffic police for light years. Catch each ghost before the last one fades, or the rocks win."
+  },
   "theme": "space",
   "car": "ufo",
   "traffic": {},

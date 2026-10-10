@@ -1,6 +1,10 @@
 {
   "id": "market-town",
   "name": "Market Town",
+  "description": {
+    "good": "Market day. Bin lorries stop, learners wobble, a funeral passes and the ice-cream van takes its time. Patience delivers the parcel.",
+    "evil": "A learner, a bin lorry, a funeral and a level crossing between you and the drop. The town will be talking about this for years."
+  },
   "theme": "suburb",
   "clock": { "good": 185, "evil": 140 },
   "tip": 170,

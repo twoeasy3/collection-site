@@ -1,6 +1,10 @@
 {
   "id": "moon",
   "name": "Tranquility Base",
+  "description": {
+    "good": "A delivery to the Moon base: craters for potholes, machines crossing, and meteors now and then. Lift for the crests and look up.",
+    "evil": "Nobody hears a crash in a vacuum. Thread the meteor showers, cut across the bulldozer and take every crest at full speed."
+  },
   "theme": "moon",
   "clock": { "good": 230, "evil": 175 },
   "tip": 320,
