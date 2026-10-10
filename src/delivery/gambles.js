@@ -6,6 +6,7 @@
 //   crests       (no field: the road's own profile, a segment's grade and ease) a crest sharp enough that a fast
 //                car leaves the ground over it: no steering in the air, and it lands on whatever is over the top
 //   jamRamps     a car transporter with its ramps down at the back of a queue: fast enough, the car flies the queue
+//   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
 // ============================================================================
@@ -40,6 +41,8 @@ export const Gambles = {
   ramps: [],      // { s (the foot of its ramps), lane, lat, run, top (m: its lip), queue, lanes: [first, last], last (s of the last car of its queue), clear (s the car must land beyond), speed (m/s that does) }
   onRamp: null,   // the ramp the car is on
   up: 0,          // m the car is above the road, by this file's doing (on a ramp, in the air)
+  boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
+  rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
   // the level's lists (as a level loads, for the drawing, and again as each run starts)
   build() {
@@ -47,6 +50,7 @@ export const Gambles = {
     this.winds = (LEVEL.crosswinds || []).map(w => ({ from: w.from, to: w.to, dir: w.dir === 'left' ? -1 : 1,
       strength: w.strength ?? W.strength, every: w.every ?? W.every, length: w.length ?? W.length }));
     this.buildCrests();
+    this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to, skim: b.skim ?? CONFIG.washboard.skim }));
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -84,6 +88,7 @@ export const Gambles = {
     this.said = {};
     this.fly = null;
     Player.rampAhead = false;
+    Player.shaken = this.rough = 0;
     this.up = 0;
     this.onRamp = null;
     this.ground = null;
@@ -271,9 +276,34 @@ export const Gambles = {
     }
   },
 
+  // ---- washboard dirt ------------------------------------------------------------------------------------
+  // Corrugations right across the road. Crawling over them (CONFIG.washboard.calm m/s or less) the car rides each
+  // one; at its `skim` speed or more it skims their tops and runs smooth. Between the two the wheels hop: the
+  // steering hardly takes (Player.shaken: see Player's steering), the car wanders, and in a bend it is carried
+  // to the outside. Worst in the middle of that band
+  board(s) { return Track.isMain(s) ? this.boards.find(b => s >= b.from && s <= b.to) || null : null; },
+  // how rough a washboard that skims at `skim` is at v m/s: 0 (crawling, or skimming) .. 1
+  roughness(v, skim = CONFIG.washboard.skim) {
+    const calm = CONFIG.washboard.calm;
+    return v <= calm || v >= skim ? 0 : Math.sin(Math.PI * (v - calm) / (skim - calm)) ** CONFIG.washboard.shape;
+  },
+  updateBoards(dt) {
+    const B = CONFIG.washboard, P = Player;
+    const b = P.active && !this.fly && !CAR.noWheels && P.ghost <= 0 && !(P.tank > 0) ? this.board(P.s) : null;
+    if (P.active && this.board(P.s)) this.once('washboard');
+    this.rough = P.shaken = b ? this.roughness(P.speed, b.skim) : 0;
+    if (!this.rough || P.busted) return;
+    const t = Game.time, r = this.rough;
+    P.latVel += B.wander * r * (Math.sin(t * 2.3) + Math.sin(t * 3.9 + 1.7)) * dt; // (hopping about)
+    P.latVel -= Math.sign(Track.bend(P.s)) * Math.min(B.slideMost, Math.abs(Track.bend(P.s)) * P.speed * P.speed * B.slide) * r * dt; // (and wide in a bend)
+    Game.shake = Math.max(Game.shake, B.shake * r);
+    if ((this.boardSound = (this.boardSound || 0) - dt) <= 0) { this.boardSound = B.soundEvery; sfx('gravel', 0.5 * r); }
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
+    this.updateBoards(dt);
     this.updateWinds(dt);
   },
 };

@@ -45,19 +45,31 @@
     { "type": "cash10", "s": 2480, "lane": 3 },
     { "type": "cash10", "s": 2480, "lane": 5 },
     { "type": "wrench", "s": 2700, "lane": 3 },
+    { "type": "cash10", "s": 3160, "lane": 3 },
+    { "type": "cash10", "s": 3160, "lane": 5 },
+    { "type": "cash20", "s": 3240, "lane": 4 },
+    { "type": "cash10", "s": 3370, "lane": 3 },
+    { "type": "cash10", "s": 3370, "lane": 5 },
     { "type": "wrench", "s": 3800, "lane": 3 },
     { "type": "wrench", "s": 5100, "lane": 3 }
   ],
   "obstacles": [
     { "s": 1218, "lane": 4, "kind": "barrier" },
     { "s": 1518, "lane": 3, "kind": "barrier" },
-    { "s": 1518, "lane": 5, "kind": "barrier" }
+    { "s": 1518, "lane": 5, "kind": "barrier" },
+    { "s": 3120, "lane": 4, "kind": "barrier" },
+    { "s": 3200, "lane": 3, "kind": "barrier" },
+    { "s": 3200, "lane": 5, "kind": "barrier" },
+    { "s": 3330, "lane": 4, "kind": "barrier" }
   ],
   "jamRamps": [
     { "s": 2400, "lane": 4 }
   ],
   "shoulderRows": [
     { "kind": "barrier", "from": 2390, "to": 2470, "every": 10, "side": "right" }
+  ],
+  "washboards": [
+    { "from": 2950, "to": 3450 }
   ],
   "crosswinds": [
     { "from": 300, "to": 900, "dir": "left" }

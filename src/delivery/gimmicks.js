@@ -70,7 +70,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -871,6 +871,17 @@ const GROUPS = [
       return { model: g, spin: false, tick: (t) => { const u = (t % 3.4) / 3.4, z = -21 + u * 44, on = z + 14;
         const y = on < 0 ? 0 : on < GB.ramp.run ? on * top / GB.ramp.run : Math.max(0, top + (on - GB.ramp.run) * 0.28 - 0.016 * (on - GB.ramp.run) ** 2);
         car.position.set(0, y, z); car.rotation.x = on > 0 && on < GB.ramp.run ? -GB.ramp.angle : y > 0 ? -0.28 + 0.032 * (on - GB.ramp.run) : 0; } };
+    } },
+    { name: 'Washboard dirt', color: 0xa9865a, has: (l) => l.washboards?.length, rules: [
+      `A dirt road worn into corrugations right across. A board before it gives its speed: at ${kmh(GB.board.skim)} or more the car <strong>skims the tops</strong> and it runs smooth, with all its steering.`,
+      `Crawling (${kmh(GB.board.calm)} or less) it rides each one, and steers as ever. That always works, and it is slow.`,
+      `In between, the wheels hop: ${pct(GB.board.steerLoss)} of the steering is gone at the worst of it, the car wanders, and in a bend it is carried to the outside. Braking for something on the dirt drops you right into it.`,
+      'So come in fast and stay fast, round whatever is in the way, or come in slow. The cash is on the line that needs steering.',
+    ], build: () => {
+      const g = road(9, 16, 0xa9865a), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      for (let z = -7.5; z < 8; z += 1.1) g.add(box(9, 0.06, 0.45, lambert(0x7a5d3c), 0, 0.03, z));
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4, slow = u < 0.5; car.position.set(slow ? Math.sin(t * 9) * 0.5 : 0, slow ? Math.abs(Math.sin(t * 22)) * 0.16 : 0.05, -7 + ((slow ? u * 2 : (u - 0.5) * 2)) * 14); car.rotation.z = slow ? Math.sin(t * 17) * 0.08 : 0; } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

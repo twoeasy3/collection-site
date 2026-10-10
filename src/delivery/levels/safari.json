@@ -49,7 +49,14 @@
     { "s": 3000, "side": "left" },
     { "s": 4100, "side": "right" }
   ],
+  "washboards": [
+    { "from": 2520, "to": 2980 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 2640, "lane": 1 },
+    { "type": "cash10", "s": 2640, "lane": 2 },
+    { "type": "cash5", "s": 2760, "lane": 2 },
+    { "type": "cash20", "s": 2880, "lane": 1 },
     { "type": "turbo", "s": 300, "lane": 1 },
     { "type": "wrench", "s": 800, "lane": 2 },
     { "type": "timePlus", "s": 1150, "lane": 0 },

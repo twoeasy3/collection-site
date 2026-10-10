@@ -26,7 +26,7 @@ export const makeBoard = (text, bg, fg, w, h) => {
   c.font = 'bold ' + Math.round(canvas.height * (lines.length > 1 ? 0.36 : 0.55)) + 'px system-ui, sans-serif';
   c.textAlign = 'center';
   c.textBaseline = 'middle';
-  lines.forEach((line, k) => c.fillText(line, canvas.width / 2, canvas.height * (k + 0.5) / lines.length + 2));
+  lines.forEach((line, k) => c.fillText(line, canvas.width / 2, canvas.height * (k + 0.5) / lines.length + 2, canvas.width - 44)); // (a long line is squeezed to fit the board)
   return new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(canvas), side: THREE.DoubleSide }));
 };
 // a board on a post, facing the traffic coming up to it (the model's -z)

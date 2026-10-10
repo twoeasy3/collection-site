@@ -52,6 +52,7 @@ try {
       each(l);
     }
     g.select('gimmick-road-3');
+    G.start();
   };
   start(100, 3, 20);
   console.log('Level problems: ' + (T().problems.join(' | ') || 'none'));
@@ -248,6 +249,47 @@ try {
       const rr = Gambles.ramps[0], q = g.Traffic.cars.filter(c => c.active && c.jam).length, [first, last] = T().laneRange(1, rr.s);
       check(q === Gambles.queueSpots(rr).length && rr.speed < 34, l.id + ': the ramp at ' + rr.s + ' m, lane ' + rr.lane + ' of ' + first + ' to ' + last + ': its whole queue is out (' + q + ' cars), clearing it takes ' + Math.round(rr.speed * 3.6) + ' km/h');
     });
+  });
+
+  // ---- washboard dirt (2950 - 3450, through the two gentle bends; barriers to be steered round at 3120 (lane 4),
+  // 3200 (lanes 3 and 5) and 3330 (lane 4): the line through is lane 3, lane 4, lane 3)
+  await section('washboard', async () => {
+    const B = C.washboard, b = () => Gambles.boards[0];
+    // through it held at v, steering for the line through the barriers as a player would (at the stick's full
+    // throw towards the lane wanted, let go within 0.3 m of it)
+    const through = (v, car = 'sport') => {
+      start(2900, 3, v, { car });
+      const health = P.health;
+      let off = 0, rough = 0, slowest = 99;
+      const t = g.run(120, () => {
+        quiet();
+        P.speed = Math.min(P.speed, v);
+        const want = lane(P.s > 3140 && P.s < 3270 ? 4 : 3, P.s), d = want - P.lat;
+        g.drive(1, Math.abs(d) < 0.3 ? 0 : Math.sign(d));
+        if (P.s > 2960 && P.s < 3440) { off = Math.max(off, Math.abs(d)); rough = Math.max(rough, Gambles.rough); slowest = Math.min(slowest, P.speed); }
+        return P.s > 3460 || G.wrecks > 0;
+      });
+      return { t, off, rough, slowest, lost: health - P.health, wrecks: G.wrecks, busted: P.busted };
+    };
+    check(Gambles.roughness(B.calm) === 0 && Gambles.roughness(b().skim) === 0 && Gambles.roughness((B.calm + b().skim) / 2) === 1, 'washboard: smooth at ' + Math.round(B.calm * 3.6) + ' km/h or less and at ' + Math.round(b().skim * 3.6) + ' km/h or more, worst half way between');
+    const fast = through(b().skim + 4);
+    check(fast.rough === 0 && fast.lost === 0 && fast.wrecks === 0, 'washboard, the risk taken and right: at ' + Math.round((b().skim + 4) * 3.6) + ' km/h it skims: never rough, round all three barriers unhurt in ' + fast.t.toFixed(1) + ' s');
+    check(said('Washboard'), 'washboard: it is announced');
+    const mid = through((B.calm + b().skim) / 2);
+    check(mid.rough > 0.95 && (mid.lost > 0 || mid.wrecks > 0), 'washboard, the risk taken and wrong: at ' + Math.round((B.calm + b().skim) / 2 * 3.6) + ' km/h, the same steering: it hops, wanders ' + mid.off.toFixed(1) + ' m off the line and hits a barrier (' + (mid.wrecks ? 'wrecked' : mid.lost.toFixed(0) + ' health lost') + ')');
+    const slow = through(B.calm - 0.5);
+    check(slow.rough === 0 && slow.lost === 0 && slow.wrecks === 0 && !slow.busted && slow.slowest > B.calm - 1.5, 'washboard, the safe line: crawling at ' + Math.round((B.calm - 0.5) * 3.6) + ' km/h it is never rough: round all three unhurt, never stopped, in ' + slow.t.toFixed(1) + ' s (' + (slow.t - fast.t).toFixed(1) + ' s slower than skimming)');
+    // lifting off in it from above the skim speed drops the car into the rough
+    start(3000, 3, b().skim + 2);
+    let worst = 0;
+    g.run(6, () => { quiet(); g.drive(-1, 0); worst = Math.max(worst, Gambles.rough); return P.speed < B.calm; });
+    check(worst > 0.95, 'washboard: braking on it from skimming goes down through the rough (' + worst.toFixed(2) + ' at its worst)');
+    // every garage car here can reach the skim speed; a ghost feels nothing
+    check(g.cars.CARS.every(c => c.noWheels || c.maxSpeed > b().skim), 'washboard: every car in the garage has the speed to skim it (' + Math.round(b().skim * 3.6) + ' km/h)');
+    start(3000, 3, 14, { ghost: true });
+    g.run(0.5, () => { P.speed = 14; });
+    check(Gambles.rough === 0, 'washboard: a ghost feels nothing of it');
+    real('washboards', () => check(Gambles.boards.length > 0, '  its washboard: ' + Gambles.boards.map(x => x.from + ' to ' + x.to + ' m, skims at ' + Math.round(x.skim * 3.6) + ' km/h').join('; ')));
   });
 
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)

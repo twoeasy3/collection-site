@@ -246,6 +246,8 @@ export const FIELDS = {
   crosswinds: { shape: 'stretch', group: 'hazards', label: 'Crosswind', span: 500, help: 'An exposed stretch with a gusting wind across it: tall cars are pushed harder, a tall vehicle alongside gives shelter.',
     settings: { dir: pick('Blows to the', SIDES, { required: true, init: 'left' }), strength: num('Strength (m/s²)', { min: 0.5, max: 50, step: 0.5, default: C.crosswind?.strength }),
       every: num('A gust every (s)', { min: 1, max: 60, step: 0.5, default: C.crosswind?.every }), length: num('A gust lasts (s)', { min: 0.5, max: 60, step: 0.1, default: C.crosswind?.length }) } },
+  washboards: { shape: 'stretch', group: 'hazards', label: 'Washboard dirt', span: 400, help: 'Corrugated dirt: at a middling speed the grip is shaken away; crawling, or at the skim speed or more, it is smooth.',
+    settings: { skim: num('Skims from (m/s)', { min: (C.washboard?.calm ?? 9) + 4, max: 40, step: 0.5, default: C.washboard?.skim }) } },
   jamRamps: { shape: 'point', group: 'hazards', label: 'Ramp over the jam', rules: ['straight', 'level'], reach: () => (C.jamRamp?.run ?? 15) + 60, help: 'A car transporter with its ramps down at the back of a queue of stopped traffic: fast enough, the car flies the queue.',
     settings: { lane: lane('Its lane', { required: true, player: true }), queue: int('Cars in the queue', { min: 1, max: 10, default: C.jamRamp?.queue }), lanes: lanes('Lanes the queue fills', { span: true, help: 'Left out: the player\'s whole side.' }) } },
   mud: { shape: 'stretch', group: 'hazards', label: 'Mud', help: 'The road gives way to mud: a car is slowed in it by how well it crosses.' },

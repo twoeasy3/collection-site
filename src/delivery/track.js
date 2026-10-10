@@ -1039,6 +1039,10 @@ const createTrack = () => {
       else if (w.dir !== 'left' && w.dir !== 'right') problems.push('crosswind at ' + w.from + ': dir is left or right (the side it blows to)');
       else if ([w.strength, w.every, w.length].some(v => v !== undefined && !(v > 0)) || (w.every ?? CONFIG.crosswind.every) < (w.length ?? CONFIG.crosswind.length)) problems.push('crosswind at ' + w.from + ': strength, every and length are more than 0, a gust no longer than the time between gusts');
     }
+    for (const b of LEVEL.washboards || []) {
+      if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
+      else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');
+    }
     for (const r of LEVEL.jamRamps || []) {
       const J = CONFIG.jamRamp, far = r.s + J.run + J.gap + (r.queue ?? J.queue) * J.spacing + 40, name = 'ramp over the jam at ' + r.s;
       if (r.road === 'side' || !(r.s >= 60 && far <= length)) { problems.push(name + ': on the expressway, 60 m from the start, room for its queue before the finish'); continue; }

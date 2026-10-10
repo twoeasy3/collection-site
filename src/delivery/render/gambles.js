@@ -11,6 +11,22 @@ import { Gambles } from '../gambles.js';
 import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
 import { makeWindsock, makeSign, makeTransporter } from './gambleModels.js';
+import { buildStrip } from './road.js';
+
+const flat = (color, offset) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
+// bars across the road from..to, one every `every` m, each `wide` m along it, as one mesh's geometry
+const buildRipples = (from, to, every, wide, y) => {
+  const pos = [], idx = [];
+  for (let s = from + every / 2; s < to; s += every) {
+    const lo = Track.lo(s) - 1, hi = Track.hi(s) + 1, n = pos.length / 3;
+    for (const [ds, lat] of [[0, lo], [0, hi], [wide, lo], [wide, hi]]) { Track.toWorld(s + ds, lat, tmp); pos.push(tmp.x, tmp.y + y, tmp.z); }
+    idx.push(n, n + 1, n + 2, n + 1, n + 3, n + 2);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setIndex(idx);
+  return geo;
+};
 
 const group = new THREE.Group();
 scene.add(group);
@@ -46,6 +62,16 @@ Game.onLoad.push(() => {
     for (const back of [J.sign, J.sign / 2]) {
       if (r.s - back < 5) continue;
       at(r.s - back, Track.hi(r.s - back) - 0.6).add(makeSign('JAM RAMP\n' + kmh(r.speed) + '+', '#ffd23f', '#111', 5.4, 2.6));
+    }
+  }
+  // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
+  for (const b of Gambles.boards) {
+    const B = CONFIG.washboard;
+    group.add(new THREE.Mesh(buildStrip(b.from, b.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(0xa9865a, -2)));
+    group.add(new THREE.Mesh(buildRipples(b.from, b.to, B.ripple, B.ripple * 0.42, 0.02), flat(0x7a5d3c, -4)));
+    for (const back of [B.sign, 20]) {
+      if (b.from - back < 5) continue;
+      for (const lat of [Track.hi(b.from - back) - 0.6, Track.lo(b.from - back) + 0.6]) at(b.from - back, lat).add(makeSign('WASHBOARD\n' + kmh(b.skim) + '+ OR CRAWL', '#ffd23f', '#111', 5.8, 2.6));
     }
   }
   // ---- crosswinds: windsocks

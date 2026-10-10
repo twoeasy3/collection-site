@@ -1361,6 +1361,13 @@ export const CONFIG = {
   // on the ramps it is never slower than `crawl` m/s, so nothing comes to a stand on them)
   // (The queue is the level's ordinary traffic no longer than `longest` m (half its length) or taller than `tallest` m)
   jamRamp: { crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
+  // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
+  // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
+  // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,
+  // the car wanders (`wander` m/s^2 sideways, to and fro) and in a bend it is carried to the outside (`slide` of
+  // what the bend asks, speed^2 x curvature, up to slideMost m/s^2), the screen shaking (`shake`). Boards `sign` m
+  // before it give the speed; ripples every `ripple` m are drawn across it
+  washboard: { calm: 9, skim: 20, shape: 0.6, steerLoss: 0.88, wander: 9, slide: 1.6, slideMost: 14, shake: 0.4, soundEvery: 0.22, sign: 120, ripple: 2.4 },
   crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it

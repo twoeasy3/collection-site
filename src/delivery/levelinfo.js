@@ -66,6 +66,7 @@ const GIMMICKS = [
   ['Stampede', (l) => some(l.stampedes)],
   ['Crosswind', (l) => some(l.crosswinds)],
   ['Ramp over the jam', (l) => some(l.jamRamps)],
+  ['Washboard dirt', (l) => some(l.washboards)],
   ['Crest jumps', (l) => l.segments.some(seg => seg.ease && seg.grade)],
   ['Cyclists', (l) => some(l.pelotons)],
   ['Funerals', (l) => l.processions],

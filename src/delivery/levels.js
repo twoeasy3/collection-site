@@ -297,6 +297,10 @@
 //              `lanes` ([first, last]: the player's whole side if not said). Driven up at the speed on its board or
 //              more, the car flies the queue; slower, it comes down in it. The way round is whatever the level leaves
 //              open: a lane, the shoulder (its rules apply), the oncoming side. On straight, level road
+//   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
+//              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
+//              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a
+//              bend it is carried wide. Boards before it give the speed. Put something in it to be steered round
 //   pelotons   { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind

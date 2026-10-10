@@ -487,9 +487,18 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       It saves the whole bend, shakes the car, costs health, and rejoins across the traffic.
       _Gamble:_ seconds against damage and a blind rejoin. _Builds on:_ Stelvio's hairpins, mud,
       side roads.
-- [ ] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
+- [x] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
       certain speed the car skims the tops and it goes smooth. _Gamble:_ commit to the speed
       before the bend, or crawl. _Builds on:_ potholes, mud, the safari's dirt road.
+      _Built (`gambles.js`, field `washboards: { from, to, skim? }`):_ smooth at 32 km/h or less and
+      at 72 km/h or more; between, 88% of the steering goes, the car wanders and runs wide in bends
+      (worst half way). On Gimmick Road 3 (2950-3450, three barriers to steer round), Safari
+      (2520-2980) and Outback Express (3960-4380), cash on the lines that need steering. Clocks not
+      re-timed (skimming costs no time). Verified by `.gimmicks3-check.mjs washboard` (skimming
+      round the barriers unhurt, the same steering at 52 km/h hits one, crawling unhurt and 41 s
+      slower, braking on it drops into the rough, every garage car can reach the speed, both real
+      levels load) and in stills (the boards, on it, the card, Safari). Not verified: played by
+      hand; how it feels behind slow traffic; Outback Express on screen; sound.
 - [ ] H9. **Ruts**: tractors have left deep ruts in the mud. In a rut the car runs straight and
       fast; changing lane means climbing out, with a jolt and a wobble. _Gamble:_ pick the rut
       early and live with it. _Builds on:_ mud, tractors.
