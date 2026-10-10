@@ -315,8 +315,8 @@ const showCarModel = (evil) => {
 }
 // The cargo: the HUD corner's round window (render/cargoview.js), in the stage's corner. Its model is drawn by the same
 // one renderer as the car's, into a canvas in its circle (no WebGL context of its own), turning at the corner's own
-// speed on a desktop; on a phone (a touch screen, a narrow window: see phone()) it stands at a three-quarter angle
-// and is drawn once, and under prefers-reduced-motion it is stilled as the car is (modelviews.js drawViews).
+// speed, on a phone as on a desktop (it stood still on a phone until 11-Oct), and under prefers-reduced-motion it
+// is stilled as the car is (modelviews.js drawViews).
 // Built when the item (or the way it is shown) changes, not when the stage is drawn again; given back when the
 // item changes, when no level on show carries one, and when the menu is left (the frame below). The stage's
 // own nodes are made afresh each time it is drawn, so the view is moved into the new circle.
@@ -331,7 +331,7 @@ const dropCargo = () => {
 const buildCargo = () => {
   const item = cargoWant?.item;
   if (!item || !cargoWant.el) return dropCargo();
-  const still = phone();
+  const still = false; // (it turns on a phone too: the owner, 11-Oct, "the cargo on the level card does not rotate ... on mobile")
   try {
     if (cargoView && (cargoView.id !== item.id || cargoView.still !== still)) dropCargo();
     if (!cargoView) {

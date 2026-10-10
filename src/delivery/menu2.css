@@ -216,7 +216,7 @@
      (about 200 tall, anchored to its foot) ran off its top. The stage is never less than 210: on a screen too
      short for that the menu scrolls, where it would have cut START off */
   #startScreen { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(210px, 1fr) auto auto;
-    grid-template-areas: "top" "groups" "stage" "strip" "side"; gap: 6px; padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+    grid-template-areas: "top" "groups" "stage" "strip" "side"; gap: 6px; padding: 8px 10px max(26px, calc(env(safe-area-inset-bottom) + 14px)); /* (26 under START: the owner, 11-Oct) */
     bottom: auto; height: 100vh; height: 100dvh; overflow-y: auto; } /* (dvh: what is left of the screen with the browser's bars showing) */
   #startScreen .menu-keys { display: none; }
   /* the top: the title, the bank (the figure alone) and the options on one line, the tabs on the next */
@@ -250,8 +250,10 @@
      no bars, no note), and START a slim bar under it */
   #startScreen .menu-side { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); grid-template-areas: "car side" "start start"; gap: 6px; padding: 6px; }
   #startScreen.races .menu-side { grid-template-areas: "car side" "race race" "start start"; }
-  #startScreen .car-card { grid-area: car; flex-direction: row; align-items: center; gap: 8px; height: 44px; }
-  #startScreen .car-card .picture { flex: 0 0 64px; align-self: stretch; min-height: 0; box-shadow: none; }
+  /* (the car row is 92 tall, not 44: the owner, 11-Oct, "the car barely gets any height" and then "you can do
+     more": its picture was a 64 x 44 thumbnail; now 112 x 92, and the stage gives up the 48) */
+  #startScreen .car-card { grid-area: car; flex-direction: row; align-items: center; gap: 8px; height: 92px; }
+  #startScreen .car-card .picture { flex: 0 0 112px; align-self: stretch; min-height: 0; box-shadow: none; }
   #startScreen .car-card .words { flex: 1 1 0; min-width: 0; padding: 0 8px 0 0; }
   #startScreen .car-card strong { font-size: 16px; line-height: 1.05; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   #startScreen .car-card .stars { font-size: 11px; }
@@ -260,7 +262,7 @@
   #startScreen #raceMenu .menu-chip { flex: 1 1 0; min-width: 0; display: block; padding: 6px 4px; font-size: 11px; line-height: 13px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #startScreen .side-box { grid-area: side; }
   #startScreen .side-switch { flex: 1 1 auto; }
-  #startScreen .side-switch button { padding: 0 4px; font-size: 17px; }
+  #startScreen .side-switch button { padding: 0 4px; font-size: 19px; }
   #startScreen #sideNote { display: none; }
   #startScreen #startBtn { grid-area: start; padding: 9px 10px 7px; font-size: 24px; }
   #startScreen .menu-sheet { position: fixed; padding: 8px; } /* (fixed: over the screen even where the menu has scrolled) */
