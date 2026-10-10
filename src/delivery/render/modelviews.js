@@ -78,14 +78,21 @@ export const pickupView = (type, color, evil = false) => {
 };
 
 // The one renderer, on a canvas of its own that is never put in the page (see-through round the model). It is
-// sized in device pixels, and only ever grows: to the biggest view it has drawn
+// sized in device pixels, and only ever grows: to the biggest view it has drawn.
+// null if no renderer can be had (a phone that will give no more WebGL contexts, a browser with none): it
+// never throws, and drawViews then draws nothing: the cards keep their names and words, with empty pictures
 export const viewRenderer = () => {
-  const renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas'), alpha: true, antialias: true });
-  renderer.setPixelRatio(1);
-  renderer.setSize(2, 2, false);
-  renderer.setClearColor(0x000000, 0);
-  renderer.setScissorTest(true);
-  return renderer;
+  try {
+    const renderer = new THREE.WebGLRenderer({ canvas: document.createElement('canvas'), alpha: true, antialias: true });
+    renderer.setPixelRatio(1);
+    renderer.setSize(2, 2, false);
+    renderer.setClearColor(0x000000, 0);
+    renderer.setScissorTest(true);
+    return renderer;
+  } catch (error) {
+    console.warn('No renderer for the models: ' + (error?.message || error));
+    return null;
+  }
 };
 // a view's own canvas, filling its element (made the first time the view is drawn)
 const canvasOf = (v) => {
@@ -99,9 +106,11 @@ const canvasOf = (v) => {
 };
 // A frame: every view ({ el, scene, camera, step }) whose element is on screen (and within `within`'s box, if
 // one is given: a scrolling box the views are in) is moved on, rendered, and copied into its own canvas.
-// One out of sight is neither drawn nor moved.
+// One out of sight is neither drawn nor moved. Returns false, having drawn nothing, if there is no renderer
+// (see viewRenderer) or its context has been lost; true otherwise.
 const size = new THREE.Vector2();
 export const drawViews = (renderer, views, t, dt, within = null) => {
+  if (!renderer || renderer.getContext().isContextLost()) return false;
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
   const box = within ? within.getBoundingClientRect() : { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
   renderer.getSize(size);
@@ -123,4 +132,5 @@ export const drawViews = (renderer, views, t, dt, within = null) => {
     v.ctx.clearRect(0, 0, w, h);
     v.ctx.drawImage(renderer.domElement, 0, size.y - h, w, h, 0, 0, w, h);
   }
+  return true;
 };

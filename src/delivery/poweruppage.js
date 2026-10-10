@@ -45,7 +45,7 @@ for (const card of CARDS) {
 }
 
 // ---- drawing ------------------------------------------------------------------------------------
-const renderer = viewRenderer();
+const renderer = viewRenderer(); // (null if none can be had: the page is its words alone)
 let last = performance.now();
 const frame = (now) => {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -53,4 +53,4 @@ const frame = (now) => {
   drawViews(renderer, views, now / 1000, dt);
   requestAnimationFrame(frame);
 };
-requestAnimationFrame(frame);
+if (renderer) requestAnimationFrame(frame);

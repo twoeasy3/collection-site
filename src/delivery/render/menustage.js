@@ -302,7 +302,11 @@ let roadModule = null;
 const roadCard = async (level) => {
   roadModule ||= await import('./levelcard3d.js');
   if (sheet === roadBox || !menuUp()) return; // (asked for twice; or a run started while it was on its way)
-  openSheet(roadBox, roadModule.showRoadCard(roadBox, level, closeSheet)); // (what it returns lets its renderer go when the sheet closes)
+  // (what it returns lets its renderer go when the sheet closes. With no renderer to be had the card opens
+  // without its models: see render/modelviews.js viewRenderer. Whatever else goes wrong in building it is said, not swallowed)
+  let onClose = null;
+  try { onClose = roadModule.showRoadCard(roadBox, level, closeSheet); } catch (error) { console.error(error); return; }
+  openSheet(roadBox, onClose);
 };
 
 // the keys. Heard ahead of the game's own (input.js: Enter is its "confirm", which starts a run), so that Enter

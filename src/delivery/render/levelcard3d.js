@@ -110,7 +110,7 @@ export const showRoadCard = (box, level, close) => {
     make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', levelLabel(LEVELS.indexOf(level)) + '  ' + level.name)), closeBtn),
     make('div', 'sheet-main', body)));
 
-  const renderer = viewRenderer();
+  const renderer = viewRenderer(); // (null if none can be had: the card opens all the same, its tiles' pictures empty)
   let last = performance.now(), frame = 0;
   const draw = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
@@ -118,11 +118,11 @@ export const showRoadCard = (box, level, close) => {
     drawViews(renderer, views, now / 1000, dt, body); // (only the tiles scrolled into sight in the sheet)
     frame = requestAnimationFrame(draw);
   };
-  frame = requestAnimationFrame(draw);
+  if (renderer) frame = requestAnimationFrame(draw);
   return () => {
     cancelAnimationFrame(frame);
-    renderer.dispose();
-    renderer.forceContextLoss(); // (the WebGL context given back at once, not whenever the canvas is collected)
+    renderer?.dispose();
+    renderer?.forceContextLoss(); // (the WebGL context given back at once, not whenever the canvas is collected)
     box.replaceChildren();
   };
 };
