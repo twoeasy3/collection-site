@@ -1761,7 +1761,10 @@ const buildRoad = () => {
           const s = s0 + Math.random() * 10;
           const w = 6 + Math.random() * 10, h = 5 + Math.random() * 22, d = 6 + Math.random() * 12;
           const far = 8 + w / 2 + Math.random() * 30;
-          if (cityKeepsClear(s, side)) continue; // (a set-piece of a zone stands there: themes/extras.js. The dice are thrown all the same, so the rest is laid out as ever)
+          // (a set-piece of a zone stands there: themes/extras.js. The dice are thrown all the same, so the rest is laid
+          // out as ever. A side road's own blocks reach across the expressway where the two run close: along such a
+          // stretch it has none on its left)
+          if (from === Track.start ? cityKeepsClear(s, side) : side < 0 && cityKeepsClear(Track.along(s), -1)) continue;
           blocks.push([s, side < 0 ? Track.lo(s) - far : Track.hi(s) + far, h / 2, w, h, d]);
         }
       }

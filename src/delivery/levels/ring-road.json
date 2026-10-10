@@ -1,7 +1,7 @@
 {
   "id": "ring-road",
   "name": "Ring Road",
-  "description": { "good": "Round the city in the rush. The limit is 90, the cameras mean it, and the ambulances need a clear lane. Four exits if it all backs up.", "evil": "Rush hour on the ring road: cameras, ambulances, a police chase and four exits to vanish down. Make the traffic report." },
+  "description": { "good": "Rush hour round the city: estate, retail park, stadium, services. The limit is 90, a 20 lies past every camera, and each low bridge has an exit round it.", "evil": "Cameras, ambulances, a police chase and three low bridges between you and the city centre. Take the cash off the shoulder and vanish down an exit." },
   "theme": "city",
   "clock": { "good": 265, "evil": 200 },
   "tip": 200,
@@ -73,7 +73,7 @@
   "targets": [
     { "s": 1500, "side": "right" },
     { "s": 2650, "side": "left" },
-    { "s": 3700, "side": "left" },
+    { "s": 4150, "side": "left" },
     { "s": 300, "side": "right", "road": "side", "exit": 1 }
   ],
   "pickups": [
