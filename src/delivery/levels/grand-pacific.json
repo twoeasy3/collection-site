@@ -71,7 +71,7 @@
   "targets": [
     { "s": 1000, "side": "left" },
     { "s": 3000, "side": "right" },
-    { "s": 4600, "side": "left" },
+    { "s": 4600, "side": "left", "offset": 1.2, "beam": true },
     { "s": 7600, "side": "right" },
     { "s": 9400, "side": "left" }
   ],

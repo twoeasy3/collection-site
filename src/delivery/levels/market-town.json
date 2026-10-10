@@ -75,7 +75,7 @@
       "limit": 60
     },
     {
-      "s": 1250,
+      "s": 1300,
       "side": "left",
       "limit": 60
     }
@@ -160,6 +160,20 @@
       "dir": -1
     }
   ],
+  "shoulderRows": [
+    {
+      "kind": "umbrella",
+      "from": 930,
+      "to": 1060,
+      "every": 10
+    }
+  ],
+  "waterMains": [
+    {
+      "s": 1600,
+      "lane": 1
+    }
+  ],
   "crossings": [
     {
       "s": 2000
@@ -175,11 +189,7 @@
     {
       "exitAt": 2500,
       "mergeAt": 3450,
-      "out": 90,
-      "bends": {
-        "count": 3,
-        "size": 10
-      },
+      "out": 70,
       "oncoming": true
     }
   ],
@@ -243,6 +253,139 @@
     {
       "type": "turbo",
       "s": 600,
+      "lane": 1,
+      "road": "side"
+    },
+    {
+      "type": "cash5",
+      "s": 120,
+      "lane": 1
+    },
+    {
+      "type": "cash5",
+      "s": 350,
+      "lane": 1
+    },
+    {
+      "type": "cash10",
+      "s": 350,
+      "lane": 0
+    },
+    {
+      "type": "cash5",
+      "s": 620,
+      "lane": 1
+    },
+    {
+      "type": "cash10",
+      "s": 990,
+      "lane": 1
+    },
+    {
+      "type": "cash20",
+      "s": 990,
+      "lane": 0
+    },
+    {
+      "type": "cash5",
+      "s": 1420,
+      "lane": 1
+    },
+    {
+      "type": "cash10",
+      "s": 1600,
+      "lane": 1
+    },
+    {
+      "type": "cash5",
+      "s": 1600,
+      "lane": 0
+    },
+    {
+      "type": "cash10",
+      "s": 1800,
+      "lane": 0
+    },
+    {
+      "type": "cash5",
+      "s": 2150,
+      "lane": 1
+    },
+    {
+      "type": "cash10",
+      "s": 2350,
+      "lane": 0
+    },
+    {
+      "type": "cash5",
+      "s": 2650,
+      "lane": 1
+    },
+    {
+      "type": "cash20",
+      "s": 3100,
+      "lane": 0
+    },
+    {
+      "type": "cash5",
+      "s": 3600,
+      "lane": 1
+    },
+    {
+      "type": "cash10",
+      "s": 3600,
+      "lane": 0
+    },
+    {
+      "type": "cash5",
+      "s": 3900,
+      "lane": 1
+    },
+    {
+      "type": "cash10",
+      "s": 200,
+      "lane": 0,
+      "road": "side"
+    },
+    {
+      "type": "cash5",
+      "s": 200,
+      "lane": 1,
+      "road": "side"
+    },
+    {
+      "type": "cash10",
+      "s": 420,
+      "lane": 0,
+      "road": "side"
+    },
+    {
+      "type": "cash5",
+      "s": 420,
+      "lane": 1,
+      "road": "side"
+    },
+    {
+      "type": "cash20",
+      "s": 420,
+      "lane": "right",
+      "road": "side"
+    },
+    {
+      "type": "cash20",
+      "s": 700,
+      "lane": 0,
+      "road": "side"
+    },
+    {
+      "type": "cash5",
+      "s": 700,
+      "lane": 1,
+      "road": "side"
+    },
+    {
+      "type": "cash10",
+      "s": 840,
       "lane": 1,
       "road": "side"
     }

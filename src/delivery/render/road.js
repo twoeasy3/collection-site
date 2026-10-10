@@ -9,6 +9,7 @@ import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
 import { setHeadlights } from './headlights.js';
 import { THEMES } from '../themes.js';
 import { CIRCUITS } from './circuits/index.js';
+import { THEME_SCENERY } from './themes/index.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -164,8 +165,18 @@ const buildTerrain = (colours, others) => {
   land.material.polygonOffsetFactor = 2;
   land.material.polygonOffsetUnits = 2;
   levelGroup.add(land);
-  return heightAt;
+  // (what stands on the land stands on the land as drawn: the grid's own triangles, which on a steep face between
+  // two stretches of road can be metres off the height worked out at a point between its corners)
+  const corner = (r, c) => pos[(Math.max(0, Math.min(rows - 1, r)) * cols + Math.max(0, Math.min(cols - 1, c))) * 3 + 1];
+  return (x, z) => {
+    const u = (x - (x0 - M)) / G, v = (z - (z0 - M)) / G, c = Math.floor(u), r = Math.floor(v), fx = u - c, fz = v - r;
+    const a = corner(r, c), b = corner(r, c + 1), d = corner(r + 1, c), e = corner(r + 1, c + 1);
+    return fx + fz <= 1 ? a + (b - a) * fx + (d - a) * fz : e + (d - e) * (1 - fx) + (b - e) * (1 - fz);
+  };
 };
+// the height of the land as drawn at a world point (x, z), on a level whose theme has terrain; null on any other,
+// where the land is level with the road beside it (what waits beside the road stands on it: see render/items.js)
+export let landAt = null;
 
 // how far out from the centre line (m) anything may reach on a side (-1 left, 1 right) at s: on the
 // inside of a bend, short of its middle (with the sharpest bend within 200 m either way), so that
@@ -810,6 +821,15 @@ const buildRoad = () => {
     along(x.side0, x.sideEnd, Track.lo, Track.hi);
     if (x.flyovers) for (const from of [x.flyA0, x.flyB0]) along(from, from + CONFIG.ramps.flyoverLength, () => -LW / 2 - 0.5, () => LW / 2 + 0.5);
   }
+  // (and each arm of a crossroads that the road does not take, a level's "junctions": as wide as the road, level)
+  for (const jn of Track.junctions) {
+    for (const arm of jn.arms) {
+      for (let d = jn.half; d <= arm.length; d += 5) {
+        others.push(jn.centre.x + arm.dir.x * d, jn.centre.z + arm.dir.z * d, jn.half + 1.5);
+        (others.ys || (others.ys = [])).push(jn.centre.y);
+      }
+    }
+  }
   // ---- keeping scenery off the other roads ----------------------------------------------------------
   // Every road's pavement, shoulders and all, as points 2 m apart along its middle (x, z, half its width there,
   // which road), in a grid of squares to look them up by: each side road and flyover whole, and the expressway
@@ -833,6 +853,17 @@ const buildRoad = () => {
     pavedRoad(1 + 3 * n, x.side0, x.sideEnd, Track.lo, Track.hi);
     if (x.flyovers) [x.flyA0, x.flyB0].forEach((from, k) => pavedRoad(2 + 3 * n + k, from, from + FLY, () => -LW / 2 - 0.5, () => LW / 2 + 0.5));
   });
+  // (a crossroads' arms: roads 900 on, two to a junction. Until 2026-10-10 they were not here at all, and on a level
+  // with no exits nothing was: houses, lawns, trees, fences and pavements stood on the cross road, over its lines)
+  Track.junctions.forEach((jn, j) => jn.arms.forEach((arm, k) => {
+    for (let d = jn.half; d <= arm.length; d += 2) {
+      const x = jn.centre.x + arm.dir.x * d, z = jn.centre.z + arm.dir.z * d;
+      const key = Math.floor(x / SQUARE) * 100003 + Math.floor(z / SQUARE);
+      if (!squares.has(key)) squares.set(key, []);
+      squares.get(key).push(paved.length);
+      paved.push(x, z, jn.half, 900 + 2 * j + k);
+    }
+  }));
   // which road s is on
   const roadOf = (s) => {
     if (Track.isMain(s)) return 0;
@@ -876,7 +907,10 @@ const buildRoad = () => {
   // a strip beside a road (as buildStrip: ground cover, a pavement, a rail), stopping short of any other road:
   // each row of it runs out from its edge nearer the road only as far as it is clear, and where that edge
   // itself is on another road the strip breaks off
-  const sideStrip = (sFrom, sTo, latA, latB, y, step = 4) => {
+  // (whole: no part rows. A pavement is its full width or not there: a sliver of one in the wedge between two roads is no
+  // pavement. As a number: and only where that many m beyond it are clear too, so that two roads' pavements, in the
+  // wedge where the roads part, both begin where there is room for the two of them and grass between)
+  const sideStrip = (sFrom, sTo, latA, latB, y, step = 4, whole = false) => {
     if (!paved.length) return buildStrip(sFrom, sTo, latA, latB, y, step);
     const fa = typeof latA === 'function' ? latA : () => latA, fb = typeof latB === 'function' ? latB : () => latB;
     const pos = [], idx = [], own = roadOf(sFrom);
@@ -889,16 +923,19 @@ const buildRoad = () => {
       if (swap) [a, b] = [b, a];
       Track.toWorld(s, (a + b) / 2, spot);
       const width = Math.abs(b - a);
-      let reach = width;
-      if (roadGap(spot.x, spot.z, own, width / 2 + VERGE) <= width / 2 + VERGE) {
+      const beyond = typeof whole === 'number' ? whole : 0;
+      let reach = width + beyond;
+      if (roadGap(spot.x, spot.z, own, width / 2 + beyond + VERGE) <= width / 2 + beyond + VERGE) {
         reach = -1;
-        for (let d = 0; d <= width; d += Math.min(1, width || 1)) {
+        for (let d = 0; d <= width + beyond; d += Math.min(1, width || 1)) {
           Track.toWorld(s, a + Math.sign(b - a) * d, spot);
           if (!offRoads(spot.x, spot.z, 0, own)) break;
           reach = d;
           if (!width) break;
         }
       }
+      if (whole && reach < width + beyond - 0.01) reach = -1;
+      reach = Math.min(reach, width);
       if (reach < Math.min(width, 0.2) && width) joined = false;
       else if (reach < 0) joined = false;
       else {
@@ -1226,6 +1263,7 @@ const buildRoad = () => {
   levelGroup.add(ground);
 
   const terrainAt = theme.terrain ? buildTerrain(theme.terrain === true ? null : theme.terrain, others) : null; // (the height of the land at a world point)
+  landAt = terrainAt;
   if (Track.hilly && theme.ground !== null && !theme.terrain) {
     // Hills: the land beside the road rises and falls with it. It is a wide ribbon of grass
     // just under the road, with a skirt sloping down to the flat ground along each edge.
@@ -1372,6 +1410,8 @@ const buildRoad = () => {
       geo.setIndex(idx);
       levelGroup.add(new THREE.Mesh(geo, bank));
     }
+    // (a lit theme's land and banks need to know which way they face, as `add` sees to for the strips: without, they are black)
+    if (theme.lit) levelGroup.traverse((o) => { if (o.isMesh && o.geometry.attributes.position && !o.geometry.attributes.normal) o.geometry.computeVertexNormals(); });
     // where the land stops at each end of a bridge, an embankment down to the water, right across
     // the land and its banks, so that it never ends in the air
     for (const b of LEVEL.bridges || []) {
@@ -1814,8 +1854,34 @@ const buildRoad = () => {
     // ---- suburb: a pavement each side, then lots: a front lawn behind a picket fence, a house
     // with a door and windows facing the road, a driveway and a mailbox; here and there a little
     // park of trees instead. Trees in the gardens, and street lamps along the pavement.
+    // (the same along each side road, and along each arm of a crossroads: lots, lamps and pavement, as the main road's.
+    // runs: every road that has them, [from, to, the number of its first lot])
+    const runs = [[Track.start, Track.end, 0], ...exits.map((x, n) => [x.side0, x.sideEnd, 5000 * (n + 1)])];
     for (const side of [-1, 1]) {
-      add(sideStrip(Track.start, Track.end, (q) => beside(side, q, 0.4), (q) => beside(side, q, 2.4), 0.03), flat(0xcfd0cb));
+      for (const [from, to] of runs) add(sideStrip(from, to, (q) => beside(side, q, 0.4), (q) => beside(side, q, 2.4), 0.03, 4, exits.length ? 3 : true), flat(0xcfd0cb));
+    }
+    // (round the outside of each fork and merge the pavement runs on unbroken, from the exit lane's kerb onto the side
+    // road's and back: there the two roads are one pavement wide apart, and each one's strip would stop for the other)
+    for (const x of exits) {
+      for (const [a, b] of [[x.exitAt - 45, x.exitAt], [x.side0, x.side0 + 45], [x.sideEnd - 45, x.sideEnd], [x.mergeAt, x.mergeAt + 45]]) {
+        add(buildStrip(a, b, (q) => beside(1, q, 0.4), (q) => beside(1, q, 2.4), 0.03), flat(0xcfd0cb));
+      }
+    }
+    for (const jn of Track.junctions) {
+      for (const arm of jn.arms) {
+        for (const side of [-1, 1]) { // (from the corner, where the road's own pavement stops, out along the arm)
+          const pos = [], r = { x: -arm.dir.z, z: arm.dir.x };
+          // (and the corner: on round it to where the road's own pavement, kept a verge and more off the arm, breaks off)
+          for (const [u, v] of [[jn.half + 0.4, 0.4], [jn.half + 0.4, 2.4], [arm.length, 0.4], [arm.length, 2.4],
+            [jn.half + 0.4, 2.4], [jn.half + 0.4, 8], [jn.half + 2.4, 2.4], [jn.half + 2.4, 8]]) {
+            pos.push(jn.centre.x + arm.dir.x * u + r.x * side * (jn.half + v), jn.centre.y + 0.03, jn.centre.z + arm.dir.z * u + r.z * side * (jn.half + v));
+          }
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+          geo.setIndex([0, 1, 2, 1, 3, 2, 4, 5, 6, 5, 7, 6]);
+          add(geo, flat(0xcfd0cb));
+        }
+      }
     }
     // (run down, theme.rundown: drab walls, boarded windows, gaps in the fences, dead trees, bare dirt,
     // burnt-out houses, wrecks on the lawns, rubbish and graffiti)
@@ -1852,10 +1918,19 @@ const buildRoad = () => {
     const FENCE = 2.8; // m off the pavement edge to the fence (and LOT m along the road per lot: see gunfire.js)
     // (nothing goes where it would stand on a side road)
     const clear = (s, lat) => standsClear(s, lat, 20, LOT, CONFIG.ramps.clearBuilding); // (a lot: its house and garden)
-    for (const side of [-1, 1]) {
-      for (let s = Track.start + (side > 0 ? 0 : LOT / 2), lot = 0; s < Track.end - LOT; s += LOT, lot++) {
+    // (nor where another road's lot already is: the expressway's come first, then each side road's between and beyond)
+    const taken = [], lotSpot = {};
+    const free = (s, lat, run) => {
+      Track.toWorld(s, lat, lotSpot);
+      if (taken.some(t => t[2] !== run && Math.hypot(t[0] - lotSpot.x, t[1] - lotSpot.z) < LOT + 6)) return false;
+      taken.push([lotSpot.x, lotSpot.z, run]);
+      return true;
+    };
+    for (const [runFrom, runTo, lot0] of runs) for (const side of [-1, 1]) {
+      for (let s = runFrom + (side > 0 ? 0 : LOT / 2), lot = lot0; s < runTo - LOT; s += LOT, lot++) {
         const mid = s + LOT / 2;
         if (!clear(mid, beside(side, mid, 12))) continue;
+        if (exits.length && !free(mid, beside(side, mid, 14), lot0)) continue;
         // (each lot the same every time: The Hood's shooters are in these houses, see gunfire.js)
         const house = houseAt(side, lot);
         if (!house) { // a little park
@@ -1921,7 +1996,17 @@ const buildRoad = () => {
         tree(mid + Math.random() * 8 - 4, beside(side, mid, front + across + 5 + Math.random() * 10));   // and the back
       }
     }
-    for (let s = Track.start, k = 0; s < Track.end; s += 55, k++) { // street lamps, each side in turn
+    // (a row of trees along each side of a cross road, where the road runs straight over it: its arms lie square
+    // to the road there, so a spot on one is a spot beside the road, that far out)
+    for (const jn of Track.junctions) {
+      if (jn.way) continue;
+      jn.arms.forEach((arm, k) => {
+        for (const side of [-1, 1]) {
+          for (let d = jn.half + 14; d < arm.length - 6; d += 17) tree(jn.s + jn.half + side * (jn.half + 6.5), (k ? -1 : 1) * (d + Math.random() * 4));
+        }
+      });
+    }
+    for (const [runFrom, runTo] of runs) for (let s = runFrom, k = 0; s < runTo; s += 55, k++) { // street lamps, each side in turn
       const side = k % 2 ? 1 : -1;
       if (!clear(s, beside(side, s, 0.8))) continue;
       lampPosts.push([s, beside(side, s, 0.8), 2.75, 0.16, 5.5, 0.16]);
@@ -2824,12 +2909,79 @@ const buildRoad = () => {
     instances(cube, 0x5a5f66, posts);
     instances(cube, 0xb9bec5, rails);
     instances(new THREE.SphereGeometry(0.5, 8, 6), 0xffffff, banks);
+    // snow poles: tall, orange, black at the top, every 24 m along both edges, so the road reads under snow
+    // and its bends show from a way off
+    const poles = [], tips = [];
+    for (let s = Track.start; s < Track.end; s += 24) {
+      for (const side of [-1, 1]) {
+        poles.push([s, beside(side, s, 0.95), 1.5, 0.09, 3, 0.09]);
+        tips.push([s, beside(side, s, 0.95), 2.8, 0.11, 0.45, 0.11]);
+      }
+    }
+    instances(cube, 0xf07a1a, poles);
+    instances(cube, 0x1b1d22, tips);
+    // a hairpin (a bend tighter than HAIRPIN m round) reads as one: round the outside of it, and a little way
+    // either side, a stone wall with snow along its top in place of the rail's snowbanks, a band of red and white
+    // boards along its face, pointing the bend out
+    const HAIRPIN = 1 / 30, LEAD = 16, stone = [], capping = [], red = [], pale = [];
+    const hairpinAt = (s) => { const c = Track.bend(s); return Math.abs(c) > HAIRPIN ? Math.sign(c) : 0; };
+    for (let s = Track.start, k = 0; s < Track.end; s += 2, k++) {
+      const turn = hairpinAt(s) || hairpinAt(s + LEAD) || hairpinAt(s - LEAD);
+      if (!turn) continue;
+      const side = -turn, a = [s, beside(side, s, 1.3)], b = [s + 2, beside(side, s + 2, 1.3)]; // (+ = a right turn: its outside is the left)
+      stone.push([a[0], a[1], 0.6, 0.6, 1.2, 1, b]);
+      capping.push([a[0], a[1], 1.27, 0.75, 0.16, 1, b]);
+      if (hairpinAt(s)) (Math.floor(k / 2) % 2 ? red : pale).push([s, beside(side, s, 0.97), 0.75, 0.06, 0.6, 1, [s + 2, beside(side, s + 2, 0.97)]]);
+    }
+    instances(cube, 0x7f8388, stone);
+    instances(cube, 0xffffff, capping);
+    instances(cube, 0xd23b2b, red);
+    instances(cube, 0xf4f4f4, pale);
+    // the top of the pass (on a level that climbs): a refuge hut of stone beside the road at its highest point,
+    // snow on its roof, and a board on two posts with the level's name on it
+    let hut = null; // (where it is along the road: no pines there)
+    if (Track.hilly) {
+      let top = 0, high = -Infinity, flatTo = 0;
+      for (let s = 0; s < Track.length; s += 10) { Track.toWorld(s, 0, tmp); if (tmp.y > high + 0.05) { high = tmp.y; top = flatTo = s; } else if (tmp.y > high - 0.05) flatTo = s; }
+      const at = Math.min(Track.length - 60, Math.max(60, (top + flatTo) / 2));
+      if (high > 20) {
+        hut = at + 26;
+        instances(cube, 0x8c8478, [[at + 26, beside(1, at + 26, 11), 2, 9, 4, 12]]);            // the hut's walls
+        instances(cube, 0x4d3b30, [[at + 26, beside(1, at + 26, 6.45), 1.1, 0.12, 2.2, 1.2]]);  // its door
+        instances(cube, 0xffd98a, [[at + 22.5, beside(1, at + 22.5, 6.45), 2.2, 0.12, 1, 1.4], [at + 29.5, beside(1, at + 29.5, 6.45), 2.2, 0.12, 1, 1.4]], true); // lit windows
+        instances(new THREE.ConeGeometry(Math.SQRT1_2, 1, 4).rotateY(Math.PI / 4), 0xf3f6f9, [[at + 26, beside(1, at + 26, 11), 5.2, 10.4, 2.4, 13.4]]); // a hip roof, under snow
+        instances(cube, 0x6a5a4a, [[at + 30, beside(1, at + 30, 13), 6.4, 0.9, 1.6, 0.9]]);   // the chimney
+        instances(cube, 0x5a4636, [[at, beside(1, at, 3.4), 1.6, 0.22, 3.2, 0.22], [at, beside(1, at, 8.6), 1.6, 0.22, 3.2, 0.22]]); // the board's posts
+        const canvas = document.createElement('canvas');
+        canvas.width = 512; canvas.height = 192;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#5b3a22';
+        ctx.fillRect(0, 0, 512, 192);
+        ctx.strokeStyle = '#f4ead2'; ctx.lineWidth = 8;
+        ctx.strokeRect(10, 10, 492, 172);
+        ctx.fillStyle = '#f4ead2';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 58px sans-serif';
+        ctx.fillText(String(LEVEL.name || 'The pass').toUpperCase().slice(0, 16), 256, 92, 460);
+        ctx.font = 'bold 40px sans-serif';
+        ctx.fillText('SUMMIT  ' + Math.round(2000 + high * 6) + ' m', 256, 150, 460);
+        const map = new THREE.CanvasTexture(canvas);
+        map.colorSpace = THREE.SRGBColorSpace;
+        const board = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 2.1), new THREE.MeshBasicMaterial({ map }));
+        board.rotation.y = Track.toWorld(at, beside(1, at, 6), tmp) + Math.PI; // (facing the car coming up)
+        board.scale.x = Track.mirrored ? -1 : 1; // (mirrored back on a left-hand level, so it still reads)
+        board.position.set(tmp.x, tmp.y + 2.3, tmp.z);
+        levelGroup.add(board);
+      }
+    }
     // pines: dark green tiers dusted with snow, standing on the land itself, never on another stretch of road
     const trunks = [], tiers = [], caps = [], spot = new THREE.Object3D(), p = {};
     for (let s = Track.start; s < Track.end; s += 9) {
       for (const side of [-1, 1]) {
         if (Math.random() < 0.35) continue;
         const d = 10 + Math.random() * 45;
+        if (d < 24 && (hairpinAt(s) || hairpinAt(s + LEAD) || hairpinAt(s - LEAD))) continue; // (none close in round a hairpin: a tall pine there fills the screen)
+        if (hut !== null && side > 0 && Math.abs(s - hut + 13) < 34 && d < 26) continue; // (nor on the hut and its board)
         Track.toWorld(s + Math.random() * 6, beside(side, s, d), p);
         if (Track.mainDistance(p.x, p.z) < Math.max(Track.hi(s), -Track.lo(s)) + 4 || !offRoads(p.x, p.z, 3)) continue;
         const y = terrainAt(p.x, p.z), h = 6 + Math.random() * 6;
@@ -3176,6 +3328,9 @@ const buildRoad = () => {
     instances(cube, 0x2a2a2a, tanks);
     instances(tube, 0x6b5436, trunks);
     instances(cube, 0x3f7a2e, fronds);
+  } else if (THEME_SCENERY[theme.scenery]) {
+    // ---- a theme with a file of its own (render/themes/<scenery>.js): given what stands things beside a road here
+    THEME_SCENERY[theme.scenery]({ theme, add, flat, instances, sideStrip, buildStrip, offRoads, standsClear, clearOfRoads, beside, inJunction, exits, cube, tube, cone, levelGroup, elevatedRoad });
   }
   if (theme.snow && theme.scenery !== 'alpine') snowfall();
   if (theme.rain) rainfall();
