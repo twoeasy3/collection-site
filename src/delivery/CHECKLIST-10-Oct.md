@@ -7,7 +7,15 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `88e87aa` (main; not pushed). 57 levels on the menu. Running: agent 19 (road gimmicks, from H9), 24 (known problems), 26 (theme levels D). Everything else is merged.
+Last updated: after `29e78ba` (main; not pushed). 57 levels on the menu. Running: agent 19 (road gimmicks, from H17), 24 (known problems), 26 (theme levels D). Everything else is merged.
+
+**Two checks fail on `main` right now:**
+- `.pursuit-check.mjs` (3 failures: the chase no longer gets past and away, and the player is hit). It passed before the road gimmicks were merged; agent 19 is finding which of its gimmicks did it.
+- `.cargo-check.mjs` ("every item turns up"): with 57 levels the rotation no longer reaches all 50 items. Agent 24 has it.
+
+**Merged since the last update:**
+- Known problems, first ten commits (`4b7421e`): audit C4 (the editor never writes a level's values into the page as HTML: the script injection is closed), C6 (a pasted save code keeps only a save's fields), C2 (a visit with an address switch, plain `?autostart` included, never writes the save), C5 (a bad edited level is refused with a reason; one that makes the track builder loop for ever still hangs), C3 (a traffic slot is wiped when dealt out), pickups and obstacles allowed on the main road's shoulders (the check was wrong, the docs right), duplicate config keys removed. **Replay: 53 of 53 levels replay exactly from a seed (it was 31 of 53).** Behaviour changes from the duplicate keys: traffic honks less (70 m, 5 s apart, as first written), and the ice-cream van is its own model with its tune again (a later duplicate had made it a pink delivery van and silenced it).
+- Road gimmicks, second lot (`29e78ba`): H9 ruts (Farm, Outback Express), H16 fresh tarmac (Hong Kong, Tokyo); the drawbridge's river takes the theme's colour (lava on Cinder Island, lagoon green on Venice, a blue ribbon on the toy carpet); rocks and asteroids put out as plain obstacles or drifters were built with no size (an error in the browser on Cinder Island): fixed.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -554,6 +562,18 @@ says what the gamble is. All are things that happen on real roads, as the eleven
 - [ ] H9. **Ruts**: tractors have left deep ruts in the mud. In a rut the car runs straight and
       fast; changing lane means climbing out, with a jolt and a wobble. _Gamble:_ pick the rut
       early and live with it. _Builds on:_ mud, tractors.
+      _Built (`gambles.js`, field `ruts: { from, to }`):_ deep mud with a rut down each lane. In a
+      rut the car runs at its own pace and is held to it; 0.45 s of steering against it gets it
+      out with a jolt (8 health, a fifth of its speed, a lurch) into the mud between, slow by how
+      badly the car crosses rough ground, until it drops into the next rut for nothing. On
+      Gimmick Road 3 (4830-5030: lane 4's rut has the big cash and then a barrier), Farm
+      (2810-2970, a bale down lane 3's) and Outback Express (2560-2860). Clocks not re-timed.
+      Verified by `.gimmicks3-check.mjs ruts` (the right rut held at full speed for nothing, a tap
+      of steering does not get out, the wrong rut kept runs into its barrier, out after the cash
+      with one jolt and past it, the Lowrider slower than the Lifted Truck in the mud, a ghost not
+      held, both real levels) and in stills (Gimmick Road 3, Farm, the card). Not verified: played
+      by hand; Outback Express on screen. Changing rut costs little time (0.2 s) as tuned: the
+      cost is the health.
 - [ ] H10. **Black ice in the shade**: ice lies only where a building, a cutting or the trees
       shade the road, so it can be read from the shadows before reaching it. _Gamble:_ brake
       before the shadow, or stay in the sunny lane with the traffic. _Builds on:_ ice, the
@@ -590,6 +610,17 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       empty and it is sticky: the longer the car stays on it the slower it gets, and the tyres
       stay slow for a while after. _Gamble:_ short hops along it. _Builds on:_ stop / go
       roadworks, mud, narrows.
+      _Built (`gambles.js`, field `tarmac: { from, to, lane }`):_ traffic keeps out of the tar lane
+      and crawls past at 29 km/h. On the tar the tyres fill in 4 s and the top speed falls with
+      them, by 90% when full (slower than the queue); they clean in 3 s, off it only. On Gimmick
+      Road 3 (1750-2050, lane 5), Hong Kong (2620-2920) and Tokyo (860-1140), cash on the tar.
+      Clocks not re-timed (measure them if the queue proves slow in play: it is new traffic
+      slowing). Verified by `.gimmicks3-check.mjs tarmac` (the queue 42 s, short hops 14 s
+      quicker, on it all the way 41 s slower than the queue and never stopped, the tyres' timing,
+      a van moves out and crawls past, both real levels) and in stills (Gimmick Road 3, the card,
+      Hong Kong). Not verified: played by hand; nothing on screen shows how full the tyres are
+      (no HUD was added: the HUD is another branch's); Tokyo on screen; the tar is black on a
+      night road in Hong Kong, read by its cones.
 - [ ] H17. **Climbing lane**: a hill with a short extra lane for overtaking the lorries, and a
       sign counting down to where it ends. _Gamble:_ one more lorry before the lane runs out.
       _Builds on:_ narrows, convoys, hills.

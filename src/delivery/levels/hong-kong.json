@@ -41,7 +41,13 @@
     { "s": 2100, "side": "right" },
     { "s": 3300, "side": "left" }
   ],
+  "tarmac": [
+    { "from": 2620, "to": 2920, "lane": 3 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 2670, "lane": 3 },
+    { "type": "cash10", "s": 2670, "lane": 4 },
+    { "type": "cash20", "s": 2880, "lane": 3 },
     { "type": "turbo", "s": 250, "lane": 3 },
     { "type": "ghost", "s": 620, "lane": 2 },
     { "type": "radarDetector", "s": 880, "lane": 3 },

@@ -265,7 +265,16 @@ export const Collision = (() => {
   };
   const obstacles = [];
   const loaders = []; // (others adding obstacles of their own as a level loads: each is called with add)
+  // a rock or an asteroid is sized by its radius, which a rockfall or an asteroid field gives it with the rest of
+  // what it does there. One put out any other way (a level's "obstacles", its "drifters") is `loose`: given a
+  // radius here (the same every run), it sits on the road like any other obstacle, with none of those doings.
+  // (Without a radius its model was built of NaNs)
+  const loose = (kind, s) => {
+    const R = CONFIG.drifters.rock, u = Math.abs(Math.sin(s * 12.9898) * 43758.5453) % 1, r = R.min + u * (R.max - R.min), h = kind === 'asteroid' ? r * 0.6 : 0;
+    return { loose: true, r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, h0: h, h, vLat: 0, bob: 0, period: 1, phase: 0, time: 0, spin: 0.5 };
+  };
   const add = (kind, s, lat, extra) => {
+    if ((kind === 'rock' || kind === 'asteroid') && !(extra && extra.r > 0)) extra = { ...loose(kind, s), lat0: lat, ...extra };
     const [hw, hl, height] = SIZE[kind];
     // h = height off the ground (frogs), face = which way the model points, in track space
     obstacles.push({ kind, s, lat, h: 0, yaw: 0, face: 0, hw, hl, height, gone: false, ...extra });
@@ -608,7 +617,7 @@ export const Collision = (() => {
           o.h = Math.max(0, o.h - o.fall * dt);
           if (o.h === 0) sfxAt('crash', o.s, 0.6); // (thud)
         }
-      } else if (o.kind === 'rock') {
+      } else if (o.kind === 'rock' && !o.loose) { // (a rockfall's: a loose one sits still, or moves as drifters do, below)
         // up the hillside until the player is near: then it tumbles down onto the road, bounding
         // out across it to where it lands (it can only be hit once it is down)
         if (o.h <= 0) continue;
@@ -821,7 +830,7 @@ export const Collision = (() => {
         o.near = CONFIG.dropBear.near.min + Math.random() * (CONFIG.dropBear.near.max - CONFIG.dropBear.near.min);
         continue;
       }
-      if (o.kind === 'rock') { // back up the hillside (or wherever its stretch has it wait)
+      if (o.kind === 'rock' && !o.loose) { // back up the hillside (or wherever its stretch has it wait)
         o.h = o.up;
         o.fall = 0;
         o.spin = 0;
@@ -849,7 +858,7 @@ export const Collision = (() => {
         o.lat = o.lat0;
         continue;
       }
-      if (o.kind === 'asteroid') { // back to where the field put it
+      if (o.kind === 'asteroid' && !o.loose) { // back to where the field put it
         o.lat = o.lat0;
         o.h = o.h0;
         o.time = 0;

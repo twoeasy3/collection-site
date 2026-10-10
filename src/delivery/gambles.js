@@ -14,6 +14,10 @@
 //                feels nothing; over one at speed it is thrown up and knocked
 //   shade        black ice, which cannot be seen, lies only in the shadow of what stands beside the road: the shaded
 //                lanes are empty and icy, the sunny one has the traffic
+//   ruts         deep ruts in mud, one down each lane: in a rut the car runs fast and is held to it; getting out is a
+//                jolt, and between the ruts it is slow going
+//   tarmac       a coned-off lane of fresh tar beside a roadworks queue: empty, and sticky: the longer on it the
+//                slower the car, and for a while after
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -29,6 +33,7 @@ import { hurt, sfx } from './physics.js';
 import { Game } from './game.js';
 import { Hazards } from './hazards.js';
 import { Water } from './water.js';
+import { Input } from './input.js';
 
 const clamp01 = (u) => Math.max(0, Math.min(1, u));
 const smooth = (u) => { u = clamp01(u); return u * u * (3 - 2 * u); };
@@ -56,6 +61,11 @@ export const Gambles = {
   rows: [],       // speed cushions: { s (a row of them across the lanes), from, to (the stretch it is one of) }
   cushionHits: 0, // how many the player's car has gone over at speed this run (for a check)
   shades: [],     // black ice in the shade: { from, to, side (-1 left, 1 right), first, last (the player's lanes in shadow), lo, hi (lat: the shadow, which is the ice), slick (its entry in Track.slicks) }
+  ruts: [],       // { from, to }
+  rut: null,      // the rut the player's car is in: { lane, push (s it has been steered against) } (null: in none)
+  rutJolts: 0,    // how many times it has climbed out of one this run (for a check)
+  tars: [],       // fresh tarmac: { from, to, lane, lo, hi (lat: the lane) }
+  tar: 0,         // how much of it is on the player's tyres (0 clean .. 1 as much as they hold)
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
@@ -77,6 +87,8 @@ export const Gambles = {
       const lo = side > 0 ? Track.laneOffset(a, mid) - LW / 2 : Track.lo(mid), hi = side > 0 ? Track.hi(mid) : Track.laneOffset(b, mid) + LW / 2;
       return { from: z.from, to: z.to, side, first: a, last: b, lo, hi, slick: { from: z.from, to: z.to, lat: (lo + hi) / 2, half: (hi - lo) / 2, shade: true } };
     });
+    this.ruts = (LEVEL.ruts || []).map(r => ({ from: r.from, to: r.to }));
+    this.tars = (LEVEL.tarmac || []).map((z) => { const c = Track.laneOffset(z.lane, (z.from + z.to) / 2); return { from: z.from, to: z.to, lane: z.lane, lo: c - CONFIG.laneWidth / 2, hi: c + CONFIG.laneWidth / 2 }; });
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -116,6 +128,9 @@ export const Gambles = {
     Player.rampAhead = false;
     Player.shaken = this.rough = 0;
     this.barS = this.rowS = Player.s;
+    this.rut = null;
+    this.rutJolts = 0;
+    this.tar = 0;
     this.cushionHits = 0;
     this.inFord = null;
     this.up = 0;
@@ -123,6 +138,15 @@ export const Gambles = {
     this.ground = null;
     this.flights = 0;
     this.lastS = Player.s;
+  },
+  // traffic is held to `pace` m/s through from..to on the expressway, coming down to it over the CONFIG
+  // .gambleApproach m before (whichever way it is going): its speed is capped outright, after its own update
+  crawl(car, pace, from, to) {
+    if (!car.active || car.junction || car.emergency || !Track.isMain(car.s)) return;
+    const A = CONFIG.gambleApproach, before = car.dir > 0 ? from - car.s : car.s - to;
+    if (before > A.reach || (car.dir > 0 ? car.s > to : car.s < from)) return;
+    const cap = pace + A.perMetre * Math.max(0, before);
+    if (Math.abs(car.vs) > cap) car.vs = Math.sign(car.vs) * cap;
   },
   once(key, ...more) {
     if (this.said[key]) return;
@@ -385,7 +409,7 @@ export const Gambles = {
       }
     }
     for (const car of Traffic.cars) { // (the traffic wades through slowly)
-      if (car.active && !car.junction && this.ford(car.s) && Math.abs(car.vs) > F.traffic) car.vs = Math.sign(car.vs) * Math.max(F.traffic, Math.abs(car.vs) - F.bite * dt);
+      for (const f of this.fords) this.crawl(car, F.traffic, f.from, f.to);
     }
     const f = P.active && !this.fly && !CAR.noWheels && !Water.floats(CAR) && P.ghost <= 0 && !(P.tank > 0) ? this.ford(P.s) : null;
     if (f && !this.inFord) { sfx('waveCrash', Math.min(1, P.speed / 25)); Game.shake = Math.max(Game.shake, 0.5); }
@@ -414,13 +438,12 @@ export const Gambles = {
     const centre = Track.laneOffset(Track.nearestLane(lat, s), s);
     return CONFIG.laneWidth / 2 - Math.abs(lat - centre) > this.cushionRoom(hw);
   },
-  cushioned(s) { return Track.isMain(s) && this.rows.some(r => s >= r.from - 20 && s <= r.to + 10); },
   updateCushions(dt) {
     const K = CONFIG.cushion, P = Player, was = this.rowS ?? P.s;
     this.rowS = P.s;
     if (!this.rows.length) return;
     for (const car of Traffic.cars) { // (the traffic takes them slowly)
-      if (car.active && !car.junction && !car.emergency && Math.abs(car.vs) > K.traffic && this.cushioned(car.s)) car.vs = Math.sign(car.vs) * Math.max(K.traffic, Math.abs(car.vs) - K.brake * dt);
+      for (const c of LEVEL.cushions || []) this.crawl(car, K.traffic, c.from, c.to);
     }
     if (!P.active || !Track.isMain(P.s) || P.s - was > 30) return;
     if (this.rows.some(r => P.s > r.from - K.sign && P.s < r.from)) this.once('cushions');
@@ -464,6 +487,88 @@ export const Gambles = {
     }
   },
 
+  // ---- ruts -----------------------------------------------------------------------------------------------
+  // A stretch of deep mud with a rut down the middle of every lane. In a rut (within CONFIG.rut.half m of a
+  // lane's middle) the going is firm: the car runs at its own pace and is held to the rut, hands off or steered.
+  // To get out it has to be steered against for `climb` s; then it comes out with a jolt (health, some speed, a
+  // lurch to that side) into the mud between, where it is slowed (the less, the better it crosses rough ground)
+  // until it drops into the next rut, which costs nothing. Before the stretch any lane can be picked freely
+  rutted(s) { return Track.isMain(s) ? this.ruts.find(r => s >= r.from && s <= r.to) || null : null; },
+  updateRuts(dt) {
+    const R = CONFIG.rut, P = Player;
+    if (!this.ruts.length) return;
+    for (const car of Traffic.cars) { // (the traffic keeps to its ruts, at a tractor's pace)
+      if (!car.active || car.junction || car.emergency || !this.rutted(car.s)) continue;
+      for (const r of this.ruts) this.crawl(car, R.traffic, r.from, r.to);
+      car.pendingLane = null;
+    }
+    if (P.active && Track.isMain(P.s) && this.ruts.some(r => P.s > r.from - R.sign && P.s < r.from)) this.once('ruts');
+    const z = P.active && !this.fly && !CAR.noWheels && P.ghost <= 0 && !(P.tank > 0) && !P.busted ? this.rutted(P.s) : null;
+    if (!z || P.lat < Track.laneLo(P.s) || P.lat > Track.laneHi(P.s)) { this.rut = null; return; }
+    const lane = Track.nearestLane(P.lat, P.s), centre = Track.laneOffset(lane, P.s), off = P.lat - centre;
+    if (!this.rut && Math.abs(off) <= R.half) { // (down into one)
+      this.rut = { lane, push: 0 };
+      Game.shake = Math.max(Game.shake, 0.3);
+      sfx('drop', 0.3);
+    }
+    if (this.rut && this.rut.lane !== lane) this.rut = null;
+    if (!this.rut) { // in the mud between two: slow going
+      if (CAR.trait === 'mud') return; // (the Rally Car is at home in it)
+      const pace = R.mud + (R.mudBest - R.mud) * P.crossing;
+      if (P.speed > pace) P.speed = Math.max(pace, P.speed - R.bite * dt);
+      Game.shake = Math.max(Game.shake, 0.15);
+      return;
+    }
+    const steer = Input.steer;
+    this.rut.push = steer ? this.rut.push + dt : 0;
+    if (steer && this.rut.push >= R.climb) { // out of it, with a jolt
+      const side = Math.sign(steer);
+      this.rut = null;
+      this.rutJolts++;
+      P.lat = centre + side * (R.half + 0.15);
+      P.latVel = side * R.lurch;
+      P.yawVel += side * R.yaw;
+      P.speed *= R.keep;
+      if (P.shield <= 0) hurt(P, R.damage);
+      Game.shake = Math.max(Game.shake, 0.7);
+      sfx('drop', 0.8);
+      this.once('rutOut');
+      return;
+    }
+    // held to it: back to its middle, whatever the steering asks
+    P.lat = centre + off * Math.max(0, 1 - R.hold * dt);
+    P.latVel = 0;
+  },
+
+  // ---- fresh tarmac ---------------------------------------------------------------------------------------
+  // Roadworks: one lane of the player's side is new tar, coned off, and the traffic queues past it in the others
+  // at a crawl. Nothing is on the tar and nothing stops a car driving on it, but it sticks: tar builds up on the
+  // tyres for as long as the car is on it (all they hold in CONFIG.tarmac.fill s) and wears off again only off
+  // it (`clean` s from full), and the car's top speed is down by `slow` of itself with the tyres full: slower
+  // than the queue. So it pays in short hops, and costs for a while after a long one
+  onTar(s, lat) { return Track.isMain(s) ? this.tars.find(z => s >= z.from && s <= z.to && lat >= z.lo && lat <= z.hi) || null : null; },
+  tarPace(tar = this.tar) { return CAR.maxSpeed * (1 - CONFIG.tarmac.slow * tar); },
+  updateTar(dt) {
+    const T = CONFIG.tarmac, P = Player;
+    if (!this.tars.length) return;
+    for (const z of this.tars) {
+      if (Math.abs(z.from - P.s) > 800 && Math.abs(z.to - P.s) > 800) continue;
+      const [first, last] = Track.laneRange(1, (z.from + z.to) / 2), other = z.lane > first ? z.lane - 1 : z.lane + 1;
+      for (const car of Traffic.cars) { // (the traffic keeps off it, and crawls past it)
+        if (!car.active || car.dir < 0 || car.junction || !Track.isMain(car.s) || car.s > z.to || car.s < z.from - T.keepClear) continue;
+        if (car.lane === z.lane && !car.fixed && other <= last) { car.signal = other - car.lane; car.lane = other; car.pendingLane = null; }
+        this.crawl(car, T.queue, z.from, z.to);
+      }
+      if (P.active && Track.isMain(P.s) && P.s > z.from - T.sign && P.s < z.from) this.once('tarAhead');
+    }
+    const on = P.active && !this.fly && !CAR.noWheels && P.ghost <= 0 && !(P.tank > 0) ? this.onTar(P.s, P.lat) : null;
+    this.tar = Math.max(0, Math.min(1, this.tar + (on ? dt / T.fill : -dt / T.clean)));
+    if (on) { this.once('tarOn'); Game.shake = Math.max(Game.shake, 0.08 + 0.1 * this.tar); }
+    if (this.tar <= 0 || P.ghost > 0 || P.tank > 0) return;
+    const pace = this.tarPace();
+    if (P.speed > pace) P.speed = Math.max(pace, P.speed - T.bite * dt);
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
@@ -472,6 +577,8 @@ export const Gambles = {
     this.updateBars();
     this.updateBoards(dt);
     this.updateShade(); // (after the washboard's: both have a say in Player.shaken)
+    this.updateRuts(dt);
+    this.updateTar(dt);
     this.updateWinds(dt);
   },
 };
