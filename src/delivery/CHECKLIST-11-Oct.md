@@ -246,6 +246,13 @@ the orchestrator (on 11-Oct the owner said: "Just make the edits on the uncomitt
   tasks to agents that finish; running agents finish what they hold; finished work is merged locally and
   reported. Nothing below is started until the owner lifts this: K3 (prank ideas draft), J4, the rest of
   Q1 to Q51, Hong Kong, Stelvio, Tokyo, Mumbai, Night Shift, I2.
+- [ ] **K9. Garage side-switch bug, 11-Oct.** "Fix this bug here, on a level where you are locked from using
+      other tiered vehicles only on one side, selecting the opposite side gives you the full garage, then
+      the player is allowed to switch sides on the full garage. The garage should switch to the filtered
+      version." (Started; branch `delivery-garagefix`.)
+- [ ] **K10. "Also, apply the new progression please" (11-Oct):** `CONFIG.progression.tiers` set to true by
+      default after K9, `?tiers=0` kept; the checks that asserted it off updated; old saves checked. Local
+      `main` only until the owner says push.
 - **Standing rule from K2:** a new model is looked at in stills from front, back, side and above, in every
   state and at the level-card tile size, and must be distinct from every other model in concept; open-topped
   things have no top face; no coplanar faces; no parts passing through each other. **Refined by the owner:**

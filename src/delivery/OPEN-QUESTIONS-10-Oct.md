@@ -164,3 +164,7 @@ into.
 20. **A link to the game from the site.** Nothing on the site links to `/delivery/`. Where should one go?
 21. **More cargo.** Twenty more ideas (C41 to C60, the "malicious deliveries") are drafted in the checklist
     and not built. Build them?
+
+## Asked 11-Oct, late
+
+22. **What do players get for earning both medals on a level?** As built, nothing beyond the unlock counts and the per-side bronze, silver or gold grade. Options: a one-time tip bonus scaled to the tier (orchestrator pick, stays inside the existing systems); a cosmetic mark on the plate and card and a tier-complete mark; a cosmetic unlock (a livery or trail) for a whole tier; a cargo collection page or special Evil cargo state. Left alone: no reward.
