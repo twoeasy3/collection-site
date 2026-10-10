@@ -1225,6 +1225,13 @@ pick ups and traffic."
           come first, and `.descriptions-check.mjs` FAILS a level whose words differ between the two places,
           which under "the file overrides" is stricter than the rule needs: both for the owner to say. `messages.json` already holds the spoken lines. To confirm with the owner: one file
           for everything, or one a kind.)
+    - [ ] Q42. "Rendering the volcano theme without a floor makes near objects look floating and the skybox
+          erupting volcano overlap the mountains appear through fog banks". (Three faults on the volcano
+          theme, Cinder Island and Eruption Day: no ground is drawn beside the road, so things near it look
+          afloat; the erupting mountain on the skyline is drawn over the nearer mountains; and it shows
+          through a fog bank. The last was already noted when fog was made to take its theme's colour
+          (`ff21b9a`): far backdrops drawn with `fog: false`, the volcano and the ice road's aurora among
+          them, show through a thick bank. The erupting look is `229dd8d`, `render/themes/volcano.js`.)
 - [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
   - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
     truck gimmick for now." What it is: the car's trait `tow` (`cars.js:127-129`): driven into fallen
