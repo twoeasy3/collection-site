@@ -1124,13 +1124,14 @@ export const CONFIG = {
     groups: {},            // s, by group in messages.json, e.g. zones: 3, milestones: 6
     keys: {},              // s, by the message's own path, e.g. 'events.speedFine': 6
     // The sticky ones: a message about something that is still true of the player's car. It is said as any
-    // other, on the message lines, and then stays in a slot of its own in the meters' corner (ordinary
-    // messages never push it out) until the condition named here ends, or the car is wrecked or busted, or
+    // other, on the message lines and for its time above, and then a small icon for it stays under the
+    // gauges (`stickyIcons` below; its picture is in render/hudIcons.js, its name in messages.json's
+    // stickyNames or mysteryNames) until the condition named here ends, or the car is wrecked or busted, or
     // the run is over. path in messages.json: the condition it lasts for (see the foot of player.js:
     // 'mystery' is "the mystery effect this message is for is running"). Take a line out and that message
     // is an ordinary one again; add one, with a condition that player.js has
     sticky: {
-      'events.puncture': 'puncture',                 // a flat tyre, until it is changed (its row shows the change going on)
+      'events.puncture': 'puncture',                 // a flat tyre, until it is changed (its icon shows the change going on)
       'events.beached': 'beached',                   // stuck in the gravel, until the car digs itself out
       'powerups.badGas': 'badGas',                   // the bad powerups: cheap fuel, for as long as it lasts
       'powerups.heavyMass': 'heavy',                 // ...the extra weight
@@ -1144,7 +1145,18 @@ export const CONFIG = {
       // (the good ones are left to the pickup status, which names them while they run: toad, angel,
       // invincible, soupedUp, giant, magnet, trafficFreeze; and sundayDrivers, rushHour, carSwap, moodSwing)
     },
-    stickyRows: 3,         // sticky messages shown at once, the newest first
+    recall: 3,             // s a sticky message's words show again for, when its icon is touched (or the pointer goes over it)
+    // the sticky messages' icons: a round badge each, in rows under the two gauges (beside them on a phone
+    // held upright, where under them is the road), the oldest first. By the
+    // screen's shape: `wide` (a desktop, a tablet), `portrait` (a phone held upright), `short` (a phone on its
+    // side: under 480 px high). The ring round an icon drains as its condition runs out. (In play there are
+    // three at most: a flat tyre, the gravel, and the one powerup or mystery running)
+    stickyIcons: {
+      size: { wide: 30, portrait: 28, short: 26 },   // px across
+      gap: { wide: 5, portrait: 4, short: 4 },       // px between two, and between rows
+      across: { wide: 4, portrait: 3, short: 3 },    // icons in a row before the next row starts (four: the gauges' width; three: short of the TANK RAGE corner, or of the camera's warning)
+      shift: { wide: [0, 0], portrait: [0, 0], short: [0, 0] }, // px [right, down] from that place, to move the lot
+    },
   },
 
   // night levels (theme "night"): the player's headlights, two spotlights riding on the car

@@ -76,7 +76,7 @@ delivered, bought or counted in it (`Progress.noSave`).
 | `?racewatch` | The race screensaver; `&camcheck` logs a check of its cameras |
 | `&touch` | Shows the on-screen controls on a desktop |
 | `&cargostate=2` | An Evil run's cargo in that state (0 calm, 1 agitated, 2 furious) whatever the clock says |
-| `&hudcheck` | Every part of the HUD showing at once and held there, for a picture: the shoulder's dial most of the way up, a flat tyre, a mystery running (`&mystery=` names it), two messages. With `&touch` and a level with a speed camera just ahead (`&level=20&at=760`) nothing is left out |
+| `&hudcheck` | Every part of the HUD showing at once and held there, for a picture: the shoulder's dial most of the way up, a flat tyre, a mystery running (`&mystery=` names it), two messages. With `&touch` and a level with a speed camera just ahead (`&level=20&at=760`) nothing is left out. `&hudcheck=many`: six sticky icons at once (in play three is the most); `=one`: a flat tyre just had, its message up with its icon; `=later`: the same left to run, so the icon alone; `=icons`: all eleven icons |
 | `&rage`, `&pieces=3` | In TANK RAGE from the start (on an amphibious level: in the Amphibious Tank, which is only ever that level's rage vehicle, never a garage car); that many pieces of the tank found already. `&cine=car&turn=120` turns the studio camera that many degrees round the car |
 | `&deliver=3.5` | Stops the delivery at the kerb that many seconds in, for a picture (with `&at=` just short of the finish and `&ff=14`) |
 | `&pursuit=3` | A police pursuit set off 3 s into the run, on any delivery level; `&pursuitbehind=60` starts it that far behind |
@@ -264,7 +264,7 @@ ones, which are always open and open nothing.
   `node scripts/.cargo-check.mjs` lists what every level carries and checks the ending.
 - **A sound:** drop a WAV in `sounds/` and name it in `SAMPLES` in `render/audio.js`. Game logic
   asks for it with `sfx()` or `sfxAt()` from `physics.js`.
-- **A message:** add its wording to `messages.json`. How long it stays up is in `CONFIG.messageTimes` (by its kind, its group or its own path), and so is the list of sticky ones, which stay until what they warn of is over; `node scripts/.hud-check.mjs` checks both, and the mystery effect's name in the pickup status (`mysteryNames` in `messages.json`).
+- **A message:** add its wording to `messages.json`. How long it stays up is in `CONFIG.messageTimes` (by its kind, its group or its own path), and so is the list of sticky ones: said as any message, then a small icon under the gauges until what they warn of is over (a new one needs its picture in `render/hudIcons.js` and its name in `stickyNames`; the icons' size and rows are `CONFIG.messageTimes.stickyIcons`); `node scripts/.hud-check.mjs` checks both, and the mystery effect's name in the pickup status (`mysteryNames` in `messages.json`).
 
 ## The start screen
 

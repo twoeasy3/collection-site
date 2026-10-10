@@ -7,6 +7,7 @@ import { Game, formatTime, clockFor } from '../game.js';
 import { Message } from '../messages.js';
 import { Traffic } from '../traffic.js';
 import { SpeedCameras } from '../cameras.js';
+import { stickyIcon } from './hudIcons.js';
 
 // ---- HUD -------------------------------------------------------------------
 import { Social } from '../social.js';
@@ -136,32 +137,52 @@ const syncCamAlert = () => {
   if (hudCamArrow) hudCamArrow.style.transform = `rotate(${turn.toFixed(3)}rad)`;
 };
 const hudDangerFill = document.getElementById('dangerFill'), hudDangerNeedle = document.getElementById('dangerNeedle');
-// the sticky messages' slot (see messages.js): a row each, the newest at the top
+// the sticky messages' icons (see messages.js; the pictures are render/hudIcons.js): one for each condition
+// still on, under the gauges, the oldest first. The words themselves were an ordinary message and have gone
+// as one; the ring round an icon drains as its condition runs out. Sizes and place: CONFIG.messageTimes.stickyIcons
 const hudSticky = document.getElementById('sticky');
+for (const [name, byShape] of Object.entries(CONFIG.messageTimes.stickyIcons)) {
+  for (const [shape, value] of Object.entries(byShape)) {
+    [].concat(value).forEach((v, i, all) => hudSticky.style.setProperty(`--${name}-${shape}${all.length > 1 ? '-' + 'xy'[i] : ''}`, name === 'across' ? v : v + 'px'));
+  }
+}
+const stickyName = (h) => Message.pick(h.condition === 'mystery' ? 'mysteryNames' : 'stickyNames', h.condition === 'mystery' ? h.key : h.condition) || h.line.text;
 let stickyShown = '';
-const syncSticky = (now) => {
+const syncSticky = () => {
   Message.settle(); // (none is drawn after its condition has ended)
-  const playing = Game.state === 'playing' && !Game.screensaver;
-  const held = playing ? Message.sticky.slice(-CONFIG.messageTimes.stickyRows).reverse() : [];
-  const key = held.map(h => h.id + h.line.text).join('|');
+  const held = Game.state === 'playing' && !Game.screensaver ? Message.sticky : [];
+  const key = held.map(h => h.id).join('|');
   if (key !== stickyShown) {
     stickyShown = key;
     hudSticky.textContent = '';
     for (const h of held) {
-      const row = document.createElement('div'), words = document.createElement('span');
-      row.className = 'row';
-      words.textContent = h.line.text;
-      row.append(Object.assign(document.createElement('i'), { className: 'lamp' }), words, Object.assign(document.createElement('div'), { className: 'bar' }));
-      hudSticky.append(row);
+      const icon = document.createElement('button'), name = stickyName(h);
+      icon.className = 'icon';
+      icon.type = 'button';
+      icon.tabIndex = -1; // (never the keyboard's: the keys drive the car)
+      icon.title = name;
+      icon.setAttribute('aria-label', name);
+      icon.dataset.path = h.path;
+      icon.innerHTML = '<svg viewBox="0 0 32 32" aria-hidden="true"><circle class="back" cx="16" cy="16" r="14.5"/>' +
+        '<circle class="left" cx="16" cy="16" r="14.5" pathLength="100" stroke-dasharray="100 100" transform="rotate(-90 16 16)"/>' +
+        '<g class="art" transform="translate(5.4 5.4) scale(.88)">' + stickyIcon(h) + '</g></svg>';
+      hudSticky.append(icon);
     }
   }
   held.forEach((h, i) => {
-    const row = hudSticky.children[i];
-    // (not while the same words are still up on a message line: said once, then kept here)
-    row.classList.toggle('hidden', !Game.paused && Message.lines.includes(h.line) && now - h.line.at < h.line.time * 1000);
-    row.lastChild.style.width = h.progress * 100 + '%';
+    const ring = hudSticky.children[i].firstChild.children[1], left = ((1 - h.progress) * 100).toFixed(1);
+    if (ring.dataset.left !== left) ring.setAttribute('stroke-dasharray', (ring.dataset.left = left) + ' 100');
   });
 };
+// a touch of an icon, or the pointer over it: its message again, briefly, as the ordinary message it was
+const recallSticky = (e) => {
+  const icon = e.target.closest?.('.icon');
+  if (!icon) return;
+  if (e.type === 'pointerdown') e.preventDefault(); // (the button takes no focus, so the keys still drive)
+  Message.recall(icon.dataset.path);
+};
+hudSticky.addEventListener('pointerdown', recallSticky);
+hudSticky.addEventListener('pointerover', recallSticky);
 const hudFade = document.getElementById('fade');
 const runButtons = document.getElementById('runButtons');
 const pauseBtn = document.getElementById('pauseBtn');
@@ -210,7 +231,7 @@ export const updateHud = () => {
     button.style.opacity = throwOpacity;
     if (button.textContent !== throwLabel) button.textContent = throwLabel;
   }
-  syncSticky(performance.now());
+  syncSticky();
   // pause and exit: shown during a run and the screensaver
   runButtons.style.display = Game.state === 'playing' ? 'flex' : 'none';
   const pauseLabel = Game.paused ? 'Resume' : 'Pause';

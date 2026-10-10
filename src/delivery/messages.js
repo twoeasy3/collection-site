@@ -7,9 +7,10 @@
 // in place of the less important of the two (or, of two as important, the older). Only one
 // driver's reaction is ever up: a new one takes the place of one already showing. A message
 // the same as one still showing (another car destroyed) doesn't take a line: that one stays up longer.
-// A sticky message (CONFIG.messageTimes.sticky: a flat tyre, no brakes) is said the same way, and is also
-// kept in Message.sticky for as long as its condition lasts (Message.conditions, which player.js fills
-// in): the HUD shows those in a slot of their own, which ordinary messages never take.
+// A sticky message (CONFIG.messageTimes.sticky: a flat tyre, no brakes) is said the same way and for the
+// same time, and is also kept in Message.sticky for as long as its condition lasts (Message.conditions,
+// which player.js fills in): the HUD shows a small icon for each of those (never its words again, unless
+// the icon is touched: Message.recall).
 // ============================================================================
 import MESSAGES from './messages.json';
 import { CONFIG } from './config.js';
@@ -34,9 +35,11 @@ let nextId = 1;
 export const Message = {
   lines: [empty(), empty()], // top, bottom: { text, kind, at (ms), time (s it stays up), id (new for every message) }
   // the sticky messages up, oldest first: { line (the message as it was said: its text may be filled in
-  // after), path, condition, key, progress (0 .. 1 of the way to its end, where the condition counts one), id }
+  // after), path, condition, key, progress (0 .. 1 of the way to its end, where the condition counts one or
+  // says how long it has left), total (s: the most it has had left), id }
   sticky: [],
-  // what a sticky message lasts for, by name: { on(key): still true?, progress(key): 0 .. 1, if it has one }
+  // what a sticky message lasts for, by name: { on(key): still true?, and one of progress(key): 0 .. 1 of the
+  // way to its end, or left(key): s until it ends, if it has either }
   // (key: the last of the message's path, the effect of a mystery). `run`, if there, is asked of them all:
   // false while the car is wrecked or busted, or the run is over. Filled in by player.js
   conditions: {},
@@ -70,8 +73,19 @@ export const Message = {
     const path = [group, ...keys].join('.'), condition = CONFIG.messageTimes.sticky[path];
     if (!condition) return line;
     this.sticky = this.sticky.filter(held => held.path !== path);
-    this.sticky.push({ line, path, condition, key: keys[keys.length - 1], progress: 0, id: nextId++ });
+    this.sticky.push({ line, path, condition, key: keys[keys.length - 1], progress: 0, total: 0, id: nextId++ });
     return line;
+  },
+  // a sticky message's words again, for a moment (CONFIG.messageTimes.recall), as the ordinary message they
+  // were: the player has touched its icon. On the line it is still on, else a free one, else the older
+  recall(path) {
+    const held = this.sticky.find(h => h.path === path);
+    if (!held) return null;
+    const now = performance.now(), [top, bottom] = this.lines, line = held.line, again = CONFIG.messageTimes.recall;
+    const left = (l) => l.text ? l.time - (now - l.at) / 1000 : 0;
+    if (this.lines.includes(line) && left(line) >= again) return line; // (still up, and for longer than this would keep it)
+    if (!this.lines.includes(line)) this.lines[left(top) <= 0 ? 0 : left(bottom) <= 0 ? 1 : top.at <= bottom.at ? 0 : 1] = line;
+    return Object.assign(line, { at: now, time: again });
   },
   // drops every sticky message whose condition has ended (and all of them with the car wrecked or busted, or
   // the run over), and brings the others' progress up to date: each step of the game, and before each drawing
@@ -79,7 +93,14 @@ export const Message = {
     if (!this.sticky.length) return;
     const C = this.conditions, running = !C.run || C.run();
     this.sticky = this.sticky.filter(held => running && !!C[held.condition]?.on(held.key));
-    for (const held of this.sticky) held.progress = C[held.condition].progress?.(held.key) || 0;
+    for (const held of this.sticky) {
+      const c = C[held.condition];
+      if (c.progress) { held.progress = c.progress(held.key) || 0; continue; }
+      if (!c.left) continue;
+      const left = Math.max(0, c.left(held.key) || 0);
+      held.total = Math.max(held.total, left);
+      held.progress = held.total > 0 ? 1 - left / held.total : 0;
+    }
   },
   clear() {
     this.lines = [empty(), empty()];

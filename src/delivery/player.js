@@ -576,9 +576,9 @@ export const Player = {
 Object.assign(Message.conditions, {
   run: () => Game.state === 'playing' && Player.active && !Player.busted, // (none outlasts a wreck, a bust or the run)
   puncture: { on: () => !!Player.puncture, progress: () => Math.min(1, Player.fixing / CONFIG.puncture.fixTime) }, // (its progress: the tyre being changed)
-  beached: { on: () => Player.beached > 0 },
-  badGas: { on: () => Player.badGas > 0 },
-  heavy: { on: () => Player.heavy > 0 },
-  butterfingers: { on: () => Player.butterfingers > 0 },
-  mystery: { on: (effect) => Player.mystery === effect }, // (the effect the message is for: the last of its path)
+  beached: { on: () => Player.beached > 0, left: () => Player.beached }, // (left: s until it ends, which its icon shows draining)
+  badGas: { on: () => Player.badGas > 0, left: () => Player.badGas },
+  heavy: { on: () => Player.heavy > 0, left: () => Player.heavy },
+  butterfingers: { on: () => Player.butterfingers > 0, left: () => Player.butterfingers },
+  mystery: { on: (effect) => Player.mystery === effect, left: () => Player.mysteryTime }, // (the effect the message is for: the last of its path)
 });

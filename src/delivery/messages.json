@@ -349,6 +349,13 @@
     "gunTurret": ["You found a tank gun turret!"],
     "gunBarrel": ["You found a tank gun barrel!"]
   },
+  "stickyNames": {
+    "puncture": ["Flat tyre: stop to change it"],
+    "beached": ["Beached in the gravel"],
+    "badGas": ["Bad gas"],
+    "heavy": ["Heavy"],
+    "butterfingers": ["Butterfingers: no throwing"]
+  },
   "mysteryNames": {
     "rickety": ["Rickety"],
     "toad": ["Toad rage"],

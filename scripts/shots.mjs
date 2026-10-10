@@ -58,10 +58,18 @@ if (opt('levels', false) || opt('cars', false)) {
   const side = opt('evil', false) ? '=evil' : '';
   const only = (value) => typeof value === 'string' ? value.split(',') : null;
   // (where the usual place for the camera, 9 m off the right-hand edge, is inside a wall, a stand or a building)
-  const CINE = { mumbai: '&cineout=-1&cineup=10&cineback=30', spa: '&cineside=left', 'albert-park': '&cineside=left' }; // (a block of flats; the pit building; a tree)
+  // and where the picture is better taken further along than the start: &at=<m>, a little short of what is to be
+  // in it (the six seconds of ?ff carry the car on from there)
+  const CINE = { mumbai: '&cineout=-1&cineup=10&cineback=30', spa: '&cineside=left', 'albert-park': '&cineside=left', // (a block of flats; the pit building; a tree)
+    expressway: '&at=880', 'back-roads': '&at=600', canberra: '&at=1200', // (each one's bridge)
+    'grand-pacific': '&at=6000', 'passage-du-gois': '&at=900', safari: '&at=2350', airport: '&at=850', // (the Sea Cliff Bridge; the causeway; the hippos' river; a parked plane)
+    'mountain-pass': '&at=420', 'outback-express': '&at=1080', 'tour-de-coast': '&at=1600', stelvio: '&at=250', // (a rockfall; a level crossing; the cliff road; clear of a fir that fills the frame)
+    // (an entry with an &ff of its own is taken after that many seconds, not six: a place chosen to the metre)
+    'quarry-run': '&at=2520&ff=1&cineside=left&cineup=8' }; // (the crag before its blast, benches, stockpiles, a stacker, a siren mast: its level's agent's choice)
+  const FF = (id) => /[?&]ff=/.test(CINE[id] || '') ? '' : '&ff=6';
   if (opt('levels', false)) {
     levels.LEVELS.forEach((level, i) => {
-      if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine&ff=6${CINE[level.id] || ''}`, !!PAIR.folder]);
+      if (!only(opt('levels')) || only(opt('levels')).includes(level.id)) shots.push([level.id, `?autostart${side}&level=${i + 1}&ghost&cine${FF(level.id)}${CINE[level.id] || ''}`, !!PAIR.folder]);
     });
   }
   if (opt('cars', false)) {
@@ -315,8 +323,11 @@ try {
     const file = pair ? join(PAIR.folder, name + '.jpg') : join(out, name + '.png');
     const began = Date.now();
     let notes = [], why = '';
-    try { rmSync(file, { force: true }); notes = await shoot(url, file, pair && name + '.jpg'); } catch (error) { why = '  ' + String(error && error.message || error); }
-    const ok = existsSync(file) && statSync(file).size > 2000;
+    for (let go = 0, done = false; go < 2 && !done; go++) { // (once more if the browser gave no answer: a machine with every core busy)
+      try { why = ''; notes = await shoot(url, file, pair && name + '.jpg'); done = true; } catch (error) { why = '  ' + String(error && error.message || error); }
+    }
+    // (made by THIS run: a picture of that name from before is left as it was if this one fails)
+    const ok = existsSync(file) && statSync(file).size > 2000 && statSync(file).mtimeMs >= began - 2000;
     if (!ok) failed++;
     const sizes = ok && pair ? '  ' + [file, join(PAIR.folder, 'large', name + '.jpg')].map(f => Math.round(statSync(f).size / 1024) + ' KB').join(' + ') : '';
     console.log((ok ? '  ok    ' : '  FAIL  ') + name + '  ' + url + '  (' + ((Date.now() - began) / 1000).toFixed(1) + ' s)' + sizes + why);
