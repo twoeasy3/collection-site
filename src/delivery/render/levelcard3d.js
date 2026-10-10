@@ -8,7 +8,8 @@
 // tile has the model its page shows, a name, and the first line of what its page says.
 // Drawn cheaply: ONE WebGL renderer for the whole card, on a canvas off the page, its picture of each tile
 // copied into the tile's own small canvas (render/modelviews.js, as the pages do: the models scroll with
-// their tiles), made when the card opens and let go when it closes.
+// their tiles). The renderer is the start screen's one (the car card's too: sharedRenderer), so the card
+// takes no WebGL context of its own; when it closes, what its models took is given back.
 // Nothing of the level is built, and the game's own scene is not touched.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
@@ -21,7 +22,7 @@ import { CARDS } from '../powerups.js';
 import { MODELS } from './models.js';
 import { makeTractorModel, makeUfo } from './carExtras.js';
 import { PICKUP_COLOR } from './pickupModels.js';
-import { standView, pickupView, viewRenderer, drawViews } from './modelviews.js';
+import { standView, pickupView, sharedRenderer, disposeViews, drawViews } from './modelviews.js';
 
 const make = (tag, className, ...inside) => {
   const node = document.createElement(tag);
@@ -110,7 +111,7 @@ export const showRoadCard = (box, level, close) => {
     make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', levelLabel(LEVELS.indexOf(level)) + '  ' + level.name)), closeBtn),
     make('div', 'sheet-main', body)));
 
-  const renderer = viewRenderer(); // (null if none can be had: the card opens all the same, its tiles' pictures empty)
+  const renderer = sharedRenderer(); // (the menu's one; null if none can be had: the card opens all the same, its tiles' pictures empty)
   let last = performance.now(), frame = 0;
   const draw = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
@@ -121,8 +122,7 @@ export const showRoadCard = (box, level, close) => {
   if (renderer) frame = requestAnimationFrame(draw);
   return () => {
     cancelAnimationFrame(frame);
-    renderer?.dispose();
-    renderer?.forceContextLoss(); // (the WebGL context given back at once, not whenever the canvas is collected)
+    disposeViews(views); // (the renderer is the menu's, and stays: only what the tiles' models took is given back)
     box.replaceChildren();
   };
 };

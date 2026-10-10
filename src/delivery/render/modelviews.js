@@ -19,14 +19,16 @@ export const lit = () => {
   return scene;
 };
 
-// A model on a turntable, framed whatever its size: { model, tick?(t, dt), spin = true, lift? } (what a gimmick
-// card's build() returns; lift: how far down it is looked on, rad; close: how much nearer than a full frame the
+// A model on a turntable, framed whatever its size: { model, tick?(t, dt), spin = true, lift?, angle? } (what a
+// gimmick card's build() returns; lift: how far down it is looked on, rad; angle: how far round the turntable
+// starts, rad; close: how much nearer than a full frame the
 // camera stands, for a small patch). The camera is put back far enough for the
 // whole of it over the whole of its animation: it is played through a few seconds and measured all the way,
 // so nothing that hops, drops or tumbles goes out of the picture.
-export const standView = ({ model, tick, spin = true, lift = 0.42 }, close = 1) => {
+export const standView = ({ model, tick, spin = true, lift = 0.42, angle = 0 }, close = 1) => {
   const scene = lit();
   const turn = new THREE.Group(); // (the turntable: the model turns on it, and animates on its own)
+  turn.rotation.y = angle;
   turn.add(model);
   scene.add(turn);
   const bounds = new THREE.Box3().setFromObject(model);
@@ -94,6 +96,19 @@ export const viewRenderer = () => {
     console.warn('No renderer for the models: ' + (error?.message || error));
     return null;
   }
+};
+// The start screen's one renderer (the car card's model and the road card's tiles share it, so the menu takes
+// one WebGL context however many of them are showing): made when first asked for, and kept. null if none can be had
+let shared;
+export const sharedRenderer = () => shared === undefined ? (shared = viewRenderer()) : shared;
+// Views done with: what their scenes put on the graphics card is given back (a renderer that is kept would
+// hold it for good). Anything of theirs still in use elsewhere, a geometry or material models share, is
+// simply sent again when next drawn.
+export const disposeViews = (views) => {
+  for (const v of views) v.scene.traverse((node) => {
+    node.geometry?.dispose();
+    for (const material of [].concat(node.material || [])) { material.map?.dispose(); material.dispose(); }
+  });
 };
 // a view's own canvas, filling its element (made the first time the view is drawn)
 const canvasOf = (v) => {

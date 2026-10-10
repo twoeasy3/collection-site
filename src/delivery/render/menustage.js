@@ -17,7 +17,8 @@ import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } 
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { medalFor, medalNeeds } from '../levelinfo.js';
-import { Garage } from './garage.js';
+import { Garage, makeShowCar, paintShowCar } from './garage.js';
+import { standView, sharedRenderer, disposeViews, drawViews } from './modelviews.js';
 import { Sound } from './audio.js';
 
 const money = (amount) => '$' + amount.toFixed(2);
@@ -25,7 +26,8 @@ const money = (amount) => '$' + amount.toFixed(2);
 export const LEVEL_SHOTS = Object.fromEntries(Object.entries(
   import.meta.glob('../levelshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
-// each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car)
+// each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car). The car
+// card shows the car's own model, live (see drawCar); these are what it shows where that cannot be had
 const CAR_SHOTS = Object.fromEntries(Object.entries(
   import.meta.glob('../carshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
@@ -202,11 +204,65 @@ const bar = (name, value, share) => {
   fill.style.width = Math.round(Math.max(0.06, Math.min(1, share)) * 100) + '%';
   return make('span', 'stat', make('small', '', name), make('span', 'track', fill), make('b', '', value));
 };
+// The car's picture: its own model, slowly turning, in the livery of the side picked, its own parts moving
+// (userData.animate). The model is the garage's (makeShowCar, paintShowCar), on a stand as the reference
+// pages' are, drawn by the start screen's one renderer into a small canvas in the picture
+// (render/modelviews.js): no run is built, and nothing of the game's scene is touched. Where no renderer can
+// be had, the model cannot be built, or the context is lost, the picture is the still as before (CAR_SHOTS).
+// prefers-reduced-motion: the model stands still, at an angle.
+const CAR_VIEW = { close: 1.35, lift: 0.3, angle: 0.7, stillEvery: 0.5 }; // how near and from how high it is seen; where it starts (rad); s between drawings of one that stands still
+const picture = make('span', 'picture');
+const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
+let carView = null;   // { el, scene, camera, step, canvas, ctx, model, car, evil }: the model on show
+let carUrl = '';      // the still for the car and side on show
+let carLive = false;  // the model is being drawn (so the still is not shown under it)
+let carDrawn = -1;    // s: when the model was last drawn
+const syncPicture = () => {
+  picture.style.backgroundImage = !carLive && carUrl ? `url("${carUrl}")` : '';
+  if (carView?.canvas) carView.canvas.style.display = carLive ? 'block' : 'none';
+};
+const showCarModel = (evil) => {
+  carUrl = CAR_SHOTS[CAR.id + (evil ? '-evil' : '-good')] || '';
+  try {
+    if (carView?.car === CAR) { // (the same car: the other side's paint, where it stands)
+      if (carView.evil !== evil) paintShowCar(carView.model, CAR, carView.evil = evil);
+    } else {
+      const old = carView;
+      carView = null;
+      if (old) disposeViews([old]);
+      if (sharedRenderer()) {
+        const model = makeShowCar(CAR);
+        paintShowCar(model, CAR, evil);
+        const stand = standView({ model, tick: (t) => model.userData.animate?.(t), spin: !reducedMotion, lift: CAR_VIEW.lift, angle: CAR_VIEW.angle }, CAR_VIEW.close);
+        carView = { el: picture, canvas: old?.canvas, ctx: old?.ctx, ...stand, model, car: CAR, evil }; // (the canvas is kept from car to car)
+      }
+    }
+  } catch (error) { // (a vehicle with no model to show: its still)
+    console.warn('No model for the car card: ' + (error?.message || error));
+    carView = null;
+  }
+  if (!carView) picture.querySelector('canvas')?.remove(); // (no model: nor the last car's picture of one)
+  carLive = !!carView;
+  carDrawn = -1;
+  syncPicture();
+};
+{
+  let last = performance.now();
+  const frame = (now) => {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (!carView || !menuUp() || Garage.isOpen) return;
+    if (reducedMotion && carDrawn >= 0 && now / 1000 - carDrawn < CAR_VIEW.stillEvery) return;
+    carDrawn = now / 1000;
+    const live = drawViews(sharedRenderer(), [carView], reducedMotion ? 0 : now / 1000, reducedMotion ? 0 : dt);
+    if (live !== carLive) { carLive = live; syncPicture(); }
+  };
+  requestAnimationFrame(frame);
+}
 const drawCar = () => {
   const evil = Game.evil && !oneSided(cursor);
-  const picture = make('span', 'picture');
-  const url = CAR_SHOTS[CAR.id + (evil ? '-evil' : '-good')];
-  if (url) picture.style.backgroundImage = `url("${url}")`;
+  showCarModel(evil);
   const starSpan = make('span', 'stars', stars(CAR));
   starSpan.style.color = starColour(CAR);
   shop.replaceChildren(picture,
