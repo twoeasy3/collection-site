@@ -19,6 +19,7 @@ import { StopGo } from './stopgo.js';
 import { Water } from './water.js';
 import { Hazards } from './hazards.js';
 import { Gambles } from './gambles.js';
+import { Radiation } from './radiation.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -137,6 +138,7 @@ export const Traffic = (() => {
       : Track.openLane(first + Math.floor(Math.random() * (last - first + 1)), car.s);
     if (!laneClear(car, lane, 25) || Wreckage.blocked(lane, car.s)) return false;
     outfit(car, kind, lane);
+    Radiation.deal(car); // (a share of a radiated level's traffic comes infected: car.infected, which blank() puts back)
     return true;
   };
   // the lane by the kerb for traffic going way dir: its outside lane

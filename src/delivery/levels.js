@@ -345,6 +345,15 @@
 //              beside it) is new tar, coned off: traffic keeps out of it and crawls past in the other lanes. A car
 //              on it picks tar up on its tyres, which slows it more the longer it stays (in the end to less than
 //              the queue's pace) and for a few seconds after it is off (see CONFIG.tarmac)
+//   radiation  { from, to, lanes?: [first, last], side?: 'left' | 'right' }: a radiated area: over the stretch, in those
+//              lanes (out to the road's edge on `side`, if given; with no lanes, the whole road, shoulders and all),
+//              the player's car loses health slowly and its radiation meter rises; out of it the meter falls
+//              back. A full meter infects the player for the rest of the run: its health ticks down everywhere.
+//              The Armour pickup keeps all of it out. Always leave a clean line (other lanes, a shoulder, a side
+//              road) or put an armour before it (see radiation.js and CONFIG.radiation)
+//   infectedTraffic  the share of the traffic dealt out infected (0 .. 1; left out: CONFIG.radiation.share on a
+//              level with a radiated area, none on any other). An infected car doses the player within its ring
+//              as an area does, and touching it infects at once; a clean vehicle can catch it in an area
 //   spray      { from, to }: truck spray: over the stretch the expressway is wet, and every tall vehicle moving on it
 //              (a van, a bus, a lorry) drags a cloud of spray behind it, as wide as its lane and the next each
 //              side: in the cloud the player sees next to nothing. Nothing is done to the car (see CONFIG.spray)

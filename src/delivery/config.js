@@ -1153,6 +1153,7 @@ export const CONFIG = {
       'powerups.mystery.swapSides': 'mystery',       // ...on the other side: the packages do something else
       'powerups.mystery.blackout': 'mystery',        // ...the lights out
       'powerups.mystery.earthquake': 'mystery',      // ...the road heaving
+      'events.infected': 'infected',                 // infected with radiation (a full meter, or an infected car touched): for the rest of the run (radiation.js)
       // (the good ones are left to the pickup status, which names them while they run: toad, angel,
       // invincible, soupedUp, giant, magnet, trafficFreeze; and sundayDrivers, rushHour, carSwap, moodSwing)
     },
@@ -1489,6 +1490,22 @@ export const CONFIG = {
   // off it, it wears off in `clean` s. With the tyres full the car's top speed is down by `slow` of itself (in
   // proportion with less), brought down at `bite` m/s^2. A board `sign` m before; a cone every `cone` m
   tarmac: { fill: 4, clean: 3, slow: 0.9, bite: 45, queue: 8, keepClear: 160, sign: 120, cone: 14 },
+  // radiation ("radiation": [{ from, to, lanes?, side? }] and "infectedTraffic": radiation.js). In a radiated area,
+  // or within `radius` m of an infected car, the player's car loses `tick` of its FULL health a second and its
+  // radiation meter fills in `meterTime` s; out of both, the meter empties again in `meterFall` s (Infinity: it
+  // never falls). At `high` of the meter a warning is said; full, the player is infected for the rest of the
+  // run and loses `infectedTick` of its full health a second everywhere (in a dose, the greater of the two, not
+  // both). Touching an infected car infects at once. The Armour pickup (and a helicopter drop's shield, the
+  // SuperCar, a ghost, a tank) keeps all of it out, and stops an infected car's ticking while it lasts.
+  // `share` of a radiated level's traffic is dealt out infected (a level's "infectedTraffic" says otherwise) and
+  // a clean vehicle driving in an area has `catch` chance a second of catching it, `most` infected about at
+  // once; never the kinds in `immune` (nor an emergency, a pursuit, a racer, a convoy...: see Radiation.can).
+  // wreckCures: a car wrecked comes back clean (false: infected is for the run). click: s between the counter's
+  // clicks with the meter empty (slow) and full (fast). sign: m before an area its warning board stands
+  // (At 25 m/s a 200 m area is 8 s: 6% of the car's health and a fifth of the meter. Infected from the start of
+  // a three-minute level costs the whole car, less what its wrenches give back: a quarter each)
+  radiation: { tick: 0.008, meterTime: 40, meterFall: 120, high: 0.75, infectedTick: 0.006, radius: 7, share: 0.12, catch: 0.08, most: 5,
+    immune: ['police', 'ambulance', 'tank', 'interceptor', 'getaway'], wreckCures: false, click: { slow: 0.45, fast: 0.07, volume: 0.5 }, sign: 110 },
   // (traffic that one of these slows comes down to its pace over the `reach` m before: perMetre m/s more for each m short of it)
   gambleApproach: { reach: 60, perMetre: 0.25 },
   // the veil over the picture when something takes the view (spray, the sun, dust: see Gambles.veil): it closes

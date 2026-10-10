@@ -49,6 +49,11 @@
     "mourners": ["You crashed into a funeral procession!! The mourners are furious!"],
     "crossing": ["Level crossing! The lights are flashing!"],
     "fog": ["Fog bank ahead!"],
+    "radiation": ["RADIATION! Your health ticks away in the green."],
+    "radiationHigh": ["Radiation meter at three quarters! Get out of the green!"],
+    "infected": ["INFECTED! Your health ticks down all the way to the drop."],
+    "infectedCar": ["Infected car! Keep out of its ring, and never touch it."],
+    "radiationShield": ["The armour keeps the radiation out!"],
     "towed": ["Wreck cleared! That's what a tow truck is for."],
     "schoolCrossing": ["School crossing! Stop for the lollipop!"],
     "waterMain": ["Burst water main! It's slippery while it sprays."],
@@ -370,7 +375,8 @@
     "beached": ["Beached in the gravel"],
     "badGas": ["Bad gas"],
     "heavy": ["Heavy"],
-    "butterfingers": ["Butterfingers: no throwing"]
+    "butterfingers": ["Butterfingers: no throwing"],
+    "infected": ["Infected: health ticking down"]
   },
   "mysteryNames": {
     "rickety": ["Rickety"],

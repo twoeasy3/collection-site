@@ -22,6 +22,7 @@ import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
 import { Hazards } from './hazards.js';
 import { Gambles } from './gambles.js';
+import { Radiation } from './radiation.js';
 import { Social } from './social.js';
 import { Mysteries } from './mysteries.js';
 import { Milestones } from './milestones.js';
@@ -78,6 +79,7 @@ export const Game = {
   load() {
     buildTrack();
     Gambles.build(); // (its lists: Traffic puts out a ramp's queue from them)
+    Radiation.build(); // (its areas, for the drawing)
     Hazards.attach(); // (its obstacles are loaded with the level's: see Collision.loaders)
     Collision.loadLevel();
     Pickups.load();
@@ -209,6 +211,7 @@ export const Game = {
     StopGo.reset();
     Hazards.reset();
     Gambles.reset();
+    Radiation.reset();
     Milestones.reset();
     Track.slicks.length = 0; // (a run starts with no patch of its own on the road: the shade's black ice lays its again, see Gambles.updateShade)
     Pursuit.reset();
@@ -274,6 +277,7 @@ export const Game = {
       this.respawn = CONFIG.respawnTime;
       this.respawnKind = 'wreck';
       this.wrecks++;
+      Radiation.wrecked(); // (the infection outlasts a wreck, unless CONFIG.radiation says a wreck cures it)
       this.grabLat = Player.lat;
       Player.prepareDrop();
       return;
@@ -386,6 +390,7 @@ export const Game = {
     if (playing) Site.update(dt);
     if (playing) Hazards.update(dt);
     if (playing) Gambles.update(dt); // (after Hazards: it has the last word on the car's height off the road)
+    if (playing) Radiation.update(dt); // (radiated areas and infected cars: after the traffic has moved, before the collisions push anything apart)
     if (playing) Mysteries.update(dt);
     if (playing) Milestones.update(dt); // (the counters watched each step: see milestones.js)
     if (playing) Social.update(dt);
