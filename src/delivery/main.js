@@ -38,6 +38,7 @@ import { syncRoadside } from './render/roadside.js';
 import { syncHazards } from './render/hazards.js';
 import { syncGambles } from './render/gambles.js';
 import { syncRadiation } from './render/radiation.js';
+import { Radiation } from './radiation.js';
 import { syncBattle } from './render/battle.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
@@ -76,7 +77,7 @@ const params = new URLSearchParams(location.search);
 // (Progress.noSave: the save stays as it was before the visit, whatever is delivered, bought or counted in it)
 if (['autostart', 'hidden', 'test', 'edited', 'pick', 'car', 'ghost', 'mystery', 'theme', 'beaten', 'owns'].some(key => params.get(key) !== null)) Progress.noSave = true;
 // ?beaten=expressway,back-roads:evil,farm:both and ?owns=lovebus,wagon&money=500: a state to look at (the level tiers:
-// ribbons are best times; nothing is saved). A level listed alone is a Good half.
+// medals are best times; nothing is saved). A level listed alone is a Good medal.
 if (params.get('beaten')) {
   for (const token of params.get('beaten').split(',')) {
     const [id, side = 'good'] = token.split(':');
@@ -186,6 +187,8 @@ if (params.get('racewatch') !== null) {
   Game.start();
   if (params.get('car')?.startsWith('super-') && superOf(CAR)) Player.takeCar(() => lendCar(superOf(CAR)));
   if (params.get('at')) Player.s = Number(params.get('at'));
+  // ?infected: the player infected from the start (a picture of its glow; with ?infected=armour, under the armour too)
+  if (params.get('infected') !== null) { Radiation.infect(); if (params.get('infected') === 'armour') Player.armour = 600; }
   if (params.get('speed')) Object.assign(Player, { speed: Number(params.get('speed')), launching: false }); // ?speed=31: doing that many m/s from the start (with ?ff: hands off, the speed holds)
   if (params.get('lane')) Player.lat = Track.laneOffset(Number(params.get('lane')), Player.s); // ?lane=4: in that lane
   if (params.get('pieces')) Game.tankPieces = Math.min(CONFIG.tankPieces - 1, Number(params.get('pieces')) || 0); // ?pieces=3: that many pieces of the tank found already

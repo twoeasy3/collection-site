@@ -1,6 +1,6 @@
 // Tip money against the cost of cars, on a RUSHED playthrough of the level tiers (src/delivery/tiers.json): the
 // least number of levels a player must play, taking the best tips a rushed run can earn, to afford the cheapest
-// car of each tier before playing it (the car rule: a half-ribbon not yet earned needs a car of EXACTLY that tier).
+// car of each tier before playing it (the car rule: a medal not yet earned needs a car of EXACTLY that tier).
 // It rebalances nothing: it only counts. Prints a table.
 //   node scripts/tier-money.mjs [--cash=0]     (--cash: the average cash pickups a level adds, $; default none)
 //
@@ -13,10 +13,10 @@
 //    the level's full tip: the best a rushed run can earn from it (a rush of the clock is not a rush of cash)
 //  - the player buys, at each tier, only that tier's CHEAPEST car (Gold 1's is the free Commuter), before its first
 //    level; nothing else is bought; no mystery or powerup money; cars from the earned/amphibious sets are not needed
-//  - the rules of tiers.js: levels 1 and 2 open with the tier, 3 needs 2 half-ribbons in the tier, 4 needs 4, 5 needs
-//    level 4 beaten, beating 5 opens the next tier. So a tier takes at least SIX plays: four half-ribbons (from
+//  - the rules of tiers.js: levels 1 and 2 open with the tier, 3 needs 2 medals in the tier, 4 needs 4, 5 needs
+//    level 4 beaten, beating 5 opens the next tier. So a tier takes at least SIX plays: four medals (from
 //    levels 1 to 3, the best four tips: a level's halves are two plays, one a side) then level 4 and level 5
-//  - when the bank is short of the next tier's cheapest car the player replays (in any car: the half is earned)
+//  - when the bank is short of the next tier's cheapest car the player replays (in any car: the medal is earned)
 //    the best-tipping level they have already beaten, one play a time, until it is not
 import { boot } from './delivery-headless.mjs';
 
@@ -31,7 +31,7 @@ const tierCars = (n) => CARS.filter(c => !c.amphibious && !c.earned && c.tier ==
 const money = (x) => '$' + Math.round(x);
 const names = Object.keys(data.tiers).sort((a, b) => a - b);
 
-// the four best half-ribbon plays out of levels 1 to 3 (each level's halves: two plays, one a side; level 3 needs two
+// the four best medal plays out of levels 1 to 3 (each level's halves: two plays, one a side; level 3 needs two
 // halves from levels 1 and 2 before it opens), by trying every choice
 const bestFour = (l1, l2, l3) => {
   let best = null;

@@ -62,7 +62,7 @@ export const makeRadiationBoard = (text = 'RADIATION\nKEEP OUT OF THE GREEN', w 
 };
 // what an infected car wears: a green shell of light round its body (hw, hl, height: the car's), a trefoil
 // floating over it, and its ring on the road, `radius` m out (the edge of what it doses), over a faint disc.
-// userData.pulse(t): it throbs
+// userData.pulse(t, k = 1): it throbs (k < 1: dimmer, as the player's does under the shield)
 export const makeInfection = (hw, hl, height, radius) => {
   const g = new THREE.Group();
   const shellMat = new THREE.MeshBasicMaterial({ color: RAD.haze, transparent: true, opacity: 0.34, depthWrite: false, blending: THREE.AdditiveBlending });
@@ -73,7 +73,8 @@ export const makeInfection = (hw, hl, height, radius) => {
   const ring = new THREE.Mesh(new THREE.RingGeometry(radius - 0.35, radius, 56), ringMat);
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.09;
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(radius - 0.35, 40), new THREE.MeshBasicMaterial({ color: RAD.haze, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+  const discMat = new THREE.MeshBasicMaterial({ color: RAD.haze, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(radius - 0.35, 40), discMat);
   disc.rotation.x = -Math.PI / 2;
   disc.position.y = 0.07;
   const badge = new THREE.Sprite(new THREE.SpriteMaterial({ map: trefoil(), depthWrite: false }));
@@ -84,10 +85,12 @@ export const makeInfection = (hw, hl, height, radius) => {
   body.add(shell, badge);
   g.add(body, ring, disc);
   g.userData.body = body;
-  g.userData.pulse = (t) => {
+  g.userData.pulse = (t, k = 1) => {
     const beat = 0.5 + 0.5 * Math.sin(t * 5);
-    shellMat.opacity = 0.24 + 0.2 * beat;
-    ringMat.opacity = 0.75 + 0.25 * beat;
+    shellMat.opacity = (0.24 + 0.2 * beat) * k;
+    ringMat.opacity = (0.75 + 0.25 * beat) * k;
+    discMat.opacity = 0.2 * k;
+    badge.material.opacity = k;
     badge.position.y = height + 1.5 + 0.12 * Math.sin(t * 2.4);
   };
   return g;

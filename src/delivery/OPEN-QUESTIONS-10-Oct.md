@@ -134,7 +134,7 @@ into.
 14. **Assumptions written down for you to overrule:** the races stay on their own tab outside the tiers;
     cars with no tier (the Tank, the bus, earned cars, amphibious cars, the idea cars) cannot start a level
     whose ribbon half is not yet earned; "beating" a level means delivered on time; beating gold 5's last
-    level replaces "after level 20" for opening the Blue season; medals are kept beside ribbons; half-ribbons
+    level replaces "after level 20" for opening the Blue season; medals are kept beside ribbons; medals
     count only within their own tier.
 
 ## The code audit (`AUDIT-10-Oct.md`)

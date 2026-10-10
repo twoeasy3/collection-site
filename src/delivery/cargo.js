@@ -13,6 +13,7 @@
 import { CONFIG } from './config.js';
 import { LEVELS } from './levels.js';
 import { levelCargoNames } from './levelText.js';
+import { nameOf, statesOf } from './words.js';
 
 export const CARGO = {
   good: [
@@ -88,6 +89,11 @@ export const CARGO = {
     { id: 'band', name: 'Marching Band in a Box', states: ['A faint oompah', 'Trombone out', 'Full blast'] },
   ],
 };
+// the names and the Evil states in cargoText.json come first, these the fallback (words.js: a bad entry is passed over)
+for (const side of ['good', 'evil']) for (const item of CARGO[side]) {
+  item.name = nameOf('cargo', item.id, item.name);
+  if (item.states) item.states = statesOf(item.id, item.states);
+}
 export const CARGO_STATES = ['calm', 'agitated', 'furious'];
 const find = (side, id) => CARGO[side].find(c => c.id === id);
 
