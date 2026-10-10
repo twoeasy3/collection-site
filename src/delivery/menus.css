@@ -134,12 +134,18 @@ body.ideas-tab #garageUse { display: none !important; }
   #garageUi #garageBank { font-size: 15px; }
 }
 
-/* ---- garage: the level's car rule on the side on show (render/garage.js): a banner under the bar, a badge on a car
-   that may not be driven, and the reason beside the disabled buttons ---- */
-#garageRule { flex: 1 1 100%; order: 99; box-sizing: border-box; padding: 6px 12px; border-radius: 8px; font: 700 15px/1.3 system-ui, sans-serif; color: #fff; background: rgba(60, 130, 80, .85); }
+/* ---- garage: the level's car rule on the side on show (render/garage.js): a small note under the bar, in the menu's chip
+   language (panel, 1px line, 7px radius, an accent edge), sized to its text; a badge on a car that may not be driven,
+   and the reason as a caption under the disabled buttons ---- */
+#garageRule { flex: 1 1 100%; order: 99; display: flex; justify-content: flex-start; pointer-events: none; }
 #garageRule.hidden, #garageWhy.hidden { display: none; }
-#garageRule.restricted { color: #fff; background: rgba(24, 28, 38, .94); box-shadow: inset 0 0 0 2px #ffd23f; }
-#garageUi .notallowed { color: #ff9d8f; font-weight: 700; }
-#garageWhy { flex: 1 1 100%; align-self: center; font: 700 14px/1.3 system-ui, sans-serif; color: #ffb4a8; }
+#garageRule .rulechip { display: inline-flex; align-items: center; gap: 8px; max-width: min(36rem, 100%); box-sizing: border-box; padding: 6px 12px 6px 10px;
+  border-radius: 7px; font: 700 13px/1.3 system-ui, sans-serif; letter-spacing: .03em; color: #fff; background: rgba(34, 41, 56, .92);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .11), inset 3px 0 0 #6fe08a; }
+#garageRule.restricted .rulechip { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .11), inset 3px 0 0 #ffd23f; }
+#garageRule .rulechip::before { content: ""; flex: 0 0 auto; width: 11px; height: 13px; background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 13'%3E%3Cpath d='M2.5 6V4a3 3 0 0 1 6 0v2' fill='none' stroke='%23ffd23f' stroke-width='1.6'/%3E%3Crect x='0.5' y='6' width='10' height='6.5' rx='1.5' fill='%23ffd23f'/%3E%3C/svg%3E"); }
+#garageRule:not(.restricted) .rulechip::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 11 13'%3E%3Cpath d='M1 7l3 3 6-7' fill='none' stroke='%236fe08a' stroke-width='1.8'/%3E%3C/svg%3E"); height: 11px; }
+#garageUi .notallowed { color: #ffb4a8; font-weight: 700; }
+#garageWhy { flex: 1 1 100%; font: 600 12px/1.3 system-ui, sans-serif; letter-spacing: .03em; color: #ffb4a8; }
 #garageUi .actions { flex-wrap: wrap; }
 #garageUi .actions button:disabled { opacity: .5; cursor: not-allowed; }
