@@ -140,7 +140,7 @@ Three agents at a time; the next item starts as each one finishes.
 - [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
 - Not in the queue unless the owner says: road characters P3 to P13 (the owner wanted the pursuit kept simple); anything needing a person (listening, playing by hand, a real phone)
 
-- **Asked by the owner, not on any list:** a "level tier rework / progression". Nothing about it is in the checklists, handovers, scratchpads or commit history. Waiting for the owner to say what it should be.
+- [ ] Next 0b: the level progression rework (the owner's spec is in the section "Level progression rework" at the end; nine things in it need the owner's answer before it is built)
 
 ## Not assigned
 
@@ -748,3 +748,57 @@ Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `ren
 (the phone layout), `messages.js` and `messages.json` (the times), `config.js`, `player.js` or
 `mysteries.js` (the effect's name for the status). To be checked in screenshots at 1100x650 and
 520x900, in a level with every meter showing at once.
+
+## Level progression rework (owner's spec, 10-Oct; queued, not started)
+
+### The spec, in the owner's words
+
+> Divide levels into groups of 5.
+> Each star tier gets 5 levels.
+> 1/2/3/4/5 then blue 1/blue 2/ etc
+> Each level will have a ribbon for beating it. The left half of the ribbon is Good and the Right half is evil.
+> When playing a level without that half of the ribbon earned, the player is only allowed to use cars from EXACTLY that tier. No tiers lower or higher, no tiers from another coloured stars. When beating the level on evil this way, the player can replay it in any (evil) car.
+> The progression will be as follows:
+> When a tier is unlocked, the first two levels are unlocked
+> Level 3 requires 1 ribbon (any two halves)
+> Level 4 requires 2 ribbons (any 4 halves)
+> Level 5 requires level 4 to be beaten (any half)
+> Beating Level 5 unlocks the next tier
+> For levels with no good/evil option, it awards a full ribbon
+
+### As a checklist
+
+- [ ] R1. Levels in tiers of five: gold 1, 2, 3, 4, 5, then blue 1, 2, 3, 4, 5. Ten tiers, fifty places. The menu's groups become the tiers, each headed by its stars.
+- [ ] R2. A ribbon on every level: the left half earned by beating it as Good, the right half as Evil. A level with no choice of side (the Battlefield, an "always Good" level) gives the whole ribbon at once. Shown on the level's card, and counted per tier.
+- [ ] R3. The car rule: on a level whose half-ribbon for the side being played is not yet earned, only a car of exactly that tier may be driven: same number of stars, same colour of stars. Once that half is earned, the level can be replayed on that side in any car.
+- [ ] R4. Unlocking inside a tier: levels 1 and 2 open with the tier; level 3 needs two half-ribbons in the tier; level 4 needs four; level 5 needs level 4 beaten on either side.
+- [ ] R5. Beating level 5 on either side opens the next tier (its first two levels).
+- [ ] R6. Saved progress carried over: a best time already saved on a side becomes that half of the ribbon; tiers and levels open accordingly, so nobody loses what they had.
+- [ ] R7. The menu and garage say why: a locked level says what it needs ("2 more half-ribbons in this tier"); a level that restricts the car says which tier, and the garage marks the cars that qualify.
+- [ ] R8. Checks: the unlock rules, the car rule on both sides, old saves, and that no player can be left with no way forward.
+
+### What the spec does not settle (to be answered before it is built)
+
+1. **Which level goes in which place.** The game has 31 main levels, 9 specials, 5 amphibious
+   levels and 6 races: 51 against 50 places. Do the races keep their own tab outside the tiers
+   (leaving 45 for 50 places, so five short)? Where do the specials and the amphibious levels go?
+2. **Levels that bring their own vehicle** (Asteroid Run's UFO, Oh Mine!'s jetboat, the
+   Battlefield's 8x8, the races' F1 / GT / LMP) and the **amphibious-only levels** cannot obey
+   "exactly that tier's cars". Are they outside the tiers, or exempt from the car rule?
+3. **Having a car of the tier.** The player must own one to play at all. Gold 1 has the free
+   Commuter; every other tier's cheapest car costs money (gold 2: $130, blue 1: $270, blue 5:
+   $1,200). If the tips from a tier do not cover the next tier's cheapest car, the player is stuck.
+   Is the cheapest car of a new tier lent or given, or must the tips be made to cover it?
+4. **Blue 4 looks empty.** Reading `cars.js` finds Blue Star cars at 1, 2, 3 and 5 stars and none
+   at 4 (to be confirmed by the builder). A tier with no cars cannot be played under the car rule.
+5. **Cars with no tier, or their own:** the Tank, the City Bus, the 6-star earned cars, the
+   amphibious cars (sea-green stars, 1 to 5), Super cars lent by a mystery. Assumed: none of them
+   may start an unribboned level; a mystery may still lend one mid-run.
+6. **"Beating" a level:** assumed to mean delivered on time, as "Deliver it on time to open the
+   next" means today; a late delivery earns nothing.
+7. **The Blue Star season** opens today after level 20. Under this spec it opens by beating gold
+   5's fifth level: assumed to replace the old rule.
+8. **Medals** (bronze, silver, gold by time to spare, added today) are kept beside the ribbons:
+   assumed.
+9. **The half-ribbons that count** towards levels 3 and 4: assumed to be those earned in that
+   tier only, not across the game.
