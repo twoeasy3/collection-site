@@ -38,6 +38,7 @@ try {
   Progress.data.bestTime.good['all-heck'] = other.earned.par.good;
   check(Progress.earned(other), 'a level played on one side only asks for that side');
   // (driven on an ordinary level)
+  Progress.data.bestTime.good.suburbs = 99; // (the tiers are the default: a tier level whose medal is not earned allows only its tier's cars; this one's Good medal is earned, so any car will do)
   g.select('suburbs');
   selectCar(car.id);
   g.Game.evil = false;
