@@ -1217,7 +1217,13 @@ pick ups and traffic."
           `levelText.json` did for level names and descriptions, one words file for every car's name and
           the game's other strings (cars, traffic kinds, pickups, gimmicks, obstacles, cargo), with each
           thing's own table as the fallback; then every entry in it gets a short line for its tile on the
-          road card. `messages.json` already holds the spoken lines. To confirm with the owner: one file
+          road card. **The owner's rule for all such files (said of `levelText.json`, "and so will the other
+          ones I suggested (like the vehicle one)"): the words file takes priority: where it has an entry
+          the game uses it and overrides the text in the level's or the thing's own file.** `levelText.js`
+          already does this field by field (checked in the code: `places()` asks the file first); the one
+          exception is a level handed over by the level editor (`?edited`, `standsAlone`), whose own words
+          come first, and `.descriptions-check.mjs` FAILS a level whose words differ between the two places,
+          which under "the file overrides" is stricter than the rule needs: both for the owner to say. `messages.json` already holds the spoken lines. To confirm with the owner: one file
           for everything, or one a kind.)
 - [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
   - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
