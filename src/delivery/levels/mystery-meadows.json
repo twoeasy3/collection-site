@@ -1,10 +1,5 @@
 {
   "id": "mystery-meadows",
-  "name": "Mystery Meadows",
-  "description": {
-    "good": "Nine mystery boxes between the cows and the tractors. We cannot say what is in them. Please collect responsibly, and mind the roaming junk.",
-    "evil": "Nine mystery boxes: toads, earthquakes, air strikes, who knows. Grab every one and let the meadow sort itself out."
-  },
   "theme": "farm",
   "clock": { "good": 234, "evil": 166 },
   "traffic": { "lowrider": 0.35, "darkvan": 0.25, "commuter": 0.12, "van": 0.22, "bus": 0.03, "police": 0.03 },

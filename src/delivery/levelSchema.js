@@ -119,7 +119,8 @@ const C = CONFIG;
 export const FIELDS = {
   // ---- the level ----
   id: { shape: 'text', group: 'basics', label: 'Id', required: true, help: 'Unique name: the level\'s key in saved progress. Keep it short.' },
-  name: { shape: 'text', group: 'basics', label: 'Name', required: true, help: 'The level\'s name on the menu.' },
+  name: { shape: 'text', group: 'basics', label: 'Name', required: true, help: 'The level\'s name on the menu. (A built-in level keeps its name and description in levelText.json; the editor opens it with them, and a level downloaded from here carries its own.)' },
+  // (required of a level as the editor holds it: one opened through levelText.js withWords. A built-in level's own file may leave name and description to levelText.json)
   description: { shape: 'object', group: 'basics', label: 'Description', help: 'A sentence or two about the level for the menu, one for each side (160 characters each at most). Good: a cheerful, careful courier\'s briefing. Evil: the same job, relished.',
     settings: { good: text('Good'), evil: text('Evil (left out on a level that is always Good)') } },
   clock: { shape: 'object', group: 'basics', label: 'Clock', required: true, help: 'Seconds on the clock for each side (scripts/level-clocks.mjs works them out from a clean run).',
@@ -275,8 +276,8 @@ export const FIELDS = {
   mud: { shape: 'stretch', group: 'hazards', label: 'Mud', help: 'The road gives way to mud: a car is slowed in it by how well it crosses.' },
   fog: { shape: 'stretch', group: 'hazards', label: 'Fog bank', span: 300, help: 'The fog closes right in, and the police see less.' },
   potholes: { shape: 'point', group: 'hazards', label: 'Pothole', road: 'both', help: 'A jolt, and maybe a flat tyre.', settings: { lane: lane('Lane', { required: true }), r: num('Radius (m)', { min: 0.2, max: 5, step: 0.1, default: C.site?.potholeR }) } },
-  waterMains: { shape: 'point', group: 'hazards', label: 'Burst water main', road: 'both', help: 'Now and then a geyser up out of the road; while it sprays the road round it is as slippery as ice: weaker brakes and slower lane changes on its water.',
-    settings: { lane: lane('Lane', { help: 'Left out: the centre line.' }), every: every(undefined, { default: C.waterMain?.every }), length: num('Slippery for (m)', { min: 1, max: 500, default: C.waterMain?.length }) } },
+  waterMains: { shape: 'point', group: 'hazards', label: 'Burst water main', road: 'both', help: 'A fountain out of its lane, on and off; while it sprays that stretch of the lane is as slippery as ice: weaker brakes and slower lane changes on its water.',
+    settings: { lane: lane('Lane', { required: true, init: 0 }), length: num('Slippery for (m)', { min: 1, max: 500, default: C.waterMain?.length }) } },
   landmines: { shape: 'stretch', group: 'hazards', label: 'Landmines', road: 'both', help: 'Scattered down the lanes: whatever touches one is destroyed outright.', settings: { count: count(8) } },
   rockfall: { shape: 'stretch', group: 'hazards', label: 'Rockfall', road: 'both', help: 'Rocks tumbling down onto the road from that side as the player comes near.',
     settings: { count: count(5), side: side(), out: num('Waiting (m off the edge)', { min: 0, max: 200, default: C.rockfall?.out }), height: num('Waiting (m up)', { min: 0, max: 200, default: C.rockfall?.height }) } },

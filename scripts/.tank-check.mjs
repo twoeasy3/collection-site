@@ -49,7 +49,7 @@ const begin = (level) => {
 };
 
 for (const level of g.levels.AMPHIBIOUS_LEVELS) {
-  console.log(level.id + ' (' + level.name + ')');
+  console.log(level.id + ' (' + g.levels.levelName(level) + ')');
   begin(level);
   const Track = g.track.Track, Player = g.Player;
   check(g.cars.CAR.amphibious && Player.tank === 0 && !Player.rageTank, 'starts in an amphibious car (' + g.cars.CAR.name + '), no rage');
@@ -112,7 +112,7 @@ for (const level of g.levels.AMPHIBIOUS_LEVELS) {
 
 for (const id of ['expressway', 'hong-kong']) {
   const level = g.levels.LEVELS.find(l => l.id === id);
-  console.log(level.id + ' (' + level.name + '): an ordinary level');
+  console.log(level.id + ' (' + g.levels.levelName(level) + '): an ordinary level');
   begin(level);
   const Player = g.Player;
   const hits = hitTargets(CONFIG.tankPieces);

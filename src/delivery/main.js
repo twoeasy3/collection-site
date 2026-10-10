@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
 import { LEVEL, LEVELS, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
+import { standsAlone } from './levelText.js';
 import { THEMES } from './themes.js';
 import { Progress } from './progress.js';
 import './render/demo.js'; // (?demo: before the menu)
@@ -46,7 +47,6 @@ import { UfoStrike } from './ufostrike.js';
 import { syncStorm } from './render/storm.js';
 import { syncMovers } from './render/movers.js';
 import { syncTunnel } from './render/tunnel.js';
-import { syncWaterMains } from './render/watermains.js';
 import { syncReversible } from './render/reversible.js';
 import { syncMysteries } from './render/mysteries.js';
 import './render/pursuit.js';
@@ -111,6 +111,7 @@ const editedLevel = () => {
   let level = null;
   try { level = JSON.parse(localStorage.getItem('delivery_editor_level')); } catch { /* (no level handed over) */ }
   if (level === null) return { level }; // (none handed over: the test track)
+  standsAlone(level); // (its name and description are its own, whatever its id: see levelText.js)
   const menuLevel = LEVELS.indexOf(LEVEL), road = level.segments;
   let problem = '';
   if (typeof level !== 'object' || Array.isArray(level)) problem = 'it is not a level';
@@ -298,7 +299,6 @@ const frame = (now) => {
     syncHazards(now);
     syncGambles(now, dt); // (after the car and the traffic are placed: it leans and shakes them)
     syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
-    syncWaterMains(dt);
     syncReversible();
     syncBattle(dt);
     syncZones(dt);

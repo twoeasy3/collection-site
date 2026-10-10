@@ -1,6 +1,5 @@
 {
   "id": "gimmick-road-3",
-  "name": "Gimmick Road 3",
   "clock": { "good": 480, "evil": 370 },
   "tip": 50,
   "lanes": 6,

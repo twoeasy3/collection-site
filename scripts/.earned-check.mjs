@@ -14,7 +14,12 @@ try {
   check(new Set([...CARS, ...EARNED_CARS, ...Object.values(LEVEL_CARS)].map(c => c.id)).size === CARS.length + EARNED_CARS.length + Object.keys(LEVEL_CARS).length, 'every id its own');
   for (const car of EARNED_CARS) {
     const level = LEVELS.find(l => l.id === car.earned.level), par = car.earned.par, onlyGood = level.battle || level.alwaysGood;
-    const within = car.maxSpeed <= NEXT_TIER_CAPS.maxSpeed && car.maxSpeed > 48 && car.accel <= NEXT_TIER_CAPS.accel && car.health <= NEXT_TIER_CAPS.health;
+    // (held to no cap: each drives by its own figures; a level's vehicle as on its level unless one is given)
+    const own = ['maxSpeed', 'accel', 'health'].every(k => car[k] > 0 && isFinite(car[k]));
+    // (a race car's road version is a little tamer than it is on its circuit; the others as on their levels)
+    const racer = ['gt', 'f1', 'lmp'].includes(car.base?.id);
+    const within = own && (!car.base || (racer ? car.maxSpeed < car.base.maxSpeed && car.maxSpeed > car.base.maxSpeed * 0.85 && car.accel < car.base.accel
+      : car.maxSpeed === car.base.maxSpeed && car.accel === car.base.accel));
     const fair = par.good < level.clock.good && (onlyGood ? par.evil === undefined : par.evil < level.clock.evil);
     check(within && fair && car.tier === 6 && !CARS.includes(car) && superOf(car) === null,
       `${car.name} (${car.id}): ${car.maxSpeed} / ${car.accel} / ${car.health}, par ${par.good}${par.evil === undefined ? '' : ' / ' + par.evil} of ${level.clock.good} / ${level.clock.evil}`);

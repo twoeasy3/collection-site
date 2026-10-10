@@ -10,6 +10,7 @@ import './gimmicks.css';
 import './cargo.css';
 import { CONFIG } from './config.js';
 import { LEVELS, levelLabel } from './levels.js';
+import { levelName } from './levelText.js';
 import { CARGO, CARGO_STATES, cargoFor } from './cargo.js';
 import { makeCargoModel } from './render/cargoModels.js';
 import { lit, viewRenderer, drawViews } from './render/modelviews.js';
@@ -35,7 +36,7 @@ document.getElementById('rules').innerHTML = `
   </ul>`;
 
 // the levels that carry an item, as their numbers on the menu
-const where = (side, id) => LEVELS.map((level, i) => cargoFor(level, side === 'evil')?.id === id ? `<span title="${level.name}">${levelLabel(i)}</span>` : '').filter(Boolean);
+const where = (side, id) => LEVELS.map((level, i) => cargoFor(level, side === 'evil')?.id === id ? `<span title="${levelName(level)}">${levelLabel(i)}</span>` : '').filter(Boolean);
 
 const cardBox = document.getElementById('cards');
 const views = [];

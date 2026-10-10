@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVELS, levelLabel } from '../levels.js';
+import { levelName } from '../levelText.js';
 import { CARS, LEVEL_CARS } from '../cars.js';
 import { Game } from '../game.js';
 import { levelNotes, levelPickups, mysteryPool, levelTraffic, vehicleInfo } from '../levelinfo.js';
@@ -86,7 +87,7 @@ export const showRoadCard = (box, level, close) => {
   const views = [];
   const evil = Game.evil && !level.battle && !level.alwaysGood;
   const cards = GROUPS.flatMap(g => g.cards).filter(card => card.has(level));
-  const gimmickTile = (card) => tile(views, standView(card.build(), CLOSE), card.color, card.name, card.rules[0]);
+  const gimmickTile = (card) => tile(views, standView(card.build(level), CLOSE), card.color, card.name, card.line?.(level) || card.rules[0]); // (the level: a card may show, and say, this level's own things)
 
   const gimmicks = cards.filter(card => !TRAFFIC_CARDS.has(card.name)).map(gimmickTile);
 
@@ -120,7 +121,7 @@ export const showRoadCard = (box, level, close) => {
     group('Pickups', 'powerups.html', 'All the power-ups', pickups, 'None on this level.'),
     group('Traffic', 'gimmicks.html#vehicles', 'More about vehicles', traffic, 'No traffic at all.'));
   box.replaceChildren(make('div', 'sheet-box road',
-    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', levelLabel(LEVELS.indexOf(level)) + '  ' + level.name)), closeBtn),
+    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', levelLabel(LEVELS.indexOf(level)) + '  ' + levelName(level))), closeBtn),
     make('div', 'sheet-main', body)));
 
   const renderer = sharedRenderer(); // (the menu's one; null if none can be had: the card opens all the same, its tiles' pictures empty)

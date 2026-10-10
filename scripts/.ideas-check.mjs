@@ -155,7 +155,7 @@ try {
     if (!ok) console.log('  FAIL  ' + lines[lines.length - 1]);
   }
   console.log('  ' + lines.join('; '));
-  check(driven === (quick ? EXTREMES.length : IDEA_CARS.length), driven + ' ideas driven to the end of ' + level.name + ' as a ghost, each with its own size and health, at its top speed (clock: ' + level.clock.good + ' s)');
+  check(driven === (quick ? EXTREMES.length : IDEA_CARS.length), driven + ' ideas driven to the end of ' + g.levels.levelName(level) + ' as a ghost, each with its own size and health, at its top speed (clock: ' + level.clock.good + ' s)');
   check(!g.track.Track.problems.length, 'no level problems');
   // (the slowest of them, not a ghost and with nothing done but the accelerator held: it gets there)
   const late = lines.filter(l => !l.includes(' delivered '));
@@ -165,7 +165,7 @@ try {
   const amphibious = LEVELS.find(l => l.amphibious && !l.car);
   g.select(amphibious.id);
   selectCar('monster');
-  check(!g.Game.canStart, 'an amphibious level (' + amphibious.name + ') is not started in an idea, with no amphibious car owned');
+  check(!g.Game.canStart, 'an amphibious level (' + g.levels.levelName(amphibious) + ') is not started in an idea, with no amphibious car owned');
   g.Game.start();
   check(g.Game.state !== 'playing' || cars().CAR.amphibious, '...Game.start refuses it');
   Progress.data.cars.push(amphibiousCars()[0].id);
@@ -178,7 +178,7 @@ try {
   const race = LEVELS.find(l => l.laps);
   g.select(race.id);
   g.Game.start();
-  check(!cars().CAR.idea && Object.values(LEVEL_CARS).includes(cars().CAR), 'a race (' + race.name + ') in its own car: ' + cars().CAR.name);
+  check(!cars().CAR.idea && Object.values(LEVEL_CARS).includes(cars().CAR), 'a race (' + g.levels.levelName(race) + ') in its own car: ' + cars().CAR.name);
 
   // ---- the mysteries that change the car, with an idea as the player's
   const start = (id) => { g.select('suburbs'); selectCar(id); P.testGhost = true; g.Game.start(); g.drive(1, 0); g.run(2); };
