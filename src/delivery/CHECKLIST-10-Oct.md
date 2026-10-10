@@ -1200,6 +1200,23 @@ pick ups and traffic."
           \"Switch\" and \"Use\". Switch is current behaviour, Use sets the car and goes to the menu."
     - [ ] Q37. "The stat lines still block the cars in the mobile view." (After the comparison strip of
           `9af18d1`: the garage's stats text, now three lines on a phone with Delivery and Nerve pending.)
+  - **Added later the same evening**
+    - [ ] Q38. "The UFO should have a floating animation and be off the ground".
+    - [ ] Q39. "The six-star cars with a in-game super variant should use the super variant's model." (Of the
+          nine earned cars, the ones built on a garage model: Hell Rod on the Hot Rod, Courier Special on
+          the Sleeper, Showdown Muscle on the Muscle; the other six are level vehicles: to be confirmed by
+          the builder which of them has a Super livery and kit.)
+    - [ ] Q40. "A car with no super variant should have a clamped 0% chance to get the super upgrade mystery
+          effect". (Today a tierless car that draws "souped up" gets a fallback, being made invincible:
+          that fallback goes; the effect is simply never drawn for such a car: the idea cars, the level
+          vehicles, anything `superOf` returns nothing for.)
+    - [ ] Q41. "A variant of the level file, all car names and strings should be compiled in one file. Then,
+          all of then needs a short description for the \"What's on this road\" level card". (Read as: as
+          `levelText.json` did for level names and descriptions, one words file for every car's name and
+          the game's other strings (cars, traffic kinds, pickups, gimmicks, obstacles, cargo), with each
+          thing's own table as the fallback; then every entry in it gets a short line for its tile on the
+          road card. `messages.json` already holds the spoken lines. To confirm with the owner: one file
+          for everything, or one a kind.)
 - [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
   - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
     truck gimmick for now." What it is: the car's trait `tow` (`cars.js:127-129`): driven into fallen
