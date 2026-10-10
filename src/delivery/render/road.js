@@ -2172,9 +2172,9 @@ const buildRoad = () => {
         const out = k ? -1 : 1;
         for (const side of [-1, 1]) {
           const off = (d) => centre + side * (jn.half + d); // (d m off the arm's edge)
-          for (let d = (out > 0 ? Track.hi(centre) : -Track.lo(centre)) + 34, n = 0; d < arm.length - 16; d += LOT, n++) {
+          for (let d = (out > 0 ? Track.hi(centre) : -Track.lo(centre)) + 17, n = 0; d < arm.length - 16; d += LOT, n++) {
             const lat = out * d, tall = (n + k + (side > 0 ? 1 : 0)) % 3 === 0, h = tall ? 6 : 3.4;
-            if (!standsClear(off(12.6), lat, 12, 10)) continue;
+            if (!standsClear(off(12.6), lat, 12, 10) || !free(off(12.6), lat, 9000 + Math.round(jn.s) * 4 + k * 2 + (side > 0 ? 1 : 0))) continue; // (nor where one of the road's own lots is)
             walls[(n * 3 + k + (side > 0 ? 2 : 0)) % WALLS.length].push([off(12.6), lat, h / 2, 11, h, 8]);
             roofs.push([off(12.6), lat, h + 1.1, 12.3, 2.2, 9]);
             chimneys.push([off(12.6), lat + 3, h + 1.5, 0.8, 1.9, 0.8]);
