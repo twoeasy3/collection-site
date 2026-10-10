@@ -160,3 +160,46 @@ export const THEMES = {
     target: { height: 4.2, beam: true } }, // (up over the roadside palms' feet)
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
 };
+
+// ---- the themes' own obstacles ---------------------------------------------------------------------------
+// obstacles: { crate: 'barrel', ... }: what a level's plain obstacle of a kind IS in this theme. A level goes on
+// saying 'crate' (in its "obstacles", "shoulderRows" and "drifters") and on this theme a barrel stands there: the
+// same box, the same cost, in the same place, only the thing itself belonging to where it is (see Collision's
+// loadLevel, CONFIG.obstacleKinds and render/obstacleModels.js). A kind the theme does not name is itself; so is
+// whatever a gimmick puts out (a cargo truck's load is crates and bales everywhere). A level that wants one of
+// these on another theme names it outright ("kind": "barrel"). Kept apart from the list above, one theme a line.
+// A cone is swapped only where the theme's levels do not use cones as roadworks (round a narrowing, a dug-up lane):
+// there a cone is the right thing, and stays (the suburbs, the city).
+const OBSTACLES = {
+  toyroom: { crate: 'toyBlock', cone: 'skittle', bale: 'toyDrum' },
+  seabed: { crate: 'divingHelmet' },
+  moon: { crate: 'supplyPod' },
+  backlot: { crate: 'directorChair', bale: 'cameraDolly' },
+  venice: { crate: 'mooringPosts', cone: 'cafeTable' },
+  iceroad: { crate: 'fuelDrum', cone: 'snowdrift' },
+  themepark: { crate: 'popcornCart' },
+  volcano: { rock: 'lavaRock' }, // (a grey-brown rock is lost on its black road)
+  wildwest: { crate: 'barrel' },
+  favela: { crate: 'chairStack' },
+  rice: { crate: 'riceBasket' },
+  christmas: { bale: 'present' },
+  snow: { cone: 'snowdrift' },
+  hood: { cone: 'wheelieBin' },
+  mumbai: { bale: 'sackStack' },
+  beach: { bale: 'beachBall' },
+  hell: { cone: 'brimstone' },
+  // (the port keeps its crates, the farm and the Wild West their bales: there they belong)
+};
+// drifting: the same, for the things of a level's "drifters" alone, where what moves about the road wants to be
+// another thing than what stands on it (a theme's `obstacles` otherwise)
+const DRIFTING = {
+  wildwest: { bale: 'tumbleweed' },
+  moon: { cone: 'flagStand' },
+};
+for (const [name, map] of Object.entries(OBSTACLES)) THEMES[name].obstacles = map;
+for (const [name, map] of Object.entries(DRIFTING)) THEMES[name].drifting = map;
+// the kind a level's obstacle of `kind` is on a level of that theme (a level's "theme"); drifting: one of its drifters
+export const themedKind = (theme, kind, drifting = false) => {
+  const T = THEMES[theme || 'city'];
+  return (drifting && T?.drifting?.[kind]) || T?.obstacles?.[kind] || kind;
+};

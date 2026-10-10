@@ -149,6 +149,17 @@
 //                                  'sewage', 'pile' and 'beam', or the beach's 'umbrella',
 //                                  'surfboard', 'cooler' and 'chair' (a lifeguard chair), or 'mine' (a sea mine, afloat).
 //                                  With drift: 'dart', it darts about its spot at random (see CONFIG.drifters)
+//                                  A theme can have obstacles of its own (themes.js, its `obstacles`): there a
+//                                  level's 'crate' is a barrel (the Wild West), a diving helmet (the sea bed), a
+//                                  supply pod (the Moon)...: the same box and the same cost, only the thing itself
+//                                  differing; so a level names the plain kind and its theme does the rest (in its
+//                                  shoulderRows and drifters too). Those kinds can be named outright as well:
+//                                  'toyBlock', 'skittle', 'divingHelmet', 'supplyPod', 'directorChair',
+//                                  'cameraDolly', 'mooringPosts', 'fuelDrum', 'popcornCart', 'barrel',
+//                                  'chairStack', 'riceBasket', 'present', 'toyDrum', 'sackStack', 'beachBall',
+//                                  'tumbleweed', 'cafeTable', 'wheelieBin', 'snowdrift', 'brimstone', 'flagStand',
+//                                  'lavaRock' (the volcano's rock). All of them are on the Gimmicks page, last,
+//                                  under Road dressing (gimmicks.html?group=road-dressing)
 //   dropBears  { from, to, count } drop bears up in the trees over that stretch, dropping onto the
 //              road as the player comes near (see CONFIG.dropBear)
 //   herds      { from, to, count, kind } animals wandering back and forth across that stretch: cows,

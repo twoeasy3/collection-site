@@ -600,6 +600,34 @@ export const CONFIG = {
     marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
     // falling cargo (a shedding truck's load: see CONFIG.cargo): bales and crates
     crate: { damage: 18, speedKept: 0.75 },
+    // the themes' own (a theme's `obstacles` in themes.js): each a plain kind in another shape, so each costs
+    // exactly what the kind it stands in for costs (scripts/.obstacles-check.mjs holds them to it). For a crate:
+    toyBlock: { damage: 18, speedKept: 0.75 },      // the toy room's: alphabet blocks
+    divingHelmet: { damage: 18, speedKept: 0.75 },  // the sea bed's: a brass diving helmet
+    supplyPod: { damage: 18, speedKept: 0.75 },     // the Moon's: a supply pod on its legs
+    directorChair: { damage: 18, speedKept: 0.75 }, // the film studio's
+    mooringPosts: { damage: 18, speedKept: 0.75 },  // Venice's: three striped mooring posts
+    fuelDrum: { damage: 18, speedKept: 0.75 },      // the ice road's: a red drum under a cap of snow
+    popcornCart: { damage: 18, speedKept: 0.75 },   // the theme park's
+    barrel: { damage: 18, speedKept: 0.75 },        // the Wild West's
+    chairStack: { damage: 18, speedKept: 0.75 },    // the favela's: a stack of plastic chairs
+    riceBasket: { damage: 18, speedKept: 0.75 },    // the rice terraces': a basket heaped with rice
+    // ...for a bale:
+    cameraDolly: { damage: 20, speedKept: 0.75 },   // the film studio's: a camera on its dolly
+    present: { damage: 20, speedKept: 0.75 },       // Christmas Eve's: a wrapped present
+    toyDrum: { damage: 20, speedKept: 0.75 },       // the toy room's: a toy drum
+    sackStack: { damage: 20, speedKept: 0.75 },     // Mumbai's: a stack of jute sacks
+    beachBall: { damage: 20, speedKept: 0.75 },     // the beach's: a great beach ball (it rolls, as a bale does)
+    tumbleweed: { damage: 20, speedKept: 0.75 },    // the Wild West's, for a bale that drifts (it rolls too)
+    // ...for a cone:
+    skittle: { damage: 3, speedKept: 0.94, light: true }, // the toy room's (an orange cone is lost on its orange track)
+    cafeTable: { damage: 3, speedKept: 0.94, light: true },  // Venice's: a cafe table under its shut parasol
+    wheelieBin: { damage: 3, speedKept: 0.94, light: true }, // the hood's
+    snowdrift: { damage: 3, speedKept: 0.94, light: true },  // the snow's and the ice road's: a heap of snow with a stake in it
+    brimstone: { damage: 3, speedKept: 0.94, light: true },  // hell's: a glowing spike
+    flagStand: { damage: 3, speedKept: 0.94, light: true },  // the Moon's, for a cone that drifts: a flag on a stand
+    // ...for a rock (sized by its radius, as a rock is):
+    lavaRock: { damage: 25, speedKept: 0.6 },       // the volcano's: cooled lava, glowing in its cracks
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
