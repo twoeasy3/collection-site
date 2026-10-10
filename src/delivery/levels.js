@@ -250,9 +250,11 @@
 //   speedLimit km/h: the limit at the level's speed cameras, where a camera doesn't say
 //   processions  { every: { min, max } }: now and then a funeral procession, a hearse and its cars,
 //              slow, nose to tail (see CONFIG.procession)
-//   crossings  { s, trigger, every }: a level crossing: lights, booms, and a short fast train across
+//   crossings  { s, trigger, every, train }: a level crossing: lights, booms, and a short fast train across
 //              the road, set off so the train gets there about as the player would (see CONFIG.crossing),
-//              or with a trigger, as the player comes within that many m. On straight road
+//              or with a trigger, as the player comes within that many m. On straight road. `train`:
+//              which train ('bullet' | 'steam'); left out, the theme's "train" (themes.js), else the bullet
+//              train's carriages
 //   stopGo     { from, to, go?, clear? }: stop / go roadworks on a two-way road: the oncoming side dug up
 //              over that stretch (as long as it likes), both ways taking turns through the lane left. go: s
 //              each way gets the GO; clear: s between, for the last through to clear (a long works wants

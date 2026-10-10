@@ -7,11 +7,14 @@
 // shoots across the road. Traffic waits at the booms (one too close to stop carries on over);
 // whatever is on the line as the train goes by is wrecked, the player's car included (but for a
 // ghost). The player can't stop, so it is a matter of easing off to arrive after the train, or
-// getting over first; a boom down is no barrier to that, only a knock (and it breaks).
-// This is what they do; render/crossing.js draws them.
+// getting over first; a boom down is no barrier to that, only a knock, no slowing (and it breaks).
+// The train is the bullet train's carriages cut down, or the Wild West's steam train (a crossing's
+// "train", or its theme's: see CONFIG.crossing.trains), the same length and hit boxes either way.
+// This is what they do; render/roadside.js draws them.
 // ============================================================================
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
+import { THEMES } from './themes.js';
 import { Track } from './track.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
@@ -26,12 +29,19 @@ const clamp01 = (u) => Math.max(0, Math.min(1, u));
 
 export const Crossings = {
   // { s, trigger, every, state: 'idle' | 'warn' | 'train' | 'raise', t, triggered, next, dir (the way
-  //   the train goes across: 1 = towards +lat), train (lat of its nose), broken: [ours, theirs], bell }
+  //   the train goes across: 1 = towards +lat), train (lat of its nose), model ('bullet' | 'steam': the train
+  //   drawn), broken: [ours, theirs], bell }
   list: [],
 
+  // the train a crossing has: its own, else its theme's (a variant: the theme whose scenery it draws), else the usual
+  model(c) {
+    const C = CONFIG.crossing, theme = THEMES[LEVEL.theme];
+    const want = c.train || theme?.train || THEMES[theme?.scenery]?.train || C.usual;
+    return C.trains.includes(want) ? want : C.usual;
+  },
   reset() {
     const C = CONFIG.crossing;
-    this.list = (LEVEL.crossings || []).map(c => ({ s: Track.place(c), trigger: c.trigger ?? null, every: c.every || C.every,
+    this.list = (LEVEL.crossings || []).map(c => ({ s: Track.place(c), trigger: c.trigger ?? null, every: c.every || C.every, model: this.model(c),
       offset: between(C.timing), state: 'idle', t: 0, triggered: false, next: 0, dir: 1, train: 0, broken: [false, false], bell: 0 }));
   },
   // how far down its booms are, 0 (up) .. 1 (down across the road)
@@ -120,10 +130,7 @@ export const Crossings = {
           const b = this.boom(c, dir);
           if (Math.abs(Player.s - b.s) > Player.hl + 0.15 || Player.lat + Player.hw < b.lo || Player.lat - Player.hw > b.hi) return;
           c.broken[k] = true;
-          if (Player.tank <= 0) {
-            hurt(Player, C.boomDamage);
-            Player.speed *= C.boomKept;
-          }
+          if (Player.tank <= 0) hurt(Player, C.boomDamage); // (no slowing: slowed, the car could hardly be caught by the train)
           Game.shake = Math.max(Game.shake, 0.4);
           sfx('crash', 0.7);
         });
