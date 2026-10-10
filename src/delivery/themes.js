@@ -105,5 +105,8 @@ export const THEMES = {
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // themepark: the road through a theme park (render/themes/themepark.js): a promenade behind candy-striped kerbs, bunting and rainbow arches over the road, striped tents and stalls, carousels and Ferris wheels turning, a rollercoaster over the road and beside it, a castle on the skyline; a tunnel is the ghost train's
   themepark: { sky: 0x6ec3f5, ground: 0x7fc66b, road: 0x4b4a55, scenery: 'themepark', tunnel: { wall: 0x5a2d82, tiles: 0xffd21f, roof: 0x24143a, face: 0xe23b3b, lamp: 0xff9ff0 } },
+  // volcano: a volcano island (render/themes/volcano.js): a black road over black sand under an ashen sky, rivers of lava glowing beside it and across under every bridge, basalt, palms, steam vents, torches, the sea beyond the surf, ash coming down, and the volcano smoking on the skyline; a tunnel is a lava tube
+  volcano: { sky: 0xa89aa0, ground: 0x29272b, road: 0x161518, scenery: 'volcano', line: 0xe8e2d4, centre: 0xffa51e, tunnel: { wall: 0x2a2224, tiles: 0xff6a1e, roof: 0x151113, face: 0x3a3032, lamp: 0xffb060 },
+    light: { sky: 0xffe6cf, ground: 0x6a3a26, ambient: 1.35, sun: 0xffd2a8, sunlight: 1.15 } },
   // (batch C: theme park, volcano island, container port: new themes go above this line)
 };
