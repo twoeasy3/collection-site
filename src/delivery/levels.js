@@ -330,6 +330,9 @@
 //              beside it) is new tar, coned off: traffic keeps out of it and crawls past in the other lanes. A car
 //              on it picks tar up on its tyres, which slows it more the longer it stays (in the end to less than
 //              the queue's pace) and for a few seconds after it is off (see CONFIG.tarmac)
+//   spray      { from, to }: truck spray: over the stretch the expressway is wet, and every tall vehicle moving on it
+//              (a van, a bus, a lorry) drags a cloud of spray behind it, as wide as its lane and the next each
+//              side: in the cloud the player sees next to nothing. Nothing is done to the car (see CONFIG.spray)
 //   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
 //              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
 //              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a

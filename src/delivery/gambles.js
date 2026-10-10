@@ -18,6 +18,7 @@
 //                jolt, and between the ruts it is slow going
 //   tarmac       a coned-off lane of fresh tar beside a roadworks queue: empty, and sticky: the longer on it the
 //                slower the car, and for a while after
+//   spray        a wet stretch where every tall vehicle drags a cloud of spray: in it the player sees next to nothing
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -66,6 +67,9 @@ export const Gambles = {
   rutJolts: 0,    // how many times it has climbed out of one this run (for a check)
   tars: [],       // fresh tarmac: { from, to, lane, lo, hi (lat: the lane) }
   tar: 0,         // how much of it is on the player's tyres (0 clean .. 1 as much as they hold)
+  wets: [],       // truck spray: { from, to }
+  veil: 0,        // how much of the view is gone just now (0 clear .. 1), eased; and what took it: 'spray' | null
+  veilOf: null,
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
@@ -89,6 +93,7 @@ export const Gambles = {
     });
     this.ruts = (LEVEL.ruts || []).map(r => ({ from: r.from, to: r.to }));
     this.tars = (LEVEL.tarmac || []).map((z) => { const c = Track.laneOffset(z.lane, (z.from + z.to) / 2); return { from: z.from, to: z.to, lane: z.lane, lo: c - CONFIG.laneWidth / 2, hi: c + CONFIG.laneWidth / 2 }; });
+    this.wets = (LEVEL.spray || []).map(z => ({ from: z.from, to: z.to }));
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -131,6 +136,8 @@ export const Gambles = {
     this.rut = null;
     this.rutJolts = 0;
     this.tar = 0;
+    this.veil = 0;
+    this.veilOf = null;
     this.cushionHits = 0;
     this.inFord = null;
     this.up = 0;
@@ -569,6 +576,41 @@ export const Gambles = {
     if (P.speed > pace) P.speed = Math.max(pace, P.speed - T.bite * dt);
   },
 
+  // ---- what cannot be seen through: truck spray -------------------------------------------------------------
+  // Nothing here touches the car: only what the player can see of the road (render/gambles.js lays a veil over
+  // the picture, all but the car and the few metres before it, by Gambles.veil).
+  // how deep the point (s, lat) is in the cloud a vehicle drags behind it: 0 (out of it) .. 1 (at its tail).
+  // The cloud is `length` m long and `half` m either side of the vehicle's line, a little wider further back
+  // (`drift`: m it is carried sideways by its far end)
+  cloud(car, s, lat, length, half, drift = 0) {
+    const d = car.dir > 0 ? car.s - car.hl - s : s - car.s - car.hl; // (m behind its tail)
+    if (d < 0 || d > length) return 0;
+    const u = d / length;
+    return Math.abs(lat - car.lat - drift * u) <= half + u ? 1 - u : 0;
+  },
+  wet(s) { return Track.isMain(s) ? this.wets.find(z => s >= z.from && s <= z.to) || null : null; },
+  // a wet stretch: every vehicle CONFIG.spray.height m tall or more that is moving drags a cloud of spray, as
+  // long as CONFIG.spray.length m at speed. In it the view is gone, the nearer its tail the more
+  sprays(car) { return car.active && !car.junction && car.height >= CONFIG.spray.height && Math.abs(car.vs) > CONFIG.spray.slowest && !!this.wet(car.s); },
+  sprayLength(car) { return CONFIG.spray.length * Math.min(1, Math.abs(car.vs) / CONFIG.spray.fullAt); },
+  updateVeil(dt) {
+    const V = CONFIG.veil, S = CONFIG.spray, P = Player;
+    let want = 0, of = null;
+    if (P.active && Track.isMain(P.s)) {
+      if (this.wets.some(z => P.s > z.from - S.sign && P.s < z.to)) this.once('spray');
+      if (this.wets.length && this.wet(P.s)) {
+        for (const car of Traffic.cars) {
+          if (!this.sprays(car)) continue;
+          const deep = this.cloud(car, P.s, P.lat, this.sprayLength(car), car.hw + S.spread) * S.most;
+          if (deep > want) { want = deep; of = 'spray'; }
+        }
+      }
+    }
+    if (want > 0) this.veilOf = of;
+    this.veil += (want - this.veil) * Math.min(1, dt * (want > this.veil ? V.close : V.clear));
+    if (this.veil < 0.004 && !want) { this.veil = 0; this.veilOf = null; }
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
@@ -579,6 +621,7 @@ export const Gambles = {
     this.updateShade(); // (after the washboard's: both have a say in Player.shaken)
     this.updateRuts(dt);
     this.updateTar(dt);
+    this.updateVeil(dt);
     this.updateWinds(dt);
   },
 };

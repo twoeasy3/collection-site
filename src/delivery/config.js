@@ -1451,6 +1451,15 @@ export const CONFIG = {
   tarmac: { fill: 4, clean: 3, slow: 0.9, bite: 45, queue: 8, keepClear: 160, sign: 120, cone: 14 },
   // (traffic that one of these slows comes down to its pace over the `reach` m before: perMetre m/s more for each m short of it)
   gambleApproach: { reach: 60, perMetre: 0.25 },
+  // the veil over the picture when something takes the view (spray, the sun, dust: see Gambles.veil): it closes
+  // at `close` a second and clears at `clear`; the car and what is within `hole` of the picture's height round
+  // it are always seen, the veil full from `full` of it out
+  veil: { close: 6, clear: 2.5, hole: 0.13, full: 0.42 },
+  // truck spray ("spray": { from, to }): a wet stretch. Every moving vehicle `height` m tall or more (faster than
+  // `slowest` m/s) drags a cloud `length` m long at fullAt m/s or more (shorter in proportion slower), its own
+  // width and `spread` m more either side, widening by a metre to its far end. In it `most` of the view is gone
+  // at its tail, less in proportion further back. A board `sign` m before
+  spray: { height: 2.2, slowest: 4, length: 45, fullAt: 18, spread: 3.6, most: 0.92, sign: 120 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

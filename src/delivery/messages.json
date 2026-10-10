@@ -75,6 +75,7 @@
     "rutOut": ["Out of the rut! Slow going in the mud between."],
     "tarAhead": ["Roadworks! The coned-off lane is fresh tar: empty, and sticky."],
     "tarOn": ["On the fresh tar! It's building up on the tyres: don't stay long."],
+    "spray": ["Wet road: every lorry is dragging a cloud of spray. Hang back and see, or go through blind."],
     "washboard": ["Washboard dirt! Fast and it skims smooth, or crawl. Not in between."],
     "jamRamp": ["Up the transporter! Hope that was fast enough."],
     "jamAhead": ["Traffic jam ahead! The transporter's ramps are down..."],

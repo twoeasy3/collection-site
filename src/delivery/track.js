@@ -1068,6 +1068,7 @@ const createTrack = () => {
       if (!(Number.isInteger(z.lane) && z.lane >= first && z.lane <= last)) problems.push(name + ': lane is one on the player\'s side (' + first + ' to ' + last + ')');
       else if (last === first) problems.push(name + ': the player\'s side needs a second lane there, for the queue');
     }
+    for (const z of LEVEL.spray || []) if (!mainStretch(z)) problems.push('spray at ' + z.from + ': from before to, on the expressway');
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
       else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');

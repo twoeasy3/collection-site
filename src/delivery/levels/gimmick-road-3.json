@@ -49,6 +49,8 @@
     { "type": "cash10", "s": 2480, "lane": 3 },
     { "type": "cash10", "s": 2480, "lane": 5 },
     { "type": "wrench", "s": 2700, "lane": 3 },
+    { "type": "cash10", "s": 2760, "lane": 4 },
+    { "type": "cash10", "s": 2760, "lane": 5 },
     { "type": "cash10", "s": 3160, "lane": 3 },
     { "type": "cash10", "s": 3160, "lane": 5 },
     { "type": "cash20", "s": 3240, "lane": 4 },
@@ -108,6 +110,12 @@
   ],
   "tarmac": [
     { "from": 1750, "to": 2050, "lane": 5 }
+  ],
+  "spray": [
+    { "from": 2520, "to": 2880 }
+  ],
+  "tractors": [
+    { "s": 2640, "lane": 4 }
   ],
   "washboards": [
     { "from": 2950, "to": 3450 }
