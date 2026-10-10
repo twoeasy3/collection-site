@@ -70,8 +70,7 @@ import { CAR, lendCar, superOf, ownedAmphibious } from './cars.js';
 const params = new URLSearchParams(location.search);
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
-  Garage.evil = params.get('garage') === 'evil';
-  Garage.open();
+  Garage.open(params.get('garage') === 'evil');
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
 }
