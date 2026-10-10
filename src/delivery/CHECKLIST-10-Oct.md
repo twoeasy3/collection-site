@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: after `70ef5dc` (main). All seven agents are finished and everything is on `main`; no agent is running and the queue is empty.
+Last updated: round 2 started from `2e0a296` (main). Agents 1 to 7 are finished and merged; agents 8, 9 and 10 are running.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -105,6 +105,17 @@ $1. Largest step between neighbouring widths: Monza 47.5 m to 0, Spa 27.5 m to 0
    - [ ] For the owner to overrule: a late delivery also gets the ending; the thresholds; the length; the HUD behind the results reads "GHOST"
    - [ ] `.replay-check` fails on Expressway (runs part at 7 s); the agent says it fails the same without its work
    - [ ] `.hazards-check` sometimes throws when run straight after other checks, and passes by itself
+
+## Round 2: running and queued (three at a time)
+
+The owner's standing instruction (10-Oct): assign the unassigned lists, and give any new task to
+whichever agent is free, without asking first.
+
+5. Level editor, full control: **started**, agent 8, branch `delivery-editor` (in the city-levels worktree). Items E1 to E7 below, in the order given at the end of that section
+6. Police pursuit and the other road characters: **started**, agent 9, branch `delivery-pursuit` (in the circuits worktree). P1 then P2, then P9, P7, P8, P6, P5, P3, P4, P10, P11, P12, P13
+7. Road gimmicks: **started**, agent 10, on `main`. A hidden Gimmick Road 3, then G16 crosswind, H1 crest jumps, H2 ramp over the jam, H8 washboard, H4 low bridge, H5 ford, then the rest of the kept G and H lists; each also put on two or three real levels
+8. New themes: **queued**, next free slot. In the owner's order (most unlike the game first): T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio backlot, T1 Venice, T4 ice road, then on down the ranking; a level for each
+9. Queued after that, as slots free: menu pictures and clocks (the three circuits, the five themed levels, Super and 6-star cars); 28 liveries; 31 endless mode; the replay system's next step (`REPLAY-NOTES.md`); 51 performance on phones; 49 and 50 (test speed, lint and CI)
 
 ## Not assigned
 
