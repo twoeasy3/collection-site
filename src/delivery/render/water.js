@@ -179,12 +179,16 @@ export const syncWater = (now, dt) => {
   // the player's car afloat: down into the water by its draft, bobbing, its bow up a little at speed
   const depth = Game.screensaver ? 0 : Track.water(Player.s);
   if (depth > 0) {
-    const r = riding(Player.s, Player.tank > 0 || CAR.noWheels ? C.boatDraft : CAR.draft ?? C.draft, 0, now);
+    const r = riding(Player.s, Player.rageTank ? Player.rageTank.draft : Player.tank > 0 || CAR.noWheels ? C.boatDraft : CAR.draft ?? C.draft, 0, now);
     carMesh.position.y += r.y;
     carMesh.rotation.z = r.roll;
     carMesh.rotation.x += r.pitch - depth * 0.05 * Math.min(1, Player.speed / 30);
     rolled = true;
-    if (Player.active && Player.speed > C.wakeFrom && depth > 0.2) spray(Player.s, Player.lat, Player.hw, Player.hl, Player.speed, 1);
+    if (Player.active && Player.speed > C.wakeFrom && depth > 0.2) {
+      spray(Player.s, Player.lat, Player.hw, Player.hl, Player.speed, 1);
+      // (the Amphibious Tank shoulders a big bow wave ahead of it: as much white water again, thrown wider)
+      for (let n = 1; n < (Player.rageTank?.bowWave || 1); n++) spray(Player.s + 0.6 * n, Player.lat, Player.hw + 0.5 * n, Player.hl + 0.4, Player.speed * (1 + 0.25 * n), 1);
+    }
   } else if (rolled) { carMesh.rotation.z = 0; rolled = false; }
   // (a splash as it floats off the slipway)
   if (Player.afloat && !wasAfloat && Player.active) {

@@ -1,6 +1,10 @@
 {
   "id": "speed-trap-alley",
   "name": "Speed Trap Alley",
+  "description": {
+    "good": "The limit is 100 and eight cameras are counting. Ease off for each one, mind the fog bank, and let the radar detector earn its keep.",
+    "evil": "Eight speed cameras, a patrol car or two and a getaway driver showing how it is done. Take the radar detector and smile for the photo."
+  },
   "theme": "suburb",
   "clock": { "good": 245, "evil": 185 },
   "tip": 150,

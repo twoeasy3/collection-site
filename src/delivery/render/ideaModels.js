@@ -179,7 +179,8 @@ export const IDEA_MODELS = {
     };
     const body = egg(paint, w / 2, 0.46, L * 1.203, 0.6, L * 0.203, 0.4);               // the shell
     egg(glass, w * 0.45, 0.44, L, 0.88, L * 0.2, 0.3);                                  // the bubble of glass in it
-    egg(paint, w * 0.4, 0.47, L * 0.82, 0.88, L * 0.12, 0.3);                           // its roof, showing through the top
+    egg(paint, w * 0.34, 0.5, L * 0.74, 0.86, L * 0.1, 0.3);                            // its roof, showing through the top
+    blob(group, paint, w * 0.462, 0.452, 0.05, 0, 0.88, -L * 0.02);                     // and a hoop of a pillar round the glass
     // the front door: a panel across the whole nose, a dark gap round it, the windscreen in the bubble above it
     box(group, trim, w * 0.66, 0.5, 0.05, 0, 0.6, L - 0.035);
     box(group, paint, w * 0.6, 0.44, 0.06, 0, 0.6, L - 0.02);
@@ -193,7 +194,7 @@ export const IDEA_MODELS = {
       fender(group, paint, R + 0.07, 0.17, side * (w / 2 - 0.1), R, L * 0.42);          // the front wheels' arches
       wheel(group, R, 0.13, side * (w / 2 - 0.1), R, L * 0.42);
       wheel(group, R, 0.13, side * 0.26, R, -L * 0.62);                                 // the back pair, close together
-      disc(group, TAIL, 0.05, 0.04, side * w * 0.2, 0.66, -L * 0.9);
+      disc(group, TAIL, 0.045, 0.06, side * 0.1, 0.62, -L * 0.93);
     }
     tube(group, trim, 0.05, 0.4, 0, R, -L * 0.62, 'x');                                 // their short axle
     group.userData = { body, animate: () => {} };
@@ -607,8 +608,8 @@ export const IDEA_MODELS = {
     const w = car.hw * 2, L = car.hl, R = 0.33;
     const paint = lambert(car.color), glass = lambert(GLASS), chrome = lambert(CHROME), trim = lambert(TRIM);
     const body = curved(group, paint, w, rounded([[-L * 0.76, 0.34], [L * 0.74, 0.34], [L * 0.74, 0.78], [L * 0.1, 0.8], [-L * 0.76, 0.8]], 0.03), 0.04);
-    taper(group, paint, [L * 0.72, w, 0.3, 0.82], [L, w * 0.5, 0.47, 0.57]);              // the pointed nose,
-    taper(group, paint, [-L * 0.74, w, 0.3, 0.84], [-L, w * 0.56, 0.46, 0.66]);           // and the pointed tail
+    taper(group, paint, [L * 0.66, w, 0.3, 0.82], [L, w * 0.8, 0.5, 0.56]);               // the nose, drawn out to a blade,
+    taper(group, paint, [-L * 0.74, w, 0.3, 0.84], [-L, w * 0.74, 0.5, 0.62]);            // and the tail to another
     box(group, paint, 0.07, 0.04, L * 0.66, 0, 0.855, L * 0.42);                          // the crease down the bonnet,
     for (const side of [-1, 1]) box(group, trim, 0.2, 0.02, 0.22, side * 0.24, 0.85, L * 0.44); // and its two vents
     prism(group, glass, w * 0.74, [[L * 0.12, 0.84], [-L * 0.08, 1.2], [-L * 0.3, 1.22], [-L * 0.34, 0.84]]); // the side glass
@@ -620,25 +621,25 @@ export const IDEA_MODELS = {
     // the lamps: a pod each side of the nose, which goes down flush and comes up again
     const pods = [-1, 1].map((side) => {
       const pod = new THREE.Group();
-      pod.position.set(side * w * 0.25, 0.7, L * 0.84);
+      pod.position.set(side * w * 0.27, 0.7, L * 0.83);
       group.add(pod);
       box(pod, paint, 0.3, 0.12, 0.2, 0, 0, 0);
       for (const x of [-0.07, 0.07]) disc(pod, LAMP, 0.045, 0.03, x, 0, 0.1);
       return pod;
     });
     for (const side of [-1, 1]) {
-      for (const z of [0.54, -0.54]) fender(group, paint, 0.62, 0.3, side * (w / 2 - 0.15), R, L * z); // a peak over each wheel
+      for (const z of [0.5, -0.54]) fender(group, paint, 0.58, 0.3, side * (w / 2 - 0.15), R, L * z); // a peak over each wheel
       tube(group, chrome, 0.05, L * 0.8, side * (w / 2 + 0.03), 0.3, -L * 0.02, 'z');     // side pipes
-      for (const x of [0.14, 0.33]) disc(group, TAIL, 0.06, 0.05, side * x, 0.57, -L - 0.01); // four round tail lamps
-      box(group, chrome, w * 0.22, 0.04, 0.05, side * w * 0.17, 0.5, L - 0.03).rotation.y = -side * 0.5; // the bumper's blades
-      wheel(group, R, 0.24, side * (w / 2 - 0.05), R, L * 0.54, lambert(CHROME));
+      for (const x of [0.2, 0.42]) disc(group, TAIL, 0.055, 0.05, side * x, 0.57, -L - 0.01); // four round tail lamps
+      box(group, chrome, w * 0.3, 0.04, 0.05, side * w * 0.22, 0.47, L + 0.0);            // the bumper's blades
+      wheel(group, R, 0.24, side * (w / 2 - 0.05), R, L * 0.5, lambert(CHROME));
       wheel(group, R, 0.24, side * (w / 2 - 0.05), R, -L * 0.54, lambert(CHROME));
     }
     group.userData = {
       body,
       animate: (t) => { // (up for most of the time; down and back every ten seconds or so)
         const up = Math.max(0, Math.min(1, Math.sin(t * 0.6) * 4 + 3));
-        for (const pod of pods) pod.position.y = 0.6 + up * 0.11;
+        for (const pod of pods) pod.position.y = 0.58 + up * 0.11;
       },
     };
     group.userData.animate(0);

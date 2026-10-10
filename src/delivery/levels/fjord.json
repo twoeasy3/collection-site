@@ -1,6 +1,10 @@
 {
   "id": "fjord",
   "name": "Fjord Crossing",
+  "description": {
+    "good": "Across the fjord and back among the ferries, then ice, rockfall and a tunnel on the far shore. Cold water, warm heart, dry parcel.",
+    "evil": "A ferry to cut up, ice to slide on, rocks coming down and fog to do it all in. Nobody will see a thing."
+  },
   "theme": "snow",
   "amphibious": true,
   "clock": { "good": 210, "evil": 160 },

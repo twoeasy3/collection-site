@@ -1215,6 +1215,10 @@ const createTrack = () => {
         problems.push(name + ': beyond the road');
       } else if (onBridge(s)) {
         problems.push(name + ': inside a bridge\'s structure');
+      } else if (tunnel(s) > 0) {
+        problems.push(name + ': in a tunnel');
+      } else if (isMain(s) && junctions.some(j => s > j.s - 12 && s < j.end + 12)) {
+        problems.push(name + ': at a junction');
       }
     }
     for (const text of problems) console.warn('Level "' + LEVEL.name + '": ' + text);

@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
+import { THEMES } from './themes.js';
 import { Track } from './track.js';
 import { Player } from './player.js';
 import { sfx } from './physics.js';
@@ -59,10 +60,21 @@ export const Targets = (() => {
   const load = () => {
     items.length = 0;
     for (const t of LEVEL.targets || []) {
-      const s = Track.place(t);
-      const lat = t.side === 'left' ? Track.lo(s) - CONFIG.targetOffset : Track.hi(s) + CONFIG.targetOffset;
-      items.push({ s, lat, vs: 0, latVel: 0, height: 2, used: false });
+      const s = Track.place(t), side = t.side === 'left' ? -1 : 1, look = standing(t);
+      const lat = side < 0 ? Track.lo(s) - look.offset : Track.hi(s) + look.offset;
+      // (height: what a package is thrown at, a little under the ring's middle, as it was; look: how it is drawn)
+      items.push({ s, lat, side, vs: 0, latVel: 0, height: look.height - 0.7, look, used: false });
     }
+  };
+  // how a target stands: the usual (CONFIG.target), as the level's theme has it (its "target"), as the target
+  // itself has it ({ offset, height, style, base, arm, beam }). One close enough to the pavement to be driven
+  // through is carried up over the tallest car
+  const standing = (t) => {
+    const T = CONFIG.target, theme = (THEMES[LEVEL.theme] || THEMES.city).target || {}, look = { offset: CONFIG.targetOffset };
+    for (const key of ['offset', 'height', 'style', 'base', 'arm', 'beam']) look[key] = t[key] ?? theme[key] ?? T[key] ?? look[key];
+    if (!T.styles.includes(look.style)) look.style = T.style;
+    if (look.offset < T.clear) look.height = Math.max(look.height, T.headroom);
+    return look;
   };
   const reset = () => { for (const t of items) t.used = false; };
   return { items, load, reset };

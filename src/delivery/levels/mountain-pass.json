@@ -1,6 +1,10 @@
 {
   "id": "mountain-pass",
   "name": "Mountain Pass",
+  "description": {
+    "good": "Over the pass in winter: ice, rocks coming down, fog near the top and roadworks on a stop / go light. Wait for the green.",
+    "evil": "Ice, falling rocks and a queue at the roadworks light. Green is a suggestion. So is the edge of the mountain."
+  },
   "theme": "snow",
   "clock": { "good": 205, "evil": 160 },
   "tip": 160,
