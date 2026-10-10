@@ -127,6 +127,15 @@ Game.onLoad.push(() => {
     const lat = (s) => Track.laneOffset(m.lane, s);
     // (the wet lane: a run of pools down it, each its own shape, overlapping, the ones further from the main
     // filling later and drying sooner. The pictures fade out well inside their edges, so they are cut wide)
+    // (and under them the whole wet length, marked from end to end: the lane filled with a thin sheet of water and a
+    // bright line of foam down each edge of it, so that on a dark road as on a pale one it is plain how far the
+    // slippery stretch goes. They come up at once as the main begins to spray, and go as its pools shrink away)
+    const sheet = flat(0x3f93c9, -3, { transparent: true, opacity: 0, depthWrite: false }), foam = flat(0xe6f8ff, -3, { transparent: true, opacity: 0, depthWrite: false });
+    const wet = new THREE.Group();
+    wet.add(new THREE.Mesh(buildStrip(from, to, (s) => lat(s) - LW / 2 + 0.1, (s) => lat(s) + LW / 2 - 0.1, 0.022, 2), sheet));
+    for (const e of [-1, 1]) wet.add(new THREE.Mesh(buildStrip(from, to, (s) => lat(s) + e * (LW / 2 - 0.1) - 0.09, (s) => lat(s) + e * (LW / 2 - 0.1) + 0.09, 0.026, 2), foam));
+    wet.add(new THREE.Mesh(buildStrip(to - 0.18, to, (s) => lat(s) - LW / 2 + 0.1, (s) => lat(s) + LW / 2 - 0.1, 0.026, 1), foam)); // (and across its far end)
+    group.add(wet);
     const pools = [];
     for (let k = 0, s = from + 2; s < to - 1; k++, s += 4.6) {
       const length = Math.min(9 + (k % 3) * 1.5, (to - s) * 2 + 4), pool = makePuddle(LW * (1.3 + (k % 2) * 0.12), length, 31 + k * 13 + Math.round(from));
@@ -139,7 +148,7 @@ Game.onLoad.push(() => {
     add(cover, box(0.9, 0.06, 0.5), lambert(0x55575c), 0.5, 0.12, 0.3).rotation.z = 0.5;
     const jet = makeFountain(5.5);
     cover.add(jet);
-    return { from, lat: lat(from + 1.5), pools, jet, x: cover.position.x, y: cover.position.y, z: cover.position.z };
+    return { from, lat: lat(from + 1.5), pools, jet, wet, sheet, foam, x: cover.position.x, y: cover.position.y, z: cover.position.z };
   });
   // ---- hot-air balloons
   balloons = (LEVEL.balloons || []).map((b) => {
@@ -272,6 +281,10 @@ export const syncHazards = (now) => {
     if (!mesh) return;
     const spread = Hazards.mainSpread(m), close = near(m.from);
     mesh.pools.forEach((pool, k) => pool.userData.set(Math.max(0, Math.min(1, spread * (1 + k * 0.22) - k * 0.22)), t + k));
+    const shown = Math.min(1, spread * 3);
+    mesh.wet.visible = shown > 0.02;
+    mesh.sheet.opacity = 0.42 * shown;
+    mesh.foam.opacity = (0.8 + 0.12 * Math.sin(t * 5 + k)) * shown;
     mesh.jet.userData.set(m.on ? Math.min(1, m.t / 0.5) : Math.max(0, 1 - m.t / 0.4), t, mesh.x, mesh.y, mesh.z, Game.paused || !close);
   });
   Hazards.balloons.forEach((b, k) => {
