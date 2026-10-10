@@ -70,6 +70,7 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `&touch` | Shows the on-screen controls on a desktop |
 | `&cargostate=2` | An Evil run's cargo in that state (0 calm, 1 agitated, 2 furious) whatever the clock says |
 | `&hudcheck` | Every part of the HUD showing at once and held there, for a picture: the shoulder's dial most of the way up, a flat tyre, a mystery running (`&mystery=` names it), two messages. With `&touch` and a level with a speed camera just ahead (`&level=20&at=760`) nothing is left out |
+| `&rage`, `&pieces=3` | In TANK RAGE from the start (on an amphibious level: in the Amphibious Tank, which is only ever that level's rage vehicle, never a garage car); that many pieces of the tank found already. `&cine=car&turn=120` turns the studio camera that many degrees round the car |
 | `&deliver=3.5` | Stops the delivery at the kerb that many seconds in, for a picture (with `&at=` just short of the finish and `&ff=14`) |
 | `&pursuit=3` | A police pursuit set off 3 s into the run, on any delivery level; `&pursuitbehind=60` starts it that far behind |
 | `?pick=41` | The menu with that level picked, every level open for the visit (a look at its card); `&start` presses Start Game too |
