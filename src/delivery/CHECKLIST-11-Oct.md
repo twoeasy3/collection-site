@@ -378,3 +378,14 @@ The owner's words, as in `CHECKLIST-10-Oct.md`. Q52 and Q53 are done and left ou
     `tour-de-coast`, `ring-road`, `market-town`, `stelvio`, `toys`, `leaks`, `moon`, `morro`.
 - [ ] "**Levels 28 Tokyo and 29 Mumbai** to the standard: never started; the plans are in
       `SCRATCHPAD-10-Oct.md` ("Levels 26 to 30")."
+
+## J. Level progression rework: BUILT on branch `delivery-tiers`, off by default (11-Oct)
+
+- The tier table is `src/delivery/tiers.json` (tier -> five level ids; the rest under `outside`); `node scripts/tiers.mjs`
+  prints and checks it, `node scripts/tiers.mjs move <id> <tier|outside> [position]` moves a level. Rules and the
+  amphibious rule (Q12: half a ribbon on every stage of its blue tier, ONE function, `Tiers.amphibiousOpens`) are in
+  `tiers.js`. Switch: `CONFIG.progression.tiers` (false = the old rule); `?tiers=1` / `?tiers=0` for a visit.
+- Ribbons are the best times (nothing new saved); `tierBase` keeps a save's already-open levels open; `tierCars` keeps a
+  restricted level's car apart from the player's pick (Q45). Null car, disabled START and the filtered garage: done.
+- NOT built (5c, for the rebalance): traffic made of cars in the tier of its level.
+- `scripts/tier-money.mjs` is the rushed-run money table; `scripts/.tiers-check.mjs` checks the rules.
