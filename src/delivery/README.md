@@ -226,6 +226,12 @@ ones, which are always open and open nothing.
   give the water its colours (`channel` in `themes.js`).
 - **An obstacle kind:** give it a size and behaviour in `collision.js`, a cost in `obstacleKinds`
   in `config.js`, and a model in `render/obstacleModels.js`.
+- **A theme's own obstacle** (a barrel where the Wild West's levels say `crate`): the plain obstacles are not
+  gimmicks, and a level goes on naming the plain kind. Give the new kind the cost of the kind it stands in for
+  in `obstacleKinds`, that kind's box in `collision.js` (the list under `SIZE`), a model in
+  `render/obstacleModels.js` that reads on that theme's road from the chase camera (tall, a colour that stands
+  off the road, a dark patch under it), and name it in the theme's line of `OBSTACLES` at the foot of
+  `themes.js`. `node scripts/.obstacles-check.mjs` holds each to costing and measuring what it replaces.
 - **A gimmick:** a level field documented in `levels.js`, its logic in a file of its own here,
   its tuning in `config.js`, and its drawing in `render/`, called from the frame loop in
   `main.js`. Add it to `gimmicks.js` so it shows on the gimmicks page, and on the menu's road card for

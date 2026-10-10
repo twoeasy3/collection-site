@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
+import { themedKind } from './themes.js';
 import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
 import './render/trafficModels.js';
@@ -35,6 +36,10 @@ const mesh = (geometry, material, x = 0, y = 0, z = 0) => { const m = new THREE.
 const box = (w, h, d, material, x, y, z) => mesh(new THREE.BoxGeometry(w, h, d), material, x, y, z);
 const group = (...parts) => { const g = new THREE.Group(); if (parts.length) g.add(...parts); return g; }; // (an empty one too: add() with nothing to add logs an error, as the bullet train's sleepers = group() did)
 const ob = (kind, o = {}) => OBSTACLE_MODELS[kind](o);
+// the sizes the Drifting junk card builds its models at (the kinds that drift on some level; the themes' own take no size)
+const JUNK = { umbrella: { hw: 1.2, hl: 1.2, height: 3 }, surfboard: { hw: 0.6, hl: 0.25, height: 2.6 }, cooler: { hw: 0.8, hl: 0.6, height: 1.2 }, chair: { hw: 1, hl: 1, height: 3.4 },
+  wreck: { hw: 1, hl: 2.1, height: 1.4 }, bale: { hw: 1.1, hl: 1.1, height: 1.5 }, crate: { hw: 0.6, hl: 0.6, height: 1.1 }, cone: {}, barrow: {}, trolley: {}, rock: { r: 1 },
+  toyBlock: {}, skittle: {}, divingHelmet: {}, supplyPod: {}, directorChair: {}, cameraDolly: {}, mooringPosts: {}, fuelDrum: {}, popcornCart: {}, barrel: {}, chairStack: {}, riceBasket: {}, present: {} };
 const vehicle = (kind, color) => MODELS[CONFIG.vehicles[kind].model]({ ...CONFIG.vehicles[kind], color });
 // a car's model painted (its body's material is its paint)
 const painted = (model, color) => { model.userData.body.material.color.setHex(color); return model; };
@@ -226,11 +231,12 @@ export const GROUPS = [
     { name: 'Drifting junk', color: 0xe8c547, has: (l) => l.drifters?.some(d => d.pattern !== 'dart'), rules: [
       'Obstacles that won\'t keep still: a hurricane\'s beach junk (umbrellas, surfboards, coolers, lifeguard chairs, wrecks) or hay bales, moving about the road in circles, figures of eight, sweeps across and zigzags along it.',
       `Each wobbles off its pattern a little (${pct(D.wobble)}), so no two move quite alike. They hit like any obstacle of their kind.`,
-    ], build: () => {
-      const u = ob('umbrella', { hw: 1.2, hl: 1.2, height: 3 }), s = ob('surfboard', { hw: 0.6, hl: 0.25, height: 2.6 }), c = ob('cooler', { hw: 0.8, hl: 0.6, height: 1.2 });
-      const g = group(u, s, c);
+    ], build: (level) => { // (on a level's own card, the things that drift on that level, as its theme has them)
+      const own = level ? [...new Set(level.drifters.filter(d => d.pattern !== 'dart').map(d => themedKind(level.theme, d.kind || 'cone')))].filter(k => JUNK[k]).slice(0, 3) : [];
+      const junk = (own.length ? own : ['umbrella', 'surfboard', 'cooler']).map(k => ob(k, JUNK[k]));
+      const g = group(...junk);
       return { model: g, spin: false, tick: (t) => {
-        [u, s, c].forEach((m, i) => { const a = t * 0.9 + i * 2.1; m.position.set(Math.cos(a) * 2.6, 0, Math.sin(a) * 1.6); m.rotation.y = -a; });
+        junk.forEach((m, i) => { const a = t * 0.9 + i * 2.1; m.position.set(Math.cos(a) * 2.6, 0, Math.sin(a) * 1.6); m.rotation.y = -a; });
       } };
     } },
     { name: 'Darting mines', color: 0xe0e0e0, has: (l) => l.obstacles?.some(o => o.drift === 'dart') || l.drifters?.some(d => d.pattern === 'dart'), rules: [

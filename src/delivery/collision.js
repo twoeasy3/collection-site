@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
+import { themedKind } from './themes.js';
 import { clamp } from './util.js';
 import { Track } from './track.js';
 import { FxQueue, startRivalry, hurt, sfx, sfxAt } from './physics.js';
@@ -263,6 +264,13 @@ export const Collision = (() => {
     // a parade's bandsman (see parades below); and falling cargo, shed off a truck (see Cargo)
     marcher: [0.35, 0.35, 2.3], crate: [0.6, 0.6, 1.1],
   };
+  // the themes' own obstacles (a theme's `obstacles`: see themes.js): each is the kind it stands in for in another
+  // shape, so it has that kind's box, its height too (what the car clears in the air), whatever its model's
+  for (const [kind, like] of Object.entries({ toyBlock: 'crate', divingHelmet: 'crate', supplyPod: 'crate', directorChair: 'crate', mooringPosts: 'crate',
+    fuelDrum: 'crate', popcornCart: 'crate', barrel: 'crate', chairStack: 'crate', riceBasket: 'crate', cameraDolly: 'bale', present: 'bale', skittle: 'cone' })) SIZE[kind] = SIZE[like];
+  // what a level's own obstacle of that kind is on its theme (its "obstacles", "shoulderRows" and "drifters"
+  // only: what a gimmick puts out, a cargo truck's load among it, is what it always was)
+  const themed = (kind) => themedKind(LEVEL.theme, kind);
   const obstacles = [];
   const loaders = []; // (others adding obstacles of their own as a level loads: each is called with add)
   // a rock or an asteroid is sized by its radius, which a rockfall or an asteroid field gives it with the rest of
@@ -288,7 +296,7 @@ export const Collision = (() => {
     for (const load of loaders) load(add);
     for (const o of LEVEL.obstacles || []) {
       const s = Track.place(o), lat = Track.laneOffset(o.lane, s), D = CONFIG.drifters;
-      add(o.kind || 'barrier', s, lat, o.drift === 'dart' ? { drift: 'dart', time: 0, homeS: s, homeLat: lat, along: D.dartAlong, across: D.dartAcross } : undefined);
+      add(themed(o.kind || 'barrier'), s, lat, o.drift === 'dart' ? { drift: 'dart', time: 0, homeS: s, homeLat: lat, along: D.dartAlong, across: D.dartAcross } : undefined);
     }
     // rows of things standing on the shoulders (not beside an exit or merge lane, where a
     // side road's pavement runs over the shoulder as it forks off, nor on a bridge)
@@ -302,7 +310,7 @@ export const Collision = (() => {
           const lat = Track.shoulderOffset(side, s);
           Track.toWorld(s, lat, spot);
           if (Track.sideDistance(spot.x, spot.z) < CONFIG.laneWidth * 2) continue;
-          add(row.kind || 'cone', s, lat);
+          add(themed(row.kind || 'cone'), s, lat);
         }
       }
     }
@@ -442,7 +450,7 @@ export const Collision = (() => {
       // each has a centre of its own along the stretch, spaced out, with the pattern's
       // reach along the road kept inside the stretch, and a rhythm of its own: its own
       // pace, and a second, unrelated wobble on top, so no two move quite alike
-      const { from, to } = stretch(z), count = z.count || 4, kind = z.kind || 'cone';
+      const { from, to } = stretch(z), count = z.count || 4, kind = themed(z.kind || 'cone');
       const reach = Math.max(CONFIG.drifters.circleRadius, CONFIG.drifters.eightLength) + 5;
       for (let i = 0; i < count; i++) {
         const centre = from + reach + (count > 1 ? i / (count - 1) : 0.5) * (to - from - 2 * reach);

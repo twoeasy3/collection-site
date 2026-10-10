@@ -716,3 +716,202 @@ OBSTACLE_MODELS.escort = (o) => {
   group.userData.beacons = beacons;
   return group;
 };
+
+// ---- the themes' own obstacles (see ../themes.js: a theme's `obstacles`) ----------------------------------
+// Each stands in for a plain kind on its theme's levels (a crate, a bale, a cone) and has that kind's hitbox and
+// cost (see Collision's SIZE and CONFIG.obstacleKinds), so none takes its size from `o`: the model is the one
+// thing that differs. Each is made to be read from the chase camera at speed on its own theme's road: taller
+// than what it replaces, in colours that stand off that road, a dark patch under it where it meets the ground.
+const put = (group, geometry, material, x = 0, y = 0, z = 0) => {
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(x, y, z);
+  group.add(mesh);
+  return mesh;
+};
+const lathe = (profile, segments, material) => new THREE.Mesh(new THREE.LatheGeometry(profile.map(([x, y]) => new THREE.Vector2(x, y)), segments), material);
+// (the dark patch under it, as a rock's)
+const grounded = (group, r) => {
+  const shade = put(group, new THREE.CircleGeometry(r, 14), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32,
+    depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }), 0, 0.03, 0);
+  shade.rotation.x = -Math.PI / 2;
+  return group;
+};
+// the toy room's: two alphabet blocks, the small one askew on the big one, a pale face with a coloured middle on every side
+OBSTACLE_MODELS.toyBlock = () => {
+  const block = (size, color, middle) => {
+    const g = boxModel([
+      [lambert(color), size, size, size, 0, 0, 0],
+      [lambert(0xfff3d0), size * 0.7, size * 0.7, size + 0.04, 0, 0, 0], [lambert(0xfff3d0), size + 0.04, size * 0.7, size * 0.7, 0, 0, 0], [lambert(0xfff3d0), size * 0.7, size + 0.04, size * 0.7, 0, 0, 0],
+      [lambert(middle), size * 0.34, size * 0.34, size + 0.08, 0, 0, 0], [lambert(middle), size + 0.08, size * 0.34, size * 0.34, 0, 0, 0], [lambert(middle), size * 0.34, size + 0.08, size * 0.34, 0, 0, 0],
+    ]);
+    return g;
+  };
+  const group = new THREE.Group(), big = block(1.2, 0x1f5fd0, 0xd8262b), small = block(0.8, 0x2f9a48, 0x1f5fd0);
+  big.position.y = 0.6;
+  small.position.y = 1.6;
+  small.rotation.y = 0.55;
+  group.add(big, small);
+  return grounded(group, 0.95);
+};
+// ...and its cone: a skittle, white with two red bands round its neck (one mesh, as the cone is)
+const SKITTLE_PROFILE = [[0.17, 0], [0.27, 0.2], [0.31, 0.42], [0.27, 0.66], [0.15, 0.9], [0.15, 0.901], [0.12, 1.0], [0.12, 1.001], [0.17, 1.12], [0.16, 1.24], [0.08, 1.33], [0, 1.34]];
+OBSTACLE_MODELS.skittle = () => {
+  const geo = new THREE.LatheGeometry(SKITTLE_PROFILE.map(([x, y]) => new THREE.Vector2(x, y)), 12);
+  const p = geo.attributes.position, colors = [];
+  for (let i = 0; i < p.count; i++) {
+    const red = p.getY(i) > 0.9005 && p.getY(i) < 1.0005;
+    colors.push(red ? 0.85 : 1, red ? 0.1 : 1, red ? 0.12 : 1);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geo.scale(1.3, 1.3, 1.3);
+  return grounded(new THREE.Group().add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true }))), 0.5);
+};
+// the sea bed's: a hard-hat diver's helmet, brass, on its copper collar, a dark glass port to the front, the back and each side
+OBSTACLE_MODELS.divingHelmet = () => {
+  const group = new THREE.Group();
+  const brass = new THREE.MeshPhongMaterial({ color: 0xe0a93a, shininess: 60, specular: 0x8a6a2a }), copper = lambert(0xc56a32), glass = lambert(0x0f2a36);
+  put(group, new THREE.CylinderGeometry(0.4, 0.6, 0.42, 14), copper, 0, 0.21, 0);          // the collar
+  put(group, new THREE.CylinderGeometry(0.44, 0.44, 0.1, 14), brass, 0, 0.46, 0);           // its neck ring
+  put(group, new THREE.SphereGeometry(0.52, 16, 12), brass, 0, 0.92, 0);                    // the dome
+  for (let i = 0; i < 4; i++) {
+    const a = i * Math.PI / 2, x = Math.sin(a), z = Math.cos(a);
+    const rim = put(group, new THREE.CylinderGeometry(0.21, 0.21, 0.12, 12), copper, x * 0.47, 0.95, z * 0.47);
+    const port = put(group, new THREE.CylinderGeometry(0.15, 0.15, 0.14, 12), glass, x * 0.48, 0.95, z * 0.48);
+    for (const m of [rim, port]) { m.rotation.x = Math.PI / 2; m.rotation.z = -a; }
+  }
+  put(group, new THREE.CylinderGeometry(0.1, 0.1, 0.16, 8), copper, 0, 1.48, 0);            // the valve on top
+  return grounded(group, 0.8);
+};
+// the Moon's: a supply pod set down on three legs: a white capsule, an orange band, gold foil below, a red light on top
+OBSTACLE_MODELS.supplyPod = () => {
+  const group = new THREE.Group(), white = lambert(0xf4f4f4), dark = lambert(0x2b2f38);
+  put(group, new THREE.CylinderGeometry(0.5, 0.58, 0.26, 12), lambert(0xe6b63c), 0, 0.43, 0); // the foil skirt
+  put(group, new THREE.CylinderGeometry(0.5, 0.5, 0.62, 12), white, 0, 0.87, 0);              // the capsule
+  put(group, new THREE.CylinderGeometry(0.52, 0.52, 0.2, 12), lambert(0xff6a00), 0, 0.82, 0); // its band
+  put(group, new THREE.CylinderGeometry(0.2, 0.5, 0.36, 12), white, 0, 1.36, 0);              // its nose
+  put(group, new THREE.SphereGeometry(0.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xff3b30 }), 0, 1.6, 0);
+  for (let i = 0; i < 3; i++) {
+    const a = i * Math.PI * 2 / 3 + 0.5, leg = put(group, new THREE.BoxGeometry(0.07, 0.5, 0.07), dark, Math.sin(a) * 0.5, 0.2, Math.cos(a) * 0.5);
+    leg.rotation.y = a;
+    leg.rotation.x = 0.45;
+    put(group, new THREE.CylinderGeometry(0.11, 0.11, 0.04, 8), dark, Math.sin(a) * 0.6, 0.02, Math.cos(a) * 0.6); // its pad
+  }
+  return grounded(group, 0.85);
+};
+// the film studio's: a director's chair, tall, pale wood, the seat and the back of red canvas
+OBSTACLE_MODELS.directorChair = () => {
+  const wood = lambert(0xe6c690), canvas = lambert(0xd8262b);
+  const group = boxModel([
+    [canvas, 1.0, 0.06, 0.8, 0, 1.0, 0],                                             // the seat
+    [canvas, 1.0, 0.4, 0.05, 0, 1.6, -0.4],                                          // the back
+    [wood, 0.09, 0.07, 0.9, -0.52, 1.3, 0], [wood, 0.09, 0.07, 0.9, 0.52, 1.3, 0],   // the arms
+    [wood, 0.08, 0.85, 0.08, -0.52, 1.4, -0.4], [wood, 0.08, 0.85, 0.08, 0.52, 1.4, -0.4], // the back's posts
+    [wood, 0.08, 0.32, 0.08, -0.52, 1.14, 0.4], [wood, 0.08, 0.32, 0.08, 0.52, 1.14, 0.4], // the arms' front posts
+    [wood, 1.0, 0.07, 0.07, 0, 0.4, 0.42],                                           // the footrest
+  ]);
+  for (const z of [-0.4, 0.4]) for (const lean of [-1, 1]) { // the crossed legs, front and back
+    const leg = put(group, new THREE.BoxGeometry(0.08, 1.45, 0.08), wood, 0, 0.5, z + lean * 0.02);
+    leg.rotation.z = lean * 0.8;
+  }
+  return grounded(group, 0.85);
+};
+// ...and its bale: a film camera on a dolly: a grey platform on four wheels, a yellow column, the black camera with its
+// two round magazines on top and a pale lens hood, a red seat behind
+OBSTACLE_MODELS.cameraDolly = () => {
+  const black = lambert(0x1b1d22), yellow = lambert(0xffc928);
+  const group = boxModel([
+    [lambert(0x9aa0a8), 1.9, 0.14, 2.0, 0, 0.36, 0],                                  // the platform
+    [yellow, 1.94, 0.08, 2.04, 0, 0.3, 0],                                           // (a yellow edge round it)
+    [black, 0.5, 0.55, 0.95, 0, 1.75, 0.15],                                         // the camera
+    [lambert(0xd9dde2), 0.44, 0.44, 0.34, 0, 1.75, 0.78],                            // its lens hood
+    [black, 0.08, 0.5, 0.08, 0, 0.75, -0.6], [lambert(0xd8262b), 0.5, 0.1, 0.5, 0, 1.03, -0.6], // the operator's seat
+    [yellow, 1.5, 0.07, 0.07, 0, 1.1, -0.98], [yellow, 0.07, 0.7, 0.07, -0.7, 0.75, -0.98], [yellow, 0.07, 0.7, 0.07, 0.7, 0.75, -0.98], // the push bar
+  ]);
+  put(group, new THREE.CylinderGeometry(0.17, 0.22, 1.05, 10), yellow, 0, 0.95, 0.15); // the column
+  for (const z of [-0.16, 0.42]) put(group, new THREE.CylinderGeometry(0.3, 0.3, 0.2, 14).rotateZ(Math.PI / 2), black, 0, 2.28, z); // the magazines
+  for (const x of [-0.85, 0.85]) for (const z of [-0.75, 0.75]) put(group, new THREE.CylinderGeometry(0.22, 0.22, 0.18, 10).rotateZ(Math.PI / 2), black, x, 0.22, z);
+  return grounded(group, 1.5);
+};
+// Venice's: mooring posts (paline), three lashed together, banded red and white, a gold cap on each
+OBSTACLE_MODELS.mooringPosts = () => {
+  const group = new THREE.Group(), white = lambert(0xf6f2e6), red = lambert(0xc81e1e), gold = lambert(0xe6b63c);
+  [[0, 0.3, 2.3], [2.1, 0.32, 2.0], [4.2, 0.32, 1.75]].forEach(([a, r, h]) => {
+    const post = new THREE.Group();
+    put(post, new THREE.CylinderGeometry(0.16, 0.18, h, 10), white, 0, h / 2, 0);
+    for (let y = 0.35; y < h - 0.2; y += 0.56) put(post, new THREE.CylinderGeometry(0.185, 0.185, 0.28, 10), red, 0, y, 0);
+    put(post, new THREE.ConeGeometry(0.19, 0.26, 10), gold, 0, h + 0.13, 0);
+    post.position.set(Math.sin(a) * r, 0, Math.cos(a) * r);
+    post.rotation.set(Math.cos(a) * 0.07, 0, -Math.sin(a) * 0.07); // (each leaning out a little)
+    group.add(post);
+  });
+  put(group, new THREE.CylinderGeometry(0.52, 0.52, 0.14, 12), lambert(0x6b4a2b), 0, 1.0, 0); // the rope round them
+  return grounded(group, 0.85);
+};
+// the ice road's: a red fuel drum, two pale hoops round it, a cap of snow on top
+OBSTACLE_MODELS.fuelDrum = () => {
+  const group = new THREE.Group(), pale = lambert(0xf2f2f2);
+  put(group, new THREE.CylinderGeometry(0.56, 0.56, 1.25, 14), lambert(0xe0261f), 0, 0.625, 0);
+  for (const y of [0.42, 0.84]) put(group, new THREE.CylinderGeometry(0.585, 0.585, 0.08, 14), pale, 0, y, 0);
+  put(group, new THREE.SphereGeometry(0.58, 12, 8), lambert(0xf6fbff), 0, 1.24, 0).scale.y = 0.34;
+  return grounded(group, 0.85);
+};
+// the theme park's: a popcorn cart: a red cart on two white wheels, a box of popcorn behind glass posts, a striped roof
+OBSTACLE_MODELS.popcornCart = () => {
+  const red = lambert(0xd8262b), white = lambert(0xf6f6f6);
+  const parts = [
+    [red, 1.1, 0.55, 1.05, 0, 0.82, 0],                                              // the cart
+    [lambert(0xffd95a), 0.92, 0.4, 0.86, 0, 1.3, 0],                                 // the popcorn
+    [red, 0.07, 0.07, 0.5, -0.4, 0.95, -0.75], [red, 0.07, 0.07, 0.5, 0.4, 0.95, -0.75], [white, 0.9, 0.07, 0.07, 0, 0.95, -1.0], // the handles
+    [red, 0.08, 0.55, 0.08, 0, 0.28, 0.45],                                          // the leg it stands on
+  ];
+  for (const x of [-0.5, 0.5]) for (const z of [-0.47, 0.47]) parts.push([white, 0.06, 0.85, 0.06, x, 1.52, z]); // the roof's posts
+  for (let i = 0; i < 5; i++) parts.push([i % 2 ? white : red, 0.26, 0.12, 1.3, -0.52 + i * 0.26, 2.0, 0]);     // the roof, striped
+  const group = boxModel(parts);
+  for (const x of [-0.6, 0.6]) {
+    put(group, new THREE.CylinderGeometry(0.42, 0.42, 0.07, 14).rotateZ(Math.PI / 2), white, x, 0.42, -0.1);
+    put(group, new THREE.CylinderGeometry(0.12, 0.12, 0.1, 8).rotateZ(Math.PI / 2), red, x, 0.42, -0.1);
+  }
+  return grounded(group, 0.95);
+};
+// the Wild West's: a barrel: dark oak staves, bulged, three iron hoops, a paler lid
+OBSTACLE_MODELS.barrel = () => {
+  const group = new THREE.Group(), iron = lambert(0x24262b);
+  group.add(lathe([[0.43, 0], [0.51, 0.3], [0.55, 0.675], [0.51, 1.05], [0.43, 1.35], [0, 1.35]], 14, lambert(0x7a4520)));
+  for (const [y, r] of [[0.2, 0.5], [0.675, 0.565], [1.15, 0.5]]) put(group, new THREE.CylinderGeometry(r, r, 0.09, 14), iron, 0, y, 0);
+  put(group, new THREE.CylinderGeometry(0.39, 0.39, 0.03, 14), lambert(0xa9713c), 0, 1.35, 0);
+  return grounded(group, 0.85);
+};
+// the favela's: a stack of plastic chairs, white, the top one blue
+OBSTACLE_MODELS.chairStack = () => {
+  const white = lambert(0xf6f6f6), blue = lambert(0x1f7ae0), parts = [];
+  for (const x of [-0.42, 0.42]) for (const z of [-0.4, 0.4]) parts.push([white, 0.09, 0.62, 0.09, x, 0.31, z]); // the bottom one's legs
+  for (let i = 0; i < 6; i++) {
+    const plastic = i === 5 ? blue : white, y = 0.62 + i * 0.15, z = -i * 0.035;
+    parts.push([plastic, 0.98, 0.07, 0.92, 0, y, z]);                                // a seat
+    parts.push([plastic, 0.98, 0.62, 0.07, 0, y + 0.36, z - 0.46]);                  // its back
+    parts.push([plastic, 0.08, 0.07, 0.8, -0.5, y + 0.1, z], [plastic, 0.08, 0.07, 0.8, 0.5, y + 0.1, z]); // its arms
+  }
+  return grounded(boxModel(parts), 0.9);
+};
+// the rice terraces': a wide woven basket heaped with rice, a straw hat laid on the heap
+OBSTACLE_MODELS.riceBasket = () => {
+  const group = new THREE.Group(), band = lambert(0x8a5f24);
+  group.add(lathe([[0.42, 0], [0.6, 0.8], [0.54, 0.8], [0.4, 0.1]], 14, lambert(0xd9a546)));
+  for (const [y, r] of [[0.22, 0.48], [0.5, 0.545], [0.77, 0.61]]) put(group, new THREE.CylinderGeometry(r, r, 0.07, 14), band, 0, y, 0);
+  put(group, new THREE.SphereGeometry(0.56, 12, 8), lambert(0xfbf8ec), 0, 0.8, 0).scale.y = 0.62; // the rice
+  const hat = put(group, new THREE.ConeGeometry(0.5, 0.26, 14), lambert(0xe9c869), 0.1, 1.27, -0.05);
+  hat.rotation.z = -0.25;
+  return grounded(group, 0.9);
+};
+// Christmas Eve's bale: a wrapped present: red paper, a gold ribbon both ways round it and a bow on top
+OBSTACLE_MODELS.present = () => {
+  const gold = lambert(0xf2c230);
+  const group = boxModel([
+    [lambert(0xd8262b), 1.9, 1.4, 1.9, 0, 0.7, 0],
+    [gold, 0.3, 1.44, 1.94, 0, 0.71, 0], [gold, 1.94, 1.44, 0.3, 0, 0.71, 0],
+    [gold, 0.7, 0.34, 0.3, -0.42, 1.6, 0], [gold, 0.7, 0.34, 0.3, 0.42, 1.6, 0], [gold, 0.3, 0.3, 0.34, 0, 1.52, 0],
+  ]);
+  group.children[3].rotation.z = -0.5;
+  group.children[4].rotation.z = 0.5;
+  return grounded(group, 1.45);
+};
