@@ -686,6 +686,13 @@ at thumbnail size, calm at the start, agitated at half the clock, furious for th
 | C19 | Tool box, open | Spanners rattle in their trays; the lid creaks | Construction, Quarry Run |
 | C20 | Telescope on a tripod | Swings round to look at things; the lens glints | Asteroid Run, Mountain Pass |
 
+**Built (Agent 15, branch `delivery-cargo-good`):** all twenty, in `render/cargoModelsGood2.js`, on the cargo page and in the default rotation (no level JSON edited).
+
+- [x] C1 to C20 built: ids `coffee`, `balloons`, `present`, `bouquet`, `pancakes`, `sundae`, `sushi`, `teaset`, `record`, `lavalamp`, `snowglobe`, `bonsai`, `puppy`, `canary`, `ramen`, `globe`, `trophy`, `surfboard`, `toolbox`, `telescope`.
+- Looked at: every one as a still on the cargo page (scratchpad `shots-cargo-good/sheet.png`, and `p1` to `p4`, `q1`); pancakes, record player and puppy in the HUD corner; record player and telescope at the kerb. Stills only: none has been seen moving.
+- Departures from the table: C18 the surfboard stands on its tail in a heap of sand and rocks from side to side (lying on its fin it was a sliver at thumbnail size); C14 the cage rocks on its base, it does not hang.
+- `CARGO.good` was reordered so every item turns up under the default rotation (places 6 and 15 fall on levels that name their own, so goldfish and wedding cake, which levels name, sit there).
+
 ### Evil: 20 things nobody should be driving about with
 
 | # | Item | Calm | Agitated (half the clock left) | Furious (a fifth left) | Fits |

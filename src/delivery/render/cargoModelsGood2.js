@@ -679,10 +679,10 @@ const makeGlobe = () => {
   part(ball, sphere(0.42, 24, 16), sea);
   // the land: big balls sunk in the sea's, so only a cap of each shows. [latitude, longitude, radius]
   const cap = (lat, lon, r, material = land) => {
-    const a = lat * Math.PI / 180, b = lon * Math.PI / 180, d = 0.42 - r + 0.014;
+    const a = lat * Math.PI / 180, b = lon * Math.PI / 180, d = 0.42 - r + 0.022;
     part(ball, sphere(r, 16, 12), material, Math.cos(a) * Math.sin(b) * d, Math.sin(a) * d, Math.cos(a) * Math.cos(b) * d);
   };
-  for (const [lat, lon, r] of [[48, -100, 0.3], [22, -98, 0.17], [64, -115, 0.24], [-8, -60, 0.26], [-34, -66, 0.17], [8, 20, 0.3], [-20, 26, 0.23], [50, 14, 0.18], [52, 80, 0.3], [34, 104, 0.28], [18, 78, 0.17], [60, 125, 0.24], [-25, 134, 0.23], [72, -40, 0.16]]) cap(lat, lon, r);
+  for (const [lat, lon, r] of [[48, -100, 0.3], [22, -98, 0.17], [64, -115, 0.24], [-8, -60, 0.26], [-34, -66, 0.17], [8, 20, 0.3], [-20, 26, 0.23], [50, 14, 0.18], [52, 80, 0.3], [34, 104, 0.28], [18, 78, 0.17], [60, 125, 0.24], [-25, 134, 0.23], [72, -40, 0.16], [-4, 112, 0.15], [-42, 172, 0.13], [36, 138, 0.13]]) cap(lat, lon, r);
   cap(90, 0, 0.2, ice);
   cap(-90, 0, 0.26, ice);
   return idle(group, (t) => {
