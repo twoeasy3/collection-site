@@ -20,11 +20,12 @@ PENNANT.setAttribute('position', new THREE.Float32BufferAttribute([-0.5, 0, 0, 0
 PENNANT.computeVertexNormals();
 const RAINBOW = [0xe23b3b, 0xf27d1a, 0xf2c21c, 0x35a852, 0x2f7fe0, 0x9a4fd0];
 
-export const themepark = ({ add, flat, instances, sideStrip, offRoads, beside, inJunction, exits, cube, tube, levelGroup }) => {
+export const themepark = ({ theme, add, flat, instances, sideStrip, offRoads, beside, inJunction, exits, cube, tube, levelGroup }) => {
   // (laid out the same every time: a seed of the level's own)
   let seed = 11 + (LEVEL.id || '').length * 977;
   const rand = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
   const p = {};
+  const night = !!theme.night; // (the park after closing: the rides' bulbs lit, the arches neon, bulbs along the bunting)
   const within = (list, s, pad, a = 'from', b = 'to') => (list || []).some(x => !x.road && s >= x[a] - pad && s <= x[b] + pad);
   // under cover or on a bridge there (nothing stands there, nothing hangs over it); and, as well, where the
   // level has something of its own across the road (a level crossing's train, a drawbridge's leaves, a junction)
@@ -127,7 +128,7 @@ export const themepark = ({ add, flat, instances, sideStrip, offRoads, beside, i
     const side = n % 2 ? 1 : -1, at = s + rand() * 50;
     if (n % 3 === 0) { // a Ferris wheel, across the road's way so that it is seen whole from the road
       const r = 24 + rand() * 6;
-      if (big(at, side, r + 9, r + 2)) stand(makeFerrisWheel(r), at, beside(side, at, r + 9));
+      if (big(at, side, r + 9, r + 2)) stand(makeFerrisWheel(r, night), at, beside(side, at, r + 9));
     } else if (n % 3 === 1) { // a big top: a striped drum under a striped cone, a pennant on its mast
       const r = 11 + rand() * 4, d = r + 14 + rand() * 12;
       if (!big(at, side, d, r + 1)) continue;
@@ -136,14 +137,14 @@ export const themepark = ({ add, flat, instances, sideStrip, offRoads, beside, i
       roofsA.push([at, lat, 5.2 + r * 0.45, r * 2.2, r * 0.9, r * 2.2]); roofsB.push([at, lat, 5.2 + r * 0.45, r * 2.2, r * 0.9, r * 2.2]);
       masts.push([at, lat, 5.2 + r * 0.9 + 2, 0.25, 4, 0.25]);
       flags[n % flags.length].push([at + 1.3, lat, 5.2 + r * 0.9 + 3.3, 0.12, 1.3, 2.6]);
-    } else if (big(at, side, 17, 9)) stand(makeCarousel(), at, beside(side, at, 17)); // a carousel
+    } else if (big(at, side, 17, 9)) stand(makeCarousel(night), at, beside(side, at, 17)); // a carousel
   }
   for (let s = Track.start + 420, n = 0; s < Track.end + 300; s += 1150, n++) {
     const side = n % 2 ? -1 : 1, q = Math.min(Track.end, s);
     for (let d = 150; d < 330; d += 30) {
       Track.toWorld(q, beside(side, q, d), p);
       if (!offRoads(p.x, p.z, 70) || Track.mainDistance(p.x, p.z) < d - 30) continue;
-      stand(makeCastle(1.25), q, beside(side, q, d), side * (Math.PI / 2 + 0.55));
+      stand(makeCastle(1.25, night), q, beside(side, q, d), side * (Math.PI / 2 + 0.55));
       break;
     }
   }
@@ -153,14 +154,14 @@ export const themepark = ({ add, flat, instances, sideStrip, offRoads, beside, i
   PARK_COLOURS.forEach((color, i) => instances(cube, color, flags[i]));
 
   // ---- rainbow arches over the road, and bunting strung across it between striped poles
-  const archMats = RAINBOW.map(color => new THREE.MeshLambertMaterial({ color }));
+  const archMats = RAINBOW.map(color => new (night ? THREE.MeshBasicMaterial : THREE.MeshLambertMaterial)({ color }));
   for (let s = Track.start + 60; s < Track.end; s += 640) {
     if (busy(s, 30) || under(s, 25) || within(LEVEL.reversible, s, 20) || exits.some(x => s > x.exitAt - 200 && s < x.mergeAt + 200)) continue;
     const arch = new THREE.Group(), r = (Track.hi(s) - Track.lo(s)) / 2 + 2.5;
     RAINBOW.forEach((color, k) => arch.add(new THREE.Mesh(new THREE.TorusGeometry(r + (RAINBOW.length - k) * 0.9, 0.5, 6, 40, Math.PI), archMats[k])));
     stand(arch, s, (Track.lo(s) + Track.hi(s)) / 2);
   }
-  const poles = [], bands = [], lines = [], pennants = PARK_COLOURS.map(() => []), knobs = [];
+  const poles = [], bands = [], lines = [], pennants = PARK_COLOURS.map(() => []), knobs = [], bulbs = [];
   for (let s = Track.start + 25, n = 0; s < Track.end - 5; s += 52, n++) {
     if (busy(s, 12) || !Track.isMain(s) || within(LEVEL.reversible, s, 10) || under(s, 6) || exits.some(x => s > x.exitAt - 190 && s < x.mergeAt + 190)) continue;
     const lo = beside(-1, s, 1.1), hi = beside(1, s, 1.1), y = 8.2;
@@ -171,11 +172,13 @@ export const themepark = ({ add, flat, instances, sideStrip, offRoads, beside, i
     }
     lines.push([s, lo, y - 0.2, 0.06, 0.06, 1, [s, hi]]);
     for (let lat = lo + 1, k = 0; lat < hi - 0.6; lat += 1.25, k++) pennants[(k + n) % PARK_COLOURS.length].push([s, lat, y - 0.25, 1, 1, 1]);
+    if (night) for (let lat = lo + 0.4; lat < hi; lat += 1.25) bulbs.push([s, lat, y - 0.1, 0.34, 0.34, 0.34]);
   }
   instances(tube, 0xffffff, poles);
   instances(tube, 0xe23b3b, bands);
   instances(BALL, 0xf2c21c, knobs);
   instances(cube, 0x4a4a4a, lines);
+  instances(BALL, 0xfff2b0, bulbs, true);
   PARK_COLOURS.forEach((color, i) => instances(PENNANT, color, pennants[i]));
 
   // ---- lamps along the promenade, a white globe on a green post, each side in turn
