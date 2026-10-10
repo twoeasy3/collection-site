@@ -255,7 +255,7 @@
 //   roadblocks { s, gap? }: a police roadblock: police cars across every lane of the player's side but one (gap:
 //              which; left out, any, each run). Touching one is a bust, unless the car has a radar detector; with
 //              a siren going the police pull aside and wave the player through (see CONFIG.roadblock)
-//   (a traffic kind that sheds, "cargotruck", drops crates, bales and tyres off the back as it goes, a little
+//   (a traffic kind that sheds, "cargotruck", drops crates and bales off the back as it goes, a little
 //              way ahead of the player: obstacles, sliding on and stopping. See CONFIG.cargo)
 //   iceCreamStops { s, lane, wait? }: an ice-cream van stopped in that lane, its jingle going; the traffic behind it
 //              queues, nobody pulling out round it, until it drives off, `wait` s after the player comes near

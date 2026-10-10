@@ -595,9 +595,8 @@ export const CONFIG = {
     wideLoad: { damage: 12, speedKept: 0.6, sideDamage: 6, sideKept: 0.85 }, // (a knock: see CONFIG.wideLoad)
     escort: { damage: 8, speedKept: 0.6, sideDamage: 4, sideKept: 0.9 },
     marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
-    // falling cargo (a shedding truck's load: see CONFIG.cargo): bales, crates and tyres
+    // falling cargo (a shedding truck's load: see CONFIG.cargo): bales and crates
     crate: { damage: 18, speedKept: 0.75 },
-    tyre: { damage: 8, speedKept: 0.85, light: true },
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -837,12 +836,12 @@ export const CONFIG = {
     drumEvery: 0.55,       // s between beats
     heard: 220,            // m
   },
-  // falling cargo: a truck that sheds its load (a traffic kind with sheds: true, the cargo truck) drops a crate,
-  // a bale or a tyre off the back now and then, anywhere across its lane and a little either side, which
+  // falling cargo: a truck that sheds its load (a traffic kind with sheds: true, the cargo truck) drops a crate
+  // or a bale off the back now and then, anywhere across its lane and a little either side, which
   // slides on down the road a way and stops: an obstacle, the player's to hit (see Collision)
   cargo: {
     pool: 14,              // loads a level has to drop, all told, out of play until dropped (reused once well behind the player)
-    kinds: ['crate', 'bale', 'tyre', 'crate'],
+    kinds: ['crate', 'bale'],
     every: { min: 3, max: 7 }, // s between drops, while a truck is within `near` m ahead of the player
     near: 180,
     drag: 6,               // m/s^2 a dropped load slows at (it comes off at the truck's speed, less a little)
