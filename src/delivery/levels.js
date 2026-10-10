@@ -75,7 +75,7 @@
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
 //   theme      'city' (default), 'bathurst' (Mount Panorama: a mountain), 'panorama' (the same, as a road through the bush), 'montreal' (Circuit Gilles-Villeneuve's island: its landmarks 'river', 'basin',
-//              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'flooded' (the city under flood water, in the rain), 'toyroom' (the level at toy scale, on a playroom floor), 'hell' or 'space': the look of the ground, sky and roadside.
+//              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'flooded' (the city under flood water, in the rain), 'toyroom' (the level at toy scale, on a playroom floor), 'seabed' (an underwater tunnel: the road in a glass tube on the sea bed), 'moon' (a moon base: regolith, craters, domes, the Earth in a black sky), 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo', 'f1')
@@ -270,7 +270,12 @@
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side, out?, height? }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall). out / height: where they wait,
-//              m off the road's edge and m up, if not CONFIG.rockfall's (the hillside's): on a quarry's bench, say
+//              m off the road's edge and m up, if not CONFIG.rockfall's (the hillside's): on a quarry's bench, say.
+//              A rock waits ON something and comes down over it (render/items.js): on a level whose land climbs (a theme
+//              with terrain), the land itself, out m off, on whichever side is uphill (leave height out there: with a
+//              height it is taken to be a ledge that high, wherever the land is, and hangs in the air if there is none);
+//              on flat land, a crag `height` m tall built for it. Keep a stretch 40 m clear of a hairpin, where the
+//              legs either side are level with each other and there is no slope for a rock to come down
 //   (Gimmick Road 2's: see hazards.js and CONFIG, each under its own name. Any can be on a side road, as cameras,
 //   crossings and potholes can: { road: 'side', exit: n }, s then m along that side road)
 //   schoolCrossings { s }: a lollipop person stops the traffic for the children; running it is a bust
@@ -308,7 +313,17 @@
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
 //   id         unique name, used as the level's key in saved progress
 //   name       the level's name on the menu
+//   description  { good, evil }: a sentence or two about the level, shown on the menu's stage for the side picked
+//              (160 characters each at most; scripts/.descriptions-check.mjs). Good's is a cheerful, careful
+//              courier's briefing; Evil's the same job, relished. A level played on one side only (alwaysGood,
+//              battle) has only "good"
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
+//              How a target stands is the level's theme's (a theme's "target": see themes.js and CONFIG.target),
+//              and one target can have its own where a stretch has sides of its own (an elevated road, a
+//              bridge, a zone's look): { s, side, offset?, height?, style?, base?, arm?, beam? }: offset: m
+//              beyond the pavement its ring is; height: m above the road; style: 'post' | 'wall' (on a
+//              stalk on a wall's top, `base` m up) | 'gantry' (hung from an arm, its mast `arm` m further
+//              out); beam: a beam of light over it. Not in a tunnel, nor where a junction or another road is
 //   clock      { good, evil }: seconds on the clock for each side. Worked out from a clean run in the
 //              reference car by scripts/level-clocks.mjs (see CONFIG.clock), unless set by hand
 //   tip        the money earned for finishing before the clock reaches zero
@@ -375,6 +390,8 @@ import ford from './levels/ford.json';
 import fjord from './levels/fjord.json';
 // (the themed levels, THEME_LEVELS below: one a line, a new one on the line above its batch's marker)
 import toys from './levels/toys.json';
+import leaks from './levels/leaks.json';
+import moonbase from './levels/moon.json';
 // (batch A's imports go above this line)
 // (batch B's imports go above this line)
 import park from './levels/park.json';
@@ -403,6 +420,8 @@ export const CIRCUIT_LEVELS = [monza, spa, albertPark];
 // built side by side on three branches: the markers keep their additions apart, so the branches merge)
 export const THEME_LEVELS = [
   toys,
+  leaks,
+  moonbase,
   // (batch A: toy room, underwater tunnel, moon base: new levels go above this line)
   // (batch B: film studio, Venice, ice road: new levels go above this line)
   park,

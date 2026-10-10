@@ -1,6 +1,10 @@
 {
   "id": "rival-run",
   "name": "Rival Run",
+  "description": {
+    "good": "Another courier is after the same tip, and playing dirty. Beat them to the drop through the tractors and bales, fair and square.",
+    "evil": "A goody-two-shoes courier wants your tip. Farm lanes, tractors, a Big Splash pickup: make sure only one of you arrives."
+  },
   "theme": "farm",
   "clock": { "good": 300, "evil": 285 },
   "tip": 300,

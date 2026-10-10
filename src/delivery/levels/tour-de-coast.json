@@ -1,6 +1,10 @@
 {
   "id": "tour-de-coast",
   "name": "Tour de Coast",
+  "description": {
+    "good": "Race day on the coast road, and a dozen packs of cyclists are out. Pass them wide, cross the causeway ahead of the tide, and cheer them on.",
+    "evil": "A dozen pelotons in lycra all over your road, and the tide coming in behind them. Ring your bell."
+  },
   "theme": "coast",
   "clock": { "good": 210, "evil": 160 },
   "tip": 190,

@@ -119,6 +119,8 @@ export const FIELDS = {
   // ---- the level ----
   id: { shape: 'text', group: 'basics', label: 'Id', required: true, help: 'Unique name: the level\'s key in saved progress. Keep it short.' },
   name: { shape: 'text', group: 'basics', label: 'Name', required: true, help: 'The level\'s name on the menu.' },
+  description: { shape: 'object', group: 'basics', label: 'Description', help: 'A sentence or two about the level for the menu, one for each side (160 characters each at most). Good: a cheerful, careful courier\'s briefing. Evil: the same job, relished.',
+    settings: { good: text('Good'), evil: text('Evil (left out on a level that is always Good)') } },
   clock: { shape: 'object', group: 'basics', label: 'Clock', required: true, help: 'Seconds on the clock for each side (scripts/level-clocks.mjs works them out from a clean run).',
     settings: { good: num('Good (s)', { min: 1, max: 100000, required: true, init: 150 }), evil: num('Evil (s)', { min: 1, max: 100000, required: true, init: 115 }) } },
   tip: { shape: 'number', group: 'basics', label: 'Tip ($)', min: 0, max: 100000, init: 50, help: 'The money earned for finishing before the clock reaches zero.' },
@@ -188,7 +190,9 @@ export const FIELDS = {
     settings: { type: pick('Type', PICKUP_TYPES, { required: true, init: 'turbo' }), lane: lane('Lane', { shoulders: true, required: true }) } },
   obstacles: { shape: 'point', group: 'items', label: 'Obstacle', road: 'both', sub: 'kind', help: 'Something on the road that explodes when hit.',
     settings: { lane: lane('Lane', { shoulders: true, required: true }), kind: pick('Kind', OBSTACLE_KINDS, { default: 'barrier' }), drift: pick('Darts about', ['dart'], { help: 'It darts about its spot at random.' }) } },
-  targets: { shape: 'point', group: 'items', label: 'TANK RAGE target', road: 'both', help: 'A target beside the road.', settings: { side: side() } },
+  targets: { shape: 'point', group: 'items', label: 'TANK RAGE target', road: 'both', help: 'A target beside the road. How it stands is the theme\'s, unless set here.',
+    settings: { side: side(), offset: num('Beyond the pavement (m)', { min: -4, max: 30, step: 0.1 }), height: num('Ring height (m)', { min: 1.5, max: 14, step: 0.1 }),
+      style: pick('Style', C.target.styles), base: num('Wall top (m)', { min: 0, max: 12, step: 0.1 }), arm: num('Gantry arm (m)', { min: 0.5, max: 8, step: 0.1 }), beam: flag('Beam of light') } },
 
   // ---- stretches that change the road ----
   narrows: { shape: 'stretch', group: 'shape', label: 'Narrowing', help: 'Each side of the expressway drops to that many lanes (or only one side).',

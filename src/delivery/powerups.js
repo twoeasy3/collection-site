@@ -1,24 +1,18 @@
 // ============================================================================
-// THE POWER-UPS PAGE (delivery/powerups.html): every pickup's own model, spinning over its pad,
-// with what it does. The numbers come from the game's CONFIG and the wording it shows from
-// messages.json, so the page stays true when either changes.
-// One renderer draws every card: a canvas over the whole window, drawn into patch by patch
-// (each card's .view), and left clear everywhere else.
+// THE POWER-UPS (delivery/powerups.html): every pickup, and what it does. The numbers come from the game's
+// CONFIG and the wording it shows from messages.json, so the page stays true when either changes.
+// Only the catalogue is here (CARDS): the page that shows it, each with its model spinning over its pad, is
+// poweruppage.js, and the menu's "what's on this road" card shows a level's own (render/levelcard3d.js).
 // ============================================================================
-import * as THREE from 'three';
-import './powerups.css';
 import { CONFIG } from './config.js';
-import { Progress } from './progress.js';
 import MESSAGES from './messages.json';
-import { PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './render/pickupModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
-const says = (...path) => { let e = MESSAGES; for (const k of path) e = e && e[k]; return [].concat(e || [])[0] || ''; };
-const hex = (color) => '#' + color.toString(16).padStart(6, '0');
+export const says = (...path) => { let e = MESSAGES; for (const k of path) e = e && e[k]; return [].concat(e || [])[0] || ''; };
 
 // ---- what each one does -------------------------------------------------------------------------
 const M = CONFIG.mystery, S = CONFIG.sirenPickup;
-const CARDS = [
+export const CARDS = [
   { type: 'turbo', name: 'Turbo', time: CONFIG.turboTime, says: says('powerups', 'turbo'), rules: [
     `Your car pulls itself up to <strong>${kmh(CONFIG.turboBoost)}</strong> over its own top speed, even with your foot off.`,
     'Braking still works; when it runs out you ease back down to your normal top speed.',
@@ -117,97 +111,3 @@ const CARDS = [
     'Once used, the tank\'s pieces are gone: you start collecting again from nothing.',
   ] },
 ];
-
-// ---- the cards ----------------------------------------------------------------------------------
-document.getElementById('rules').innerHTML = `
-  <h2>How power-ups work</h2>
-  <ul>
-    <li><strong>One at a time.</strong> Picking one up replaces the one running (the wrench, the stopwatches and cash excepted).</li>
-    <li>The time left shows under your speed, and the power-up's sign rides on or over your car.</li>
-    <li>In the last <strong>${CONFIG.powerUpWarning} s</strong> a warning sound loops and the sign blinks.</li>
-    <li>Each one announces itself in yellow as you pick it up; TANK RAGE in red.</li>
-  </ul>`;
-const cardBox = document.getElementById('cards');
-const views = [];
-for (const card of CARDS) {
-  const color = card.color ?? PICKUP_COLOR[card.type];
-  const el = document.createElement('article');
-  el.className = 'card' + (card.wide ? ' wide' : '');
-  el.style.setProperty('--glow', hex(color) + '55');
-  el.style.setProperty('--swatch', hex(color));
-  if (card.saysColor) el.style.setProperty('--says', card.saysColor);
-  el.innerHTML = `
-    <div class="view"></div>
-    <div class="body">
-      <h2>${card.name}${card.time ? `<span class="time">${card.time} s</span>` : ''}</h2>
-      ${card.says ? `<p class="says">${card.says}</p>` : ''}
-      <ul>${card.rules.map(r => `<li>${r}</li>`).join('')}</ul>
-      ${card.effects ? `<ul class="effects">${card.effects.map(([key, text]) =>
-        `<li><strong>${says('powerups', 'mystery', key) || key}</strong><br>${text}</li>`).join('')}</ul>` : ''}
-    </div>`;
-  cardBox.append(el);
-  views.push(makeView(el.querySelector('.view'), card, color));
-}
-
-// ---- a little scene per card: the model turning and bobbing over its pad ------------------------
-function makeView(el, card, color) {
-  const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2.2));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-  sun.position.set(3, 6, 5);
-  scene.add(sun);
-  const target = card.type === 'target';
-  const model = target ? makeTargetModel() : PICKUP_MODELS[card.type]();
-  model.userData.livery?.(!!Progress.data.evil); // (the look for the side picked on the menu)
-  model.scale.setScalar(target ? 0.42 : 1.15);
-  scene.add(model);
-  const pad = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.02, 2.4), new THREE.MeshBasicMaterial({
-    color, transparent: true, opacity: 0.4, depthWrite: false }));
-  pad.position.y = -1.25;
-  scene.add(pad);
-  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 50);
-  camera.position.set(0, 1.4, 6.2);
-  camera.lookAt(0, -0.25, 0);
-  return { el, scene, camera, model, target, phase: Math.random() * 6 };
-}
-
-// ---- drawing ------------------------------------------------------------------------------------
-const canvas = document.getElementById('stage');
-const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x000000, 0);
-let last = performance.now();
-const frame = (now) => {
-  const dt = Math.min(0.05, (now - last) / 1000);
-  last = now;
-  const w = window.innerWidth, h = window.innerHeight;
-  const size = renderer.getSize(new THREE.Vector2());
-  if (size.x !== w || size.y !== h) renderer.setSize(w, h, false);
-  renderer.setScissorTest(false);
-  renderer.clear();
-  renderer.setScissorTest(true);
-  const t = now / 1000;
-  for (const v of views) {
-    const r = v.el.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > h || r.width === 0) continue; // (off screen)
-    const bottom = h - r.bottom;
-    renderer.setViewport(r.left, bottom, r.width, r.height);
-    renderer.setScissor(r.left, bottom, r.width, r.height);
-    v.camera.aspect = r.width / r.height;
-    v.camera.updateProjectionMatrix();
-    if (v.target) { // the ring turns, the glow pulses
-      v.model.userData.ring.rotation.y += dt * 3;
-      v.model.userData.glow.scale.setScalar(1 + Math.sin(t * 5.5 + v.phase) * 0.15);
-      v.model.position.y = 0.15;
-    } else {
-      v.model.rotation.y += dt * 1.6;
-      v.model.position.y = Math.sin(t * 2 + v.phase) * 0.12;
-    }
-    v.model.userData.animate?.(t + v.phase); // (a model that moves: the big splash's flames)
-    const { red, blue } = v.model.userData; // (the siren's light bar flashes)
-    if (red && blue) { const on = Math.floor(t * 6) % 2 === 0; red.visible = on; blue.visible = !on; }
-    renderer.render(v.scene, v.camera);
-  }
-  requestAnimationFrame(frame);
-};
-requestAnimationFrame(frame);

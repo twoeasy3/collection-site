@@ -1,6 +1,10 @@
 {
   "id": "grand-pacific",
   "name": "Sydney to Kiama",
+  "description": {
+    "good": "Ten kilometres down the coast from Sydney to Kiama: city, bush, the Sea Cliff Bridge. Watch for kangaroos, drop bears and gusts off the sea.",
+    "evil": "A long coast road with caravans to bully, kangaroos to dodge and a cliff bridge in a crosswind. Scenic route, antisocial driver."
+  },
   "theme": "coast",
   "drive": "left",
   "clock": { "good": 480, "evil": 340 },
@@ -67,7 +71,7 @@
   "targets": [
     { "s": 1000, "side": "left" },
     { "s": 3000, "side": "right" },
-    { "s": 4600, "side": "left" },
+    { "s": 4600, "side": "left", "offset": 1.2, "beam": true },
     { "s": 7600, "side": "right" },
     { "s": 9400, "side": "left" }
   ],

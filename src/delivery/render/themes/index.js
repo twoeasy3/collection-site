@@ -8,6 +8,8 @@
 // LINE, each on the line above its batch's marker (the batches were built side by side on three branches: the markers
 // keep their additions apart, so the branches merge).
 import { toyroom } from './toyroom.js';
+import { seabed } from './seabed.js';
+import { moon } from './moon.js';
 // (batch A's imports go above this line)
 // (batch B's imports go above this line)
 import { themepark } from './themepark.js';
@@ -17,6 +19,8 @@ import { port } from './port.js';
 
 export const THEME_SCENERY = {
   toyroom,
+  seabed,
+  moon,
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   themepark,

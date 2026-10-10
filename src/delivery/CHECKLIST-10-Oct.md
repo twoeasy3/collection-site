@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `3047fac` (main; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 17 (in-game UI), 18 (menu UI), 19 (road gimmicks), 20 (theme levels A). Theme levels B and C start as soon as A has committed the shared base.
+Last updated: after `6e327af` (main: the audit, Tank Rage and theme levels A merged; not pushed). Running: agent 18 (menu UI), 19 (road gimmicks), 21, 22, 26 (theme levels B, C, D), 24 (known problems, with four audit findings added).
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -126,23 +126,31 @@ whichever agent is free, without asking first.
 
 Three agents at a time; the next item starts as each one finishes.
 
-- [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
+- [x] **Stelvio and Market Town**: agent 14, merged into `main` as `f9303ee` (`2050f4e`, `1d787fa`, `c513726`, `ff83536`); levels, schema, bundle, hazards and HUD checks pass. Seen: Stelvio's hairpin and Market Town's crossroads, before and after, sent to the owner
+  - [x] Boulders: a rock's waiting place and fall were measured from the road's plane, not the land, so it hung in the sky. Now each waits on the land and lands a little sunk, on every level
+  - [x] Markings: a crossroads' arms were not counted as roads, so houses and lawns lay over the cross road and hid its lines. Arms are roads now, for every theme; the suburb gets pavements, lots and trees along side roads and cross roads
+  - [x] Stelvio: stone walls and red and white bands round the hairpins, snow poles, a summit hut and sign, a crosswind over the top, 20 cash pickups in 8 rows
+  - [x] Market Town: a calmer side road, market umbrellas, a burst main, 25 cash pickups in 10 rows
+  - [ ] Still wrong: the face between Stelvio's legs is a ramp on a coarse grid; no valley view; Market Town's railway is a flat band; the cross road has no houses; a pickup on a shoulder of the main road fails the level check (so rows are two across at most on a two-lane road)
 - [x] Police pursuit redone as a plain traffic event: a getaway car and its interceptor come through from behind and drive on; nothing gained or lost by the player. Merged, `65478c1`; levels, schema, pursuit and hazards checks pass. Seen as two small stills and its Gimmicks card. For the owner: the pair now pass at 130% of the player's top speed; the getaway car is no longer an "evil" car; the helicopter was removed
-- [~] Car ideas lot: agent 13
+- [x] Car ideas lot: all 30 models, the table and the garage's "Car ideas" tab, on `main` (`18125cb`, `9ce0665`, `657beea`, `303bdb7`). Contact sheet sent to the owner. Weakest: Split-Window Coupe, Midnight Coupe, Two-Stroke Saloon. Nothing clicked by hand
 - [x] Twenty more Good cargo items (C1 to C20): agent 15, merged into `main` (`cc34343`, `533d5a2`); cargo, bundle and levels checks pass; seen on the Cargo page's contact sheet, sent to the owner. Weakest: sushi boat, tea set, globe. Nothing seen moving
 - [x] Twenty more Evil cargo items (C21 to C40), three states each: agent 16, merged into `main` as `6fc32e2` (`c8ba744`, `269134e`; two small conflicts with the Good branch, both sides kept); cargo, bundle and levels checks pass; 50 items in all now. Seen on two contact sheets, sent to the owner. Weakest: the teddy bear's middle state, the cannonball's first two states, the reactor's last, the skunk asleep. Nothing seen moving
 - [ ] Cargo picked by hand for more levels (the pairs suggested under "More cargo"): not done; every level gets one by its place on the menu
 - [~] Menu UI rework (M1 to M3 in the section "Menu UI" at the end): agent 18, branch `delivery-menu`
-- [~] In-game UI improvements (U1 to U5): agent 17, branch `delivery-ui`. The owner asked what the "on fire" message was: there is none (the orchestrator had listed it without checking); the agent has been told to build the stay-on-screen list only from messages that exist
+- [x] In-game UI improvements (U1 to U5): agent 17, merged into `main` as `1d94f0e` (`8cb5d78`, `5eb974f`); levels, bundle and HUD checks pass. A ring with the distance to go and a shoulder dial in the meters' corner; messages along the top edge in landscape and at the foot in portrait; `CONFIG.messageTimes`; eleven sticky messages (puncture, beached, bad gas, heavy, butterfingers, and six bad mystery effects); the mystery's name in the status. Seen at desktop and phone size, sent to the owner. Weak spots: wrapped messages and sticky rows push the camera warning toward the horizon on desktop; in portrait a long message reaches the car. Nothing seen moving
 - [~] Road gimmicks, resumed from the saved ramp work: agent 19, branch `delivery-gimmicks` (a new worktree)
 - [~] New levels on new themes, built from the gimmicks the game has now (owner, 10-Oct: "Let's get some agents going making new levels with the new themes and the gimmicks we have right now"). No new gimmick per theme. Three agents, three themes each, a level on each:
-  - [~] A (agent 20, `delivery-themes`): the shared base first (where the new levels live, saved progress undisturbed), then T14 toy room, T15 underwater tunnel, T18 moon base
-  - [ ] B (`delivery-themes-b`, waiting for A's base): T13 film studio backlot, T1 Venice, T4 ice road
-  - [ ] C (`delivery-themes-c`, waiting for A's base): T12 theme park, T7 volcano island, T11 container port
+  - [x] A (agent 20), merged into `main` as `6e327af`; levels, schema, bundle, save and targets checks pass. A group of their own on the menu (T1...), saved progress undisturbed. **T1 Toy Room**, **T2 Twenty Thousand Leaks** (a new sea-bed theme: the road in a glass tube), **T3 Tranquility Base** (a new moon theme). 22 to 28 cash pickups and 8 to 11 side-by-side rows each. Seen in one still each, sent to the owner. Not played. The stopped agent's toy gimmicks and low gravity were cut and kept on `delivery-themes-toys-wip`
+  - [~] D (agent 26, `delivery-themes-d`): T16 old Wild West, T9 favela hillside, T17 rice terraces
+  - [~] B (agent 21, `delivery-themes-b`, from A's base `0c74bd6`): T13 film studio backlot, T1 Venice, T4 ice road
+  - [~] C (agent 22, `delivery-themes-c`, from A's base `0c74bd6`): T12 theme park, T7 volcano island, T11 container port
 - **Standing rule for level content (owner, 10-Oct):** "add more Cash bonus pickups on the level from now, and have parts of the level where two or more pickups are side by side." Given to the theme agents, the Stelvio and Market Town agent and the gimmicks agent. Older levels have between none and four cash pickups
+- [x] Tank Rage: agent 23, merged into `main` as `d1e6e9d` (`0c72eb6`, `a735f67`, `422f268`); targets (257), tank, water and save checks pass. **Markers:** a theme or a single target can set `target: { offset, height, style, base, arm, beam }`; set for Mumbai (the post stood inside a building), Hong Kong (half in a tower wall), Tokyo, Singapore day and night, Safari and the circuit themes. **Amphibious tank:** a model of its own; a rage on an amphibious level is in it, on land and water; no garage bay. Seen in stills, sent to the owner. For the owner: no garage bay; 46 m/s ashore and 72% afloat; a beam of light only on the configured themes
+- [x] Audit (owner: "Audit only", then "Include a plan to cut down on the bloat"): `AUDIT-10-Oct.md`, `11ef1b5`: 32 findings and a ten-stage plan. C4 (script injection in the editor, live), C2, C3, C5, C6 given to agent 24. **C1 needs the owner**: which of the two burst-water-main systems is the game's. Performance findings and the bloat plan are not assigned
 - **The level progression rework waits:** the owner will do "a full rebalance later"
-- [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
-- [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
+- [ ] Next 3: clocks for the five themed levels; Gimmick Road 2's gimmicks into real levels (menu pictures moved to the known-problems agent)
+- [~] Known problems: agent 24, branch `delivery-fixes`: the flaky headless checks first (suspected: every worktree shares one Vite cache through its `node_modules` junction), pickups on shoulders, the Gimmicks page's console errors, the replay failures, duplicate config keys, stale notes and HANDOVER, the editor's leftovers (E6.2, E3.5, E6.1), the missing menu pictures
 - [ ] Next 5: 28 liveries, 31 endless mode, replay in the browser
 - [ ] Next 6: 51 phone performance, 49 parallel smoke test, 50 lint and CI
 - [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
@@ -361,11 +369,15 @@ Build the theme first, then the level. Make sure the theme is reusable
       a painted sky on a flat, with cameras on cranes and a director's chair. Gimmick: stunt
       cars that crash on cue (scripted wreckage) and a "cut!" that freezes traffic. Reuses:
       zones (a look per stretch), wreckage, the traffic-freeze mystery.
-- [ ] T14. **Toy room**: the whole level at toy scale: a road of plastic track across a carpet,
+- [x] T14. **Toy room** (done as level T1 "Toy Room", `levels/toys.json`, with the game's existing gimmicks, not the
+      three below: those are unfinished on branch `delivery-themes-toys-wip`. Verified: the level's checks, a ghost
+      probe to the end, screenshots along it. Not played by hand): the whole level at toy scale: a road of plastic track across a carpet,
       building blocks, a train set, a sleeping cat. Gimmick: marbles rolling down the track, the
       cat's paw as a hazard, a ramp-and-loop jump. Reuses: drifters, drawbridge jump, the models
       are already toy-like.
-- [ ] T15. **Underwater tunnel**: a glass tube on the sea bed: whales and shoals outside, a
+- [x] T15. **Underwater tunnel** (done as theme `seabed` and level T2 "Twenty Thousand Leaks", `levels/leaks.json`, with
+      the game's existing gimmicks: burst mains for the leaks, two tunnels for the dark stretches. No pump, no gimmick
+      of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a glass tube on the sea bed: whales and shoals outside, a
       leaking stretch, an air-lock at each end. Gimmick: leaks that flood a lane until a pump
       catches up; a section with the lights out. Reuses: tunnels, water mains, blackout.
 - [ ] T16. **Old Wild West**: a dirt main street, saloon, water tower, a steam railway beside the
@@ -376,7 +388,10 @@ Build the theme first, then the level. Make sure the theme is reusable
       temple gate over the road, kites. Gimmick: the terraces flood in turn, spilling across the
       road as moving slick patches; ducks crossing in a line. Reuses: terrain, water mains'
       slicks, herds.
-- [ ] T18. **Moon base**: grey regolith, domes, a low black sky with the Earth in it, a road of
+- [x] T18. **Moon base** (done as theme `moon` and level T3 "Tranquility Base", `levels/moon.json`, with the game's
+      existing gimmicks: four crests to fly, potholes for craterlets, rockfall and a boulder strike for meteors. NO low
+      gravity: the physics are the game's own (the stopped agent's start on it is on `delivery-themes-toys-wip`).
+      Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): grey regolith, domes, a low black sky with the Earth in it, a road of
       compacted dust. Gimmick: low gravity: every bump is a long jump and braking takes twice as
       far. Different from the space theme, which has no ground. Reuses: space's sky, potholes,
       the jump physics.
@@ -645,10 +660,32 @@ saved progress and the balance of the tiers are untouched.
 | 29 | `doubledecker` | Double Decker | AEC Routemaster | Two decks, open rear platform, half-cab beside the engine |
 | 30 | `fireengine` | Fire Engine | American LaFrance pumper | Red, ladder on top, hose reels and pump panel, light bar |
 
-- [ ] The 30 models, in a state-free file of their own
-- [ ] A table of the 30 (name, what it is based on, size, colours for Good and Evil, a line about it)
-- [ ] A "Car ideas" tab in the garage: a second lot where they are parked, to look at, with the Livery button working
-- [ ] A picture of each, looked at and corrected until it reads as what it is based on
+- [x] The 30 models, in a state-free file of their own: `render/ideaModels.js` (`IDEA_MODELS`), in the
+      conventions of `render/models.js` (it has helpers of its own: those of `models.js` are not exported).
+      Eleven move: the three-wheeler rocks, the tin snail sways, the two-stroke smokes, the milk float's crates
+      rattle, the split-window's and the panda's lamps pop up, the wedge's and the gullwing's doors open, the
+      monster truck rocks with its flags flying, the food truck's vent spins, the school bus's stop arm swings
+      out and its lamps flash, the fire engine's lights flash. Checked: `node --check`, `.bundle-check.mjs`.
+- [x] A table of the 30 (name, what it is based on, size, colours for Good and Evil, a line about it):
+      `ideas.js` (`IDEA_CARS`), no rendering imports. Sizes are the real vehicle's (the monster truck is 3.1 m
+      wide, the school bus 10.8 m long). None is in `CARS` or `CONFIG.vehicles`; no check script counts them.
+- [x] A "Car ideas" tab in the garage: a second lot where they are parked, to look at, with the Livery button
+      working: `render/ideaslot.js`, with small edits in `render/garage.js`, `main.js` (one line),
+      `delivery/index.html` (the "Garage" title is now two tab buttons) and `menus.css`. Three rows of ten
+      bays (the ten longest in a deeper back row), each idea's name painted in front of its bay, a hoarding
+      and CAR IDEAS signs behind; hover or tap for name, "Based on", size and note; Sort, Show, the bank and
+      the comparison card are hidden on this tab; the button reads "An idea, not a car yet" and is disabled.
+      The garage always opens on its own lot. `?garage&tab=ideas&look=<id>` / `&hover=<id>`. Seen in stills
+      (desktop, Evil livery, a 520 px wide phone shape, and the garage's own lot unchanged). NOT verified:
+      nothing clicked, dragged or tapped by hand: the tab buttons, scrolling and the pointer's hover are
+      untested beyond their address-bar equivalents.
+- [x] A picture of each, looked at and corrected until it reads as what it is based on: every model looked
+      at from three sides (`&studio=<ids>&views=3`), then again singly; corrected after looking: the bubble
+      car (rebuilt as an egg with a flat door), the bug (wings, lamps, windscreen), the two-stroke (rear
+      pillars), the pony car (nose), the split-window (nose and tail drawn to blades), the motorhome (its W
+      was an M). Weakest: the Split-Window Coupe (reads as a sixties sports coupe, not unmistakably a Sting
+      Ray), the Midnight Coupe (a boxy coupe with a wing until its tail lamps are seen) and the Two-Stroke
+      Saloon (a generic little saloon). Evil liveries seen once each, not tuned.
 
 ## More cargo: 40 ideas (draft, not assigned)
 

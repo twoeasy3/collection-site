@@ -1,6 +1,10 @@
 {
   "id": "hong-kong",
   "name": "Hong Kong Harbour",
+  "description": {
+    "good": "Along the harbour front, on the left: a tunnel, a camera or two, a convoy to let by, and the sea lapping over the low road.",
+    "evil": "Taxis nose to tail, a convoy to cut up, cameras to ignore and the harbour washing over the road. Hong Kong will cope."
+  },
   "cargo": { "good": "goldfish", "evil": "tentacle" },
   "theme": "hongkong",
   "drive": "left",

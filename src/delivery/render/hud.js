@@ -17,8 +17,15 @@ const hudCamLimit = document.getElementById('camLimit');
 const hudCamDist = document.getElementById('camDist');
 const hudCamStatus = document.getElementById('camStatus');
 const hudCamArrow = document.getElementById('camArrow');
+// the level's gauge (see index.html, #progress): a ring that fills, the distance left in its middle
+const hudProgressLeft = document.getElementById('progressLeft'), hudProgressUnit = document.getElementById('progressUnit');
+const hudProgressLabel = document.getElementById('progressLabel'), hudProgressLaps = document.getElementById('progressLaps');
 Game.onLoad.push(() => {
   hudProblems.textContent = Track.problems.length ? 'Level data problems: ' + Track.problems.join(' | ') : '';
+  // (a lapped level: a notch across the ring where each lap ends)
+  let notches = '';
+  for (let lap = 1; lap < (LEVEL.laps || 1); lap++) notches += `<path d="M28 3.5v5" transform="rotate(${(lap / LEVEL.laps * 360).toFixed(1)} 28 28)"/>`;
+  hudProgressLaps.innerHTML = notches;
 });
 const hudTip = document.getElementById('tip');
 const hudSpeed = document.getElementById('speed');
@@ -35,7 +42,7 @@ const hudTowing = document.getElementById('towing'), hudTowFill = document.getEl
 const hudSocial = document.getElementById('social'), hudSocialFill = document.getElementById('socialFill');
 const hudBusts = document.getElementById('busts');
 // (racing a rival courier, the player's busts, as on any delivery level)
-const rivalLine = () => '   BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
+const rivalLine = () => '\nBUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts; // (on a line of its own: see style.css, #busts)
 // who is coming up behind, at the foot of the screen (see CONFIG.behind): an arrow pointing back
 // towards them (tipped and moved over to the side of the road they are on), and how far back they are
 const hudBehind = document.getElementById('behind'), hudBehindArrow = hudBehind.querySelector('.arrow');
@@ -124,11 +131,37 @@ const syncCamAlert = () => {
   const turn = Math.atan2(across, Math.max(gap, 4));
 
   const slide = Math.max(-120, Math.min(120, across * 14));
-  hudCamAlert.style.transform = `translateX(calc(-50% + ${slide.toFixed(1)}px))`;
+  hudCamAlert.style.transform = `translateX(${slide.toFixed(1)}px)`; // (from the middle of the top strip, where it sits)
 
   if (hudCamArrow) hudCamArrow.style.transform = `rotate(${turn.toFixed(3)}rad)`;
 };
-const hudDangerFill = document.getElementById('dangerFill');
+const hudDangerFill = document.getElementById('dangerFill'), hudDangerNeedle = document.getElementById('dangerNeedle');
+// the sticky messages' slot (see messages.js): a row each, the newest at the top
+const hudSticky = document.getElementById('sticky');
+let stickyShown = '';
+const syncSticky = (now) => {
+  Message.settle(); // (none is drawn after its condition has ended)
+  const playing = Game.state === 'playing' && !Game.screensaver;
+  const held = playing ? Message.sticky.slice(-CONFIG.messageTimes.stickyRows).reverse() : [];
+  const key = held.map(h => h.id + h.line.text).join('|');
+  if (key !== stickyShown) {
+    stickyShown = key;
+    hudSticky.textContent = '';
+    for (const h of held) {
+      const row = document.createElement('div'), words = document.createElement('span');
+      row.className = 'row';
+      words.textContent = h.line.text;
+      row.append(Object.assign(document.createElement('i'), { className: 'lamp' }), words, Object.assign(document.createElement('div'), { className: 'bar' }));
+      hudSticky.append(row);
+    }
+  }
+  held.forEach((h, i) => {
+    const row = hudSticky.children[i];
+    // (not while the same words are still up on a message line: said once, then kept here)
+    row.classList.toggle('hidden', !Game.paused && Message.lines.includes(h.line) && now - h.line.at < h.line.time * 1000);
+    row.lastChild.style.width = h.progress * 100 + '%';
+  });
+};
 const hudFade = document.getElementById('fade');
 const runButtons = document.getElementById('runButtons');
 const pauseBtn = document.getElementById('pauseBtn');
@@ -149,7 +182,14 @@ export const updateHud = () => {
   hudTimer.style.color = hudTip.style.color = late ? '#ff5a4f' : '';
   hudTip.textContent = (late ? 'TIP COUNTDOWN  $' : 'TIP $') + (Game.state === 'start' ? LEVEL.tip : Game.tip).toFixed(2);
   hudSpeed.firstChild.nodeValue = kmh(Player.speed) + ' ';
-  hudProgress.style.width = Game.progress * 100 + '%';
+  // the level's ring, and the distance left in it (in km down to the last one, then in m)
+  hudProgress.setAttribute('stroke-dasharray', (Game.progress * 100).toFixed(2) + ' 100');
+  const togo = Math.max(0, Game.state === 'start' ? 0 : Game.distanceLeft);
+  const figure = togo >= 1000 ? (togo / 1000).toFixed(1) : String(Math.round(togo)), unit = togo >= 1000 ? 'km' : 'm';
+  if (hudProgressLeft.textContent !== figure) hudProgressLeft.textContent = figure;
+  if (hudProgressUnit.textContent !== unit) hudProgressUnit.textContent = unit;
+  const lapLabel = LEVEL.laps ? 'LAP ' + Math.min(LEVEL.laps, Game.lap + 1) + '/' + LEVEL.laps : 'TO GO';
+  if (hudProgressLabel.textContent !== lapLabel) hudProgressLabel.textContent = lapLabel;
   let effects = '';
   if (Player.active) {
     if (Player.turbo > 0) effects += 'TURBO ' + Player.turbo.toFixed(1) + '  ';
@@ -159,7 +199,7 @@ export const updateHud = () => {
     if (Player.siren > 0) effects += 'SIREN ' + Player.siren.toFixed(1) + '  ';
     if (Player.badGas > 0) effects += 'BAD GAS ' + Player.badGas.toFixed(1) + '  ';
     if (Player.heavy > 0) effects += 'HEAVY ' + Player.heavy.toFixed(1) + '  ';
-    if (Player.mystery) effects += 'MYSTERY ' + Player.mysteryTime.toFixed(1) + '  ';
+    if (Player.mystery) effects += Player.mysteryName.toUpperCase() + ' ' + Player.mysteryTime.toFixed(1) + '  '; // (the effect by name: "EARTHQUAKE 7.2")
     if (Player.tank > 0) effects += 'TANK RAGE';
   }
   hudTurbo.textContent = effects;
@@ -170,6 +210,7 @@ export const updateHud = () => {
     button.style.opacity = throwOpacity;
     if (button.textContent !== throwLabel) button.textContent = throwLabel;
   }
+  syncSticky(performance.now());
   // pause and exit: shown during a run and the screensaver
   runButtons.style.display = Game.state === 'playing' ? 'flex' : 'none';
   const pauseLabel = Game.paused ? 'Resume' : 'Pause';
@@ -189,15 +230,14 @@ export const updateHud = () => {
     }
     const age = (now - line.at) / 1000;
     el.style.opacity = Game.paused || Game.state !== 'playing' || !line.text ? 0
-      : Math.min(1, Math.max(0, (line.time - age) / CONFIG.messageFade));
+      : Math.min(1, Math.max(0, (line.time - age) / CONFIG.messageTimes.fade));
   });
   // (in a race, the player's place in it: one more than the racers ahead)
   // (round a lapped circuit, the laps count first)
   const raced = (laps, s) => (LEVEL.laps ? laps * Track.length : 0) + Track.along(s);
   hudBusts.textContent = LEVEL.grid
     ? 'POSITION ' + (1 + Traffic.cars.filter(c => c.racer && raced(c.laps || 0, c.s) > raced(Game.lap, Player.s)).length) + ' / ' + (LEVEL.grid.count + 1) +
-      (LEVEL.laps ? '   LAP ' + Math.min(LEVEL.laps, Game.lap + 1) + ' / ' + LEVEL.laps : '') +
-      (LEVEL.grid.rival ? rivalLine() : '')
+      (LEVEL.grid.rival ? rivalLine() : '') // (the lap is under the level's ring: see above)
     : 'BUSTS ' + Game.busts + ' / ' + CONFIG.maxBusts;
   syncBehind(raced);
   syncCamAlert();
@@ -225,12 +265,16 @@ export const updateHud = () => {
     hudSocialFill.style.width = Social.level * 100 + '%';
     hudSocial.classList.toggle('protected', Social.protected);
   }
-  const danger = Player.danger / Social.dangerTime;
-  hudDanger.style.display = Player.active && danger < 1 ? 'block' : 'none';
-  // a flat tyre: stop, and the bar fills as the tyre is changed
-  hudFlat.style.display = Player.active && Player.puncture ? 'block' : 'none';
+  // the shoulder's dial: 0 on the road, up to the bust on the shoulder (always there; dim where no shoulder rule applies)
+  const danger = Player.active ? Math.max(0, Math.min(1, 1 - Player.danger / Social.dangerTime)) : 0;
+  hudDangerNeedle.setAttribute('transform', `rotate(${(-120 + danger * 240).toFixed(1)} 28 28)`);
+  hudDangerFill.setAttribute('stroke-dasharray', (danger * 100).toFixed(1) + ' 100');
+  hudDanger.classList.toggle('hot', danger >= 0.75);
+  hudDanger.classList.toggle('off', LEVEL.shoulderTimer === false);
+  // a flat tyre: stop, and the bar fills as the tyre is changed (said by its sticky message, where that is one:
+  // this line only if it has been taken out of CONFIG.messageTimes.sticky)
+  hudFlat.style.display = Player.active && Player.puncture && !Message.sticky.some(h => h.condition === 'puncture') ? 'block' : 'none';
   hudFlatFill.style.width = Math.min(1, (Player.fixing || 0) / CONFIG.puncture.fixTime) * 100 + '%';
-  hudDangerFill.style.width = danger * 100 + '%';
   const health = Math.max(0, Player.health / Player.maxHealth);
   hudHealth.style.width = health * 100 + '%';
   hudHealth.style.background = health > 0.5 ? '#4caf50' : health > 0.25 ? '#ffd23f' : '#ff3b30';

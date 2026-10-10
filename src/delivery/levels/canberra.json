@@ -1,6 +1,10 @@
 {
   "id": "canberra",
   "name": "Canberra",
+  "description": {
+    "good": "The capital's grand avenues, with a median to keep things civil. A bullet train shares the route: do look both ways.",
+    "evil": "Wide avenues, slow public servants and a bullet train that takes no prisoners. Be on the right side of it and enjoy the view."
+  },
   "theme": "canberra",
   "clock": { "good": 180, "evil": 128 },
   "tip": 95,

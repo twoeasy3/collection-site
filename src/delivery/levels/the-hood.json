@@ -1,6 +1,10 @@
 {
   "id": "the-hood",
   "name": "The Hood",
+  "description": {
+    "good": "A delivery through a rough neighbourhood. Gang houses shoot at whatever passes and drive-by cars cruise: take the armour and keep moving.",
+    "evil": "Gang houses, drive-bys and bullets for anyone passing. They started it. Grab the armour and give the street something back."
+  },
   "theme": "hood",
   "clock": { "good": 304, "evil": 215 },
   "tip": 170,
