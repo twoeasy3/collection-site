@@ -1099,6 +1099,119 @@ pick ups and traffic."
         phone qualifies too: owner to say), over the small one. NO large pictures exist yet. To take them:
         `shots.mjs --levels` to render once at 1920x854 and write that as `large/<id>.jpg` and a 600x267
         copy as `<id>.jpg`, both JPEG at about 80.
+- [x] **Level 26 Quarry Run to the new standard: `delivery-rework-b` merged into `main` as `d96a95c`, not
+      pushed.** Seen down its whole length in 22 stills (nothing needed fixing), kinds the same as before,
+      36 cash in 14 rows (seven reach a shoulder), clock 215 / 165 unchanged, menu picture in both sizes
+      from a chosen frame (the default one had a lamp post dead centre: the screenshot agent is giving it a
+      `CINE` entry). All checks passed before the last merge of `main`. Pictures sent to the owner. For the
+      owner: the finale's blast takes both lanes; the right shoulder and the merge side are the way round.
+      Not seen: the side roads from on them, the level as Evil, anything moving. Next there: 27 Hong Kong
+      (before-pictures taken).
+- [~] **Audit C1 decided by the owner: "remove A"** (the undrawn round slick of `watermains.js`; the wet lane
+      of `hazards.js` stays). Branch `delivery-mains`, the Quarry Run agent, before Hong Kong.
+- [x] **Lasting messages as icons: `06cd661`, merged into `main` as `7b482e0`, not pushed.** A lasting condition
+      is said like any message for its normal 4 s, then leaves a round icon with a draining ring (eleven
+      icons, inline SVG, `render/hudIcons.js`); a hover or touch says it again for 3 s. Under the gauges on
+      desktop and phone landscape, beside them in portrait. HUD, bundle, levels, mysteries, milestones and
+      gravel checks pass; stills at the three sizes looked at; before and after sent to the owner. Not seen
+      moving or on a real phone; a tap on an icon never fired in a browser; narrower than about 375 px the
+      third icon of a row may reach the tank corner. Its agent is now on level 22, Outback Express
+      (`delivery-rework-c`).
+- [~] **Themed obstacles, first pass: `d9f4696` on `delivery-obstacles`, NOT merged** (three of thirteen models
+      never seen, none seen close up; the agent is on that now). **The audit:** the crate is only on the
+      newest levels (49 on 11 of levels 32 to 43); older levels use barrier, cone, sign and bale and things
+      made for their place; 22 menu levels place no plain obstacle. **Mechanism:** a mapping on the theme
+      (`OBSTACLES` at the foot of `themes.js`, `themedKind`), applied where a level's `obstacles`,
+      `shoulderRows` and `drifters` are loaded, so no level file changes and nobody else has anything to
+      replace; each new kind costs and measures exactly what it stands in for; new
+      `scripts/.obstacles-check.mjs`. **Built:** toy block and skittle (toy room), diving helmet (sea bed),
+      supply pod (moon), director's chair and camera dolly (backlot), mooring posts (Venice), fuel drum (ice
+      road), popcorn cart (theme park), barrel (Wild West), chair stack (favela), rice basket (rice), a
+      present (Christmas Eve). Port keeps its crates. Checks pass; three clocks did not move. Pictures sent
+      to the owner (Venice, the barrel, the drum, the carts). Next there: a sheet of all thirteen close up
+      and corrections, a lava boulder for the volcano's too-dark rock, then wheelie bin, tumbleweed,
+      snowdrift, sack stack, a flag for the Moon, Hurricane's bales, hell's cones.
+- [x] **Every check on the code pushed as `1f05bc5`: all 27 pass** (run on `delivery-gapfill` with `main` merged
+      in; that tree differs from `1f05bc5` only by the seeded gimmicks check and four level files).
+- [~] **`delivery-gapfill`: built, NOT merged (unseen; its agent is taking the stills).**
+  - The gimmicks check is seeded and repeats (`e940af3`): `--seed=n`, `--seeds=k`; two full runs print the
+    same bytes. All three flaky lines were the CHECK's faults (a test vehicle put into a used slot kept the
+    last driver's quirks; cleared traffic was dealt out again the next step; a lane read after the stretch
+    ended): none in 30 seeds now. Today's ice change does not touch traffic.
+  - The four gaps (`8156b6e`, `af993a7`): Toy Room a washboard with two crates (440-660); Leaks a fresh-tar
+    lane (3560-3860); Tranquility Base a barrier past the crest (470) and ruts (620-820); Favela Heights
+    speed cushions (1490-1670); cash re-laid with a 20 on a shoulder at each; descriptions reworded.
+    Checks, replay and probes pass; no clock moved.
+  - Seen in the game's code and left: a tall vehicle only takes the low bridge's exit if already in the
+    kerb lane; Tranquility Base's crest costs 30 health on landing at 130 km/h even in a clear lane.
+  - Next for that agent: level 23, Tour de Coast (`delivery-rework-d`).
+- [x] **Second levels, batch E: `delivery-themes-e` merged into `main` as `3cb4f2d`, not pushed.** All five seen
+      along their whole length (56 stills); three faults found and fixed: a toy-room rug lying over Derby's
+      road (`82a73a7`), a wall across the camera at Far Side's second hairpins and a crater rim across its
+      road (`88f4297`). All 27 checks pass on the branch; clocks as written. Menu pictures in both sizes for
+      four; Stunt Double's waits on a `CINE` entry (given to the screenshot agent). Pictures sent to the
+      owner. Not re-shot: Tranquility Base after the crater change. Not started: Spring Thaw (the ice
+      road's second level). On `main` the menu now has 65 levels.
+- [~] **Two new car stats, Delivery and Nerve: started** by the batch E agent, branch `delivery-stats` (it reports
+      first on how packages, the social meter and the danger meter work today). The owner's words follow.
+  - **Delivery:** scales package damage / happiness. "Delivery is to be scaled over tiers as health is
+    scaled. To keep the number of packages required to destroy a car in control. It should still be harder
+    to wreck a higher tier cars with packages overall." And: "We will have to consider if the social meter
+    needs to be scaled per level as well" (to be reported on by whoever builds it, before it is designed).
+  - **Nerve** (the owner took the name): scales the danger meter's countdown. "Nerve shouldn't scale per
+    tier but as a extra balancing knob."
+  - To settle while building: both as multipliers in `cars.js` (1 changes nothing); Nerve to multiply the
+    level's own shoulder timer; whether either overlaps one of the four car traits; room for nine stats on
+    the phone's comparison strip; values for the 41 garage cars and the idea cars.
+- **Level progression rework: three more answers from the owner (10-Oct evening; still not being built):**
+  - Owning a car of the tier (open question 3): "The player is forced to buy a car of that tier." No loan,
+    no gift. (Whether a tier's tips cover the next tier's cheapest car is then a matter for the rebalance.)
+  - Amphibious levels: "meant to be locked behind each regular star. A player will have to buy all 5 to play
+    them." Read as: A1 to A5 are tied one each to star levels 1 to 5 and each needs the amphibious car of
+    that star (Sailing Herald, Float Van, Toybota, Dampervan, Nissank), so all five must be bought to play
+    all five. Today the section is open from the start and any amphibious car plays any of them. Exactly
+    what opens each (reaching that gold tier, or only owning that car) is still to be confirmed.
+  - Blue 4 has no cars (open question 4): four of the idea cars to go there. The orchestrator's suggestion,
+    awaiting the owner's word: Rear-Engine Coupe, Snake Roadster, Stainless Gullwing, and the Polygon Truck
+    (the owner: "Swap the rally wedge for a non-passenger car model"; other such choices: Wide Truck,
+    Monster Truck, Fire Engine). **Approved by the owner.** [~] Being built by the idea-cars agent as a
+    further piece on `delivery-idea-cars`: the four become real Blue Star 4-star garage cars (stats and
+    prices between Blue 3 and Blue 5, bought and owned); the other twenty-six stay tierless and free. Open questions for the owner are
+    now kept in `OPEN-QUESTIONS-10-Oct.md`.
+- **Pushed on the owner's word ("Push it"): `main` at `1f05bc5` is on the remote and deploying.** The full set
+      of checks on it had not come back when it went; no production build was run here.
+- **The owner's rule from here: a request jumps the queue only if the owner labels it so;** unlabelled ones go
+      to the next agent that frees up.
+- [x] **Idea cars drivable and the Blue 4 tier: `5b78611`, `8dd1dbf`, merged into `main` as `9c3dfdc`, not
+      pushed.** 26 ideas stay in their lot, tierless, free, flagged `placeholder`, "Drive it" on the lot's
+      button, "Idea" where stars would be; they stay out of `CARS` (only the look-up of the car in use sees
+      both lists) and out of the save's owned list (the cookie is 1024 bytes on a full save). Four are now
+      real Blue Star 4-star cars with Super liveries: Stainless Gullwing $920, Rear-Engine Coupe $960, Snake
+      Roadster $1000, Polygon Truck $1060. A crash on opening the garage with a bay-less car in use was
+      found by the stills and fixed. New `scripts/.ideas-check.mjs`; the balance, save, mysteries, gimmicks3
+      and other checks pass. Stills looked at; pictures sent to the owner. Not driven by hand; 22 ideas not
+      seen in a run; no horn heard. Its agent is now on level 24, Ring Road (`delivery-rework-e`).
+- The original entry: [x] **Idea cars drivable (owner, 10-Oct evening; JUMPED THE QUEUE):** "Give all the idea car models placeholder
+      values and allow them to be selected. They are tierless for now." The thirty models of the Car ideas
+      lot get placeholder stats (flagged as such), no tier, stars or price, a "Drive it" button, and are
+      saved as the car in use without joining the owned list; not in traffic. A ninth agent, branch
+      `delivery-idea-cars`, stills included.
+- [~] **Obstacles to belong to their levels (owner, 10-Oct evening):** "Replace the crates with a better obstacle.
+      Please replace the obstacles with things more evocative for their levels. Do an audit. These obstacles
+      are not gimmicks." Read as: plain obstacles (crate, cone, barrier, bale...) are dressing, so swapping
+      them does not change a level's list of gimmicks, and each replacement behaves exactly as what it
+      replaces; the crate goes wherever something better fits; every new one must read at a glance against
+      its road (the tyre's fault). An eighth agent, branch `delivery-obstacles`: the audit (every level's
+      kinds, a table per theme), a mechanism (likely a mapping on the theme, so level files need not
+      change), models for the twelve newest themes first, stills. Level agents told to keep placing generic
+      kinds and to list any obstacle that does not read or does not belong. Batch E's crate drifters on
+      Derby and Seaquake stay as drifters and take the theme's replacement.
+- [x] **`delivery-gimmicks` merged into `main` as `1f05bc5`, not pushed** (it had waited since the morning): the
+      low sun (Grand Pacific, Passage du Gois), the dust trail (Safari, the Battlefield), the flooded
+      underpass (Big Business, Expressway); Gimmick Road 3 is 1200 m longer. No conflicts. The full set of
+      checks on this `main` is being run by the gap-fill agent: NOT yet known to pass.
+- [x] Old screenshot folders: the owner said to delete the `delivery-shots-*` leftovers in Temp; given to the
+      screenshot agent (only those, and none belonging to a live run).
 - [~] HUD (owner, 10-Oct evening): "Permanent messages block too much of the screen. They should show up as
       normal messages and stay there with a icon." The eleven sticky messages (puncture, beached, bad gas,
       heavy, butterfingers, six bad mystery effects) to show for the normal time like any message, then
@@ -1127,7 +1240,14 @@ pick ups and traffic."
       West, new: 5.62 km, two side roads, a ford, a low trestle, three stampedes, two crossings) 36 / 15 /
       255-195. For the owner: Cattle Drive's bridge at 1280 narrows the player's side to one lane for
       190 m (the oncoming lane is the way past).
-- [~] Levels 20 and 21 to the new standard (`delivery-rework-a`): picked up by the menu agent, stills included.
+- [~] **Levels 20 and 21 to the new standard: done on `delivery-rework-a` (tip `a83f948`), judged fit, MERGE
+      WAITING** on the screenshot agent committing its uncommitted `scripts/shots.mjs` in the main checkout
+      (the branch changes one `CINE` entry there). Speed Trap Alley: 12 stills, nothing to fix, 34 cash / 14
+      rows, clock 240 / 180, menu picture in both sizes. The suburb scenery seen on Suburbia, The Hood,
+      Christmas Eve and Market Town: nothing on a road. Mountain Pass: 12 stills, nothing to fix, 32 cash /
+      13 rows; clock 195 / 155 (`33a000f`: the old clean run's 142 s was ice the non-steering test driver
+      slid on, not the stop / go light); menu picture from a hairpin under the peaks. All 27 checks pass.
+      Not played. Its agent is now on level 25, Market Town (`delivery-rework-f`).
 - [x] **Every check on `main` at `74f3bfa` (the code that was pushed as `fc365ba`): all 26 pass**, each run by
       itself; logs in the session scratch folder, `checks-main-a`. Not run since on the later local merges
       (`f3302a9` tyres, `7e0290d` visual fixes).
