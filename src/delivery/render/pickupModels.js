@@ -125,17 +125,56 @@ export const PICKUP_MODELS = {
     mouth.scale.set(0.12, 0.1, 0.05);
     return group;
   },
-  // a combination wrench: an open jaw at one end, a ring at the other
-  // (stood on end, head up, so the pickup's spin turns it about its own length)
+  // a combination spanner, flat on to the road (as the stopwatch and the shield are) and leaning: an open jaw at
+  // the top, two prongs with a gap between them, set at an angle to the handle as a real one's is; a flat handle
+  // tapering down from it; a ring with a hole through it at the bottom. Bright steel, its edges chamfered, with a
+  // panel of the pickup's orange let into both faces of the handle. (It was a bar with a disc and a ring on it, all
+  // orange, and edge on to the road: 0.2 m wide from behind until its spin brought it round, and its jaw a dark
+  // block on a whole disc, not a gap.) As long as it was: 2.04 m, 1.5 times that on the road
   wrench: () => {
     const group = new THREE.Group(), wrench = new THREE.Group();
-    const orange = lambert(PICKUP_COLOR.wrench), dark = lambert(0x3a3a40);
-    part(wrench, new THREE.BoxGeometry(1.3, 0.2, 0.3), orange, 0, 0, 0);                            // handle
-    part(wrench, new THREE.CylinderGeometry(0.42, 0.42, 0.2, 14), orange, 0.85, 0, 0);               // open-end head
-    part(wrench, new THREE.BoxGeometry(0.34, 0.26, 0.26), dark, 1.0, 0, 0);                          // its jaw
-    part(wrench, new THREE.TorusGeometry(0.3, 0.13, 8, 18), orange, -0.85, 0, 0, Math.PI / 2);       // ring end
-    wrench.rotation.z = Math.PI / 2;
-    wrench.scale.setScalar(0.8);
+    // (bright, with a little light of its own, and a dark rim standing out all round it between its two faces: so its
+    // outline shows on a pale road as on a dark one, where plain steel was grey on grey)
+    const steel = new THREE.MeshPhongMaterial({ color: 0xe6ecf1, emissive: 0x59626b, shininess: 90, specular: 0x999999 }), orange = lambert(PICKUP_COLOR.wrench);
+    const rim = new THREE.MeshBasicMaterial({ color: 0x1c2128 }), RIM = 0.05;
+    const DEPTH = 0.16, EDGE = 0.03; // (m thick, and the chamfer round every edge, each side of that)
+    const solid = (shape) => {
+      const geometry = new THREE.ExtrudeGeometry(shape, { depth: DEPTH, bevelEnabled: true, bevelThickness: EDGE, bevelSize: EDGE, bevelOffset: -EDGE, bevelSegments: 1, curveSegments: 9 });
+      geometry.translate(0, 0, -DEPTH / 2);
+      const outline = new THREE.ExtrudeGeometry(shape, { depth: 0.06, bevelEnabled: true, bevelThickness: 0.01, bevelSize: 0.01, bevelOffset: RIM, bevelSegments: 1, curveSegments: 9 });
+      outline.translate(0, 0, -0.03);
+      part(wrench, outline, rim, 0, 0, 0);
+      return part(wrench, geometry, steel, 0, 0, 0);
+    };
+    // the head: a disc R across, cut off square at the prongs' tips (TIP from its middle), with a slot GAP wide
+    // down into it, round at the bottom; the slot leans TURN from the handle's line
+    const HEAD = 0.66, R = 0.4, TIP = 0.3, GAP = 0.36, TURN = Math.PI / 12, way = Math.PI / 2 - TURN, open = Math.acos(TIP / R);
+    const ux = Math.cos(way), uy = Math.sin(way), wx = uy, wy = -ux; // (out of the jaw; and across it)
+    const head = new THREE.Shape();
+    head.absarc(0, HEAD, R, way + open, way - open + Math.PI * 2, false);
+    head.lineTo(ux * TIP + wx * GAP / 2, HEAD + uy * TIP + wy * GAP / 2);
+    head.absarc(0, HEAD, GAP / 2, way - Math.PI / 2, way - Math.PI * 1.5, true);
+    head.lineTo(ux * TIP - wx * GAP / 2, HEAD + uy * TIP - wy * GAP / 2);
+    head.closePath();
+    solid(head);
+    // the ring: RING across, a hole HOLE across through it
+    const FOOT = -0.72, RING = 0.3, HOLE = 0.18;
+    const ring = new THREE.Shape();
+    ring.absarc(0, FOOT, RING, 0, Math.PI * 2, false);
+    const hole = new THREE.Path();
+    hole.absarc(0, FOOT, HOLE, 0, Math.PI * 2, true);
+    ring.holes.push(hole);
+    solid(ring);
+    // the handle between them, wider at the head: its ends inside the head (short of the slot) and the ring (short of the hole)
+    const handle = new THREE.Shape(), y0 = FOOT + 0.22, y1 = HEAD - 0.3;
+    handle.moveTo(-0.11, y0);
+    handle.lineTo(0.11, y0);
+    handle.lineTo(0.15, y1);
+    handle.lineTo(-0.15, y1);
+    handle.closePath();
+    solid(handle);
+    part(wrench, new THREE.BoxGeometry(0.13, 0.62, DEPTH + EDGE * 2 + 0.03), orange, 0, (FOOT + RING + HEAD - R) / 2, 0); // the panel, proud of both faces
+    wrench.rotation.z = -Math.PI / 6;
     group.add(wrench);
     return group;
   },

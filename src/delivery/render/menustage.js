@@ -17,7 +17,8 @@ import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } 
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { medalFor, medalNeeds } from '../levelinfo.js';
-import { Garage } from './garage.js';
+import { Garage, makeShowCar, paintShowCar } from './garage.js';
+import { standView, sharedRenderer, disposeViews, drawViews } from './modelviews.js';
 import { Sound } from './audio.js';
 
 const money = (amount) => '$' + amount.toFixed(2);
@@ -25,7 +26,26 @@ const money = (amount) => '$' + amount.toFixed(2);
 export const LEVEL_SHOTS = Object.fromEntries(Object.entries(
   import.meta.glob('../levelshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
-// each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car)
+// ...and its large one, where it has one (levelshots/large/<id>.jpg: the same picture, the same shape, 1920 x 854
+// against 600 x 267), for the stage alone: the stage stretches its picture to cover it, and at a desktop's size
+// the small one is blurred. Only their addresses are in the bundle: a picture is fetched when the stage shows it
+const LEVEL_SHOTS_LARGE = Object.fromEntries(Object.entries(
+  import.meta.glob('../levelshots/large/*.jpg', { eager: true, query: '?url', import: 'default' }))
+  .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
+const SHOT = { w: 600, h: 267, slack: 1.15 }; // (the small picture's size; and how far it may be stretched before the large one is wanted)
+// the stage's picture of a level: the small one, with the large one over it where there is one and the stage
+// draws its picture bigger than the small one is (in the screen's own pixels: a dense screen counts). The small
+// one is under it all the same: it shows until the large one has come, and if it never does
+const stageShot = (id) => {
+  const small = LEVEL_SHOTS[id], large = LEVEL_SHOTS_LARGE[id];
+  if (!small) return large ? `url("${large}")` : '';
+  const w = stage.clientWidth || window.innerWidth * 0.7, h = stage.clientHeight || window.innerHeight * 0.6;
+  const drawn = Math.max(w, h * SHOT.w / SHOT.h) * (window.devicePixelRatio || 1); // (covering the stage: as wide as it, or as tall)
+  const wanted = large && drawn > SHOT.w * SHOT.slack && !navigator.connection?.saveData;
+  return (wanted ? `url("${large}"), ` : '') + `url("${small}")`;
+};
+// each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car). The car
+// card shows the car's own model, live (see drawCar); these are what it shows where that cannot be had
 const CAR_SHOTS = Object.fromEntries(Object.entries(
   import.meta.glob('../carshots/*.jpg', { eager: true, query: '?url', import: 'default' }))
   .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1, -4), url]));
@@ -135,7 +155,8 @@ const drawStage = () => {
   const list = TABS[tab].list, at = list.indexOf(level);
   const key = level.id + (evil ? '/evil' : '/good'), sameLevel = !!drawn && drawn.split('/')[0] === level.id;
   const shot = (sameLevel && stage.querySelector('.shot')) || make('div', 'shot'); // (the same level drawn again keeps its picture, drifting as it was)
-  if (LEVEL_SHOTS[level.id]) shot.style.backgroundImage = `url("${LEVEL_SHOTS[level.id]}")`;
+  const picture = stageShot(level.id);
+  if (picture) shot.style.backgroundImage = picture; // (the large picture where the stage is big enough to want it)
   else shot.classList.add('none'); // (no picture of it yet)
   const plate = make('div', 'plate', make('small', '', kindOf(level)), make('b', '', label(level)));
   const ribbon = make('div', 'ribbon', ...(open ? (oneSided(level) ? [false] : [false, true]).map(side => ribbonHalf(level, side)) : []));
@@ -202,11 +223,61 @@ const bar = (name, value, share) => {
   fill.style.width = Math.round(Math.max(0.06, Math.min(1, share)) * 100) + '%';
   return make('span', 'stat', make('small', '', name), make('span', 'track', fill), make('b', '', value));
 };
+// The car's picture: its own model, slowly turning, in the livery of the side picked, its own parts moving
+// (userData.animate). The model is the garage's (makeShowCar, paintShowCar), on a stand as the reference
+// pages' are, drawn by the start screen's one renderer into a small canvas in the picture
+// (render/modelviews.js): no run is built, and nothing of the game's scene is touched. Where no renderer can
+// be had, the model cannot be built, or the context is lost, the picture is the still as before (CAR_SHOTS).
+// prefers-reduced-motion: the model stands still, at its angle (the views' own doing: modelviews.js STILL).
+const CAR_VIEW = { close: 1.35, lift: 0.3, angle: 0.7 }; // how near and from how high it is seen; where it starts (rad)
+const picture = make('span', 'picture');
+let carView = null;   // { el, scene, camera, step, canvas, ctx, model, car, evil }: the model on show
+let carUrl = '';      // the still for the car and side on show
+let carLive = false;  // the model is being drawn (so the still is not shown under it)
+const syncPicture = () => {
+  picture.style.backgroundImage = !carLive && carUrl ? `url("${carUrl}")` : '';
+  if (carView?.canvas) carView.canvas.style.display = carLive ? 'block' : 'none';
+};
+const showCarModel = (evil) => {
+  carUrl = CAR_SHOTS[CAR.id + (evil ? '-evil' : '-good')] || '';
+  try {
+    if (carView?.car === CAR) { // (the same car: the other side's paint, where it stands)
+      if (carView.evil !== evil) paintShowCar(carView.model, CAR, carView.evil = evil);
+    } else {
+      const old = carView;
+      carView = null;
+      if (old) disposeViews([old]);
+      if (sharedRenderer()) {
+        const model = makeShowCar(CAR);
+        paintShowCar(model, CAR, evil);
+        const stand = standView({ model, tick: (t) => model.userData.animate?.(t), lift: CAR_VIEW.lift, angle: CAR_VIEW.angle, fitWidth: true }, CAR_VIEW.close); // (fitWidth: the picture is narrow, and a car long)
+        carView = { el: picture, canvas: old?.canvas, ctx: old?.ctx, ...stand, model, car: CAR, evil }; // (the canvas is kept from car to car)
+      }
+    }
+  } catch (error) { // (a vehicle with no model to show: its still)
+    console.warn('No model for the car card: ' + (error?.message || error));
+    carView = null;
+  }
+  if (!carView) picture.querySelector('canvas')?.remove(); // (no model: nor the last car's picture of one)
+  carLive = !!carView;
+  if (carView) carView.stillAt = undefined; // (standing still or not, it is drawn again at once: its paint may have changed)
+  syncPicture();
+};
+{
+  let last = performance.now();
+  const frame = (now) => {
+    requestAnimationFrame(frame);
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    if (!carView || !menuUp() || Garage.isOpen) return;
+    const live = drawViews(sharedRenderer(), [carView], now / 1000, dt);
+    if (live !== carLive) { carLive = live; syncPicture(); }
+  };
+  requestAnimationFrame(frame);
+}
 const drawCar = () => {
   const evil = Game.evil && !oneSided(cursor);
-  const picture = make('span', 'picture');
-  const url = CAR_SHOTS[CAR.id + (evil ? '-evil' : '-good')];
-  if (url) picture.style.backgroundImage = `url("${url}")`;
+  showCarModel(evil);
   const starSpan = make('span', 'stars', stars(CAR));
   starSpan.style.color = starColour(CAR);
   shop.replaceChildren(picture,
@@ -297,12 +368,41 @@ for (const id of ['albumBtn', 'milestonesBtn', 'exportBtn', 'importBtn', 'screen
 
 // "What's on this road": the level's gimmicks, pickups and traffic, with their models (render/levelcard3d.js,
 // brought in only when it is first asked for: it carries the reference pages' models)
+// A tap always opens the sheet, at once: the first time the card's code is still to come (and on a phone that
+// can be a while), so the sheet opens with a line saying so and is filled when it has; and if it cannot be had
+// (no connection; a page left open over a new version of the site, whose files are gone) or the card cannot be
+// drawn, the sheet says that, and the next tap tries again. Nothing fails without a word on the screen.
 const roadBox = document.getElementById('roadCard');
-let roadModule = null;
+let roadModule = null, roadLoading = null, roadAsked = null;
+// the sheet with a line in place of the card
+const roadLine = (level, words) => {
+  const closeBtn = make('button', 'menu-chip', 'Close');
+  closeBtn.addEventListener('click', closeSheet);
+  roadBox.replaceChildren(make('div', 'sheet-box road',
+    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', label(level) + '  ' + level.name)), closeBtn),
+    make('div', 'sheet-main', make('div', 'sheet-body', make('p', 'road-wait', words)))));
+};
 const roadCard = async (level) => {
-  roadModule ||= await import('./levelcard3d.js');
-  if (sheet === roadBox || !menuUp()) return; // (asked for twice; or a run started while it was on its way)
-  openSheet(roadBox, roadModule.showRoadCard(roadBox, level, closeSheet)); // (what it returns lets its renderer go when the sheet closes)
+  if (sheet === roadBox || !menuUp()) return; // (asked for twice; or no menu to open it over)
+  // (what showRoadCard returns gives back what its models took when the sheet closes. With no renderer to be had
+  // the card opens without its models: see render/modelviews.js viewRenderer)
+  const fill = () => {
+    try { onSheetClose = roadModule.showRoadCard(roadBox, level, closeSheet); } catch (error) {
+      console.error(error);
+      roadLine(level, 'This card could not be drawn.');
+    }
+  };
+  const asked = roadAsked = {}; // (this asking: a later one, for another level, takes its place)
+  if (roadModule) { openSheet(roadBox, () => roadBox.replaceChildren()); fill(); return; }
+  roadLine(level, 'Loading…');
+  openSheet(roadBox, () => roadBox.replaceChildren());
+  try { roadModule = await (roadLoading ||= import('./levelcard3d.js')); } catch (error) {
+    roadLoading = null; // (the next tap asks for it again)
+    console.error(error);
+    if (sheet === roadBox && roadAsked === asked) roadLine(level, 'This card could not be loaded. Check the connection, or reload the page.');
+    return;
+  }
+  if (sheet === roadBox && roadAsked === asked && menuUp()) fill(); // (not if it was closed while on its way, or a run started)
 };
 
 // the keys. Heard ahead of the game's own (input.js: Enter is its "confirm", which starts a run), so that Enter

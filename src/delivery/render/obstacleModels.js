@@ -34,20 +34,12 @@ export const OBSTACLE_MODELS = {
     g.add(drum);
     return g;
   },
-  // falling cargo: a wooden crate, and a loose tyre on its side
+  // falling cargo: a wooden crate
   crate: (o) => boxModel([
     [lambert(0xb8894a), o.hw * 2, o.height, o.hl * 2, 0, o.height / 2, 0],
     [lambert(0x6b4a2b), o.hw * 2 + 0.04, 0.08, 0.12, 0, o.height / 2, 0],
     [lambert(0x6b4a2b), 0.12, 0.08, o.hl * 2 + 0.04, 0, o.height / 2, 0],
   ]),
-  tyre: (o) => {
-    const t = new THREE.Mesh(new THREE.TorusGeometry(o.hw * 0.7, o.hw * 0.3, 8, 16), lambert(0x141414));
-    t.rotation.x = Math.PI / 2;
-    t.position.y = o.hw * 0.3;
-    const g = new THREE.Group();
-    g.add(t);
-    return g;
-  },
   // a beach umbrella: a pole with a striped canopy
   umbrella: (o) => {
     const group = boxModel([[lambert(0xf4f4f4), 0.1, o.height - 0.5, 0.1, 0, (o.height - 0.5) / 2, 0]]);

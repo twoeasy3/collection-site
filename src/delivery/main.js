@@ -11,6 +11,7 @@ import './render/demo.js'; // (?demo: before the menu)
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Game } from './game.js';
+import { cleanRun } from './cleanrun.js';
 import { Collision } from './collision.js';
 import { renderer, scene, camera, tmp, updateCamera, Cinematic } from './render/scene.js';
 import { syncZones } from './render/road.js';
@@ -127,6 +128,14 @@ if (params.get('racewatch') !== null) {
 } else if (params.get('screensaver') !== null) {
   Game.startScreensaver();
   for (let t = 0; t < Number(params.get('ff') || 0); t += CONFIG.maxStep) Game.update(CONFIG.maxStep);
+} else if (edited && params.get('clock') !== null) {
+  // ?edited&clock: the level editor's "Work out the clock" (editor.js loads this page out of sight): the level's
+  // clean run is driven here, at once, and the page that asked is told what clock it gives (cleanrun.js)
+  let told = { problem: edited.problem || (edited.level ? '' : 'no level was handed over') };
+  if (!told.problem) {
+    try { selectSpecial(edited.level); told = cleanRun(); } catch (e) { told = { problem: 'it could not be driven (' + (e && e.message || e) + ')' }; }
+  }
+  if (window.parent !== window) window.parent.postMessage({ type: 'clock', ...told }, '*');
 } else if (edited && edited.problem) { // (nothing starts: the menu, with a line across the top of the page)
   const note = document.createElement('div');
   note.textContent = 'The edited level was not started: ' + edited.problem + '. Open it in the level editor to put it right.';

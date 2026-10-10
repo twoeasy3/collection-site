@@ -37,7 +37,8 @@ export const Player = {
   launching: true,     // pulling away to startSpeed on its own
   braking: false,      // braking hard by itself for a car ahead (the tyres squeal as it starts)
   brakeLight: false,   // braking at all: the brake lights are on
-  onIce: false,        // on an ice patch (see CONFIG.ice)
+  onIce: false,        // on an ice patch (see CONFIG.ice), or anything as slippery (see Track.icy)...
+  onWater: false,      // ...and that being a burst main's water (see CONFIG.waterMain: its own share of the brakes and the steering)
   wading: 0,           // how deep the tide's water is where the car is (see Tide): 0 = dry, 1 = full depth
   afloat: false,       // afloat on a water stage (see Water), and how deep its water is where the car is: 0 = dry road .. 1
   waterDepth: 0,
@@ -157,6 +158,7 @@ export const Player = {
     this.yawVel = 0;
     this.stun = 0;
     this.onIce = false;
+    this.onWater = false;
     this.wading = 0;
     this.afloat = false;
     this.waterDepth = 0;
@@ -398,7 +400,7 @@ export const Player = {
     // the slowest the brakes bring it: on a lapped circuit, minSpeed; anywhere else, to a stop, for as long
     // as the brake is held (let go, it rolls on up to minSpeed again by itself)
     const slowest = LEVEL.laps ? CONFIG.minSpeed : 0;
-    const grip = this.onIce ? CONFIG.ice.brakeGrip : 1; // (braking on ice)
+    const grip = this.onIce ? (this.onWater ? CONFIG.waterMain : CONFIG.ice).brakeGrip : 1; // (braking on ice, or on a burst main's water)
     // (but with a flat tyre, not: the car can be brought to a stop to change it, and stays there)
     if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed) && !this.puncture && !(drive < 0 && !this.launching && slowest < CONFIG.minSpeed)) drive = 1;
     if (drive === 0 && boosted && !lifting) drive = 1; // the turbo pulls unless you brake (or lift off)
@@ -458,13 +460,15 @@ export const Player = {
     this.butterfingers = Math.max(0, this.butterfingers - dt);
     if (this.mystery && (this.mysteryTime -= dt) <= 0) this.endMystery();
     // ice: hitting it, the car slews round (the look of it only), with a squeal of tyres
-    const icy = !!Track.icy(this.s, this.lat);
+    const patch = Track.icy(this.s, this.lat), icy = !!patch;
     if (icy && !this.onIce) {
       this.yawVel += (Math.random() < 0.5 ? -1 : 1) * CONFIG.ice.yawKick * Math.min(1, this.speed / 25);
       if (this.speed > 8) sfx('brake', 0.5);
     }
     if (icy) this.yawVel += (Math.random() - 0.5) * 8 * Math.min(1, this.speed / 25) * dt; // (and twitches about on it)
     this.onIce = icy;
+    this.onWater = icy && !!patch.water; // (a burst main's water: slippery by its own numbers, see CONFIG.waterMain)
+    const slippery = icy ? (this.onWater ? CONFIG.waterMain : CONFIG.ice) : null;
     // the tide: in deep water the car is damaged, the more so the worse it wades (a ghost skims
     // over the water, and a car just set down is spared)
     this.wading = this.ghost > 0 ? 0 : Tide.depth(this.s, this.lat);
@@ -494,7 +498,7 @@ export const Player = {
     if (this.busted) {
       wantVel = 0;
     } else if (steer !== 0) {
-      wantVel = steer * CONFIG.steerSpeed * this.agility * seaSteer; // (afloat, it moves across more slowly)
+      wantVel = steer * CONFIG.steerSpeed * this.agility * seaSteer * (slippery ? slippery.laneSpeed : 1); // (afloat, it moves across more slowly; and on ice or a burst main's water)
     } else {
       // only a faint nudge, and only once the car is close to a lane line: within
       // laneAssistFree of the centre it stays exactly where it was left
@@ -507,7 +511,7 @@ export const Player = {
     // a hard knock briefly weakens steering
     // (a car sliding wide in a bend, on a level where cars understeer or with no brakes, has lost its grip, as on ice)
     const push = understeer(this), sliding = !this.onIce && push !== 0;
-    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce || sliding ? CONFIG.ice.steerGrip : 1) *
+    const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (slippery ? slippery.steerGrip : sliding ? CONFIG.ice.steerGrip : 1) *
       (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) && CAR.trait !== 'mud' ? CONFIG.mud.steerGrip : 1) * (this.inGravel ? CONFIG.gravel.steerGrip : 1) * (1 - this.shaken) * seaGrip; // (and afloat, its steering takes slowly)
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
     // afloat, a current carries the car sideways and a boat's wake shoves it off the boat's line (see Water.push)
