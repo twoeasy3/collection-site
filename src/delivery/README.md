@@ -205,10 +205,14 @@ ones, which are always open and open nothing.
     amphibious level and checks the water's rules on it. The save has room for any number of levels: it is kept in local
     storage, and the cookie beside it holds no best times (`node scripts/.save-check.mjs` saves and loads 100
     levels and 80 cars).
-  - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`:
-    `node scripts/shots.mjs <folder> --levels=<id>` saves it as a PNG, to be scaled to 600x267 and saved as a
-    JPEG. A level with none shows a plate of stripes (every level on the menu has one now). Where the camera's
-    usual place is inside a building or behind a wall, give the level a place of its own in `CINE` in `shots.mjs`.
+  - Its picture on the menu comes in two sizes, both from one `?cine` frame: `levelshots/<id>.jpg` (600x267:
+    the strip, the album, a phone) and `levelshots/large/<id>.jpg` (1920x854: the stage on a desktop).
+    `node scripts/shots.mjs --levels=<id> --write` makes both; `--write=<folder>` puts them in a folder to be
+    looked at first, and `node scripts/shots.mjs <folder> --levels=<id>` only saves a PNG there. A level with
+    none shows a plate of stripes (every level on the menu has one now). Six seconds from the start is seldom
+    the best view: give the level a place of its own in `CINE` in `shots.mjs` (`&at=<m>` a little short of its
+    landmark; `&cineside=left`, `&cineout`, `&cineup`, `&cineback` where a building, a stand or a tree is in the
+    way), and look at both pictures before they are committed.
   - Its `description`: a sentence or two for the menu's stage, one as Good and one as Evil, 160 characters each at
     most (`node scripts/.descriptions-check.mjs`; `--list` prints them all).
   - `node scripts/.roadcard-check.mjs --list` prints what the menu's "what's on this road" card will list for it.

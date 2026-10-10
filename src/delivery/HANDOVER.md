@@ -108,10 +108,18 @@ Things that bit:
 - A visit with a test switch in its address (`?autostart`, `?car`, `?pick`, `?edited`...) saves nothing
   (`Progress.noSave`). To test saving itself, play from the menu.
 
-Screenshots are taken by `scripts/shots.mjs`, which starts a server of its own and drives headless Edge (or
-Chrome): `node scripts/shots.mjs out "bridge=?level=4&ghost&at=1600&ff=4"`. Edge will not go narrower than
-about 500 px, so use `--size=520x900` for a portrait shot. `&cine` gives the still used for a level's menu
-picture and `&cine=car` the one for a car's. A page's console errors and warnings come out in the terminal.
+Screenshots are taken by `scripts/shots.mjs`, which starts a server of its own and drives ONE headless Edge
+(or Chrome) for the whole list over the DevTools protocol: `node scripts/shots.mjs out
+"bridge=?level=4&ghost&at=1600&ff=4"`. Any size (`--size=390x844` for a phone, with `--scale=3` for its pixel
+ratio). An address starting with `?` gets `autostart` added, so the menu is `index.html`. `&cine` gives the
+still used for a level's menu picture and `&cine=car` the one for a car's; `--levels=<id> --write` makes the
+menu's two sizes of a level's picture (README, "Adding content"). Each line gives the seconds the picture took,
+and under it the page's console errors and warnings. The first picture of a run waits for Vite to bundle (ten
+seconds on a quiet machine, a minute or two on a busy one); the rest take a few seconds each. At most two runs
+take pictures at once on the machine: a third says it is waiting, and waits. A run keeps everything it writes
+(the browser's profile and TEMP, Vite's cache) in `%LOCALAPPDATA%\Temp\delivery-shots-run-<pid>-<when>` and
+removes it however it ends; a run that was killed outright leaves that folder, and the next run removes it. The
+header of the script has the commands for the common jobs.
 
 ## How the game is built
 
@@ -294,8 +302,13 @@ Known limits:
   fields send the track builder round for ever (an exit with no place) still hangs the page: the game does
   not load the schema to check it.
 - A level's menu picture is taken from 9 m off the road's right-hand edge. Where a building, a wall or a stand
-  is there the picture is of its back: `scripts/shots.mjs` keeps another place for the camera for such a
-  level (`CINE`: Mumbai, Spa, Albert Park).
+  is there the picture is of its back, and six seconds from the start is often not where the level's landmark
+  is: `scripts/shots.mjs` keeps a place for the camera for such a level (`CINE`: about thirty of them). A
+  retake shows other traffic: the frame is never the same twice.
+- Never start a headless Edge for each picture, or without a TEMP of its own: every start left a `scoped_dir`
+  (up to 394 MB) and a 74 MB `.tmp` in the machine's temp folder for good, which filled the disk on 10-Oct.
+  `scripts/shots.mjs` is the pattern to copy (one browser, closed with `Browser.close`, its TEMP and profile in
+  a folder that is removed).
 
 ## Likely next steps
 
