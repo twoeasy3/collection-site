@@ -15,6 +15,7 @@ import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
 import './render/trafficModels.js';
 import './render/boatModels.js';
+import './render/pursuitModels.js';
 import { OBSTACLE_MODELS } from './render/obstacleModels.js';
 import { makeElephant } from './render/elephantModel.js';
 import { makeHippo } from './render/hippoModel.js';
@@ -410,6 +411,14 @@ const GROUPS = [
       const red = box(0.62, 0.22, 0.35, glow(0xff2a2a), -0.34, y, z), white = box(0.62, 0.22, 0.35, glow(0xffffff), 0.34, y, z);
       const mount = box(1.5, 0.12, 0.6, lambert(0x15171c), 0, v.height + 0.05, z); // (dark, so the white lamp shows on the white roof)
       return { model: group(car, mount, red, white), tick: (t) => { const on = Math.floor(t * 6) % 2 === 0; red.visible = on; white.visible = !on; } };
+    } },
+    { name: 'Police pursuit', color: 0x2060ff, has: (l) => l.pursuits, rules: [
+      `Now and then a chase already under way comes through from behind, its siren heard from ${CONFIG.pursuit.heard} m: a getaway car flat out, weaving through the traffic, and ${CONFIG.pursuit.gap} m behind it an interceptor, a police car seen nowhere else.`,
+      'Traffic pulls aside for the siren, as it does for an ambulance. Move over and the two go by and away up the road; get in the way and it is a collision like any other.',
+    ], build: () => {
+      const cop = vehicle('interceptor', CONFIG.vehicles.interceptor.livery), getaway = vehicle('getaway', CONFIG.vehicles.getaway.livery);
+      cop.position.set(-0.6, 0, -3); getaway.position.set(0.6, 0, 3);
+      return { model: group(cop, getaway), tick: (t) => { cop.userData.animate(t); getaway.userData.animate(t); getaway.rotation.y = Math.sin(t * 2) * 0.08; } };
     } },
     { name: 'Wrong-way drivers', color: 0xffd23f, has: (l) => !l.flow && l.exits?.some(x => !x.flyovers && x.oncoming !== false), rules: [
       'A side road with oncoming traffic and no flyover has nowhere to send it: where its lane meets the expressway, a car carries straight on into your right-hand lane, coming at you.',

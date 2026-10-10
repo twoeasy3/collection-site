@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `2109867` (main). Running: agent 12 (pursuit redo), agent 13 (car ideas lot), agent 14 (Stelvio and Market Town). The owner has asked for the whole list to be cleared: the queue is in "Round 3" below.
+Last updated: after `3047fac` (main; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 17 (in-game UI), 18 (menu UI), 19 (road gimmicks), 20 (theme levels A). Theme levels B and C start as soon as A has committed the shared base.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -112,7 +112,7 @@ The owner's standing instruction (10-Oct): assign the unassigned lists, and give
 whichever agent is free, without asking first.
 
 5. Level editor, full control: **finished**, agent 8, merged into `main` as `5fe99da` (no conflicts). A schema of 99 level fields (`levelSchema.js`); the editor builds every form, place-button and its map from it; all level files load and save through it unchanged. Not started: E1.4 (the game validating with the schema), E6.2 (clock button). Partly: E2.6, E3.5, E5.3, E6.1. Nothing clicked by hand. The item ticks are in the editor section below
-6. Police pursuit: **being redone**, agent 12, branch `delivery-pursuit`. The owner's verdict on the first version: "It is supposed to just be a simple traffic event." So: a getaway car and the interceptor (a model of its own) come through from behind like an ambulance does and drive on; no endings, rewards or gambles. The bank robber wanting a lift (P2, the orchestrator's idea, never asked for) is removed. The other road characters (P3 to P13) are NOT being built. First version, stopped at 09:21: `881f429`, `ee6dde8`, `bcd6b25`
+6. Police pursuit: **redone and merged** into `main` as `65478c1` (agent 12; `f2404a4`, `cab1580`, `dcaa98c`, `b64201e`). Now 152 lines of logic where it was 402. The owner's verdict on the first version: "It is supposed to just be a simple traffic event." So: a getaway car and the interceptor (a model of its own) come through from behind like an ambulance does and drive on; no endings, rewards or gambles. The bank robber wanting a lift (P2, the orchestrator's idea, never asked for) is removed. The other road characters (P3 to P13) are NOT being built. First version, stopped at 09:21: `881f429`, `ee6dde8`, `bcd6b25`
 7. Road gimmicks: **stopped at 09:21**, agent 10, on `main`. Unfinished ramp-over-the-jam work is sitting uncommitted in the main checkout (17 files). Nobody is on it. Done so far: G16 crosswinds (`1d48924`: on Grand Pacific, Hurricane, Tokyo) and H1 crest jumps (`9d7711b`: on Rival Run, Mystery Meadows), both on the hidden Gimmick Road 3. It re-timed two clocks by a lot; told to put them back. A hidden Gimmick Road 3, then G16 crosswind, H1 crest jumps, H2 ramp over the jam, H8 washboard, H4 low bridge, H5 ford, then the rest of the kept G and H lists; each also put on two or three real levels
 8. New themes: **stopped at 09:21**, agent 11, branch `delivery-themes` (in the city-levels worktree). The toy room's look is committed (`14e3c56`); its gimmick is uncommitted in that worktree. Nobody is on it. In the owner's order (most unlike the game first): T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio backlot, T1 Venice, T4 ice road, then on down the ranking; a level for each
 9. Queued after that, as slots free: menu pictures and clocks (the three circuits, the five themed levels, Super and 6-star cars); 28 liveries; 31 endless mode; the replay system's next step (`REPLAY-NOTES.md`); 51 performance on phones; 49 and 50 (test speed, lint and CI)
@@ -127,18 +127,28 @@ whichever agent is free, without asking first.
 Three agents at a time; the next item starts as each one finishes.
 
 - [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
-- [~] Police pursuit redone as a plain traffic event: agent 12
+- [x] Police pursuit redone as a plain traffic event: a getaway car and its interceptor come through from behind and drive on; nothing gained or lost by the player. Merged, `65478c1`; levels, schema, pursuit and hazards checks pass. Seen as two small stills and its Gimmicks card. For the owner: the pair now pass at 130% of the player's top speed; the getaway car is no longer an "evil" car; the helicopter was removed
 - [~] Car ideas lot: agent 13
-- [~] Forty more cargo items: agent 15 (Good, C1 to C20, branch `delivery-cargo-good`) and agent 16 (Evil, C21 to C40, branch `delivery-cargo-evil`). Five agents running, on the owner's word ("Get a couple of agents on these")
-- [x] Next 0: in-game UI improvements (the owner's five, in the section "In-game UI improvements" below)
-- [ ] Next 1: road gimmicks, picking up the half-built ramp (H2) in the main checkout, then H8, H4, H5 and on down the kept G and H lists
-- [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
+- [x] Twenty more Good cargo items (C1 to C20): agent 15, merged into `main` (`cc34343`, `533d5a2`); cargo, bundle and levels checks pass; seen on the Cargo page's contact sheet, sent to the owner. Weakest: sushi boat, tea set, globe. Nothing seen moving
+- [x] Twenty more Evil cargo items (C21 to C40), three states each: agent 16, merged into `main` as `6fc32e2` (`c8ba744`, `269134e`; two small conflicts with the Good branch, both sides kept); cargo, bundle and levels checks pass; 50 items in all now. Seen on two contact sheets, sent to the owner. Weakest: the teddy bear's middle state, the cannonball's first two states, the reactor's last, the skunk asleep. Nothing seen moving
+- [ ] Cargo picked by hand for more levels (the pairs suggested under "More cargo"): not done; every level gets one by its place on the menu
+- [~] Menu UI rework (M1 to M3 in the section "Menu UI" at the end): agent 18, branch `delivery-menu`
+- [~] In-game UI improvements (U1 to U5): agent 17, branch `delivery-ui`. The owner asked what the "on fire" message was: there is none (the orchestrator had listed it without checking); the agent has been told to build the stay-on-screen list only from messages that exist
+- [~] Road gimmicks, resumed from the saved ramp work: agent 19, branch `delivery-gimmicks` (a new worktree)
+- [~] New levels on new themes, built from the gimmicks the game has now (owner, 10-Oct: "Let's get some agents going making new levels with the new themes and the gimmicks we have right now"). No new gimmick per theme. Three agents, three themes each, a level on each:
+  - [~] A (agent 20, `delivery-themes`): the shared base first (where the new levels live, saved progress undisturbed), then T14 toy room, T15 underwater tunnel, T18 moon base
+  - [ ] B (`delivery-themes-b`, waiting for A's base): T13 film studio backlot, T1 Venice, T4 ice road
+  - [ ] C (`delivery-themes-c`, waiting for A's base): T12 theme park, T7 volcano island, T11 container port
+- **Standing rule for level content (owner, 10-Oct):** "add more Cash bonus pickups on the level from now, and have parts of the level where two or more pickups are side by side." Given to the theme agents, the Stelvio and Market Town agent and the gimmicks agent. Older levels have between none and four cash pickups
+- **The level progression rework waits:** the owner will do "a full rebalance later"
 - [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
 - [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
 - [ ] Next 5: 28 liveries, 31 endless mode, replay in the browser
 - [ ] Next 6: 51 phone performance, 49 parallel smoke test, 50 lint and CI
 - [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
 - Not in the queue unless the owner says: road characters P3 to P13 (the owner wanted the pursuit kept simple); anything needing a person (listening, playing by hand, a real phone)
+
+- [ ] Next 0b: the level progression rework (the owner's spec is in the section "Level progression rework" at the end; nine things in it need the owner's answer before it is built)
 
 ## Not assigned
 
@@ -528,33 +538,19 @@ Not obstacles: road users with something of their own going on, that the player 
 hinder or keep clear of. Each is a random or timed event, as ambulances, funeral processions and
 convoys already are (a level's `every: { min, max }`), so any level can have them.
 
-- [ ] P1. **Police pursuit** (the owner's idea): a chase already under way comes through the
-      level: a getaway car weaving through the traffic flat out, and behind it a pursuit car that
-      is **a model of its own, seen only in this event** (a low, wide interceptor with a light bar
-      and push bar, unlike the patrol cars), its siren heard coming before it is seen. The
-      helicopter joins with its searchlight.
-      - *What they do:* the getaway car takes any gap, the shoulder and the oncoming side; the
-        interceptor follows its line and tries to get alongside to turn it. Traffic pulls aside
-        for the siren, so a clear channel opens behind the two of them and closes again.
-      - *A Good player's gamble:* get in the getaway car's way. Hold a lane it wants, box it in
-        against traffic or the kerb, and the interceptor gets its chance: social standing, a
-        cash reward, and a bust wiped. Getting it wrong means being hit by one or both.
-      - *An Evil player's gamble:* run interference for the criminal: block the interceptor, or
-        tuck into the channel behind the chase and ride it through the traffic. The getaway
-        driver throws a bag of cash out for the help; the police add the player to the chase.
-      - *Or keep out of it:* move over and let it go by, at the cost of nothing.
-      - *How it ends:* caught (the two of them stopped on the shoulder further up, lights going,
-        a thing to rubberneck at), crashed (wreckage ahead), or away. Which one depends on what
-        happened, and on the player if the player took part.
-      - *Builds on:* emergencies, the police and their sight, the helicopter, wrong-way drivers'
-        warning and horn, rubbernecking, wreckage, cash pickups.
-      - *To settle when built:* whether the interceptor can also be earned as a car; one
-        interceptor or two; whether it can happen on race levels (suggest not).
-- [ ] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
-      a man with a bag stands on the shoulder with his thumb out, as a passenger pickup does.
-      *Gamble:* carry him for a large payout and have every police car on the level after the
-      car until he is dropped; or drive him straight to the next patrol car for standing.
-      *Builds on:* the passenger pickup, P1.
+- [x] P1. **Police pursuit** (the owner's idea), built in its simple form: a traffic event, as an ambulance is.
+      Now and then (`pursuits: { every: { min, max } }`) a getaway car comes up from behind flat out, weaving
+      through the traffic, and after it an interceptor that is **a model of its own, seen only in this event**,
+      its siren heard before it is seen; traffic pulls aside as for an ambulance, and the two drive on through
+      and away. Nothing in it for the player and nothing against: hitting either is a collision like any other.
+      - *Built (10-Oct, `delivery-pursuit`):* `pursuit.js`, `render/pursuitModels.js`, `CONFIG.pursuit`, a Gimmicks
+        card, a `levelSchema.js` entry; on Big Business, Night Drive, Speed Trap Alley, Ring Road, Tokyo and Gimmick
+        Road 2; never on a race or the Battlefield. *Verified:* `node scripts/.pursuit-check.mjs`; stills of the chase
+        going by. *Not verified:* never played by hand, the siren never heard.
+      - *Taken out at the owner's word (10-Oct):* the first build's three endings (caught, crashed, away), the Good
+        and Evil gambles with their rewards, bag of cash and bust, and the helicopter.
+- [-] P2. **Bank robber wants a lift**: dropped at the owner's word (10-Oct). Built once on `delivery-pursuit`
+      and reverted: the pursuit is a simple traffic event, and nobody on the road wants a lift from it.
 - [ ] P3. **Street racers**: two tuned cars line up beside the player at speed, flash their
       lights, and go: a race through the traffic to a marked point a kilometre on. *Gamble:*
       take it up (cash for winning, and the police take an interest in all three) or let them
@@ -604,8 +600,8 @@ convoys already are (a level's `every: { min, max }`), so any level can have the
       not. *Gamble:* through the stubble field beside it (rough, slow, unpoliced) or wait for a
       gateway. *Builds on:* tractors, wide load, mud.
 
-The orchestrator's view: P1 is the best of these by some way, because both sides have something
-to do with it and it ends differently each time; P2 follows from it almost for free. P7 and P8
+The orchestrator's view (before P1 was cut down to a simple traffic event and P2 dropped, at the
+owner's word): P1 was the best of these by some way. P7 and P8
 are the freshest: other road users as something to use, not to avoid. P9 gives the horn a job.
 
 ## Car ideas lot: 30 models (assigned, agent 13)
@@ -688,6 +684,13 @@ at thumbnail size, calm at the start, agitated at half the clock, furious for th
 | C19 | Tool box, open | Spanners rattle in their trays; the lid creaks | Construction, Quarry Run |
 | C20 | Telescope on a tripod | Swings round to look at things; the lens glints | Asteroid Run, Mountain Pass |
 
+**Built (Agent 15, branch `delivery-cargo-good`):** all twenty, in `render/cargoModelsGood2.js`, on the cargo page and in the default rotation (no level JSON edited).
+
+- [x] C1 to C20 built: ids `coffee`, `balloons`, `present`, `bouquet`, `pancakes`, `sundae`, `sushi`, `teaset`, `record`, `lavalamp`, `snowglobe`, `bonsai`, `puppy`, `canary`, `ramen`, `globe`, `trophy`, `surfboard`, `toolbox`, `telescope`.
+- Looked at: every one as a still on the cargo page (scratchpad `shots-cargo-good/sheet.png`, and `p1` to `p4`, `q1`); pancakes, record player and puppy in the HUD corner; record player and telescope at the kerb. Stills only: none has been seen moving.
+- Departures from the table: C18 the surfboard stands on its tail in a heap of sand and rocks from side to side (lying on its fin it was a sliver at thumbnail size); C14 the cage rocks on its base, it does not hang.
+- `CARGO.good` was reordered so every item turns up under the default rotation (places 6 and 15 fall on levels that name their own, so goldfish and wedding cake, which levels name, sit there).
+
 ### Evil: 20 things nobody should be driving about with
 
 | # | Item | Calm | Agitated (half the clock left) | Furious (a fifth left) | Fits |
@@ -713,6 +716,14 @@ at thumbnail size, calm at the start, agitated at half the clock, furious for th
 | C39 | Thundercloud in a jar | A small grey cloud | Dark, rumbling, flickers of light | Lightning cracking the glass, rain inside | Hurricane, Mumbai |
 | C40 | Piranha tank | Fish idling | Circling fast, the water churning | Leaping out, snapping, water everywhere | Passage du Gois, the amphibious levels |
 
+- [x] **C21 to C40 built** (agent 16, branch `delivery-cargo-evil`): all twenty, in
+  `render/cargoModelsEvil2.js`, listed in `CARGO.evil` (ids egg, cooker, flytrap, barrel, mirror,
+  skunk, cannonball, mimic, fireworks, alien, teddy, bats, ice, snakes, genie, reactor, goose, jack,
+  cloud, piranhas). The egg hatches a dragon; the ice holds a yeti cub. No level names one yet: the
+  rotation by menu position hands them out. Looked at: every one in all three states as stills of the
+  cargo page (two moments each), and the mirror, genie and thundercloud in the HUD corner. Nothing
+  was seen moving.
+
 ### Notes for whoever builds them
 
 - **Pairs that suit a level** (one Good, one Evil, as each level carries): snow globe and ice block
@@ -730,62 +741,110 @@ at thumbnail size, calm at the start, agitated at half the clock, furious for th
 
 ## In-game UI improvements (owner, 10-Oct; queued as "Next 0")
 
-The owner's five, in their words, each with what it comes to. All five built on `delivery-ui` (Agent 17).
+The owner's five, in their words, each with what it comes to. None is started.
 
-- [x] U1. "The level meter takes up too much of the screen, rework it to different style in the
+- [ ] U1. "The level meter takes up too much of the screen, rework it to different style in the
       same corner as the other meters." The progress bar across the top centre goes; the distance
       through the level becomes a compact meter in the top-left block with the clock, tip, busts
       and social standing, in a style of its own (not another long bar). Pause and Exit level,
       which sit under it now, need a new place that is out of the way.
-      **Done (8cb5d78).** The bar is gone. In the meters' corner, beside the readouts (under them on a phone held
-      upright), a ring 64 px across fills clockwise round to a chequered flag at its top, with the distance left in
-      its middle (km, then m in the last one) and TO GO under it; on a lapped level, a notch where each lap ends and
-      LAP 1/3 under it (the lap came off the POSITION line, which no longer fits beside it). Pause and Exit level:
-      bottom centre in landscape (the gap between the two pads, stacking where it is narrow), top centre and small
-      on a phone held upright, top centre in the screensavers. Seen in pictures at 1100x650, 520x900 and 900x420;
-      not seen moving, nothing touched on a real phone, nothing narrower than 500 px seen (the browser goes no narrower).
-- [x] U2. "Have a odometer for the danger/shoulder meter instead, have it sit at 0 danger when not
+- [ ] U2. "Have a odometer for the danger/shoulder meter instead, have it sit at 0 danger when not
       active." The shoulder's danger timer becomes a dial (a small gauge with a needle, as a car's
       instrument is): always there, resting at 0 while the car is on the road, climbing while it
       is on the shoulder, falling back when it leaves. No element that appears and disappears.
-      **Done (8cb5d78).** A dial with a needle (SVG), beside the level's ring, always there: 0 at the lower left,
-      the bust at the lower right, the last quarter red, an amber arc following the needle; needle and label turn
-      red in the red zone; dim on a level with no shoulder rule. Read as "a gauge", not rolling digits. Seen at
-      70% in the pictures and at 0 in plain ones; the needle not seen moving.
-- [x] U3. "The messages are right in the way of the horizon in both desktop and mobile." Event and
+- [ ] U3. "The messages are right in the way of the horizon in both desktop and mobile." Event and
       status messages move off the horizon line, where the road ahead is read: to a strip clear
       of it (low on the screen above the controls, or the top edge), on desktop and on a phone,
       checked against the on-screen buttons, the cargo window and the tank corner.
-      **Done (8cb5d78).** Landscape (desktop and a phone on its side): a strip along the top edge between the two
-      corners, in the sky: the two lines, then the speed camera's warning under them. A phone held upright: the
-      lines at the foot of the screen, above the pads and between the THROW buttons (on the road behind the car);
-      the camera's warning under the corners. Checked in pictures with everything up at once at the three sizes.
-      Known: a long message that wraps pushes the camera's warning down toward the horizon; upright, five lines
-      of text at once reach the car's tail.
-- [x] U4. "Some critical messages should stay indefinitely like punctures. I'll let you have the
+- [ ] U4. "Some critical messages should stay indefinitely like punctures. I'll let you have the
       judgement call but extract all message times to a config." Every message's time on screen
       comes out of the code into one table in `config.js` (by kind of message). Messages about a
       condition that is still true stay until it ends: a puncture, no brakes, a stalled engine, a
       wanted level, a mystery effect running, being on fire, the wrong way down a road. Which
       ones are "critical" is the builder's call, written down in the table for the owner to edit.
-      **Done (8cb5d78).** `CONFIG.messageTimes`: default, fade, kinds, groups, keys (the first that names a message
-      wins), and `sticky` (path in messages.json: the condition it lasts for; conditions at the foot of player.js).
-      The times themselves are unchanged (2 / 4 / 4 / 7 s). A sticky message is said as usual, then stays as an
-      amber row with a lamp (top of the strip; under the meters on a phone on its side) until its condition ends,
-      or a wreck, a bust or the end of the run. Sticky: puncture (its row shows the tyre being changed), beached,
-      badGas, heavyMass, butterfingers, and the mysteries noBrakes, rickety, jerk, swapSides, blackout, earthquake.
-      `node scripts/.hud-check.mjs`: all 153 messages have a time; each sticky one comes and goes with its condition.
-      No message exists for: shoulder danger about to bust, a police car watching, the tip countdown (not added).
-- [x] U5. "The mystery effect should be written as the pick up status, so the player can remember
+- [ ] U5. "The mystery effect should be written as the pick up status, so the player can remember
       what it was." While a mystery effect runs, the pickup's status line names the effect
       (Earthquake, Giant, Traffic freeze...) with its time left, as a turbo or ghost shows its
       own name, not just "Mystery".
-      **Done (8cb5d78).** `Player.mysteryName` (words in messages.json `mysteryNames`); the status reads
-      EARTHQUAKE 9.8, NO BRAKES 11.8, TRAFFIC FREEZE 7.8, SUPERCAR (the fallback)... for as long as it lasts.
-      Checked headless for all 18 effects, the 4 unused ones and the fallback; the four that are over at once
-      (insurance up / down, UFO, bullet train, rewind) have no status, as before.
 
 Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `render/touch.js`
 (the phone layout), `messages.js` and `messages.json` (the times), `config.js`, `player.js` or
 `mysteries.js` (the effect's name for the status). To be checked in screenshots at 1100x650 and
 520x900, in a level with every meter showing at once.
+
+## Level progression rework (owner's spec, 10-Oct; queued, not started)
+
+### The spec, in the owner's words
+
+> Divide levels into groups of 5.
+> Each star tier gets 5 levels.
+> 1/2/3/4/5 then blue 1/blue 2/ etc
+> Each level will have a ribbon for beating it. The left half of the ribbon is Good and the Right half is evil.
+> When playing a level without that half of the ribbon earned, the player is only allowed to use cars from EXACTLY that tier. No tiers lower or higher, no tiers from another coloured stars. When beating the level on evil this way, the player can replay it in any (evil) car.
+> The progression will be as follows:
+> When a tier is unlocked, the first two levels are unlocked
+> Level 3 requires 1 ribbon (any two halves)
+> Level 4 requires 2 ribbons (any 4 halves)
+> Level 5 requires level 4 to be beaten (any half)
+> Beating Level 5 unlocks the next tier
+> For levels with no good/evil option, it awards a full ribbon
+
+### As a checklist
+
+- [ ] R1. Levels in tiers of five: gold 1, 2, 3, 4, 5, then blue 1, 2, 3, 4, 5. Ten tiers, fifty places. The menu's groups become the tiers, each headed by its stars.
+- [ ] R2. A ribbon on every level: the left half earned by beating it as Good, the right half as Evil. A level with no choice of side (the Battlefield, an "always Good" level) gives the whole ribbon at once. Shown on the level's card, and counted per tier.
+- [ ] R3. The car rule: on a level whose half-ribbon for the side being played is not yet earned, only a car of exactly that tier may be driven: same number of stars, same colour of stars. Once that half is earned, the level can be replayed on that side in any car.
+- [ ] R4. Unlocking inside a tier: levels 1 and 2 open with the tier; level 3 needs two half-ribbons in the tier; level 4 needs four; level 5 needs level 4 beaten on either side.
+- [ ] R5. Beating level 5 on either side opens the next tier (its first two levels).
+- [ ] R6. Saved progress carried over: a best time already saved on a side becomes that half of the ribbon; tiers and levels open accordingly, so nobody loses what they had.
+- [ ] R7. The menu and garage say why: a locked level says what it needs ("2 more half-ribbons in this tier"); a level that restricts the car says which tier, and the garage marks the cars that qualify.
+- [ ] R8. Checks: the unlock rules, the car rule on both sides, old saves, and that no player can be left with no way forward.
+
+### What the spec does not settle (to be answered before it is built)
+
+**Answered by the owner (10-Oct): "Leave the Special and Amphibious levels outside of the progression system."** So the tiers are made of the 31 main levels only; specials and amphibious levels keep their own groups and have no ribbon rule or car rule. That settles most of 1 and 2 below. Still open: the races (assumed outside too, on their own tab); 31 levels make six tiers of five and one over, against ten tiers (gold 1 to 5, blue 1 to 5): which levels go in which tier, and what fills the blue tiers; 3 (owning a car of the tier); 4 (Blue 4 has no cars).
+
+1. **Which level goes in which place.** The game has 31 main levels, 9 specials, 5 amphibious
+   levels and 6 races: 51 against 50 places. Do the races keep their own tab outside the tiers
+   (leaving 45 for 50 places, so five short)? Where do the specials and the amphibious levels go?
+2. **Levels that bring their own vehicle** (Asteroid Run's UFO, Oh Mine!'s jetboat, the
+   Battlefield's 8x8, the races' F1 / GT / LMP) and the **amphibious-only levels** cannot obey
+   "exactly that tier's cars". Are they outside the tiers, or exempt from the car rule?
+3. **Having a car of the tier.** The player must own one to play at all. Gold 1 has the free
+   Commuter; every other tier's cheapest car costs money (gold 2: $130, blue 1: $270, blue 5:
+   $1,200). If the tips from a tier do not cover the next tier's cheapest car, the player is stuck.
+   Is the cheapest car of a new tier lent or given, or must the tips be made to cover it?
+4. **Blue 4 looks empty.** Reading `cars.js` finds Blue Star cars at 1, 2, 3 and 5 stars and none
+   at 4 (to be confirmed by the builder). A tier with no cars cannot be played under the car rule.
+5. **Cars with no tier, or their own:** the Tank, the City Bus, the 6-star earned cars, the
+   amphibious cars (sea-green stars, 1 to 5), Super cars lent by a mystery. Assumed: none of them
+   may start an unribboned level; a mystery may still lend one mid-run.
+6. **"Beating" a level:** assumed to mean delivered on time, as "Deliver it on time to open the
+   next" means today; a late delivery earns nothing.
+7. **The Blue Star season** opens today after level 20. Under this spec it opens by beating gold
+   5's fifth level: assumed to replace the old rule.
+8. **Medals** (bronze, silver, gold by time to spare, added today) are kept beside the ribbons:
+   assumed.
+9. **The half-ribbons that count** towards levels 3 and 4: assumed to be those earned in that
+   tier only, not across the game.
+
+## Menu UI (owner, 10-Oct; agent 18, branch `delivery-menu`)
+
+The owner's words: "Rework the UI to be more game like than a webpage. Have a place for a level
+description, unique for both Good and Evil. The gimmicks list should be moved to a button where
+clicking it gives you a card showing the 3d models (gimmicks page) of all the gimmicks in the level,
+pick ups and traffic."
+
+- [ ] M1. The start screen reworked to feel like a game's menu, not a web page: a composed screen
+      (a level-select stage with the picked level shown large, the car and side as part of the
+      scene, proper game buttons with states and sound, movement between screens), in place of a
+      scrolling page of cards and rows of grey buttons. Works with mouse, keyboard and touch, on
+      desktop and on a phone. It stays strictly a menu, with no page reloads.
+- [ ] M2. A level description on the menu, written twice for every level: one for Good, one for
+      Evil, each in that side's voice, shown for the side picked.
+- [ ] M3. The gimmick chips leave the level card; a button opens a card for the level showing the
+      3D models (the ones the Gimmicks page draws) of everything in it: its gimmicks, its
+      pickups and its traffic, each named, with a line on what it does.
+- To keep in mind while building: the level progression rework (the section above) will put
+  levels in tiers of five with a two-halved ribbon on each and a car rule per tier; the new menu
+  should have a place for those, though the rules themselves are a separate job.
