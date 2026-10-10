@@ -57,7 +57,7 @@ export const THEMES = {
   hood: { sky: 0xbcc3c2, ground: 0x9a8d55, road: 0x46474a, scenery: 'suburb', rundown: true },
   // suburb: lawns, pavements, picket fences and houses in a row (sets: what a zone of a level can be there in place of
   // the houses: a row of shops, a market square, a retail park, a town park: see the suburb scenery in render/road.js)
-  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb', sets: ['highstreet', 'market', 'retail', 'park'] },
+  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb', sets: ['highstreet', 'market', 'retail', 'park', 'livestock'] },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
   // battlefield: a dirt track through a war (unmarked: only the ruts worn into it), churned mud under a smoky
   // sky, shell craters, sandbagged trenches, tank traps, barbed wire and shattered trees (and the pillboxes:

@@ -1937,12 +1937,14 @@ const buildRoad = () => {
     const carBodies = PAINT.map(() => []), carTops = [], carParks = [], sheds = [], shedBands = BRIGHT.map(() => []), pylons = [], hedges = [], chimneys = [], bins = [];
     const stallPosts = [], stallTops = BRIGHT.map(() => []), stallTables = [], produce = BRIGHT.map(() => []), cobbles = [], stone = [], stoneRoofs = [], clockFaces = [], columns = [];
     const railPosts = [], railBars = [], ponds = [], decks = [], bandRoofs = [], playBars = BRIGHT.map(() => []), beds = BRIGHT.map(() => []), bunting = BRIGHT.map(() => []);
+    const cattle = [], sheep = [];
     const towered = new Set();
     const parkedCar = (at, lat, alongRoad, k) => { // a car standing: a body and a cabin (alongRoad: nose along the road, not across it)
       const [ax, az] = alongRoad ? [1.8, 4.2] : [4.2, 1.8];
       carBodies[k % PAINT.length].push([at, lat, 0.6, ax, 0.7, az]);
       carTops.push([at, lat, 1.2, ax * (alongRoad ? 0.86 : 0.5), 0.5, az * (alongRoad ? 0.5 : 0.86)]);
     };
+    const railways = (LEVEL.crossings || []).filter(c => c.road !== 'side').map(c => Track.place(c)); // (where a railway crosses the expressway)
     const SETS = {
       highstreet(side, s, mid, lot) {
         paving.push([mid, beside(side, mid, 3.6), 0.02, 2.4, 0.05, LOT]); // (a forecourt, from the pavement to the shop fronts)
@@ -2002,6 +2004,28 @@ const buildRoad = () => {
           shedBands[Math.floor(lot / 4) % BRIGHT.length].push([s + 1.5, beside(side, s + 1.5, 5), 10.6, 0.7, 3.2, 4.4]);
         }
       },
+      // 'livestock': a cattle market: a yard of pens, railed, a few beasts in each, the market's shed behind them and,
+      // once, half way along on the right, the round sale ring under its roof
+      livestock(side, s, mid, lot, zone) {
+        paving.push([mid, beside(side, mid, 15.4), 0.02, 26, 0.05, LOT + 0.05]);
+        if (side > 0 && zone && !towered.has(zone) && mid > (zone.from + zone.to) / 2 - LOT) {
+          towered.add(zone);
+          decks.push([mid, beside(side, mid, 15), 0.3, 13, 0.6, 13]);
+          for (let a = 0; a < 8; a++) stallPosts.push([mid + Math.sin(a * Math.PI / 4) * 6, beside(side, mid, 15) + Math.cos(a * Math.PI / 4) * 6, 2.6, 0.16, 4, 0.16]);
+          bandRoofs.push([mid, beside(side, mid, 15), 5.6, 14.5, 2.2, 14.5]);
+          return;
+        }
+        for (const d of [5, 11, 17, 23]) for (const y of [0.5, 1.0]) railBars.push([mid, beside(side, mid, d), y, 0.08, 0.08, LOT - 2]);
+        for (let q = s + 1; q <= s + LOT - 1; q += 6) {
+          for (const y of [0.5, 1.0]) railBars.push([q, beside(side, q, 14), y, 18, 0.08, 0.08]);
+          for (const d of [5, 11, 17, 23]) railPosts.push([q, beside(side, q, d), 0.6, 0.14, 1.2, 0.14]);
+        }
+        for (const d of [8, 14, 20]) for (let q = s + 4; q < s + LOT - 2; q += 6) {
+          const big = (lot + d) % 2 === 0, list = big ? cattle : sheep;
+          for (let k = Math.floor(Math.random() * 3); k > 0; k--) list.push([q + Math.random() * 3 - 1.5, beside(side, q, d + Math.random() * 3 - 1.5), big ? 0.85 : 0.5, big ? 0.8 : 0.6, big ? 0.9 : 0.6, big ? 1.9 : 1.1]);
+        }
+        sheds.push([mid, beside(side, mid, 33), 3, 12, 6, LOT - 2]);
+      },
       park(side, s, mid, lot) {
         for (let q = s; q < s + LOT; q += 2.6) railPosts.push([q, beside(side, q, FENCE), 0.6, 0.1, 1.2, 0.1]);
         for (const y of [0.45, 1.05]) railBars.push([mid, beside(side, mid, FENCE), y, 0.06, 0.08, LOT]);
@@ -2028,6 +2052,7 @@ const buildRoad = () => {
         const mid = s + LOT / 2;
         if (!clear(mid, beside(side, mid, 12))) continue;
         if (exits.length && !free(mid, beside(side, mid, 14), lot0)) continue;
+        if (lot0 === 0 && railways.some(cs => Math.abs(cs - mid) < LOT)) continue; // (the line, its station and its signal box are there: below)
         const zone = lot0 === 0 ? (LEVEL.zones || []).find(z => mid >= z.from && mid < z.to) : null;
         if (zone && SETS[zone.scenery]) { SETS[zone.scenery](side, s, mid, lot, zone); continue; }
         // (each lot the same every time: The Hood's shooters are in these houses, see gunfire.js)
@@ -2111,6 +2136,57 @@ const buildRoad = () => {
         }
       });
     }
+    // (a railway, where a level crossing is: fenced off either side of the line, telegraph poles along it, a station
+    // beyond it on the right (a platform under a canopy, the building behind) and a signal box before it on the left)
+    for (const cs of railways) {
+      for (const side of [-1, 1]) {
+        for (const q of [cs - 3, cs + 3]) {
+          for (let d = 3.4; d < 150; d += 2.4) pickets.push([q, beside(side, q, d), 0.5, 0.1, 1, 0.1]);
+          for (const y of [0.35, 0.75]) rails.push([q, beside(side, q, 76.7), y, 146.6, 0.08, 0.06]);
+        }
+        for (let d = 14; d < 280; d += 38) {
+          lampPosts.push([cs - 4.4, beside(side, cs, d), 3.5, 0.2, 7, 0.2]);
+          fascias.push([cs - 4.4, beside(side, cs, d), 6.6, 0.16, 0.16, 2.2]);
+        }
+      }
+      const st = (d) => beside(1, cs, d), box = (d) => beside(-1, cs, d);
+      paving.push([cs + 4.2, st(19), 0.45, 28, 0.9, 3.4]);
+      shopWalls[0].push([cs + 9.4, st(17), 2.6, 16, 5.2, 6]);
+      roofs.push([cs + 9.4, st(17), 6.3, 17.5, 2.2, 7.4]);
+      chimneys.push([cs + 9.4, st(12), 6.6, 0.9, 2.4, 0.9]);
+      fascias.push([cs + 4.6, st(17), 3.9, 18, 0.2, 4]);
+      for (const d of [9, 14, 20, 25]) stallPosts.push([cs + 3.2, st(d), 2.4, 0.14, 3, 0.14]);
+      for (const d of [12, 17, 22]) windows.push([cs + 6.36, st(d), 2.4, 1.6, 1.6, 0.1]);
+      doors.push([cs + 6.36, st(19.5), 2, 1.2, 2.2, 0.1]);
+      benches.push([cs + 5.4, st(24), 1.3, 1.8, 0.5, 0.5]);
+      shopWalls[2].push([cs - 6.5, box(8), 1.6, 5, 3.2, 3.6]);
+      shopGlass.push([cs - 6.5, box(8), 4.3, 5.2, 2.2, 3.8]);
+      roofs.push([cs - 6.5, box(8), 6.2, 6.2, 1.6, 4.8]);
+    }
+    // (houses along each arm of a cross road the road runs straight over, facing the arm, out beyond the back gardens
+    // of the road's own: a house, its chimney, door and window, a driveway and now and then a car on it or a hedge)
+    for (const jn of Track.junctions) {
+      if (jn.way) continue;
+      const centre = jn.s + jn.half;
+      jn.arms.forEach((arm, k) => {
+        const out = k ? -1 : 1;
+        for (const side of [-1, 1]) {
+          const off = (d) => centre + side * (jn.half + d); // (d m off the arm's edge)
+          for (let d = (out > 0 ? Track.hi(centre) : -Track.lo(centre)) + 34, n = 0; d < arm.length - 16; d += LOT, n++) {
+            const lat = out * d, tall = (n + k + (side > 0 ? 1 : 0)) % 3 === 0, h = tall ? 6 : 3.4;
+            if (!standsClear(off(12.6), lat, 12, 10)) continue;
+            walls[(n * 3 + k + (side > 0 ? 2 : 0)) % WALLS.length].push([off(12.6), lat, h / 2, 11, h, 8]);
+            roofs.push([off(12.6), lat, h + 1.1, 12.3, 2.2, 9]);
+            chimneys.push([off(12.6), lat + 3, h + 1.5, 0.8, 1.9, 0.8]);
+            doors.push([off(8.56), lat - 1.5, 1.1, 1.1, 2.2, 0.12]);
+            for (const y of tall ? [1.6, 4.4] : [1.6]) windows.push([off(8.56), lat + 2.2, y, 1.7, 1.2, 0.1]);
+            drives.push([off(7.2), lat + 8, 0.03, 3.2, 0.06, 9.6]);
+            if (n % 2) parkedCar(off(8), lat + 8, true, n * 7 + k * 3 + (side > 0 ? 1 : 0));
+            if ((n + k) % 3 === 1) hedges.push([off(5.2), lat - 1, 0.55, 11, 1.1, 0.8]);
+          }
+        }
+      });
+    }
     for (const [runFrom, runTo] of runs) for (let s = runFrom, k = 0; s < runTo; s += 55, k++) { // street lamps, each side in turn
       const side = k % 2 ? 1 : -1;
       if (!clear(s, beside(side, s, 0.8))) continue;
@@ -2180,6 +2256,8 @@ const buildRoad = () => {
     instances(tube, 0x4f9ad0, ponds);
     instances(tube, 0xe9e2d0, decks);
     instances(new THREE.ConeGeometry(0.5, 1, 8), 0x9a3b2e, bandRoofs);
+    instances(cube, 0x6b4a32, cattle);
+    instances(cube, 0xefeadc, sheep);
     // low wooded hills out beyond the houses, all round, so the street has a horizon (each pushed out clear of every road)
     {
       const hills = [], at = {}, far = {}, shade = new THREE.Color(theme.ground);
