@@ -1010,18 +1010,21 @@ OBSTACLE_MODELS.beachBall = () => {
   group.userData = { roller };
   return grounded(group, 1.1);
 };
-// the Moon's drifting cone: a flag on a stand: a weighted yellow foot, a white staff, the flag held out stiff by a
-// rod along its top (there is no wind), red and white
+// the Moon's drifting cone: a flag on a stand: a broad weighted yellow foot, a stout white pole with a gold ball on
+// top, and a wide banner hung square from a bar across it (there is no wind): orange and white stripes and a blue
+// corner, bright enough of themselves to be seen in the Moon's hard shadow
 OBSTACLE_MODELS.flagStand = () => {
-  const white = lambert(0xf6f6f6), red = lambert(0xe0261f);
-  const group = boxModel([
-    [white, 0.07, 2.3, 0.07, 0, 1.25, 0],                                            // the staff
-    [white, 0.95, 0.05, 0.05, 0.45, 2.38, 0],                                        // the rod along the flag's top
-    [red, 0.9, 0.16, 0.04, 0.5, 2.27, 0], [white, 0.9, 0.16, 0.04, 0.5, 2.11, 0], [red, 0.9, 0.16, 0.04, 0.5, 1.95, 0], [white, 0.9, 0.16, 0.04, 0.5, 1.79, 0],
-    [lambert(0x1f5fd0), 0.38, 0.32, 0.05, 0.24, 2.19, 0],                            // the flag's corner
-  ]);
-  put(group, new THREE.CylinderGeometry(0.2, 0.4, 0.24, 10), lambert(0xffc928), 0, 0.12, 0); // the foot
-  return grounded(group, 0.6);
+  const lit = (color, share = 0.45) => new THREE.MeshLambertMaterial({ color, emissive: new THREE.Color(color).multiplyScalar(share) });
+  const white = lit(0xf6f6f6), orange = lit(0xff4a12), parts = [
+    [white, 0.14, 2.9, 0.14, 0, 1.55, 0],                                            // the pole
+    [white, 1.4, 0.09, 0.09, 0, 2.86, 0],                                            // the bar the banner hangs from
+    [lit(0x1f5fd0), 0.56, 0.5, 0.07, -0.37, 2.56, 0],                                // the banner's corner
+  ];
+  for (let i = 0; i < 5; i++) parts.push([i % 2 ? white : orange, 1.3, 0.25, 0.05, 0, 2.69 - i * 0.25, 0]); // its stripes
+  const group = boxModel(parts);
+  put(group, new THREE.CylinderGeometry(0.26, 0.48, 0.3, 10), lit(0xffc928, 0.3), 0, 0.15, 0); // the foot
+  put(group, new THREE.SphereGeometry(0.13, 8, 6), lit(0xffc928, 0.3), 0, 3.05, 0);
+  return grounded(group, 0.7);
 };
 // the hood's cone: a wheelie bin: green, a yellow lid, two wheels and a handle at the back
 OBSTACLE_MODELS.wheelieBin = () => {
@@ -1038,15 +1041,17 @@ OBSTACLE_MODELS.wheelieBin = () => {
   group.scale.setScalar(1.15); // (bigger than life, as the cone it stands in for is)
   return grounded(group, 0.6);
 };
-// the snow's and the ice road's cone: a heap of shovelled snow, an orange stake with a dark band stuck in it
+// the snow's and the ice road's cone: a heap of shovelled snow, a stout orange pole stuck in it with two bright
+// reflective bands and a dark cap (a thin stake could not be seen from the car)
 OBSTACLE_MODELS.snowdrift = () => {
-  const group = new THREE.Group(), snow = lambert(0xf6fbff), orange = lambert(0xff6a00);
-  put(group, new THREE.SphereGeometry(0.46, 10, 6), snow, 0, 0.1, 0).scale.set(1, 0.75, 1);
-  put(group, new THREE.SphereGeometry(0.3, 8, 6), snow, 0.2, 0.1, 0.22).scale.set(1, 0.7, 1);
-  put(group, new THREE.BoxGeometry(0.09, 1.5, 0.09), orange, -0.05, 0.95, 0);
-  put(group, new THREE.BoxGeometry(0.11, 0.2, 0.11), lambert(0x1b1d22), -0.05, 1.45, 0);
-  put(group, new THREE.BoxGeometry(0.11, 0.14, 0.11), lambert(0xf2f2f2), -0.05, 1.62, 0);
-  return grounded(group, 0.6);
+  const group = new THREE.Group(), snow = lambert(0xf6fbff), orange = new THREE.MeshLambertMaterial({ color: 0xff6a00, emissive: 0x551f00 });
+  const bright = new THREE.MeshBasicMaterial({ color: 0xffffff });
+  put(group, new THREE.SphereGeometry(0.5, 10, 6), snow, 0, 0.1, 0).scale.set(1, 0.8, 1);
+  put(group, new THREE.SphereGeometry(0.32, 8, 6), snow, 0.22, 0.1, 0.24).scale.set(1, 0.7, 1);
+  put(group, new THREE.BoxGeometry(0.2, 1.9, 0.2), orange, -0.05, 1.1, 0);
+  for (const y of [1.25, 1.7]) put(group, new THREE.BoxGeometry(0.23, 0.2, 0.23), bright, -0.05, y, 0);
+  put(group, new THREE.BoxGeometry(0.24, 0.14, 0.24), lambert(0x1b1d22), -0.05, 2.1, 0);
+  return grounded(group, 0.65);
 };
 // Mumbai's bale: jute sacks stacked three, two and one, a red band stencilled round each
 OBSTACLE_MODELS.sackStack = () => {
