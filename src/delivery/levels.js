@@ -246,11 +246,6 @@
 //   fog        { from, to }: a fog bank: the fog closes right in, and the police see less (see CONFIG.fog)
 //   tunnels    { from, to }: a tunnel: the road under cover, dark but for its lamps, the player's headlights on
 //              and the engine echoing (see CONFIG.tunnel and render/tunnel.js). Clear of any exit's ramps
-//   waterMains { s, lane?, every? }: a burst water main in that lane (no lane: the centre line): now and then
-//              a geyser up out of the road, and while it sprays the road round it is as slippery as ice: on its
-//              water the car brakes with a share of its brakes and changes lane more slowly, by numbers of its
-//              own (CONFIG.waterMain: brakeGrip, steerGrip, laneSpeed)
-//              (see watermains.js and CONFIG.waterMain); every: { min, max } s between bursts, if not CONFIG's
 //   (a herd, "herds", with stay: true never leaves the road: it turns back at the lane lines, and never rests)
 //   parades    { s, speed? }: a street parade at s: a float in every lane of the player's side, abreast, a marching
 //              band behind, all off at a crawl the player's way as the player comes near, taking the whole road
@@ -282,8 +277,10 @@
 //   (Gimmick Road 2's: see hazards.js and CONFIG, each under its own name. Any can be on a side road, as cameras,
 //   crossings and potholes can: { road: 'side', exit: n }, s then m along that side road)
 //   schoolCrossings { s }: a lollipop person stops the traffic for the children; running it is a bust
-//   waterMains { s, lane, length? }: a burst main: that stretch of the lane is as slippery as ice while it sprays
-//              (weaker brakes and slower lane changes on its water, by CONFIG.waterMain's own numbers)
+//   waterMains { s, lane, length? }: a burst water main in that lane: a fountain out of the road for CONFIG.waterMain.on
+//              s, then nothing for .off s, over and over. While it sprays, `length` m of that lane beyond it (.length,
+//              if not given) is under water and as slippery as ice: on it the car brakes with a share of its brakes
+//              and changes lane more slowly, by numbers of its own (CONFIG.waterMain: brakeGrip, steerGrip, laneSpeed)
 //   balloons   { s, lanes: [first, last] }: a hot-air balloon comes down on those lanes, sits, and lifts off again
 //   drawbridges { s }: bells, booms, and two leaves that lift: the car goes up the near one and jumps the gap if it
 //              came fast enough (a board gives the speed), or stops short, or drops in. On straight road

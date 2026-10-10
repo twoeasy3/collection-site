@@ -1233,18 +1233,15 @@ export const CONFIG = {
     lampEvery: 12,         // m between the ceiling lamps
     echo: 0.45,            // how much of the engine comes back off the walls, well inside (0 = none)
   },
-  // a burst water main (a level's "waterMains": { s, lane?, every? }): a geyser out of the road, now and
-  // then, and while it sprays the road round it is as slippery as ice; a few seconds after it stops, dry
+  // a burst water main (a level's "waterMains": { s, lane, length? }, see Hazards): a fountain out of its lane for
+  // `on` s, then nothing for `off` s, over and over; while it sprays, `length` m of that lane beyond it is under
+  // water and as slippery as ice, and dry again as soon as it stops
   waterMain: {
-    spray: 5,              // s each burst lasts
-    every: { min: 6, max: 11 }, // s between bursts (a main can set its own: "every")
-    radius: 8,             // m along the road either way the water reaches...
-    half: 4.5,             // ...and m across, either side of the main
-    drain: 3,              // s after a burst the road stays slippery
-    warn: 150,             // m short of one spraying ahead that the player is warned
-    height: 9,             // m the geyser throws its water
-    spread: 1.4,           // s the puddle takes to spread out, as a burst begins (the look of it only)
-    on: 5, off: 4, length: 28, dry: 1.6, // (Gimmick Road 2's, see Hazards: s on and off, m of lane, and s its puddles take to shrink away)
+    on: 5, off: 4,         // s it sprays, and s between
+    length: 28,            // m of its lane the water covers (a main can set its own: "length")
+    warn: 150,             // m short of one ahead that the player is warned
+    spread: 1.4,           // s the pools take to spread down the lane as it begins to spray...
+    dry: 1.6,              // ...and to shrink away when it stops (the look of it only)
     // on its water the player's car brakes and steers with less grip, as on ice (CONFIG.ice) but by numbers of its own:
     brakeGrip: 0.35,       // share of its braking (or braking by itself for a car ahead) that works on the water
     steerGrip: 0.3,        // share of its steering's grip: of how quickly the car takes up the way it is steered...
