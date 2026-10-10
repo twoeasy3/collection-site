@@ -1,7 +1,7 @@
 // A check of the level tiers (src/delivery/tiers.js, tiers.json): the file is sound; what opens and when (levels 1
-// and 2 with the tier, 3 on two half-ribbons, 4 on four, 5 on level 4, the next tier on level 5, Blue 1 after the
-// five-star tier's level 5, an amphibious level on half a ribbon on every stage of its blue tier); the car rule
-// (exactly that tier's cars on a half not earned, any car once it is, null car with none owned, the player's own
+// and 2 with the tier, 3 on two medals, 4 on four, 5 on level 4, the next tier on level 5, Blue 1 after the
+// five-star tier's level 5, an amphibious level on a medal on every stage of its blue tier); the car rule
+// (exactly that tier's cars on a medal not earned, any car once it is, null car with none owned, the player's own
 // pick kept apart); a save from before keeps what it had open; and the switch off gives the old rule.
 //   node scripts/.tiers-check.mjs
 import { boot } from './delivery-headless.mjs';
@@ -30,9 +30,9 @@ check(Tiers.isOpen(a) && Tiers.isOpen(b), 'tier 1: levels 1 and 2 open with the 
 check(!Tiers.isOpen(c) && !Tiers.isOpen(d) && !Tiers.isOpen(e), 'tier 1: levels 3, 4, 5 closed');
 check(!Tiers.isOpen(T[1][0]), 'tier 2 closed');
 beat(a);
-check(Tiers.halves(a) === 1 && !Tiers.isOpen(c), 'one half-ribbon does not open level 3');
+check(Tiers.medals(a) === 1 && !Tiers.isOpen(c), 'one medal does not open level 3');
 beat(a, true);
-check(Tiers.halves(a) === 2 && Tiers.isOpen(c), 'a whole ribbon (both halves of one level) opens level 3');
+check(Tiers.medals(a) === 2 && Tiers.isOpen(c), 'both medals of one level open level 3');
 check(!Tiers.isOpen(d), 'level 4 still closed on two halves');
 fresh(); beat(a); beat(b);
 check(Tiers.isOpen(c), 'level 3 opens on two halves from two levels (any two halves)');
@@ -40,7 +40,7 @@ check(!Tiers.isOpen(d), 'level 4 needs four halves');
 beat(a, true); beat(b, true);
 check(Tiers.isOpen(d) && !Tiers.isOpen(e), 'four halves open level 4, not level 5');
 beat(d);
-check(Tiers.isOpen(e), 'level 5 opens on level 4 beaten (either half)');
+check(Tiers.isOpen(e), 'level 5 opens on level 4 beaten (either medal)');
 check(!Tiers.isOpen(T[1][0]), 'tier 2 still closed before level 5 is beaten');
 beat(e);
 check(Tiers.isOpen(T[1][0]) && Tiers.isOpen(T[1][1]) && !Tiers.isOpen(T[1][2]), 'beating level 5 opens the next tier: its first two levels');
@@ -61,7 +61,7 @@ check(!Tiers.isOpen(A[0]), 'A1 closed at the start');
 T[5].slice(0, 4).forEach(level => beat(level));
 check(!Tiers.isOpen(A[0]), 'A1 closed with a stage of Blue 1 undelivered');
 beat(T[5][4]);
-check(Tiers.isOpen(A[0]) && !Tiers.isOpen(A[1]), 'A1 opens on half a ribbon on every stage of Blue 1 (A2 needs Blue 2)');
+check(Tiers.isOpen(A[0]) && !Tiers.isOpen(A[1]), 'A1 opens on a medal on every stage of Blue 1 (A2 needs Blue 2)');
 // ---- outside
 fresh();
 const chain = Tiers.outside.filter(l => !g.levels.isRace(l) && !A.includes(l));
@@ -72,13 +72,13 @@ check(g.levels.RACE_LEVELS.every(l => Tiers.isOpen(l)), 'races always open');
 // ---- the car rule
 fresh();
 g.select(a.id); side(false);
-check(Tiers.restriction(a, false) === 1, 'level 1, Good half not earned: only 1-star gold cars');
+check(Tiers.restriction(a, false) === 1, 'level 1, Good medal not earned: only 1-star gold cars');
 beat(a);
-check(Tiers.restriction(a, false) === null && Tiers.restriction(a, true) === 1, 'Good half earned frees Good only: Evil still wants a gold 1 car');
+check(Tiers.restriction(a, false) === null && Tiers.restriction(a, true) === 1, 'Good medal earned frees Good only: Evil still wants a gold 1 car');
 check(Tiers.restriction(T[5][0], false) === 6, 'a Blue 1 level wants a Blue Star 1 car (tier 6)');
 check(Tiers.restriction(L('all-heck'), false) === null && Tiers.restriction(A[0], false) === null, 'a level outside the tiers or amphibious: no car rule');
 const one = g.levels.LEVELS.find(l => (l.battle || l.alwaysGood) && Tiers.place(l));
-if (one) { beat(one); check(Tiers.restriction(one, true) === null, 'a level with no side to choose gives the whole ribbon'); }
+if (one) { beat(one); check(Tiers.restriction(one, true) === null, 'a level with no side to choose gives both medals'); }
 else console.log('  (no level with one side sits in a tier: that case is not exercised)');
 check(cars.carTier(cars.CARS.find(x => x.id === 'commuter')) === 1 && cars.carTier(cars.CARS.find(x => x.id === 'postvan')) === 6, 'car tiers: Commuter 1, Post Van (blue 1) 6');
 check(cars.carTier(cars.CARS.find(x => x.amphibious)) === null && cars.carTier(cars.EARNED_CARS[0]) === null, 'amphibious and earned (magenta) cars are in no tier');
@@ -108,7 +108,37 @@ Progress.data.unlocked = 12;
 Progress.data.bestTime.good = Object.fromEntries(g.levels.LEVELS.slice(0, 11).map(l => [l.id, 5]));
 check(Tiers.isOpen(g.levels.LEVELS[11]) && Tiers.isOpen(g.levels.LEVELS[0]) && Tiers.legacy() === 12, 'a save with 12 levels open keeps all 12 open under the tiers');
 check(Progress.data.tierBase === 12, 'and the count is kept in the save (tierBase)');
-check(Tiers.halves(g.levels.LEVELS[0]) === 1, 'its best times are its ribbons (a Good half each)');
+check(Tiers.medals(g.levels.LEVELS[0]) === 1, 'its best times are its medals (a Good medal each)');
+// ---- the owner's bug: an Idea Car picked, a restricted level forces the Commuter, and the run and its results
+// must stay in the Commuter even once the delivery earns the medal (which ends the rule); the pick comes back
+{
+  fresh();
+  g.CONFIG.progression.tiers = true;
+  const idea = (await g.load('ideas.js')).IDEA_CARS[0];
+  Progress.data.car = idea.id;
+  g.select(a.id); side(false);
+  cars.useLevelCar(null, false);
+  check(cars.CAR.id === 'commuter' && Progress.data.car === idea.id, 'Idea Car picked, level 1 restricted: the Commuter is forced, the pick is kept');
+  g.Game.evil = false;
+  g.Game.start();
+  check(cars.CAR.id === 'commuter', 'the run is in the Commuter');
+  Progress.levelDone(g.levels.LEVEL_INDEX, a.id, 10, 5, false); // (delivered: the Good medal is earned, the rule ends)
+  check(Tiers.restriction(a, false) === null, 'the delivery earned the medal: the rule no longer applies');
+  cars.useLevelCar(null, false); // (the menu drawing itself while the results show asks for the car again)
+  check(cars.CAR.id === 'commuter', 'the results are still in the Commuter (the car of the run)');
+  g.Game.toMenu();
+  cars.useLevelCar(null, false);
+  check(cars.CAR.id === idea.id && Progress.data.car === idea.id, 'back at the menu the Idea Car pick is in use again');
+  // an unrestricted level (the medal earned) and the tiers off: the Idea Car is driven
+  g.Game.start();
+  check(cars.CAR.id === idea.id, 'on a level that allows it the run is in the Idea Car');
+  g.Game.toMenu();
+  g.CONFIG.progression.tiers = false;
+  g.select(T[1][0].id);
+  g.Game.start();
+  check(cars.CAR.id === idea.id, 'the tiers off: the Idea Car is driven everywhere');
+  g.Game.toMenu();
+}
 // a hand-made save from long ago (order 30, 25 levels open, a best time on each side of the first) read back
 {
   const old = { money: 321.5, unlocked: 25, levelOrder: 30, cars: ['hatch', 'lovebus'], car: 'lovebus', bestTime: { good: { expressway: 12, 'back-roads': 8 }, evil: { expressway: 6 } } };
@@ -118,7 +148,7 @@ check(Tiers.halves(g.levels.LEVELS[0]) === 1, 'its best times are its ribbons (a
   check(d.money === 321.5 && d.cars.includes('commuter') && d.car === 'lovebus' && d.tierBase === null, 'an old save loads whole, with no tier fields yet');
   check(d.levelOrder > 30 && d.unlocked >= 25, 'its open count is migrated to the current order as ever (' + d.unlocked + ')');
   check(Tiers.legacy() === d.unlocked && Tiers.isOpen(g.levels.LEVELS[d.unlocked - 1]), 'the tiers keep all ' + d.unlocked + ' of its levels open');
-  check(Tiers.halves(L('expressway')) === 2 && Tiers.halves(L('back-roads')) === 1, 'its best times are its ribbons');
+  check(Tiers.medals(L('expressway')) === 2 && Tiers.medals(L('back-roads')) === 1, 'its best times are its medals');
   localStorage.removeItem('delivery_racer_progress_backup');
   Progress.noSave = true;
 }

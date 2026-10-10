@@ -1,7 +1,7 @@
 import { CONFIG } from './config.js';
 import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial, nextOnTab, isRace } from './levels.js';
 import { Progress } from './progress.js';
-import { useLevelCar, returnCar, earnedFor, ownedAmphibious, carAllowed } from './cars.js';
+import { useLevelCar, returnCar, earnedFor, ownedAmphibious, carAllowed, restrictedTier } from './cars.js';
 import { Tiers } from './tiers.js';
 import { Input } from './input.js';
 import { clamp } from './util.js';
@@ -93,6 +93,7 @@ export const Game = {
   toMenu() {
     this.state = 'start';
     this.paused = false;
+    Tiers.hold = null; // (the run's car rule is over: the menu goes by the player's own pick again)
     returnCar(); // (a car lent by Car Swap goes back)
     if (this.screensaver) { // the menu's own level is picked again
       this.screensaver = false;
@@ -168,6 +169,8 @@ export const Game = {
     this.rivalsIn = 0;          // rivals over the line before the player
     this.rivalAhead = new Map(); // for each, whether it was ahead of the player when last looked
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
+    Tiers.hold = null;
+    Tiers.hold = { tier: restrictedTier() }; // (the car rule as the run starts it: held to the menu, whatever the delivery earns)
     useLevelCar(LEVEL.car, LEVEL.amphibious); // a UFO on the space level, otherwise the garage's car (on an amphibious level, the player's amphibious one)
     Player.evil = this.evil && !LEVEL.battle && !LEVEL.alwaysGood; // (on the Battlefield the player is in the green army, the good one, whatever the side on the menu; a level can say so too)
     Mysteries.reset(); // (before the player: a side swap or a giant left from the last run is not undone over this one)
