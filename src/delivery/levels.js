@@ -158,7 +158,7 @@
 //                                  'cameraDolly', 'mooringPosts', 'fuelDrum', 'popcornCart', 'barrel',
 //                                  'chairStack', 'riceBasket', 'present', 'toyDrum', 'sackStack', 'beachBall',
 //                                  'tumbleweed', 'cafeTable', 'wheelieBin', 'snowdrift', 'brimstone', 'flagStand',
-//                                  'lavaRock' (the volcano's rock). All of them are on the Gimmicks page, last,
+//                                  'lavaRock' (the volcano's rock), 'wasteDrum' (the fallout zone's). All of them are on the Gimmicks page, last,
 //                                  under Road dressing (gimmicks.html?group=road-dressing)
 //   dropBears  { from, to, count } drop bears up in the trees over that stretch, dropping onto the
 //              road as the player comes near (see CONFIG.dropBear)
@@ -345,6 +345,15 @@
 //              beside it) is new tar, coned off: traffic keeps out of it and crawls past in the other lanes. A car
 //              on it picks tar up on its tyres, which slows it more the longer it stays (in the end to less than
 //              the queue's pace) and for a few seconds after it is off (see CONFIG.tarmac)
+//   radiation  { from, to, lanes?: [first, last], side?: 'left' | 'right' }: a radiated area: over the stretch, in those
+//              lanes (out to the road's edge on `side`, if given; with no lanes, the whole road, shoulders and all),
+//              the player's car loses health slowly and its radiation meter rises; out of it the meter falls
+//              back. A full meter infects the player for the rest of the run: its health ticks down everywhere.
+//              The Armour pickup keeps all of it out. Always leave a clean line (other lanes, a shoulder, a side
+//              road) or put an armour before it (see radiation.js and CONFIG.radiation)
+//   infectedTraffic  the share of the traffic dealt out infected (0 .. 1; left out: CONFIG.radiation.share on a
+//              level with a radiated area, none on any other). An infected car doses the player within its ring
+//              as an area does, and touching it infects at once; a clean vehicle can catch it in an area
 //   spray      { from, to }: truck spray: over the stretch the expressway is wet, and every tall vehicle moving on it
 //              (a van, a bus, a lorry) drags a cloud of spray behind it, as wide as its lane and the next each
 //              side: in the cloud the player sees next to nothing. Nothing is done to the car (see CONFIG.spray)
@@ -482,6 +491,7 @@ import glow from './levels/glow.json';
 import erupt from './levels/erupt.json';
 import cattle from './levels/cattle.json';
 // (batch F's imports go above this line)
+import fallout from './levels/fallout.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
@@ -533,6 +543,7 @@ export const THEME_LEVELS = [
   cattle,
   thaw, // (batch E's last, the ice road's: written after batch F's three, so after them: its place in saved progress is 52)
   // (batch F: second levels on the theme park, volcano, port, Wild West, favela, rice terraces: new levels go above this line)
+  fallout, // (Hot Zone, the fallout level, after Spring Thaw: order 48, INSERTED_AT 53 in progress.js)
 ];
 export const MAIN_LEVELS = [...FIRST_LEVELS, ...THEME_LEVELS]; // (every numbered level: 1, 2, 3...)
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...AMPHIBIOUS_LEVELS, ...CIRCUIT_LEVELS];

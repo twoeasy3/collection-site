@@ -36,7 +36,7 @@ const hex = (color) => '#' + color.toString(16).padStart(6, '0');
 
 // the Gimmicks page's cards that are about vehicles: listed under Traffic here, not under Gimmicks
 const TRAFFIC_CARDS = new Set(['Emergency vehicles', 'Police pursuit', 'Wrong-way drivers', 'Traffic with quirks', 'Tractors', 'Funeral processions',
-  'Convoys', 'Boats', 'Falling cargo', 'Drive-bys', 'Police stretches', 'The UFO', 'The jetboat', 'Your 8x8']);
+  'Convoys', 'Boats', 'Falling cargo', 'Drive-bys', 'Police stretches', 'Infected cars', 'The UFO', 'The jetboat', 'Your 8x8']);
 // ...and the vehicle kinds one of those cards already shows (so the kind gets no tile of its own)
 const KIND_CARD = { ufo: 'The UFO', jetboat: 'The jetboat', apc: 'Your 8x8', tractor: 'Tractors', cargotruck: 'Falling cargo', driveby: 'Drive-bys' };
 // a vehicle kind's own model, painted (a traffic kind's, or a level's own vehicle's)

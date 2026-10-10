@@ -286,6 +286,13 @@
       "evil": "An egg that likes the heat, through an island on the run. Fly the jam off the transporter, skim the washboard, and let the lava bombs sort out the queue."
     }
   },
+  "fallout": {
+    "name": "Hot Zone",
+    "description": {
+      "good": "A bonsai out of the exclusion zone. Through the checkpoint, past the plant's cooling towers and the dead village: keep out of the green, off the glowing cars.",
+      "evil": "A cloud for a client who glows in the dark. Run the hot stretches flat out, thread the infected traffic for the cash, and let the armour take the dose."
+    }
+  },
   "cattle": {
     "name": "Cattle Drive",
     "description": {
