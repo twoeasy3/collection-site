@@ -82,8 +82,11 @@
 //   alwaysGood true = the player is Good on it, whatever the side picked on the menu (as on the Battlefield)
 //   cargo      { good, evil }: what the player is delivering, for each side (the ids of cargo.js: good 'pizza' |
 //              'cake' | 'goldfish' | 'cactus' | 'clock'; evil 'parcel' | 'porcupine' | 'bees' | 'doll' | 'tentacle').
-//              Only a sight: it rides in a corner of the HUD and is set down at the kerb at the end. Left out (or
-//              either side of it), the level's place on the menu picks one. Races and the Battlefield carry nothing
+//              Only a sight: it rides in a corner of the HUD and is set down at the kerb at the end, and the menu names
+//              it on the stage. A built-in level's cargo is kept in levelText.json, with its name and description (the
+//              file's first, a side at a time; this field is the fallback: levelText.js, cargo.js); an id that is no
+//              item is passed over. Left out (or either side of it), the level's place on the menu deals one. Races
+//              and the Battlefield carry nothing
 //   grid       { count, kind, gap, pace: { min, max }, from }: a race. `count` cars of that kind on a
 //              grid, two by two, `gap` m apart, ahead of the player, all the player's way, half of them
 //              evil, each at its own share (pace) of the player's car's top speed; they race on,

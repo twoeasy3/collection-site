@@ -1,5 +1,7 @@
 // A headless check of the cargo (src/delivery/cargo.js) and the delivery at the kerb (delivery.js): every
-// level's item, the Evil states' thresholds, and the ending's sequence, skip and exceptions.
+// level's item, where it is named (levelText.json, with the level's own file as the fallback: an id there is
+// not fails the level, and the failsafe that carries on without it is tested), the Evil states' thresholds, and
+// the ending's sequence, skip and exceptions.
 //   node scripts/.cargo-check.mjs
 import { boot } from './delivery-headless.mjs';
 
@@ -9,6 +11,7 @@ const ok = (what, pass, more = '') => { if (!pass) failed++; console.log((pass ?
 try {
   const { CARGO, cargoFor, cargoProblems, cargoState, carriesCargo } = await g.load('cargo.js');
   const { Delivery } = await g.load('delivery.js');
+  const { LEVEL_TEXT, levelCargoNames, levelCargo, withWords } = await g.load('levelText.js');
   const { CONFIG, Game, Player } = g, C = CONFIG.consignment, E = C.ending;
   const all = [...g.levels.LEVELS, ...Object.values(g.levels.HIDDEN_LEVELS)];
 
@@ -24,6 +27,50 @@ try {
   }
   ok('every level\'s "cargo" names items there are', !bad.length, bad.join(' | '));
   ok('every item turns up', seen.good.size === CARGO.good.length && seen.evil.size === CARGO.evil.length, [...seen.good, ...seen.evil].join(' '));
+  // ---- where the cargo is named: levelText.json, then the level's own file
+  const filed = [], shape = [], differ = [], dealtToday = [];
+  for (const [id, words] of Object.entries(LEVEL_TEXT)) {
+    if (words.cargo === undefined) continue;
+    filed.push(id);
+    const c = words.cargo;
+    if (!c || typeof c !== 'object' || Array.isArray(c)) { shape.push(id + ': "cargo" is not { good, evil }'); continue; }
+    for (const key of Object.keys(c)) if (key !== 'good' && key !== 'evil') shape.push(id + ': cargo.' + key + '?');
+    const own = all.find(l => l.id === id);
+    for (const side of ['good', 'evil']) if (own?.cargo?.[side] !== undefined && c[side] !== undefined && own.cargo[side] !== c[side])
+      differ.push(id + ': its ' + side + ' cargo is "' + c[side] + '" in levelText.json and "' + own.cargo[side] + '" in its own file');
+  }
+  for (const level of g.levels.LEVELS) if (carriesCargo(level) && !levelCargoNames(level, 'good').length && !levelCargoNames(level, 'evil').length) dealtToday.push(level.id);
+  ok('levelText.json: "cargo" is { good, evil } and nothing else', !shape.length, shape.join(' | '));
+  ok('levelText.json and the level\'s own file do not name different cargo', !differ.length, differ.join(' | '));
+  ok('levelText.json names the cargo of the levels (any left over are dealt one)', filed.length > 0, filed.length + ' named there' + (dealtToday.length ? '; dealt: ' + dealtToday.join(' ') : ''));
+
+  // ---- the failsafe: a cargo id that is no item (a typo, an item taken out) never crashes and never shows
+  // nothing: the level's own file's id, then the dealt item. Tried on levels made up for it
+  const real = (item, side) => !!item && CARGO[side].some(c => c.id === item.id);
+  try {
+    LEVEL_TEXT.__failsafe_a = { cargo: { good: 'no-such-item', evil: 'nor-this' } };
+    LEVEL_TEXT.__failsafe_b = { cargo: { good: 'no-such-item', evil: 'skunk' } };
+    LEVEL_TEXT.__failsafe_c = { cargo: { good: 'trophy', evil: 'bats' } };
+    LEVEL_TEXT.__failsafe_d = { cargo: { good: 7, evil: null } };
+    const withOwn = { id: '__failsafe_a', cargo: { good: 'coffee', evil: 'parcel' } };
+    const noOwn = { id: '__failsafe_b' };
+    const goodFile = { id: '__failsafe_c', cargo: { good: 'coffee', evil: 'parcel' } };
+    const odd = { id: '__failsafe_d' };
+    const bothBad = { id: '__failsafe_a', cargo: { good: 'also-wrong', evil: 'worse' } };
+    const nothing = { id: '__failsafe_none' };
+    ok('failsafe: a bad id in levelText.json falls back to the level\'s own file\'s', cargoFor(withOwn, false)?.id === 'coffee' && cargoFor(withOwn, true)?.id === 'parcel');
+    ok('failsafe: a bad id in both places is dealt an item, on both sides', real(cargoFor(bothBad, false), 'good') && real(cargoFor(bothBad, true), 'evil'));
+    ok('failsafe: a bad id and no own file\'s: dealt an item; a good id on the other side stands', real(cargoFor(noOwn, false), 'good') && cargoFor(noOwn, true)?.id === 'skunk');
+    ok('failsafe: an id that is not even a word does not crash, and an item is carried', real(cargoFor(odd, false), 'good') && real(cargoFor(odd, true), 'evil'));
+    ok('failsafe: a level that names nothing anywhere is dealt an item', real(cargoFor(nothing, false), 'good') && real(cargoFor(nothing, true), 'evil'));
+    ok('levelText.json comes before the level\'s own file, a side at a time', cargoFor(goodFile, false)?.id === 'trophy' && cargoFor(goodFile, true)?.id === 'bats');
+    ok('cargoProblems finds the bad ids and says where they are', cargoProblems(withOwn).length === 2 && cargoProblems(withOwn).every(p => p.includes('levelText.json')) && cargoProblems(bothBad).length === 4 && !cargoProblems(goodFile).length && cargoProblems(odd).length === 1,
+      cargoProblems(withOwn).concat(cargoProblems(odd)).join(' | '));
+    const kept = withWords({ id: '__failsafe_c', cargo: { good: 'coffee' } });
+    ok('withWords: the level for the editor carries the file\'s cargo, a side at a time', kept.cargo?.good === 'trophy' && kept.cargo?.evil === 'bats' && levelCargo({ id: '__failsafe_none' }) === undefined);
+  } finally {
+    for (const k of ['a', 'b', 'c', 'd']) delete LEVEL_TEXT['__failsafe_' + k];
+  }
   ok('races and the Battlefield carry nothing', all.filter(l => l.laps || l.battle).every(l => !cargoFor(l, false)));
 
   ok('state: calm with most of the clock left', cargoState(100, 100) === 0 && cargoState(100 * C.agitated + 0.1, 100) === 0);
