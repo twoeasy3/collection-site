@@ -55,7 +55,12 @@
     { "s": 1600, "side": "right" },
     { "s": 3400, "side": "left" }
   ],
+  "shade": [
+    { "from": 2370, "to": 2450, "side": "right" }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 2395, "lane": 1 },
+    { "type": "cash10", "s": 2395, "lane": 0 },
     { "type": "turbo", "s": 200, "lane": 1 },
     { "type": "armour", "s": 330, "lane": 1 },
     { "type": "wrench", "s": 900, "lane": 1 },

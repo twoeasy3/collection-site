@@ -11,7 +11,13 @@ import { toyroom } from './toyroom.js';
 import { seabed } from './seabed.js';
 import { moon } from './moon.js';
 // (batch A's imports go above this line)
+import { backlot } from './backlot.js';
+import { venice } from './venice.js';
+import { iceroad } from './iceroad.js';
 // (batch B's imports go above this line)
+import { themepark } from './themepark.js';
+import { volcano } from './volcano.js';
+import { port } from './port.js';
 // (batch C's imports go above this line)
 import { wildwest } from './wildwest.js';
 import { favela } from './favela.js';
@@ -22,7 +28,13 @@ export const THEME_SCENERY = {
   seabed,
   moon,
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
+  backlot,
+  venice,
+  iceroad,
   // (batch B: film studio, Venice, ice road: new themes go above this line)
+  themepark,
+  volcano,
+  port,
   // (batch C: theme park, volcano island, container port: new themes go above this line)
   wildwest,
   favela,

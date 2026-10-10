@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `6e327af` (main: the audit, Tank Rage and theme levels A merged; not pushed). Running: agent 18 (menu UI), 19 (road gimmicks), 21, 22, 26 (theme levels B, C, D), 24 (known problems, with four audit findings added).
+Last updated: after `88e87aa` (main; not pushed). 57 levels on the menu. Running: agent 19 (road gimmicks, from H9), 24 (known problems), 26 (theme levels D). Everything else is merged.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -137,20 +137,24 @@ Three agents at a time; the next item starts as each one finishes.
 - [x] Twenty more Good cargo items (C1 to C20): agent 15, merged into `main` (`cc34343`, `533d5a2`); cargo, bundle and levels checks pass; seen on the Cargo page's contact sheet, sent to the owner. Weakest: sushi boat, tea set, globe. Nothing seen moving
 - [x] Twenty more Evil cargo items (C21 to C40), three states each: agent 16, merged into `main` as `6fc32e2` (`c8ba744`, `269134e`; two small conflicts with the Good branch, both sides kept); cargo, bundle and levels checks pass; 50 items in all now. Seen on two contact sheets, sent to the owner. Weakest: the teddy bear's middle state, the cannonball's first two states, the reactor's last, the skunk asleep. Nothing seen moving
 - [ ] Cargo picked by hand for more levels (the pairs suggested under "More cargo"): not done; every level gets one by its place on the menu
-- [~] Menu UI rework (M1 to M3 in the section "Menu UI" at the end): agent 18, branch `delivery-menu`
+- [x] Menu UI rework (M1 to M3): agent 18, merged into `main` as `59ffd04` (`1eb9ece`, `f6fa1bc`, `0c54493`, `6ffb4fd`); bundle, levels, schema, descriptions, road-card and HUD checks pass. One screen with no scrolling: a level stage, a strip, the car and side beside it, one START; a description of every level for each side (in each level's JSON); "What's on this road" opens a card of the level's gimmicks, pickups and traffic with their 3D models. The orchestrator added the themed-level group and descriptions for T1 to T3 at the merge (`087fb40`). Seen at desktop size after the merge and in the agent's phone still; sent to the owner. Nothing clicked, tapped or heard. Eight levels still have no menu picture
 - [x] In-game UI improvements (U1 to U5): agent 17, merged into `main` as `1d94f0e` (`8cb5d78`, `5eb974f`); levels, bundle and HUD checks pass. A ring with the distance to go and a shoulder dial in the meters' corner; messages along the top edge in landscape and at the foot in portrait; `CONFIG.messageTimes`; eleven sticky messages (puncture, beached, bad gas, heavy, butterfingers, and six bad mystery effects); the mystery's name in the status. Seen at desktop and phone size, sent to the owner. Weak spots: wrapped messages and sticky rows push the camera warning toward the horizon on desktop; in portrait a long message reaches the car. Nothing seen moving
-- [~] Road gimmicks, resumed from the saved ramp work: agent 19, branch `delivery-gimmicks` (a new worktree)
+- [~] Road gimmicks: agent 19, branch `delivery-gimmicks`. **Merged so far** (f6e0648): H2 the ramp over the jam (Night Drive, Speed Trap Alley), H8 washboard dirt (Safari, Outback Express), H4 the low bridge (Ring Road, Quarry Run), H5 the ford (Back Roads, Quarry Run), H19 speed cushions (Suburbs, The Hood, Christmas Eve), H10 black ice in the shade (Mountain Pass, Fjord Crossing); all on the hidden Gimmick Road 3; no clock changed. Carrying on from H9 ruts, plus the drawbridge's river colour and an asteroid-drifter error
 - [~] New levels on new themes, built from the gimmicks the game has now (owner, 10-Oct: "Let's get some agents going making new levels with the new themes and the gimmicks we have right now"). No new gimmick per theme. Three agents, three themes each, a level on each:
   - [x] A (agent 20), merged into `main` as `6e327af`; levels, schema, bundle, save and targets checks pass. A group of their own on the menu (T1...), saved progress undisturbed. **T1 Toy Room**, **T2 Twenty Thousand Leaks** (a new sea-bed theme: the road in a glass tube), **T3 Tranquility Base** (a new moon theme). 22 to 28 cash pickups and 8 to 11 side-by-side rows each. Seen in one still each, sent to the owner. Not played. The stopped agent's toy gimmicks and low gravity were cut and kept on `delivery-themes-toys-wip`
   - [~] D (agent 26, `delivery-themes-d`): T16 old Wild West, T9 favela hillside, T17 rice terraces
-  - [~] B (agent 21, `delivery-themes-b`, from A's base `0c74bd6`): T13 film studio backlot, T1 Venice, T4 ice road
-  - [~] C (agent 22, `delivery-themes-c`, from A's base `0c74bd6`): T12 theme park, T7 volcano island, T11 container port
+  - [x] B (agent 21), merged into `main`: **Quiet on Set** (a film studio backlot: five sets in turn), **Acqua Alta** (Venice: the road a quay on the lagoon), **Northern Lights** (an ice road at night under an aurora). 29, 35 and 37 cash pickups; 9, 13 and 11 rows. Seen in one still each. Not played
+    - [x] T13 film studio backlot: theme `backlot` (`29d651b`), level `backlot` "Quiet on Set" (`65e69cf`): 4150 m in five sets (the lot, a Western town, a soundstage tunnel with a spaceship corridor, a New York street of flats, painted skies), 29 cash pickups, nine rows side by side. Verified: the levels, schema, bundle and save checks; a ghost driven to the finish; each row takes only the pickup in the car's lane (a headless check); 30 stills along the level looked at. Not verified: nothing played by hand, nothing seen moving (the wind machines' fans, the gimmicks in action), no sound
+    - [x] T1 Venice: theme `venice` (`4efb9c8`), level `venice` "Acqua Alta" (`bf2c77d`): 4500 m of quay, an ordinary road level (the water is beside the road; acqua alta is the tide the game has, no new gimmick): three humped bridges that are crest jumps, a drawbridge, a carnival parade, a sotoportego (tunnel), fog, the tide, a balloon, a reversible lane; 35 cash pickups, thirteen rows of two. Verified as the backlot was (checks, ghost to the finish, rows, 24 stills). Not verified: nothing played by hand; the boats are scenery and do not move; the drawbridge's own river is the gimmick's blue, not the lagoon's green
+    - [x] T4 ice road: theme `iceroad` (`4b41285`), level `iceroad` "Northern Lights" (`45b99b9`): 4600 m across a frozen lake at night under the aurora, an ordinary road level (no breaking ice: the ice patches, crosswinds, fog and burst mains the game has): eight ice patches, two crosswinds, a pressure ridge that is a crest jump, a side road, sliding crates, a whiteout, a wide load, truck convoys; 37 cash pickups, eleven rows side by side (two of them on the side road). Verified as the others (checks, ghost to the finish, 21 stills; the rows on the expressway by a headless check, the two on the side road only by the level check). Not verified: nothing played by hand; the aurora's drift not seen moving
+  - [x] C (agent 22), merged into `main`: **Thrill Park** (a theme park with a rollercoaster over the road), **Cinder Island** (a volcano island with rivers of lava), **Dock Run** (a container port). 31, 29 and 27 cash pickups; 11, 9 and 8 rows. Seen in one still each. Not played. Known flaw: the drawbridge draws a blue river on any theme (given to agent 19)
+  - [x] **"The themed levels are just normal levels"** (owner): no T group; they are numbered levels 32 to 40, ahead of the specials; saved progress counts them in. `9335812`, `3f75184`, `88e87aa`. All checks pass; the save cookie is 3760 of 4096 bytes with 57 levels
 - **Standing rule for level content (owner, 10-Oct):** "add more Cash bonus pickups on the level from now, and have parts of the level where two or more pickups are side by side." Given to the theme agents, the Stelvio and Market Town agent and the gimmicks agent. Older levels have between none and four cash pickups
 - [x] Tank Rage: agent 23, merged into `main` as `d1e6e9d` (`0c72eb6`, `a735f67`, `422f268`); targets (257), tank, water and save checks pass. **Markers:** a theme or a single target can set `target: { offset, height, style, base, arm, beam }`; set for Mumbai (the post stood inside a building), Hong Kong (half in a tower wall), Tokyo, Singapore day and night, Safari and the circuit themes. **Amphibious tank:** a model of its own; a rage on an amphibious level is in it, on land and water; no garage bay. Seen in stills, sent to the owner. For the owner: no garage bay; 46 m/s ashore and 72% afloat; a beam of light only on the configured themes
 - [x] Audit (owner: "Audit only", then "Include a plan to cut down on the bloat"): `AUDIT-10-Oct.md`, `11ef1b5`: 32 findings and a ten-stage plan. C4 (script injection in the editor, live), C2, C3, C5, C6 given to agent 24. **C1 needs the owner**: which of the two burst-water-main systems is the game's. Performance findings and the bloat plan are not assigned
 - **The level progression rework waits:** the owner will do "a full rebalance later"
 - [ ] Next 3: clocks for the five themed levels; Gimmick Road 2's gimmicks into real levels (menu pictures moved to the known-problems agent)
-- [~] Known problems: agent 24, branch `delivery-fixes`: the flaky headless checks first (suspected: every worktree shares one Vite cache through its `node_modules` junction), pickups on shoulders, the Gimmicks page's console errors, the replay failures, duplicate config keys, stale notes and HANDOVER, the editor's leftovers (E6.2, E3.5, E6.1), the missing menu pictures
+- [~] Known problems: agent 24, branch `delivery-fixes`. Done: the flaky checks (every worktree shared one Vite cache and each run deleted it: `69b8ae1` on `main`); audit C4 (the editor no longer writes level values into the page as HTML), C6 (a pasted save code keeps only a save's fields), C2 (address-bar switches never write the save), C5 (a bad edited level is refused with a reason): committed, not merged yet. To do: C3 with the replay failures, pickups on shoulders, the Gimmicks page's console errors, duplicate keys, stale notes and HANDOVER, the editor's leftovers, the missing menu pictures
 - [ ] Next 5: 28 liveries, 31 endless mode, replay in the browser
 - [ ] Next 6: 51 phone performance, 49 parallel smoke test, 50 lint and CI
 - [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
@@ -343,7 +347,7 @@ Build the theme first, then the level. Make sure the theme is reusable
 - [ ] T6. **Desert canyon**: red rock walls, mesas, a dry riverbed for a shoulder, tumbleweed.
       Gimmick: a dust storm that closes visibility like fog but blows cars sideways; a flash flood
       down the wash. Reuses: fog, storm, terrain, rockfall.
-- [ ] T7. **Volcano island**: black sand, palms, steam vents, a lava field across the old road.
+- [x] T7. **Built (agent 22, `delivery-themes-c`): theme `volcano`, level `cinder` "Cinder Island" from the gimmicks the game has (the lava bombs and the lost lanes below were not built). Verified: levels, schema, bundle, save, descriptions and targets checks; a ghost driven to the end; each pickup of a row taken only from its own lane; screenshots along the whole level and of a target. Not verified: nothing played by hand, nothing seen moving (the scenery that moves was seen only in stills), nothing heard.** **Volcano island**: black sand, palms, steam vents, a lava field across the old road.
       Gimmick: lava bombs landing on the road and cooling into obstacles; lava flows that close a
       lane for good partway through the run. Reuses: quarry blasts and boulders, hell's palette.
 - [ ] T8. **Autumn countryside**: orange and red forest, stone walls, covered bridges, a village
@@ -360,11 +364,11 @@ Build the theme first, then the level. Make sure the theme is reusable
       neon signs in the rain. Gimmick: the stalls creep outward as the evening goes on, and
       pedestrians cross anywhere. Reuses: narrows, parades, the lit themes, school crossing's
       walkers.
-- [ ] T11. **Container port**: stacks of containers for walls, gantry cranes, straddle carriers,
+- [x] T11. **Built (agent 22, `delivery-themes-c`): theme `port`, level `docks` "Dock Run" from the gimmicks the game has (the cranes lowering boxes into lanes below were not built: the cranes are scenery). Verified: levels, schema, bundle, save, descriptions and targets checks; a ghost driven to the end; each pickup of a row taken only from its own lane; screenshots along the whole level and of a target. Not verified: nothing played by hand, nothing seen moving (the scenery that moves was seen only in stills), nothing heard.** **Container port**: stacks of containers for walls, gantry cranes, straddle carriers,
       rail lines in the road. Gimmick: cranes lower containers into lanes on a rhythm; straddle
       carriers drive over you if you are low enough. Reuses: machinery, level crossings, falling
       cargo, potties' patterns.
-- [ ] T12. **Theme park**: the road runs through the park: a rollercoaster looping over it,
+- [x] T12. **Built (agent 22, `delivery-themes-c`): theme `themepark`, level `park` "Thrill Park" from the gimmicks the game has (the coaster sharing the road and the bumper cars below were not built: the coaster is scenery). Verified: levels, schema, bundle, save, descriptions and targets checks; a ghost driven to the end; each pickup of a row taken only from its own lane; screenshots along the whole level and of a target. Not verified: nothing played by hand, nothing seen moving (the scenery that moves was seen only in stills), nothing heard.** **Theme park**: the road runs through the park: a rollercoaster looping over it,
       a Ferris wheel, a log flume that crosses as a water stretch, a parade route. Gimmick: the
       coaster's train shares the road for a stretch; bumper cars as traffic. Reuses: parades,
       bullet train, balloons.
@@ -481,10 +485,19 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       no steering in the air, the safe line under the board's speed, faster by 2.4 s, a hard landing
       costs, no other level has a crest by accident) and in stills (the hidden far side, the car in the
       air, the card). Not verified: played by hand; the two real crests on screen; sound.
-- [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
+- [x] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
       in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
       slow and it lands in it. _Gamble:_ the jump or the slow way round. _Builds on:_ drawbridge
       jump, rubbernecking queues, convoys.
+      _Built (`gambles.js`, field `jamRamps: { s, lane, queue?, lanes? }`):_ on Gimmick Road 3 (2400,
+      lane 4, 115 km/h), Night (2250, a queue of 2: 85 km/h, a turbo before it) and Speed Trap Alley
+      (2860, a queue of 3: 100 km/h, just past the camera at 2750). The queue is real stopped traffic
+      (small vehicles, the same every run); cash beyond it. The way round is the oncoming side or the
+      shoulder. Verified by `.gimmicks3-check.mjs ramp` (over at the board's speed, into the queue
+      8 m/s under it, round by the oncoming lane unhurt, kept out of the trailer from beside, traffic
+      moves over, never stood still on the ramp, both real levels load with their whole queue) and
+      in stills (the board, the foot, in the air, the card, Night). Not verified: played by hand;
+      Speed Trap Alley on screen; whether the cash beyond is picked up on landing.
 - [ ] H3. **Tram lane**: the median's rails are an empty lane, and a tram is coming along them
       somewhere. Fast and clear, slippery in the rain, and the tram does not swerve. _Gamble:_
       how long to stay on the rails. _Builds on:_ the railway median, Hong Kong's trams, ice.
@@ -492,10 +505,37 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       long way round. A low car goes straight under; a van or the bus must take the detour, or
       lose its roof rack, lights and some health trying. _Gamble:_ made in the garage, and again
       at the sign. _Builds on:_ side roads, tunnels, car heights already in `cars.js`.
+      _Built (`gambles.js`, field `lowBridges: { s, clearance? }`, as a height bar over the player's
+      side, 2 m unless said):_ it must stand between an exit and its merge (the level reports one
+      that does not). A car that fits goes under; a taller one that goes at it loses 30 health and
+      25 more per metre too tall, and 60% of its speed, and is through; the player is told on the
+      way in what the car measures. Tall traffic takes the exit. On Gimmick Road 3 (4400; its first
+      side road pushed out to 150 m so the way round costs 4 s), Ring Road (1100) and Quarry Run
+      (1510), cash under each. Clocks not re-timed. Verified by `.gimmicks3-check.mjs bridge` (a low
+      car untouched, a 2.65 m truck takes the knock and is never stopped, the same truck round by
+      the exit unhurt and 4 s slower, the oncoming side not barred, a bus takes the exit, both real
+      levels have an exit round theirs) and in stills (the board, the bar, the card, Ring Road).
+      Not verified: played by hand. Known gap: a tall traffic vehicle that
+      cannot get over to the exit lane is taken off the road if it is 140 m or more from the
+      player, and otherwise drives through the bar. It is a bar, not a bridge: say if a real
+      bridge over the whole road is wanted.
 - [ ] H5. **Ford**: the road dips through a river, with the bridge a little further round. Depth
       posts show how deep it is today (it varies down the level). A car that wades well goes
       through; one that does not is slowed to a crawl or stalls. _Gamble:_ read the posts and
       know the car. _Builds on:_ the tide's wading (`crossing` in `cars.js`), side roads.
+      _Built (`gambles.js`, field `fords: { from, to, depth? }`, each ford its own fixed depth: it
+      does not change during a run):_ between an exit and its merge (the side road is the bridge;
+      the level reports a ford with none). A car wades 0.25 m (crossing 0) to 1 m (crossing 1):
+      within that it is slowed (to 47 km/h at its limit), beyond it it crawls at 16 km/h and loses
+      10 health a second per metre too deep; never stopped. The player is told the depth and what
+      the car wades before the exit. On Gimmick Road 3 (5650-5720, 0.6 m; its second side road
+      out to 150 m), Back Roads (1790-1850, 0.45 m) and Quarry Run (4060-4105, 0.7 m), cash in each.
+      (The low bridge moved from Back Roads to Quarry Run, 1510, so Back Roads has one of the two.)
+      Clocks not re-timed. Verified by `.gimmicks3-check.mjs ford` (a truck through unhurt and 3 s
+      quicker than the bridge, a lowrider crawling 13 s and 31 health, the same car over the bridge
+      dry and 9 s quicker, a ghost untouched, traffic wading slowly, both real levels) and in stills
+      (the board, the bank, in it, Back Roads, Quarry Run). Not verified: played by hand; the road
+      does not dip (the water lies on it); the card on screen.
 - [ ] H6. **Flooded underpass**: the same, in town in the rain: the main road dips under a
       railway and fills, and the slip road goes up and over. The water rises through the run.
       _Gamble:_ early on it is passable by anything; later only by some. _Builds on:_ tunnels,
@@ -504,9 +544,18 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       It saves the whole bend, shakes the car, costs health, and rejoins across the traffic.
       _Gamble:_ seconds against damage and a blind rejoin. _Builds on:_ Stelvio's hairpins, mud,
       side roads.
-- [ ] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
+- [x] H8. **Washboard dirt**: a corrugated dirt road. Slowly, it shakes the grip away; above a
       certain speed the car skims the tops and it goes smooth. _Gamble:_ commit to the speed
       before the bend, or crawl. _Builds on:_ potholes, mud, the safari's dirt road.
+      _Built (`gambles.js`, field `washboards: { from, to, skim? }`):_ smooth at 32 km/h or less and
+      at 72 km/h or more; between, 88% of the steering goes, the car wanders and runs wide in bends
+      (worst half way). On Gimmick Road 3 (2950-3450, three barriers to steer round), Safari
+      (2520-2980) and Outback Express (3960-4380), cash on the lines that need steering. Clocks not
+      re-timed (skimming costs no time). Verified by `.gimmicks3-check.mjs washboard` (skimming
+      round the barriers unhurt, the same steering at 52 km/h hits one, crawling unhurt and 41 s
+      slower, braking on it drops into the rough, every garage car can reach the speed, both real
+      levels load) and in stills (the boards, on it, the card, Safari). Not verified: played by
+      hand; how it feels behind slow traffic; Outback Express on screen; sound.
 - [ ] H9. **Ruts**: tractors have left deep ruts in the mud. In a rut the car runs straight and
       fast; changing lane means climbing out, with a jolt and a wobble. _Gamble:_ pick the rut
       early and live with it. _Builds on:_ mud, tractors.
@@ -514,6 +563,19 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       shade the road, so it can be read from the shadows before reaching it. _Gamble:_ brake
       before the shadow, or stay in the sunny lane with the traffic. _Builds on:_ ice, the
       scenery already casting the shade.
+      _Built (`gambles.js`, field `shade: { from, to, side, lanes? }`):_ a row of tall trees of its
+      own on that side (not the theme's scenery) shades the nearest lane or lanes, and the shadow
+      is ice (the game's own, through `Track.slicks`) with 90% more of the steering gone; nothing
+      is drawn but the shadow. Traffic moves into the sun before it. On Gimmick Road 3 (6250-6450,
+      a barrier in the shade at 6410, the bigger cash in the shade), Mountain Pass (2370-2450, the
+      braking for the hairpin) and Fjord (1340-1470, the shaded lane the way past the barriers).
+      Not on Christmas: it is a night level, with no sun to be out of. Clocks not re-timed.
+      Verified by `.gimmicks3-check.mjs shade` (the sunny lane never ice, out of the shade early
+      unhurt, a move 25 m before the barrier hits on the ice and clears with the ice taken away,
+      slowly it clears, a van moves into the sun, both real levels) and in stills (Gimmick Road 3,
+      Mountain Pass, Fjord). Not verified: played by hand; the card on screen. Weak point: the
+      game's ice costs nothing in a straight line, so a shade needs a bend, a hazard or a braking
+      point in it to be a gamble at all.
 - [ ] H11. **Truck spray**: in rain every lorry drags a cloud of spray: nothing can be seen
       behind one. _Gamble:_ hang back and see, or overtake blind. _Builds on:_ rain, fog.
 - [ ] H12. **Low sun**: one stretch runs straight into the sun and the screen washes out,
@@ -543,6 +605,17 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       gap on exactly the right line and the car does not feel it; clip one at speed and it
       jumps and takes a knock. _Gamble:_ precision at speed against slowing. _Builds on:_
       potholes, the jump.
+      _Built (`gambles.js`, field `cushions: { from, to, every? }`):_ a row every 45 m, a cushion in
+      the middle of each lane and a gap on each lane line. Within 0.45 m of a lane line (less for a
+      wide car) the car goes between two at any speed; over one at 30 km/h or less it is a bump;
+      faster it is thrown up (no steering until down) and knocked, 3 health and more the faster.
+      Traffic takes them slowly. On Gimmick Road 3 (3520-3700), Suburbs (1460-1600), The Hood
+      (1460-1595) and Christmas (1480-1615), cash between the rows. Clocks not re-timed. Verified
+      by `.gimmicks3-check.mjs cushions` (the lane line at 108 km/h untouched, the middle of the
+      lane at that speed thrown at all five rows and 42 health, braking for each row unhurt and
+      11 s slower, 0.7 m off the line is not the gap, a wide car has less room, the three real
+      levels) and in stills (the rows, the card, Suburbs). Not verified: played by hand; how it
+      is among the slowed traffic; The Hood and Christmas on screen.
 - [ ] H20. **Blast window**: the quarry's siren goes and the road under the face is about to
       be showered; the haul road round the back is longer and rough. _Gamble:_ sprint under
       before it goes, or take the haul road. _Builds on:_ quarry blasts, side roads.

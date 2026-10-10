@@ -266,7 +266,15 @@
       "exit": 0
     }
   ],
+  "lowBridges": [
+    { "s": 1510 }
+  ],
+  "fords": [
+    { "from": 4060, "to": 4105, "depth": 0.7 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 1530, "lane": 1 },
+    { "type": "cash20", "s": 4085, "lane": 1 },
     {
       "type": "wrench",
       "s": 200,

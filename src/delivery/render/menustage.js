@@ -12,7 +12,7 @@
 // For a picture: ?cursor=47 puts that level on the stage, open or not (?pick= opens them all first: see
 // main.js); ?side=evil shows the Evil side for the visit; ?options opens the options; ?road the road card.
 import '../menu2.css';
-import { LEVELS, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, THEME_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace } from '../levels.js';
+import { LEVELS, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace } from '../levels.js';
 import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
@@ -47,21 +47,20 @@ const sideBox = document.getElementById('sideBtn'), sideNote = document.getEleme
 
 // ---- the tabs and their groups ---------------------------------------------------------------------------
 // Two tabs: the deliveries, and the races (the circuits: see RACE_LEVELS). On each, the levels in groups of
-// five (the main delivery levels, then the special ones, then the amphibious ones, then the themed ones, each
-// kind starting a group of its own; the races five at a time)
+// five (the main delivery levels, then the special ones, then the amphibious ones, each kind starting a group
+// of its own; the races five at a time)
 const TABS = { delivery: { list: DELIVERY_LEVELS, groups: [] }, race: { list: RACE_LEVELS, groups: [] } };
 for (let i = 0; i < MAIN_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(MAIN_LEVELS.length, i + 5)]);
 {
-  const themed = DELIVERY_LEVELS.length - THEME_LEVELS.length, specials = themed - AMPHIBIOUS_LEVELS.length;
+  const specials = DELIVERY_LEVELS.length - AMPHIBIOUS_LEVELS.length;
   for (let i = MAIN_LEVELS.length; i < specials; i += 5) TABS.delivery.groups.push([i, Math.min(specials, i + 5)]);
-  for (let i = specials; i < themed; i += 5) TABS.delivery.groups.push([i, Math.min(themed, i + 5)]);
-  for (let i = themed; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
+  for (let i = specials; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
 }
 for (let i = 0; i < RACE_LEVELS.length; i += 5) TABS.race.groups.push([i, Math.min(RACE_LEVELS.length, i + 5)]);
 const tabOf = (level) => isRace(level) ? 'race' : 'delivery';
 const label = (level) => levelLabel(LEVELS.indexOf(level));
 // what kind of level it is, for the plate over its picture
-const kindOf = (level) => isRace(level) ? 'Race' : AMPHIBIOUS_LEVELS.includes(level) ? 'Amphibious' : THEME_LEVELS.includes(level) ? 'Themed' : MAIN_LEVELS.includes(level) ? 'Level' : 'Special';
+const kindOf = (level) => isRace(level) ? 'Race' : AMPHIBIOUS_LEVELS.includes(level) ? 'Amphibious' : MAIN_LEVELS.includes(level) ? 'Level' : 'Special';
 // a race is always open; a delivery level once the one before it has been delivered
 const isOpen = (level) => isRace(level) || LEVELS.indexOf(level) < Progress.data.unlocked;
 // a level played on one side only (the Battlefield, All Heck: always Good)

@@ -218,7 +218,12 @@
       "exit": 1
     }
   ],
+  "lowBridges": [
+    { "s": 1100 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 1125, "lane": 2 },
+    { "type": "cash10", "s": 1125, "lane": 3 },
     {
       "type": "passenger",
       "s": 150,

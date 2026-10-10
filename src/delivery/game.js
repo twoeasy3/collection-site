@@ -78,6 +78,7 @@ export const Game = {
   // (through the onLoad hooks, which the rendering modules register) the scenery.
   load() {
     buildTrack();
+    Gambles.build(); // (its lists: Traffic puts out a ramp's queue from them)
     Hazards.attach(); // (its obstacles are loaded with the level's: see Collision.loaders)
     Collision.loadLevel();
     Pickups.load();

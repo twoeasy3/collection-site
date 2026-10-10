@@ -296,6 +296,36 @@
 //              `length` s (CONFIG.crosswind's if not said; strength: m/s^2 on a car as tall as the Commuter). A taller
 //              car is pushed harder; beside a tall vehicle on the windward side there is shelter, and a shove on
 //              clearing it. Windsocks before it and along it show which way and how hard, as it gusts
+//   jamRamps   { s, lane, queue?, lanes? }: a ramp over the jam: a car transporter stopped in that lane (one on the
+//              player's side), its ramps down, the foot of them at s, at the back of a queue of stopped traffic:
+//              `queue` cars beyond it in its lane (CONFIG.jamRamp.queue if not said) and as far in every lane of
+//              `lanes` ([first, last]: the player's whole side if not said). Driven up at the speed on its board or
+//              more, the car flies the queue; slower, it comes down in it. The way round is whatever the level leaves
+//              open: a lane, the shoulder (its rules apply), the oncoming side. On straight, level road
+//   lowBridges { s, clearance? }: a low bridge: a height bar across the player's side of the expressway and its shoulder,
+//              `clearance` m off the road (CONFIG.lowBridge.clearance if not said), between an exit and its merge:
+//              the side road is the way round for tall vehicles, and tall traffic takes it. A car no taller than the
+//              bar (its `height` in cars.js) goes straight under; a taller one that goes at it loses health and most
+//              of its speed, and is through. Signed before the exit, with what the car measures. The level reports
+//              one that has no exit round it
+//   fords      { from, to, depth? }: a ford: over the stretch the expressway runs through a river `depth` m deep
+//              (CONFIG.ford.depth if not said), between an exit and its merge: the side road is the bridge. A car is
+//              slowed in it by how well it wades (its `crossing` in cars.js: see CONFIG.ford); in water deeper than
+//              it wades it crawls and is damaged, but is never stopped. Depth posts on its banks and boards before
+//              the exit show the depth, and the player is told what the car wades. Each ford its own depth
+//   cushions   { from, to, every? }: speed cushions: over the stretch a row of them across the expressway every `every` m
+//              (CONFIG.cushion.every if not said), the first at `from`: a cushion in the middle of each lane, a gap
+//              on each lane line. A car on a lane line goes between two and feels nothing; over one slowly it is a
+//              bump; over one at speed it is thrown up and knocked. Traffic crawls over them (see CONFIG.cushion)
+//   shade      { from, to, side, lanes? }: black ice in the shade: over the stretch a row of tall trees on that side
+//              ('left' | 'right') shades the `lanes` lanes of the player's side nearest it (CONFIG.shade.lanes if
+//              not said; on the right, the shoulder too), and those are ice (CONFIG.ice), with nothing drawn of it
+//              but the shadow. Traffic moves into the sun before it where there is a sunny lane. Put it on a bend,
+//              or put something in the shade to be steered round: ice in a straight line costs nothing
+//   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
+//              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
+//              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a
+//              bend it is carried wide. Boards before it give the speed. Put something in it to be steered round
 //   pelotons  { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind
@@ -393,7 +423,13 @@ import toys from './levels/toys.json';
 import leaks from './levels/leaks.json';
 import moonbase from './levels/moon.json';
 // (batch A's imports go above this line)
+import backlot from './levels/backlot.json';
+import venice from './levels/venice.json';
+import iceroad from './levels/iceroad.json';
 // (batch B's imports go above this line)
+import park from './levels/park.json';
+import cinder from './levels/cinder.json';
+import docks from './levels/docks.json';
 // (batch C's imports go above this line)
 import noon from './levels/noon.json';
 import morro from './levels/morro.json';
@@ -401,8 +437,9 @@ import morro from './levels/morro.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
-// counts unlocked levels by position
-export const MAIN_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue,
+// counts unlocked levels by position. (The numbered levels are these and then the levels of the new
+// themes, THEME_LEVELS further down: together they are MAIN_LEVELS)
+const FIRST_LEVELS = [expressway, backRoads, farm, bigBusiness, hurricane, night, mysteryMeadows, suburbs, canberra, monteCarlo, singapore, singaporeNight, grandPacific, passageDuGois, safari, airport, construction, theHood, panoramaAvenue,
   speedTrapAlley, mountainPass, outbackExpress, tourDeCoast, ringRoad, marketTown, quarryRun, hongKong, tokyo, mumbai, stelvio, christmas];
 export const SPECIAL_LEVELS = [allHeck, ufo, marinaBay, ohMine, montreal, bathurst, rivalRun, showdown, battlefield];
 // ...and the amphibious levels (A1, A2...: each "amphibious", with water stages, driven only in an amphibious
@@ -413,23 +450,32 @@ export const AMPHIBIOUS_LEVELS = [slipway, harbour, flood, ford, fjord];
 // last in LEVELS, after every delivery level (races are always open, so saved progress, which counts the
 // delivery levels open by position, only has to know the amphibious levels went in ahead of them: see progress.js)
 export const CIRCUIT_LEVELS = [monza, spa, albertPark];
-// ...and, between the two, the levels of the themes of 10-Oct (T1, T2...: the toy room and on): a theme of its own
-// each, and the gimmicks the game has. They unlock in order like the rest, the first by delivering the last
-// amphibious level; a new one goes at the end of the list, which disturbs no save (see progress.js). Short ids, as
-// the amphibious levels'. ONE LEVEL A LINE, and a new one on the line above its batch's marker (the batches were
-// built side by side on three branches: the markers keep their additions apart, so the branches merge)
+// ...and the levels of the themes of 10-Oct (the toy room and on): a theme of its own each, and the gimmicks the
+// game has. They are ordinary numbered levels (the owner: "the themed levels are just normal levels"): they carry
+// on from the last of the levels above (32, 33...), ahead of the special ones, and unlock in order like the rest.
+// A new one goes at the end of the list, and needs its place adding to INSERTED_AT in progress.js (it goes in
+// ahead of the special levels, so an old save must count one more). Short ids, as the amphibious levels'. ONE
+// LEVEL A LINE, and a new one on the line above its batch's marker (the batches were built side by side on
+// several branches: the markers keep their additions apart, so the branches merge)
 export const THEME_LEVELS = [
   toys,
   leaks,
   moonbase,
   // (batch A: toy room, underwater tunnel, moon base: new levels go above this line)
+  backlot,
+  venice,
+  iceroad,
   // (batch B: film studio, Venice, ice road: new levels go above this line)
+  park,
+  cinder,
+  docks,
   // (batch C: theme park, volcano island, container port: new levels go above this line)
   noon,
   morro,
   // (batch D: Wild West, favela, rice terraces: new levels go above this line)
 ];
-export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...AMPHIBIOUS_LEVELS, ...THEME_LEVELS, ...CIRCUIT_LEVELS];
+export const MAIN_LEVELS = [...FIRST_LEVELS, ...THEME_LEVELS]; // (every numbered level: 1, 2, 3...)
+export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...AMPHIBIOUS_LEVELS, ...CIRCUIT_LEVELS];
 // The menu has two tabs: deliveries, and races. A race is any lapped level (its "laps"), wherever it sits in
 // LEVELS (Marina Bay, Montreal and Mount Panorama are among the special levels); races are always open, and
 // never lock the delivery level after them (see Progress and the menu)
@@ -439,12 +485,11 @@ export const DELIVERY_LEVELS = LEVELS.filter(l => !isRace(l));
 // the level after this one on its own tab (the next delivery, or the next race), or null at the end
 export const nextOnTab = (level) => { const list = isRace(level) ? RACE_LEVELS : DELIVERY_LEVELS, k = list.indexOf(level); return k >= 0 && k + 1 < list.length ? list[k + 1] : null; };
 // a level's number on the menu, by its position in LEVELS: '1'... for the main levels, 'S1'... for the special
-// delivery levels, 'A1'... for the amphibious ones, 'T1'... for the themed ones, 'R1'... for the races (each tab numbers its own)
+// delivery levels, 'A1'... for the amphibious ones, 'R1'... for the races (each tab numbers its own)
 export const levelLabel = (index) => {
   const level = LEVELS[index];
   if (isRace(level)) return 'R' + (RACE_LEVELS.indexOf(level) + 1);
   if (AMPHIBIOUS_LEVELS.includes(level)) return 'A' + (AMPHIBIOUS_LEVELS.indexOf(level) + 1);
-  if (THEME_LEVELS.includes(level)) return 'T' + (THEME_LEVELS.indexOf(level) + 1);
   return index < MAIN_LEVELS.length ? String(index + 1) : 'S' + (DELIVERY_LEVELS.indexOf(level) - MAIN_LEVELS.length + 1);
 };
 // the screensaver's level: not on the menu, driven round and round with no player car
