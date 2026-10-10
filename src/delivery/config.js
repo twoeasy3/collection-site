@@ -757,7 +757,7 @@ export const CONFIG = {
     dampervan: { hw: 1.0, hl: 2.3, height: 2.7, mass: 1.7, health: 120, model: 'dampervan', speed: 0.95, amphibious: true, draft: 0.72 },
     nissank:  { hw: 1.35, hl: 2.6, height: 1.7, mass: 2, health: 130, model: 'nissank', speed: 1.1, amphibious: true, draft: 0.85 },
     // traffic with quirks of its own (see Traffic: quirks). jingle: an ice cream van's tune, heard near it (every
-    // jingle s); stops: a bin lorry pulls up where it is every every s, for 	ime s, hazards on; learner: it
+    // jingle s); stops: a bin lorry pulls up where it is every every s, for time s, hazards on; learner: it
     // hesitates all the time (as CONFIG.hesitation: dabs of the brakes, drifting about its lane); tailgates: a boy
     // racer sits on the player's bumper, as a sulky driver does; sway: m a caravan swings about behind its car
     icecream: { hw: 1.05, hl: 2.6, height: 2.4, mass: 1.6, health: 80, speed: 0.6, special: true, model: 'icecream', livery: 0xff9ec4, jingle: 2.6 },
@@ -778,8 +778,7 @@ export const CONFIG = {
     float:   { hw: 1.3,  hl: 4.2, height: 3.4, mass: 3.5, health: 240, speed: 1, special: true, model: 'float', noSpin: true, crit: 0 },
     // a cargo truck (an 18-wheeler with an open load) that sheds its load as it goes: see CONFIG.cargo
     cargotruck: { hw: 1.25, hl: 8.2, height: 4.0, mass: 6, health: 320, speed: 1, model: 'semi', kerb: true, cruise: { min: 20, max: 24 }, noSpin: true, sheds: true, special: true },
-    // an ice-cream van (a level's "iceCreamStops": see CONFIG.iceCream), pink, in the one livery; never evil
-    icecream: { hw: 1.0, hl: 2.4, height: 2.3, mass: 1.6, health: 120, speed: 0.9, special: true, model: 'deliveryvan', livery: 0xf7b6d2 },
+    // (the ice-cream van at a level's "iceCreamStops" is the icecream kind above: see CONFIG.iceCream)
     // a police pursuit's two cars (a level's "pursuits": see CONFIG.pursuit and pursuit.js), never in a level's traffic list:
     // the getaway car, and the interceptor, a model seen nowhere else (low and wide, a light bar, a push bar)
     getaway: { hw: 0.95, hl: 2.3, height: 1.3, mass: 1.3, health: 220, speed: 1, special: true, model: 'getaway', livery: 0x7a1420, crit: 0.5 },
@@ -883,10 +882,6 @@ export const CONFIG = {
   // lane, swerving over (into a lane clear `room` m round it) only within swerve m of something in it
   // (for the player: a warning as one comes within warn m ahead, and its horn every horn s from there on)
   wrongWay: { look: 30, lookTime: 2, stopShort: 6, swerve: 40, room: 10, warn: 320, horn: 1.1 },
-  hornRange: 60,
-  hornWait: 2,
-  passByRange: 4,
-  passByChance: 0.4,
   horn: { range: 60, wait: 0.6 },
   // dents and scorch on a damaged car (render/dents.js): at each `steps` share of damage the body's
   // geometry is swapped for a more crumpled one (vertices shoved `amount` of the body's size per step,

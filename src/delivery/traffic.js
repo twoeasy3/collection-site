@@ -2316,8 +2316,8 @@ export const Traffic = (() => {
           if (car.binStop > 0) { car.binStop -= dt; target = 0; }
           else if ((car.binWait -= dt) <= 0) { car.binWait = between(quirk.stops.every); car.binStop = between(quirk.stops.time); }
         }
-        // (and an ice cream van's tune, near the player)
-        if (quirk.jingle && Math.abs(car.s - Player.s) < CONFIG.hornRange * 2 && (car.jingleWait -= dt) <= 0) { car.jingleWait = quirk.jingle; sfxAt('jingle', car.s, 0.8); }
+        // (and an ice cream van's tune, near the player; one at a stop has that tune's own timing: see CONFIG.iceCream)
+        if (quirk.jingle && !car.icecream && Math.abs(car.s - Player.s) < CONFIG.hornRange * 2 && (car.jingleWait -= dt) <= 0) { car.jingleWait = quirk.jingle; sfxAt('jingle', car.s, 0.8); }
         target = Math.min(target, hold, cyclists.hold);
         if (Player.mystery === 'sundayDrivers' && !car.racer && !car.emergency) target *= CONFIG.mystery.sundayPace; // (Sunday Drivers, a mystery: pottering along)
         if (car.racer) target = Math.min(target, racingLine(car) * ceding);
