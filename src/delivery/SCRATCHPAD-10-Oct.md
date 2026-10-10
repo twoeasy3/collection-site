@@ -534,3 +534,39 @@ roadshow / parades, and `gimmick-road-3`, which only exercises those.
 - Not looked into: `.hazards-check` throwing at its line 38 straight after other checks.
 - Screenshots: scratchpad `shots-fixes/` (`before`, `bridge`, `load`, `water`, `runoff-before`,
   `runoff-after`, `gravel`, and `monza-/spa-before.svg`, `-after.svg`).
+
+## Agent 8: level editor (.claude/worktrees/delivery-city-levels, delivery-editor)
+
+Task: checklist "Level editor: full control over every feature and gimmick" (E1.1 to E7.3). Finished. Never ran the smoke test.
+Commits on `delivery-editor` (not pushed, not merged): 3df4ec5 schema + check, ee04af4 editor rebuilt from it,
+032114d picture hooks + README recipe, 465b555 checklist, 369e072 road handles + gradient strip, 5d6a7db and one after.
+
+- [x] E1.1, E1.2, E1.3, E1.5: `levelSchema.js` (99 fields, 164 settings), `editorForms.js`, `editor.js` rewritten from it
+- [x] E2.1 to E2.5; E2.6 partly (weather belongs to the theme: shown, not switched)
+- [x] E3.1 to E3.4; E3.5 partly (says how far a loop is from closed; no "close it")
+- [x] E4.1 to E4.7
+- [x] E5.1, E5.2, E5.4, E5.5; E5.3 partly (duplicate, copy, paste of one thing; no multi-select)
+- [x] E6.3, E6.4; E6.1 partly (Play from here; the 3D view still by its button)
+- [x] E7.1 to E7.3
+- [ ] E1.4 (the game checking levels with the schema) and E6.2 (a clock button): not done
+- Checks: `.schema-check.mjs` passes (53 levels, round-trip clean), `.bundle-check.mjs`, `delivery-levels-check.mjs` (52 built, no FAIL).
+- A new level field = one entry in `FIELDS` in `levelSchema.js` (README, "Adding content"). AT MERGE: `.schema-check.mjs`
+  will fail for fields added on other branches until each has its entry (Agent 10's `crosswinds`, a segment's `ease`, ...).
+- Nothing was clicked by hand: screenshots only, with scripted clicks and drags from the address (scratchpad `shots-editor/`).
+
+## Agent 10: road gimmicks (main checkout, main)
+
+Task: checklist "New gimmicks": G16, H1, H2, H8, H4, H5, then down the list. Never runs the smoke test.
+Files of its own: `gambles.js`, `render/gambles.js`, `render/gambleModels.js`, `levels/gimmick-road-3.json`
+(`?hidden=gimmick-road-3`), `scripts/.gimmicks3-check.mjs`. Small additive edits in `game.js` (reset, update),
+`main.js` (syncGambles), `track.js` (validation block "Gimmick Road 3's", a segment's `ease`), `config.js` (one block),
+`levels.js` (docs), `gimmicks.js` (group "Road gambles"), `levelinfo.js`, `messages.json`.
+Nothing here has been played by hand: headless checks and stills only.
+
+Level fields added (for the editor's schema):
+- `crosswinds: [{ from, to, dir: 'left' | 'right', strength?, every?, length? }]` (expressway only)
+- a segment's `ease` (m, 2 to 200): how sharply its slope blends into the next (a crest)
+
+Progress:
+- [x] Gimmick Road 3 + G16 crosswind: done (hash below once committed). On Grand Pacific (sea cliff bridge
+  6080-6520), Hurricane (1900-2400, stronger), Tokyo (1700-2250). Clocks not re-timed: the clock's ghost feels no wind.

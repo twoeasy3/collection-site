@@ -39,6 +39,9 @@
     { "s": 2400, "side": "left" },
     { "s": 3700, "side": "right" }
   ],
+  "crosswinds": [
+    { "from": 1700, "to": 2250, "dir": "left" }
+  ],
   "targets": [
     { "s": 600, "side": "right" },
     { "s": 2200, "side": "left" },

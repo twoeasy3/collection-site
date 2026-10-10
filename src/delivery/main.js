@@ -34,6 +34,7 @@ import { syncGunfire } from './render/gunfire.js';
 import { syncSite } from './render/site.js';
 import { syncRoadside } from './render/roadside.js';
 import { syncHazards } from './render/hazards.js';
+import { syncGambles } from './render/gambles.js';
 import { syncBattle } from './render/battle.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
@@ -70,8 +71,7 @@ import { CAR, lendCar, superOf, ownedAmphibious } from './cars.js';
 const params = new URLSearchParams(location.search);
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
-  Garage.evil = params.get('garage') === 'evil';
-  Garage.open();
+  Garage.open(params.get('garage') === 'evil');
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
 }
@@ -120,6 +120,8 @@ if (params.get('racewatch') !== null) {
   Game.start();
   if (params.get('car')?.startsWith('super-') && superOf(CAR)) Player.takeCar(() => lendCar(superOf(CAR)));
   if (params.get('at')) Player.s = Number(params.get('at'));
+  if (params.get('speed')) Object.assign(Player, { speed: Number(params.get('speed')), launching: false }); // ?speed=31: doing that many m/s from the start (with ?ff: hands off, the speed holds)
+  if (params.get('lane')) Player.lat = Track.laneOffset(Number(params.get('lane')), Player.s); // ?lane=4: in that lane
   if (params.get('fly') !== null) startFly();
   const photo = params.get('photo') !== null; // ?photo: paused, in photo mode, once ?ff has run (a check of render/photo.js)
   // ?cine: a still for the level select. The traffic is dealt out afresh around the car, ?ff lets
@@ -205,6 +207,7 @@ const frame = (now) => {
     syncSite();
     syncRoadside(dt);
     syncHazards(now);
+    syncGambles(now, dt); // (after the car and the traffic are placed: it leans and shakes them)
     syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
     syncWaterMains(dt);
     syncReversible();

@@ -5,9 +5,9 @@ Kept by the orchestrator; updated whenever an agent commits or the owner adds so
 the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPAD-10-Oct.md`.
 
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
-Nothing is pushed.
+**Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `70ef5dc` (main). All seven agents are finished and everything is on `main`; no agent is running and the queue is empty.
+Last updated: after `2109867` (main). Running: agent 12 (pursuit redo), agent 13 (car ideas lot), agent 14 (Stelvio and Market Town). The owner has asked for the whole list to be cleared: the queue is in "Round 3" below.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -106,6 +106,38 @@ $1. Largest step between neighbouring widths: Monza 47.5 m to 0, Spa 27.5 m to 0
    - [ ] `.replay-check` fails on Expressway (runs part at 7 s); the agent says it fails the same without its work
    - [ ] `.hazards-check` sometimes throws when run straight after other checks, and passes by itself
 
+## Round 2: running and queued (three at a time)
+
+The owner's standing instruction (10-Oct): assign the unassigned lists, and give any new task to
+whichever agent is free, without asking first.
+
+5. Level editor, full control: **finished**, agent 8, merged into `main` as `5fe99da` (no conflicts). A schema of 99 level fields (`levelSchema.js`); the editor builds every form, place-button and its map from it; all level files load and save through it unchanged. Not started: E1.4 (the game validating with the schema), E6.2 (clock button). Partly: E2.6, E3.5, E5.3, E6.1. Nothing clicked by hand. The item ticks are in the editor section below
+6. Police pursuit: **being redone**, agent 12, branch `delivery-pursuit`. The owner's verdict on the first version: "It is supposed to just be a simple traffic event." So: a getaway car and the interceptor (a model of its own) come through from behind like an ambulance does and drive on; no endings, rewards or gambles. The bank robber wanting a lift (P2, the orchestrator's idea, never asked for) is removed. The other road characters (P3 to P13) are NOT being built. First version, stopped at 09:21: `881f429`, `ee6dde8`, `bcd6b25`
+7. Road gimmicks: **stopped at 09:21**, agent 10, on `main`. Unfinished ramp-over-the-jam work is sitting uncommitted in the main checkout (17 files). Nobody is on it. Done so far: G16 crosswinds (`1d48924`: on Grand Pacific, Hurricane, Tokyo) and H1 crest jumps (`9d7711b`: on Rival Run, Mystery Meadows), both on the hidden Gimmick Road 3. It re-timed two clocks by a lot; told to put them back. A hidden Gimmick Road 3, then G16 crosswind, H1 crest jumps, H2 ramp over the jam, H8 washboard, H4 low bridge, H5 ford, then the rest of the kept G and H lists; each also put on two or three real levels
+8. New themes: **stopped at 09:21**, agent 11, branch `delivery-themes` (in the city-levels worktree). The toy room's look is committed (`14e3c56`); its gimmick is uncommitted in that worktree. Nobody is on it. In the owner's order (most unlike the game first): T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio backlot, T1 Venice, T4 ice road, then on down the ranking; a level for each
+9. Queued after that, as slots free: menu pictures and clocks (the three circuits, the five themed levels, Super and 6-star cars); 28 liveries; 31 endless mode; the replay system's next step (`REPLAY-NOTES.md`); 51 performance on phones; 49 and 50 (test speed, lint and CI)
+
+- [x] Super cars screenshotted: all 35, Good and Evil (70 pictures, two contact sheets, sent to the owner). Every one has its livery, stripe and kit. To look at closer: the Super of the Super Lowrider (caught mid-hop, parts apart), the Dampervan (too big for the frame), the Tow Truck's wing beside its crane
+- [x] Super cars: the stripe stops at every screen and window; the kit rides the body's animation; an underglow under every Super car; vans and off-roaders get a wing, a bull bar, a snorkel and roof lamps. `136c0d5`, `35e0ac3`
+- [x] Menu pictures of the 35 Super cars, Good and Evil, in `carshots/` as `super-<id>-good.jpg` / `-evil.jpg`. `8d7ab8f`. Nothing shows them yet
+- [x] A car picked in the garage takes the side whose livery is showing; the garage opens in the livery of the side being played. `8a0bd79`. Seen in one screenshot ("Drive it as Evil"); not clicked
+
+## Round 3: clearing the list (owner, 10-Oct: "Delegate agents to properly clear the list")
+
+Three agents at a time; the next item starts as each one finishes.
+
+- [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
+- [~] Police pursuit redone as a plain traffic event: agent 12
+- [~] Car ideas lot: agent 13
+- [ ] Next 1: road gimmicks, picking up the half-built ramp (H2) in the main checkout, then H8, H4, H5 and on down the kept G and H lists
+- [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
+- [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
+- [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
+- [ ] Next 5: 28 liveries, 31 endless mode, replay in the browser
+- [ ] Next 6: 51 phone performance, 49 parallel smoke test, 50 lint and CI
+- [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
+- Not in the queue unless the owner says: road characters P3 to P13 (the owner wanted the pursuit kept simple); anything needing a person (listening, playing by hand, a real phone)
+
 ## Not assigned
 
 - [ ] 28. Liveries earned for Evil and Good clears
@@ -115,13 +147,15 @@ $1. Largest step between neighbouring widths: Monza 47.5 m to 0, Spa 27.5 m to 0
 - [ ] 51. Performance on phones
 - [ ] Level clocks and menu pictures for Hong Kong, Tokyo, Mumbai, Stelvio, Christmas
 - [ ] More circuits: Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka
-- [ ] Level editor: full control over every feature and gimmick (itemised below)
+- [ ] Level editor: full control over every feature and gimmick (itemised below; built on `delivery-editor`: all but E1.4 and E6.2 done or partly done)
 - [ ] Gimmick Road 2's gimmicks used in real levels
 
-## Level editor: full control over every feature and gimmick (not assigned)
+## Level editor: full control over every feature and gimmick (Agent 8, branch `delivery-editor`)
 
 Asked for by the owner on 10-Oct; investigated by reading `editor.js` (757 lines),
-`delivery/editor.html` and the field list at the top of `levels.js`. Nothing built yet.
+`delivery/editor.html` and the field list at the top of `levels.js`. Built on 10-Oct (see each item):
+verified with `.schema-check.mjs`, `.bundle-check.mjs` and headless screenshots, with scripted clicks and
+drags from the address bar. **Nothing was clicked by hand.**
 
 **How it is today.** A level has about 90 documented fields. The editor has real controls for 13
 (`id`, `name`, `clock`, `tip`, `lanes` as one number, `theme`, `car`, `flow`, `traffic` as typed
@@ -135,96 +169,96 @@ the fact.
 
 ### E1. The foundation: one description of every level field
 
-- [ ] E1.1 A schema file (`levelSchema.js`, logic side, no rendering): for every field its shape
+- [x] E1.1 **Done (delivery-editor). `levelSchema.js`: 99 fields, 164 settings; `node scripts/.schema-check.mjs` passes on all 53 levels.** A schema file (`levelSchema.js`, logic side, no rendering): for every field its shape
       (flag, number, choice, stretch `from..to`, point `s`, timed `every {min,max}`, list of
       these, world-placed `x,z`), each setting's type, range, default and choices, which road it
       may be on, and a line of help. About 90 fields; the comments at the top of `levels.js` are
       the source.
-- [ ] E1.2 The editor builds its forms, place-buttons, map drawing and default entries from the
+- [x] E1.2 **Done (delivery-editor). Seen in screenshots; nothing clicked by hand.** The editor builds its forms, place-buttons, map drawing and default entries from the
       schema, in place of `FEATURE_TEMPLATES`, `EDITED` and the hand-written panels.
-- [ ] E1.3 Lists the editor hard-codes come from the game instead: obstacle kinds from
+- [x] E1.3 **Done (delivery-editor). Obstacles, vehicles, wreckage, themes, cars and cargo from the game's tables; pickup types, herd, drifter, dance, machinery, site, landmark and zone kinds had no table, so the schema is now it (pickups cross-checked with `render/pickupModels.js`).** Lists the editor hard-codes come from the game instead: obstacle kinds from
       `CONFIG.obstacleKinds`, traffic kinds from `CONFIG.vehicles`, herd, drifter, machinery,
       landmark and wreckage kinds from their own tables.
-- [ ] E1.4 The same schema checks a level when the game loads it, so the editor and
+- [ ] E1.4 **NOT DONE: the game does not check levels with the schema (`Game.start` rewrites a rival level's `grid` with keys of its own, and fields arriving from other branches would be reported until their entry is added); `.schema-check.mjs` does it headlessly instead. The README recipe has the step.** The same schema checks a level when the game loads it, so the editor and
       `Track.problems` cannot disagree, and a new gimmick is added to the editor by adding its
       schema entry (add this step to the README's "adding content" recipe).
-- [ ] E1.5 The raw JSON box stays, as an "advanced" fallback for anything the schema lacks.
+- [x] E1.5 **Done (delivery-editor). The JSON tab holds the whole level; every selected thing has an "As JSON" box.** The raw JSON box stays, as an "advanced" fallback for anything the schema lacks.
 
 ### E2. Level-wide settings that have no control today
 
-- [ ] E2.1 Road: `drive` (left / right), `lanes` as `{ north, south }` and odd counts, `median`,
+- [x] E2.1 **Done (delivery-editor). `laps` is under Race and rivals.** Road: `drive` (left / right), `lanes` as `{ north, south }` and odd counts, `median`,
       `shoulder`, `shoulderTimer`, `speedLimit`, `laps`.
-- [ ] E2.2 Traffic: the mix as a table with sliders in place of typed text; `trafficCount`,
+- [x] E2.2 **Done (delivery-editor).** Traffic: the mix as a table with sliders in place of typed text; `trafficCount`,
       `oncomingCount`, `trafficSpeed`, `drivers` (evil, happy, angry), `hesitation`.
-- [ ] E2.3 Timed events, each a switch with a min and max: `emergencies`, `processions`,
+- [x] E2.3 **Done (delivery-editor).** Timed events, each a switch with a min and max: `emergencies`, `processions`,
       `convoys` (size, kind), `railway`.
-- [ ] E2.4 Mode switches: `alwaysGood`, `noPackages`, `understeer`, `wallDamage`, `nudge`,
+- [x] E2.4 **Done (delivery-editor).** Mode switches: `alwaysGood`, `noPackages`, `understeer`, `wallDamage`, `nudge`,
       `helicopter`, `battle`, `pillboxes`.
-- [ ] E2.5 Race and rivals: `grid` (count, kind, gap, pace, from), `rival`, `rivals` (name, car,
+- [x] E2.5 **Done (delivery-editor).** Race and rivals: `grid` (count, kind, gap, pace, from), `rival`, `rivals` (name, car,
       colours, marker).
-- [ ] E2.6 Weather and look, where a theme allows it: `rain`, `snow`, `festive`, `elevated`.
+- [ ] E2.6 **PARTLY (delivery-editor): `rain`, `snow`, `festive`, `elevated` are properties of a theme, not level fields: the theme picker says what each theme brings; no switches.** Weather and look, where a theme allows it: `rain`, `snow`, `festive`, `elevated`.
 
 ### E3. The road itself
 
-- [ ] E3.1 Segments: draw and drag the road on the map (handles for a bend's length and angle),
+- [x] E3.1 **Done (delivery-editor). On the Road tab each segment's end is a handle: dragged along the road it changes the length, across it the bend (one handle for both); the rise and fall is a strip along the bottom of the map on a road with a slope. Seen through a scripted drag (a blank level's third segment bent 53 degrees) and on Stelvio; not dragged by hand.** Segments: draw and drag the road on the map (handles for a bend's length and angle),
       beside the table; show the gradient profile as a strip under the map.
-- [ ] E3.2 Side roads (`exits`): place the fork and merge by clicking, drag them, and edit `out`,
+- [x] E3.2 **Done (delivery-editor). Fork and merge placed by a click and dragged as a band; out, bends, own segments, lanes (a number or along the way), oncoming, oncomingFrom and flyovers in the form. Dragging not tried by hand.** Side roads (`exits`): place the fork and merge by clicking, drag them, and edit `out`,
       the side road's own `segments`, `lanes`, widenings and `flyovers` in a form. Today only
       "oncoming from here" has a tool.
-- [ ] E3.3 Crossroads (`junctions`): place, with `turn`, `forward`, `turnOff`.
-- [ ] E3.4 Stretch kinds that change the road, with forms: `narrows`, `splits`, `bridges`,
+- [x] E3.3 **Done (delivery-editor). From the schema (place, drag, form). The quarter bend still has to be made in the segments table.** Crossroads (`junctions`): place, with `turn`, `forward`, `turnOff`.
+- [x] E3.4 **Done (delivery-editor). Also `water`, `gravel`, `tide`; `runoff` with its taper (`end`).** Stretch kinds that change the road, with forms: `narrows`, `splits`, `bridges`,
       `tunnels`, `runoff`, `stands`, `runway`, `reversible`, `quietZones`, `trafficZones`, `zones`
       (scenery, ground, sky, sea).
-- [ ] E3.5 Circuits: closing a lapped road (show the gap and heading error, offer to close it),
+- [ ] E3.5 **PARTLY (delivery-editor): the Road tab says how far a road is from closing and by what angle; no "close it" button. Run-off and stands per side are in their forms.** Circuits: closing a lapped road (show the gap and heading error, offer to close it),
       and run-off and stands per side.
 
 ### E4. Gimmicks: a place-button and a form for each (most have neither)
 
-- [ ] E4.1 Stretch gimmicks: `fog`, `gunfire`, `asteroidFields`, `storm`, `migration`,
+- [x] E4.1 **Done (delivery-editor).** Stretch gimmicks: `fog`, `gunfire`, `asteroidFields`, `storm`, `migration`,
       `elephants`, `landmines`, `trolleys`, `stampedes`, `rockfall`, `quarries`, `tide` (with its
       waves), plus full forms for the ten that only have a button.
-- [ ] E4.2 Point gimmicks: `cameras`, `crossings`, `stopGo`, `potholes`, `potties`, `machinery`,
+- [x] E4.2 **Done (delivery-editor).** Point gimmicks: `cameras`, `crossings`, `stopGo`, `potholes`, `potties`, `machinery`,
       `siteWorks`, `waterMains`, `parades`, `roadblocks`, `iceCreamStops`, `schoolCrossings`,
       `balloons`, `drawbridges`, `wideLoads`, `marathons`, `pelotons`, `wreckage`, `tower`,
       `shoulderRows`, `parkedPlanes`.
-- [ ] E4.3 Gimmicks on a side road (`{ road: 'side', exit: n }`): the editor leaves these off the
+- [x] E4.3 **Done (delivery-editor). Seen: Gimmick Road 2's side-road camera, potholes, crossing and stampede drawn; a stampede placed on Expressway's side road by a scripted click.** Gimmicks on a side road (`{ road: 'side', exit: n }`): the editor leaves these off the
       map entirely today. Draw them, place them and drag them along the side road.
-- [ ] E4.4 Lane pickers that know the road at that spot (a narrowed stretch, an exit lane, a side
+- [x] E4.4 **Done (delivery-editor). Lanes offered are those of the road at that spot (closed ones marked; a side road's own); ranges for wide loads, balloons, wreckage.** Lane pickers that know the road at that spot (a narrowed stretch, an exit lane, a side
       road's own lanes), and lane ranges (`lanes: [first, last]`) for wide loads, balloons and
       wreckage.
-- [ ] E4.5 Triggers: for anything with `trigger` or `flipAt`, show on the map where the player
+- [x] E4.5 **Done (delivery-editor). A hollow arrowhead where the player sets it off, joined to the thing when selected.** Triggers: for anything with `trigger` or `flipAt`, show on the map where the player
       sets it off as well as where it happens.
-- [ ] E4.6 World-placed things (`landmarks`: `x, z, r, rot`): place and turn them on the map
+- [x] E4.6 **Done (delivery-editor). Rings in the world, a tick to turn them by; circuit `paths` drawn. Which way `rot` turns a model was not checked against the 3D view.** World-placed things (`landmarks`: `x, z, r, rot`): place and turn them on the map
       beside the road, not along it.
-- [ ] E4.7 Rules shown while editing, not after: straight road only (crossings, stop / go,
+- [x] E4.7 **Done (delivery-editor). Each form lists its rules with a tick or a cross; where a thing cannot go is tinted red on the road while it is being placed; a button whose level-wide rule fails is marked.** Rules shown while editing, not after: straight road only (crossings, stop / go,
       drawbridges), level road only (bridges), two-way only (stop / go, reversible), what cannot be
       combined with exits. The side roads cleanup in the queue will change some of these.
 
 ### E5. Keeping a level whole while it is edited
 
-- [ ] E5.1 Changing a segment's length moves or stretches everything after it (today "a change to
+- [x] E5.1 **Done (delivery-editor). "Move what comes after" (on by default), also when a segment is removed. Seen on Expressway: first segment 600 to 1200 m.** Changing a segment's length moves or stretches everything after it (today "a change to
       the road can leave them out of place").
-- [ ] E5.2 Undo and redo.
-- [ ] E5.3 Copy, paste and duplicate; select and move several things at once.
-- [ ] E5.4 Problems listed under the map link to the thing that causes them.
-- [ ] E5.5 Autosave of the level being edited, and Load a `.json` file (today only the built-in
+- [x] E5.2 **Done (delivery-editor). Buttons, Ctrl+Z, Ctrl+Y. Seen through a scripted drag and undo; not by hand.** Undo and redo.
+- [ ] E5.3 **PARTLY (delivery-editor): Duplicate (Ctrl+D), copy and paste (Ctrl+C / V) of one thing; no selecting several.** Copy, paste and duplicate; select and move several things at once.
+- [x] E5.4 **Done (delivery-editor). Each problem under the map is a button to its cause (the game's problems are traced by their wording: a new wording falls back to the list).** Problems listed under the map link to the thing that causes them.
+- [x] E5.5 **Done (delivery-editor). Autosave to local storage (not when the address names a level); Load .json by button or drop. Neither tried by hand.** Autosave of the level being edited, and Load a `.json` file (today only the built-in
       levels can be opened, and only Download saves).
 
 ### E6. Seeing and proving it
 
-- [ ] E6.1 The 3D view updates as you edit, and "Play from here" starts a run at the spot under
+- [ ] E6.1 **PARTLY (delivery-editor): "Play from here" (a tool, and a button on each thing) opens `?edited&at=`; the 3D view is still updated by its button.** The 3D view updates as you edit, and "Play from here" starts a run at the spot under
       the cursor (`?at=`).
-- [ ] E6.2 A "Work out the clock" button, doing what `scripts/level-clocks.mjs` does, in the page.
-- [ ] E6.3 Filters on the map (show only one kind, hide scenery bands) and a list of everything in
+- [ ] E6.2 **NOT DONE: not started.** A "Work out the clock" button, doing what `scripts/level-clocks.mjs` does, in the page.
+- [x] E6.3 **Done (delivery-editor).** Filters on the map (show only one kind, hide scenery bands) and a list of everything in
       the level to pick from.
-- [ ] E6.4 A headless check that the schema covers every field used by every level in `levels/`,
+- [x] E6.4 **Done (delivery-editor). `scripts/.schema-check.mjs`.** A headless check that the schema covers every field used by every level in `levels/`,
       and that each level passes through the editor's load and save unchanged.
 
 ### E7. To come from today's queue (add their fields once they exist)
 
-- [ ] E7.1 Water stages, boat traffic and "amphibious only" for the amphibious levels.
-- [ ] E7.2 The cargo a level carries, for each side.
-- [ ] E7.3 Whatever the side roads cleanup adds or lifts.
+- [x] E7.1 **Done (delivery-editor). `water` (place, drag, form, rules), `amphibious`; boats are kinds in the traffic mix.** Water stages, boat traffic and "amphibious only" for the amphibious levels.
+- [x] E7.2 **Done (delivery-editor).** The cargo a level carries, for each side.
+- [x] E7.3 **Done (delivery-editor). The side-road list of today's `levels.js` (`road: 'both'` on 22 fields).** Whatever the side roads cleanup adds or lifts.
 
 Order that makes sense: E1 first (everything else is built on it), then E4.1 to E4.3 and E2 (they
 fall out of the schema almost for free), then E3.2 and E5.1, then the rest. Removed today, so not
@@ -376,9 +410,14 @@ leave.
 
 ### How the car answers
 
-- [ ] G16. **Crosswind**: a steady push sideways on an exposed stretch (a viaduct, a dam), with
+- [x] G16. **Crosswind**: a steady push sideways on an exposed stretch (a viaduct, a dam), with
       gusts announced by a windsock. Tall cars are pushed more; passing a truck gives shelter,
       then a shove as you clear it.
+      _Built (`1d48924`, `gambles.js`, field `crosswinds`):_ on Gimmick Road 3 (300-900), Grand Pacific's
+      sea cliff bridge, Hurricane, Tokyo. Verified by `scripts/.gimmicks3-check.mjs wind` (push by
+      height, taps hold the lane, shelter beside a bus and the shove on clearing it, traffic drifts in
+      lane, the low car's safe line) and in stills on Gimmick Road 3 (socks, the card). Not verified:
+      played by hand; the lean on screen; the three real levels on screen.
 - [ ] G18. **Fuel**: a long level where the tank will not make it. Petrol stations are on the
       shoulder: pull in and stop (time lost) or run dry and coast.
 - [ ] G20. **Fragile cargo**: on this level the package breaks with bumps, kerbs and hard
@@ -401,9 +440,15 @@ leave.
 Written to the counterplay rule: every one is a gamble the player can take or leave, and each
 says what the gamble is. All are things that happen on real roads, as the eleven kept ones are.
 
-- [ ] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
+- [x] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
       car flies: no steering in the air, and it lands on whatever is over the top. _Gamble:_ lift
       and see, or fly blind and gain seconds. _Builds on:_ the drawbridge's jump, hills.
+      _Built (`9d7711b`, `gambles.js`, a segment's `ease`: no object placed):_ on Gimmick Road 3 (tops at
+      1190 and 1490), Rival Run (4400), Mystery Meadows (2740, the cows over the top). Verified by
+      `.gimmicks3-check.mjs crest` (flies in a clear lane unhurt, lands in the barrier in the wrong one,
+      no steering in the air, the safe line under the board's speed, faster by 2.4 s, a hard landing
+      costs, no other level has a crest by accident) and in stills (the hidden far side, the car in the
+      air, the card). Not verified: played by hand; the two real crests on screen; sound.
 - [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
       in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
       slow and it lands in it. _Gamble:_ the jump or the slow way round. _Builds on:_ drawbridge
@@ -481,53 +526,19 @@ Not obstacles: road users with something of their own going on, that the player 
 hinder or keep clear of. Each is a random or timed event, as ambulances, funeral processions and
 convoys already are (a level's `every: { min, max }`), so any level can have them.
 
-- [x] P1. **Police pursuit** (the owner's idea): a chase already under way comes through the
-      level: a getaway car weaving through the traffic flat out, and behind it a pursuit car that
-      is **a model of its own, seen only in this event** (a low, wide interceptor with a light bar
-      and push bar, unlike the patrol cars), its siren heard coming before it is seen. The
-      helicopter joins with its searchlight.
-      - *What they do:* the getaway car takes any gap, the shoulder and the oncoming side; the
-        interceptor follows its line and tries to get alongside to turn it. Traffic pulls aside
-        for the siren, so a clear channel opens behind the two of them and closes again.
-      - *A Good player's gamble:* get in the getaway car's way. Hold a lane it wants, box it in
-        against traffic or the kerb, and the interceptor gets its chance: social standing, a
-        cash reward, and a bust wiped. Getting it wrong means being hit by one or both.
-      - *An Evil player's gamble:* run interference for the criminal: block the interceptor, or
-        tuck into the channel behind the chase and ride it through the traffic. The getaway
-        driver throws a bag of cash out for the help; the police add the player to the chase.
-      - *Or keep out of it:* move over and let it go by, at the cost of nothing.
-      - *How it ends:* caught (the two of them stopped on the shoulder further up, lights going,
-        a thing to rubberneck at), crashed (wreckage ahead), or away. Which one depends on what
-        happened, and on the player if the player took part.
-      - *Builds on:* emergencies, the police and their sight, the helicopter, wrong-way drivers'
-        warning and horn, rubbernecking, wreckage, cash pickups.
-      - *To settle when built:* whether the interceptor can also be earned as a car; one
-        interceptor or two; whether it can happen on race levels (suggest not).
-      - *Built (10-Oct, `delivery-pursuit`):* `pursuits: { every: { min, max } }`, `pursuit.js`, `render/pursuit.js`,
-        `render/pursuitModels.js`, `CONFIG.pursuit`, a card on the Gimmicks page; on Big Business, Night Drive,
-        Speed Trap Alley, Ring Road, Tokyo and Gimmick Road 2. Good: hold the getaway car below 78% of its pace
-        for 2.2 s and the interceptor turns it (20 standing, $40, a bust wiped, if it was the player holding it).
-        Evil: 1.5 s in the interceptor's way is a $60 bag thrown out; 3.5 s in its way or 9 s in its channel is a
-        bust for obstructing. Left alone it is decided up the road (caught 40 / crashed 25 / away 35).
-        *Verified:* `node scripts/.pursuit-check.mjs` (43 checks: it fires, the three endings, each gamble pays
-        and costs, moving over costs nothing in 11 of 12 runs, a run still finishes); stills of the interceptor,
-        the chase by day and night with the helicopter, a caught getaway car on the shoulder, a wreck.
-        *Not verified:* never played by hand, the siren never heard, nothing seen moving; no still of the two
-        parked together with the lights going; the editor has no control for the field.
-        *Settled so:* one interceptor; the interceptor is not a garage car; never on a race or the Battlefield.
-- [x] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
-      a man with a bag stands on the shoulder with his thumb out, as a passenger pickup does.
-      *Gamble:* carry him for a large payout and have every police car on the level after the
-      car until he is dropped; or drive him straight to the next patrol car for standing.
-      *Builds on:* the passenger pickup, P1.
-      - *Built (10-Oct, `delivery-pursuit`):* `robbers: [{ s }]`, `robber.js`, `render/robber.js`,
-        `CONFIG.robber`, a Gimmicks card; on Big Business, Night Drive, The Hood, Ring Road and Gimmick Road 2,
-        and wherever a pursuit's getaway car is wrecked. Drive over where he stands to pick him up: $15 per 100
-        m of a 1000 m lift; every police car going the player's way comes after the car (97% of its top speed,
-        so it is being held up that gets it caught: 1.4 s within 9 m is a bust and his money goes); or slow
-        below 9 m/s beside any police car to hand him over (25 standing for Good, no bust). *Verified:* `node
-        scripts/.robber-check.mjs` (all ok); stills of him on the shoulder, on the roof, and his card. *Not
-        verified:* never played; whether 97% is the right pace for the police.
+- [x] P1. **Police pursuit** (the owner's idea), built in its simple form: a traffic event, as an ambulance is.
+      Now and then (`pursuits: { every: { min, max } }`) a getaway car comes up from behind flat out, weaving
+      through the traffic, and after it an interceptor that is **a model of its own, seen only in this event**,
+      its siren heard before it is seen; traffic pulls aside as for an ambulance, and the two drive on through
+      and away. Nothing in it for the player and nothing against: hitting either is a collision like any other.
+      - *Built (10-Oct, `delivery-pursuit`):* `pursuit.js`, `render/pursuitModels.js`, `CONFIG.pursuit`, a Gimmicks
+        card, a `levelSchema.js` entry; on Big Business, Night Drive, Speed Trap Alley, Ring Road, Tokyo and Gimmick
+        Road 2; never on a race or the Battlefield. *Verified:* `node scripts/.pursuit-check.mjs`; stills of the chase
+        going by. *Not verified:* never played by hand, the siren never heard.
+      - *Taken out at the owner's word (10-Oct):* the first build's three endings (caught, crashed, away), the Good
+        and Evil gambles with their rewards, bag of cash and bust, and the helicopter.
+- [-] P2. **Bank robber wants a lift**: dropped at the owner's word (10-Oct). Built once on `delivery-pursuit`
+      and reverted: the pursuit is a simple traffic event, and nobody on the road wants a lift from it.
 - [ ] P3. **Street racers**: two tuned cars line up beside the player at speed, flash their
       lights, and go: a race through the traffic to a marked point a kilometre on. *Gamble:*
       take it up (cash for winning, and the police take an interest in all three) or let them
@@ -577,6 +588,52 @@ convoys already are (a level's `every: { min, max }`), so any level can have the
       not. *Gamble:* through the stubble field beside it (rough, slow, unpoliced) or wait for a
       gateway. *Builds on:* tractors, wide load, mud.
 
-The orchestrator's view: P1 is the best of these by some way, because both sides have something
-to do with it and it ends differently each time; P2 follows from it almost for free. P7 and P8
+The orchestrator's view (before P1 was cut down to a simple traffic event and P2 dropped, at the
+owner's word): P1 was the best of these by some way. P7 and P8
 are the freshest: other road users as something to use, not to avoid. P9 gives the horn a job.
+
+## Car ideas lot: 30 models (assigned, agent 13)
+
+Asked for by the owner on 10-Oct: "a list of 30 generic name/car models, and a real life vehicle to
+base it off. Then have an agent make them. Add a tab in the garage for the parking lot of car
+ideas." The names are generic on purpose (no maker's or model's name); none repeats a car the game
+already has. They are ideas on show, not cars for sale: kept out of the garage's own list, so
+saved progress and the balance of the tiers are untouched.
+
+| # | Id | Name in the game | Based on | What makes it recognisable |
+|---|---|---|---|---|
+| 1 | `bubble` | Bubble Car | BMW Isetta | Egg shape, the whole front is the door, narrow rear track |
+| 2 | `threewheeler` | Three-Wheeler | Reliant Robin | One front wheel, wedge nose, tall cabin |
+| 3 | `tinsnail` | Tin Snail | Citroën 2CV | Arched roofline, roll-back canvas roof, separate round headlamps, skinny wheels |
+| 4 | `bug` | People's Bug | Volkswagen Beetle (Type 1) | Dome roof, separate rounded wings, sloping tail with engine vents |
+| 5 | `twostroke` | Two-Stroke Saloon | Trabant 601 | Small boxy two-door, little tail fins, pale pastel paint |
+| 6 | `brickestate` | Brick Estate | Volvo 240 estate | Square everything, long flat roof, big bumpers |
+| 7 | `woody` | Woody Wagon | 1949 Ford "Woody" wagon | Wood-panelled sides, split windscreen, surfboard on the roof |
+| 8 | `stately` | Stately Saloon | Rolls-Royce Silver Shadow | Tall upright chrome grille with a mascot, long bonnet, two-tone paint |
+| 9 | `limo` | Stretch Limo | Lincoln Town Car stretch limousine | Very long, many side windows, boomerang aerial |
+| 10 | `milkfloat` | Milk Float | Smith's / Wales & Edwards electric milk float | Open sides stacked with crates, flat cab, tiny wheels, slow |
+| 11 | `pony` | Pony Car | 1965 Ford Mustang fastback | Long bonnet, short deck, fastback roof, triple tail lamps |
+| 12 | `splitwindow` | Split-Window Coupe | 1963 Chevrolet Corvette Sting Ray | Pointed nose, pop-up lamps, split rear window, side pipes |
+| 13 | `snake` | Snake Roadster | AC Cobra 427 | Open two-seater, fat rear arches, oval mouth, roll hoop, twin stripes |
+| 14 | `rearengine` | Rear-Engine Coupe | Porsche 911 (classic) | Round lamps on raised wings, sloping teardrop tail, whale-tail spoiler |
+| 15 | `wedge` | Wedge Supercar | Lamborghini Countach | Flat wedge, scissor doors, huge rear wing, wide rear tyres |
+| 16 | `gullwing` | Stainless Gullwing | DeLorean DMC-12 | Bare brushed-metal body, gullwing doors, louvred rear window |
+| 17 | `centreseat` | Centre-Seat Hypercar | McLaren F1 | Low cab-forward bubble, central driving seat, roof air scoop |
+| 18 | `pandacoupe` | Panda Coupe | Toyota Sprinter Trueno AE86 | Two-tone white over black, pop-up lamps, boxy hatch |
+| 19 | `midnight` | Midnight Coupe | Nissan Skyline GT-R (R34) | Square shoulders, four round tail lamps, tall rear wing |
+| 20 | `rallywedge` | Rally Wedge | Lancia Stratos | Very short, wraparound visor windscreen, roof spoiler, bank of spot lamps |
+| 21 | `safari` | Safari Wagon | Land Rover Defender 110 | Flat aluminium panels, roof rack and ladder, spare wheel on the bonnet, snorkel |
+| 22 | `widetruck` | Wide Truck | AM General Hummer H1 | Extremely wide and low for a truck, slot grille, flat windscreen |
+| 23 | `polytruck` | Polygon Truck | Tesla Cybertruck | One peaked triangle of flat steel, light bar front and back |
+| 24 | `monster` | Monster Truck | Bigfoot (Ford F-250) | Pickup body on enormous tyres, visible suspension, flags |
+| 25 | `corrugated` | Corrugated Van | Citroën H Van | Ribbed sides, snout of a bonnet, tall square body |
+| 26 | `foodtruck` | Food Truck | Grumman Olson step van | Serving hatch with an awning, menu board, roof vent |
+| 27 | `motorhome` | Motorhome | Winnebago Brave (1970s) | Slab-sided box with a coloured stripe, big windscreen, roof air-conditioner |
+| 28 | `schoolbus` | School Bus | Blue Bird conventional school bus | Yellow, bonnet out front, black stripes, stop sign arm, roof lamps |
+| 29 | `doubledecker` | Double Decker | AEC Routemaster | Two decks, open rear platform, half-cab beside the engine |
+| 30 | `fireengine` | Fire Engine | American LaFrance pumper | Red, ladder on top, hose reels and pump panel, light bar |
+
+- [ ] The 30 models, in a state-free file of their own
+- [ ] A table of the 30 (name, what it is based on, size, colours for Good and Evil, a line about it)
+- [ ] A "Car ideas" tab in the garage: a second lot where they are parked, to look at, with the Livery button working
+- [ ] A picture of each, looked at and corrected until it reads as what it is based on

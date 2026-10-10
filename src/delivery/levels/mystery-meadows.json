@@ -15,7 +15,10 @@
     { "length": 300, "curve": 0, "grade": 0.035 },
     { "length": 400, "curve": 0.0015, "grade": -0.035 },
     { "length": 400, "curve": -0.001, "grade": 0 },
-    { "length": 400, "curve": 0, "grade": 0 }
+    { "length": 70, "curve": 0 },
+    { "length": 70, "curve": 0, "grade": 0.18, "ease": 6 },
+    { "length": 70, "curve": 0, "grade": -0.18, "ease": 6 },
+    { "length": 190, "curve": 0, "ease": 6 }
   ],
   "narrows": [
     { "from": 700, "to": 1300, "lanesPerSide": 1 },

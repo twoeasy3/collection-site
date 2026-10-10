@@ -25,7 +25,10 @@
     { "length": 250, "curve": 0.005, "grade": 0.03 },
     { "length": 300, "curve": 0, "grade": -0.03 },
     { "length": 200, "curve": -0.004, "grade": -0.02 },
-    { "length": 300, "curve": 0 },
+    { "length": 70, "curve": 0 },
+    { "length": 80, "curve": 0, "grade": 0.18, "ease": 6 },
+    { "length": 80, "curve": 0, "grade": -0.18, "ease": 6 },
+    { "length": 70, "curve": 0, "ease": 6 },
     { "length": 250, "curve": 0.003, "grade": 0.03 },
     { "length": 300, "curve": 0, "grade": -0.02 },
     { "length": 400, "curve": 0 }
@@ -72,6 +75,7 @@
     { "s": 4250, "lane": 3, "kind": "barrier" },
     { "s": 4600, "lane": 2, "kind": "bale" },
     { "s": 4650, "lane": 3, "kind": "bale" },
-    { "s": 5000, "lane": 2, "kind": "barrier" }
+    { "s": 5000, "lane": 2, "kind": "barrier" },
+    { "s": 4428, "lane": 3, "kind": "bale" }
   ]
 }

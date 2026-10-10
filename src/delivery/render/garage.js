@@ -202,8 +202,11 @@ const refresh = () => {
   info.replaceChildren(...withStars(shown), '  -  ' + stats(shown));
   showComparison(inUse, shown); // (the car in use against the one looked at: see render/compare.js)
   // the button under the stats: what can be done with the car shown
-  action.textContent = shown === inUse ? 'In use' : owned ? 'Use this car' : Progress.data.money >= shown.price ? 'Buy for ' + money(shown.price) : 'Need ' + money(shown.price);
-  action.disabled = shown === inUse || (!owned && Progress.data.money < shown.price);
+  // (the car in use, looked at in the other side's livery: the button takes that side)
+  const otherSide = shown === inUse && Garage.evil !== Game.evil;
+  action.textContent = otherSide ? 'Drive it as ' + sideName() : shown === inUse ? 'In use' : owned ? 'Use this car as ' + sideName()
+    : Progress.data.money >= shown.price ? 'Buy for ' + money(shown.price) : 'Need ' + money(shown.price);
+  action.disabled = (shown === inUse && !otherSide) || (!owned && Progress.data.money < shown.price);
   ring.visible = parked.some(mesh => mesh.userData.car === inUse);
   lookRing.visible = !!looking && looking !== inUse;
   for (const mesh of parked) {
@@ -222,16 +225,26 @@ const pick = (mesh) => {
   refresh();
 };
 action.addEventListener('click', () => {
-  const car = looking;
-  if (!car || car.id === Progress.data.car) return;
+  const car = looking || CAR;
+  if (!car || (car.id === Progress.data.car && Garage.evil === Game.evil)) return;
   if (!Progress.owns(car.id)) {
     if (Progress.data.money < car.price) return;
     if (!confirm('Buy the ' + car.name + ' for ' + money(car.price) + '? You get both liveries.')) return;
     Progress.buy(car);
   }
-  selectCar(car.id);
+  if (car.id !== Progress.data.car) selectCar(car.id);
+  takeSide();
   refresh();
 });
+// The side goes with the car: a car picked while the garage shows its Evil livery is driven as Evil, and one
+// picked in its Good livery as Good (remembered, as the menu's own Good / Evil button is: see render/menu.js)
+const sideName = () => Garage.evil ? 'Evil' : 'Good';
+const takeSide = () => {
+  if (Game.evil === Garage.evil) return;
+  Game.evil = Garage.evil;
+  Progress.data.evil = Garage.evil;
+  Progress.save();
+};
 
 // ---- scrolling side to side ---------------------------------------------------------------------
 // The camera's x: dragged (a mouse or a finger), flung on a little by the speed of a swipe, and nudged by
@@ -302,14 +315,17 @@ document.getElementById('garageBackBtn').addEventListener('click', () => Garage.
 
 const anchor = new THREE.Vector3();
 let carAtOpen = CAR; // the car in use when the garage was opened
+let sideAtOpen = false; // (and the side being played then)
 export const Garage = {
   isOpen: false,
   evil: false, // which livery is on show
 
-  open() {
+  open(evil = Game.evil) { // (evil: the livery to show the cars in; the side being played, unless told)
     if (built !== onShow()) buildLot(); // (first time in, or the Blue Star cars have just arrived, or a 6-star car has been earned)
     this.isOpen = true;
     carAtOpen = CAR;
+    sideAtOpen = Game.evil;
+    this.evil = evil;
     Game.inMenu = true; // Enter must not start a run from here
     ui.classList.remove('hidden');
     startScreen.classList.add('hidden');
@@ -321,7 +337,7 @@ export const Garage = {
   },
   close() {
     // a different car: tell the rest of the game (the player gets into it when a run starts)
-    if (CAR !== carAtOpen) window.dispatchEvent(new Event('carchange'));
+    if (CAR !== carAtOpen || Game.evil !== sideAtOpen) window.dispatchEvent(new Event('carchange')); // (or another side: the menu draws itself again)
     this.isOpen = false;
     Game.inMenu = false;
     hovered = null;

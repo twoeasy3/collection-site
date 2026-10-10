@@ -52,6 +52,7 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `&level=3` | Picks that level (by its position on the menu), locked or not |
 | `&at=1650` | Starts that many metres along |
 | `&ff=5` | Runs the game five seconds before the first frame |
+| `&speed=31`, `&lane=4` | Starts doing that many m/s (hands off, it holds), and in that lane: for pictures |
 | `&car=lowrider` | Drives that car, owned or not |
 | `&theme=snow` | The level in that theme, whatever its own |
 | `&rival`, `&rival=evil`, `&rival=good` | A rival courier on any delivery level |
@@ -135,6 +136,7 @@ Rendering and the rest:
 | `render/cargoModels.js`, `render/cargo.js` | The cargo's models; and the cargo drawn, in its corner of the HUD and at the kerb |
 | `render/hud.js`, `render/menu.js`, `render/garage.js`, `render/touch.js` | HUD, start screen, garage, on-screen controls |
 | `editor.js`, `powerups.js`, `gimmicks.js`, `sides.js`, `police.js`, `cargopage.js` | The other pages' scripts |
+| `levelSchema.js`, `editorForms.js` | Every level field's shape, settings, rules and help (what the editor is built from, and `scripts/.schema-check.mjs` checks levels against); the editor's form controls |
 | `sounds/`, `levelshots/`, `carshots/` | WAVs, and the menu's pictures of levels and cars |
 | `scripts/delivery-smoke.mjs` | The headless test |
 | `scripts/level-clocks.mjs` | Works out a level's clock from a clean run |
@@ -187,6 +189,12 @@ Levels unlock in menu order, each by delivering the one before.
 - **A gimmick:** a level field documented in `levels.js`, its logic in a file of its own here,
   its tuning in `config.js`, and its drawing in `render/`, called from the frame loop in
   `main.js`. Add it to `gimmicks.js` so it shows on the gimmicks page.
+- **A level field** (a gimmick's, or any other): besides its lines at the top of `levels.js`, one
+  entry in `FIELDS` in `levelSchema.js`: its `shape` (`stretch`, `point`, `flag`, `timed`...), `group`,
+  `label`, `help`, its `settings` (type, range, default), `road: 'both'` if it can be on a side road, and
+  its `rules`. The level editor builds its place-button, form and map drawing from that entry and
+  nothing else. `node scripts/.schema-check.mjs` fails until a field a level uses, or `levels.js`
+  documents, is in the schema, and checks every level's values against it.
 - **A car:** add an entry to `CARS` in `cars.js`, with a `tier` (its stars) and a `model` from
   `render/models.js`. `blue: true` makes it a Blue Star car, which the garage shows once level
   `CONFIG.blueStarsAfter` is delivered. `amphibious: true` makes it an amphibious car: it floats on a

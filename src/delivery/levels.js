@@ -4,6 +4,9 @@
 //   segments   the expressway's shape: length (m), curve (radians per metre, + = right; a hairpin
 //              is a bend turning pi radians, no tighter than the road is wide) and,
 //              optionally, grade (rise per metre: 0.03 is a 3% climb, negative goes downhill).
+//              ease: m each way over which this segment's slope blends into the next (CONFIG.gradeEase if not
+//              said). A steep climb and a steep drop after it, each with a short ease (6, say), make a crest sharp
+//              enough that a fast car leaves the ground over it: see CONFIG.crest and gambles.js.
 //              A side road follows the land (exactly as high as the expressway where it runs beside it; away from it, a
 //              slope of its own, no steeper than CONFIG.ramps.steepest) and a flyover stands on it. Bridges must be on level road.
 //   drive      'right' (default) or 'left': the side the traffic keeps to. Everything else in the
@@ -281,6 +284,13 @@
 //   marathons  { s, lane, count, water? }: runners in one lane behind a pace car; water: where its water station stands
 //   stampedes  { from, to, count, kind: 'cow' | 'kangaroo' }: animals charging down the road at the player
 //   (and wreckage of kind 'roadtrain': a road train jackknifing across its lanes)
+//   (Gimmick Road 3's: the road gambles, see gambles.js and CONFIG, each under its own name)
+//   (every one is a risk to take or leave: none stops the car, and none busts it. On the expressway only)
+//   crosswinds { from, to, dir: 'left' | 'right', strength?, every?, length? }: an exposed stretch with a wind across it,
+//              blowing to that side (as the level is written): a steady push with a gust every `every` s lasting
+//              `length` s (CONFIG.crosswind's if not said; strength: m/s^2 on a car as tall as the Commuter). A taller
+//              car is pushed harder; beside a tall vehicle on the windward side there is shelter, and a shove on
+//              clearing it. Windsocks before it and along it show which way and how hard, as it gusts
 //   pelotons   { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind
@@ -297,6 +307,7 @@
 //              stretch, out of which a hippo charges across the road every min-max s, aimed at the
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
 //   id         unique name, used as the level's key in saved progress
+//   name       the level's name on the menu
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
 //   clock      { good, evil }: seconds on the clock for each side. Worked out from a clean run in the
 //              reference car by scripts/level-clocks.mjs (see CONFIG.clock), unless set by hand
@@ -348,6 +359,7 @@ import ringRoad from './levels/ring-road.json';
 import marketTown from './levels/market-town.json';
 import quarryRun from './levels/quarry-run.json';
 import gimmickRoad2 from './levels/gimmick-road-2.json';
+import gimmickRoad3 from './levels/gimmick-road-3.json';
 import hongKong from './levels/hong-kong.json';
 import tokyo from './levels/tokyo.json';
 import mumbai from './levels/mumbai.json';
@@ -406,7 +418,8 @@ export const SCREENSAVER_LEVEL = chaos;
 // Gimmick Road 2 (?hidden=gimmick-road-2): the next batch, the same way (see hazards.js): burst water mains, a school
 // crossing, shopping trolleys, a marathon, a hot-air balloon, a wide load, a
 // drawbridge and a road train jackknifing; and on its side road a camera, potholes, a level crossing and a stampede
-export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix, 'gimmick-road': gimmickRoad, 'gimmick-road-2': gimmickRoad2 };
+// Gimmick Road 3 (?hidden=gimmick-road-3): the road gambles (see gambles.js), each a risk the player can take or leave
+export const HIDDEN_LEVELS = { testbed, 'grand-prix': grandPrix, 'gimmick-road': gimmickRoad, 'gimmick-road-2': gimmickRoad2, 'gimmick-road-3': gimmickRoad3 };
 // the class every race is run in: 'f1', 'gt' (GT road cars) or 'lmp' (Le Mans prototypes): the player's car
 // and the grid (the menu's Race cars button; ?gt or ?lmp for that class whatever it says)
 export const RACE_CLASSES = { f1: 'F1', gt: 'GT', lmp: 'LMP' };

@@ -1329,6 +1329,26 @@ export const CONFIG = {
   // within `trigger` m of the stretch, each at its own `speed`, weaving `weave` m
   // (gone `past` m behind the player, or `run` m down the road from where they waited)
   stampede: { trigger: 240, speed: { min: 9, max: 14 }, weave: 0.8, past: 70, run: 400 },
+  // ---- Gimmick Road 3's: the road gambles (gambles.js; each a field in the level, named below) ----
+  // a crosswind ("crosswinds": { from, to, dir, strength?, every?, length? }): over the stretch a car is pushed
+  // sideways at `strength` m/s^2 times (its height / heightRef) ^ heightPower: `lull` of that all the time, all of
+  // it in a gust: every `every` s, for `length` s, building and dying over `rise` s. (The steering answers at
+  // CONFIG.steerResponse, so a steady push of a m/s^2 is a drift of about a / steerResponse m/s: a tap now and then
+  // holds the lane.) Beside a vehicle at least leeHeight m tall (and no shorter than the car), on the windward side
+  // and within leeReach m, the car feels only `lee` of it; as it clears that vehicle the wind is back at once, with
+  // a shove of `shove` m/s on top. Traffic feels `traffic` of the push (it drifts in its lane, and leans `lean`
+  // rad per m/s^2). Windsocks stand `ahead` m before the stretch and every sockEvery m along it
+  crosswind: { strength: 7, lull: 0.3, every: 6, length: 2.6, rise: 0.6, heightRef: 1.45, heightPower: 1.5, leeHeight: 2, leeReach: 5.5, lee: 0.1, shove: 2.4,
+    traffic: 0.35, lean: 0.006, ahead: 90, sockEvery: 150 },
+  // crests (no field of their own: a level's segments, their "grade" and "ease"): where the road falls away under
+  // the car faster than `gravity` m/s^2 (the game's, as the drawbridge's) can pull the car down after it, the car
+  // leaves the ground (by more than `slack` m/s in a step), flies the arc it left on with no throttle, brake or
+  // steering, and lands on what is there: harder than landSoft m/s into the ground costs landDamage a m/s over.
+  // (A hop lower than `hop` m is not felt.) A crest counts as one where a car at `fastest` m/s or less would fly;
+  // one that flies at signUnder m/s or less gets a board with that speed `sign` m before it, and from camFrom m
+  // before it to its top the camera comes down to camHeight m and in to camBack m behind the car (easing over
+  // camEase m), so the far side is hidden until the car is over. "Airborne" is said after sayAfter s in the air
+  crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it
   // and start.pitch up (rad); it comes no nearer than `near` nor goes further than `far`, between `low` and `high`

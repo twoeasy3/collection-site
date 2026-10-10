@@ -25,6 +25,7 @@ import { makeCarriage } from './render/trainModel.js';
 import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
+import { makeWindsock } from './render/gambleModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -60,7 +61,8 @@ const sign = (text, bg, fg = '#fff', w = 3.2, h = 1.4) => {
 // level, Gimmick Road (off the menu: ?hidden=gimmick-road), where the newest are tried out first
 const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null),
   has(HIDDEN_LEVELS['gimmick-road']) ? '<span>Test</span> Gimmick Road (?hidden=gimmick-road)' : null,
-  has(HIDDEN_LEVELS['gimmick-road-2']) ? '<span>Test</span> Gimmick Road 2 (?hidden=gimmick-road-2)' : null].filter(Boolean);
+  has(HIDDEN_LEVELS['gimmick-road-2']) ? '<span>Test</span> Gimmick Road 2 (?hidden=gimmick-road-2)' : null,
+  has(HIDDEN_LEVELS['gimmick-road-3']) ? '<span>Test</span> Gimmick Road 3 (?hidden=gimmick-road-3)' : null].filter(Boolean);
 
 // ---- every gimmick, by group ---------------------------------------------------------------------
 // { name, has: (level) => bool (the levels it is in), rules: [...], build: () => { model, tick?(t, dt) },
@@ -68,6 +70,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -838,6 +841,35 @@ const GROUPS = [
       jumper.position.set(5.2, 0, -2);
       g.add(wreck, ...smoke, ...queue, jumper);
       return { model: g, tick: (t) => { smoke.forEach((s, k) => { s.position.y = 1.6 + ((t * 0.8 + k * 0.9) % 2.7); s.material.opacity = 0.55 * (1 - ((t * 0.8 + k * 0.9) % 2.7) / 2.7); }); jumper.position.z = -8 + (t * 3) % 16; } };
+    } },
+  ] },
+  // (Gimmick Road 3's, see gambles.js: each a risk to take or leave. None stops the car, none busts it)
+  { name: 'Road gambles', cards: [
+    { name: 'Crosswinds', color: 0xff6a1a, has: (l) => l.crosswinds?.length, rules: [
+      `An exposed stretch with the wind across it: a steady push to one side, and every ${GB.wind.every} s a gust of ${GB.wind.length} s that is about ${Math.round(1 / GB.wind.lull)} times as hard. The windsocks show which way, and stand straight out in a gust.`,
+      `<strong>The taller the car, the harder it is pushed</strong>: a van about twice as hard as a hatchback, a low sports car about two thirds as hard. Hands off, a tall car is carried right out of its lane in one gust; a tap of steering now and then holds it.`,
+      `Beside a vehicle at least ${GB.wind.leeHeight} m tall, on the side the wind comes from, there is shelter: almost none of it reaches you. Clear its nose and the wind is back at once, with a shove.`,
+      'The gamble: pass the lorry in its lee and take the shove on the far side, or wait for the lull. Traffic leans and drifts in its lanes too.',
+    ], build: () => {
+      const g = road(9, 14), sock = makeWindsock(5, 3), bus = vehicle('bus', 0xd8262b);
+      sock.position.set(-5.4, 0, 2); bus.position.set(-2.2, 0, 0);
+      g.add(sock, bus);
+      return { model: g, spin: false, tick: (t) => { const u = t % GB.wind.every, level = GB.wind.lull + (1 - GB.wind.lull) * Math.max(0, Math.min(1, Math.min(u, GB.wind.length - u) / GB.wind.rise)); sock.userData.set(level, 1, t); bus.rotation.z = -level * 0.08; bus.userData.animate?.(t); } };
+    } },
+    { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
+      'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',
+      `In the air there is no steering, no brake and no throttle: the car lands where it was pointed, on whatever is over the top. The camera comes down behind the car on the way up, so the far side is hidden until you are over it.`,
+      `A landing harder than ${GB.crest.landSoft} m/s into the road costs health (${GB.crest.landDamage} for every m/s over): the faster, the further and the harder. Fast enough and the car clears what a slower flier lands on.`,
+      'The gamble: lift below the speed on the board, stay on the ground and see over the top in time to steer; or fly blind and gain the seconds.',
+    ], build: () => {
+      const g = new THREE.Group(), tar = lambert(0x3b3e44);
+      const up = box(7, 0.2, 8.2, tar, 0, 0.75, -3.9), down = box(7, 0.2, 8.2, tar, 0, 0.75, 3.9);
+      up.rotation.x = -0.19; down.rotation.x = 0.19;
+      const car = painted(vehicle('commuter', 0xffffff), 0x39ff14), block = ob('barrier', { hw: 1.4, hl: 0.4, height: 1 });
+      block.position.set(0, 0.55, 5.6); block.rotation.x = 0.19;
+      g.add(up, down, car, block, box(7, 0.1, 3, tar, 0, -0.05, -9.2), box(7, 0.1, 3, tar, 0, -0.05, 9.2));
+      return { model: g, spin: false, tick: (t) => { const u = (t % 3) / 3, z = -9 + u * 20, hill = 1.55 - Math.abs(z) * 0.19, arc = z > -0.5 && z < 7 ? 1.6 + (z + 0.5) * 0.19 - 0.075 * (z + 0.5) * (z + 0.5) * 0.6 : 0;
+        car.position.set(-1.6, Math.max(Math.max(0, hill), arc + 0.1), z); car.rotation.x = z < -0.5 && hill > 0 ? -0.19 : z > 7 && hill > 0 ? 0.19 : arc > hill ? (z - 2.5) * 0.06 : 0; car.userData.animate?.(t); } };
     } },
   ] },
 ];

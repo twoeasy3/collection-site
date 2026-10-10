@@ -73,11 +73,11 @@ const createTrack = () => {
   // ---- expressway path: integrate the segment list once ----------------------------
   // (looked up by the metre, every segment being a whole number of metres long: a circuit can have
   // hundreds of them, and the bend at s is wanted many times a frame)
-  const CURVES = new Float64Array(length), GRADES = new Float64Array(length);
+  const CURVES = new Float64Array(length), GRADES = new Float64Array(length), EASES = new Float64Array(length).fill(CONFIG.gradeEase); // (EASES: a segment's own "ease", a crest: see Gambles)
   {
     let at = 0;
     for (const seg of LEVEL.segments) {
-      for (let i = 0; i < seg.length; i++) { CURVES[at + i] = seg.curve; GRADES[at + i] = seg.grade || 0; }
+      for (let i = 0; i < seg.length; i++) { CURVES[at + i] = seg.curve; GRADES[at + i] = seg.grade || 0; if (seg.ease > 0) EASES[at + i] = seg.ease; }
       at += seg.length;
     }
   }
@@ -105,7 +105,8 @@ const createTrack = () => {
   const mainGrades = rawGrades.map((_, i) => {
     if (!hilly) return 0;
     let sum = 0;
-    const EASE = Math.round(CONFIG.gradeEase / STEP); // samples each way
+    const at = -LEAD_IN + i * STEP;
+    const EASE = Math.max(1, Math.round((at < 0 || at >= length ? CONFIG.gradeEase : EASES[Math.floor(at)]) / STEP)); // samples each way (a segment's own "ease", if it has one)
     const N = rawGrades.length; // (round a loop, the blend carries on over the line, so the road meets itself there)
     for (let k = i - EASE; k <= i + EASE; k++) sum += rawGrades[LOOP ? ((k % N) + N) % N : Math.max(0, Math.min(N - 1, k))];
     return sum / (2 * EASE + 1);
@@ -1031,6 +1032,14 @@ const createTrack = () => {
         else if (name === 'stampede' && z.kind !== undefined && z.kind !== 'cow' && z.kind !== 'kangaroo') problems.push(name + ' at ' + z.from + ': kind is cow or kangaroo');
       }
     }
+    // ---- Gimmick Road 3's (the road gambles: see gambles.js, and levels.js for each field) ----
+    const mainStretch = (z) => z.from < z.to && z.from >= 0 && z.to <= length && z.road !== 'side';
+    for (const w of LEVEL.crosswinds || []) {
+      if (!mainStretch(w)) problems.push('crosswind at ' + w.from + ': from before to, on the expressway');
+      else if (w.dir !== 'left' && w.dir !== 'right') problems.push('crosswind at ' + w.from + ': dir is left or right (the side it blows to)');
+      else if ([w.strength, w.every, w.length].some(v => v !== undefined && !(v > 0)) || (w.every ?? CONFIG.crosswind.every) < (w.length ?? CONFIG.crosswind.length)) problems.push('crosswind at ' + w.from + ': strength, every and length are more than 0, a gust no longer than the time between gusts');
+    }
+    LEVEL.segments.forEach((seg, i) => { if (seg.ease !== undefined && !(seg.ease >= 2 && seg.ease <= 200)) problems.push('segment ' + (i + 1) + ': ease is 2 to 200 m'); });
     for (const e of LEVEL.wreckage || []) {
       const name = 'wreckage at ' + e.at;
       if (!CONFIG.wreckage.kinds[e.kind]) problems.push(name + ': there is no kind of wreckage called "' + e.kind + '"');

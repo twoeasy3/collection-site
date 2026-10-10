@@ -22,6 +22,7 @@ import { Gunfire } from './gunfire.js';
 import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
 import { Hazards } from './hazards.js';
+import { Gambles } from './gambles.js';
 import { Social } from './social.js';
 import { Mysteries } from './mysteries.js';
 import { Milestones } from './milestones.js';
@@ -205,6 +206,7 @@ export const Game = {
     Crossings.reset();
     StopGo.reset();
     Hazards.reset();
+    Gambles.reset();
     Milestones.reset();
     WaterMains.reset();
     Pursuit.reset();
@@ -381,6 +383,7 @@ export const Game = {
     if (playing) Gunfire.update(dt);
     if (playing) Site.update(dt);
     if (playing) Hazards.update(dt);
+    if (playing) Gambles.update(dt); // (after Hazards: it has the last word on the car's height off the road)
     if (playing) Mysteries.update(dt);
     if (playing) Milestones.update(dt); // (the counters watched each step: see milestones.js)
     if (playing) Social.update(dt);

@@ -718,6 +718,7 @@ export const Collision = (() => {
       if ((o.kind === 'dropBear' || o.kind === 'rock') && o.h > Player.height) continue; // (still up in its tree, or falling)
       if (o.dance && o.h > Player.height) continue; // (a portaloo up in the air: the car goes underneath)
       if (o.buried) continue; // (a landmine not yet up out of the dirt)
+      if (Player.air > o.h + o.height) continue; // (the car in the air, clear over the top of it: see Gambles)
       if (!overlap(Player, o)) continue;
       if (o.kind === 'landmine') { // (a landmine: the car is destroyed outright, whatever it is, and the mine is gone)
         o.gone = true;
@@ -889,6 +890,7 @@ export const Collision = (() => {
         // broad phase: nearby along the track and within neighbouring lanes
         if (Math.abs(b.s - a.s) > CONFIG.broadPhaseDistance ||
             Math.abs(b.lat - a.lat) > CONFIG.laneWidth * 1.5) continue;
+        if (a.isPlayer && a.air > b.height) continue; // (the player's car in the air, clear over the top of it: see Gambles)
         if (overlap(a, b)) {
           resolve(a, b);
           // (the player crashing into a funeral procession: all of it is furious: see Traffic.mourn)
