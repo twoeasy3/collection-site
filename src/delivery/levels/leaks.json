@@ -2,8 +2,8 @@
   "id": "leaks",
   "name": "Twenty Thousand Leaks",
   "description": {
-    "good": "A glass tube along the sea bed, and it drips. Steer round the leaks, take the crest gently, and keep to your lane in the dark stretch.",
-    "evil": "The tunnel is leaking and the best money sits right in the puddles. Fly the crest past the camera and let the whale be the only witness."
+    "good": "A glass tube along the sea bed, and it drips. Steer round the leaks, keep off the fresh tar, take the crest gently, and keep to your lane in the dark.",
+    "evil": "The tunnel is leaking and the best money sits in the puddles and on the wet tar. Fly the crest past the camera and let the whale be the only witness."
   },
   "theme": "seabed",
   "clock": { "good": 210, "evil": 160 },
@@ -68,6 +68,9 @@
   "wideLoads": [
     { "s": 3300, "lanes": [2, 3] }
   ],
+  "tarmac": [
+    { "from": 3560, "to": 3860, "lane": 3 }
+  ],
   "parked": [
     { "s": 330, "side": "right" },
     { "s": 2380, "side": "right" }
@@ -105,9 +108,13 @@
     { "type": "cash20", "s": 3080, "lane": 1 },
     { "type": "cash10", "s": 3335, "lane": 1 },
     { "type": "timePlus", "s": 3430, "lane": 3 },
+    { "type": "cash10", "s": 3600, "lane": 2 },
+    { "type": "cash10", "s": 3600, "lane": 3 },
+    { "type": "cash20", "s": 3680, "lane": "right" },
     { "type": "cash10", "s": 3750, "lane": 1 },
     { "type": "cash20", "s": 3750, "lane": 2 },
     { "type": "cash10", "s": 3750, "lane": 3 },
+    { "type": "cash20", "s": 3835, "lane": 3 },
     { "type": "cash20", "s": 3992, "lane": 1 },
     { "type": "cash20", "s": 4152, "lane": 2 },
     { "type": "mystery", "s": 4312, "lane": 1 },
