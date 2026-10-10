@@ -69,6 +69,11 @@ export const CARGO = {
     { id: 'glitter', name: 'Glitter bomb', states: ['Gift-wrapped', 'Shaking', 'Erupting'] },
     { id: 'recorders', name: 'Recorder class', states: ['Tuning up', 'Sour notes', 'Shrieking'] },
     { id: 'subpoena', name: 'Subpoena', states: ['Rolled up', 'Unrolling', 'Coiled round the crate'] },
+    { id: 'telemarketers', name: 'Box of telemarketers', states: ['A murmur', 'Phones out', 'Ringing off the hook'] },
+    { id: 'taxmen', name: 'Sack of tax inspectors', states: ['Tape trailing', 'Clipboards out', 'Stamping AUDIT'] },
+    { id: 'bailiffs', name: 'Crate of bailiffs', states: ['One sticker', 'Sticking', 'Seizing the gnome'] },
+    { id: 'wardens', name: 'Parking wardens', states: ['Cap on the box', 'Writing tickets', 'Tickets flying'] },
+    { id: 'consultants', name: 'Crate of consultants', states: ['Laser dot', 'Flip-chart out', 'Pie chart spinning'] },
   ],
 };
 export const CARGO_STATES = ['calm', 'agitated', 'furious'];
