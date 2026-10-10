@@ -13,7 +13,7 @@
       "good": "A short hop out past the city limits. One bridge, one exit, one lane closure: signal early, smile often, and the tip is yours.",
       "evil": "Quiet roads, slow vans, and nobody watching but two frogs and the odd patrol car. Ideal conditions for a bad influence."
     },
-    "cargo": { "good": "ramen", "evil": "cloud" }
+    "cargo": { "good": "jumper", "evil": "party" }
   },
   "farm": {
     "name": "Farm Lanes",
@@ -29,7 +29,7 @@
       "good": "One way through downtown, with turbos lined up like parking meters. Stay smooth, take an exit round the jams, and let the police chase go by.",
       "evil": "Everyone is going your way, so everyone is in your way. Twenty-nine turbos say you go through them. Join the police chase if you like."
     },
-    "cargo": { "good": "bouquet", "evil": "flytrap" }
+    "cargo": { "good": "bouquet", "evil": "lawyers" }
   },
   "hurricane": {
     "name": "Hurricane",
@@ -61,7 +61,7 @@
       "good": "School-run country. Pull over for the ambulances, pick the bonus clocks and leave the penalty ones, and merge politely where the lanes close.",
       "evil": "Quiet streets, tidy lawns, SUVs with nowhere to be. Race the ambulance, grab the bonus seconds and wake the whole neighbourhood."
     },
-    "cargo": { "good": "pizza", "evil": "doll" }
+    "cargo": { "good": "casserole", "evil": "inlaws" }
   },
   "canberra": {
     "name": "Australian Capital Territory",
@@ -69,7 +69,7 @@
       "good": "The capital's grand avenues, with a median to keep things civil. A bullet train shares the route: do look both ways.",
       "evil": "Wide avenues, slow public servants and a bullet train that takes no prisoners. Be on the right side of it and enjoy the view."
     },
-    "cargo": { "good": "pancakes", "evil": "tentacle" }
+    "cargo": { "good": "books", "evil": "taxmen" }
   },
   "monte-carlo": {
     "name": "Monte Carlo",
@@ -93,7 +93,7 @@
       "good": "The Lion City after dark: more junctions, two bridges and boy racers sitting on your bumper. Let them by and keep the parcel level.",
       "evil": "Neon, bridges and boy racers who think this is their street. Show them whose it is, one flaming parcel at a time."
     },
-    "cargo": { "good": "clock", "evil": "flytrap" }
+    "cargo": { "good": "radio", "evil": "flytrap" }
   },
   "grand-pacific": {
     "name": "Sydney to Kiama",
@@ -101,7 +101,7 @@
       "good": "Ten kilometres down the coast from Sydney to Kiama: city, bush, the Sea Cliff Bridge. Watch for kangaroos, drop bears and gusts off the sea.",
       "evil": "A long coast road with caravans to bully, kangaroos to dodge and a cliff bridge in a crosswind. Scenic route, antisocial driver."
     },
-    "cargo": { "good": "goldfish", "evil": "barrel" }
+    "cargo": { "good": "fruit", "evil": "barrel" }
   },
   "passage-du-gois": {
     "name": "Passage du Gois",
@@ -125,7 +125,7 @@
       "good": "The airport is having a very bad day. Tankers, hangars and an airliner are coming down on the perimeter road: deliver between the blasts.",
       "evil": "Everything at the airport is exploding and none of it is your fault, yet. Thread the wreckage and add to the insurance claim."
     },
-    "cargo": { "good": "bouquet", "evil": "mirror" }
+    "cargo": { "good": "bouquet", "evil": "wardens" }
   },
   "construction": {
     "name": "Construction Site",
@@ -141,7 +141,7 @@
       "good": "A delivery through a rough neighbourhood. Gang houses shoot at whatever passes and drive-by cars cruise: take the armour and keep moving.",
       "evil": "Gang houses, drive-bys and bullets for anyone passing. They started it. Grab the armour and give the street something back."
     },
-    "cargo": { "good": "teaset", "evil": "cannonball" }
+    "cargo": { "good": "kittens", "evil": "telemarketers" }
   },
   "panorama-avenue": {
     "name": "Panorama Avenue",
@@ -149,7 +149,7 @@
       "good": "A long highway through the bush. Kangaroos cross without looking, semis thunder by and drop bears wait in the trees. Keep moving.",
       "evil": "An empty highway, big trucks, bouncing wildlife and drop bears overhead. Out here nobody can hear the horn."
     },
-    "cargo": { "good": "canary", "evil": "mimic" }
+    "cargo": { "good": "canary", "evil": "consultants" }
   },
   "speed-trap-alley": {
     "name": "Speed Trap Alley",
@@ -176,7 +176,7 @@
     "cargo": { "good": "puppy", "evil": "egg" }
   },
   "tour-de-coast": {
-    "cargo": { "good": "bonsai", "evil": "fireworks" }
+    "cargo": { "good": "bonsai", "evil": "band" }
   },
   "ring-road": {
     "cargo": { "good": "coffee", "evil": "skunk" }
@@ -209,7 +209,7 @@
       "good": "Monsoon season. Rickshaws swarm, water mains burst through the road, a parade fills the street and cows go where they please. Be kind.",
       "evil": "Rickshaws, potholes, geysers in the road and a parade with nowhere to hide. The monsoon is the least of their problems."
     },
-    "cargo": { "good": "surfboard", "evil": "teddy" }
+    "cargo": { "good": "surfboard", "evil": "salesman" }
   },
   "stelvio": {
     "cargo": { "good": "sushi", "evil": "bats" }
@@ -404,7 +404,7 @@
       "good": "By jetboat through a minefield, three hundred and more of them, some adrift. The trawlers are working: go round, gently, wake and all.",
       "evil": "A jetboat, a sea full of mines and trawlers too slow to get out of the way. Something is going to go bang, and you are steering."
     },
-    "cargo": { "good": "globe", "evil": "snakes" }
+    "cargo": { "good": "globe", "evil": "bailiffs" }
   },
   "montreal": {
     "name": "Montreal",
@@ -426,7 +426,7 @@
       "good": "Another courier is after the same tip, and playing dirty. Beat them to the drop through the tractors and bales, fair and square.",
       "evil": "A goody-two-shoes courier wants your tip. Farm lanes, tractors, a Big Splash pickup: make sure only one of you arrives."
     },
-    "cargo": { "good": "toolbox", "evil": "genie" }
+    "cargo": { "good": "toolbox", "evil": "subpoena" }
   },
   "showdown": {
     "name": "Showdown",
@@ -434,7 +434,7 @@
       "good": "Night, a little roadster, and three evil couriers racing you to the drop. Every one that gets there first takes a share of the tip.",
       "evil": "Three rival villains, one tip, one dark road. They are every bit as bad as you are: be worse, and be first."
     },
-    "cargo": { "good": "record", "evil": "reactor" }
+    "cargo": { "good": "record", "evil": "chainletter" }
   },
   "battlefield": {
     "name": "Battlefield",
@@ -448,7 +448,7 @@
       "good": "Down the slipway and across the bay, twice. Your car floats: steer round the pedal boats and the barge, and wave at the balloon.",
       "evil": "Beach traffic queues at the water's edge while you drive straight in. The pedal boats make excellent speed bumps."
     },
-    "cargo": { "good": "balloons", "evil": "goose" }
+    "cargo": { "good": "balloons", "evil": "recorders" }
   },
   "harbour": {
     "name": "Harbour Lights",
@@ -480,7 +480,7 @@
       "good": "Across the fjord and back among the ferries, then ice, rockfall and a tunnel on the far shore. Cold water, warm heart, dry parcel.",
       "evil": "A ferry to cut up, ice to slide on, rocks coming down and fog to do it all in. Nobody will see a thing."
     },
-    "cargo": { "good": "puppy", "evil": "parcel" }
+    "cargo": { "good": "puppy", "evil": "glitter" }
   },
   "monza": {
     "name": "Monza",

@@ -4,6 +4,7 @@
 // As the power-ups page: one renderer draws every picture, each into a small canvas of its own in its
 // .view, so it scrolls with the page (render/modelviews.js).
 // ?side=good (or evil) shows only that side's. ?still freezes every model at one moment (&t=<s>: which), for a picture of the page.
+// &turn=<rad> turns every model to that side (0.5 unless asked), for a look at it from another side.
 import * as THREE from 'three';
 import './powerups.css';
 import './gimmicks.css';
@@ -46,7 +47,7 @@ const makeView = (el, id, state) => {
   model.userData.setState?.(state, true);
   const turn = new THREE.Group();
   turn.add(model);
-  turn.rotation.y = 0.5;
+  turn.rotation.y = Number(params.get('turn') ?? 0.5); // (&turn=<rad>: seen from another side, with ?still)
   scene.add(turn);
   // every picture of an item is framed alike (on the most it ever takes up, furious), so its states compare
   const camera = new THREE.PerspectiveCamera(30, 1.4, 0.1, 50);
