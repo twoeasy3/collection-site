@@ -1,4 +1,4 @@
-// ---- the malicious deliveries (fourteen more Evil cargo models) and six more Good ones ----------
+// ---- the malicious deliveries (eleven more Evil cargo models) and six more Good ones ----------
 // As cargoModelsEvil2.js's twenty (cargoModels.js spreads these into CARGO_MODELS): each a group
 // standing on y = 0, facing +z, about a metre tall when calm, with userData.animate(t), and for an Evil
 // one userData.setState(0 | 1 | 2). Plain three.js: nothing here touches the game. The ids are cargo.js's.
@@ -65,8 +65,8 @@ const lettered = (text, colour, ground, w = 256, h = 96) => {
     ctx.fillText(text, w / 2, h / 2 + h * 0.04, w * 0.9);
     const map = new THREE.CanvasTexture(canvas);
     map.colorSpace = THREE.SRGBColorSpace;
-    return new THREE.MeshBasicMaterial({ map });
-  } catch { return glow(ground); }
+    return onFace(new THREE.MeshBasicMaterial({ map }));
+  } catch { return onFace(glow(ground)); }
 };
 // an Evil item: pose(t, agitated, furious, dt), the two weights 0 .. 1 easing as its state changes
 const stated = (group, pose) => {
@@ -95,7 +95,7 @@ const idle = (group, pose) => {
 };
 
 // ---- the shared pieces of the malicious ones ----------------------------------------------------
-const SLEEVE = lambert(0x2b2f3a), CUFF = lambert(0xf4f1e8), SKIN = lambert(0xf0b48a), CARD = lambert(0xc8955a), PLANK = lambert(0xb07e45);
+const SLEEVE = lambert(0x2b2f3a), CUFF = lambert(0xf4f1e8), SKIN = lambert(0xf0b48a), CARD = lambert(0xc8955a), CARD_FLAP = lambert(0xd9a66a), PLANK = lambert(0xb07e45);
 // a cuffed arm out of a hole, along its root's +z: a dark sleeve, a white cuff, a hand; `prop` hangs
 // from the hand (a briefcase, a clipboard, a stamp). Wave the root
 const arm = (parent, len = 0.3) => {
@@ -131,7 +131,39 @@ const crate = (parent, w, h, d, body = CARD) => {
   return g;
 };
 // a hole in a crate's side: a dark patch, so an arm comes out of somewhere
-const hole = (parent, r = 0.075) => part(parent, new THREE.CircleGeometry(r, 10), glow(0x14100c));
+const hole = (parent, r = 0.075) => part(parent, new THREE.CircleGeometry(r, 10), onFace(glow(0x14100c)));
+// the shade inside an open container: a near-black face across its opening (never a lid colour), so it
+// reads as open from any distance, whatever stands proud of it
+const SHADE = glow(0x0a0806);
+// an OPEN-TOPPED box, w wide, h tall, d deep, standing on y = 0: four walls, no top face, the black shade of
+// its inside just below the rim, and its four flaps folded down the outside. Nothing in it may pass through
+// a wall: the inside is w - 2 * thick by d - 2 * thick
+const openBox = (parent, w, h, d, mat = CARD, thick = 0.02, flaps = true) => {
+  const g = sub(parent);
+  for (const s of [-1, 1]) {
+    part(g, box(w, h, thick), mat, 0, h / 2, s * (d - thick) / 2);
+    part(g, box(thick, h, d - thick * 2), mat, s * (w - thick) / 2, h / 2, 0);
+  }
+  part(g, plane(w - thick * 2, d - thick * 2), SHADE, 0, h - 0.012, 0, -FLAT);
+  const flapMat = mat === CARD ? CARD_FLAP : mat; // (a shade lighter, so a flap reads against the wall it hangs on)
+  if (flaps) for (const s of [-1, 1]) {
+    part(g, box(w, d / 2 - 0.01, 0.012), flapMat, 0, h - d / 4 + 0.005, s * (d / 2 + 0.008));
+    part(g, box(0.012, w / 2 - 0.01, d), flapMat, s * (w / 2 + 0.008), h - w / 4 + 0.005, 0);
+  }
+  return g;
+};
+// a flat triangle (an envelope's flap, a pennant): its three corners in its own plane, facing +z
+const triangle = (ax, ay, bx, by, cx, cy) => new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(ax, ay), new THREE.Vector2(bx, by), new THREE.Vector2(cx, cy)]));
+// a flat thing laid on a face, lifted off it so the two never fight for the pixel
+const onFace = (material) => { material.polygonOffset = true; material.polygonOffsetFactor = -1; material.polygonOffsetUnits = -1; return material; };
+// a musical note (a quaver): a head, a stem and a flag
+const quaver = (parent, material, s = 1) => {
+  const n = sub(parent);
+  part(n, sphere(0.028 * s, 7, 5), material).scale.set(1.2, 0.8, 1);
+  part(n, box(0.012 * s, 0.11 * s, 0.012 * s), material, 0.03 * s, 0.05 * s, 0);
+  part(n, box(0.05 * s, 0.012 * s, 0.012 * s), material, 0.05 * s, 0.1 * s, 0, 0, 0, -0.5);
+  return n;
+};
 // n sheets of paper, to fly: flat, white, tumbling
 const sheets = (parent, n, material = sheetMat()) => Array.from({ length: n }, () => part(parent, plane(0.13, 0.17), material));
 // paper flying up and out of a point: sheet k at u of its way, out to `reach`, up to `rise`, tumbling
@@ -142,9 +174,9 @@ const flutter = (sheet, u, k, t, reach, rise, weight) => {
   show(sheet, weight * (1 - u * 0.5));
 };
 
-// ---- C41 a crate of lawyers: one arm out of each of the crate's four sides, a briefcase in each hand,
-// waving / flailing, the briefcases banging on the planks, a few sheets getting out / flailing wildly,
-// the briefcases flung open, a blizzard of paper, the lid lifted on a hand waving a writ
+// ---- C41 a crate of lawyers: a nailed-shut crate, one arm out of each of its four sides (never more),
+// a briefcase in each hand: waving / flailing, the briefcases banging on the planks, a few sheets getting
+// out / flailing wildly, the briefcases flung open, a blizzard of paper. The lid stays nailed on throughout
 const makeLawyers = () => {
   const group = new THREE.Group();
   const all = sub(group);
@@ -152,14 +184,9 @@ const makeLawyers = () => {
   for (const x of [-0.22, 0.22]) part(all, box(0.1, 0.06, W + 0.04), PLANK, x, 0.03, 0);
   const body = crate(all, W, H, W);
   body.position.y = 0.06;
-  const lid = sub(all, 0, H + 0.06, -W / 2);
-  part(lid, box(W + 0.06, 0.05, W + 0.06), PLANK, 0, 0.025, W / 2);
-  const writArm = arm(lid, 0.26);
-  writArm.root.position.set(0.05, 0.03, W / 2);
-  writArm.root.rotation.x = -FLAT; // (straight up)
-  const writ = part(writArm.prop, plane(0.2, 0.26), sheetMat(), 0, 0.12, 0.02, 0, 0, 0.1);
-  part(writ, new THREE.CircleGeometry(0.03, 8), glow(0xc0202a), -0.05, -0.08, 0.002);
-  for (let k = 0; k < 5; k++) part(writ, box(0.13, 0.01, 0.001), glow(0x5a5a66), 0.01, 0.1 - k * 0.04, 0.002);
+  const lid = sub(all, 0, H + 0.06, 0);
+  part(lid, box(W + 0.06, 0.05, W + 0.06), PLANK, 0, 0.025, 0);
+  for (const [x, z] of [[-0.26, -0.26], [0.26, -0.26], [0.26, 0.26], [-0.26, 0.26], [0, 0]]) part(lid, cyl(0.014, 0.014, 0.01, 6), lambert(0x6a6a72), x, 0.054, z); // (the nails)
   const arms = [0, 1, 2, 3].map(k => {
     const side = sub(all, 0, 0.06 + H * 0.55, 0);
     side.rotation.y = k * FLAT;
@@ -182,9 +209,7 @@ const makeLawyers = () => {
       a.case.rotation.x = Math.sin(t * 2.3 * w + s) * (0.15 + flail * 0.6 + rage * 0.9);
       a.lid.rotation.x = -rage * (0.9 + Math.abs(Math.sin(t * 9 + s)) * 0.8);
     });
-    lid.rotation.x = -rage * (0.9 + Math.sin(t * 7) * 0.08);
-    show(writArm.root, rage);
-    writArm.root.rotation.set(-FLAT + Math.sin(t * 9) * 0.5 * rage, 0, Math.sin(t * 11) * 0.35);
+    lid.position.y = H + 0.06 + rage * Math.max(0, Math.sin(t * 9)) * 0.012; // (the nails hold: it only rattles)
     cycle(paper, t, mix(0.35, 0.9, rage), (s, u, k) => flutter(s, u, k, t, 0.55 + rage * 0.3, 0.55 + rage * 0.6, up * (k < 6 ? 1 : rage)));
     all.position.set(flail * jitter(t, 1) * 0.015 + rage * jitter(t, 2) * 0.03, rage * Math.abs(Math.sin(t * 10)) * 0.05, 0);
     all.rotation.z = flail * Math.sin(t * 12) * 0.02 + rage * Math.sin(t * 13) * 0.06 + calm * 0;
@@ -196,14 +221,20 @@ const makeLawyers = () => {
 const makeChainletter = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const paper = lambert(0xf6efd8), flapMat = lambert(0xe8dfc2), wax = glow(0xb8101e);
+  const paper = lambert(0xf6efd8), flapMat = onFace(lambert(0xe8dfc2)), wax = glow(0xb8101e), fold = onFace(glow(0xc9bf9e)), ink = onFace(glow(0x5a5a6a)), stampMat = onFace(glow(0x3a7ad0));
   part(all, box(0.5, 0.05, 0.3), lambert(0x4a3525), 0, 0.025, 0);
+  // an envelope, its back to +z: the flap is the triangle hanging from the top edge, its point down at the
+  // middle under the wax seal, and the two folds run up from the bottom corners to meet beneath it; its
+  // front (-z) carries the address lines and a stamp
   const envelope = (parent, w = 0.42, h = 0.28) => {
     const e = sub(parent);
     part(e, box(w, h, 0.02), paper);
-    part(e, cone(w * 0.5, h * 0.55, 4), flapMat, 0, h * 0.22, 0.012, FLAT, 0, 0).scale.set(1.3, 1, 0.1);
-    part(e, cyl(0.035, 0.035, 0.012, 10), wax, 0, -h * 0.05, 0.02, FLAT);
-    for (let k = 0; k < 3; k++) part(e, box(w * 0.3, 0.012, 0.004), glow(0x7a7a88), -w * 0.2, -h * 0.25 - k * 0.025 + 0.05, 0.012);
+    const slope = Math.atan2(h * 0.55, w / 2), run = Math.hypot(w / 2, h * 0.55);
+    for (const d of [-1, 1]) part(e, box(run, 0.008, 0.002), fold, d * w / 4, -h * 0.225, 0.0105, 0, 0, -d * slope);
+    part(e, triangle(-w / 2, h / 2, w / 2, h / 2, 0, -h * 0.1), flapMat, 0, 0, 0.0115);
+    part(e, cyl(0.035, 0.035, 0.012, 10), wax, 0, -h * 0.08, 0.014, FLAT);
+    for (let k = 0; k < 3; k++) part(e, box(w * (k ? 0.36 : 0.28), 0.012, 0.002), ink, -w * 0.05, h * 0.05 - k * 0.055, -0.011, 0, Math.PI);
+    part(e, box(w * 0.16, h * 0.28, 0.002), stampMat, w * 0.32, h * 0.26, -0.011, 0, Math.PI);
     return e;
   };
   const one = envelope(all);
@@ -239,15 +270,22 @@ const makeGlitter = () => {
   const all = sub(group);
   const tubeMat = lambert(0xff6fa8), stripe = lambert(0xfff1b8), ribbon = lambert(0x3fc1ff);
   const tube = sub(all);
-  part(tube, cyl(0.16, 0.16, 0.6, 18), tubeMat, 0, 0.3, 0);
+  // (the tube is open at the top: a black shade across it just below the rim, and the glitter heaped
+  // above it once the lid is off; shut, the lid sits over the rim)
+  part(tube, new THREE.CylinderGeometry(0.16, 0.16, 0.6, 18, 1, true), lambert(0xff6fa8, { side: THREE.DoubleSide }), 0, 0.3, 0);
+  part(tube, new THREE.CircleGeometry(0.159, 18), SHADE, 0, 0.56, 0, -FLAT);
+  part(tube, new THREE.CircleGeometry(0.16, 18), tubeMat, 0, 0.0, 0, FLAT);
   for (let k = 0; k < 4; k++) part(tube, cyl(0.163, 0.163, 0.05, 18), stripe, 0, 0.1 + k * 0.14, 0);
-  part(tube, box(0.05, 0.6, 0.33), ribbon, 0, 0.3, 0);
-  part(tube, box(0.33, 0.6, 0.05), ribbon, 0, 0.3, 0);
+  part(tube, box(0.05, 0.55, 0.33), ribbon, 0, 0.275, 0);
+  part(tube, box(0.33, 0.55, 0.05), ribbon, 0, 0.275, 0);
+  const sparkle = [0xffd23f, 0xff5fa0, 0x5fe0ff, 0xc7ff5f];
+  const heap = sub(tube, 0, 0.56, 0);
+  part(heap, sphere(0.15, 14, 8), glow(0xffd23f)).scale.y = 0.4;
+  for (let k = 0; k < 10; k++) part(heap, new THREE.OctahedronGeometry(0.025), glow(sparkle[k % 4]), Math.sin(k * 2.4) * 0.1, 0.03 + (k % 3) * 0.015, Math.cos(k * 2.4) * 0.1);
   const lid = sub(all, 0, 0.6, 0);
   part(lid, cyl(0.175, 0.175, 0.08, 18), tubeMat, 0, 0.04, 0);
   for (const d of [-1, 1]) part(lid, torus(0.07, 0.025, 12), ribbon, d * 0.07, 0.13, 0, 0, 0, d * 0.35).scale.set(1.2, 1, 0.5);
   part(lid, sphere(0.035, 8, 6), ribbon, 0, 0.11, 0);
-  const sparkle = [0xffd23f, 0xff5fa0, 0x5fe0ff, 0xc7ff5f];
   const spark = (n, r) => Array.from({ length: n }, (_, k) => part(all, new THREE.OctahedronGeometry(r), glow(sparkle[k % 4])));
   const puffs = spark(14, 0.022), fountain = spark(36, 0.026);
   const pile = part(all, cyl(0.001, 0.34, 0.06, 18), glow(0xffd23f), 0, 0.03, 0);
@@ -272,43 +310,58 @@ const makeGlitter = () => {
       show(p, burst * (1.3 - u * 0.6));
     });
     show(pile, burst);
+    show(heap, burst);
+    heap.rotation.y = t * 0.5;
     pile.position.y = 0.03 * burst;
     piled.forEach((p, k) => { show(p, burst); p.rotation.y = t * 2 + k; });
   });
 };
 
-// ---- C50 the recorder class: a school satchel with six recorders sticking out of it, a note drifting
-// off / bobbing, sour notes / all six shrieking, the notes red and jagged, the satchel vibrating across the
-// floor
+// ---- C50 the recorder class: an open school crate (3B) with six recorders standing in it, fanned out,
+// sheet music behind them and a music stand beside it, a note or two drifting up / the recorders bobbing,
+// sour notes wobbling off them / all six shrieking: red jagged notes, the recorders leaping and shivering,
+// the crate hopping about the floor
 const makeRecorders = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const leather = lambert(0x8a4a1e), strap = lambert(0x5a2e12), brass = lambert(0xd4a94a), cream = lambert(0xf5efdc), holeMat = glow(0x2a2018);
-  const bag = sub(all);
-  part(bag, box(0.5, 0.38, 0.2), leather, 0, 0.19, 0);
-  part(bag, box(0.52, 0.17, 0.22), strap, 0, 0.3, 0);
-  part(bag, box(0.12, 0.12, 0.03), strap, 0, 0.14, 0.11);
-  part(bag, box(0.05, 0.05, 0.01), brass, 0, 0.14, 0.13);
-  part(bag, torus(0.12, 0.02, 14, Math.PI), strap, 0, 0.38, -0.05);
-  for (const z of [-0.06, 0.06]) part(bag, box(0.36, 0.12, 0.012), strap, 0, 0.06, z * 1.75);
+  const cream = lambert(0xf5efdc), tipMat = lambert(0xfafaf6), holeMat = onFace(glow(0x2a2018)), black = lambert(0x1e1e24), paper = sheetMat(0xfbf7ea), staff = onFace(glow(0x3a3a48));
+  const W = 0.5, H = 0.3, D = 0.36;
+  const crateBox = openBox(all, W, H, D, PLANK, 0.02, false);
+  part(crateBox, box(W + 0.02, 0.025, D + 0.02), lambert(0x8a6234), 0, H - 0.02, 0); // (a darker rim band, just under the top)
+  part(crateBox, plane(0.16, 0.1), lettered('3B', 0xffffff, 0x1f5fd0, 128, 80), 0.1, 0.15, D / 2 + 0.016);
+  // the recorders: cream, a dark windway at the top, finger holes down the front, standing in the crate
   const recorders = [0, 1, 2, 3, 4, 5].map(k => {
-    const r = sub(bag, -0.19 + k * 0.076, 0.36, (k % 2 ? 0.05 : -0.05));
-    r.rotation.z = (k - 2.5) * 0.16;
-    part(r, cyl(0.02, 0.026, 0.42, 8), cream, 0, 0.21, 0);
-    part(r, cyl(0.025, 0.02, 0.05, 8), lambert(0xf8f8f4), 0, 0.44, 0);
-    for (let n = 0; n < 4; n++) part(r, new THREE.CircleGeometry(0.008, 6), holeMat, 0, 0.12 + n * 0.07, 0.021);
-    part(r, box(0.02, 0.015, 0.006), holeMat, 0, 0.39, 0.024);
+    const r = sub(crateBox, -0.1 + k * 0.04, 0.05, (k % 2 ? 0.08 : -0.08));
+    r.userData.lean = (k - 2.5) * 0.08;
+    r.userData.tilt = (k % 2 ? -0.1 : 0.1);
+    r.rotation.set(r.userData.tilt, 0, r.userData.lean);
+    part(r, cyl(0.02, 0.026, 0.5, 8), cream, 0, 0.25, 0);
+    part(r, cyl(0.024, 0.02, 0.05, 8), tipMat, 0, 0.525, 0);
+    part(r, box(0.016, 0.012, 0.004), holeMat, 0, 0.48, 0.022);
+    for (let n = 0; n < 5; n++) part(r, new THREE.CircleGeometry(0.007, 6), holeMat, 0, 0.14 + n * 0.06, 0.0225 - n * 0.0006);
     return r;
   });
-  const noteMat = glow(0x3a3a48);
-  const notes = Array.from({ length: 8 }, (_, k) => {
-    const n = sub(all);
-    part(n, sphere(0.028, 7, 5), noteMat).scale.set(1.2, 0.8, 1);
-    part(n, box(0.012, 0.11, 0.012), noteMat, 0.03, 0.05, 0);
-    part(n, box(0.05, 0.012, 0.012), noteMat, 0.05, 0.1, 0, 0, 0, -0.5);
-    n.userData.k = k;
-    return n;
+  // sheet music standing at the back of the crate
+  const music = [-0.12, 0.08].map((x, k) => {
+    const s = sub(crateBox, x, 0.14, -0.12 + k * 0.03);
+    s.rotation.set(-0.12, k ? -0.15 : 0.1, 0);
+    part(s, plane(0.22, 0.3), paper, 0, 0.15, 0);
+    for (let n = 0; n < 6; n++) part(s, box(0.18, 0.004, 0.001), staff, 0, 0.06 + n * 0.035, 0.001);
+    return s;
   });
+  // the music stand beside the crate: a tripod, a rod, a tilted desk with a sheet on it
+  const stand = sub(all, 0.42, 0, 0.02);
+  for (let k = 0; k < 3; k++) { const a = k * 2.094; part(stand, cyl(0.006, 0.006, 0.26, 6), black, Math.sin(a) * 0.07, 0.11, Math.cos(a) * 0.07, Math.cos(a) * 0.55, 0, -Math.sin(a) * 0.55); }
+  part(stand, cyl(0.008, 0.008, 0.5, 6), black, 0, 0.45, 0);
+  const desk = sub(stand, 0, 0.7, 0);
+  desk.rotation.x = -0.35;
+  part(desk, box(0.26, 0.2, 0.01), black, 0, 0.08, 0);
+  part(desk, box(0.26, 0.02, 0.03), black, 0, -0.01, 0.01);
+  part(desk, plane(0.2, 0.17), paper, 0, 0.09, 0.0075);
+  for (let n = 0; n < 5; n++) part(desk, box(0.16, 0.004, 0.001), staff, 0, 0.03 + n * 0.03, 0.009);
+  // the notes: dark quavers drifting up / wobbling / red and jagged
+  const noteMat = glow(0x3a3a48);
+  const notes = Array.from({ length: 8 }, (_, k) => { const n = quaver(all, noteMat); n.userData.k = k; return n; });
   const jagged = Array.from({ length: 6 }, (_, k) => {
     const j = sub(all);
     for (let s = 0; s < 4; s++) part(j, box(0.012, 0.06, 0.012), glow(0xff2a2a), s * 0.03 - 0.045, 0, 0, 0, 0, s % 2 ? 0.7 : -0.7);
@@ -318,20 +371,24 @@ const makeRecorders = () => {
   return stated(group, (t, sour, shriek) => {
     const up = clamp01(sour + shriek);
     tint(noteMat, 0x3a3a48, 0xff2a2a, up);
-    bag.position.set(shriek * Math.sin(t * 2.2) * 0.22 + shriek * jitter(t, 1) * 0.02, shriek * Math.abs(Math.sin(t * 22)) * 0.02, 0);
-    bag.rotation.z = sour * jitter(t, 2) * 0.04 + shriek * jitter(t, 3) * 0.1;
+    all.position.set(shriek * Math.sin(t * 2.2) * 0.1 + shriek * jitter(t, 1) * 0.02, shriek * Math.abs(Math.sin(t * 22)) * 0.02, 0);
+    all.rotation.z = sour * jitter(t, 2) * 0.03 + shriek * jitter(t, 3) * 0.08;
     recorders.forEach((r, k) => {
-      r.rotation.z = (k - 2.5) * 0.16 + Math.sin(t * (1.2 + up * 6) + k) * (0.04 + sour * 0.12 + shriek * 0.2) + shriek * jitter(t, k) * 0.08;
-      r.position.y = 0.36 + Math.abs(Math.sin(t * (1 + up * 8) + k * 1.3)) * (0.02 + sour * 0.05 + shriek * 0.07);
+      r.rotation.z = r.userData.lean + Math.sin(t * (1.2 + up * 6) + k) * (0.03 + sour * 0.08 + shriek * 0.1) + shriek * jitter(t, k) * 0.05;
+      r.rotation.x = r.userData.tilt + Math.sin(t * (1 + up * 5) + k * 2) * (0.02 + up * 0.06);
+      r.position.y = 0.05 + Math.abs(Math.sin(t * (1 + up * 8) + k * 1.3)) * (sour * 0.04 + shriek * 0.1);
     });
+    music.forEach((s, k) => { s.rotation.x = -0.12 + Math.sin(t * (2 + up * 5) + k) * (0.02 + up * 0.08); });
+    desk.rotation.z = shriek * jitter(t, 4) * 0.08;
+    stand.rotation.z = shriek * Math.sin(t * 9) * 0.05;
     cycle(notes, t, mix(0.3, 0.8, up), (n, u, k) => {
-      const x = -0.19 + (k % 6) * 0.076;
-      n.position.set(x + Math.sin(t * 3 + k) * 0.06 * (1 + sour), 0.8 + u * 0.6, Math.sin(k) * 0.08);
+      const x = -0.1 + (k % 6) * 0.04;
+      n.position.set(x + Math.sin(t * 3 + k) * 0.06 * (1 + sour), 0.6 + u * 0.6, Math.sin(k) * 0.08);
       n.rotation.z = sour * Math.sin(t * 7 + k) * 0.5 + shriek * jitter(t, k) * 0.6;
       show(n, (k < 2 ? 1 : up) * (1 - u) * (1 - shriek * 0.5));
     });
     cycle(jagged, t, 1.1, (j, u, k) => {
-      j.position.set(-0.19 + k * 0.076 + Math.sin(t * 9 + k) * 0.05, 0.82 + u * 0.7, 0);
+      j.position.set(-0.1 + k * 0.04 + Math.sin(t * 9 + k) * 0.05, 0.62 + u * 0.7, 0);
       j.rotation.z = jitter(t, k) * 0.6;
       show(j, shriek * (1.2 - u) * (1.2 + jitter(t, k + 3) * 0.5));
     });
@@ -396,45 +453,49 @@ const makeSubpoena = () => {
   });
 };
 
-// ---- C42 a box of telemarketers: a cardboard box, headset microphones poking out of its flaps /
-// hands thrust phone handsets out of the flaps, the cords tangling / a forest of ringing phones on
-// springing cords, speech bubbles of LIMITED OFFER
+// ---- C42 a box of telemarketers: an open cardboard box with three headset-wearing heads looking over
+// its rim, murmuring / the heads up, a phone handset pressed to each ear, the cords running down into the
+// box / a forest of handsets ringing on springing cords, speech bubbles of LIMITED OFFER, the heads
+// bouncing. (No hands: the heads and their headsets are the telemarketers)
 const makeTelemarketers = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const tape = lambert(0xa0773c), black = lambert(0x1e1e24), handsetMat = lambert(0xf4f4f0), cordMat = lambert(0x2a2a30);
-  const W = 0.62, H = 0.42;
-  part(all, box(W, H, 0.5), CARD, 0, H / 2, 0);
-  part(all, box(W + 0.01, 0.06, 0.5 + 0.01), tape, 0, H * 0.5, 0);
-  const flaps = [-1, 1].map(d => { const f = sub(all, d * W / 2, H, 0); part(f, box(W / 2 + 0.01, 0.02, 0.5), CARD, -d * W / 4, 0.01, 0); f.rotation.z = d * 0.5; return f; });
-  for (const z of [-1, 1]) part(all, box(W, 0.02, 0.1), CARD, 0, H, z * 0.2);
-  // the headsets: a black arc with a foam tip, poking up from the gap
-  const headsets = [0, 1, 2].map(k => {
-    const h = sub(all, -0.15 + k * 0.15, H - 0.02, (k % 2 ? 0.05 : -0.05));
-    part(h, torus(0.09, 0.012, 14, Math.PI), black, 0, 0, 0);
-    part(h, box(0.01, 0.01, 0.07), black, 0.085, -0.02, 0.03, 0, 0.6, 0);
-    part(h, sphere(0.022, 7, 5), black, 0.075, -0.03, 0.07);
-    return h;
+  const black = lambert(0x1e1e24), handsetMat = lambert(0xf4f4f0), cordMat = lambert(0x2a2a30), hairMats = [lambert(0x4a2e1a), lambert(0x1a1a1e), lambert(0xd8a850)];
+  const W = 0.62, H = 0.4, D = 0.5;
+  const crateBox = openBox(all, W, H, D, CARD);
+  part(crateBox, plane(0.26, 0.09), lettered('SALES', 0xffffff, 0x1e2a5a, 192, 64), 0.0, 0.08, D / 2 + 0.016); // (under the folded-down flap)
+  // a head in a headset: a face, hair, eyes, an open mouth; the band over the top, pads at the ears, the
+  // mic boom to the mouth
+  const heads = [[-0.17, 0.02], [0.02, -0.02], [0.19, 0.08]].map(([x, z], k) => {
+    const h = sub(crateBox, x, H, z);
+    part(h, sphere(0.09, 14, 10), SKIN);
+    part(h, new THREE.SphereGeometry(0.093, 14, 8, 0, Math.PI * 2, 0, Math.PI * 0.45), hairMats[k], 0, 0.004, -0.01);
+    for (const d of [-1, 1]) { part(h, sphere(0.013, 6, 5), glow(0xffffff), d * 0.035, 0.015, 0.08); part(h, sphere(0.007, 6, 5), glow(0x101010), d * 0.035, 0.015, 0.09); }
+    const mouth = part(h, sphere(0.018, 8, 6), glow(0x4a1014), 0, -0.04, 0.082);
+    mouth.scale.set(1.2, 0.6, 0.5);
+    part(h, torus(0.095, 0.012, 14, Math.PI), black, 0, 0.01, 0, 0, 0, 0); // (the band)
+    for (const d of [-1, 1]) part(h, cyl(0.03, 0.03, 0.025, 10), black, d * 0.095, 0.005, 0, 0, 0, FLAT);
+    part(h, cyl(0.005, 0.005, 0.1, 5), black, 0.06, -0.025, 0.06, 0, 0, 0.9).rotation.x = -0.3;
+    part(h, sphere(0.014, 6, 5), black, 0.025, -0.05, 0.1);
+    // the handset at its ear, with a cord down into the box (only when the phones are out)
+    const phone = sub(h, -0.11, 0.0, 0.02);
+    phone.rotation.z = 0.25;
+    part(phone, box(0.035, 0.2, 0.04), handsetMat, 0, 0, 0);
+    for (const y of [-0.095, 0.095]) part(phone, sphere(0.04, 8, 6), handsetMat, 0, y, 0).scale.set(0.9, 1, 1.2);
+    const cord = part(phone, cyl(0.006, 0.006, 0.4, 5), cordMat, 0, -0.3, 0);
+    return { h, mouth, phone, cord, k, x, z };
   });
-  // a phone handset in a hand, on a cord: hands out of the flaps' gap at the top
+  // the murmur: dots that drift up from the mouths
+  const murmur = Array.from({ length: 6 }, (_, k) => { const m = part(all, sphere(0.012, 6, 5), glow(0xd8d8e0)); m.userData.k = k; return m; });
+  // the forest: handsets up on springing cords (coils), and the speech bubbles
   const handset = (parent) => {
     const g = sub(parent);
     part(g, box(0.2, 0.035, 0.04), handsetMat, 0, 0.04, 0);
     for (const x of [-0.09, 0.09]) part(g, sphere(0.04, 8, 6), handsetMat, x, 0.02, 0).scale.set(1, 0.9, 1.2);
     return g;
   };
-  const phones = [0, 1, 2, 3].map(k => {
-    const root = sub(all, -0.2 + k * 0.13, H - 0.05, k % 2 ? 0.08 : -0.08);
-    const a = arm(root, 0.24);
-    a.root.rotation.x = -FLAT;
-    const set = handset(a.prop);
-    set.position.set(0, 0.05, 0);
-    const cord = part(root, torus(0.06, 0.012, 10, Math.PI * 1.5), cordMat, (k % 2 ? 0.1 : -0.1), 0.1, 0, 0, 0, k);
-    return { root, a, set, cord, k };
-  });
-  // the forest: handsets up on springing cords (coils), and the speech bubbles
-  const springs = [0, 1, 2, 3, 4].map(k => {
-    const root = sub(all, -0.22 + k * 0.11, H, (k % 2 ? 0.1 : -0.1));
+  const springs = [[-0.25, -0.14], [-0.08, 0.16], [0.08, -0.16], [0.27, 0.2]].map(([x, z], k) => {
+    const root = sub(crateBox, x, H - 0.02, z);
     const coil = [0, 1, 2, 3, 4, 5].map(j => part(root, torus(0.04, 0.01, 8), cordMat, 0, 0.05 + j * 0.09, 0, FLAT));
     const set = handset(root);
     set.position.y = 0.58;
@@ -448,15 +509,20 @@ const makeTelemarketers = () => {
     b.userData.k = k;
     return b;
   });
-  return stated(group, (t, thrust, forest) => {
-    const up = clamp01(thrust + forest), calm = clamp01(1 - up);
-    headsets.forEach((h, k) => { h.position.y = H - 0.02 + Math.sin(t * 1.6 + k * 2) * 0.03 * calm; h.rotation.z = Math.sin(t * 1.1 + k) * 0.12; show(h, 1 - up * 0.9); });
-    flaps.forEach((f, k) => { f.rotation.z = (k ? 1 : -1) * (0.5 + thrust * 0.4 + forest * 0.9) + jitter(t, k) * 0.05 * up; });
-    phones.forEach((p) => {
-      show(p.root, thrust);
-      p.a.root.rotation.set(-FLAT + Math.sin(t * 4 + p.k * 2) * 0.35, 0, Math.sin(t * 3.3 + p.k) * 0.4);
-      p.set.rotation.set(0, 0, Math.sin(t * 5 + p.k) * 0.4);
-      p.cord.rotation.y = t * 2 + p.k;
+  return stated(group, (t, out, forest) => {
+    const up = clamp01(out + forest), calm = clamp01(1 - up);
+    heads.forEach((hd) => {
+      const k = hd.k, talk = Math.abs(Math.sin(t * (6 + up * 6) + k * 2));
+      hd.h.position.y = H + 0.0 + Math.sin(t * 1.3 + k * 2) * 0.015 + out * 0.12 + forest * (0.08 + Math.abs(Math.sin(t * 8 + k * 1.3)) * 0.1);
+      hd.h.rotation.set(Math.sin(t * 1.1 + k) * 0.08 * calm - forest * 0.15, Math.sin(t * 0.7 + k * 1.5) * 0.5 * (1 - forest * 0.5) + forest * Math.sin(t * 5 + k) * 0.3, out * 0.2 + forest * jitter(t, k) * 0.1);
+      hd.mouth.scale.set(1.2, 0.3 + talk * (0.5 + up * 1.2), 0.5);
+      show(hd.phone, up);
+      hd.phone.rotation.z = 0.25 + Math.sin(t * (3 + forest * 12) + k) * (0.08 + forest * 0.2);
+    });
+    cycle(murmur, t, 0.5, (m, u, k) => {
+      const hd = heads[k % 3];
+      m.position.set(hd.x + Math.sin(t * 2 + k) * 0.03, H + 0.02 + u * 0.25, hd.z + 0.1 + u * 0.1);
+      show(m, calm * (1 - u) * Math.min(1, u * 5) * (1 + (k % 2)) * 0.6);
     });
     springs.forEach((s) => {
       show(s.root, forest);
@@ -467,59 +533,89 @@ const makeTelemarketers = () => {
     });
     bubbles.forEach((b) => {
       const k = b.userData.k, u = ((t * 0.6 + k / 3) % 1);
-      b.position.set(-0.35 + k * 0.32, 0.95 + u * 0.3 + (k % 2) * 0.12, 0.15 - (k % 2) * 0.3);
+      b.position.set(-0.35 + k * 0.32, 1.0 + u * 0.3 + (k % 2) * 0.12, 0.15 - (k % 2) * 0.3);
       b.rotation.y = Math.sin(t * 2 + k) * 0.3;
       show(b, forest * Math.min(1, u * 5) * (1 - u * 0.6));
     });
-    all.position.set(thrust * jitter(t, 1) * 0.012 + forest * jitter(t, 2) * 0.025, forest * Math.abs(Math.sin(t * 9)) * 0.04, 0);
+    all.position.set(out * jitter(t, 1) * 0.012 + forest * jitter(t, 2) * 0.025, forest * Math.abs(Math.sin(t * 9)) * 0.04, 0);
     all.rotation.z = up * Math.sin(t * 11) * 0.03;
   });
 };
 
-// ---- C43 a sack of tax inspectors: a mail sack with a bowler hat on top and a calculator tape trailing
-// out / arms out with clipboards and a magnifying glass, the tape spooling / rubber stamps hammering
-// AUDIT on everything in reach, red tape flying in loops
+// ---- C43 a sack of tax inspectors: a slumped burlap sack, its neck tied with rope, two bowler hats
+// peeking out of the opening, a till roll of receipts trailing out of it and across the ground / the hats
+// higher, arms out of the opening with clipboards, the roll spooling further / rubber stamps hammering
+// AUDIT on the sack, forms flying, the hats bouncing
 const makeTaxmen = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const sackMat = lambert(0x8d8372), rope = lambert(0xd2b98a), black = lambert(0x1a1a1e), tapeMat = sheetMat(0xffffff), red = lambert(0xd81e2a);
+  const sackMat = lambert(0x9a8a6a), patchMat = lambert(0x7a6a4c), rope = lambert(0xd2b98a), black = lambert(0x1a1a1e), tapeMat = sheetMat(0xffffff), red = lambert(0xd81e2a);
   const sack = sub(all);
-  part(sack, new THREE.LatheGeometry([[0.02, 0], [0.3, 0.02], [0.33, 0.25], [0.28, 0.5], [0.16, 0.66], [0.14, 0.72], [0.17, 0.78]].map(([r, y]) => new THREE.Vector2(r, y)), 16), sackMat);
-  part(sack, torus(0.145, 0.02, 12), rope, 0, 0.7, 0, FLAT);
-  part(sack, box(0.02, 0.12, 0.02), rope, 0.15, 0.64, 0.05, 0, 0, 0.4);
-  const hat = sub(sack, 0.03, 0.78, 0);
-  part(hat, cyl(0.14, 0.15, 0.12, 14), black, 0, 0.06, 0);
-  part(hat, torus(0.17, 0.025, 16), black, 0, 0.01, 0, FLAT);
-  part(hat, cyl(0.151, 0.151, 0.025, 14), lambert(0x3a3a48), 0, 0.03, 0);
-  // the tape: a white strip curling out of the neck and down the side
-  const tape = sub(sack, -0.1, 0.7, 0.1);
-  const tapeBits = Array.from({ length: 10 }, () => part(tape, plane(0.08, 0.09), tapeMat));
-  // arms: clipboards and a magnifying glass
+  // its outline, bottom to top: wide and slumped, a tied neck, the gathered top flaring open
+  const PROFILE = [[0.02, 0], [0.34, 0], [0.37, 0.12], [0.35, 0.3], [0.3, 0.48], [0.2, 0.6], [0.13, 0.68], [0.12, 0.72], [0.17, 0.8], [0.19, 0.84]];
+  const radiusAt = (y) => { for (let i = 1; i < PROFILE.length; i++) if (y <= PROFILE[i][1]) { const [r0, y0] = PROFILE[i - 1], [r1, y1] = PROFILE[i]; return mix(r0, r1, (y - y0) / (y1 - y0)); } return PROFILE[PROFILE.length - 1][0]; };
+  part(sack, new THREE.LatheGeometry(PROFILE.map(([r, y]) => new THREE.Vector2(r, y)), 18), sackMat);
+  part(sack, new THREE.CircleGeometry(0.17, 18), SHADE, 0, 0.825, 0, -FLAT); // (the dark inside the opening)
+  for (const [a, y, r] of [[0.6, 0.22, 0.13], [2.6, 0.38, 0.11], [4.4, 0.16, 0.12]]) part(sack, sphere(r, 10, 8), sackMat, Math.sin(a) * (radiusAt(y) - r * 0.4), y, Math.cos(a) * (radiusAt(y) - r * 0.4)); // (elbows and knees inside)
+  part(sack, torus(0.125, 0.022, 12), rope, 0, 0.7, 0, FLAT);
+  part(sack, torus(0.125, 0.018, 12), rope, 0, 0.735, 0, FLAT);
+  part(sack, box(0.02, 0.12, 0.02), rope, 0.14, 0.64, 0.05, 0, 0, 0.4); // (the rope's loose end)
+  const patch = part(sack, box(0.14, 0.12, 0.02), patchMat, -0.1, 0.3, radiusAt(0.3) - 0.004, 0, -0.3, 0.15);
+  for (const d of [-1, 1]) for (let k = 0; k < 3; k++) part(patch, box(0.012, 0.025, 0.004), black, d * 0.07, -0.04 + k * 0.04, 0.009, 0, 0, 0.6);
+  // the bowler hats, on the tops of heads, in the opening
+  const bowler = (x, z, tilt) => {
+    const b = sub(sack, x, 0.84, z);
+    part(b, sphere(0.055, 10, 8), SKIN, 0, -0.02, 0);
+    const hat = sub(b, 0, 0.015, 0);
+    hat.rotation.z = tilt;
+    part(hat, cyl(0.062, 0.062, 0.012, 14), black, 0, 0, 0);
+    part(hat, new THREE.SphereGeometry(0.052, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.5), black, 0, 0.0, 0).scale.y = 1.3;
+    part(hat, torus(0.095, 0.01, 16), black, 0, 0.002, 0, FLAT);
+    return b;
+  };
+  const hats = [bowler(-0.07, 0.02, 0.15), bowler(0.07, -0.04, -0.2)];
+  // the till roll: a continuous strip of receipts out of the opening, down the front and along the ground
+  const path = new THREE.CatmullRomCurve3([new THREE.Vector3(0.0, 0.84, 0.1), new THREE.Vector3(0.05, 0.82, 0.2), new THREE.Vector3(0.1, 0.6, 0.32), new THREE.Vector3(0.14, 0.3, 0.37), new THREE.Vector3(0.18, 0.04, 0.42), new THREE.Vector3(0.28, 0.006, 0.6), new THREE.Vector3(0.36, 0.006, 0.85), new THREE.Vector3(0.3, 0.006, 1.1), new THREE.Vector3(0.1, 0.006, 1.3)]);
+  const N = 22, segLen = 1 / N;
+  const strip = Array.from({ length: N }, () => {
+    const seg = sub(all);
+    part(seg, plane(0.08, 0.1), tapeMat, 0, 0, 0, -FLAT); // (lies along local z, faces local y)
+    for (let n = 0; n < 3; n++) part(seg, box(0.05, 0.001, 0.006), onFace(glow(0x7a7a88)), -0.005, 0.0015, -0.03 + n * 0.03);
+    return seg;
+  });
+  const basis = new THREE.Matrix4(), T = new THREE.Vector3(), Nv = new THREE.Vector3(), B = new THREE.Vector3(), P = new THREE.Vector3();
+  const layStrip = (shown) => strip.forEach((seg, k) => {
+    const u = Math.min(0.999, (k + 0.5) * segLen);
+    if (u > shown) { show(seg, 0.001); return; }
+    path.getPointAt(u, P);
+    path.getTangentAt(u, T);
+    Nv.set(P.x, 0, P.z).normalize().lerp(new THREE.Vector3(0, 1, 0), P.y < 0.08 ? 1 : 0.15).normalize();
+    B.crossVectors(Nv, T).normalize();
+    Nv.crossVectors(T, B).normalize();
+    basis.makeBasis(B, Nv, T);
+    seg.quaternion.setFromRotationMatrix(basis);
+    seg.position.copy(P);
+    seg.scale.set(1, 1, 1);
+  });
+  // arms out of the opening with clipboards
   const clipboard = (parent) => {
     const g = sub(parent, 0, -0.1, 0.04);
     part(g, box(0.16, 0.22, 0.012), lambert(0x6b4a2a));
     part(g, box(0.14, 0.18, 0.004), glow(0xfbf7ea), 0, -0.01, 0.008);
     part(g, box(0.06, 0.03, 0.02), lambert(0x9a9aa6), 0, 0.1, 0.008);
-    for (let k = 0; k < 4; k++) part(g, box(0.1, 0.008, 0.001), glow(0x8a8a9a), 0, 0.05 - k * 0.035, 0.011);
+    for (let k = 0; k < 4; k++) part(g, box(0.1, 0.008, 0.001), onFace(glow(0x8a8a9a)), 0, 0.05 - k * 0.035, 0.0105);
     return g;
   };
-  const arms = [[-1, 0.45, 0], [1, 0.42, 0], [0, 0.5, 1]].map(([d, y, z], k) => {
-    const root = sub(sack, d * 0.26, y, z ? 0.26 : 0);
-    root.rotation.y = z ? 0 : d * FLAT;
+  const arms = [-1, 1].map((d, k) => {
+    const root = sub(sack, d * 0.1, 0.8, -0.02);
     const a = arm(root, 0.26);
-    if (k < 2) clipboard(a.prop);
-    else { // (the magnifying glass)
-      const g = sub(a.prop, 0, 0.02, 0.06);
-      part(g, torus(0.07, 0.014, 14), black, 0, 0.08, 0);
-      part(g, new THREE.CircleGeometry(0.065, 14), haze(0xbfe6ff, 0.45), 0, 0.08, 0);
-      part(g, box(0.02, 0.1, 0.02), black, 0, 0, 0);
-    }
-    return { root, a, k };
+    clipboard(a.prop);
+    return { root, a, k, d };
   });
-  // the stamps: two arms hammering down, and the AUDIT marks they leave
-  const auditMat = lettered('AUDIT', 0xffffff, 0xd81e2a, 192, 72);
+  // the stamps: two arms hammering down on the sack, and the AUDIT marks they leave
+  const auditMat = onFace(lettered('AUDIT', 0xffffff, 0xd81e2a, 192, 72));
   const stamps = [-1, 1].map((d, k) => {
-    const root = sub(sack, d * 0.1, 0.72, 0);
+    const root = sub(sack, d * 0.04, 0.82, 0.04);
     const a = arm(root, 0.22);
     const block = sub(a.prop, 0, 0.02, 0.03);
     part(block, cyl(0.035, 0.03, 0.09, 8), lambert(0x6b4a2a), 0, 0.03, 0);
@@ -527,110 +623,36 @@ const makeTaxmen = () => {
     return { root, a, k, d };
   });
   const marks = Array.from({ length: 7 }, (_, k) => {
-    const a = k * 0.9 + 0.3, y = 0.12 + (k % 4) * 0.13, r = 0.33 - Math.abs(y - 0.25) * 0.3 + 0.012;
+    const a = k * 0.9 + 0.3, y = 0.12 + (k % 4) * 0.12, r = radiusAt(y) + 0.006;
     const m = part(sack, plane(0.16, 0.06), auditMat, Math.sin(a) * r, y, Math.cos(a) * r, 0, a, (k % 2 ? 0.3 : -0.3));
     m.userData.k = k;
     return m;
   });
-  const loops = Array.from({ length: 6 }, (_, k) => { const l = part(all, torus(0.1 + (k % 3) * 0.04, 0.01, 16), red); l.userData.k = k; return l; });
+  const forms = sheets(all, 10);
   return stated(group, (t, spool, audit) => {
     const up = clamp01(spool + audit);
-    sack.rotation.z = Math.sin(t * 1.3) * 0.03 + spool * jitter(t, 1) * 0.04 + audit * jitter(t, 2) * 0.08;
+    sack.rotation.z = Math.sin(t * 1.3) * 0.02 + spool * jitter(t, 1) * 0.04 + audit * jitter(t, 2) * 0.07;
     sack.position.y = audit * Math.abs(Math.sin(t * 8)) * 0.04;
-    hat.rotation.set(Math.sin(t * 1.1) * 0.05 + audit * Math.sin(t * 9) * 0.2, 0, 0.1 + up * Math.sin(t * 7) * 0.25);
-    hat.position.y = 0.78 + up * Math.abs(Math.sin(t * 6)) * 0.06;
-    // the tape: it spools down and along as it goes
-    tapeBits.forEach((bit, k) => {
-      const len = 0.3 + spool * 0.7 + audit * 0.8, u = k / 10, along = u * len, bend = Math.min(1, along / 0.5);
-      bit.position.set(-along * 0.2, -along * (0.9 - bend * 0.5) + Math.sin(t * 3 + k) * 0.01 * up, along * 0.35 + spool * Math.sin(t * 2 + k) * 0.03);
-      bit.rotation.set(-0.5 - bend * 0.9, 0.2, 0);
-      show(bit, u < len ? 1 : 0.001);
+    hats.forEach((h, k) => {
+      h.position.y = 0.84 + Math.sin(t * 1.2 + k * 2) * 0.01 + spool * 0.06 + audit * (0.04 + Math.abs(Math.sin(t * 7 + k)) * 0.08);
+      h.rotation.set(Math.sin(t * 1.1 + k) * 0.05 + audit * Math.sin(t * 9 + k) * 0.15, Math.sin(t * 0.6 + k * 2) * 0.4, (k ? -1 : 1) * up * Math.sin(t * 6 + k) * 0.15);
     });
+    layStrip(0.35 + spool * 0.4 + audit * 0.65);
     arms.forEach((p) => {
       show(p.root, up);
-      p.a.root.rotation.set(-0.4 + Math.sin(t * (2 + audit * 4) + p.k * 2) * (0.25 + audit * 0.4), Math.sin(t * 1.7 + p.k) * 0.3, 0);
+      p.a.root.rotation.set(-FLAT + 0.5 + Math.sin(t * (2 + audit * 4) + p.k * 2) * (0.2 + audit * 0.35), 0, p.d * (0.5 + Math.sin(t * 1.7 + p.k) * 0.2));
     });
     stamps.forEach((st) => {
       show(st.root, audit);
       const hit = Math.pow(Math.abs(Math.sin(t * 6 + st.k * 1.57)), 3);
-      st.a.root.rotation.set(-FLAT + 0.7 + hit * 1.6, 0, st.d * (0.4 + Math.sin(t * 2.5 + st.k) * 0.3));
+      st.a.root.rotation.set(-FLAT + 0.9 + hit * 1.5, 0, st.d * (0.9 + Math.sin(t * 2.5 + st.k) * 0.3));
     });
     marks.forEach((m) => { const k = m.userData.k; show(m, audit * (((t * 0.8 + k / 7) % 1) < 0.85 ? 1 : 0.001)); });
-    cycle(loops, t, 0.4, (l, u, k) => {
-      const a = k * 1.7 + t * 1.2;
-      l.position.set(Math.sin(a) * (0.3 + u * 0.3), 0.3 + u * 0.8, Math.cos(a) * (0.3 + u * 0.3));
-      l.rotation.set(t * 2 + k, t * 1.5, 0);
-      show(l, audit * (1.1 - u));
-    });
+    cycle(forms, t, 0.6, (s, u, k) => flutter(s, u, k, t, 0.5, 0.9, audit));
   });
 };
 
-// ---- C44 a crate of bailiffs: a crate with a clipboard chained to it and one SEIZED sticker / hands
-// out slapping SEIZED stickers on the crate itself / stickers on everything, the lid up, and a hand
-// dragging the customer's garden gnome into the crate
-const makeBailiffs = () => {
-  const group = new THREE.Group();
-  const all = sub(group);
-  const W = 0.64, H = 0.56;
-  const body = crate(all, W, H, W, lambert(0xb5925c));
-  const lid = sub(all, 0, H, -W / 2);
-  part(lid, box(W + 0.05, 0.05, W + 0.05), PLANK, 0, 0.025, W / 2);
-  const seizedMat = lettered('SEIZED', 0xd81e2a, 0xffe24a, 192, 64);
-  const sticker = (parent, x, y, z, ry, rz = 0) => part(parent, plane(0.2, 0.07), seizedMat, x, y, z, 0, ry, rz);
-  sticker(body, 0.08, 0.36, W / 2 + 0.012, 0, -0.15);
-  // the clipboard on its chain, hanging off the front
-  const chain = Array.from({ length: 5 }, (_, k) => part(body, torus(0.018, 0.006, 8), lambert(0x8a8a96), -0.22, H - 0.03 - k * 0.03, W / 2 + 0.02, k % 2 ? FLAT : 0, 0, 0));
-  const clip = sub(body, -0.22, H - 0.18, W / 2 + 0.025);
-  part(clip, box(0.12, 0.17, 0.01), lambert(0x6b4a2a));
-  part(clip, box(0.1, 0.14, 0.004), glow(0xfbf7ea), 0, -0.01, 0.007);
-  part(clip, box(0.05, 0.025, 0.015), lambert(0x9a9aa6), 0, 0.075, 0.006);
-  // the stickers that appear: round the crate, then on the lid too, everywhere
-  const more = [[0.2, 0.15, 0], [-0.1, 0.2, 1], [0.15, 0.4, 2], [-0.15, 0.12, 3], [0.05, 0.45, 1], [-0.2, 0.3, 2], [0.2, 0.28, 3], [-0.05, 0.08, 0]].map(([x, y, side], k) => {
-    const g = sub(body);
-    g.rotation.y = side * FLAT;
-    const st = sticker(g, x, y, W / 2 + 0.012 + (k % 3) * 0.002, 0, (k % 2 ? 0.25 : -0.2));
-    st.userData.k = k;
-    return st;
-  });
-  const lidStickers = [0, 1, 2].map(k => { const st = sticker(lid, -0.15 + k * 0.17, 0.052, W / 2 + (k % 2) * 0.12, 0, 0); st.rotation.x = -FLAT; st.rotation.z = k * 0.5; return st; });
-  // the slapping hands, out of the sides
-  const hands = [[1, 0.3], [-1, 0.38]].map(([d, y], k) => {
-    const root = sub(all, d * (W / 2 - 0.02), y, 0.1);
-    root.rotation.y = d * FLAT;
-    hole(root, 0.075).position.z = 0.03;
-    const a = arm(root, 0.22);
-    return { root, a, k, d };
-  });
-  // the gnome, dragged in by a hand over the lid
-  const dragger = sub(all, 0.1, H - 0.02, 0.1);
-  const drag = arm(dragger, 0.3);
-  drag.root.rotation.x = -FLAT;
-  const gnome = sub(drag.prop, 0, 0.04, 0.05);
-  part(gnome, cone(0.07, 0.2, 10), lambert(0xd81e2a), 0, 0.3, 0);
-  part(gnome, sphere(0.06, 10, 8), SKIN, 0, 0.17, 0);
-  part(gnome, sphere(0.065, 10, 8), lambert(0xfafafa), 0, 0.1, 0.02).scale.set(1, 1.3, 0.8);
-  part(gnome, cyl(0.07, 0.09, 0.2, 10), lambert(0x2a5ab8), 0, 0.0, 0);
-  part(gnome, sphere(0.02, 7, 5), lambert(0xff8a8a), 0, 0.17, 0.06);
-  return stated(group, (t, slap, seized) => {
-    const up = clamp01(slap + seized);
-    clip.rotation.z = Math.sin(t * 1.4) * 0.05 + up * Math.sin(t * 6) * 0.2;
-    chain.forEach((c, k) => { c.rotation.z = up * Math.sin(t * 6 + k) * 0.2; });
-    more.forEach((st) => { const k = st.userData.k; show(st, k < 4 ? slap * (((t * 0.5 + k / 4) % 1) < 0.9 ? 1 : 0) + seized : seized); });
-    lidStickers.forEach((st) => show(st, seized));
-    hands.forEach((h) => {
-      show(h.root, slap + seized * 0.9);
-      const hit = Math.pow(Math.abs(Math.sin(t * 5 + h.k * 1.3)), 2);
-      h.a.root.rotation.set(0.2 - hit * 0.5, 0, (h.d > 0 ? 1 : -1) * (-0.6 + hit * 1.3));
-      h.a.hand.rotation.x = -0.6 - hit * 0.5;
-    });
-    lid.rotation.x = -seized * (0.7 + Math.sin(t * 5) * 0.06);
-    show(dragger, seized);
-    drag.root.rotation.set(-FLAT + 0.5 + Math.sin(t * 4) * 0.25, 0, 0.3 + Math.sin(t * 3) * 0.2);
-    gnome.rotation.set(0.4 + Math.sin(t * 5) * 0.3, Math.sin(t * 2) * 0.5, 0.3 + Math.sin(t * 4) * 0.2); // (the gnome struggling)
-    all.position.set(slap * jitter(t, 1) * 0.012 + seized * jitter(t, 2) * 0.02, seized * Math.abs(Math.sin(t * 8)) * 0.03, 0);
-    all.rotation.z = up * Math.sin(t * 10) * 0.025;
-  });
-};
+
 
 // ---- C47 parking wardens in a van-shaped box: a small cardboard box cut like a van, a peaked cap
 // resting on it / a hand out of each side writing tickets / tickets fired like confetti, a wheel clamp
@@ -701,67 +723,75 @@ const makeWardens = () => {
   });
 };
 
-// ---- C51 a crate of consultants: a crate labelled SYNERGY, a laser pointer's dot wandering over it /
-// hands push out a flip-chart and sticky notes / sticky notes plastered over the crate, a pie chart
-// spinning above it, an invoice unrolling out of the side
+// ---- C51 a crate of consultants: a crate labelled SYNERGY with a flip-chart easel standing on it, a
+// laser dot wandering over the chart / the chart's pages flipping over by themselves, sticky notes
+// breaking out over the crate, the dot frantic / a pie chart spinning in the air above it, sticky notes
+// plastered over everything, pages flying off the chart, an invoice unrolling out of the side
 const makeConsultants = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const W = 0.6, H = 0.6;
-  const body = crate(all, W, H, W, lambert(0xc6a16a));
-  part(body, plane(0.42, 0.13), lettered('SYNERGY', 0xffffff, 0x1f5fd0, 256, 80), 0, 0.36, W / 2 + 0.012);
-  const dot = part(body, new THREE.CircleGeometry(0.018, 8), glow(0xff2020), 0, 0.3, W / 2 + 0.014);
+  const W = 0.6, H = 0.4, D = 0.5;
+  const body = crate(all, W, H, D, lambert(0xc6a16a));
+  part(body, plane(0.42, 0.13), lettered('SYNERGY', 0xffffff, 0x1f5fd0, 256, 80), 0, 0.22, D / 2 + 0.016);
   const noteColours = [0xfff176, 0xff9ad5, 0x9df0a0, 0x8fd8ff];
-  const note = (parent, x, y, z, ry, k) => part(parent, plane(0.09, 0.09), lambert(noteColours[k % 4], { side: THREE.DoubleSide }), x, y, z, 0, ry, (k % 3 - 1) * 0.2);
-  // the flip-chart: a sheet on a pole, pushed up out of the lid by a hand
-  const chartRoot = sub(all, -0.12, H - 0.02, 0);
-  const chartArm = arm(chartRoot, 0.22);
-  chartArm.root.rotation.x = -FLAT;
-  const chart = sub(chartArm.prop, 0, 0.05, 0);
-  part(chart, cyl(0.012, 0.012, 0.5, 6), lambert(0x8a8a96), 0, 0.2, 0);
-  const sheet = part(chart, plane(0.32, 0.26), sheetMat(0xffffff), 0, 0.32, 0.02);
-  for (let k = 0; k < 3; k++) part(sheet, box(0.2 - k * 0.04, 0.012, 0.001), glow(0x1f5fd0), -0.03 - k * 0.02, 0.06 - k * 0.06, 0.002);
-  part(sheet, box(0.16, 0.012, 0.001), glow(0xd81e2a), 0.02, 0, 0.002, 0, 0, 0.55); // (the line that goes up)
-  // notes pushed out by a hand at the side, and the plastering
-  const noteRoot = sub(all, W / 2 - 0.02, 0.4, 0.1);
-  noteRoot.rotation.y = FLAT;
-  hole(noteRoot, 0.075).position.z = 0.03;
-  const noteArm = arm(noteRoot, 0.2);
-  const held = [0, 1, 2].map(k => note(noteArm.prop, 0, 0.02 + k * 0.012, 0.04 + k * 0.004, 0, k));
-  const plastered = Array.from({ length: 22 }, (_, k) => {
+  const note = (parent, x, y, z, ry, k) => part(parent, plane(0.09, 0.09), onFace(lambert(noteColours[k % 4], { side: THREE.DoubleSide })), x, y, z, 0, ry, (k % 3 - 1) * 0.2);
+  // the easel on the crate: two front legs and a back leg, a board leaning back, a pad of sheets on it
+  const easel = sub(all, 0, H, 0);
+  const alu = lambert(0x9a9aa6);
+  for (const d of [-1, 1]) part(easel, cyl(0.012, 0.012, 0.66, 6), alu, d * 0.14, 0.32, 0.02, 0, 0, d * 0.12);
+  part(easel, cyl(0.012, 0.012, 0.62, 6), alu, 0, 0.3, -0.14, -0.4, 0, 0);
+  part(easel, cyl(0.01, 0.01, 0.3, 6), alu, 0, 0.3, 0.02, 0, 0, FLAT); // (the cross bar)
+  const board = sub(easel, 0, 0.42, 0.04);
+  board.rotation.x = -0.12;
+  part(board, box(0.42, 0.34, 0.016), lambert(0xf0f0f0), 0, 0, 0);
+  part(board, box(0.44, 0.03, 0.03), lambert(0x2a2a30), 0, 0.175, 0.004); // (the clamp along the top)
+  const pad = part(board, box(0.38, 0.28, 0.012), lambert(0xffffff), 0, -0.02, 0.014);
+  const chartLine = onFace(glow(0x1f5fd0));
+  const inkOn = (parent, z) => { // (a hockey-stick graph: axes, and a line that goes up and up)
+    part(parent, box(0.004, 0.2, 0.001), onFace(glow(0x2a2a30)), -0.13, 0.0, z);
+    part(parent, box(0.28, 0.004, 0.001), onFace(glow(0x2a2a30)), 0.01, -0.1, z);
+    part(parent, box(0.12, 0.008, 0.001), chartLine, -0.07, -0.08, z, 0, 0, 0.15);
+    part(parent, box(0.16, 0.008, 0.001), onFace(glow(0xd81e2a)), 0.05, 0.0, z, 0, 0, 0.9);
+  };
+  inkOn(pad, 0.0065);
+  const dot = part(board, new THREE.CircleGeometry(0.014, 8), onFace(glow(0xff2020)), 0, 0, 0.022);
+  // the sheet that flips over the top of the board, again and again
+  const flip = sub(board, 0, 0.155, 0.028);
+  const flipSheet = part(flip, plane(0.38, 0.28), sheetMat(0xffffff), 0, -0.145, 0);
+  inkOn(flipSheet, 0.001);
+  // the sticky notes: over the crate, then the board and the easel too
+  const plastered = Array.from({ length: 20 }, (_, k) => {
     const g = sub(body);
     g.rotation.y = (k % 4) * FLAT;
-    const n = note(g, -0.2 + ((k * 0.37) % 1) * 0.4, 0.08 + ((k * 0.61) % 1) * 0.45, W / 2 + 0.014 + (k % 3) * 0.002, 0, k);
+    const n = note(g, -0.2 + ((k * 0.37) % 1) * 0.4, 0.06 + ((k * 0.61) % 1) * 0.3, (k % 2 ? W : D) / 2 + 0.016, 0, k);
     n.userData.k = k;
     return n;
   });
-  const lidNotes = [0, 1, 2, 3].map(k => { const n = note(all, -0.18 + k * 0.12, H + 0.014, (k % 2 ? 0.1 : -0.1), 0, k); n.rotation.x = -FLAT; return n; });
-  // the pie chart, held up above, and the invoice out of the other side
-  const pie = sub(all, 0.1, H + 0.5, 0);
+  const boardNotes = Array.from({ length: 6 }, (_, k) => note(board, -0.15 + ((k * 0.43) % 1) * 0.3, -0.12 + ((k * 0.71) % 1) * 0.24, 0.024, 0, k + 1));
+  const lidNotes = [0, 1, 2].map(k => { const n = note(all, -0.2 + k * 0.2, H + 0.014, 0.18 - (k % 2) * 0.36, 0, k + 2); n.rotation.x = -FLAT; return n; });
+  // the pie chart in the air, and the invoice out of the side
+  const pie = sub(all, 0, H + 0.95, 0);
   const wedges = [[0, 2.4, 0x1f5fd0], [2.4, 1.6, 0xff8a2a], [4.0, 1.4, 0x9df0a0], [5.4, 0.88, 0xd81e2a]];
-  for (const [from, len, colour] of wedges) part(pie, new THREE.CylinderGeometry(0.2, 0.2, 0.04, 16, 1, false, from, len), lambert(colour), 0, 0, 0);
-  const pieArm = arm(sub(all, 0.1, H - 0.02, 0), 0.24);
-  pieArm.root.rotation.x = -FLAT;
-  const invoice = sub(all, -W / 2 - 0.01, 0, 0);
-  const invoiceBits = Array.from({ length: 8 }, (_, k) => { const b = part(invoice, plane(0.14, 0.12), sheetMat(0xffffff)); if (k % 2) part(b, box(0.09, 0.008, 0.001), glow(0x5a5a66), 0, 0, 0.001); return b; });
+  for (const [from, len, colour] of wedges) part(pie, new THREE.CylinderGeometry(0.2, 0.2, 0.05, 16, 1, false, from, len), lambert(colour), 0, 0, 0);
+  const invoice = sub(all, -W / 2 - 0.012, 0, 0);
+  const invoiceBits = Array.from({ length: 8 }, (_, k) => { const b = part(invoice, plane(0.14, 0.12), sheetMat(0xffffff)); if (k % 2) part(b, box(0.09, 0.008, 0.001), onFace(glow(0x5a5a66)), 0, 0, 0.001); return b; });
   const total = part(invoice, plane(0.14, 0.06), lettered('$$$$', 0xd81e2a, 0xffffff, 128, 56));
-  return stated(group, (t, push, over) => {
-    const up = clamp01(push + over);
-    dot.position.set(Math.sin(t * 1.7) * 0.2 + Math.sin(t * 5.3) * 0.04, 0.3 + Math.sin(t * 2.3) * 0.15, W / 2 + 0.014);
-    show(dot, 1 + over);
-    show(chartRoot, up);
-    chartArm.root.rotation.set(-FLAT + Math.sin(t * 2.5) * 0.15 * (1 + over), 0, Math.sin(t * 1.8) * 0.2 * (1 + over));
-    sheet.rotation.x = Math.sin(t * 3) * 0.08;
-    show(noteRoot, up);
-    noteArm.root.rotation.set(-0.3 + Math.sin(t * (2 + over * 4)) * (0.3 + over * 0.4), 0, Math.sin(t * 1.6) * 0.2);
-    held.forEach((n, k) => { n.position.y = 0.02 + k * 0.012 + Math.abs(Math.sin(t * 7 + k)) * 0.03 * up; });
-    plastered.forEach((n) => { const k = n.userData.k; show(n, k < 6 ? push * (((t * 0.6 + k / 6) % 1) < 0.9 ? 1 : 0) + over : over); });
+  const loose = sheets(all, 8);
+  return stated(group, (t, flipping, over) => {
+    const up = clamp01(flipping + over);
+    dot.position.set(Math.sin(t * (1.7 + up * 6)) * 0.15 + Math.sin(t * 5.3) * 0.03, -0.02 + Math.sin(t * (2.3 + up * 5)) * 0.1, 0.022);
+    dot.scale.setScalar(1 + over * 0.6);
+    // the page: it lifts, flips right over the top and comes back
+    const cycleAt = (t * (0.5 + over * 0.6)) % 1;
+    const lift = up * (cycleAt < 0.5 ? Math.sin(cycleAt * Math.PI * 2) : 0) * 0.5 + over * (cycleAt >= 0.5 ? Math.min(1, (cycleAt - 0.5) * 4) : 0);
+    flip.rotation.x = -lift * (0.3 + over * 2.6);
+    plastered.forEach((n) => { const k = n.userData.k; show(n, k < 8 ? flipping * (((t * 0.6 + k / 8) % 1) < 0.9 ? 1 : 0) + over : over); });
+    boardNotes.forEach((n, k) => show(n, over * (((t * 0.4 + k / 6) % 1) < 0.92 ? 1 : 0)));
     lidNotes.forEach((n) => show(n, over));
     show(pie, over);
-    show(pieArm.root, over);
-    pieArm.root.rotation.set(-FLAT + Math.sin(t * 2) * 0.2, 0, Math.sin(t * 1.5) * 0.2);
-    pie.position.set(0.1 + Math.sin(t * 1.5) * 0.06, H + 0.42 + Math.sin(t * 2) * 0.05, 0);
+    pie.position.set(Math.sin(t * 1.5) * 0.06, H + 0.9 + Math.sin(t * 2) * 0.05, 0.05);
     pie.rotation.set(0.5 + Math.sin(t * 1.5) * 0.2, t * 3, 0);
+    easel.rotation.z = over * Math.sin(t * 7) * 0.03;
     // the invoice: down the side and along the ground, growing
     const len = over * (0.5 + Math.min(1, (t % 5) / 3.5) * 0.5);
     invoiceBits.forEach((b, k) => {
@@ -773,277 +803,191 @@ const makeConsultants = () => {
     total.position.set(-(len - 0.24) - 0.12, 0.005, 0);
     total.rotation.set(-FLAT, 0, 0);
     show(total, over * (len > 0.9 ? 1 : 0.001));
-    all.position.set(push * jitter(t, 1) * 0.01 + over * jitter(t, 2) * 0.02, over * Math.abs(Math.sin(t * 8)) * 0.03, 0);
+    cycle(loose, t, 0.5, (s, u, k) => flutter(s, u, k, t, 0.5, 0.9 + H, over * 0.8));
+    all.position.set(flipping * jitter(t, 1) * 0.01 + over * jitter(t, 2) * 0.02, over * Math.abs(Math.sin(t * 8)) * 0.03, 0);
     all.rotation.z = up * Math.sin(t * 10) * 0.025;
   });
 };
 
-// ---- C45 the in-laws' luggage: a neat stack of floral suitcases / the cases bulge; knitting needles,
-// slippers and a framed photo poke out between them / burst open: a rocking chair unfolds on top, and a
-// finger wags from behind a newspaper
+// ---- C45 the in-laws' luggage: a tartan trunk, two strapped suitcases with stickers and handles, a hat
+// box on top, all stacked neat / the cases bulge and their lids lift a crack: a slipper, knitting needles,
+// a rolled newspaper, a framed photo poking out of the gaps / burst open: the stack heaves apart, the gaps
+// full of their things, the hat box's lid blown off and a flowered hat rising out of it. Each case stands
+// on the lid of the one below, so the stack moves as one and nothing passes through anything
 const makeInlaws = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const floral = [lambert(0xf2c6d0), lambert(0xf7e3b5), lambert(0xd9e8c8)], flower = [glow(0xd84a7a), glow(0x6a9ad0), glow(0xe0a030)], trim = lambert(0x6b4a2a), brass = lambert(0xd4a94a);
-  const sizes = [[0.7, 0.22, 0.46], [0.6, 0.2, 0.4], [0.5, 0.17, 0.34]];
-  let y = 0;
-  const cases = sizes.map(([w, h, d], k) => {
-    const c = sub(all, 0, y, 0);
-    const body = sub(c);
-    part(body, box(w, h, d), floral[k], 0, h / 2, 0);
-    part(body, box(w + 0.01, h * 0.3, d + 0.01), trim, 0, h / 2, 0); // (the strap round its middle)
-    part(body, box(w + 0.012, 0.03, d + 0.012), trim, 0, h - 0.02, 0);
-    if (k === 2) part(body, torus(0.05, 0.012, 10, Math.PI), trim, 0, h, 0).scale.set(1.8, 1, 1); // (the top one's handle)
-    for (const x of [-0.15, 0.15]) part(body, box(0.05, 0.04, 0.012), brass, x, h * 0.55, d / 2 + 0.006);
-    for (let n = 0; n < 7; n++) part(body, new THREE.CircleGeometry(0.018, 6), flower[(n + k) % 3], -w * 0.4 + ((n * 0.37 + k * 0.2) % 1) * w * 0.8, 0.03 + ((n * 0.61) % 1) * (h - 0.06), d / 2 + 0.002);
-    const lid = sub(c, 0, h, -d / 2);
-    part(lid, box(w + 0.014, 0.012, d + 0.014), floral[k], 0, 0.006, d / 2);
-    y += h;
-    return { c, body, lid, w, h, d, k };
-  });
-  // what pokes out: needles, slippers, the photo
-  const needles = [0, 1].map(k => part(all, cyl(0.006, 0.006, 0.4, 6), lambert(0xb8b8c8), 0.2, 0.22, 0.1, 0.3 + k * 0.2, 0, FLAT - 0.3 + k * 0.3));
-  const slipper = sub(all, -0.28, 0.42, 0.05);
-  part(slipper, sphere(0.06, 8, 6), lambert(0xe28ab0)).scale.set(1, 0.6, 1.8);
-  part(slipper, torus(0.04, 0.015, 10), lambert(0xffffff), 0, 0.02, 0.03, FLAT);
-  const photo = sub(all, 0.22, 0.6, 0.1);
-  part(photo, box(0.16, 0.2, 0.012), brass);
-  part(photo, box(0.13, 0.16, 0.004), lambert(0xe8e0d0), 0, 0, 0.007);
-  part(photo, sphere(0.03, 8, 6), lambert(0xd8d0c8), -0.025, 0.03, 0.01);
-  part(photo, sphere(0.03, 8, 6), lambert(0xd8d0c8), 0.03, 0.03, 0.01);
-  // the rocking chair, on the top case
-  const chair = sub(all, 0, 0.59, 0);
-  const wood = lambert(0x7a4a22);
-  const seat = part(chair, box(0.3, 0.025, 0.28), wood, 0, 0.18, 0);
-  for (const x of [-0.13, 0.13]) for (const z of [-0.12, 0.12]) part(chair, cyl(0.012, 0.012, 0.16, 6), wood, x, 0.1, z);
-  for (const z of [-1, 1]) part(chair, torus(0.26, 0.012, 14, 1.2), wood, 0, 0.26, z * 0.14, 0, 0, FLAT + 0.6 + 1.0);
-  const back = sub(chair, 0, 0.19, -0.13);
-  for (let k = 0; k < 5; k++) part(back, cyl(0.01, 0.01, 0.32, 6), wood, -0.12 + k * 0.06, 0.16, 0);
-  part(back, box(0.3, 0.03, 0.025), wood, 0, 0.32, 0);
-  // the newspaper, with a finger wagging beside it
-  const paper = sub(all, -0.12, 0.45, 0.28);
-  part(paper, box(0.28, 0.26, 0.01), lambert(0xd8d4c8));
-  for (let k = 0; k < 5; k++) part(paper, box(0.2, 0.012, 0.002), glow(0x55555f), 0, 0.08 - k * 0.04, 0.006);
-  part(paper, box(0.22, 0.03, 0.002), glow(0x222228), 0, 0.1, 0.006);
-  const wag = arm(sub(all, 0.1, 0.42, 0.26), 0.18);
-  wag.root.rotation.x = -FLAT;
-  const finger = part(wag.hand, cyl(0.016, 0.018, 0.1, 6), SKIN, 0, 0, 0.08, FLAT);
+  const brass = lambert(0xd4a94a), leather = lambert(0x8a5a2e), strapMat = lambert(0x3a2a20), tartan = lambert(0x1f4a2a), redLine = lambert(0xb8242a), yellowLine = lambert(0xe8c84a);
+  const stickers = [0xff5fa0, 0x5fd0ff, 0xfff176, 0x9df0a0, 0xff8a2a].map(c => onFace(lambert(c)));
+  // a case: its body (which bulges) and its lid (which lifts, carrying whatever is stacked on it); what is
+  // in it shows in the gap between the two. Returns { g, body, lid, gap } with lid at y = h + gap
+  const makeCase = (parent, w, h, d, mat, lidH) => {
+    const g = sub(parent);
+    const body = sub(g);
+    part(body, box(w, h, d), mat, 0, h / 2, 0);
+    const lid = sub(g, 0, h + 0.003, 0);
+    part(lid, box(w + 0.01, lidH, d + 0.01), mat, 0, lidH / 2, 0);
+    const inside = part(g, box(w - 0.03, 1, d - 0.03), SHADE, 0, h, 0); // (the dark of the gap, between body and lid: stretched to the gap)
+    inside.visible = false;
+    return { g, body, lid, w, h, d, lidH, inside };
+  };
+  // the trunk: tartan, brass corners, two latches
+  const trunk = makeCase(all, 0.72, 0.3, 0.48, tartan, 0.07);
+  for (const x of [-0.2, 0.0, 0.2]) part(trunk.body, box(0.035, 0.304, 0.484), redLine, x, 0.15, 0);
+  for (const y of [0.1, 0.22]) part(trunk.body, box(0.724, 0.03, 0.484), y > 0.15 ? yellowLine : redLine, 0, y, 0);
+  for (const x of [-0.2, 0.0, 0.2]) part(trunk.lid, box(0.035, 0.074, 0.494), redLine, x, 0.035, 0);
+  for (const [x, z] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) part(trunk.body, box(0.06, 0.06, 0.06), brass, x * 0.345, 0.03, z * 0.225);
+  for (const x of [-0.22, 0.22]) part(trunk.body, box(0.06, 0.05, 0.015), brass, x, 0.27, 0.245);
+  // the suitcases: leather with two straps, a handle on the front, stickers; floral with one strap and a tag
+  const caseA = makeCase(trunk.lid, 0.6, 0.2, 0.4, leather, 0.03);
+  caseA.g.position.y = 0.073;
+  for (const x of [-0.16, 0.16]) part(caseA.body, box(0.05, 0.204, 0.404), strapMat, x, 0.1, 0);
+  for (const x of [-0.16, 0.16]) part(caseA.lid, box(0.05, 0.034, 0.414), strapMat, x, 0.015, 0);
+  part(caseA.body, torus(0.05, 0.012, 10, Math.PI), strapMat, 0, 0.1, 0.2, FLAT, 0, 0).scale.set(1.6, 1, 1);
+  [[-0.22, 0.12, 0], [0.24, 0.08, 1], [0.05, 0.14, 2]].forEach(([x, y, k]) => part(caseA.body, plane(0.09, 0.065), stickers[k], x, y, 0.204, 0, 0, (k - 1) * 0.3));
+  part(caseA.body, plane(0.07, 0.07), stickers[3], 0.0, 0.1, -0.204, 0, Math.PI, 0.2);
+  const caseB = makeCase(caseA.lid, 0.46, 0.16, 0.32, lambert(0xf2c6d0), 0.03);
+  caseB.g.position.y = 0.033;
+  part(caseB.body, box(0.05, 0.164, 0.324), strapMat, 0.0, 0.08, 0);
+  part(caseB.lid, box(0.05, 0.034, 0.334), strapMat, 0.0, 0.015, 0);
+  for (let n = 0; n < 6; n++) part(caseB.body, new THREE.CircleGeometry(0.016, 6), onFace(glow([0xd84a7a, 0x6a9ad0, 0xe0a030][n % 3])), -0.18 + n * 0.07 + (n % 2) * 0.02, 0.05 + (n % 2) * 0.06, 0.1625);
+  part(caseB.body, torus(0.04, 0.01, 10, Math.PI), strapMat, 0.23, 0.08, 0, 0, 0, -FLAT); // (a handle on its end)
+  const tag = sub(caseB.body, 0.25, 0.05, 0.1);
+  part(tag, cyl(0.004, 0.004, 0.06, 5), lambert(0xd8d8e0), 0, 0.02, 0);
+  part(tag, box(0.05, 0.07, 0.008), lambert(0xfff1b8), 0, -0.04, 0);
+  // the hat box: striped, a lid with a ribbon bow; a flowered hat inside it
+  const hatBox = sub(caseB.lid, 0, 0.033, 0);
+  const hatR = 0.17, hatH = 0.15;
+  part(hatBox, cyl(hatR, hatR, hatH, 20), lambert(0xf4ead8), 0, hatH / 2, 0);
+  for (let k = 0; k < 6; k++) { const a = k * Math.PI / 3; part(hatBox, box(0.03, hatH - 0.004, 0.012), lambert(0x6a9ad0), Math.sin(a) * (hatR + 0.004), hatH / 2, Math.cos(a) * (hatR + 0.004), 0, a, 0); }
+  part(hatBox, new THREE.CircleGeometry(hatR - 0.004, 20), SHADE, 0, hatH - 0.012, 0, -FLAT);
+  const hatLid = sub(hatBox, 0, hatH + 0.003, 0);
+  part(hatLid, cyl(hatR + 0.006, hatR + 0.006, 0.03, 20), lambert(0xf4ead8), 0, 0.015, 0);
+  part(hatLid, box(0.03, 0.034, hatR * 2 + 0.014), lambert(0xd84a7a), 0, 0.015, 0);
+  part(hatLid, box(hatR * 2 + 0.014, 0.034, 0.03), lambert(0xd84a7a), 0, 0.015, 0);
+  for (const d of [-1, 1]) part(hatLid, torus(0.04, 0.014, 10), lambert(0xd84a7a), d * 0.045, 0.045, 0, 0, 0, d * 0.4).scale.set(1.2, 1, 0.5);
+  part(hatLid, sphere(0.022, 8, 6), lambert(0xd84a7a), 0, 0.04, 0);
+  const hat = sub(hatBox, 0, hatH - 0.1, 0);
+  part(hat, cyl(0.16, 0.16, 0.012, 18), lambert(0xd0b0e0), 0, 0, 0);
+  part(hat, cyl(0.09, 0.1, 0.09, 16), lambert(0xd0b0e0), 0, 0.05, 0);
+  part(hat, torus(0.095, 0.012, 16), lambert(0x7a3a8a), 0, 0.012, 0, FLAT);
+  for (let k = 0; k < 5; k++) part(hat, sphere(0.022, 8, 6), lambert([0xff5fa0, 0xfff176][k % 2]), 0.08 + Math.sin(k * 1.26) * 0.02, 0.03 + (k % 3) * 0.015, Math.cos(k * 1.26) * 0.03).scale.y = 0.6;
+  // what shows in the gaps: a slipper out of the trunk, needles and a newspaper out of the leather case,
+  // a framed photo out of the floral one. Each sits on its case's body, at the front or a side
+  const slipper = sub(trunk.body, -0.2, 0.3, 0.26);
+  part(slipper, sphere(0.06, 8, 6), lambert(0xe28ab0), 0, 0.03, 0).scale.set(1, 0.5, 1.6);
+  part(slipper, torus(0.035, 0.012, 10), lambert(0xffffff), 0, 0.045, 0.02, FLAT);
+  const needles = sub(caseA.body, 0.3, 0.2, 0.05);
+  for (const k of [0, 1]) part(needles, cyl(0.006, 0.006, 0.34, 6), lambert(0xb8b8c8), 0.12, 0.01, k * 0.04 - 0.02, 0, 0, FLAT + (k ? 0.25 : -0.2));
+  part(needles, box(0.12, 0.016, 0.1), lambert(0xd84a7a), 0.05, 0.012, 0); // (the knitting on them)
+  const paper = sub(caseA.body, -0.3, 0.2, -0.05);
+  part(paper, cyl(0.03, 0.03, 0.3, 10), lambert(0xd8d4c8), -0.12, 0.03, 0, 0, 0, FLAT);
+  part(paper, cyl(0.033, 0.033, 0.05, 10), lambert(0xd81e2a), -0.12, 0.03, 0, 0, 0, FLAT); // (its band)
+  const photo = sub(caseB.body, 0.05, 0.16, 0.16);
+  part(photo, box(0.14, 0.016, 0.12), brass, 0, 0.008, 0.06);
+  part(photo, box(0.11, 0.004, 0.09), lambert(0xe8e0d0), 0, 0.017, 0.06);
+  for (const x of [-0.025, 0.03]) part(photo, sphere(0.02, 8, 6), lambert(0xd8d0c8), x, 0.02, 0.05).scale.y = 0.4;
+  const gapStuff = [[slipper, trunk, 0.08], [needles, caseA, 0.03], [paper, caseA, 0.06], [photo, caseB, 0.02]];
   return stated(group, (t, bulge, burst) => {
     const up = clamp01(bulge + burst);
-    cases.forEach((c) => {
-      const swell = 1 + bulge * (0.06 + Math.abs(Math.sin(t * 5 + c.k)) * 0.04) + burst * 0.05;
+    const gap = bulge * 0.035 + burst * (0.11 + Math.abs(Math.sin(t * 3)) * 0.02);
+    for (const c of [trunk, caseA, caseB]) {
+      const swell = 1 + bulge * (0.04 + Math.abs(Math.sin(t * 5 + c.h * 20)) * 0.02) + burst * 0.05;
       c.body.scale.set(swell, 1, swell);
-      c.lid.rotation.x = -burst * (c.k === 2 ? 1.6 : 0.3 + c.k * 0.1) * (0.9 + Math.sin(t * 3 + c.k) * 0.1);
-      c.c.position.y = sizes.slice(0, c.k).reduce((s, [, h]) => s + h, 0) + up * c.k * 0.025;
+      c.lid.position.y = c.h + 0.003 + gap * (c === trunk ? 1 : c === caseA ? 0.8 : 0.6) + burst * Math.abs(Math.sin(t * 6 + c.h * 30)) * 0.02;
+      const room = c.lid.position.y - c.h - 0.003;
+      c.inside.visible = room > 0.004;
+      c.inside.scale.y = Math.max(0.001, room);
+      c.inside.position.y = c.h + 0.0015 + room / 2;
+    }
+    gapStuff.forEach(([thing, c, tall]) => {
+      const room = c.lid.position.y - c.h - 0.003;
+      show(thing, Math.min(1, room / tall));
+      thing.rotation.y = Math.sin(t * 2 + tall * 50) * 0.15 * up;
     });
-    needles.forEach((n, k) => { show(n, up); n.rotation.z = FLAT - 0.3 + k * 0.3 + Math.sin(t * 4 + k) * 0.2 * up; });
-    show(slipper, up);
-    slipper.rotation.z = Math.sin(t * 3) * 0.2 * up;
-    show(photo, up);
-    photo.rotation.set(-0.2, Math.sin(t * 1.5) * 0.3, 0);
-    show(chair, burst);
-    chair.rotation.x = Math.sin(t * 2.2) * 0.25 * burst;
-    chair.position.y = 0.59 + burst * 0.02;
-    seat.position.y = 0.18;
-    show(paper, burst);
-    paper.rotation.y = Math.sin(t * 1.3) * 0.15;
-    show(wag.root, burst);
-    wag.root.rotation.set(-FLAT + 0.2, 0, Math.sin(t * 8) * 0.45);
-    finger.rotation.y = Math.sin(t * 8) * 0.1;
+    hatLid.position.set(burst * (0.3 + Math.sin(t * 3) * 0.06), hatH + 0.003 + bulge * Math.abs(Math.sin(t * 7)) * 0.02 + burst * (0.5 + Math.sin(t * 4) * 0.1), burst * 0.1);
+    hatLid.rotation.set(burst * 0.6, burst * t * 3, burst * 0.9);
+    hat.position.y = hatH - 0.1 + burst * (0.24 + Math.abs(Math.sin(t * 2.5)) * 0.08);
+    hat.rotation.set(burst * 0.15, t * 0.5 * burst, burst * Math.sin(t * 2) * 0.15);
     all.position.x = bulge * jitter(t, 1) * 0.01 + burst * jitter(t, 2) * 0.02;
     all.rotation.z = up * Math.sin(t * 9) * 0.02;
   });
 };
 
-// ---- C46 a marching band in a box: a drum-sized hatbox, a faint oompah / a trombone slide shooting in
-// and out of its side, cymbals clapping at the lid / the lid off: a tuba bell, drumsticks, a twirling
-// baton, notes pouring out
+// ---- C46 a marching band in a box: an open cardboard box marked BAND, a red bass drum standing in it,
+// a tuba's bell and a pair of cymbals showing over the rim, a faint oompah / the cymbals up and clapping,
+// a trombone slide shooting in and out over the front, the box bouncing in time / full blast: the tuba
+// up and swaying, drumsticks beating the drum, a baton twirling above, notes pouring out
 const makeBand = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const red = lambert(0xc82a3a), band = lambert(0xf4ead8), brassMat = lambert(0xe0b04a), gold = glow(0xffd23f), dark = lambert(0x3a2a20);
-  const R = 0.3, H = 0.36;
-  const drum = sub(all);
-  part(drum, cyl(R, R, H, 20), red, 0, H / 2, 0);
-  part(drum, cyl(R + 0.005, R + 0.005, 0.07, 20), band, 0, H / 2, 0);
-  for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; part(drum, box(0.01, H, 0.01), band, Math.sin(a) * (R + 0.005), H / 2, Math.cos(a) * (R + 0.005), 0, 0, 0); }
-  const lid = sub(all, 0, H, 0);
-  part(lid, cyl(R + 0.02, R + 0.02, 0.05, 20), red, 0, 0.025, 0);
-  part(lid, cyl(R + 0.025, R + 0.025, 0.02, 20), band, 0, 0.02, 0);
-  part(lid, torus(0.05, 0.012, 10, Math.PI), dark, 0, 0.05, 0);
-  // the trombone slide, out of the side
-  const slide = sub(drum, R, 0.2, 0);
-  for (const z of [-0.03, 0.03]) part(slide, cyl(0.014, 0.014, 0.5, 8), brassMat, 0.25, 0, z, 0, 0, FLAT);
-  part(slide, torus(0.03, 0.014, 8, Math.PI), brassMat, 0.5, 0, 0, 0, 0, -FLAT).rotation.y = FLAT;
-  // the cymbals, two discs at the lid's edge
-  const cymbals = [-1, 1].map(d => { const c = sub(drum, d * 0.12, H + 0.04, 0.12); part(c, cyl(0.1, 0.1, 0.008, 16), gold); part(c, sphere(0.02, 8, 6), brassMat, 0, 0.01, 0); return c; });
-  // the band at full blast: the tuba bell, drumsticks, the baton, the notes
-  const tuba = sub(drum, 0.08, H, -0.06);
-  part(tuba, cyl(0.04, 0.04, 0.35, 10), brassMat, 0, 0.17, 0);
-  part(tuba, cone(0.22, 0.3, 16), brassMat, 0, 0.5, 0, Math.PI).scale.set(1, 1, 1);
-  part(tuba, new THREE.CircleGeometry(0.21, 16), lambert(0x6a4a10), 0, 0.651, 0, -FLAT);
-  for (let k = 0; k < 3; k++) part(tuba, torus(0.05, 0.012, 10), brassMat, 0.05, 0.1 + k * 0.08, 0.03, 0.4, 0, 0);
-  const sticks = [-1, 1].map(d => { const s = sub(drum, d * 0.2, H, 0.1); part(s, cyl(0.008, 0.01, 0.3, 6), lambert(0xe8d8b0), 0, 0.15, 0); part(s, sphere(0.018, 8, 6), lambert(0xe8d8b0), 0, 0.3, 0); return s; });
-  const baton = sub(drum, -0.1, H + 0.55, -0.1);
+  const red = lambert(0xc82a3a), hoop = lambert(0xf4ead8), brassMat = lambert(0xe0b04a), gold = glow(0xffd23f), wood = lambert(0xe8d8b0);
+  const W = 0.64, H = 0.46, D = 0.5;
+  const crateBox = openBox(all, W, H, D, CARD);
+  part(crateBox, plane(0.3, 0.12), lettered('BAND', 0xffffff, 0xc82a3a, 192, 80), 0, 0.12, D / 2 + 0.016); // (under the folded-down flap)
+  // the bass drum: standing on its rim inside the box, its red shell and white hoops showing over the top
+  const drum = sub(crateBox, 0.02, 0.3, 0.04);
+  part(drum, new THREE.CylinderGeometry(0.21, 0.21, 0.2, 24, 1, true), red, 0, 0, 0, FLAT);
+  for (const z of [-0.1, 0.1]) part(drum, torus(0.21, 0.016, 24), hoop, 0, 0, z);
+  part(drum, new THREE.CircleGeometry(0.2, 24), lambert(0xf8f4ea), 0, 0, 0.1005);
+  part(drum, new THREE.CircleGeometry(0.2, 24), lambert(0xf8f4ea), 0, 0, -0.1005, 0, Math.PI);
+  for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4; part(drum, box(0.02, 0.02, 0.2), lambert(0x8a8a96), Math.sin(a) * 0.215, Math.cos(a) * 0.215, 0); }
+  // the tuba: a pipe up from the back left, its bell flaring open at the top, valves on the pipe
+  const tuba = sub(crateBox, -0.17, 0.22, -0.08);
+  part(tuba, cyl(0.035, 0.035, 0.34, 10), brassMat, 0, 0.17, 0);
+  part(tuba, cyl(0.2, 0.04, 0.26, 18, 1, true), lambert(0xe0b04a, { side: THREE.DoubleSide }), 0, 0.47, 0);
+  part(tuba, new THREE.CircleGeometry(0.035, 10), SHADE, 0, 0.345, 0, -FLAT);
+  for (let k = 0; k < 3; k++) part(tuba, cyl(0.016, 0.016, 0.05, 8), lambert(0xf0e0a0), 0.045, 0.14 + k * 0.05, 0.02);
+  part(tuba, torus(0.08, 0.02, 10, Math.PI), brassMat, 0.06, 0.1, -0.03, 0, FLAT, 0);
+  // the cymbals: two gold discs at the right, face to face
+  const cymbals = [-1, 1].map(d => { const c = sub(crateBox, 0.22 + d * 0.03, H - 0.04, 0.12); part(c, cyl(0.1, 0.1, 0.008, 18), gold, 0, 0, 0, 0, 0, FLAT); part(c, sphere(0.018, 8, 6), brassMat, d * 0.006, 0, 0); return { c, d }; });
+  // the trombone: a bell and a slide, over the front rim, the slide shooting out
+  // (its bell pipe lies above and behind the slide's two tubes, which run out beyond it and back)
+  const trombone = sub(crateBox, -0.1, H + 0.02, 0.16);
+  trombone.rotation.x = 0.55;
+  part(trombone, cyl(0.018, 0.018, 0.26, 8), brassMat, 0, 0.12, -0.12);
+  part(trombone, cone(0.1, 0.16, 14), brassMat, 0, 0.32, -0.12, Math.PI);
+  part(trombone, cyl(0.016, 0.016, 0.12, 8), brassMat, 0, 0.0, -0.06, FLAT); // (the bend joining the two)
+  const slide = sub(trombone);
+  for (const x of [-0.04, 0.04]) part(slide, cyl(0.014, 0.014, 0.4, 8), brassMat, x, 0.2, 0);
+  part(slide, torus(0.04, 0.014, 8, Math.PI), brassMat, 0, 0.4, 0);
+  // full blast: the drumsticks over the drum, the baton in the air, the notes
+  const sticks = [-1, 1].map(d => { const s = sub(crateBox, 0.02 + d * 0.12, H + 0.12, 0.28); part(s, cyl(0.008, 0.01, 0.3, 6), wood, 0, 0.0, 0); part(s, sphere(0.02, 8, 6), wood, 0, 0.15, 0); return { s, d }; });
+  const baton = sub(all, 0.1, H + 0.7, -0.05);
   part(baton, cyl(0.008, 0.008, 0.4, 6), lambert(0xf4f4f4), 0, 0, 0, 0, 0, FLAT);
   for (const x of [-0.2, 0.2]) part(baton, sphere(0.025, 8, 6), gold, x, 0, 0);
   const noteMat = glow(0x2a2a36);
-  const notes = Array.from({ length: 12 }, () => {
-    const n = sub(all);
-    part(n, sphere(0.028, 7, 5), noteMat).scale.set(1.2, 0.8, 1);
-    part(n, box(0.012, 0.11, 0.012), noteMat, 0.03, 0.05, 0);
-    part(n, box(0.05, 0.012, 0.012), noteMat, 0.05, 0.1, 0, 0, 0, -0.5);
-    return n;
-  });
+  const notes = Array.from({ length: 12 }, () => quaver(all, noteMat));
   return stated(group, (t, play, blast) => {
     const up = clamp01(play + blast), calm = clamp01(1 - up);
-    drum.rotation.z = Math.sin(t * 2.4) * 0.02 * (1 + play * 3) + blast * jitter(t, 1) * 0.06;
-    drum.position.y = (play * 0.5 + blast) * Math.abs(Math.sin(t * 6)) * 0.05;
-    lid.position.set(blast * 0.42, H + play * Math.abs(Math.sin(t * 6)) * 0.04 - blast * (H - 0.03), blast * 0.1);
-    lid.rotation.set(blast * 0.2, 0, blast * 1.3 + play * jitter(t, 2) * 0.05);
-    show(slide, up);
-    slide.position.x = R + Math.abs(Math.sin(t * (3 + blast * 3))) * (0.25 + blast * 0.1) * up - 0.2;
-    cymbals.forEach((c, k) => { show(c, up); const clap = Math.abs(Math.sin(t * 6 + k * Math.PI)); c.position.x = (k ? 1 : -1) * (0.03 + clap * 0.12); c.rotation.z = (k ? 1 : -1) * (FLAT - 0.3 + clap * 0.3); });
-    show(tuba, blast);
-    tuba.rotation.set(0.2 + Math.sin(t * 2.5) * 0.15, 0, -0.2 + Math.sin(t * 2) * 0.15);
-    sticks.forEach((s, k) => { show(s, blast); s.rotation.set(0.4 + Math.abs(Math.sin(t * 9 + k * 1.57)) * 0.8, 0, (k ? -1 : 1) * 0.3); });
+    const beat = Math.abs(Math.sin(t * (3 + play * 3 + blast * 3)));
+    all.rotation.z = Math.sin(t * 2.4) * 0.01 * (1 + play * 3) + blast * jitter(t, 1) * 0.05;
+    all.position.y = (play * 0.5 + blast) * beat * 0.05;
+    drum.rotation.z = Math.sin(t * 2) * 0.03 * calm + beat * 0.08 * blast;
+    tuba.position.y = 0.22 + Math.sin(t * 2.5) * 0.015 * (1 + play) + blast * 0.26;
+    tuba.rotation.set(blast * Math.sin(t * 2.5) * 0.2, 0, -0.12 + blast * Math.sin(t * 2) * 0.25);
+    cymbals.forEach(({ c, d }) => {
+      const clap = Math.abs(Math.sin(t * (6 + blast * 3)));
+      c.position.set(0.22 + d * (0.03 + (0.02 + clap * 0.1) * up), H - 0.04 + up * 0.18 + blast * Math.abs(Math.sin(t * 6)) * 0.06, 0.12);
+      c.rotation.z = d * (0.1 + clap * 0.25 * up);
+    });
+    show(trombone, up);
+    slide.position.y = Math.abs(Math.sin(t * (3 + blast * 3))) * (0.22 + blast * 0.08);
+    trombone.rotation.x = 0.55 + Math.sin(t * 2) * 0.1 * up;
+    sticks.forEach(({ s, d }) => { show(s, blast); s.rotation.set(-0.8 - Math.abs(Math.sin(t * 9 + d * 0.8)) * 0.7, 0, d * 0.4); });
     show(baton, blast);
     baton.rotation.set(0, Math.sin(t) * 0.4, t * 9);
-    baton.position.y = H + 0.6 + Math.abs(Math.sin(t * 2)) * 0.15;
+    baton.position.y = H + 0.75 + Math.abs(Math.sin(t * 2)) * 0.15;
     cycle(notes, t, mix(0.25, 0.7, up), (n, u, k) => {
       const a = k * 2.2 + t * 0.3;
-      n.position.set(Math.sin(a) * (0.15 + u * 0.4 * up), H + 0.1 + u * (0.4 + up * 0.7), Math.cos(a) * (0.15 + u * 0.4 * up));
+      n.position.set(Math.sin(a) * (0.15 + u * 0.4 * up), H + 0.15 + u * (0.4 + up * 0.7), Math.cos(a) * (0.15 + u * 0.4 * up));
       n.rotation.z = Math.sin(t * 3 + k) * 0.3;
       show(n, (k < 2 ? calm * 0.7 : 0) + play * (k < 6 ? 1 : 0) + blast * 1.1 - u * 0.5 * (1 - calm * 0.5));
     });
   });
 };
 
-// ---- C52 a door-to-door salesman's case: a sample case, shut / the lid opens a crack, a foot wedged in
-// it, a hand offering a brush / wide open: brushes, encyclopaedias and a vacuum hose spilling out, the
-// foot tapping
-const makeSalesman = () => {
-  const group = new THREE.Group();
-  const all = sub(group);
-  const leather = lambert(0x5a3a22), brass = lambert(0xd4a94a), shoe = lambert(0x161616);
-  const W = 0.64, H = 0.26, D = 0.44;
-  part(all, box(W, H, D), leather, 0, H / 2, 0);
-  for (const x of [-0.2, 0.2]) part(all, box(0.06, 0.04, 0.015), brass, x, H - 0.03, D / 2 + 0.005);
-  part(all, torus(0.07, 0.014, 10, Math.PI), leather, 0, H + 0.06, 0).scale.set(1.6, 1, 1);
-  const lid = sub(all, 0, H, -D / 2);
-  part(lid, box(W, 0.14, D), leather, 0, 0.07, D / 2);
-  part(lid, box(W - 0.04, 0.02, D - 0.04), lambert(0x8a1a2a), 0, -0.005, D / 2); // (its red lining)
-  // the foot: a black shoe wedged in the gap
-  const foot = sub(all, 0.2, H - 0.02, D / 2 - 0.05);
-  part(foot, sphere(0.07, 10, 8), shoe, 0, 0.03, 0.08).scale.set(0.9, 0.6, 1.8);
-  part(foot, box(0.13, 0.02, 0.26), lambert(0x3a2a20), 0, -0.005, 0.08);
-  part(foot, cyl(0.05, 0.055, 0.14, 8), lambert(0x4a4a58), 0, 0.09, -0.04);
-  // the hand with a brush, out of the gap
-  const brush = (parent, len = 0.2) => {
-    const b = sub(parent);
-    part(b, box(0.035, 0.035, len), lambert(0xe0c890), 0, 0, len / 2);
-    for (let k = 0; k < 6; k++) part(b, box(0.03, 0.03, 0.03), lambert(0x6a4a2a), 0, -0.03, 0.04 + k * 0.025);
-    return b;
-  };
-  const offer = arm(sub(all, -0.15, H + 0.02, D / 2 - 0.08), 0.16);
-  brush(offer.prop).rotation.x = -0.3;
-  // the spill: brushes, books and the vacuum hose
-  const spill = sub(all, 0, H, 0);
-  for (let k = 0; k < 4; k++) brush(spill, 0.24).rotation.set(0.6 + k * 0.5, k * 1.3, 0.3);
-  const bookColours = [0x8a1a2a, 0x1a3a7a, 0x2a6a3a, 0x6a2a7a];
-  bookColours.forEach((c, k) => { const b = part(spill, box(0.1, 0.16, 0.04), lambert(c), 0.08 + k * 0.03, 0.08 + k * 0.025, 0.05 + (k % 2) * 0.1, 0.1 * k, 0.3 * k, 0.5 + k * 0.2); part(b, box(0.085, 0.14, 0.004), lambert(0xf4ead8), 0, 0, 0.02); });
-  const hoseMat = lambert(0x8a8a96);
-  const hose = Array.from({ length: 14 }, () => part(spill, torus(0.045, 0.012, 10), hoseMat));
-  const nozzle = part(spill, cyl(0.05, 0.035, 0.12, 10), lambert(0x3a3a48));
-  return stated(group, (t, crack, open) => {
-    const up = clamp01(crack + open);
-    lid.rotation.x = -(crack * 0.35 + open * 1.9) * (1 + Math.sin(t * 4) * 0.03 * up);
-    show(foot, up);
-    foot.rotation.x = -0.3 - open * (0.2 + Math.pow(Math.abs(Math.sin(t * 7)), 2) * 0.5); // (tapping, furious)
-    foot.position.y = H - 0.02 + crack * 0.02 + open * 0.08;
-    show(offer.root, up);
-    offer.root.rotation.set(-0.4 - Math.sin(t * 2.5) * 0.2, Math.sin(t * 1.7) * 0.3, 0);
-    offer.root.position.y = H + 0.02 + open * 0.1;
-    show(spill, open);
-    spill.children.forEach((c, k) => { if (k < 4) c.position.set(-0.22 + k * 0.1, 0.05 + Math.abs(Math.sin(t * 3 + k)) * 0.06, 0.15 + (k % 2) * 0.1); });
-    hose.forEach((h, k) => {
-      const a = k * 0.55 + t * 1.2, r = 0.1 + k * 0.012;
-      h.position.set(-0.2 + Math.sin(a) * r, 0.06 + k * 0.045 + Math.sin(t * 2 + k * 0.4) * 0.03, -0.05 + Math.cos(a) * r);
-      h.rotation.set(FLAT + Math.sin(t * 2 + k) * 0.3, a, 0);
-    });
-    nozzle.position.set(-0.2 + Math.sin(14 * 0.55 + t * 1.2) * 0.27, 0.72 + Math.sin(t * 2 + 5.6) * 0.03, -0.05 + Math.cos(14 * 0.55 + t * 1.2) * 0.27);
-    nozzle.rotation.set(Math.sin(t * 2) * 0.5, 0, 0.5 + Math.sin(t * 1.5) * 0.4);
-    all.position.x = crack * jitter(t, 1) * 0.01 + open * jitter(t, 2) * 0.015;
-    all.rotation.z = up * Math.sin(t * 8) * 0.02;
-  });
-};
 
-// ---- C53 the surprise party: a big plain box that says nothing / it giggles: a party hat pokes up and
-// ducks / hands burst out with streamers and a cake, and a banner unrolls: SURPRISE
-const makeParty = () => {
-  const group = new THREE.Group();
-  const all = sub(group);
-  const W = 0.68, H = 0.6;
-  const plain = lambert(0xb9a98a);
-  part(all, box(W, H, W), plain, 0, H / 2, 0);
-  const lid = sub(all, 0, H, -W / 2);
-  part(lid, box(W + 0.02, 0.03, W + 0.02), plain, 0, 0.015, W / 2);
-  // the party hat that pokes up, through a gap at the lid's front
-  const hat = sub(all, 0.12, H - 0.2, 0.08);
-  part(hat, cone(0.09, 0.26, 12), lambert(0xff5fa0), 0, 0.13, 0);
-  for (let k = 0; k < 3; k++) part(hat, cyl(0.09 - k * 0.028, 0.09 - k * 0.028, 0.02, 12), lambert(0xfff176), 0, 0.03 + k * 0.08, 0);
-  part(hat, sphere(0.03, 8, 6), lambert(0xfff176), 0, 0.27, 0);
-  // the giggles: little bubbles beside the box
-  const giggles = [0, 1, 2].map(k => { const g = sub(all); part(g, sphere(0.055, 10, 8), glow(0xffffff)).scale.set(1.3, 1, 1); [0, 1, 2].forEach(n => part(g, sphere(0.011, 5, 4), glow(0x5a5a6a), -0.024 + n * 0.024, 0, 0.052)); g.userData.k = k; return g; });
-  // the burst: hands with streamers, a cake, the banner
-  const colours = [0xff5fa0, 0x5fd0ff, 0xfff176, 0x9df0a0, 0xff8a2a];
-  const streamerArms = [[-0.22, 0.1], [0.22, -0.05], [0, -0.2]].map(([x, z], k) => {
-    const a = arm(sub(all, x, H - 0.02, z), 0.3);
-    a.root.rotation.x = -FLAT;
-    const curls = Array.from({ length: 7 }, (_, j) => part(a.prop, box(0.025, 0.012, 0.06), lambert(colours[(k + j) % 5], { side: THREE.DoubleSide })));
-    return { a, curls, k };
-  });
-  const cakeArm = arm(sub(all, 0.1, H - 0.02, 0.18), 0.28);
-  cakeArm.root.rotation.x = -FLAT;
-  const cake = sub(cakeArm.prop, 0, 0.04, 0);
-  part(cake, cyl(0.14, 0.14, 0.1, 16), lambert(0xf4d6a0), 0, 0.05, 0);
-  part(cake, cyl(0.145, 0.145, 0.03, 16), lambert(0xff8ab8), 0, 0.1, 0);
-  for (let k = 0; k < 4; k++) { const an = k * 1.57; part(cake, cyl(0.01, 0.01, 0.08, 6), lambert(colours[k]), Math.sin(an) * 0.08, 0.15, Math.cos(an) * 0.08); part(cake, sphere(0.015, 6, 5), glow(0xffd23f), Math.sin(an) * 0.08, 0.2, Math.cos(an) * 0.08); }
-  const banner = sub(all, 0, H + 0.55, 0.1);
-  for (const x of [-0.36, 0.36]) part(banner, cyl(0.012, 0.012, 0.5, 6), lambert(0x8a8a96), x, -0.1, 0);
-  const cloth = part(banner, plane(0.7, 0.18), lettered('SURPRISE', 0xffffff, 0xd81e2a, 320, 80), 0, 0, 0);
-  const confetti = Array.from({ length: 24 }, (_, k) => part(all, plane(0.04, 0.04), lambert(colours[k % 5], { side: THREE.DoubleSide })));
-  return stated(group, (t, giggle, burst) => {
-    const up = clamp01(giggle + burst);
-    const peek = (0.35 + Math.max(0, Math.sin(t * 2.5)) * 0.65) * giggle; // (up, and ducks back, never quite out of sight)
-    hat.position.y = H - 0.3 + peek * 0.36 + burst * 0.6;
-    hat.rotation.set(burst * 0.3, 0, Math.sin(t * 3) * 0.1 * up + burst * 0.4);
-    // the lid: lifted a touch by the hat, then thrown off, leaning against the box's side
-    lid.position.set(burst * (W / 2 + 0.3), H + peek * 0.03 + giggle * Math.abs(Math.sin(t * 9)) * 0.01 - burst * (H - 0.05), -W / 2 + burst * (W / 2 - 0.1));
-    lid.rotation.set(-giggle * peek * 0.08, burst * 0.4, burst * 1.25);
-    giggles.forEach((g) => { const k = g.userData.k, u = ((t * 0.8 + k / 3) % 1); g.position.set(W / 2 - 0.05 + k * 0.08, H + 0.12 + k * 0.1 + u * 0.2, 0.15 - k * 0.2); show(g, giggle * (1 - u) * Math.min(1, u * 6)); });
-    streamerArms.forEach((s) => {
-      show(s.a.root, burst);
-      s.a.root.rotation.set(-FLAT + Math.sin(t * 5 + s.k * 2) * 0.4, 0, Math.sin(t * 4 + s.k) * 0.5);
-      s.curls.forEach((c, j) => { const a = j * 0.9 + t * 4 + s.k; c.position.set(Math.sin(a) * 0.05, 0.04 + j * 0.05, Math.cos(a) * 0.05 + 0.02); c.rotation.set(0.5, a, 0); });
-    });
-    show(cakeArm.root, burst);
-    cakeArm.root.rotation.set(-FLAT + 0.2 + Math.sin(t * 3) * 0.15, 0, Math.sin(t * 2.2) * 0.2);
-    cake.rotation.y = t;
-    show(banner, burst);
-    banner.position.y = H + 0.3 + burst * 0.3;
-    cloth.rotation.y = Math.sin(t * 2) * 0.12;
-    cloth.scale.x = Math.max(0.001, burst);
-    cycle(confetti, t, 0.5, (c, u, k) => {
-      const a = k * 2.4;
-      c.position.set(Math.sin(a) * (0.15 + u * 0.5), H + 0.6 + 0.4 - u * 1.0, Math.cos(a) * (0.15 + u * 0.5));
-      c.rotation.set(t * 3 + k, t * 2, 0);
-      show(c, burst * (1.1 - u * 0.5));
-    });
-    all.position.x = giggle * jitter(t, 1) * 0.008 + burst * jitter(t, 2) * 0.02;
-    all.rotation.z = up * Math.sin(t * 9) * 0.02;
-  });
-};
 
 // ---- C55 a thank-you casserole: an oval dish under a tea towel; the lid lifts on the steam and settles
 const makeCasserole = () => {
@@ -1082,22 +1026,21 @@ const makeCasserole = () => {
   });
 };
 
-// ---- C56 a box of kittens: ears and one paw over the rim of a cardboard box; a paw bats at a string
-// dangling from the flap
+// ---- C56 a box of kittens: an open cardboard box, its flaps folded down, three kittens looking out
+// over the rim (heads up, ears, whiskers), one paw resting on the rim; a fourth bats at a string on a
+// stick poked in the corner
 const makeKittens = () => {
   const group = new THREE.Group();
   const all = sub(group);
   const W = 0.56, H = 0.34, D = 0.42;
-  part(all, box(W, H, D), CARD, 0, H / 2, 0);
-  part(all, box(W + 0.01, 0.05, D + 0.01), lambert(0xa0773c), 0, H * 0.45, 0);
-  const flap = sub(all, 0, H, -D / 2);
-  part(flap, box(W, 0.015, D / 2), CARD, 0, 0, -D / 4);
-  flap.rotation.x = 0.35;
-  const furs = [lambert(0xf0a050), lambert(0x4a4a50), lambert(0xf4f0e8)];
-  // a kitten: a head just over the rim, two ears, eyes; one has a paw up on the rim
+  const crateBox = openBox(all, W, H, D, CARD);
+  part(crateBox, plane(0.2, 0.08), lettered('FREE', 0x3a2a20, 0xf4e8c8, 160, 64), 0.0, 0.08, D / 2 + 0.016, 0, 0, -0.08); // (under the folded-down flap)
+  const furs = [lambert(0xf0a050), lambert(0x4a4a50), lambert(0xf4f0e8), lambert(0x8a6a4a)];
+  // a kitten's head over the rim: two ears, eyes, a nose, whiskers, on a body that stands proud of the shade
   const kitten = (x, z, fur, k) => {
-    const kit = sub(all, x, H - 0.03, z);
+    const kit = sub(crateBox, x, H + 0.02, z);
     part(kit, sphere(0.085, 12, 10), fur, 0, 0, 0);
+    part(kit, sphere(0.09, 10, 8), fur, 0, -0.1, -0.03).scale.set(1, 0.9, 1.1); // (its back, below)
     for (const d of [-1, 1]) { part(kit, cone(0.035, 0.07, 4), fur, d * 0.055, 0.085, 0, 0, 0.8, d * 0.3); part(kit, cone(0.018, 0.045, 4), lambert(0xffb0b0), d * 0.055, 0.082, 0.008, 0, 0.8, d * 0.3); }
     for (const d of [-1, 1]) { part(kit, sphere(0.018, 8, 6), glow(0x4fd0a0), d * 0.035, 0.015, 0.072); part(kit, sphere(0.008, 6, 5), glow(0x101010), d * 0.035, 0.015, 0.088).scale.set(0.5, 1.2, 1); }
     part(kit, sphere(0.012, 6, 5), lambert(0xff9aa8), 0, -0.02, 0.085);
@@ -1105,151 +1048,217 @@ const makeKittens = () => {
     kit.userData.k = k;
     return kit;
   };
-  const kits = [kitten(-0.14, 0.05, furs[0], 0), kitten(0.1, -0.02, furs[1], 1), kitten(0.0, 0.12, furs[2], 2)];
-  const paw = sub(all, -0.2, H + 0.02, D / 2 - 0.02);
+  const kits = [kitten(-0.14, 0.02, furs[0], 0), kitten(0.08, -0.08, furs[1], 1), kitten(-0.02, 0.1, furs[2], 2)];
+  // a paw resting on the front rim, from the first kitten
+  const paw = sub(crateBox, -0.1, H + 0.03, D / 2 - 0.01);
   part(paw, sphere(0.035, 8, 6), furs[0]).scale.set(1.1, 0.7, 1.2);
-  part(paw, cyl(0.03, 0.03, 0.1, 8), furs[0], 0, -0.05, -0.03, 0.4);
-  const batter = sub(all, 0.2, H + 0.02, D / 2 - 0.04); // (a paw up over the front rim, batting)
-  part(batter, cyl(0.028, 0.028, 0.14, 8), furs[1], 0, 0.07, 0);
-  part(batter, sphere(0.04, 8, 6), furs[1], 0, 0.15, 0.01).scale.set(1.2, 0.8, 1.2);
-  for (let n = 0; n < 3; n++) part(batter, sphere(0.012, 6, 5), lambert(0xffb0b0), -0.025 + n * 0.025, 0.14, 0.05);
-  // the string, from the flap's corner, with a knot: it swings as the paw bats it
-  const string = sub(all, 0.26, H + 0.3, D / 2 + 0.02);
-  part(string, cyl(0.006, 0.006, 0.36, 5), lambert(0xe8d8a0), 0, -0.18, 0);
-  part(string, sphere(0.028, 8, 6), lambert(0xd84a4a), 0, -0.38, 0);
-  part(all, cyl(0.008, 0.008, 0.42, 6), lambert(0x6a4a2a), 0.26, H + 0.1, D / 2 + 0.02); // (the stick it hangs from, poked in the box's corner)
+  for (let n = 0; n < 3; n++) part(paw, sphere(0.01, 6, 5), lambert(0xffb0b0), -0.02 + n * 0.02, 0.0, 0.035);
+  // the batter: a fourth kitten, mostly down in the box, one leg up over the front rim batting at the string
+  const batterBody = part(crateBox, sphere(0.08, 10, 8), furs[3], 0.16, H - 0.03, D / 2 - 0.12);
+  batterBody.scale.set(1, 0.8, 1.1);
+  const batter = sub(crateBox, 0.18, H + 0.01, D / 2 - 0.05);
+  part(batter, cyl(0.026, 0.028, 0.14, 8), furs[3], 0, 0.07, 0);
+  part(batter, sphere(0.038, 8, 6), furs[3], 0, 0.15, 0.01).scale.set(1.2, 0.8, 1.2);
+  for (let n = 0; n < 3; n++) part(batter, sphere(0.011, 6, 5), lambert(0xffb0b0), -0.024 + n * 0.024, 0.14, 0.048);
+  // the string on a stick poked into the corner, its knot swinging as the paw bats it
+  const stick = sub(crateBox, 0.24, H - 0.05, 0.16);
+  stick.rotation.set(0.2, 0, -0.15);
+  part(stick, cyl(0.008, 0.008, 0.46, 6), lambert(0x6a4a2a), 0, 0.23, 0);
+  const string = sub(stick, 0, 0.45, 0);
+  part(string, cyl(0.005, 0.005, 0.34, 5), lambert(0xe8d8a0), 0, -0.17, 0);
+  part(string, sphere(0.028, 8, 6), lambert(0xd84a4a), 0, -0.36, 0);
   return idle(group, (t) => {
     kits.forEach((kit) => {
       const k = kit.userData.k, bob = Math.sin(t * (1.1 + k * 0.3) + k * 2);
-      kit.position.y = H - 0.03 + Math.max(0, bob) * 0.05;
+      kit.position.y = H + 0.02 + Math.max(0, bob) * 0.05;
       kit.rotation.set(-0.15 + bob * 0.08, Math.sin(t * 0.7 + k) * 0.35, 0);
     });
     const bat = Math.pow(Math.max(0, Math.sin(t * 2.2)), 2);
-    batter.rotation.set(0.6 + bat * 0.7, 0, 0.2 - bat * 0.4);
-    string.rotation.set(Math.sin(t * 2.2 - 0.4) * 0.35, 0, Math.sin(t * 1.3) * 0.15 + bat * 0.5);
+    batter.rotation.set(0.6 + bat * 0.4, 0, -0.1 - bat * 0.3);
+    batterBody.position.y = H - 0.03 + bat * 0.02;
+    string.rotation.set(Math.sin(t * 2.2 - 0.4) * 0.35 - 0.2, 0, Math.sin(t * 1.3) * 0.15 + bat * 0.5);
     paw.rotation.x = -0.3 + Math.sin(t * 1.4) * 0.1;
   });
 };
 
-// ---- C57 a hand-knitted jumper: folded on a hanger, one sleeve far too long trailing to the floor;
-// a ball of wool rolls back and forth beside it
+// ---- C57 a hand-knitted jumper: a red jumper on a wooden hanger on a rail, a white fair-isle band of
+// diamonds across the chest, ribbed neck, cuffs and hem, one sleeve a little longer than the other (it
+// was made by hand); a gift tag on the hook; a ball of wool beside it, still joined to the hem by a
+// strand. It sways on the rail, the sleeves swing, the ball rolls
 const makeJumper = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const wool = lambert(0xd8503a), stripe = lambert(0xf4d35e), wire = lambert(0xb8b8c8), wood = lambert(0x9a6a3a);
-  // the stand: a rail on two feet, the hanger hooked over it
-  for (const x of [-0.28, 0.28]) part(all, box(0.16, 0.03, 0.16), wood, x, 0.015, 0);
-  for (const x of [-0.28, 0.28]) part(all, cyl(0.012, 0.012, 0.95, 8), wood, x, 0.49, 0);
-  part(all, cyl(0.014, 0.014, 0.62, 8), wood, 0, 0.96, 0, 0, 0, FLAT);
-  const hanger = sub(all, 0, 0.96, 0);
-  part(hanger, torus(0.035, 0.005, 10, Math.PI * 1.4), wire, 0, 0.0, 0, 0, 0, 0.6);
+  const wool = lambert(0xd8503a), rib = lambert(0xb03a2a), cream = lambert(0xf8f2e0), wire = lambert(0xb8b8c8), wood = lambert(0x9a6a3a), woodDark = lambert(0x6a4524);
+  // the rail: two uprights on feet, the bar across the top
+  for (const x of [-0.5, 0.5]) part(all, box(0.2, 0.03, 0.2), woodDark, x, 0.015, 0);
+  for (const x of [-0.5, 0.5]) part(all, cyl(0.014, 0.014, 1.0, 8), woodDark, x, 0.53, 0);
+  part(all, cyl(0.016, 0.016, 1.04, 8), woodDark, 0, 1.02, 0, 0, 0, FLAT);
+  // the hanger: a wire hook over the bar, a wooden shoulder bar; the tag on the hook
+  const hanger = sub(all, 0, 1.02, 0);
+  part(hanger, torus(0.035, 0.005, 10, Math.PI * 1.3), wire, 0, 0.0, 0, 0, 0, 0.9);
   part(hanger, cyl(0.005, 0.005, 0.1, 6), wire, 0, -0.07, 0);
+  const tag = sub(hanger, 0.05, -0.08, 0.02);
+  tag.rotation.z = -0.3;
+  part(tag, cyl(0.003, 0.003, 0.06, 5), wire, 0, 0.03, 0);
+  part(tag, plane(0.07, 0.045), lettered('FOR YOU', 0x3a2a20, 0xfff1b8, 160, 64), 0, -0.02, 0);
   const body = sub(hanger, 0, -0.12, 0);
-  part(body, box(0.36, 0.015, 0.1), wood, 0, 0, 0); // (the hanger's bar)
-  // the jumper: a ribbed body, stripes across, and the two sleeves
-  part(body, box(0.4, 0.46, 0.14), wool, 0, -0.23, 0);
-  for (let k = 0; k < 3; k++) part(body, box(0.405, 0.04, 0.145), stripe, 0, -0.1 - k * 0.14, 0);
-  part(body, box(0.42, 0.05, 0.15), lambert(0xb83a2a), 0, -0.46, 0); // (the hem's rib)
-  part(body, torus(0.08, 0.025, 12, Math.PI), lambert(0xb83a2a), 0, 0.0, 0, 0, 0, Math.PI); // (the neck)
-  const short = part(body, cyl(0.055, 0.065, 0.3, 10), wool, 0.26, -0.15, 0, 0, 0, 0.7);
-  part(short, cyl(0.06, 0.06, 0.04, 10), lambert(0xb83a2a), 0, -0.15, 0);
-  // the long sleeve: a chain of segments, down to the floor and along it
-  const sleeve = sub(body, -0.22, -0.02, 0);
-  const segs = chain(sleeve, 9, -0.13, (joint, j) => { part(joint, cyl(0.055, 0.055, 0.14, 10), j % 3 === 2 ? stripe : wool, 0, -0.065, 0); });
-  part(segs[8], cyl(0.058, 0.058, 0.04, 10), lambert(0xb83a2a), 0, -0.13, 0);
-  // the ball of wool, rolling
-  const ball = sub(all, 0, 0.07, 0.22);
+  part(body, box(0.44, 0.02, 0.03), wood, 0, 0, 0);
+  // the jumper: the body hanging from the shoulder bar, the band across the chest, the ribbed hem and
+  // neck, and the two sleeves hanging from the shoulders
+  const jumper = sub(body, 0, 0.02, 0); // (the shoulder bar is inside the shoulders; the hook comes out of the neck)
+  part(jumper, box(0.42, 0.46, 0.13), wool, 0, -0.23, 0);
+  part(jumper, box(0.424, 0.08, 0.134), cream, 0, -0.17, 0); // (the fair-isle band, its diamonds front and back)
+  for (let k = 0; k < 5; k++) for (const z of [0.0672, -0.0672]) part(jumper, new THREE.OctahedronGeometry(0.03), wool, -0.14 + k * 0.07, -0.17, z).scale.set(1, 1, 0.1);
+  for (let k = 0; k < 2; k++) part(jumper, box(0.424, 0.012, 0.134), rib, 0, -0.115 - k * 0.11, 0); // (the band's edging)
+  const hem = part(jumper, box(0.43, 0.06, 0.136), rib, 0, -0.49, 0);
+  for (let k = 0; k < 14; k++) part(hem, box(0.008, 0.06, 0.004), wool, -0.195 + k * 0.03, 0, 0.069); // (the ribbing's ridges, front)
+  for (let k = 0; k < 14; k++) part(hem, box(0.008, 0.06, 0.004), wool, -0.195 + k * 0.03, 0, -0.069);
+  part(jumper, torus(0.09, 0.022, 14), rib, 0, 0.0, 0); // (the ribbed crew neck: an arc over the shoulders)
+  const sleeve = (d, len) => {
+    const s = sub(jumper, d * 0.2, -0.02, 0);
+    s.rotation.z = d * 0.5;
+    part(s, cyl(0.065, 0.058, len, 10), wool, 0, -len / 2, 0);
+    part(s, cyl(0.062, 0.062, 0.05, 10), rib, 0, -len - 0.01, 0);
+    for (let k = 0; k < 8; k++) { const a = k * 0.785; part(s, box(0.006, 0.05, 0.004), wool, Math.sin(a) * 0.063, -len - 0.01, Math.cos(a) * 0.063, 0, a, 0); }
+    return s;
+  };
+  const sleeves = [sleeve(-1, 0.4), sleeve(1, 0.46)];
+  // the ball of wool, rolling, joined to the hem's corner by a strand
+  const ball = sub(all, 0.1, 0.07, 0.25);
   part(ball, sphere(0.07, 12, 10), wool);
   for (let k = 0; k < 4; k++) part(ball, torus(0.07, 0.006, 16), lambert(0xe8604a), 0, 0, 0, k * 0.8, k * 0.5, 0);
-  const strandMat = lambert(0xe8604a);
-  const strand = part(all, cyl(0.005, 0.005, 0.5, 5), strandMat, 0, 0.02, 0.2, 0, 0, FLAT);
+  const strand = part(all, cyl(0.004, 0.004, 1, 5).translate(0, 0.5, 0), lambert(0xe8604a));
+  const from = new THREE.Vector3(), to = new THREE.Vector3(), up = new THREE.Vector3(0, 1, 0), dir = new THREE.Vector3();
+  const hemCorner = new THREE.Vector3(-0.2, -0.5, 0.05);
   return idle(group, (t) => {
     hanger.rotation.y = Math.sin(t * 0.6) * 0.15;
     body.rotation.z = Math.sin(t * 1.1) * 0.03;
-    segs.forEach((seg, j) => { seg.rotation.z = j < 5 ? 0.05 + Math.sin(t * 1.5 + j) * 0.04 : 0.5 + Math.sin(t * 1.5 + j) * 0.08; seg.rotation.x = j > 5 ? 0.15 : 0; });
-    const roll = Math.sin(t * 0.9) * 0.22;
-    ball.position.x = roll;
+    sleeves.forEach((s, k) => { s.rotation.z = (k ? 1 : -1) * 0.5 + Math.sin(t * 1.4 + k * 1.5) * 0.06; s.rotation.x = Math.sin(t * 0.9 + k) * 0.08; });
+    const roll = Math.sin(t * 0.9) * 0.2;
+    ball.position.x = 0.1 + roll;
     ball.rotation.z = -roll / 0.07;
-    strand.position.set(roll / 2 - 0.1, 0.02, 0.2);
-    strand.scale.y = Math.max(0.1, (0.3 + roll) / 0.5);
+    // the strand runs from the hem's corner to the ball
+    all.updateMatrixWorld(true);
+    jumper.localToWorld(from.copy(hemCorner));
+    ball.getWorldPosition(to);
+    all.worldToLocal(from);
+    all.worldToLocal(to);
+    dir.subVectors(to, from);
+    strand.position.copy(from);
+    strand.scale.y = Math.max(0.01, dir.length());
+    strand.quaternion.setFromUnitVectors(up, dir.normalize());
   });
 };
 
-// ---- C58 returned library books: a strapped stack, late; the top one's pages riffle and a bookmark waves
+// ---- C58 returned library books: a strapped stack of hardbacks, late, the cream of the pages showing on
+// three sides of each, a date-due slip poking out; the top one's cover lifts in the breeze and its pages
+// riffle, a bookmark ribbon waving from under them
 const makeBooks = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const colours = [0x2a4a8a, 0x8a2a2a, 0x2a6a3a, 0x7a5a2a, 0x5a2a7a], pages = lambert(0xf4ead8), strap = lambert(0x3a2a20);
+  const colours = [0x2a4a8a, 0x8a2a2a, 0x2a6a3a, 0x7a5a2a, 0x5a2a7a], pages = lambert(0xf4ead8), strap = lambert(0x3a2a20), gilt = onFace(lambert(0xd4a94a));
+  // a hardback: two boards and a spine round a block of pages, the block showing at the fore-edge and both ends
+  const hardback = (parent, w, h, d, colour, k) => {
+    const b = sub(parent);
+    const cover = lambert(colour), board = 0.008;
+    part(b, box(w, board, d), cover, 0, board / 2, 0);
+    part(b, box(w, board, d), cover, 0, h - board / 2, 0);
+    part(b, box(0.012, h, d), cover, -w / 2 + 0.006, h / 2, 0);
+    part(b, box(w - 0.03, h - board * 2 - 0.004, d - 0.016), pages, 0.003, h / 2, 0);
+    part(b, box(0.16, 0.003, 0.03), gilt, -0.1 + (k % 2) * 0.05, h + 0.002, 0.03 - (k % 3) * 0.03); // (the title, on the top board)
+    part(b, box(0.006, h * 0.5, 0.008), gilt, -w / 2 - 0.0005, h / 2, 0); // (a stripe on the spine)
+    return b;
+  };
   const sizes = [[0.46, 0.07, 0.34], [0.42, 0.06, 0.3], [0.44, 0.05, 0.32], [0.4, 0.06, 0.3]];
   let y = 0;
   sizes.forEach(([w, h, d], k) => {
-    const b = sub(all, (k % 2 ? 0.02 : -0.02), y, 0);
+    const b = hardback(all, w, h, d, colours[k], k);
+    b.position.set((k % 2 ? 0.02 : -0.02), y, 0);
     b.rotation.y = (k % 2 ? -0.08 : 0.06);
-    part(b, box(w, h, d), lambert(colours[k]), 0, h / 2, 0);
-    part(b, box(w - 0.03, h - 0.012, d - 0.02), pages, 0.015, h / 2, 0.012);
-    part(b, box(0.04, 0.012, d - 0.08), lambert(0xd4a94a), -0.12, h + 0.001, 0, 0, FLAT); // (a title on the cover)
     y += h;
   });
-  // the strap round the stack, with a buckle
-  part(all, box(0.06, y + 0.02, 0.37), strap, 0, (y + 0.02) / 2, 0);
-  part(all, box(0.07, 0.03, 0.03), lambert(0xd4a94a), 0, y + 0.015, 0.1);
-  // the top book: its cover and the pages that riffle, and a bookmark ribbon
-  const top = sub(all, 0.1, y, 0.02);
-  const [tw, td] = [0.42, 0.3];
+  // the date-due slip, poking out of the second book's fore-edge
+  part(all, box(0.08, 0.002, 0.05), onFace(glow(0xfff1b8)), 0.26, 0.1, 0.04, 0, 0.2, 0);
+  // the strap round the stack, a buckle on top; the top book sits on the strap
+  const Y = y + 0.006;
+  for (const z of [-1, 1]) part(all, box(0.06, Y, 0.006), strap, 0, Y / 2, z * 0.176);
+  part(all, box(0.06, 0.006, 0.364), strap, 0, Y + 0.003, 0);
+  part(all, box(0.07, 0.03, 0.03), lambert(0xd4a94a), 0, Y + 0.02, 0.1);
+  // the top book: its block of pages on the stack, the cover hinged at the spine, the top sheets hinged too
+  const top = sub(all, 0.04, Y + 0.006, 0.01);
+  const [tw, th, td] = [0.42, 0.06, 0.3];
   part(top, box(tw, 0.008, td), lambert(colours[4]), 0, 0.004, 0);
-  const leaves = Array.from({ length: 7 }, (_, k) => part(top, box(tw - 0.02, 0.004, td - 0.02), pages, -0.01, 0.01 + k * 0.004, 0.01));
-  const cover = sub(top, -tw / 2, 0.04, 0);
-  part(cover, box(tw, 0.008, td), lambert(colours[4]), tw / 2, 0, 0);
-  part(cover, box(0.2, 0.004, 0.06), lambert(0xd4a94a), tw / 2, 0.006, 0);
-  part(cover, plane(0.14, 0.05), lettered('OVERDUE', 0xffffff, 0xd81e2a, 192, 64), tw / 2 + 0.05, 0.007, 0.09, -FLAT);
-  const ribbon = sub(top, 0.1, 0.03, -td / 2);
-  part(ribbon, box(0.03, 0.002, 0.16), lambert(0xd81e2a), 0, 0, -0.08);
+  part(top, box(0.012, th, td), lambert(colours[4]), -tw / 2 + 0.006, th / 2, 0);
+  part(top, box(tw - 0.03, 0.03, td - 0.016), pages, 0.003, 0.023, 0); // (the block: 0.008 to 0.038)
+  const leaves = Array.from({ length: 4 }, (_, k) => { // (the top sheets, hinged at the spine: 0.04 to 0.053)
+    const leaf = sub(top, -tw / 2 + 0.012, 0.04 + k * 0.004, 0);
+    part(leaf, box(tw - 0.03, 0.002, td - 0.016), pages, (tw - 0.03) / 2, 0, 0);
+    return leaf;
+  });
+  const cover = sub(top, -tw / 2 + 0.006, 0.058, 0);
+  part(cover, box(tw, 0.008, td), lambert(colours[4]), tw / 2 - 0.006, 0, 0);
+  part(cover, box(0.2, 0.003, 0.06), gilt, tw / 2, 0.006, 0);
+  part(cover, plane(0.14, 0.05), lettered('OVERDUE', 0xffffff, 0xd81e2a, 192, 64), tw / 2 + 0.05, 0.0045, 0.09, -FLAT);
+  const ribbon = sub(top, 0.1, 0.039, -td / 2 + 0.008);
+  part(ribbon, box(0.03, 0.0015, 0.16), lambert(0xd81e2a), 0, 0, -0.08);
   return idle(group, (t) => {
     const breeze = Math.sin(t * 0.8);
-    cover.rotation.z = -0.15 - Math.max(0, breeze) * 0.5;
-    leaves.forEach((leaf, k) => { leaf.position.set(-0.01, 0.012 + k * 0.004, 0.01); leaf.rotation.z = -Math.max(0, Math.sin(t * 2.3 + k * 0.7)) * (0.06 + k * 0.03) * Math.max(0, breeze + 0.3); leaf.position.x = -tw / 2 + 0.01 + (tw - 0.02) / 2 * Math.cos(leaf.rotation.z); });
+    cover.rotation.z = 0.1 + Math.max(0, breeze) * 0.5;
+    leaves.forEach((leaf, k) => { leaf.rotation.z = Math.max(0, Math.sin(t * 2.3 + k * 0.7)) * (0.05 + k * 0.03) * Math.max(0, breeze + 0.3); });
     ribbon.rotation.set(0.2 + Math.sin(t * 2.5) * 0.3, Math.sin(t * 1.7) * 0.25, 0);
     all.rotation.y = Math.sin(t * 0.4) * 0.05;
   });
 };
 
-// ---- C59 the new neighbour's fruit basket: a wicker basket piled with fruit; it shuffles, and the
-// pineapple's crown sways
+// ---- C59 the new neighbour's fruit basket: an open wicker basket, fruit heaped up over its rim, a
+// handle arching over with a bow and a WELCOME tag; the fruit shuffles, and the pineapple's crown sways
 const makeFruit = () => {
   const group = new THREE.Group();
   const all = sub(group);
-  const wicker = lambert(0xc49a5a), wickerDark = lambert(0x9a7238);
-  part(all, cyl(0.3, 0.22, 0.24, 18), wicker, 0, 0.12, 0);
+  const wicker = lambert(0xc49a5a, { side: THREE.DoubleSide }), wickerDark = lambert(0x9a7238);
+  // the basket: an open lathe (no top), the black shade of its inside just under the rim
+  part(all, new THREE.LatheGeometry([[0.02, 0], [0.22, 0], [0.26, 0.06], [0.3, 0.2], [0.31, 0.28]].map(([r, y]) => new THREE.Vector2(r, y)), 20), wicker);
+  part(all, new THREE.CircleGeometry(0.3, 20), SHADE, 0, 0.266, 0, -FLAT);
   for (let k = 0; k < 4; k++) part(all, torus(0.23 + k * 0.022, 0.012, 20), wickerDark, 0, 0.04 + k * 0.06, 0, FLAT);
-  part(all, torus(0.3, 0.02, 20), wickerDark, 0, 0.24, 0, FLAT);
-  part(all, torus(0.3, 0.018, 20, Math.PI), wickerDark, 0, 0.24, 0, 0, FLAT, 0); // (the handle, over the top)
+  part(all, torus(0.31, 0.022, 20), wickerDark, 0, 0.28, 0, FLAT);
+  part(all, torus(0.3, 0.02, 24, Math.PI), wickerDark, 0, 0.28, 0); // (the handle, over the top)
+  // the bow and the tag on the handle
+  const bow = sub(all, 0, 0.58, 0);
+  for (const d of [-1, 1]) part(bow, torus(0.04, 0.014, 10), lambert(0xd83a4a), d * 0.045, 0.02, 0, 0, 0, d * 0.4).scale.set(1.2, 1, 0.5);
+  part(bow, sphere(0.022, 8, 6), lambert(0xd83a4a), 0, 0.02, 0);
+  const tag = sub(all, -0.2, 0.48, 0.04);
+  part(tag, cyl(0.003, 0.003, 0.08, 5), lambert(0xd8d8e0), 0, 0.04, 0);
+  part(tag, plane(0.12, 0.06), lettered('WELCOME!', 0x3a2a20, 0xfff1b8, 192, 72), 0, -0.03, 0);
+  // the fruit, heaped: every piece stands proud of the shade
   const fruit = [];
   const add = (mesh, k) => { mesh.userData.k = k; mesh.userData.at = mesh.position.clone(); fruit.push(mesh); return mesh; };
-  add(part(all, sphere(0.075, 12, 10), lambert(0xd83a2a), -0.14, 0.3, 0.08), 0); // apples
-  add(part(all, sphere(0.07, 12, 10), lambert(0x8ac83a), 0.12, 0.28, 0.12), 1);
-  add(part(all, sphere(0.08, 12, 10), lambert(0xff8a2a), 0.15, 0.3, -0.1), 2); // an orange
-  add(part(all, sphere(0.06, 12, 10), lambert(0xffd23f), -0.02, 0.27, 0.19), 3); // a lemon
+  add(part(all, sphere(0.075, 12, 10), lambert(0xd83a2a), -0.16, 0.3, 0.1), 0); // apples
+  add(part(all, sphere(0.07, 12, 10), lambert(0x8ac83a), 0.13, 0.29, 0.14), 1);
+  add(part(all, sphere(0.08, 12, 10), lambert(0xff8a2a), 0.17, 0.3, -0.1), 2); // an orange
+  add(part(all, sphere(0.06, 12, 10), lambert(0xffd23f), -0.02, 0.28, 0.21), 3); // a lemon
   fruit[3].scale.set(1.3, 0.9, 0.9);
-  const bunch = sub(all, -0.15, 0.3, -0.12); // (grapes)
+  const bunch = sub(all, -0.17, 0.3, -0.12); // (grapes)
   for (let k = 0; k < 9; k++) part(bunch, sphere(0.03, 8, 6), lambert(0x6a3a8a), Math.sin(k * 2.4) * 0.05, (k % 3) * 0.04 - 0.02, Math.cos(k * 2.4) * 0.05);
   add(bunch, 4);
-  const bananas = sub(all, 0.02, 0.33, -0.02);
+  const bananas = sub(all, 0.1, 0.43, 0.06);
   for (let k = 0; k < 3; k++) part(bananas, torus(0.09, 0.02, 10, 2), lambert(0xf4d35e), k * 0.035, 0, k * 0.02, 0, 0.3, 0.5);
   add(bananas, 5);
-  const pineapple = sub(all, 0.0, 0.32, 0);
+  const pineapple = sub(all, -0.03, 0.3, 0.0);
   part(pineapple, sphere(0.1, 12, 10), lambert(0xc8a040), 0, 0.1, 0).scale.set(1, 1.5, 1);
   for (let k = 0; k < 10; k++) part(pineapple, sphere(0.02, 5, 4), lambert(0x8a6a20), Math.sin(k * 2.4) * 0.09, 0.02 + (k % 5) * 0.045, Math.cos(k * 2.4) * 0.09);
   const crown = sub(pineapple, 0, 0.25, 0);
   const leaves = Array.from({ length: 9 }, (_, k) => { const a = k * 0.7; const l = part(crown, cone(0.022, 0.2, 4), lambert(0x3f9b4b), Math.sin(a) * 0.03, 0.08, Math.cos(a) * 0.03, Math.cos(a) * (0.3 + (k % 3) * 0.2), 0, -Math.sin(a) * (0.3 + (k % 3) * 0.2)); l.userData.a = a; return l; });
   return idle(group, (t) => {
     fruit.forEach((f) => { // (a shuffle: each settles, now and then)
-      const k = f.userData.k, u = ((t * 0.5 + k / 6) % 1), hop = Math.pow(Math.max(0, Math.sin(u * Math.PI * 2)), 4);
+      const k = f.userData.k, u = ((t * 0.5 + k / 8) % 1), hop = Math.pow(Math.max(0, Math.sin(u * Math.PI * 2)), 4);
       f.position.set(f.userData.at.x + Math.sin(k) * hop * 0.02, f.userData.at.y + hop * 0.03, f.userData.at.z);
       f.rotation.y = Math.sin(t * 0.7 + k) * 0.3;
     });
     crown.rotation.set(Math.sin(t * 1.3) * 0.15, 0, Math.cos(t * 1.1) * 0.15);
     leaves.forEach((l, k) => { l.rotation.z = -Math.sin(l.userData.a) * (0.3 + (k % 3) * 0.2) + Math.sin(t * 2 + k) * 0.05; });
     pineapple.rotation.y = Math.sin(t * 0.5) * 0.1;
+    tag.rotation.y = Math.sin(t * 1.1) * 0.3;
+    bow.scale.setScalar(1 + Math.sin(t * 3) * 0.04);
   });
 };
 
@@ -1298,7 +1307,7 @@ const makeRadio = () => {
 // these models, by their ids in cargo.js
 export const MORE_MODELS = {
   lawyers: makeLawyers, chainletter: makeChainletter, glitter: makeGlitter, recorders: makeRecorders, subpoena: makeSubpoena,
-  telemarketers: makeTelemarketers, taxmen: makeTaxmen, bailiffs: makeBailiffs, wardens: makeWardens, consultants: makeConsultants,
-  inlaws: makeInlaws, band: makeBand, salesman: makeSalesman, party: makeParty, casserole: makeCasserole,
+  telemarketers: makeTelemarketers, taxmen: makeTaxmen, wardens: makeWardens, consultants: makeConsultants,
+  inlaws: makeInlaws, band: makeBand, casserole: makeCasserole,
   kittens: makeKittens, jumper: makeJumper, books: makeBooks, fruit: makeFruit, radio: makeRadio,
 };

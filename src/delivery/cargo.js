@@ -82,14 +82,11 @@ export const CARGO = {
     { id: 'recorders', name: 'Recorder Class', states: ['Tuning up', 'Sour notes', 'Shrieking'] },
     { id: 'subpoena', name: 'Subpoena', states: ['Rolled up', 'Unrolling', 'Coiled round the crate'] },
     { id: 'telemarketers', name: 'Box of Telemarketers', states: ['A murmur', 'Phones out', 'Ringing off the hook'] },
-    { id: 'taxmen', name: 'Sack of Tax Inspectors', states: ['Tape trailing', 'Clipboards out', 'Stamping AUDIT'] },
-    { id: 'bailiffs', name: 'Crate of Bailiffs', states: ['One sticker', 'Sticking', 'Seizing the gnome'] },
+    { id: 'taxmen', name: 'Sack of Tax Inspectors', states: ['Receipts trailing', 'Clipboards out', 'Stamping AUDIT'] },
     { id: 'wardens', name: 'Parking Wardens', states: ['Cap on the box', 'Writing tickets', 'Tickets flying'] },
-    { id: 'consultants', name: 'Crate of Consultants', states: ['Laser dot', 'Flip-chart out', 'Pie chart spinning'] },
-    { id: 'inlaws', name: "The In-Laws' Luggage", states: ['Neatly stacked', 'Bulging', 'Burst open'] },
+    { id: 'consultants', name: 'Crate of Consultants', states: ['Laser dot', 'Pages flipping', 'Pie chart spinning'] },
+    { id: 'inlaws', name: "The In-Laws' Luggage", states: ['Neatly stacked', 'Bulging', 'Heaving apart'] },
     { id: 'band', name: 'Marching Band in a Box', states: ['A faint oompah', 'Trombone out', 'Full blast'] },
-    { id: 'salesman', name: "Door-to-Door Salesman's Case", states: ['Shut', 'Foot in the door', 'Wide open'] },
-    { id: 'party', name: 'The Surprise Party', states: ['Says nothing', 'Giggling', 'SURPRISE'] },
   ],
 };
 // the names and the Evil states in cargoText.json come first, these the fallback (words.js: a bad entry is passed over)

@@ -13,7 +13,7 @@
       "good": "A short hop out past the city limits. One bridge, one exit, one lane closure: signal early, smile often, and the tip is yours.",
       "evil": "Quiet roads, slow vans, and nobody watching but two frogs and the odd patrol car. Ideal conditions for a bad influence."
     },
-    "cargo": { "good": "jumper", "evil": "party" }
+    "cargo": { "good": "jumper", "evil": "cloud" }
   },
   "farm": {
     "name": "Farm Lanes",
@@ -209,7 +209,7 @@
       "good": "Monsoon season. Rickshaws swarm, water mains burst through the road, a parade fills the street and cows go where they please. Be kind.",
       "evil": "Rickshaws, potholes, geysers in the road and a parade with nowhere to hide. The monsoon is the least of their problems."
     },
-    "cargo": { "good": "surfboard", "evil": "salesman" }
+    "cargo": { "good": "surfboard", "evil": "teddy" }
   },
   "stelvio": {
     "cargo": { "good": "sushi", "evil": "bats" }
@@ -404,7 +404,7 @@
       "good": "By jetboat through a minefield, three hundred and more of them, some adrift. The trawlers are working: go round, gently, wake and all.",
       "evil": "A jetboat, a sea full of mines and trawlers too slow to get out of the way. Something is going to go bang, and you are steering."
     },
-    "cargo": { "good": "globe", "evil": "bailiffs" }
+    "cargo": { "good": "globe", "evil": "snakes" }
   },
   "montreal": {
     "name": "Montreal",
