@@ -94,7 +94,7 @@ export const toyroom = ({ add, flat, instances, sideStrip, offRoads, beside, inJ
           const lat = at(9);
           bases.push([s, lat, 0.5, 10, 1, 10]);
           pegs.push([s, lat, 7, 1.2, 13, 1.2]);
-          for (let k = 0; k < 5; k++) rings[(k + Math.floor(s)) % BRIGHT.length].push([s, lat, 2.2 + k * 2.4, 9 - k * 1.3, 6, 9 - k * 1.3]);
+          for (let k = 0; k < 5; k++) rings[(k + Math.abs(Math.floor(s))) % BRIGHT.length].push([s, lat, 2.2 + k * 2.4, 9 - k * 1.3, 6, 9 - k * 1.3]);
         }
       }
     }

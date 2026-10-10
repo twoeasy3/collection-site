@@ -101,4 +101,7 @@ export const THEMES = {
   // furniture for a skyline; the sky is the wallpaper
   toyroom: { sky: 0xf1e3c8, ground: 0x6f8fb8, road: 0xff7a1a, scenery: 'toyroom', line: 0xffffff, centre: 0x1f6fd0,
     tunnel: { wall: 0xb98a55, tiles: 0xd9b077, roof: 0xa87c4a, face: 0xc49a66, lamp: 0xfff3d0 } },
+  // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
+  // (batch B: film studio, Venice, ice road: new themes go above this line)
+  // (batch C: theme park, volcano island, container port: new themes go above this line)
 };

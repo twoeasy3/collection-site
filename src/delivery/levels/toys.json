@@ -1,0 +1,65 @@
+{
+  "id": "toys",
+  "name": "Toy Room",
+  "theme": "toyroom",
+  "clock": { "good": 170, "evil": 130 },
+  "tip": 280,
+  "lanes": { "north": 3, "south": 2 },
+  "cargo": { "good": "goldfish", "evil": "doll" },
+  "traffic": { "commuter": 0.2, "bus": 0.1, "taxi": 0.12, "lovebus": 0.1, "icecream": 0.06, "postvan": 0.1, "pickup": 0.1, "miata": 0.08, "learner": 0.06, "police": 0.03 },
+  "trafficCount": 13,
+  "oncomingCount": 8,
+  "segments": [
+    { "length": 500, "curve": 0 },
+    { "length": 300, "curve": 0.002 },
+    { "length": 400, "curve": 0 },
+    { "length": 300, "curve": -0.0022 },
+    { "length": 600, "curve": 0 },
+    { "length": 250, "curve": 0.0025 },
+    { "length": 450, "curve": 0 },
+    { "length": 300, "curve": -0.002 },
+    { "length": 600, "curve": 0 }
+  ],
+  "tunnels": [
+    { "from": 2150, "to": 2330 }
+  ],
+  "tractors": [
+    { "s": 700, "lane": 3 },
+    { "s": 2420, "lane": 2 }
+  ],
+  "drifters": [
+    { "from": 1250, "to": 1450, "kind": "tyre", "count": 5, "pattern": "circle" }
+  ],
+  "balloons": [
+    { "s": 3520, "lanes": [2, 3] }
+  ],
+  "parked": [
+    { "s": 380, "side": "right" },
+    { "s": 2900, "side": "right" }
+  ],
+  "targets": [
+    { "s": 560, "side": "right" },
+    { "s": 1700, "side": "left" },
+    { "s": 3050, "side": "right" }
+  ],
+  "pickups": [
+    { "type": "turbo", "s": 180, "lane": 3 },
+    { "type": "cash10", "s": 520, "lane": 4 },
+    { "type": "turbo", "s": 880, "lane": 4 },
+    { "type": "cash20", "s": 1060, "lane": 4 },
+    { "type": "wrench", "s": 1200, "lane": 2 },
+    { "type": "mystery", "s": 1500, "lane": 3 },
+    { "type": "cash20", "s": 1990, "lane": 4 },
+    { "type": "timePlus", "s": 2010, "lane": 3 },
+    { "type": "wrench", "s": 2240, "lane": 2 },
+    { "type": "turbo", "s": 2480, "lane": 3 },
+    { "type": "cash20", "s": 2660, "lane": 3 },
+    { "type": "armour", "s": 3150, "lane": 4 },
+    { "type": "timePlus", "s": 3360, "lane": 2 },
+    { "type": "cash10", "s": 3600, "lane": 4 }
+  ],
+  "obstacles": [
+    { "s": 3440, "lane": 4, "kind": "crate" },
+    { "s": 3452, "lane": 4, "kind": "crate" }
+  ]
+}
