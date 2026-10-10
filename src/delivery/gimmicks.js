@@ -33,7 +33,7 @@ const lambert = (color, extra) => new THREE.MeshLambertMaterial({ color, ...extr
 const glow = (color) => new THREE.MeshBasicMaterial({ color });
 const mesh = (geometry, material, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geometry, material); m.position.set(x, y, z); return m; };
 const box = (w, h, d, material, x, y, z) => mesh(new THREE.BoxGeometry(w, h, d), material, x, y, z);
-const group = (...parts) => { const g = new THREE.Group(); g.add(...parts); return g; };
+const group = (...parts) => { const g = new THREE.Group(); if (parts.length) g.add(...parts); return g; }; // (an empty one too: add() with nothing to add logs an error, as the bullet train's sleepers = group() did)
 const ob = (kind, o = {}) => OBSTACLE_MODELS[kind](o);
 const vehicle = (kind, color) => MODELS[CONFIG.vehicles[kind].model]({ ...CONFIG.vehicles[kind], color });
 // a car's model painted (its body's material is its paint)

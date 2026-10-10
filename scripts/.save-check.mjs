@@ -1,4 +1,5 @@
-// A check of saved progress (src/delivery/progress.js): how big a full save's cookie is (the cap is 4096 bytes:
+// A check of saved progress (src/delivery/progress.js): that local storage holds the whole save and the cookie only
+// the short of it, never over its cap, even for 100 levels and 80 cars (the cap is 4096 bytes:
 // every level delivered on both sides, every car owned), and that a save code comes back as it went out.
 //   node scripts/.save-check.mjs
 import { boot } from './delivery-headless.mjs';
@@ -17,15 +18,49 @@ let n = 0;
 for (const level of LEVELS) for (const side of ['good', 'evil']) Progress.data.bestTime[side][level.id] = 10 + (++n * 7.123456789012345) % 90;
 Progress.data.money = 12345.678901234567;
 console.log(`${LEVELS.length} levels, ${Progress.data.cars.length} cars`);
-console.log('cookie, times as a run leaves them: ' + cookieSize(Progress.data) + ' bytes');
+const STORE = 'delivery_racer_progress_backup', cookieNow = () => document.cookie.split(';')[0], inCookie = () => JSON.parse(decodeURIComponent(cookieNow().split('=')[1]));
 if (Progress.saved) {
-  const size = ('delivery_racer_progress=' + encodeURIComponent(Progress.saved())).length;
-  console.log('cookie, as saved now: ' + size + ' bytes');
-  check(size <= 4096, 'a full save fits a cookie (4096 bytes)');
+  const whole = ('delivery_racer_progress=' + encodeURIComponent(Progress.saved())).length;
+  console.log('the whole save, were it a cookie: ' + whole + ' bytes (' + cookieSize(Progress.data) + ' with times as a run leaves them)');
   Progress.save();
-  const written = document.cookie.split(';')[0];
-  check(written.length === size, 'what save() writes is that size (' + written.length + ')');
-  check(JSON.parse(decodeURIComponent(written.split('=')[1])).bestTime.good[LEVELS[0].id] === Math.round(Progress.data.bestTime.good[LEVELS[0].id] * 10) / 10, 'best times saved to 0.1 s');
+  console.log('the cookie as saved now: ' + document.cookie.length + ' bytes; local storage: ' + localStorage.getItem(STORE).length + ' characters');
+  check(document.cookie.length <= 4096, 'the cookie is under its cap (4096 bytes)');
+  check(localStorage.getItem(STORE) === Progress.saved(), 'local storage holds the whole save');
+  check(JSON.parse(localStorage.getItem(STORE)).bestTime.good[LEVELS[0].id] === Math.round(Progress.data.bestTime.good[LEVELS[0].id] * 10) / 10, 'best times saved to 0.1 s');
+  check(inCookie().bestTime === undefined && inCookie().stats === undefined && inCookie().unlocked === Progress.data.unlocked && inCookie().cars.length === Progress.data.cars.length, 'the cookie holds what is open, the bank and the cars, and no best times or counters');
+  // a save far bigger than the game has: 100 levels on both sides, 80 cars, 60 counters. Saved, and loaded again
+  {
+    const kept = Progress.saved();
+    Progress.reset();
+    const big = Progress.data;
+    big.unlocked = 100; big.money = 987654.32; big.car = 'car-number-79';
+    big.cars = ['commuter', ...Array.from({ length: 79 }, (_, i) => 'car-number-' + (i + 1))];
+    for (let i = 0; i < 100; i++) for (const side of ['good', 'evil']) big.bestTime[side]['a-level-called-' + i] = 10 + i * 0.7;
+    for (let i = 0; i < 60; i++) big.stats['somethingCounted' + i] = i * 1234.56;
+    Progress.save();
+    const text = Progress.saved();
+    console.log('100 levels and 80 cars: the whole save ' + text.length + ' characters (' + encodeURIComponent(text).length + ' bytes as a cookie); the cookie as saved: ' + document.cookie.length + ' bytes');
+    check(document.cookie.length <= 4096, '100 levels and 80 cars: the cookie is still under its cap');
+    Progress.reload();
+    check(Progress.saved() === text, '...and the whole of it loads again, from local storage');
+    localStorage.removeItem(STORE);
+    Progress.reload();
+    const d = Progress.data;
+    check(d.unlocked === 100 && d.money === 987654.32 && d.cars.length === 80 && d.car === 'car-number-79', '...and with local storage gone, the cookie brings back what is open, the bank and every car (' + d.cars.length + ' cars, level ' + d.unlocked + ')');
+    check(Object.keys(d.bestTime.good).length === 0 && Object.keys(d.stats).length === 0, '   (best times and counters are not in it: those are lost with local storage)');
+    // more cars than any cookie could list: it goes down to the car in use, and still fits
+    d.cars = ['commuter', ...Array.from({ length: 600 }, (_, i) => 'a-car-with-a-long-name-' + i)]; d.car = 'a-car-with-a-long-name-7';
+    Progress.save();
+    check(document.cookie.length <= 4096 && inCookie().car === d.car && inCookie().cars.includes(d.car), '600 cars: the cookie keeps the car in use, and is ' + document.cookie.length + ' bytes');
+    Progress.reload();
+    check(Progress.data.cars.length === 601, '...while local storage has them all');
+    // a cookie from before, holding everything, is still read
+    localStorage.removeItem(STORE);
+    document.cookie = 'delivery_racer_progress=' + encodeURIComponent(kept) + '; path=/';
+    Progress.reload();
+    check(Progress.saved() === kept, 'a cookie from before this, holding the whole save, is read as it is');
+    Progress.save();
+  }
   // a save code, out and back
   const code = Progress.exportCode(), before = Progress.saved();
   console.log('save code: ' + code.length + ' characters');
@@ -60,7 +95,7 @@ if (Progress.saved) {
 {
   Progress.reset();
   Progress.save();
-  const stored = () => document.cookie.split(';')[0];
+  const stored = () => document.cookie.split(';')[0] + ' | ' + localStorage.getItem('delivery_racer_progress_backup');
   const before = stored();
   Progress.noSave = true;
   Progress.data.cars.push('tank'); // (as ?car=tank does)

@@ -165,6 +165,11 @@ if (params.get('racewatch') !== null) {
     Cinematic.on = true;
     Cinematic.studio = params.get('cine') === 'car'; // (?cine=car: the car alone, on white)
     Cinematic.turn = Number(params.get('turn')) || 0; // (&turn=120: the studio's camera that many degrees round the car, for its other sides)
+    // (the level's still: &cineside=left puts the camera on the other side of the road, &cineout=2 that many m
+    // beyond the road's edge (9; below 0, over the road), &cineup=12 that high (7.5), &cineback=40 that far behind (22))
+    if (params.get('cineside') === 'left') Cinematic.side = -1;
+    for (const key of ['out', 'up', 'back']) if (params.get('cine' + key) !== null && isFinite(Number(params.get('cine' + key)))) Cinematic[key] = Number(params.get('cine' + key));
+    Player.testGhost = false; Player.ghost = 0; // (a car kept whole by ?ghost while ?ff ran is not drawn as a ghost in its picture)
     Game.paused = true;
     document.body.classList.add('cinematic');
     if (Cinematic.studio) {

@@ -19,6 +19,10 @@ import { themepark } from './themepark.js';
 import { volcano } from './volcano.js';
 import { port } from './port.js';
 // (batch C's imports go above this line)
+import { wildwest } from './wildwest.js';
+import { favela } from './favela.js';
+import { rice } from './rice.js';
+// (batch D's imports go above this line)
 
 export const THEME_SCENERY = {
   toyroom,
@@ -33,4 +37,8 @@ export const THEME_SCENERY = {
   volcano,
   port,
   // (batch C: theme park, volcano island, container port: new themes go above this line)
+  wildwest,
+  favela,
+  rice,
+  // (batch D: Wild West, favela, rice terraces: new themes go above this line)
 };

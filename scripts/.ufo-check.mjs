@@ -1,16 +1,11 @@
-import { logicServer } from './delivery-headless.mjs'; // (a Vite server that shares no cache with any other run)
-const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
-globalThis.window = { addEventListener() {} };
-globalThis.document = { getElementById: element, body: element(), cookie: '' };
-const server = await logicServer();
+// A look at the UFO air strike (a mystery effect: ufostrike.js), headless: on Night Drive the saucer is called in
+// four times, and what becomes of the cars it sets alight is counted and timed. It prints, it does not judge.
+//   node scripts/.ufo-check.mjs
+import { boot } from './delivery-headless.mjs'; // (the game's logic and the stand-in page it needs: this used to make
+// a stand-in of its own, which fell behind the game (no querySelectorAll) and died before anything ran)
+const g = await boot({ cars: ['commuter', 'sport'] });
 try {
-  const L = (p) => server.ssrLoadModule(p);
-  const levels = await L('/src/delivery/levels.js');
-  const { Game } = await L('/src/delivery/game.js');
-  const { Player } = await L('/src/delivery/player.js');
-  const { Traffic } = await L('/src/delivery/traffic.js');
-  const { FxQueue } = await L('/src/delivery/physics.js');
-  const { CONFIG } = await L('/src/delivery/config.js');
+  const { levels, Game, Player, Traffic, FxQueue, CONFIG } = g;
   const U = CONFIG.ufoStrike;
   let spun = 0, smokingBy1s = 0, total = 0;
   const deaths = [];
@@ -43,4 +38,5 @@ try {
   deaths.sort((a, b) => a - b);
   const pct = (q) => deaths[Math.floor(q * (deaths.length - 1))].toFixed(1);
   console.log(`${total} cars wrecked, ${spun} spun out on the way, ${smokingBy1s} smoking 1 s after the saucer started to leave; wrecked ${pct(0)}-${pct(1)} s after (10% by ${pct(0.1)}, median ${pct(0.5)}, 90% by ${pct(0.9)})`);
-} finally { await server.close(); }
+} finally { await g.close(); }
+process.exit(0);
