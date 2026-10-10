@@ -48,6 +48,7 @@ import { syncTunnel } from './render/tunnel.js';
 import { syncWaterMains } from './render/watermains.js';
 import { syncReversible } from './render/reversible.js';
 import { syncMysteries } from './render/mysteries.js';
+import './render/pursuit.js';
 import { Mysteries } from './mysteries.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
@@ -71,6 +72,7 @@ const params = new URLSearchParams(location.search);
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.open(params.get('garage') === 'evil');
+  if (params.get('tab')) Garage.tab(params.get('tab')); // (&tab=ideas: its Car ideas lot, where &look and &hover name an idea)
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
 }
@@ -244,8 +246,9 @@ const frame = (now) => {
     // ping as one comes near enough to bust you (nobody busts a tank)
     let copFar = Infinity;
     for (const c of Traffic.cars) {
-      if (!c.active || (c.kind !== 'police' && c.kind !== 'ambulance') || c.toad || c.junction) continue;
-      copFar = Math.min(copFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat));
+      if (!c.active || (c.kind !== 'police' && c.kind !== 'ambulance' && !c.sirenOn) || c.toad || c.junction) continue;
+      // (a pursuit's interceptor is heard from further off: before it is seen)
+      copFar = Math.min(copFar, Math.hypot(Track.along(c.s) - Track.along(Player.s), c.lat - Player.lat) * (c.sirenOn ? CONFIG.sirenRange / CONFIG.pursuit.heard : 1));
     }
     const siren = Game.state === 'playing' && !Game.paused ? Math.max(0, 1 - copFar / CONFIG.sirenRange) : 0;
     // (the player's own siren, a pickup, at full blast)

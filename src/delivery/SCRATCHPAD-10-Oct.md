@@ -568,5 +568,87 @@ Level fields added (for the editor's schema):
 - a segment's `ease` (m, 2 to 200): how sharply its slope blends into the next (a crest)
 
 Progress:
-- [x] Gimmick Road 3 + G16 crosswind: done (hash below once committed). On Grand Pacific (sea cliff bridge
+- [x] Gimmick Road 3 + G16 crosswind: done, `1d48924`. On Grand Pacific (sea cliff bridge
   6080-6520), Hurricane (1900-2400, stronger), Tokyo (1700-2250). Clocks not re-timed: the clock's ghost feels no wind.
+  `.gimmicks3-check.mjs wind` passes (11). Stills: `shots-gimmicks3/wind-1`, `wind-2`, `card-wind`.
+- [x] H1 crest jumps: done, `9d7711b`. No object: a segment's `ease`; `Gambles.updateFlight` (the flight engine the
+  ramp and the cushions will use), `Gambles.blind` (the camera down behind the car, `render/scene.js`), a
+  board with the speed. Collision skips what the car is in the air above (`collision.js`, two lines). On Rival
+  Run (top at 4400, a bale at 4428 lane 3) and Mystery Meadows (2740, the cows beyond). `crest` passes (11).
+  Stills: `crest-1-sign` .. `crest-5-over`, `card-crest`. `&speed=` and `&lane=` added to the address (main.js).
+- Schema entries (`levelSchema.js`): `crosswinds`, a segment's `ease`: in the commit after the editor's merge.
+- For the owner: `scripts/level-clocks.mjs` disagrees with two clocks kept as they were: Rival Run 300 / 285 (it
+  says 255 / 195) and Mystery Meadows 234 / 166 (it says 145 / 115). Not changed.
+- Decisions to overrule: wind strength 7 m/s^2 and height to the power 1.5; a ghost and a tank feel no wind;
+  crests use gravity 20 (the drawbridge's); the camera drops to 6 m up, 11 m back before a crest; the UFO and the
+  boat never fly.
+
+## Agent 11: new themes (.claude/worktrees/delivery-city-levels, delivery-themes)
+
+Task: checklist "New themes" in the owner's order: T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio,
+T1 Venice, T4 ice road, then down the ranking. Per theme: the look, its gimmick, a level. Never runs the smoke test.
+Files of its own: `render/themes/` (one file per theme's scenery, `index.js` names them; road.js calls the one named),
+`extras.js` + `render/extras.js` (the one place game.js and main.js call the new gimmicks from), one logic file and one
+render file per gimmick. Small additive edits in `render/road.js` (one branch), `render/tunnel.js` (a theme's tunnel
+colours), `themes.js`, `game.js`, `main.js`, `collision.js`, `track.js` (validation), `config.js`, `levels.js`,
+`levelSchema.js`, `gimmicks.js`, `levelinfo.js`, `messages.json`, `progress.js`.
+Nothing here has been played by hand: headless checks and stills only.
+
+Progress:
+- [x] T14 toy room, the look: 14e3c56 (`toyroom` in themes.js, `render/themes/toyroom.js`, `toyModels.js`)
+
+## Agent 9: police pursuit and road characters (.claude/worktrees/delivery-circuits, delivery-pursuit)
+
+Branch `delivery-pursuit` (from `main` at 2e0a296), never pushed. Nothing here has been played by hand or
+heard: headless checks and stills only. Stills: scratchpad `shots-pursuit/`.
+
+Shared-file edits are small and additive: `traffic.js` (a `car.driver` hook, `sirenOn`, `Traffic.outfit` /
+`Traffic.spare` exported), `game.js` (three lines: `Characters.reset` / `.update`), `main.js` (one sync call,
+the siren's range), `config.js` (one block per event, two vehicle kinds), `track.js` (validation), `levels.js`
+(docs), `levelinfo.js`, `gimmicks.js`, `police.js`, `messages.json`, six level JSONs (one line each).
+New events hang off `characters.js` / `render/characters.js`, so `game.js` and `main.js` are not touched again.
+
+- [x] P1 police pursuit: logic 881f429, drawing ee6dde8. `pursuits: { every }` on big-business, night,
+  speed-trap-alley, ring-road, tokyo, gimmick-road-2. Check: `node scripts/.pursuit-check.mjs` (43 ok).
+  Address: `&pursuit=3&pursuitend=caught&pursuitbehind=60&pursuitsettle=40`.
+  Decisions to overrule: one interceptor; not a garage car; "the police add the player to the chase" is a
+  heat meter that ends in a bust (`busts.pursuit`), Evil only, with a warning first; a Good player in the
+  interceptor's way is never busted; the Good reward is only for `caught`; left alone the ending is drawn
+  up the road (40 / 25 / 35); the getaway car's pace is 112% of the player's own car's top speed.
+  Not done: no HUD meter for the heat (a message warns), no editor control, no still of the two parked.
+- [x] P2 bank robber: bcd6b25. `robbers: [{ s }]` on big-business, night, the-hood, ring-road, gimmick-road-2, and after a pursuit's wreck. Check: `node scripts/.robber-check.mjs`. Address: `&robber=1600`, `&robber=carry`. Decisions to overrule: he pays as he goes ($15 / 100 m, 1000 m), not at the end; the police run at 97% of the player's top speed (a clear road gets him there, traffic gets you caught); handing over = slowing below 9 m/s beside any police car; he rides on the roof.
+- [ ] P9 sleepy lorry: in progress
+
+**10-Oct, the redo (agent 12, same branch; supersedes P1 and P2 above).** At the owner's word the pursuit is now a
+simple traffic event, as an ambulance is: every `pursuits.every` s a getaway car comes up from behind flat out,
+weaving, the interceptor (its own model) 30 m behind with its siren going (heard from 420 m, one warning message),
+traffic pulls aside, and the two drive on and are taken off out of sight ahead. Nothing gained or lost by the player;
+hitting either is an ordinary collision. Never on a race or the Battlefield.
+Removed: the bank robber (P2, reverted: f2404a4); the three endings, the Good and Evil gambles, reward, bag of cash,
+heat and its bust (`busts.pursuit`, the police page's row), eight messages, the helicopter, `characters.js` and
+`render/characters.js` (`game.js` calls `Pursuit` itself; `main.js` imports `render/pursuit.js`), `&pursuitend`,
+`&pursuitsettle`. `pursuit.js` 402 to 152 lines, `CONFIG.pursuit` 45 to 17. Simplified: cab1580. Merged with `main`
+and `pursuits` added to `levelSchema.js` (with a `notRace` rule): dcaa98c. Check: `node scripts/.pursuit-check.mjs`
+(29 ok). Stills: scratchpad `shots-pursuit2/`. Address: `&pursuit=3&pursuitbehind=60`. Not played by hand or heard.
+The getaway car now passes at 130% of the player's car's top speed (was 112%: it took 25 s to get by).
+
+## Agent 14: Stelvio and Market Town (.claude/worktrees/delivery-levelfix, delivery-levelfix)
+
+Shots: `scratchpad/shots-levelfix/before` and `/after` (68 each: chase every 200 m, from above at each fork, merge, crossroads, rockfall). Scripts in `scratchpad/levelfix/`.
+
+### Part 1: faults seen in the "before" shots (nothing changed yet)
+Stelvio:
+- S1 every rockfall rock waits hanging in the sky: 32 m above the ROAD's plane, 18 m off its edge, whatever the land does there (over the valley on the downhill side; 10-30 m above the hillside on the uphill one). Seen at 600, 800, 1400, 2400, 2800, 3200, 3800.
+- S2 hairpins read as plain bends: no wall, no chevron boards, no snow poles, the same rail as everywhere.
+- S3 the face between two legs is a smooth grey ramp, sawtoothed where the 8 m grid cuts it; pines stand half-buried on it.
+- S4 pines 10 m off the road up to 12 m tall fill the screen on the inside of bends.
+- S5 the summit (2000-2500, in fog) is an empty white plateau: no sign, no building, nothing to see; a dead stretch.
+- S6 no view: the valley side is the same snow as the hill side.
+Market Town:
+- M1 crossroads (800, 1180): houses, lawns, driveways and trees stand ON the cross road's arms (a house across the right arm at 1180; five trees on the arms at 800); the arms' yellow and edge lines come and go under them. A speed-limit sign stands in the mouth of the 1180 box.
+- M2 the arms have no pavement, no kerb: suburb pavement stops dead at the box.
+- M3 fork (2500) and merge (3450): the pavement and fence end square where the exit lane opens and start again with a point after the merge; a sliver of pavement lies in the wedge between the two roads.
+- M4 the side road (986 m) is bare: no houses, pavement, lamps or trees, three hay bales on green.
+- M5 the side road's three bends (size 10) start straight out of the nose: it wriggles beside the main road.
+- M6 the railway at 2000 is a flat brown band with trees on it.
+- M7 the whole level is one kind of house: no market, no town centre; nothing marks the level's name.

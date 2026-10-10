@@ -109,6 +109,7 @@ export const RULES = {
   noFlyovers: { text: 'A one-way level\'s exits cannot have flyovers', broken: (f, e) => f.oneWay && !!e.flyovers },
   closedLoop: { text: 'The road must come back round to where it starts (a closed loop)', broken: (f) => !f.closed },
   battle: { text: 'Only with "battle"', broken: (f) => !f.level.battle },
+  notRace: { text: 'Not on a race, nor the Battlefield', broken: (f) => !!(f.level.laps || f.level.battle || (f.level.grid && !f.level.grid.rival)) },
   zonesTheme: { text: 'Shown on a level whose theme is in zones (coast, safari)', broken: () => false },
 };
 
@@ -158,6 +159,8 @@ export const FIELDS = {
   processions: { shape: 'timed', group: 'events', label: 'Funeral processions', help: 'Now and then a hearse and its cars, slow, nose to tail. Not on a level with water.', settings: { every: every({ min: 40, max: 70 }, { required: true }) } },
   convoys: { shape: 'timed', group: 'events', label: 'Convoys', help: 'Now and then a convoy of one kind nose to tail in one lane, shutting their gaps in the player\'s face. Not on a level with water.',
     settings: { every: every({ min: 20, max: 35 }, { required: true }), size: int('Vehicles', { min: 2, max: 20, default: C.convoy?.size }), kind: pick('Kind', VEHICLE_KINDS, { default: C.convoy?.kind }) } },
+  pursuits: { shape: 'timed', group: 'events', label: 'Police pursuits', rules: ['playerSide', 'notRace'], help: 'Now and then a getaway car comes through from behind flat out, an interceptor after it, siren going; the traffic pulls aside and the two drive on.',
+    settings: { every: every({ min: 30, max: 60 }, { required: true }) } },
   railway: { shape: 'timed', group: 'events', label: 'Railway down the median', rules: ['needsMedian'], help: 'A bullet train comes through, against the player, every so often.', settings: { every: every({ min: 14, max: 24 }, { required: true }) } },
 
   // ---- mode switches ----

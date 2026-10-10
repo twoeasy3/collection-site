@@ -982,6 +982,12 @@ const createTrack = () => {
       else if (ONE_WAY) problems.push('reversible lane at ' + r.from + ': only on a two-way road');
     }
     if (LEVEL.convoys && !(LEVEL.convoys.every && LEVEL.convoys.every.min > 0 && LEVEL.convoys.every.max >= LEVEL.convoys.every.min)) problems.push('convoys: every { min, max } s');
+    if (LEVEL.pursuits) {
+      const e = LEVEL.pursuits.every;
+      if (!(e && e.min > 0 && e.max >= e.min)) problems.push('pursuits: every { min, max } s');
+      if (LEVEL.laps || LEVEL.battle || (LEVEL.grid && !LEVEL.grid.rival)) problems.push('pursuits: not on a race, nor the Battlefield');
+      else if (FLOW === 'south' || FLOW === 'mixed') problems.push('pursuits: there is no side going the player\'s way for it');
+    }
     for (const m of LEVEL.waterMains || []) {
       if (!(m.s >= 0 && m.s <= length)) problems.push('water main at ' + m.s + ': beyond the road');
       else if (m.lane !== undefined && !(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road (or no lane: the centre line)');
