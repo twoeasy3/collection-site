@@ -1401,10 +1401,11 @@ export const CONFIG = {
   // flight: over the queue if it came fast enough, landing `margin` m or more past the last car (a board `sign` m
   // before gives the speed that does it hands off), or down into the queue. Beside it the car is kept out of the
   // trailer and its cab (`cab` m past the lip). Traffic coming up its lane moves over from keepClear m before.
+  // (A siren within `release` m of its back clears the jam: the queue drives off, and the transporter stays.)
   // (From `commit` m before its foot, in line with it, the car no longer brakes by itself for the queue beyond;
   // on the ramps it is never slower than `crawl` m/s, so nothing comes to a stand on them)
   // (The queue is the level's ordinary traffic no longer than `longest` m (half its length) or taller than `tallest` m)
-  jamRamp: { crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
+  jamRamp: { release: 320, crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
   // a low bridge ("lowBridges": { s, clearance? }): a height bar across the player's side and its shoulder, `clearance`
   // m off the road (the bridge's own, or this), between an exit and its merge. A car taller than that which goes at
   // it loses `damage` health and perMetre more for each m too tall, keeps `keep` of its speed, and is through. Said

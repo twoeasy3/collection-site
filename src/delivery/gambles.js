@@ -146,10 +146,14 @@ export const Gambles = {
     this.flights = 0;
     this.lastS = Player.s;
   },
+  // An event's vehicles (a police pursuit's two cars, driven from pursuit.js; an ambulance or any other emergency
+  // vehicle) are none of a gimmick's business: nothing here slows them, moves them over, takes them off the road
+  // or leaves them stuck. They get through or round every one, as the player can
+  event(car) { return !!car.driver || !!car.emergency; },
   // traffic is held to `pace` m/s through from..to on the expressway, coming down to it over the CONFIG
   // .gambleApproach m before (whichever way it is going): its speed is capped outright, after its own update
   crawl(car, pace, from, to) {
-    if (!car.active || car.junction || car.emergency || !Track.isMain(car.s)) return;
+    if (!car.active || car.junction || this.event(car) || !Track.isMain(car.s)) return;
     const A = CONFIG.gambleApproach, before = car.dir > 0 ? from - car.s : car.s - to;
     if (before > A.reach || (car.dir > 0 ? car.s > to : car.s < from)) return;
     const cap = pace + A.perMetre * Math.max(0, before);
@@ -236,11 +240,30 @@ export const Gambles = {
       if (!this.fly && P.s < r.s + R.foot && Math.abs(across) <= R.half) { this.onRamp = r; this.once('jamRamp'); }
       else if (this.up < 0.6 && Math.abs(across) < R.half + P.hw) { P.lat = r.lat + (across < 0 ? -1 : 1) * (R.half + P.hw); P.latVel = 0; }
     }
+    // a siren coming up behind clears the jam: with a pursuit's cars or an emergency vehicle within `release` m of
+    // its back, the queue drives off as ordinary traffic (the transporter stays where it is). So nothing with a
+    // siren is ever left standing behind it
+    for (const r of this.ramps) {
+      if (r.released || !Traffic.cars.some(car => car.active && car.dir > 0 && this.event(car) && Track.isMain(car.s) && car.s > r.s - R.release && car.s < r.last)) continue;
+      r.released = true;
+      for (const car of Traffic.cars) {
+        if (!car.active || !car.jam || car.s < r.s - 5 || car.s > r.last + 20) continue;
+        Object.assign(car, { jam: false, fixed: false, baseSpeed: car.jamPace || CONFIG.trafficMinSpeed + 4 });
+      }
+      if (P.active && Math.abs(P.s - r.s) < 500) this.once('jamCleared');
+    }
     // (nothing queues behind it: traffic coming up its lane moves over well before, so its ramps stay clear)
     for (const r of this.ramps) {
       if (Math.abs(r.s - P.s) > 700) continue;
       for (const car of Traffic.cars) {
-        if (!car.active || car.fixed || car.dir < 0 || car.lane !== r.lane || car.s > r.s + r.run || car.s < r.s - R.keepClear || !Track.isMain(car.s)) continue;
+        if (!car.active || car.dir < 0 || car.s > r.s + r.run + R.cab || car.s < r.s - R.keepClear || !Track.isMain(car.s)) continue;
+        if (car.driver) { // (a pursuit's car picks its own lane, by what it sees ahead, and the transporter is no car: it is steered off its lane, and kept out of it)
+          const side = car.lat < r.lat ? -1 : 1, clear = R.half + car.hw + 0.3;
+          if (Math.abs((car.aimLat ?? car.lat) - r.lat) < clear) car.aimLat = r.lat + side * CONFIG.laneWidth;
+          if (car.s > r.s - 3 && Math.abs(car.lat - r.lat) < R.half + car.hw) { car.lat = r.lat + side * (R.half + car.hw); car.latVel = 0; }
+          continue;
+        }
+        if (car.fixed || car.lane !== r.lane || car.s > r.s + r.run) continue;
         const [first, last] = Track.laneRange(1, car.s), other = r.lane > first ? r.lane - 1 : r.lane + 1;
         if (other > last) continue;
         car.lane = other;
@@ -379,7 +402,7 @@ export const Gambles = {
       }
       // tall traffic goes round by the exit (and one that turns up beyond the exit, far from the player, is taken away)
       for (const car of Traffic.cars) {
-        if (!car.active || car.dir < 0 || car.fixed || car.height <= bar.clearance || !Track.isMain(car.s) || car.s > bar.s) continue;
+        if (!car.active || car.dir < 0 || car.fixed || this.event(car) || car.height <= bar.clearance || !Track.isMain(car.s) || car.s > bar.s) continue;
         if (bar.exit && car.s < bar.exit.exitAt) car.viaSide = true;
         else if (car.s > bar.s - L.traffic && Math.abs(car.s - P.s) > L.unseen) car.active = false;
       }
@@ -486,7 +509,7 @@ export const Gambles = {
       const [first, last] = Track.laneRange(1, (z.from + z.to) / 2), sunny = z.side > 0 ? z.first - 1 : z.last + 1;
       if (sunny < first || sunny > last) continue; // (every lane is in the shade)
       for (const car of Traffic.cars) {
-        if (!car.active || car.fixed || car.dir < 0 || car.lane < z.first || car.lane > z.last || car.s > z.to || car.s < z.from - Z.keepClear || !Track.isMain(car.s)) continue;
+        if (!car.active || car.fixed || this.event(car) || car.dir < 0 || car.lane < z.first || car.lane > z.last || car.s > z.to || car.s < z.from - Z.keepClear || !Track.isMain(car.s)) continue;
         car.signal = sunny - car.lane;
         car.lane = sunny;
         car.pendingLane = null;
@@ -505,7 +528,7 @@ export const Gambles = {
     const R = CONFIG.rut, P = Player;
     if (!this.ruts.length) return;
     for (const car of Traffic.cars) { // (the traffic keeps to its ruts, at a tractor's pace)
-      if (!car.active || car.junction || car.emergency || !this.rutted(car.s)) continue;
+      if (!car.active || car.junction || this.event(car) || !this.rutted(car.s)) continue;
       for (const r of this.ruts) this.crawl(car, R.traffic, r.from, r.to);
       car.pendingLane = null;
     }
@@ -562,7 +585,7 @@ export const Gambles = {
       if (Math.abs(z.from - P.s) > 800 && Math.abs(z.to - P.s) > 800) continue;
       const [first, last] = Track.laneRange(1, (z.from + z.to) / 2), other = z.lane > first ? z.lane - 1 : z.lane + 1;
       for (const car of Traffic.cars) { // (the traffic keeps off it, and crawls past it)
-        if (!car.active || car.dir < 0 || car.junction || !Track.isMain(car.s) || car.s > z.to || car.s < z.from - T.keepClear) continue;
+        if (!car.active || car.dir < 0 || car.junction || this.event(car) || !Track.isMain(car.s) || car.s > z.to || car.s < z.from - T.keepClear) continue;
         if (car.lane === z.lane && !car.fixed && other <= last) { car.signal = other - car.lane; car.lane = other; car.pendingLane = null; }
         this.crawl(car, T.queue, z.from, z.to);
       }

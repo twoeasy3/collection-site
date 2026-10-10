@@ -244,6 +244,14 @@ try {
     // the slowest car, crawling onto it, never comes to a stand on it: it goes off the lip into the queue
     const crawl = at(6, 4, { car: 'commuter' });
     check(crawl.on && crawl.slowestOn >= J.crawl - 0.01 && crawl.s > 2415, 'ramp: the Commuter at ' + Math.round(6 * 3.6) + ' km/h is never brought to a stand on it (slowest ' + crawl.slowestOn.toFixed(1) + ' m/s; it got to ' + Math.round(crawl.s) + ' m)');
+    // a siren coming up behind clears the jam, and is not left standing behind it (an ambulance, in the queue's lane)
+    start(1900, 3, 0);
+    const amb = put('ambulance', 2150, lane(3, 2150), 26);
+    Object.assign(amb, { fixed: false, emergency: true });
+    const jammed = queue().length;
+    let slowestAmb = 99, past = false;
+    g.run(40, () => { for (const c of g.Traffic.cars) if (c !== amb && !c.fixed && !c.jamPace) c.active = false; P.speed = 0; P.s = 1900; if (amb.active && amb.s > 2380) slowestAmb = Math.min(slowestAmb, amb.vs); if (amb.s > 2470) past = true; return past || !amb.active; });
+    check(jammed > 0 && queue().length === 0 && Gambles.ramps[0].released && past && slowestAmb > 3, 'ramp: a siren coming up behind clears the jam (' + jammed + ' cars drive off) and gets through it, never stopped (' + slowestAmb.toFixed(1) + ' m/s at its slowest past the transporter)');
     // on the real levels
     real('jamRamps', (l) => {
       const rr = Gambles.ramps[0], q = g.Traffic.cars.filter(c => c.active && c.jam).length, [first, last] = T().laneRange(1, rr.s);
