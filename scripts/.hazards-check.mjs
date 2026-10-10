@@ -254,9 +254,8 @@ try {
     check(spots.length === 3, 'slippery road: three straight stretches to try it on (at ' + spots.join(', ') + ')');
     g.select({ ...level, id: 'slippery-road', exits: [], pickups: [], schoolCrossings: [], trolleys: [], marathons: [], balloons: [], drawbridges: [], wreckage: [], cameras: [], potholes: [], crossings: [], stampedes: [], wideLoads: [], targets: [],
       ice: [{ from: iceAt, to: iceAt + SPAN }], waterMains: [{ s: wetAt, lane: 4, length: SPAN }, { s: wetAt, lane: 5, length: SPAN }] });
-    const { WaterMains } = await g.load('watermains.js');
-    // (both mains kept spraying, and the other system's round slicks kept off the road: see AUDIT-10-Oct.md, C1)
-    const hold = () => { quiet(); Hazards.mains.forEach((m, i) => { m.on = true; m.t = 0; T.sprays[i].on = true; }); for (const m of WaterMains.list) { m.on = false; m.wait = 99; m.wet = 0; } };
+    // (both mains kept spraying)
+    const hold = () => { quiet(); Hazards.mains.forEach((m, i) => { m.on = true; m.t = 0; T.sprays[i].on = true; }); };
     const brakeFrom = 30, brakeTo = 10;
     // m the car takes to brake from 30 to 10 m/s, and s to move one lane across (lane 4 to lane 5) at full steer
     const braking = (at, ghost) => {

@@ -990,7 +990,7 @@ const createTrack = () => {
     }
     for (const m of LEVEL.waterMains || []) {
       if (!(m.s >= 0 && m.s <= length)) problems.push('water main at ' + m.s + ': beyond the road');
-      else if (m.lane !== undefined && !(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road (or no lane: the centre line)');
+      else if (!(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road');
     }
     for (const z of LEVEL.landmines || []) {
       if (!(z.from < z.to) || !onRoad(z, z.from) || !onRoad(z, z.to) || !(z.count > 0)) problems.push('landmines at ' + z.from + '-' + z.to + where(z) + ': from before to, on the road, with a count');

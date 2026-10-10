@@ -28,9 +28,10 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // (batch E) Orders 39 to 43: the second levels Toy Box Derby, Seaquake, Far Side, Stunt Double and Seven Bridges at
 // 44 to 48, after Emerald Steps and ahead of the special levels. (Another batch's entries for the same places can simply follow or
 // come before these, as they are: each level put in ahead of the specials moves a save that had reached them on one)
+// (batch F) Orders 44 to 46: After Hours, Eruption Day and Cattle Drive at 49 to 51, after those five.
 // (Order 27 was, for a few hours on 10-Oct and never on the live site, a cap at 46 with those levels after the
 // amphibious ones: no save was made with it outside a developer's machine.)
-const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34, 35, 36, 37, 35, 36, 37, 41, 42, 43, 44, 45, 46, 47, 48]; // (for orders 2, 3, ...)
+const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34, 35, 36, 37, 35, 36, 37, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 // races (the lapped levels, on the menu's Races tab) are always open, and never hold up the delivery levels: the

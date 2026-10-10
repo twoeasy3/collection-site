@@ -143,6 +143,15 @@ export const THEMES = {
     light: { sky: 0xffe6cf, ground: 0x6a3a26, ambient: 1.35, sun: 0xffd2a8, sunlight: 1.15 } },
   // port: a container port (render/themes/port.js): concrete under a grey sky, walls of stacked containers in every colour, gantry cranes over the road, straddle carriers up and down beside it, rails let into the road, floodlight masts, and on the right the quay: quay cranes over container ships, and the harbour
   port: { sky: 0xb5c3cd, ground: 0x8b8e91, road: 0x33363b, scenery: 'port' },
+  // themeparkNight: the same park after closing (the second park level): a navy sky, the lamps, the bunting's bulbs and the rides' lights the only colour (night: the theme lights itself up), headlights on
+  themeparkNight: { sky: 0x0c1236, ground: 0x3f6a48, road: 0x4b4a55, scenery: 'themepark', lit: true, headlights: true, night: true, tunnel: { wall: 0x5a2d82, tiles: 0xffd21f, roof: 0x24143a, face: 0xe23b3b, lamp: 0xff9ff0 },
+    light: { sky: 0xb8b4ff, ground: 0x3a2a55, ambient: 0.85, sun: 0xffe6f4, sunlight: 0.5 } },
+  // volcanoErupting: the same island with the volcano going up (the second volcano level): a sky of smoke lit red from below, darker ground, everything in the lava's light
+  volcanoErupting: { sky: 0x5a2a22, ground: 0x1d1a1d, road: 0x161518, scenery: 'volcano', erupting: true, river: 0xff4a12, riverCore: 0xffb52e, line: 0xe8e2d4, centre: 0xffa51e, tunnel: { wall: 0x2a2224, tiles: 0xff6a1e, roof: 0x151113, face: 0x3a3032, lamp: 0xffb060 },
+    light: { sky: 0xffc8a0, ground: 0x7a2c14, ambient: 1.2, sun: 0xff9a5c, sunlight: 1.0 } },
+  // portNight: the same port on the night shift (the second port level): a dark sky with the sodium glow of the terminal in it, wet concrete, the floodlight masts and the cranes' lamps lit, headlights on
+  portNight: { sky: 0x10151f, ground: 0x4d5258, road: 0x2c2f34, scenery: 'port', lit: true, headlights: true, night: true,
+    light: { sky: 0xffd9a8, ground: 0x2a2c36, ambient: 0.8, sun: 0xffe2b8, sunlight: 0.5 } },
   // (batch C: theme park, volcano island, container port: new themes go above this line)
   // wildwest: the old Wild West (render/themes/wildwest.js): a dirt road over red desert, a town of false-front wooden buildings
   // every 800 m with the road for its main street, a railway and its steam train along the left, mesas on the skyline
@@ -158,6 +167,15 @@ export const THEMES = {
   // every green, palms, huts on stilts, farmers and buffalo, kites, tall brick gates over the road, mist in the low ground
   rice: { sky: 0xcfe9ea, ground: 0x86c08a, road: 0x66625c, scenery: 'rice', terrain: { gentle: 0x4f9a3f, steep: 0x6b5a3c, rough: 0.5, flat: 2, rise: 30 },
     target: { height: 4.2, beam: true } }, // (up over the roadside palms' feet)
+  // favelaRain: the same hillside in a downpour (the second favela level): rain (rain: true), a low grey sky, a wet road, the sea below gone grey
+  favelaRain: { sky: 0x7f8b94, ground: 0x4f7384, road: 0x3c3f44, scenery: 'favela', rain: true, terrain: { gentle: 0x9a8c70, steep: 0x86603f, rough: 0.3, flat: 10, rise: 40 },
+    target: { style: 'gantry', offset: -1.2, arm: 2.2, height: 5, beam: true },
+    tunnel: { wall: 0x8a8f96, tiles: 0xf2c14e, roof: 0x4a4d52, face: 0x9a958a, lamp: 0xfff0c8 },
+    light: { sky: 0xd8dde4, ground: 0x4a4a44, ambient: 1.1, sun: 0xe8ecf2, sunlight: 0.6 } },
+  // riceMonsoon: the same terraces in the monsoon (the second rice level): rain (rain: true), a leaden sky, the greens deeper, a muddy road
+  riceMonsoon: { sky: 0x8d9aa0, ground: 0x6aa278, road: 0x5c5448, scenery: 'rice', rain: true, terrain: { gentle: 0x3f8a3a, steep: 0x5f5038, rough: 0.5, flat: 2, rise: 30 },
+    target: { height: 4.2, beam: true },
+    light: { sky: 0xd8e2e0, ground: 0x44503e, ambient: 1.1, sun: 0xe8f0ea, sunlight: 0.6 } },
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
 };
 

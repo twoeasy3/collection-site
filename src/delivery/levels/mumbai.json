@@ -31,10 +31,10 @@
   "waterMains": [
     { "s": 520, "lane": 2 },
     { "s": 980, "lane": 3 },
-    { "s": 1500, "lane": 2, "every": { "min": 4, "max": 7 } },
+    { "s": 1500, "lane": 2 },
     { "s": 1960, "lane": 3 },
     { "s": 2450, "lane": 2 },
-    { "s": 2900, "lane": 3, "every": { "min": 3, "max": 6 } }
+    { "s": 2900, "lane": 3 }
   ],
   "herds": [
     { "from": 1150, "to": 1350, "count": 3, "kind": "cow", "stay": true },
