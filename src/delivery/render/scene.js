@@ -88,13 +88,14 @@ export const aim = (target) => {
 // With studio on (?cine=car), it is the car alone on white: a close three-quarter view from
 // ahead and to its left, looking down on it, nose toward the bottom left; an Evil livery from its
 // right instead, the mirror image (main.js hides everything else)
-export const Cinematic = { on: false, studio: false };
+export const Cinematic = { on: false, studio: false, turn: 0 }; // (turn: degrees round the car the studio camera goes, ?turn)
 const studioCamera = () => {
   const h = Track.toWorld(Player.s, Player.lat, tmp2);
   const side = Player.evil ? -1 : 1;
   const fx = Math.sin(h), fz = Math.cos(h), lx = Math.cos(h) * side, lz = -Math.sin(h) * side; // ahead, and to its left (or right)
-  const k = (Player.hl + Player.hw) / 2.7 * (CAR.shotBack ?? 1); // (further back from a bigger vehicle, so each fills the frame alike)
-  camera.position.set(tmp2.x + (fx * 4.6 + lx * 3.2) * k, tmp2.y + 3.4 * k, tmp2.z + (fz * 4.6 + lz * 3.2) * k);
+  const k = (Player.hl + Player.hw) / 2.7 * (CAR.shotBack ?? 1) * (Player.rageTank ? 1.45 : 1); // (further back from a bigger vehicle, so each fills the frame alike)
+  const ox = fx * 4.6 + lx * 3.2, oz = fz * 4.6 + lz * 3.2, turn = Cinematic.turn * Math.PI / 180, c = Math.cos(turn), n = Math.sin(turn);
+  camera.position.set(tmp2.x + (ox * c + oz * n) * k, tmp2.y + 3.4 * k, tmp2.z + (oz * c - ox * n) * k);
   tmp2.y += 0.8;
   aim(tmp2);
   camera.fov = 34;
