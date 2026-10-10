@@ -46,7 +46,12 @@
     { "s": 3500, "side": "left" },
     { "s": 5300, "side": "right" }
   ],
+  "lowSun": [
+    { "from": 1420, "to": 1980 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 1600, "lane": 3 },
+    { "type": "cash10", "s": 1600, "lane": 4 },
     { "type": "turbo", "s": 300, "lane": 3 },
     { "type": "timePlus", "s": 900, "lane": 4 },
     { "type": "ghost", "s": 1200, "lane": 2 },

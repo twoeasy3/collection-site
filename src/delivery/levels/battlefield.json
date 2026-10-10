@@ -28,7 +28,12 @@
     { "length": 300, "curve": 0.0012 },
     { "length": 800, "curve": 0 }
   ],
+  "dust": [
+    { "from": 1750, "to": 2000, "wind": "left" }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 1900, "lane": 3 },
+    { "type": "cash10", "s": 1900, "lane": 4 },
     { "type": "wrench", "s": 550, "lane": 2 },
     { "type": "armour", "s": 850, "lane": 3 },
     { "type": "wrench", "s": 1150, "lane": 1 },
