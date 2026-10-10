@@ -129,6 +129,8 @@ Three agents at a time; the next item starts as each one finishes.
 - [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
 - [~] Police pursuit redone as a plain traffic event: agent 12
 - [~] Car ideas lot: agent 13
+- [~] Forty more cargo items: agent 15 (Good, C1 to C20, branch `delivery-cargo-good`) and agent 16 (Evil, C21 to C40, branch `delivery-cargo-evil`). Five agents running, on the owner's word ("Get a couple of agents on these")
+- [ ] Next 0: in-game UI improvements (the owner's five, in the section "In-game UI improvements" below)
 - [ ] Next 1: road gimmicks, picking up the half-built ramp (H2) in the main checkout, then H8, H4, H5 and on down the kept G and H lists
 - [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
 - [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
@@ -725,3 +727,36 @@ at thumbnail size, calm at the start, agitated at half the clock, furious for th
   cursed doll; cage of bats and the crate of bees; pressure cooker and the ticking parcel.
 - With 50 items, a level's cargo could be picked from two or three that suit it instead of one,
   the same every run by level and side, so replays of a level are not always the same parcel.
+
+## In-game UI improvements (owner, 10-Oct; queued as "Next 0")
+
+The owner's five, in their words, each with what it comes to. None is started.
+
+- [ ] U1. "The level meter takes up too much of the screen, rework it to different style in the
+      same corner as the other meters." The progress bar across the top centre goes; the distance
+      through the level becomes a compact meter in the top-left block with the clock, tip, busts
+      and social standing, in a style of its own (not another long bar). Pause and Exit level,
+      which sit under it now, need a new place that is out of the way.
+- [ ] U2. "Have a odometer for the danger/shoulder meter instead, have it sit at 0 danger when not
+      active." The shoulder's danger timer becomes a dial (a small gauge with a needle, as a car's
+      instrument is): always there, resting at 0 while the car is on the road, climbing while it
+      is on the shoulder, falling back when it leaves. No element that appears and disappears.
+- [ ] U3. "The messages are right in the way of the horizon in both desktop and mobile." Event and
+      status messages move off the horizon line, where the road ahead is read: to a strip clear
+      of it (low on the screen above the controls, or the top edge), on desktop and on a phone,
+      checked against the on-screen buttons, the cargo window and the tank corner.
+- [ ] U4. "Some critical messages should stay indefinitely like punctures. I'll let you have the
+      judgement call but extract all message times to a config." Every message's time on screen
+      comes out of the code into one table in `config.js` (by kind of message). Messages about a
+      condition that is still true stay until it ends: a puncture, no brakes, a stalled engine, a
+      wanted level, a mystery effect running, being on fire, the wrong way down a road. Which
+      ones are "critical" is the builder's call, written down in the table for the owner to edit.
+- [ ] U5. "The mystery effect should be written as the pick up status, so the player can remember
+      what it was." While a mystery effect runs, the pickup's status line names the effect
+      (Earthquake, Giant, Traffic freeze...) with its time left, as a turbo or ghost shows its
+      own name, not just "Mystery".
+
+Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `render/touch.js`
+(the phone layout), `messages.js` and `messages.json` (the times), `config.js`, `player.js` or
+`mysteries.js` (the effect's name for the status). To be checked in screenshots at 1100x650 and
+520x900, in a level with every meter showing at once.
