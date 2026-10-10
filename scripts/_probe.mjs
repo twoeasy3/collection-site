@@ -1,6 +1,6 @@
-import { createServer } from 'vite';
+import { logicServer } from './delivery-headless.mjs'; // (a Vite server that shares no cache with any other run)
 globalThis.document = { createElement: () => ({ getContext: () => new Proxy({}, { get: () => () => ({ width: 10 }) }), width: 0, height: 0 }) };
-const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+const server = await logicServer();
 try {
   const count = (g) => { let n = 0; g.traverse(o => { if (o.isMesh) n++; }); return n; };
   const O = await server.ssrLoadModule('/src/delivery/render/obstacleModels.js');
