@@ -338,3 +338,9 @@
 #startScreen .menu-groups button.blue { color: #4fa8ff; }
 #startScreen .car-card .picture.silhouette canvas { filter: brightness(0); opacity: .75; }
 #startScreen .car-card .picture.silhouette { background: #cfd4db; }
+
+/* a tier named in stars (tiers.js tierStarsNode): gold or blue, never a word */
+.tierstars { letter-spacing: .06em; }
+.tierstars.gold { color: #ffd23f; }
+.tierstars.blue { color: #4fa8ff; }
+#startScreen .menu-stage .plate small .tierstars { font-size: 13px; }

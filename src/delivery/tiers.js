@@ -42,6 +42,21 @@ const switched = (() => {
 })();
 const oneSided = (level) => !!(level.battle || level.alwaysGood);
 
+// the tier as a span of star glyphs in its colour (gold or blue), labelled for a screen reader
+export const tierStarsNode = (n) => {
+  const span = document.createElement('span');
+  span.className = 'tierstars ' + (n > 5 ? 'blue' : 'gold');
+  span.textContent = '\u2605'.repeat(((n - 1) % 5) + 1);
+  span.setAttribute('role', 'img');
+  span.setAttribute('aria-label', Tiers.spoken(n));
+  return span;
+};
+// text with {tier:n} tokens as nodes: words and star spans
+export const richTiers = (text) => String(text).split(/(\{tier:\d+\})/).filter(Boolean).map(part => {
+  const m = part.match(/^\{tier:(\d+)\}$/);
+  return m ? tierStarsNode(Number(m[1])) : part;
+});
+
 export const Tiers = {
   tiers: TIERS,                       // [[level]] by tier (tier number = index + 1 while the file counts from 1)
   outside: OUTSIDE,
@@ -69,7 +84,12 @@ export const Tiers = {
   // where a level is: { tier, pos } (pos from 1), or null for a level outside the tiers
   place(level) { return placeOf.get(level) || null; },
   // a tier's name as the menu shows it: 'Gold 3', 'Blue 2'; its stars and their colour
-  tierName(n) { return n <= 5 ? 'Gold ' + n : 'Blue ' + (n - 5); },
+  // a tier in text is the token {tier:n}: the menu draws it as a row of stars in the tier's colour (tierStarsNode), and
+  // plain() makes it star glyphs for a title; there is no word for a tier (the owner: "just render the stars")
+  tierName(n) { return '{tier:' + n + '}'; },
+  plain(text) { return String(text).replace(/\{tier:(\d+)\}/g, (m, n) => '\u2605'.repeat(this.tierStars(Number(n)))); },
+  // for a screen reader: '2 stars gold', '3 stars blue'
+  spoken(n) { const s = this.tierStars(n); return s + (s === 1 ? ' star ' : ' stars ') + (n > 5 ? 'blue' : 'gold'); },
   tierStars(n) { return ((n - 1) % 5) + 1; },
   tierIsBlue(n) { return n > 5; },
 

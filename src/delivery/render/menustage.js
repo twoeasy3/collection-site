@@ -17,7 +17,7 @@ import { levelName, levelDescription } from '../levelText.js';
 import { cargoFor } from '../cargo.js';
 import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } from '../cars.js';
 import { Progress } from '../progress.js';
-import { Tiers } from '../tiers.js';
+import { Tiers, tierStarsNode, richTiers } from '../tiers.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { medalFor, medalNeeds } from '../levelinfo.js';
 import { Garage, makeShowCar, paintShowCar, IDEA_TAG } from './garage.js';
@@ -98,7 +98,7 @@ const tabOf = (level) => isRace(level) ? 'race' : 'delivery';
 // (under the tiers a level's number is its place in its tier, 1 to 5; its kind says which tier)
 const label = (level) => Tiers.on() && Tiers.place(level) ? String(Tiers.place(level).pos) : levelLabel(LEVELS.indexOf(level));
 // what kind of level it is, for the plate over its picture
-const kindOf = (level) => isRace(level) ? 'Race' : Tiers.on() && Tiers.place(level) ? Tiers.tierName(Tiers.place(level).tier) : AMPHIBIOUS_LEVELS.includes(level) ? 'Amphibious' : MAIN_LEVELS.includes(level) ? 'Level' : 'Special';
+const kindOf = (level) => isRace(level) ? 'Race' : Tiers.on() && Tiers.place(level) ? tierStarsNode(Tiers.place(level).tier) : AMPHIBIOUS_LEVELS.includes(level) ? 'Amphibious' : MAIN_LEVELS.includes(level) ? 'Level' : 'Special';
 // a race is always open; a delivery level once the one before it has been delivered
 const isOpen = (level) => isRace(level) || (Tiers.on() ? Tiers.isOpen(level) : LEVELS.indexOf(level) < Progress.data.unlocked);
 // a level played on one side only (the Battlefield, All Heck: always Good)
@@ -176,7 +176,9 @@ const drawStage = () => {
   const picture = stageShot(level.id);
   if (picture) shot.style.backgroundImage = picture; // (the large picture where the stage is big enough to want it)
   else shot.classList.add('none'); // (no picture of it yet)
-  const plate = make('div', 'plate', make('small', '', kindOf(level)), make('b', '', label(level)));
+  const tiered = Tiers.on() ? Tiers.place(level) : null; // (under the tiers: the stars, then 1/5)
+  const plate = make('div', 'plate', make('small', '', kindOf(level)), make('b', '', tiered ? tiered.pos + '/' + Tiers.tiers[tiered.tier - 1].length : label(level)));
+  if (tiered) plate.setAttribute('aria-label', Tiers.spoken(tiered.tier) + ', level ' + tiered.pos + ' of ' + Tiers.tiers[tiered.tier - 1].length);
   const ribbon = make('div', 'ribbon', ...(open ? (oneSided(level) ? [false] : [false, true]).map(side => ribbonHalf(level, side)) : []));
   // what the level needs (a line of its own: a car that floats, the vehicle it is driven in, the level before it)
   const prize = earnedFor(level.id);
@@ -206,8 +208,8 @@ const drawStage = () => {
       fact('Tip', money(level.tip)),
       cargoFact,
       fact('Best to spare', best === undefined ? 'Not delivered yet' : formatTime(best))) : null,
-    needs ? make('p', 'needs' + (open && !Game.canStart ? ' warn' : ''), needs) : null,
-    open && place ? make('p', 'prize', Tiers.tierName(place.tier) + ': ' + Tiers.tierHalves(place.tier) + ' of ' + Tiers.tiers[place.tier - 1].length * 2 + ' half-ribbons') : null,
+    needs ? make('p', 'needs' + (open && !Game.canStart ? ' warn' : ''), ...richTiers(needs)) : null,
+    open && place ? make('p', 'prize', tierStarsNode(place.tier), ' ' + Tiers.tierHalves(place.tier) + ' of ' + Tiers.tiers[place.tier - 1].length * 2 + ' half-ribbons') : null,
     prizeLine ? make('p', 'prize', prizeLine) : null,
     open && roadCard ? make('button', 'menu-chip road', 'What’s on this road') : null);
   info.querySelector('.road')?.addEventListener('click', () => roadCard(level));
@@ -310,7 +312,7 @@ const drawCar = () => {
   // (a car idea, ideas.js, has no tier and so no stars: "Idea" stands where they would be)
   if (CAR.silhouette) { // (a car of the level's tier is to be bought: a dark outline of the cheapest, and no figures)
     shop.replaceChildren(picture,
-      make('span', 'words', make('strong', '', 'No car for this level'), make('span', 'stat', make('small', '', Tiers.tierName(CAR.tierNeeded) + ' only'))),
+      make('span', 'words', make('strong', '', 'No car for this level'), make('span', 'stat', make('small', '', tierStarsNode(CAR.tierNeeded), ' only'))),
       make('span', 'go', 'Garage'));
     shop.title = 'This level needs a car of exactly its tier: open the garage to buy one (G)';
     return;
@@ -346,7 +348,8 @@ export const draw = () => {
     const tierNo = groups[g][2]; // (under the tiers: the stars of the tier, gold or blue)
     const button = make('button', (g === shown ? 'current' : '') + (isOpen(list[a]) ? '' : ' locked') + (tierNo ? (Tiers.tierIsBlue(tierNo) ? ' blue' : ' gold') : ''),
       tierNo ? '★'.repeat(Tiers.tierStars(tierNo)) : label(list[a]) + (b - a > 1 ? '–' + label(list[b - 1]) : ''));
-    button.title = tierNo ? Tiers.tierName(tierNo) + (isOpen(list[a]) ? '' : ': not open yet') : isOpen(list[a]) ? '' : 'Not open yet';
+    button.title = tierNo ? Tiers.spoken(tierNo) + (isOpen(list[a]) ? '' : ': not open yet') : isOpen(list[a]) ? '' : 'Not open yet';
+    if (tierNo) button.setAttribute('aria-label', Tiers.spoken(tierNo) + (isOpen(list[a]) ? '' : ', not open yet'));
     button.addEventListener('click', () => { if (g !== shown) { blip('menuMove'); show(list[a]); } });
     return button;
   }));
