@@ -40,15 +40,15 @@ const SHOT = { w: 600, h: 267, slack: 1.15 }; // (the small picture's size; and 
 // the stage's picture of a level: the small one, with the large one over it where there is one and the stage
 // draws its picture bigger than the small one is (in the screen's own pixels: a dense screen counts). The small
 // one is under it all the same: it shows until the large one has come, and if it never does
-// A phone (a touch screen, or a window narrow enough for the menu's one column: the menu.css's own tests) always
-// gets the small one, however dense its screen
+// (A phone gets the large one too, as a desktop does: the owner asked for the high quality pictures there on 11-Oct,
+// reversing the small-only rule. phone() below still says whether the screen is a touch screen or a narrow window)
 const phone = () => !!window.matchMedia?.('(pointer: coarse), (max-width: 760px)').matches;
 const stageShot = (id) => {
   const small = LEVEL_SHOTS[id], large = LEVEL_SHOTS_LARGE[id];
   if (!small) return large ? `url("${large}")` : '';
   const w = stage.clientWidth || window.innerWidth * 0.7, h = stage.clientHeight || window.innerHeight * 0.6;
   const drawn = Math.max(w, h * SHOT.w / SHOT.h) * (window.devicePixelRatio || 1); // (covering the stage: as wide as it, or as tall)
-  const wanted = large && drawn > SHOT.w * SHOT.slack && !navigator.connection?.saveData && !phone();
+  const wanted = large && drawn > SHOT.w * SHOT.slack && !navigator.connection?.saveData;
   return (wanted ? `url("${large}"), ` : '') + `url("${small}")`;
 };
 // each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car). The car
