@@ -14,6 +14,7 @@ import { moon } from './moon.js';
 // (batch B's imports go above this line)
 // (batch C's imports go above this line)
 import { wildwest } from './wildwest.js';
+import { favela } from './favela.js';
 // (batch D's imports go above this line)
 
 export const THEME_SCENERY = {
@@ -24,5 +25,6 @@ export const THEME_SCENERY = {
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // (batch C: theme park, volcano island, container port: new themes go above this line)
   wildwest,
+  favela,
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
 };

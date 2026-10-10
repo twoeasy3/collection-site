@@ -131,5 +131,10 @@ export const THEMES = {
   wildwest: { sky: 0x7fb8e6, ground: 0xc8754a, road: 0xd6b083, scenery: 'wildwest', unmarked: true,
     target: { offset: 2, height: 4.6, beam: true }, // (at the street's edge, over the hitching rails: the buildings' faces are 6 m off)
     tunnel: { wall: 0x6b4a32, tiles: 0x8f6a44, roof: 0x4a3526, face: 0x97492f, lamp: 0xffc870 } },
+  // favela: a hillside of houses (render/themes/favela.js): boxes in every colour stacked row over row up land that climbs with the
+  // road (terrain), water tanks on the roofs, stairways, tangled wires, a football pitch, a cable car overhead; the city and the sea below
+  favela: { sky: 0x9fd6f2, ground: 0x3f8fc0, road: 0x55575c, scenery: 'favela', terrain: { gentle: 0xb3a07c, steep: 0x9a6a48, rough: 0.3, flat: 10, rise: 40 },
+    target: { style: 'gantry', offset: -1.2, arm: 2.2, height: 5, beam: true }, // (a mast at the kerb, the ring hung out over the shoulder: the houses stand 3 m off)
+    tunnel: { wall: 0x8a8f96, tiles: 0xf2c14e, roof: 0x4a4d52, face: 0x9a958a, lamp: 0xfff0c8 } },
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
 };

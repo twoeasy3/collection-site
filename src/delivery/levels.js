@@ -396,6 +396,7 @@ import moonbase from './levels/moon.json';
 // (batch B's imports go above this line)
 // (batch C's imports go above this line)
 import noon from './levels/noon.json';
+import morro from './levels/morro.json';
 // (batch D's imports go above this line)
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
@@ -425,6 +426,7 @@ export const THEME_LEVELS = [
   // (batch B: film studio, Venice, ice road: new levels go above this line)
   // (batch C: theme park, volcano island, container port: new levels go above this line)
   noon,
+  morro,
   // (batch D: Wild West, favela, rice terraces: new levels go above this line)
 ];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...AMPHIBIOUS_LEVELS, ...THEME_LEVELS, ...CIRCUIT_LEVELS];
