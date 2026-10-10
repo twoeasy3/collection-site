@@ -67,6 +67,33 @@ try {
     const ends = [-5.5, 5.5].map(z => Math.abs(new THREE.Vector3(0, 0.75, z).applyMatrix4(car.matrixWorld).project(v.camera).x)); // (its two ends, side on: 1 is the picture's edge)
     check(Math.max(...ends) <= 1 && v.camera.zoom <= 1, 'a bus side on in a ' + w + ' x ' + h + ' picture: its ends at ' + Math.max(...ends).toFixed(2) + ' of the way to the edge (zoom ' + v.camera.zoom.toFixed(2) + ')');
   }
+  // ---- prefers-reduced-motion: nothing moves, a light bar is steady, and a picture is drawn only now and then
+  {
+    const { STILL } = await g.load('render/modelviews.js');
+    const { MODELS, FIXED_PAINT, makeLightBar, placeLightBar, flashLightBar } = await g.load('render/models.js');
+    const police = MODELS.police({ ...g.CONFIG.vehicles.police, color: FIXED_PAINT.police }), bar = makeLightBar(), ticks = [];
+    placeLightBar(bar, 'police', g.CONFIG.vehicles.police);
+    police.add(bar);
+    const v = { el: { getBoundingClientRect: () => rect(0, 0, 112, 84), append() {} }, ...standView({ model: police, tick: (t, dt) => { ticks.push([t, dt]); flashLightBar(bar, 'police', t * 1000); } }) };
+    const turn = police.parent, colours = new Set(), angles = new Set();
+    for (let k = 0; k < 20; k++) { drawViews(fake, [v], k * 0.1, 0.1); colours.add(bar.material.color.getHex()); angles.add(turn.rotation.y.toFixed(3)); }
+    check(colours.size === 2 && angles.size === 20, 'as usual a police car turns and its bar flashes (' + colours.size + ' colours, ' + angles.size + ' angles in 2 s)');
+    window.matchMedia = () => ({ matches: true });
+    ticks.length = 0; colours.clear(); angles.clear(); calls.length = 0;
+    const clock = performance.now;
+    let now = 1000;
+    performance.now = () => now;
+    for (let k = 0; k < 20; k++) { now += 100; drawViews(fake, [v], 50 + k * 0.1, 0.1); colours.add(bar.material.color.getHex()); angles.add(turn.rotation.y.toFixed(3)); }
+    performance.now = clock;
+    check(colours.size === 1 && angles.size === 1 && Number([...angles][0]) === STILL.angle, 'reduced motion: it stands at ' + [...angles][0] + ' rad, its bar steady in one colour');
+    check(ticks.every(([t, dt]) => dt === 0 && Math.abs(t - ticks[0][0]) < 1e-9), 'the clock is held (' + ticks.length + ' frames, all at one moment, none moved on)');
+    const renders = calls.filter(line => line === 'render').length;
+    check(renders === Math.ceil(2 / STILL.every), 'and it is drawn every ' + STILL.every + ' s, not every frame (' + renders + ' drawings in 20 frames over 2 s)');
+    window.matchMedia = () => ({ matches: false });
+    drawViews(fake, [v], 60, 0.1);
+    check(turn.rotation.y !== STILL.angle, 'the setting switched off again: it turns again');
+    delete window.matchMedia;
+  }
   fake.lost = true; stepped = 0;
   check(drawViews(fake, [a], 1, 0.016) === false && stepped === 0, 'a lost context: false, nothing drawn');
 } catch (e) {

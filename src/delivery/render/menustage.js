@@ -228,14 +228,12 @@ const bar = (name, value, share) => {
 // pages' are, drawn by the start screen's one renderer into a small canvas in the picture
 // (render/modelviews.js): no run is built, and nothing of the game's scene is touched. Where no renderer can
 // be had, the model cannot be built, or the context is lost, the picture is the still as before (CAR_SHOTS).
-// prefers-reduced-motion: the model stands still, at an angle.
-const CAR_VIEW = { close: 1.35, lift: 0.3, angle: 0.7, stillEvery: 0.5 }; // how near and from how high it is seen; where it starts (rad); s between drawings of one that stands still
+// prefers-reduced-motion: the model stands still, at its angle (the views' own doing: modelviews.js STILL).
+const CAR_VIEW = { close: 1.35, lift: 0.3, angle: 0.7 }; // how near and from how high it is seen; where it starts (rad)
 const picture = make('span', 'picture');
-const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches || false;
 let carView = null;   // { el, scene, camera, step, canvas, ctx, model, car, evil }: the model on show
 let carUrl = '';      // the still for the car and side on show
 let carLive = false;  // the model is being drawn (so the still is not shown under it)
-let carDrawn = -1;    // s: when the model was last drawn
 const syncPicture = () => {
   picture.style.backgroundImage = !carLive && carUrl ? `url("${carUrl}")` : '';
   if (carView?.canvas) carView.canvas.style.display = carLive ? 'block' : 'none';
@@ -252,7 +250,7 @@ const showCarModel = (evil) => {
       if (sharedRenderer()) {
         const model = makeShowCar(CAR);
         paintShowCar(model, CAR, evil);
-        const stand = standView({ model, tick: (t) => model.userData.animate?.(t), spin: !reducedMotion, lift: CAR_VIEW.lift, angle: CAR_VIEW.angle, fitWidth: true }, CAR_VIEW.close); // (fitWidth: the picture is narrow, and a car long)
+        const stand = standView({ model, tick: (t) => model.userData.animate?.(t), lift: CAR_VIEW.lift, angle: CAR_VIEW.angle, fitWidth: true }, CAR_VIEW.close); // (fitWidth: the picture is narrow, and a car long)
         carView = { el: picture, canvas: old?.canvas, ctx: old?.ctx, ...stand, model, car: CAR, evil }; // (the canvas is kept from car to car)
       }
     }
@@ -262,7 +260,7 @@ const showCarModel = (evil) => {
   }
   if (!carView) picture.querySelector('canvas')?.remove(); // (no model: nor the last car's picture of one)
   carLive = !!carView;
-  carDrawn = -1;
+  if (carView) carView.stillAt = undefined; // (standing still or not, it is drawn again at once: its paint may have changed)
   syncPicture();
 };
 {
@@ -272,9 +270,7 @@ const showCarModel = (evil) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     if (!carView || !menuUp() || Garage.isOpen) return;
-    if (reducedMotion && carDrawn >= 0 && now / 1000 - carDrawn < CAR_VIEW.stillEvery) return;
-    carDrawn = now / 1000;
-    const live = drawViews(sharedRenderer(), [carView], reducedMotion ? 0 : now / 1000, reducedMotion ? 0 : dt);
+    const live = drawViews(sharedRenderer(), [carView], now / 1000, dt);
     if (live !== carLive) { carLive = live; syncPicture(); }
   };
   requestAnimationFrame(frame);

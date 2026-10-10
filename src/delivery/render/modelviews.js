@@ -9,6 +9,17 @@
 import * as THREE from 'three';
 import { PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 
+// prefers-reduced-motion (asked of the browser as each frame is drawn, so a change of the setting is followed):
+// every view stands still. drawViews holds the clock at `t` and moves nothing on, so no model turns, hops or
+// flashes (a light bar shows steady, in the one colour it has at that moment); a model that would have been
+// turning is stood at `angle` rad, not nose on; and each picture is drawn again only every `every` s, or when
+// its size changes. Here once, for the pages, the road card and the start screen's car card alike
+export const STILL = { t: 2.4, angle: 0.6, every: 0.5 };
+let asked, query;
+export const stillViews = () => {
+  if (asked !== window.matchMedia) { asked = window.matchMedia; query = asked ? asked.call(window, '(prefers-reduced-motion: reduce)') : null; }
+  return !!query?.matches;
+};
 // an empty scene, lit as every card's is
 export const lit = () => {
   const scene = new THREE.Scene();
@@ -49,7 +60,7 @@ export const standView = ({ model, tick, spin = true, lift = 0.42, angle = 0, fi
   return { scene, camera, reach: fitWidth ? Math.tan(Math.asin(Math.min(0.95, radius / far))) : 0, step(t, dt) {
     if (spin) turn.rotation.y += dt * 0.5;
     tick?.(t + phase, dt);
-  } };
+  }, stand(to) { if (spin && !angle) turn.rotation.y = to; } }; // (standing still: see STILL. One given an angle of its own keeps it)
 };
 
 // A pickup turning and bobbing over its pad (its type, the pad's colour, the look for the side picked); 'target'
@@ -81,7 +92,7 @@ export const pickupView = (type, color, evil = false) => {
     model.userData.animate?.(t + phase); // (a model that moves: the big splash's flames)
     const { red, blue } = model.userData; // (the siren's light bar flashes)
     if (red && blue) { const on = Math.floor(t * 6) % 2 === 0; red.visible = on; blue.visible = !on; }
-  } };
+  }, stand(to) { if (!target) model.rotation.y = to; } };
 };
 
 // The one renderer, on a canvas of its own that is never put in the page (see-through round the model). It is
@@ -128,9 +139,12 @@ const canvasOf = (v) => {
 // one is given: a scrolling box the views are in) is moved on, rendered, and copied into its own canvas.
 // One out of sight is neither drawn nor moved. Returns false, having drawn nothing, if there is no renderer
 // (see viewRenderer) or its context has been lost; true otherwise.
+// With prefers-reduced-motion nothing is moved on at all, and a picture is only drawn now and then: see STILL.
 const size = new THREE.Vector2();
 export const drawViews = (renderer, views, t, dt, within = null) => {
   if (!renderer || renderer.getContext().isContextLost()) return false;
+  const still = stillViews(), clock = performance.now() / 1000;
+  if (still) { t = STILL.t; dt = 0; }
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
   const box = within ? within.getBoundingClientRect() : { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
   renderer.getSize(size);
@@ -138,8 +152,13 @@ export const drawViews = (renderer, views, t, dt, within = null) => {
     const r = v.el.getBoundingClientRect();
     if (r.bottom < box.top || r.top > box.bottom || r.right < box.left || r.left > box.right || r.width === 0 || r.height === 0) continue;
     const w = Math.max(1, Math.round(r.width * ratio)), h = Math.max(1, Math.round(r.height * ratio));
-    const canvas = canvasOf(v);
-    if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+    const canvas = canvasOf(v), resized = canvas.width !== w || canvas.height !== h;
+    if (still) { // (standing still: its picture is kept until it is due again)
+      if (!resized && v.stillAt !== undefined && clock - v.stillAt < STILL.every) continue;
+      if (v.stillAt === undefined) v.stand?.(STILL.angle);
+      v.stillAt = clock;
+    } else v.stillAt = undefined;
+    if (resized) { canvas.width = w; canvas.height = h; }
     if (w > size.x || h > size.y) renderer.setSize(size.x = Math.max(size.x, w), size.y = Math.max(size.y, h), false);
     // (the bottom left corner of the renderer's canvas, the view's size)
     renderer.setViewport(0, 0, w, h);
