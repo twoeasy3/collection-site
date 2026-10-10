@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `3047fac` (main; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 17 (in-game UI), 18 (menu UI), 19 (road gimmicks), 20 (theme levels A). Theme levels B and C start as soon as A has committed the shared base.
+Last updated: after `1d94f0e` (main, the in-game UI merged; not pushed). Running: agent 14 (Stelvio and Market Town), 18 (menu UI), 19 (road gimmicks), 20, 21, 22 (theme levels A, B, C), 23 (Tank Rage).
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -128,18 +128,19 @@ Three agents at a time; the next item starts as each one finishes.
 
 - [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
 - [x] Police pursuit redone as a plain traffic event: a getaway car and its interceptor come through from behind and drive on; nothing gained or lost by the player. Merged, `65478c1`; levels, schema, pursuit and hazards checks pass. Seen as two small stills and its Gimmicks card. For the owner: the pair now pass at 130% of the player's top speed; the getaway car is no longer an "evil" car; the helicopter was removed
-- [~] Car ideas lot: agent 13
+- [x] Car ideas lot: all 30 models, the table and the garage's "Car ideas" tab, on `main` (`18125cb`, `9ce0665`, `657beea`, `303bdb7`). Contact sheet sent to the owner. Weakest: Split-Window Coupe, Midnight Coupe, Two-Stroke Saloon. Nothing clicked by hand
 - [x] Twenty more Good cargo items (C1 to C20): agent 15, merged into `main` (`cc34343`, `533d5a2`); cargo, bundle and levels checks pass; seen on the Cargo page's contact sheet, sent to the owner. Weakest: sushi boat, tea set, globe. Nothing seen moving
 - [x] Twenty more Evil cargo items (C21 to C40), three states each: agent 16, merged into `main` as `6fc32e2` (`c8ba744`, `269134e`; two small conflicts with the Good branch, both sides kept); cargo, bundle and levels checks pass; 50 items in all now. Seen on two contact sheets, sent to the owner. Weakest: the teddy bear's middle state, the cannonball's first two states, the reactor's last, the skunk asleep. Nothing seen moving
 - [ ] Cargo picked by hand for more levels (the pairs suggested under "More cargo"): not done; every level gets one by its place on the menu
 - [~] Menu UI rework (M1 to M3 in the section "Menu UI" at the end): agent 18, branch `delivery-menu`
-- [~] In-game UI improvements (U1 to U5): agent 17, branch `delivery-ui`. The owner asked what the "on fire" message was: there is none (the orchestrator had listed it without checking); the agent has been told to build the stay-on-screen list only from messages that exist
+- [x] In-game UI improvements (U1 to U5): agent 17, merged into `main` as `1d94f0e` (`8cb5d78`, `5eb974f`); levels, bundle and HUD checks pass. A ring with the distance to go and a shoulder dial in the meters' corner; messages along the top edge in landscape and at the foot in portrait; `CONFIG.messageTimes`; eleven sticky messages (puncture, beached, bad gas, heavy, butterfingers, and six bad mystery effects); the mystery's name in the status. Seen at desktop and phone size, sent to the owner. Weak spots: wrapped messages and sticky rows push the camera warning toward the horizon on desktop; in portrait a long message reaches the car. Nothing seen moving
 - [~] Road gimmicks, resumed from the saved ramp work: agent 19, branch `delivery-gimmicks` (a new worktree)
 - [~] New levels on new themes, built from the gimmicks the game has now (owner, 10-Oct: "Let's get some agents going making new levels with the new themes and the gimmicks we have right now"). No new gimmick per theme. Three agents, three themes each, a level on each:
   - [~] A (agent 20, `delivery-themes`): the shared base first (where the new levels live, saved progress undisturbed), then T14 toy room, T15 underwater tunnel, T18 moon base
-  - [ ] B (`delivery-themes-b`, waiting for A's base): T13 film studio backlot, T1 Venice, T4 ice road
-  - [ ] C (`delivery-themes-c`, waiting for A's base): T12 theme park, T7 volcano island, T11 container port
+  - [~] B (agent 21, `delivery-themes-b`, from A's base `0c74bd6`): T13 film studio backlot, T1 Venice, T4 ice road
+  - [~] C (agent 22, `delivery-themes-c`, from A's base `0c74bd6`): T12 theme park, T7 volcano island, T11 container port
 - **Standing rule for level content (owner, 10-Oct):** "add more Cash bonus pickups on the level from now, and have parts of the level where two or more pickups are side by side." Given to the theme agents, the Stelvio and Market Town agent and the gimmicks agent. Older levels have between none and four cash pickups
+- [~] Tank Rage (owner, 10-Oct): "Make the Tank Rage markers configurable by theme. Some themes have walls next to the road and therefore the tank rage marker isn't visible. The Mumbai and HK levels for example." and "Make a special amphibious tank exclusively for amphibious tank rage levels." Agent 23, branch `delivery-tank`
 - **The level progression rework waits:** the owner will do "a full rebalance later"
 - [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
 - [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
