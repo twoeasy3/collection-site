@@ -1232,6 +1232,8 @@ pick ups and traffic."
           through a fog bank. The last was already noted when fog was made to take its theme's colour
           (`ff21b9a`): far backdrops drawn with `fog: false`, the volcano and the ice road's aurora among
           them, show through a thick bank. The erupting look is `229dd8d`, `render/themes/volcano.js`.)
+    - [ ] Q43. "UFO air strike effect takes too long to happen, maybe it should start ticking damage before the
+          UFO leaves".
 - [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
   - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
     truck gimmick for now." What it is: the car's trait `tow` (`cars.js:127-129`): driven into fallen
