@@ -1,7 +1,7 @@
 // ============================================================================
 // THE POWER-UPS PAGE (delivery/powerups.html): every pickup in powerups.js, its own model spinning over its
-// pad, with what it does. One renderer draws every card: a canvas over the whole window, drawn into patch
-// by patch (each card's .view), and left clear everywhere else (render/modelviews.js).
+// pad, with what it does. One renderer draws every card's model, each into a small canvas of its own in the
+// card's .view, so it scrolls with the page (render/modelviews.js).
 // ============================================================================
 import './powerups.css';
 import { CONFIG } from './config.js';
@@ -45,7 +45,7 @@ for (const card of CARDS) {
 }
 
 // ---- drawing ------------------------------------------------------------------------------------
-const renderer = viewRenderer(document.getElementById('stage'));
+const renderer = viewRenderer(); // (null if none can be had: the page is its words alone)
 let last = performance.now();
 const frame = (now) => {
   const dt = Math.min(0.05, (now - last) / 1000);
@@ -53,4 +53,4 @@ const frame = (now) => {
   drawViews(renderer, views, now / 1000, dt);
   requestAnimationFrame(frame);
 };
-requestAnimationFrame(frame);
+if (renderer) requestAnimationFrame(frame);

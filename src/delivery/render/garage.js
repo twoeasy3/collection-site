@@ -134,11 +134,22 @@ const buildLot = () => {
   parked = order.map(parkCar).filter(Boolean);
 };
 
+// ---- a car on show: its own model, and its paint for a side (the lot's cars, and the start screen's car card:
+// render/menustage.js). Whoever makes one adds it to a scene of their own: makeCarMesh puts it in the game's
+export const makeShowCar = (car) => {
+  const mesh = car.tank ? makeTankMesh(car.color) : car.ufo ? makeUfo() : car.model ? MODELS[car.model](car) : makeCarMesh(car.color); // (ufo: the earned Saucer)
+  if (!car.tank && !car.ufo && !car.model) shapeCarMesh(mesh, car);
+  return mesh;
+};
+export const paintShowCar = (mesh, car, evil) => {
+  mesh.userData.body?.material.color.setHex((evil ? car.evilColor : car.color) ?? car.color); // (a level's own vehicle may have one paint, or no body to paint)
+  mesh.userData.livery?.(evil);
+};
+
 // ---- a car, parked in its bay: column by column --------------------------------------------------
 const parkCar = (car, i) => {
   if (!car) return null; // (a bay left empty: see buildLot)
-  const mesh = car.tank ? makeTankMesh(car.color) : car.ufo ? makeUfo() : car.model ? MODELS[car.model](car) : makeCarMesh(car.color); // (ufo: the earned Saucer)
-  if (!car.tank && !car.ufo && !car.model) shapeCarMesh(mesh, car);
+  const mesh = makeShowCar(car);
   mesh.position.set(colX(Math.floor(i / ROWS)), car.ufo ? 1 : 0, ROW_Z[i % ROWS]); // (a saucer hovers)
   mesh.userData.car = car;
   lot.add(mesh); // (moves it out of the game's scene, where makeCarMesh put it)
@@ -214,8 +225,7 @@ const refresh = () => {
   lookRing.visible = !!looking && looking !== inUse;
   for (const mesh of parked) {
     const car = mesh.userData.car;
-    mesh.userData.body.material.color.setHex(Garage.evil ? car.evilColor : car.color);
-    mesh.userData.livery?.(Garage.evil);
+    paintShowCar(mesh, car, Garage.evil);
     mesh.userData.tag.visible = !Progress.owns(car.id);
     if (car === inUse) ring.position.set(mesh.position.x, 0.12, mesh.position.z);
     if (car === looking) lookRing.position.set(mesh.position.x, 0.12, mesh.position.z);

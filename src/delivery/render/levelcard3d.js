@@ -6,8 +6,10 @@
 // what a mystery can be) and its TRAFFIC (what it is driven in, the grid, every vehicle kind in its mix and
 // its zones, and the Gimmicks page's cards about vehicles: ambulances, the police pursuit, convoys...). Each
 // tile has the model its page shows, a name, and the first line of what its page says.
-// Drawn cheaply: ONE WebGL renderer for the whole card, on a canvas laid over the tiles and drawn into patch
-// by patch (render/modelviews.js, as the pages do), made when the card opens and let go when it closes.
+// Drawn cheaply: ONE WebGL renderer for the whole card, on a canvas off the page, its picture of each tile
+// copied into the tile's own small canvas (render/modelviews.js, as the pages do: the models scroll with
+// their tiles). The renderer is the start screen's one (the car card's too: sharedRenderer), so the card
+// takes no WebGL context of its own; when it closes, what its models took is given back.
 // Nothing of the level is built, and the game's own scene is not touched.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
@@ -17,10 +19,10 @@ import { Game } from '../game.js';
 import { levelNotes, levelPickups, mysteryPool, levelTraffic, vehicleInfo } from '../levelinfo.js';
 import { GROUPS } from '../gimmicks.js';
 import { CARDS } from '../powerups.js';
-import { MODELS } from './models.js';
+import { MODELS, FIXED_PAINT, makeLightBar, placeLightBar, flashLightBar } from './models.js';
 import { makeTractorModel, makeUfo } from './carExtras.js';
 import { PICKUP_COLOR } from './pickupModels.js';
-import { standView, pickupView, viewRenderer, drawViews } from './modelviews.js';
+import { standView, pickupView, sharedRenderer, disposeViews, drawViews } from './modelviews.js';
 
 const make = (tag, className, ...inside) => {
   const node = document.createElement(tag);
@@ -39,11 +41,23 @@ const KIND_CARD = { ufo: 'The UFO', jetboat: 'The jetboat', apc: 'Your 8x8', tra
 // a vehicle kind's own model, painted (a traffic kind's, or a level's own vehicle's)
 const CLOSE = 1.3; // (how much nearer than the pages' cards a tile's camera stands: its patch is small)
 const PAINTS = [0x3d7bd9, 0xd8463a, 0x3fa35a, 0xe0a52e, 0x8a5bd1, 0x2fb5b5, 0xd9d9d9];
-const vehicleModel = (kind, color) => {
+// a vehicle kind's paint on its tile, the n-th of the level's: the green army's on the Battlefield, the one
+// the game always gives it (a police car's white, whatever its place on the card: FIXED_PAINT), its one livery
+// or the garage car's (vehicleInfo), or else one of a few, by its place. The tile's glow is this colour too
+export const vehiclePaint = (level, kind, n) => (level.battle && CONFIG.battle.colors.good[kind]) || (FIXED_PAINT[kind] ?? vehicleInfo(kind).color) || PAINTS[n % PAINTS.length];
+export const vehicleModel = (kind, color) => {
   if (kind === 'ufo') return makeUfo();
   if (kind === 'tractor') return makeTractorModel();
   const car = LEVEL_CARS[kind] || CARS.find(c => c.id === kind), type = CONFIG.vehicles[kind] || car;
   const build = MODELS[type?.model || car?.model];
+  if (build && (kind === 'police' || kind === 'ambulance')) { // (with the light bar the game's traffic puts on its roof, flashing as there)
+    const model = build({ ...car, ...type, color }), animate = model.userData.animate, bar = makeLightBar();
+    placeLightBar(bar, kind, type);
+    model.add(bar);
+    model.userData.bar = bar;
+    model.userData.animate = (t) => { animate?.(t); flashLightBar(bar, kind, t * 1000); };
+    return model;
+  }
   if (build) return build({ ...car, ...type, color });
   const size = type || { hw: 1, hl: 2, height: 1.5 }; // (no model of its own: a block its size)
   const block = new THREE.Mesh(new THREE.BoxGeometry(size.hw * 2, size.height, size.hl * 2), new THREE.MeshLambertMaterial({ color }));
@@ -90,40 +104,37 @@ export const showRoadCard = (box, level, close) => {
   const named = new Set(cards.map(card => card.name));
   const vehicles = levelTraffic(level).filter(({ kind }) => !named.has(KIND_CARD[kind])).map(({ kind, role }, n) => {
     const info = vehicleInfo(kind, role);
-    const color = (level.battle && CONFIG.battle.colors.good[kind]) || info.color || PAINTS[n % PAINTS.length]; // (the Battlefield: the green army's paint)
+    const color = vehiclePaint(level, kind, n);
     const model = vehicleModel(kind, color);
     return tile(views, standView({ model, tick: (t) => model.userData.animate?.(t) }, CLOSE), color, info.name + (role === 'zone' ? ' (in places)' : ''), info.line);
   });
   const traffic = [...cards.filter(card => ['The UFO', 'The jetboat', 'Your 8x8'].includes(card.name)).map(gimmickTile), ...vehicles,
     ...cards.filter(card => TRAFFIC_CARDS.has(card.name) && !['The UFO', 'The jetboat', 'Your 8x8'].includes(card.name)).map(gimmickTile)];
 
-  const canvas = make('canvas', 'road-canvas');
   const closeBtn = make('button', 'menu-chip', 'Close');
   closeBtn.addEventListener('click', close);
   const notes = levelNotes(level);
+  const body = make('div', 'sheet-body',
+    notes.length ? make('p', 'road-notes', notes.map(note => make('em', '', note))) : null,
+    group('Gimmicks', 'gimmicks.html', 'All the gimmicks', gimmicks, 'Nothing but the road, the traffic and the clock.'),
+    group('Pickups', 'powerups.html', 'All the power-ups', pickups, 'None on this level.'),
+    group('Traffic', 'gimmicks.html#vehicles', 'More about vehicles', traffic, 'No traffic at all.'));
   box.replaceChildren(make('div', 'sheet-box road',
     make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', levelLabel(LEVELS.indexOf(level)) + '  ' + level.name)), closeBtn),
-    make('div', 'sheet-main',
-      make('div', 'sheet-body',
-        notes.length ? make('p', 'road-notes', notes.map(note => make('em', '', note))) : null,
-        group('Gimmicks', 'gimmicks.html', 'All the gimmicks', gimmicks, 'Nothing but the road, the traffic and the clock.'),
-        group('Pickups', 'powerups.html', 'All the power-ups', pickups, 'None on this level.'),
-        group('Traffic', 'gimmicks.html#vehicles', 'More about vehicles', traffic, 'No traffic at all.')),
-      canvas)));
+    make('div', 'sheet-main', body)));
 
-  const renderer = viewRenderer(canvas);
+  const renderer = sharedRenderer(); // (the menu's one; null if none can be had: the card opens all the same, its tiles' pictures empty)
   let last = performance.now(), frame = 0;
   const draw = (now) => {
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    drawViews(renderer, views, now / 1000, dt);
+    drawViews(renderer, views, now / 1000, dt, body); // (only the tiles scrolled into sight in the sheet)
     frame = requestAnimationFrame(draw);
   };
-  frame = requestAnimationFrame(draw);
+  if (renderer) frame = requestAnimationFrame(draw);
   return () => {
     cancelAnimationFrame(frame);
-    renderer.dispose();
-    renderer.forceContextLoss(); // (the WebGL context given back at once, not whenever the canvas is collected)
+    disposeViews(views); // (the renderer is the menu's, and stays: only what the tiles' models took is given back)
     box.replaceChildren();
   };
 };
