@@ -36,6 +36,7 @@ export const CARGO = {
     { id: 'puppy', name: 'Puppy in a basket' },
     { id: 'sundae', name: 'Ice-cream sundae' },
     { id: 'snowglobe', name: 'Snow globe' },
+    { id: 'casserole', name: 'Thank-you casserole' },
   ],
   evil: [
     { id: 'parcel', name: 'Ticking parcel', states: ['Ticking', 'Fuse lit', 'About to blow'] },
@@ -74,6 +75,10 @@ export const CARGO = {
     { id: 'bailiffs', name: 'Crate of bailiffs', states: ['One sticker', 'Sticking', 'Seizing the gnome'] },
     { id: 'wardens', name: 'Parking wardens', states: ['Cap on the box', 'Writing tickets', 'Tickets flying'] },
     { id: 'consultants', name: 'Crate of consultants', states: ['Laser dot', 'Flip-chart out', 'Pie chart spinning'] },
+    { id: 'inlaws', name: "The in-laws' luggage", states: ['Neatly stacked', 'Bulging', 'Burst open'] },
+    { id: 'band', name: 'Marching band in a box', states: ['A faint oompah', 'Trombone out', 'Full blast'] },
+    { id: 'salesman', name: "Door-to-door salesman's case", states: ['Shut', 'Foot in the door', 'Wide open'] },
+    { id: 'party', name: 'The surprise party', states: ['Says nothing', 'Giggling', 'SURPRISE'] },
   ],
 };
 export const CARGO_STATES = ['calm', 'agitated', 'furious'];
