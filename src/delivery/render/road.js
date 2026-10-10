@@ -164,8 +164,18 @@ const buildTerrain = (colours, others) => {
   land.material.polygonOffsetFactor = 2;
   land.material.polygonOffsetUnits = 2;
   levelGroup.add(land);
-  return heightAt;
+  // (what stands on the land stands on the land as drawn: the grid's own triangles, which on a steep face between
+  // two stretches of road can be metres off the height worked out at a point between its corners)
+  const corner = (r, c) => pos[(Math.max(0, Math.min(rows - 1, r)) * cols + Math.max(0, Math.min(cols - 1, c))) * 3 + 1];
+  return (x, z) => {
+    const u = (x - (x0 - M)) / G, v = (z - (z0 - M)) / G, c = Math.floor(u), r = Math.floor(v), fx = u - c, fz = v - r;
+    const a = corner(r, c), b = corner(r, c + 1), d = corner(r + 1, c), e = corner(r + 1, c + 1);
+    return fx + fz <= 1 ? a + (b - a) * fx + (d - a) * fz : e + (d - e) * (1 - fx) + (b - e) * (1 - fz);
+  };
 };
+// the height of the land as drawn at a world point (x, z), on a level whose theme has terrain; null on any other,
+// where the land is level with the road beside it (what waits beside the road stands on it: see render/items.js)
+export let landAt = null;
 
 // how far out from the centre line (m) anything may reach on a side (-1 left, 1 right) at s: on the
 // inside of a bend, short of its middle (with the sharpest bend within 200 m either way), so that
@@ -1226,6 +1236,7 @@ const buildRoad = () => {
   levelGroup.add(ground);
 
   const terrainAt = theme.terrain ? buildTerrain(theme.terrain === true ? null : theme.terrain, others) : null; // (the height of the land at a world point)
+  landAt = terrainAt;
   if (Track.hilly && theme.ground !== null && !theme.terrain) {
     // Hills: the land beside the road rises and falls with it. It is a wide ribbon of grass
     // just under the road, with a skirt sloping down to the flat ground along each edge.

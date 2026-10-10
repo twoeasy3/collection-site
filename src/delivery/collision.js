@@ -326,7 +326,8 @@ export const Collision = (() => {
         const r = R.size.min + rockRand() * (R.size.max - R.size.min);
         const lat = Track.lo(s) + r + rockRand() * (Track.hi(s) - Track.lo(s) - 2 * r);
         add('rock', s, lat, { r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, side, land: lat, nearAt: R.near.min + rockRand() * (R.near.max - R.near.min),
-          up: z.height ?? R.height, out: z.out ?? R.out }); // (where it waits: the level's, or the hillside's)
+          up: z.height ?? R.height, out: z.out ?? R.out, // (where it waits: the level's, or the hillside's)
+          ledge: z.height !== undefined }); // (the level says how high: something stands there for it to wait on, a quarry's bench)
       }
     }
     // landmines: scattered down the lanes over their stretch, in the middle of a lane, each with its light

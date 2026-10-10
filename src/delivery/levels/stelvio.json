@@ -50,12 +50,12 @@
     { "from": 3760, "to": 3800 }
   ],
   "rockfall": [
-    { "from": 300, "to": 480, "count": 5, "side": "left", "height": 32, "out": 18 },
-    { "from": 580, "to": 760, "count": 5, "side": "right", "height": 32, "out": 18 },
-    { "from": 1120, "to": 1240, "count": 6, "side": "right", "height": 32, "out": 18 },
-    { "from": 1860, "to": 1980, "count": 6, "side": "left", "height": 32, "out": 18 },
-    { "from": 2940, "to": 3120, "count": 5, "side": "right", "height": 32, "out": 18 },
-    { "from": 3540, "to": 3700, "count": 6, "side": "right", "height": 32, "out": 18 }
+    { "from": 290, "to": 440, "count": 5, "side": "left" },
+    { "from": 570, "to": 700, "count": 5, "side": "right" },
+    { "from": 1100, "to": 1210, "count": 6, "side": "right" },
+    { "from": 1345, "to": 1500, "count": 6, "side": "left" },
+    { "from": 2985, "to": 3125, "count": 5, "side": "right" },
+    { "from": 3500, "to": 3660, "count": 6, "side": "right" }
   ],
   "fog": [
     { "from": 2000, "to": 2500 }

@@ -267,7 +267,12 @@
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side, out?, height? }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall). out / height: where they wait,
-//              m off the road's edge and m up, if not CONFIG.rockfall's (the hillside's): on a quarry's bench, say
+//              m off the road's edge and m up, if not CONFIG.rockfall's (the hillside's): on a quarry's bench, say.
+//              A rock waits ON something and comes down over it (render/items.js): on a level whose land climbs (a theme
+//              with terrain), the land itself, out m off, on whichever side is uphill (leave height out there: with a
+//              height it is taken to be a ledge that high, wherever the land is, and hangs in the air if there is none);
+//              on flat land, a crag `height` m tall built for it. Keep a stretch 40 m clear of a hairpin, where the
+//              legs either side are level with each other and there is no slope for a rock to come down
 //   (Gimmick Road 2's: see hazards.js and CONFIG, each under its own name. Any can be on a side road, as cameras,
 //   crossings and potholes can: { road: 'side', exit: n }, s then m along that side road)
 //   schoolCrossings { s }: a lollipop person stops the traffic for the children; running it is a bust
