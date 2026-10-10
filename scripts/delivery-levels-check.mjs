@@ -37,7 +37,7 @@ try {
   RACE_LEVELS.forEach((l, k) => { if (labels[LEVELS.indexOf(l)] !== 'R' + (k + 1)) fail(l.id + ': labelled ' + labels[LEVELS.indexOf(l)] + ', not R' + (k + 1)); });
   // (the special levels S1..., then the amphibious ones A1...)
   const amphibious = g.levels.AMPHIBIOUS_LEVELS || [], themed = g.levels.THEME_LEVELS || [];
-  themed.forEach((l, k) => { if (labels[LEVELS.indexOf(l)] !== 'T' + (k + 1)) fail(l.id + ': labelled ' + labels[LEVELS.indexOf(l)] + ', not T' + (k + 1)); });
+  themed.forEach((l) => { if (!MAIN_LEVELS.includes(l)) fail(l.id + ': a themed level that is not among the numbered levels'); }); // (they are ordinary levels: 32, 33...)
   DELIVERY_LEVELS.slice(MAIN_LEVELS.length).filter(l => !amphibious.includes(l) && !themed.includes(l)).forEach((l, k) => { if (labels[LEVELS.indexOf(l)] !== 'S' + (k + 1)) fail(l.id + ': labelled ' + labels[LEVELS.indexOf(l)] + ', not S' + (k + 1)); });
   amphibious.forEach((l, k) => { if (labels[LEVELS.indexOf(l)] !== 'A' + (k + 1)) fail(l.id + ': labelled ' + labels[LEVELS.indexOf(l)] + ', not A' + (k + 1)); if (!l.amphibious) fail(l.id + ': among the amphibious levels, but not "amphibious"'); });
   for (const l of LEVELS) { const next = nextOnTab(l); if (next && isRace(next) !== isRace(l)) fail(l.id + ': its next level is on the other tab'); }

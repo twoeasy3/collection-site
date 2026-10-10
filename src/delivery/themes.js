@@ -124,6 +124,21 @@ export const THEMES = {
     light: { sky: 0xffffff, ground: 0x24242c, ambient: 0.8, sun: 0xfff6e6, sunlight: 2.1 },
     tunnel: { wall: 0xb8bcc4, tiles: 0xe2e6ec, roof: 0x8a8f98, face: 0xc9cdd4, lamp: 0xfff0c8 } },
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
+  // backlot: a film studio's backlot (render/themes/backlot.js): one street that is several sets in turn, by the level's zones (sets: what a zone's scenery can be there): the lot and its soundstages, a Western town, a New York street of propped-up flats, painted skies on scaffolding; a tunnel is a soundstage with a spaceship's corridor inside (tunnel)
+  backlot: { sky: 0x8fc4ee, ground: 0xbdb7a8, road: 0x3f4146, scenery: 'backlot', sets: ['studioLot', 'western', 'soundstage', 'newyork', 'skies'], target: { offset: 2.4, height: 3.6, beam: true }, tunnel: { wall: 0xe4eaf0, tiles: 0x39d8ff, roof: 0xb4bec8, face: 0xd8cdb4, lamp: 0x9ff0ff } },
+  // venice: the road is a quay (render/themes/venice.js): the ground is the lagoon's water, a wall of palazzi along the left, the canal along the right with its mooring poles, gondolas and vaporetti, palazzi out of the water beyond; a hump in the road is a bridge over a side canal, a tunnel a sotoportego, a tide's stretch the open lagoon
+  venice: { sky: 0xc3dcec, ground: 0x4c9590, road: 0x8d877d, scenery: 'venice', line: 0xefe8d6, centre: 0xe0c27a, target: { offset: 2.4, height: 3.6, beam: true }, channel: { shallow: 0x6fb0a6, deep: 0x2f6f6c, glint: 0x8fcfc4 },
+    tunnel: { wall: 0xb5654a, tiles: 0xe6dcc6, roof: 0x6b4a2c, face: 0xd9a066, lamp: 0xffd9a0 } },
+  // iceroad: a ploughed road across a frozen lake at night (render/themes/iceroad.js): bare blue ice between snowbanks and marker poles, pressure ridges (a hump in the road is one), fishing huts with their windows lit, the dark shore far off, stars, a moon and the aurora
+  iceroad: { sky: 0x06122a, ground: 0xdfe9f2, road: 0x6f9cbc, scenery: 'iceroad', line: 0xf2f7fb, centre: 0xffa23a, lit: true, headlights: true, night: true, channel: { shallow: 0x6f9fb8, deep: 0x16384f, glint: 0x8fc4dc },
+    light: { sky: 0xa8c8ff, ground: 0x3a4a66, ambient: 0.95, sun: 0xcfe2ff, sunlight: 0.55 } },
   // (batch B: film studio, Venice, ice road: new themes go above this line)
+  // themepark: the road through a theme park (render/themes/themepark.js): a promenade behind candy-striped kerbs, bunting and rainbow arches over the road, striped tents and stalls, carousels and Ferris wheels turning, a rollercoaster over the road and beside it, a castle on the skyline; a tunnel is the ghost train's
+  themepark: { sky: 0x6ec3f5, ground: 0x7fc66b, road: 0x4b4a55, scenery: 'themepark', tunnel: { wall: 0x5a2d82, tiles: 0xffd21f, roof: 0x24143a, face: 0xe23b3b, lamp: 0xff9ff0 } },
+  // volcano: a volcano island (render/themes/volcano.js): a black road over black sand under an ashen sky, rivers of lava glowing beside it and across under every bridge, basalt, palms, steam vents, torches, the sea beyond the surf, ash coming down, and the volcano smoking on the skyline; a tunnel is a lava tube
+  volcano: { sky: 0xa89aa0, ground: 0x29272b, road: 0x161518, scenery: 'volcano', line: 0xe8e2d4, centre: 0xffa51e, tunnel: { wall: 0x2a2224, tiles: 0xff6a1e, roof: 0x151113, face: 0x3a3032, lamp: 0xffb060 },
+    light: { sky: 0xffe6cf, ground: 0x6a3a26, ambient: 1.35, sun: 0xffd2a8, sunlight: 1.15 } },
+  // port: a container port (render/themes/port.js): concrete under a grey sky, walls of stacked containers in every colour, gantry cranes over the road, straddle carriers up and down beside it, rails let into the road, floodlight masts, and on the right the quay: quay cranes over container ships, and the harbour
+  port: { sky: 0xb5c3cd, ground: 0x8b8e91, road: 0x33363b, scenery: 'port' },
   // (batch C: theme park, volcano island, container port: new themes go above this line)
 };
