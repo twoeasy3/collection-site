@@ -109,6 +109,36 @@ Progress.data.bestTime.good = Object.fromEntries(g.levels.LEVELS.slice(0, 11).ma
 check(Tiers.isOpen(g.levels.LEVELS[11]) && Tiers.isOpen(g.levels.LEVELS[0]) && Tiers.legacy() === 12, 'a save with 12 levels open keeps all 12 open under the tiers');
 check(Progress.data.tierBase === 12, 'and the count is kept in the save (tierBase)');
 check(Tiers.halves(g.levels.LEVELS[0]) === 1, 'its best times are its ribbons (a Good half each)');
+// ---- the owner's bug: an Idea Car picked, a restricted level forces the Commuter, and the run and its results
+// must stay in the Commuter even once the delivery earns the half-ribbon (which ends the rule); the pick comes back
+{
+  fresh();
+  g.CONFIG.progression.tiers = true;
+  const idea = (await g.load('ideas.js')).IDEA_CARS[0];
+  Progress.data.car = idea.id;
+  g.select(a.id); side(false);
+  cars.useLevelCar(null, false);
+  check(cars.CAR.id === 'commuter' && Progress.data.car === idea.id, 'Idea Car picked, level 1 restricted: the Commuter is forced, the pick is kept');
+  g.Game.evil = false;
+  g.Game.start();
+  check(cars.CAR.id === 'commuter', 'the run is in the Commuter');
+  Progress.levelDone(g.levels.LEVEL_INDEX, a.id, 10, 5, false); // (delivered: the Good half is earned, the rule ends)
+  check(Tiers.restriction(a, false) === null, 'the delivery earned the half: the rule no longer applies');
+  cars.useLevelCar(null, false); // (the menu drawing itself while the results show asks for the car again)
+  check(cars.CAR.id === 'commuter', 'the results are still in the Commuter (the car of the run)');
+  g.Game.toMenu();
+  cars.useLevelCar(null, false);
+  check(cars.CAR.id === idea.id && Progress.data.car === idea.id, 'back at the menu the Idea Car pick is in use again');
+  // an unrestricted level (the half earned) and the tiers off: the Idea Car is driven
+  g.Game.start();
+  check(cars.CAR.id === idea.id, 'on a level that allows it the run is in the Idea Car');
+  g.Game.toMenu();
+  g.CONFIG.progression.tiers = false;
+  g.select(T[1][0].id);
+  g.Game.start();
+  check(cars.CAR.id === idea.id, 'the tiers off: the Idea Car is driven everywhere');
+  g.Game.toMenu();
+}
 // a hand-made save from long ago (order 30, 25 levels open, a best time on each side of the first) read back
 {
   const old = { money: 321.5, unlocked: 25, levelOrder: 30, cars: ['hatch', 'lovebus'], car: 'lovebus', bestTime: { good: { expressway: 12, 'back-roads': 8 }, evil: { expressway: 6 } } };

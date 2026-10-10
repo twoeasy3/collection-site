@@ -64,6 +64,8 @@ export const Tiers = {
   on() { return switched ?? !!CONFIG.progression?.tiers; },
   // which side is being played (the menu's pick): set by game.js, which owns it
   sideIsEvil: () => false,
+  // { tier } while a run (or its results screen) is on: the car rule as it stood when the run started; null otherwise
+  hold: null,
 
   // what is wrong with tiers.json, as lines (none: it is sound): an id that names no level, a level twice or in
   // neither place, a tier that is not five levels, a tier number that skips
@@ -202,7 +204,9 @@ export const Tiers = {
 };
 // (the Blue Star cars are in the garage once Blue 1 is open; and the garage and the car in use ask the rule)
 setTierHooks({
-  restricted: () => { try { return Tiers.on() ? Tiers.restriction(currentLevel(), Tiers.sideIsEvil()) : null; } catch { return null; } },
+  // (held for the whole of a run and its results: delivering a level earns its half-ribbon and ends the rule, which
+  // must not change the car the run's finish animation draws mid-way: Game.start sets `hold`, Game.toMenu clears it)
+  restricted: () => { try { return Tiers.hold ? Tiers.hold.tier : Tiers.on() ? Tiers.restriction(currentLevel(), Tiers.sideIsEvil()) : null; } catch { return null; } },
   blueOpen: () => Tiers.on() ? Tiers.tierOpen(6) || Tiers.legacy() > CONFIG.blueStarsAfter : null,
 });
 const currentLevel = () => LEVEL; // (the live binding: the level picked)
