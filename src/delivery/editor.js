@@ -26,6 +26,7 @@ import { LEVELS, HIDDEN_LEVELS, levelLabel, selectSpecial } from './levels.js';
 import { buildTrack, Track } from './track.js';
 import { THEMES } from './themes.js';
 import { PICKUP_COLOR } from './render/pickupModels.js';
+import { closeLoop, roadEnd } from './levelSchema.js';
 import { FIELDS, GROUPS, RULES, isPlaced, isList, entriesOf, placeOf, spanOf, triggerOf, makeEntry, roadFacts, brokenRules, checkLevel, loadLevel, saveLevel,
   asSetting, choiceValue, choiceLabel } from './levelSchema.js';
 import { h, fill, control, settingsForm } from './editorForms.js';
@@ -611,7 +612,9 @@ const status = () => {
   $('status').textContent = `${(L / 1000).toFixed(2)} km: an average of ${(L / good * 3.6).toFixed(0)} km/h needed playing Good, ` +
     `${(L / evil * 3.6).toFixed(0)} km/h Evil. ${n} things placed, of ${PLACED.filter(k => entriesOf(level, k).length).length} kinds.` +
     (found.length ? ` ⚠ ${found.length === 1 ? 'A problem' : found.length + ' problems'}: see under the map.` : ' No problems found.');
-  const end = points[points.length - 1] || { x: 0, y: 0, h: 0 }, gap = Math.hypot(end.x, end.y), turned = ((end.h * 180 / Math.PI) % 360 + 540) % 360 - 180;
+  const end = roadEnd(level.segments || []), gap = Math.hypot(end.x, end.y), // (as the game lays the road out and measures it: see levelSchema.js)
+    turned = ((end.h * 180 / Math.PI) % 360 + 540) % 360 - 180;
+  $('closeLoop').hidden = !(level.laps || gap < 150) || (gap < 1 && Math.abs(turned) < 0.6);
   $('loopNote').textContent = level.laps || gap < 150 ? `A circuit: the road ends ${gap.toFixed(1)} m from where it starts, facing ${Math.abs(turned).toFixed(1)}° off` +
     (gap < 1 && Math.abs(turned) < 0.6 ? ' (closed).' : ' (a lapped level needs it closed: under 1 m, facing the same way).') : '';
 };
@@ -753,6 +756,18 @@ $('segments').addEventListener('click', (e) => {
 $('addSegment').addEventListener('click', () => { level.segments.push({ length: 300, curve: 0 }); segmentRows(); changed(); });
 
 // ---- the tools: select, or place one of anything the schema says can be placed, grouped and searched ----
+// a lapped road closed (levelSchema.js closeLoop): the bends each turned a touch, and two segments made longer or
+// shorter, what is on them and after them carried along as for any change of length (see resize)
+$('closeLoop').addEventListener('click', () => {
+  const closed = closeLoop(level.segments);
+  if (closed.problem) { $('loopNote').textContent = 'Not closed: ' + closed.problem + '.'; return; }
+  for (const m of [...closed.moved].sort((a, b) => b.i - a.i)) resize(m.i, m.to); // (the later one first: the earlier one's place is not moved by it)
+  level.segments.forEach((seg, i) => { if (seg.curve) seg.curve = closed.segments[i].curve; });
+  segmentRows();
+  changed();
+  $('loopNote').textContent += ' Closed: ' + (closed.moved.length ? closed.moved.map(m => 'segment ' + (m.i + 1) + ' ' + m.from + ' to ' + m.to + ' m').join(', ') : 'no length changed') +
+    '; ' + Math.abs(closed.turned * 180 / Math.PI).toFixed(2) + '° shared out over the bends.';
+});
 const sameTool = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const levelRules = (key) => (FIELDS[key].rules || []).filter(id => !SPAN_RULES.includes(id) && RULES[id].broken(facts, {}, [0, 0])).map(id => RULES[id].text);
 const toolButton = (label, t, swatch, title, key) => {
