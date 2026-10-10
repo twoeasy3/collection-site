@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
+import { THEMES } from '../themes.js';
 import { Track } from '../track.js';
 import { Game } from '../game.js';
 import { Player } from '../player.js';
@@ -208,11 +209,22 @@ Game.onLoad.push(() => {
 
 });
 
-// the fog bank: the scene's fog drawn in from its usual distances (and its colour towards grey) by
-// how deep in one the player is
+// the fog bank: the scene's fog drawn in from its usual distances (and its colour towards the fog's) by
+// how deep in one the player is. The fog's colour is the theme's: under a bright sky the usual pale grey
+// (CONFIG.fog.color), under a dark one that grey in the little light there is, so mostly the sky's own colour
+// (night: a dark blue-grey; the volcano going up: a red-brown murk; the sea bed: silt), the one running into
+// the other between CONFIG.fog.dark and .bright; or the colour the theme names (its "fogColor")
 const USUAL = { near: 120, far: 520 };
 const usualColor = new THREE.Color(), fogColor = new THREE.Color(CONFIG.fog.color);
-let fogged = 0;
+const fogColorOf = (theme) => {
+  if (theme.fogColor !== undefined) return theme.fogColor;
+  const F = CONFIG.fog, parts = (hex) => [hex >> 16 & 255, hex >> 8 & 255, hex & 255];
+  const sky = parts(theme.sky ?? 0x87ceeb), grey = parts(F.color);
+  const light = (0.299 * sky[0] + 0.587 * sky[1] + 0.114 * sky[2]) / 255; // (how bright the sky is, 0 .. 1)
+  const u = Math.min(1, Math.max(0, (light - F.dark) / (F.bright - F.dark))), share = F.lit + (1 - F.lit) * u * u * (3 - 2 * u);
+  return sky.reduce((hex, part, i) => hex * 256 + Math.round(part + (grey[i] - part) * share), 0);
+};
+let fogged = 0, fogFresh = true; // (fogFresh: a level just loaded, nothing of it drawn yet)
 const flashEl = document.getElementById('cameraFlash');
 
 export const syncRoadside = (dt) => {
@@ -246,6 +258,7 @@ export const syncRoadside = (dt) => {
   // the fog bank (the sky goes grey with it; out of it, the sky is whatever the level makes it)
   if (Game.state !== 'start') {
     const want = Track.foggy(Player.s);
+    if (fogFresh) { fogged = want; fogFresh = false; } // (a run that starts inside a bank, ?at= in the address, is in the fog at once: it did not drive into it)
     if (!fogged && !want) {
       usualColor.copy(scene.background);
     } else {
@@ -293,6 +306,9 @@ const syncFlash = () => {
 };
 Game.onLoad.push(() => { // (out of any fog left from the last run; a level's own sky is put up as it loads: see applySky)
   fogged = 0;
+  fogFresh = true;
+  fogColor.set(fogColorOf(THEMES[LEVEL.theme] || THEMES.city));
+  usualColor.set((THEMES[LEVEL.theme] || THEMES.city).sky ?? scene.background.getHex()); // (a run that starts inside a fog bank never saw the sky to come back out to: it was white)
   scene.fog.near = USUAL.near;
   scene.fog.far = USUAL.far;
 });
