@@ -209,7 +209,7 @@ const makeChainletter = () => {
   const one = envelope(all);
   one.position.set(0, 0.2, 0);
   one.rotation.x = -0.25;
-  const fan = [1, 2, 3, 4].map(k => { const e = envelope(all); e.rotation.x = -0.25; return e; });
+  const fan = [1, 2, 3, 4].map(() => { const e = envelope(all); e.rotation.x = -0.25; return e; });
   const swarm = Array.from({ length: 14 }, (_, k) => { const e = envelope(all, 0.3, 0.2); e.userData.k = k; return e; });
   return stated(group, (t, shuffle, swarmed) => {
     const up = clamp01(shuffle + swarmed);
@@ -345,13 +345,13 @@ const makeSubpoena = () => {
   const all = sub(group);
   const paper = lambert(0xf3ead2), paperSheet = sheetMat(0xf3ead2), ribbon = lambert(0xb8101e), waxMat = glow(0xb8101e);
   const crateW = 0.5;
-  const base = crate(all, crateW, 0.42, crateW);
+  crate(all, crateW, 0.42, crateW);
   const cushion = part(all, box(0.36, 0.08, 0.22), lambert(0x5a2a7a), 0, 0.46, 0);
   const scroll = sub(all, 0, 0.56, 0);
   const roll = part(scroll, cyl(0.065, 0.065, 0.46, 12), paper, 0, 0, 0, 0, 0, FLAT);
   for (const x of [-0.24, 0.24]) part(scroll, cyl(0.03, 0.03, 0.04, 8), lambert(0xd8c7a0), x, 0, 0, 0, 0, FLAT);
   part(scroll, cyl(0.068, 0.068, 0.05, 12), ribbon, 0, 0, 0, 0, 0, FLAT);
-  const seal = part(scroll, cyl(0.045, 0.045, 0.02, 10), waxMat, 0, 0, 0.07, FLAT);
+  part(scroll, cyl(0.045, 0.045, 0.02, 10), waxMat, 0, 0, 0.07, FLAT); // (its seal)
   // unrolling: a sheet hanging from the scroll down the crate's front and across the ground
   const sheet = sub(scroll, 0, -0.04, crateW / 2 + 0.015); // (down the crate's front)
   part(sheet, plane(0.42, 0.26), paperSheet, 0, 0.02, -0.13, -FLAT); // (the stretch from the scroll to the edge)
@@ -1195,7 +1195,7 @@ const makeBooks = () => {
   part(all, box(0.07, 0.03, 0.03), lambert(0xd4a94a), 0, y + 0.015, 0.1);
   // the top book: its cover and the pages that riffle, and a bookmark ribbon
   const top = sub(all, 0.1, y, 0.02);
-  const [tw, th, td] = [0.42, 0.05, 0.3];
+  const [tw, td] = [0.42, 0.3];
   part(top, box(tw, 0.008, td), lambert(colours[4]), 0, 0.004, 0);
   const leaves = Array.from({ length: 7 }, (_, k) => part(top, box(tw - 0.02, 0.004, td - 0.02), pages, -0.01, 0.01 + k * 0.004, 0.01));
   const cover = sub(top, -tw / 2, 0.04, 0);
@@ -1267,7 +1267,7 @@ const makeRadio = () => {
   part(body, box(0.26, 0.22, 0.02), cloth, -0.12, 0.26, 0.15);
   for (let k = 0; k < 5; k++) part(body, box(0.02, 0.24, 0.025), woodDark, -0.22 + k * 0.05, 0.26, 0.152);
   const dialMat = glow(0xffd98a);
-  const dial = part(body, box(0.2, 0.12, 0.01), dialMat, 0.15, 0.3, 0.152);
+  part(body, box(0.2, 0.12, 0.01), dialMat, 0.15, 0.3, 0.152); // (the dial's glass)
   for (let k = 0; k < 7; k++) part(body, box(0.004, 0.03, 0.002), glow(0x6a4a10), 0.07 + k * 0.027, 0.33, 0.158);
   const needle = part(body, box(0.006, 0.11, 0.004), glow(0xd81e2a), 0.15, 0.3, 0.159);
   for (const x of [0.1, 0.2]) part(body, cyl(0.03, 0.03, 0.025, 12), brass, x, 0.15, 0.16, FLAT);
