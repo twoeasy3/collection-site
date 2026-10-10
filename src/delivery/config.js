@@ -1065,6 +1065,10 @@ export const CONFIG = {
   // the Blue Star cars (the garage's second season) stay out of the garage, lot and all, until this
   // numbered level has been delivered
   blueStarsAfter: 20,
+  // The level progression rework (tiers.js, tiers.json): levels in tiers of five, a two-halved ribbon on each, and
+  // exactly that tier's cars on a half not yet earned. false = the old rule (each level opens by delivering the one
+  // before it; the Blue Stars after level 20). ?tiers=1 / ?tiers=0 in the address overrides it for a visit.
+  progression: { tiers: false },
   // the clock: each level has its own, for each side ("clock": { good, evil }), worked out by
   // scripts/level-clocks.mjs from a clean run (a ghost, flat out) in the reference car: that run's time
   // times good or evil, to the nearest `round` s, less `timePlus` s for each time plus on the level (the time

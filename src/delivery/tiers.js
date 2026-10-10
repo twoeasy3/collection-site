@@ -1,0 +1,188 @@
+// ============================================================================
+// TIERS - the level progression rework (owner's spec, 10-Oct and 11-Oct; the checklist's R1 to R8 and Q45).
+// The levels are in tiers of five (tiers.json, one id once: edit it by hand or with scripts/tiers.mjs). Tiers 1 to 5
+// are the gold-star tiers, 6 to 10 the Blue Star ones (Blue 1 is tier 6). Each level has a ribbon of two halves,
+// Good's and Evil's: a half is earned by delivering the level on time on that side (a level with no side to choose,
+// the Battlefield or an "always Good" level, gives both at once). Nothing is saved for a ribbon: it IS the best
+// time on that side (Progress.bestTime), so an old save's best times are its ribbons, and no save is lost.
+//   - a tier opens when the one before is cleared (its last level delivered on either side). Tier 1 is open.
+//     Blue 1 is tier 6: it opens when level 5 of the five-star tier is beaten.
+//   - inside a tier: levels 1 and 2 are open with it; 3 needs 1 ribbon (2 halves, in this tier); 4 needs 2 ribbons
+//     (4 halves); 5 needs level 4 beaten (a level further on needs the one before it)
+//   - a half not yet earned can only be played in a car of EXACTLY that tier (the same stars and colour of
+//     stars; none of the cars outside the tiers). Earned, the level can be replayed on that side in any car
+//   - a level the owner has listed "outside" the tiers has no ribbon rule and no car rule. They open one after
+//     another in the order listed, the first once the last tier is cleared (the old rule, at the end of the game);
+//     the amphibious ones by amphibiousOpens below; races are always open
+//   - a save that had levels open before the rework keeps them (Progress.data.tierBase: see legacy())
+// CONFIG.progression.tiers switches all of it off: the old rule, as it was (the stage and the garage read `on()`).
+// (5c, for the later rebalance, NOT built: traffic will be made of the cars in the tier of its level)
+// ============================================================================
+import tierData from './tiers.json';
+import { CONFIG } from './config.js';
+import { LEVELS, LEVEL, AMPHIBIOUS_LEVELS, isRace } from './levels.js';
+import { Progress } from './progress.js';
+import { CARS, carTier, setTierHooks } from './cars.js';
+
+const byId = new Map(LEVELS.map(level => [level.id, level]));
+const idsOf = (list) => (Array.isArray(list) ? list : []).map(String);
+const TIER_NUMBERS = Object.keys(tierData.tiers || {}).map(Number).filter(n => n >= 1).sort((a, b) => a - b);
+// the tiers: [ [level...] ] by tier number - 1; ids that name no level are dropped here (the check says so)
+const TIERS = TIER_NUMBERS.map(n => idsOf(tierData.tiers[n]).map(id => byId.get(id)).filter(Boolean));
+const OUTSIDE = idsOf(tierData.outside).map(id => byId.get(id)).filter(Boolean);
+const placeOf = new Map();
+TIERS.forEach((list, t) => list.forEach((level, p) => placeOf.set(level, { tier: TIER_NUMBERS[t], index: t, pos: p + 1 })));
+// outside levels that open in a chain (not races, which are always open; not amphibious, which have a rule of their own)
+const CHAIN = OUTSIDE.filter(level => !isRace(level) && !level.amphibious && !AMPHIBIOUS_LEVELS.includes(level));
+// the delivery levels in the order the menu shows them: the tiers, then the others
+const ORDER = [...TIERS.flat(), ...OUTSIDE.filter(level => !isRace(level))];
+
+const switched = (() => {
+  try { const v = new URLSearchParams(location.search).get('tiers'); return v === '1' ? true : v === '0' ? false : null; } catch { return null; }
+})();
+const oneSided = (level) => !!(level.battle || level.alwaysGood);
+
+export const Tiers = {
+  tiers: TIERS,                       // [[level]] by tier (tier number = index + 1 while the file counts from 1)
+  outside: OUTSIDE,
+  order: ORDER,
+  on() { return switched ?? !!CONFIG.progression?.tiers; },
+  // which side is being played (the menu's pick): set by game.js, which owns it
+  sideIsEvil: () => false,
+
+  // what is wrong with tiers.json, as lines (none: it is sound): an id that names no level, a level twice or in
+  // neither place, a tier that is not five levels, a tier number that skips
+  problems() {
+    const out = [], seen = new Map(), known = new Set(LEVELS.map(level => level.id));
+    const note = (id, where) => { if (!known.has(id)) out.push('"' + id + '" in ' + where + ' is not a level'); else if (seen.has(id)) out.push(id + ' is in both ' + seen.get(id) + ' and ' + where); else seen.set(id, where); };
+    const nums = Object.keys(tierData.tiers || {}).map(Number);
+    nums.forEach((n, i) => { if (n !== i + 1) out.push('tiers are numbered ' + nums.join(', ') + ': they must run 1, 2, 3...'); });
+    for (const [n, list] of Object.entries(tierData.tiers || {})) {
+      idsOf(list).forEach(id => note(id, 'tier ' + n));
+      if (idsOf(list).length !== 5) out.push('tier ' + n + ' has ' + idsOf(list).length + ' levels, not 5 (it works, but the rules assume five)');
+    }
+    idsOf(tierData.outside).forEach(id => note(id, 'outside'));
+    for (const level of LEVELS) if (!seen.has(level.id)) out.push(level.id + ' is in no tier and not listed outside');
+    return out;
+  },
+
+  // where a level is: { tier, pos } (pos from 1), or null for a level outside the tiers
+  place(level) { return placeOf.get(level) || null; },
+  // a tier's name as the menu shows it: 'Gold 3', 'Blue 2'; its stars and their colour
+  tierName(n) { return n <= 5 ? 'Gold ' + n : 'Blue ' + (n - 5); },
+  tierStars(n) { return ((n - 1) % 5) + 1; },
+  tierIsBlue(n) { return n > 5; },
+
+  // ---- ribbons: the best times, read as halves ----
+  halfEarned(level, evil) { return oneSided(level) ? this.halves(level) === 2 : Progress.bestTime(level.id, !!evil) !== undefined; },
+  // half-ribbons earned on a level (0 to 2; a level with no side to choose gives both at once)
+  halves(level) {
+    const good = Progress.bestTime(level.id, false) !== undefined, evil = Progress.bestTime(level.id, true) !== undefined;
+    return oneSided(level) ? (good || evil ? 2 : 0) : (good ? 1 : 0) + (evil ? 1 : 0);
+  },
+  beaten(level) { return this.halves(level) > 0; },
+  // half-ribbons earned across a tier
+  tierHalves(n) { return (TIERS[TIER_NUMBERS.indexOf(n)] || []).reduce((sum, level) => sum + this.halves(level), 0); },
+
+  // ---- what is open ----
+  // Levels open before the rework stay open: the count of levels the save had open (by position in LEVELS), taken
+  // the first time the tiers are looked at. (`unlocked` goes on being kept by the old rule, so switching the tiers
+  // off gives the old game back, as it would be.)
+  legacy() {
+    const data = Progress.data;
+    if (typeof data.tierBase !== 'number') data.tierBase = Math.max(1, data.unlocked);
+    return data.tierBase;
+  },
+  tierCleared(n) {
+    const list = TIERS[TIER_NUMBERS.indexOf(n)] || [];
+    return list.length > 0 && this.beaten(list[list.length - 1]);
+  },
+  tierOpen(n) {
+    const i = TIER_NUMBERS.indexOf(n);
+    if (i <= 0) return true;
+    return this.tierCleared(TIER_NUMBERS[i - 1]) || (TIERS[i] || []).some(level => LEVELS.indexOf(level) < this.legacy());
+  },
+  // What opens an amphibious level (the owner, 11-Oct, question 12): "It unlocks after earning at least half a
+  // ribbon on every stage in its corresponding blue star tier". A_n goes with the tier of n blue stars (tier 5 + n).
+  // (The level still needs an amphibious car to start: Game.canStart.) The ONE place to change that rule.
+  amphibiousOpens(level) {
+    const n = AMPHIBIOUS_LEVELS.indexOf(level) + 1, list = TIERS[TIER_NUMBERS.indexOf(5 + n)] || [];
+    return n > 0 && list.every(stage => this.beaten(stage));
+  },
+  // The count of half-ribbons level `pos` of a tier needs from the stages before it, or a level to be beaten
+  // first: { halves } | { level } | null (open with the tier)
+  need(level) {
+    const place = placeOf.get(level);
+    if (!place) return null;
+    const list = TIERS[place.index];
+    if (place.pos <= 2) return null;
+    if (place.pos === 3) return { halves: 2 };
+    if (place.pos === 4) return { halves: 4 };
+    return { level: list[place.pos - 2] }; // (the one before it)
+  },
+  isOpen(level) {
+    if (isRace(level)) return true;
+    if (LEVELS.indexOf(level) < this.legacy()) return true; // (open before the rework)
+    const place = placeOf.get(level);
+    if (place) {
+      if (!this.tierOpen(place.tier)) return false;
+      const need = this.need(level);
+      if (!need) return true;
+      return need.halves ? this.tierHalves(place.tier) >= need.halves : this.beaten(need.level);
+    }
+    if (level.amphibious || AMPHIBIOUS_LEVELS.includes(level)) return this.amphibiousOpens(level);
+    const k = CHAIN.indexOf(level);
+    if (k < 0) return true; // (a level neither listed nor in a tier: the check says so; it is not locked away)
+    if (k === 0) return TIERS.length === 0 || this.tierCleared(TIER_NUMBERS[TIER_NUMBERS.length - 1]);
+    return this.beaten(CHAIN[k - 1]);
+  },
+  // why a level is locked, in words for the menu
+  lockedBecause(level) {
+    const place = placeOf.get(level);
+    if (place) {
+      if (!this.tierOpen(place.tier)) {
+        const before = TIERS[TIER_NUMBERS.indexOf(place.tier) - 1] || [];
+        const last = before[before.length - 1];
+        return last ? 'Locked: deliver level ' + before.length + ' of ' + this.tierName(place.tier - 1) + ' to open ' + this.tierName(place.tier) : 'Locked';
+      }
+      const need = this.need(level);
+      if (need && need.halves) {
+        const have = this.tierHalves(place.tier), more = need.halves - have;
+        return 'Locked: ' + more + ' more half-ribbon' + (more === 1 ? '' : 's') + ' in ' + this.tierName(place.tier) + ' (a level delivered as Good, and again as Evil, is a ribbon)';
+      }
+      if (need && need.level) return 'Locked: deliver level ' + (place.pos - 1) + ' of ' + this.tierName(place.tier) + ' on either side';
+      return 'Locked';
+    }
+    if (level.amphibious || AMPHIBIOUS_LEVELS.includes(level)) {
+      const n = AMPHIBIOUS_LEVELS.indexOf(level) + 1, t = 5 + n, left = (TIERS[TIER_NUMBERS.indexOf(t)] || []).filter(stage => !this.beaten(stage)).length;
+      return 'Locked: deliver ' + left + ' more stage' + (left === 1 ? '' : 's') + ' of ' + this.tierName(t) + ' (half a ribbon on every stage opens it)';
+    }
+    const k = CHAIN.indexOf(level);
+    if (k > 0) return 'Locked: deliver ' + CHAIN[k - 1].id + ' to open it';
+    return 'Locked: clear ' + this.tierName(TIER_NUMBERS[TIER_NUMBERS.length - 1] || 10) + ' to open it';
+  },
+  // the delivery level after this one in the menu's order (tiers, then the rest), or null
+  next(level) {
+    if (isRace(level)) return null;
+    const k = ORDER.indexOf(level);
+    return k >= 0 && k + 1 < ORDER.length ? ORDER[k + 1] : null;
+  },
+
+  // ---- the car rule ----
+  // the tier a car must be from to start the level on the side: null = any car (the tiers are off, the level is
+  // outside them, it brings its own vehicle, it is amphibious, or the side's half is already earned)
+  restriction(level, evil) {
+    if (!this.on() || !level || level.car || level.amphibious || isRace(level)) return null;
+    const place = placeOf.get(level);
+    if (!place) return null;
+    return this.halfEarned(level, !!evil && !oneSided(level)) ? null : place.tier;
+  },
+  carsOfTier(n) { return CARS.filter(car => carTier(car) === n); },
+  ownedOfTier(n) { return this.carsOfTier(n).filter(car => Progress.owns(car.id)); },
+};
+// (the Blue Star cars are in the garage once Blue 1 is open; and the garage and the car in use ask the rule)
+setTierHooks({
+  restricted: () => { try { return Tiers.on() ? Tiers.restriction(currentLevel(), Tiers.sideIsEvil()) : null; } catch { return null; } },
+  blueOpen: () => Tiers.on() ? Tiers.tierOpen(6) || Tiers.legacy() > CONFIG.blueStarsAfter : null,
+});
+const currentLevel = () => LEVEL; // (the live binding: the level picked)
