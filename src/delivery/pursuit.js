@@ -142,7 +142,7 @@ export const Pursuit = (() => {
     if (!st.getaway.driver && !st.cop.driver) st = null;
   };
 
-  return { reset, update, start,
+  return { reset, update,
     get cars() { return st ? [st.getaway, st.cop] : []; }, // (the two of one going on: for the checks)
     get next() { return next; },
     // { at, behind?, anywhere? }: one set off `at` s into every run, from that far behind, on a level with no
