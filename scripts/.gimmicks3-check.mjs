@@ -5,7 +5,7 @@
 // from the seed, the section's name and the scenario's number, so a section run alone is the same as in a full run,
 // and each section builds the level afresh. A failure prints its seed, section and scenario.
 //   node scripts/.gimmicks3-check.mjs [name ...] [--seed=n] [--seeds=k]
-//     names: only those sections (wind crest ramp washboard bridge ford cushions shade ruts tarmac spray finish)
+//     names: only those sections (wind crest ramp washboard bridge ford cushions shade ruts tarmac spray sun dust finish)
 //     --seed=n: other dice (2026 if not given); --seeds=k: k seeds from there on, one after another, only the
 //     failures printed, and at the end how often each line failed
 import { boot } from './delivery-headless.mjs';
