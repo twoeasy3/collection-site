@@ -6,6 +6,7 @@
 // ============================================================================
 import { CONFIG } from './config.js';
 import MESSAGES from './messages.json';
+import { nameOf, blurbOf } from './words.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 export const says = (...path) => { let e = MESSAGES; for (const k of path) e = e && e[k]; return [].concat(e || [])[0] || ''; };
@@ -111,3 +112,10 @@ export const CARDS = [
     'Once used, the tank\'s pieces are gone: you start collecting again from nothing.',
   ] },
 ];
+// pickupText.json comes first (words.js): a card's name, and the blurb of its tile on a level's road card (`blurb`,
+// only where the file has one: the card's first rule is the fallback)
+for (const card of CARDS) {
+  card.name = nameOf('pickup', card.type, card.name);
+  const blurb = blurbOf('pickup', card.type);
+  if (blurb) card.blurb = blurb;
+}
