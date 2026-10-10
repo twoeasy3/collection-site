@@ -188,7 +188,9 @@ export const FIELDS = {
     settings: { type: pick('Type', PICKUP_TYPES, { required: true, init: 'turbo' }), lane: lane('Lane', { shoulders: true, required: true }) } },
   obstacles: { shape: 'point', group: 'items', label: 'Obstacle', road: 'both', sub: 'kind', help: 'Something on the road that explodes when hit.',
     settings: { lane: lane('Lane', { shoulders: true, required: true }), kind: pick('Kind', OBSTACLE_KINDS, { default: 'barrier' }), drift: pick('Darts about', ['dart'], { help: 'It darts about its spot at random.' }) } },
-  targets: { shape: 'point', group: 'items', label: 'TANK RAGE target', road: 'both', help: 'A target beside the road.', settings: { side: side() } },
+  targets: { shape: 'point', group: 'items', label: 'TANK RAGE target', road: 'both', help: 'A target beside the road. How it stands is the theme\'s, unless set here.',
+    settings: { side: side(), offset: num('Beyond the pavement (m)', { min: -4, max: 30, step: 0.1 }), height: num('Ring height (m)', { min: 1.5, max: 14, step: 0.1 }),
+      style: pick('Style', C.target.styles), base: num('Wall top (m)', { min: 0, max: 12, step: 0.1 }), arm: num('Gantry arm (m)', { min: 0.5, max: 8, step: 0.1 }), beam: flag('Beam of light') } },
 
   // ---- stretches that change the road ----
   narrows: { shape: 'stretch', group: 'shape', label: 'Narrowing', help: 'Each side of the expressway drops to that many lanes (or only one side).',
