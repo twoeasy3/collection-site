@@ -38,6 +38,18 @@ struck from here. Nothing below blocks the agents now at work unless it says so.
 5i. **Suburbia's clock** reads 35 / 25 s for a 3200 m level (the tool says 100 / 65). It looks like a
    mistake in the level file. Set it to the tool's figure?
 
+5j. **Stop / go roadworks impose a wait on the safe line.** Seen plainly on Market Town: the player's GO is
+   9 s of every 28. The fast lines are running the STOP (no bust, but oncoming traffic in your lane; a 20
+   is inside the works) or the shoulder past the queue; the way that never stops is the side road round,
+   which has wrong-way drivers. By your rule ("stops the game imposes have zero counterplay") is that
+   enough counterplay, or should stop / go change everywhere (a longer GO, or a queue that keeps rolling)?
+   It is one of the kinds on Market Town, Mountain Pass and Quarry Run.
+5k. **Tranquility Base's crest** has a barrier in one lane just beyond the top; a cone on the way up is its
+   only warning. A bigger marker, or move the barrier? Also there: flying that crest at 130 km/h costs 30
+   health on landing even in a clear lane (as it was before today).
+5l. **Fog's colour by theme:** the shades are first guesses (night dark blue-grey, the volcano red-brown, the
+   sea bed blue silt). Fine? One number or a colour per theme changes them.
+
 ## Cars
 
 5c2. **Delivery: what is being wrecked? (BLOCKS the merge of the two new stats.)** A thrown package only ever

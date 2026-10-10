@@ -4,6 +4,8 @@
 // and the editor both read the one list. Any theme can go on any level (?theme=snow in the address tries one
 // on the level picked): what a theme's scenery makes of something a level may have of its own (a runway,
 // zones, landmarks, grandstands) it does without where the level has none.
+// fogColor: the colour of a fog bank (a level's "fog") in this theme, if not the one worked out from its sky (pale grey
+// under a bright sky, mostly the sky's own colour under a dark one: see CONFIG.fog and render/roadside.js).
 // channel: { shallow, deep, glint }: the colours of the water of a water stage (a level's "water": see
 // render/water.js) in this theme, if not CONFIG.water.colours: a harbour at night, a muddy river, a fjord, a flood.
 // river: the colour of what runs under a drawbridge in this theme (render/hazards.js), if not its channel's deep water,
@@ -57,7 +59,7 @@ export const THEMES = {
   hood: { sky: 0xbcc3c2, ground: 0x9a8d55, road: 0x46474a, scenery: 'suburb', rundown: true },
   // suburb: lawns, pavements, picket fences and houses in a row (sets: what a zone of a level can be there in place of
   // the houses: a row of shops, a market square, a retail park, a town park: see the suburb scenery in render/road.js)
-  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb', sets: ['highstreet', 'market', 'retail', 'park'] },
+  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb', sets: ['highstreet', 'market', 'retail', 'park', 'livestock'] },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
   // battlefield: a dirt track through a war (unmarked: only the ruts worn into it), churned mud under a smoky
   // sky, shell craters, sandbagged trenches, tank traps, barbed wire and shattered trees (and the pillboxes:

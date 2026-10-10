@@ -1115,6 +1115,300 @@ pick ups and traffic."
       Spring Thaw. **Cancelled or parked until the owner says:** Stelvio (30), Tour de Coast (23), Night
       Shift, the rest of Hong Kong (27, WIP `1b3a207` on `delivery-rework-b`), the README and HANDOVER
       screenshot paragraphs, the five weak menu pictures. No new task goes to an agent that finishes.
+- **The owner, later: "Usage is critical now. Spin down and write handovers for all agents except the ones
+      closest to finishing."** Stopped with handovers in `SCRATCHPAD-10-Oct-dropped.md`: the nuclear fallout
+      work (section A: the gimmick's logic and check done, `ae29ceb`; nothing drawn; theme and level not
+      started) and Spring Thaw (section B: WIP, loads and probes, half seen). Ring Road finished and is fit
+      but its merge into `main` conflicts in three files (section 0): NOT merged. Only the full check run
+      and the built site's look is still going. `main` is at `7a90971`, ten merges ahead of what is live
+      (`8fa45a6`), not pushed. One stray process: `node` PID 26760 (a hung bundle check; the agent's kill
+      was refused): for the owner to end.
+- [ ] **QUEUED for the next session: the owner's list of 10-Oct, about 9 pm ("Add to the list"). None started,
+      none labelled to jump the queue. The owner's words are kept; a note follows only where one is needed.**
+  - **Gimmicks: how they play**
+    - [ ] Q1. "The washboard gimmick does very little. It's not an interesting obstacle."
+    - [ ] Q2. "The truck spray gimmick looks ugly and does even less. What exactly was it meant to do?"
+          (Answered in chat: H11: every tall vehicle on a wet stretch drags a cloud nothing can be seen
+          through, so the choice is to hang back and see or overtake blind; it does nothing to the car and
+          the cloud is a plain translucent box. To rework or drop: the owner's call.)
+    - [ ] Q3. "Seaquake has scripted wreckage from the sky, but it is supposed to be indoor."
+    - [ ] Q4. "There should be a difference between ice and water - ice only affects you while on it, water
+          continues to affect for a set distance after". (Wet tyres after a burst main; mains water already
+          has its own numbers in `CONFIG.waterMain`.)
+    - [ ] Q5. "Supercharger should increase the car's top speed around bends proportionally".
+    - [ ] Q6. "The tram on the Hong Kong level does nothing. It should work like Canberra's, incoming only,
+          guranteed destruction except for vehicles that survive a head-on collision (Tank)".
+    - [ ] Q7. "Drop bears should take into account player speed. Most 4 or 5 star cars outrun it".
+    - [ ] Q8. "Kangaroos are too hard to see on the road. Make them larger and brighter."
+    - [ ] Q9. "The blasting gimmick on the airport is mechanically a wreckage, but a Blast in Quarry Run. Move
+          all blasts into the blasting gimmick."
+    - [ ] Q10. "The puncture gimmick is not updated for new ways to get a puncture."
+    - [ ] Q11. "Assaulting the police in pursuit should be a bust, but everything else they will let you go as
+          they are busy,"
+    - [ ] Q12. "The wrong way driver gimmick warns a player sometimes for a car that doesn't actually affect
+          the player at all. This is a complex fix. A lane that becomes oncoming in a side road should not
+          spawn a traffic vehicle such that the player will meet one before the oncoming lane starts. This
+          wrong way driver gimmick should be used to send a random driver the wrong way like the Bullet
+          train gimmick."
+    - [ ] Q13. "A convoy and a Funeral Procession are too similar. Make it such that crashing a funeral
+          procession triggers the Jerk mechanic for 10s."
+    - [ ] Q14. "Crosswinds should be in thematic levels. It has no place in the movie set or a fevela. It also
+          is not really relevant most of the time, it needs tuning."
+    - [ ] Q15. "Low bridges are very cheap to ignore. It should deal massive damage, and be placed on both
+          sides (not at the same level, so players can slalom around them). If a tall traffic car spawns in
+          its path it should just go through with no penalty."
+    - [ ] Q16. "The learner driver's L should be a flipped writing element, and it is far too slow. It should
+          also wobble in its lane."
+    - [ ] Q17. "\"Side Road Gimmicks\" is not really a gimmick on its own".
+  - **Damage and balance**
+    - [ ] Q18. "Speed plays too big of a role in damage dealt in a crash. There should be a cap because fast
+          fragile cars are oneshotting low star cars in a rear-end."
+    - [ ] Q19. "Rebalance all the obstacles that explode on contact. They should take health away roughly equal
+          to how big they are. The construction equipment do not cause nearly enough damage."
+  - **Levels**
+    - [ ] Q20. "Some amphibious stages don't make sense as the water is just inbetween land. They should either
+          be obviously a canal, a river or it should transition into the sea or a river."
+    - [ ] Q21. "The level agents are very found of recent gimmicks. Burst water mains and potholes and tunnels
+          appear almost every level. It should be thematic." (A rule for every level brief from now on, and
+          an audit of the levels written or reworked on 10-Oct.)
+    - [ ] Q22. "Show the cargo being delivered on the menu screen per level and the level cargo should be set
+          in the same way as the level name and description." (Into `levelText.json` or a file like it,
+          with the level's own file as the fallback.)
+    - [ ] Q23. "When writing a level or taking a screenshot, note the coordinates where the screenshot was
+          taken. It will help with re-taking the shots." (A rule for every brief; the menu pictures' places
+          are already in the script's `CINE` table.)
+  - **Signs, models and the reference pages**
+    - [ ] Q24. "The newer signs do not reverse for flipped levels". (Lettered boards mirrored on `drive: left`
+          levels; one was already seen on Hong Kong's FRESH TAR board.)
+    - [ ] Q25. "The lanes closing model on the gimmick page is not accurate to what it actually looks like".
+    - [ ] Q26. "The reversible lanes model in the gimmick page is showing a reversing car."
+    - [ ] Q27. "The low bridge animation's bus crab walks away."
+    - [ ] Q28. "All models in the gimmick page should be spinning".
+    - [ ] Q29. "The tyres from explosions should gain some upwards velocity and bounce".
+    - [ ] Q30. "The Stainless Gullwing's doors should only animate in the garage".
+  - **Cars and how they look**
+    - [ ] Q31. "The non-normal star cars (blue stars, amphibious etc) have very boring and dark Evil palettes.
+          Darker in general, but not every car needs to be black."
+    - [ ] Q32. "Think of how we can indicate in-game subtly whether a car is good or evil". (Ideas wanted
+          first, for the owner to choose from; nothing to be built before that.)
+  - **Menu and garage**
+    - [ ] Q33. "Use the Plop Up sound for each click on the menu".
+    - [ ] Q34. "Migrate buying the cars from a .alert() to a ingame menu."
+    - [ ] Q35. "Change the sort and show toggles to a list rather than a cycle, and hide if the list returns 0
+          cars."
+    - [ ] Q36. "In the garage, Livery: Good should just be Good/Evil, and \"Use this car as Good\" should be
+          \"Switch\" and \"Use\". Switch is current behaviour, Use sets the car and goes to the menu."
+    - [ ] Q37. "The stat lines still block the cars in the mobile view." (After the comparison strip of
+          `9af18d1`: the garage's stats text, now three lines on a phone with Delivery and Nerve pending.)
+  - **Added later the same evening**
+    - [ ] Q38. "The UFO should have a floating animation and be off the ground".
+    - [ ] Q39. "The six-star cars with a in-game super variant should use the super variant's model." (Of the
+          nine earned cars, the ones built on a garage model: Hell Rod on the Hot Rod, Courier Special on
+          the Sleeper, Showdown Muscle on the Muscle; the other six are level vehicles: to be confirmed by
+          the builder which of them has a Super livery and kit.)
+    - [ ] Q40. First: "A car with no super variant should have a clamped 0% chance to get the super upgrade
+          mystery effect". **Revised by the owner:** it should go: "We were gonna upgrade your car, but your
+          car has no super variant!" So the effect CAN still be drawn by a car with no Super variant (the
+          idea cars, the level vehicles, anything `superOf` returns nothing for); when it is, nothing is
+          upgraded and that line is said, in those words. The fallback of today (such a car is made
+          invincible) goes. The line lives in `messages.json` with the other mystery lines.
+    - [ ] Q41. "A variant of the level file, all car names and strings should be compiled in one file. Then,
+          all of then needs a short description for the \"What's on this road\" level card". (Read as: as
+          `levelText.json` did for level names and descriptions, one words file for every car's name and
+          the game's other strings (cars, traffic kinds, pickups, gimmicks, obstacles, cargo), with each
+          thing's own table as the fallback; then every entry in it gets a short line for its tile on the
+          road card. **The owner's rule for all such files (said of `levelText.json`, "and so will the other
+          ones I suggested (like the vehicle one)"): the words file takes priority: where it has an entry
+          the game uses it and overrides the text in the level's or the thing's own file.** `levelText.js`
+          already does this field by field (checked in the code: `places()` asks the file first); the one
+          exception is a level handed over by the level editor (`?edited`, `standsAlone`), whose own words
+          come first, and `.descriptions-check.mjs` FAILS a level whose words differ between the two places,
+          which under "the file overrides" is stricter than the rule needs: both for the owner to say. `messages.json` already holds the spoken lines. To confirm with the owner: one file
+          for everything, or one a kind.)
+    - [ ] Q42. "Rendering the volcano theme without a floor makes near objects look floating and the skybox
+          erupting volcano overlap the mountains appear through fog banks". (Three faults on the volcano
+          theme, Cinder Island and Eruption Day: no ground is drawn beside the road, so things near it look
+          afloat; the erupting mountain on the skyline is drawn over the nearer mountains; and it shows
+          through a fog bank. The last was already noted when fog was made to take its theme's colour
+          (`ff21b9a`): far backdrops drawn with `fog: false`, the volcano and the ice road's aurora among
+          them, show through a thick bank. The erupting look is `229dd8d`, `render/themes/volcano.js`.)
+    - [ ] Q43. "UFO air strike effect takes too long to happen, maybe it should start ticking damage before the
+          UFO leaves".
+    - [ ] Q44. "Remove the slowdown for breaking the barrier on a level crossing. It makes it almost impossible
+          to get hit by the bullet train. Increase it by one segment too". (Read as: breaking a crossing's
+          boom no longer slows the car; and the bullet train gets one more carriage. To confirm with the
+          owner if "it" means something else.)
+    - [ ] Q45. **For the level progression rework, when it comes in (not before; add to its spec, R1 to R8 in the
+          section "Level progression rework" near the end of this file).** The owner: "A player who clicks
+          on an incomplete level of a new tier, and has no cars of that tier should select a null_car,
+          silhouetted car and not be able to start the level. Clicking into a garage with a car restriction
+          should automatically filter out the garage to just cars that can be selected. Keep the player's
+          previous pick, so when they choose a different level the car is re-selected". So: (a) on a level
+          whose ribbon half is not yet earned, with no car of that exact tier owned, the car card shows a
+          silhouette (a `null_car`) and START is disabled; (b) opening the garage from a level that
+          restricts the car shows only the cars that may be driven there; (c) the player's own pick is
+          remembered apart from the car forced by a restricted level, and comes back when they move to a
+          level that allows it.
+    - [ ] Q46. "Level 51 has a bridge that narrows. It has jagged steps." (Cattle Drive, `levels/cattle.json`:
+          the one-lane bridge at 1280 to 1420 with its `narrows`; the narrowing is drawn in steps where it
+          should taper.)
+    - [ ] Q47. "Allow level crossings to define a train model. The level crossing in the Wild West should not
+          use the bullet train." (A `train` setting on a crossing or on the theme; a steam train for High
+          Noon and Cattle Drive.)
+    - [ ] Q48. **A STANDING RULE for every level brief:** "The agents that build levels really need to know that
+          they should not aim to cram every gimmick into every level." (With Q21: gimmicks suit the theme. A
+          level has a few kinds that belong to its place and one idea of its own, not one of everything.)
+    - [ ] Q49. **A STANDING RULE, and levels to fix:** "The rockfall gimmick keeps getting added to places where
+          they float in mid air. There needs to be some standing memory about this". (Rockfall only where a
+          rock face or slope stands above the road on that side, and looked at in a still before the level
+          is called done; an audit of every level with `rockfall` or boulder `wreckage` for rocks that hang
+          in the air. Saved to the orchestrator's memory.)
+    - [ ] Q50. **An audit of every vehicle model**, the owner's three parts:
+      - [ ] Q50a. "Define proper headlights, brake light and turn signals to all vvehicles."
+      - [ ] Q50b. "Audit all models to not have gaps in their models. For example, the hearse's rear window is not
+            connected to its chassis, the Tow Truck's rear bumper is floating."
+      - [ ] Q50c. "Audit all damaged models to make sure they don't look silly. The Polygon Truck's damage model
+            phases though its windscreen, and keeps its lights hanging."
+      - Which models: the garage cars (`render/models.js`), the Blue 4 cars and the idea cars
+        (`render/ideaModels.js`), traffic (`render/trafficModels.js`), pursuit, emergency and level
+        vehicles, the amphibious cars and boats. Dents and scorching came in with `fda617c`. Each model to
+        be looked at in stills from several sides, whole and damaged, lights on.
+    - [ ] Q51. "Audit and add more idle animations to vehicles where it makes sense". (Goes with Q50, the same
+          pass over every model. Some have one already through `userData.animate`: the Lowrider's hop, the
+          Junker's shudder, the Love Bus's sway, eleven of the idea cars. Q30 limits one of them: the
+          Gullwing's doors only in the garage.)
+    - [ ] Q52. "Remove the top speed clamp and allow Magenta 6-stars to scale as per their model. These are
+          supposed to be fun extras". (The nine earned cars: `earnedCar()` in `cars.js:259-260` holds top
+          speed to 49 to 52 m/s (`EARNED_SPEED`, `NEXT_TIER_CAPS.maxSpeed`) and acceleration and health to
+          `NEXT_TIER_CAPS`, so the Road F1 is slower than the F1 its own level lends. **The owner's
+          correction: "Magenta 6-star is not a real tier, just an assignment for cars outside of the tier
+          system."** So the six magenta stars are a label, not a rung above gold and blue 5: nothing should
+          treat these cars as a sixth tier (`tier: 6`, "next tier" caps, a place in any tier's balance, the
+          progression rework's tiers and car rule, Delivery's "next step of the line" on `delivery-stats`,
+          the handover's "6-star tier" wording). To do: take the speed clamp off so each drives as its
+          vehicle does; with no tier to belong to, the orchestrator reads the acceleration and health caps
+          as going too (the owner named only top speed: confirm). The balance and earned checks assert the
+          caps and will need to follow.)
+      - **Q52, how to do it, from the owner after reading the code:** "The stats are fine in this file. There
+        is no reason to calculate these stats instead of defining new stats with existing models." So the
+        stats stay in `cars.js` (no move to JSON for this); `earnedCar()` stops computing: no `Math.min` /
+        `Math.max` against `EARNED_SPEED` or `NEXT_TIER_CAPS`; each of the nine earned cars is written out
+        with its own top speed, acceleration and health beside the model it uses, as the garage cars are.
+        That settles the question above: all three are defined, none is clamped.
+      - **Q52 and Q53 DONE on `main` by the orchestrator at the owner's word ("Just edit it now, its faster";
+        "Also do the unclamping of 6-star cars while you're at it, but nerf the race cars slightly for their
+        road versions").** `cars.js`: `earnedCar()` no longer clamps anything and `EARNED_SPEED` is gone;
+        each earned car drives by the figures written for it (top speed / acceleration / health): Hell Rod
+        50 / 18 / 200, Saucer 58 / 30 / 100, GT Racer 57 / 13 / 240 (the GT is 62 / 14 on its circuit), Land
+        Jetboat 34 / 13 / 120, Road F1 68 / 18 / 160 (75 / 20), Road Prototype 68 / 18 / 280 (75 / 20),
+        Courier Special 50 / 19 / 220, Showdown Muscle 52 / 17 / 300, Road 8x8 32 / 9 / 450. `tier: 6` is
+        still what draws six stars: nothing else was changed to stop treating it as a tier. `superOf`: the
+        Lowrider's Super version is the garage's Super Lowrider as it stands (model, colours, 47 / 16 /
+        260, no kit). The earned and mysteries checks rewritten to match; earned, mysteries, balance and
+        bundle checks pass. NOT run: the other checks. NOT seen or driven: the souped-up Lowrider on
+        screen, any earned car at its new speed (the Road F1 at 68 m/s on an ordinary level is untried:
+        bends, the jump over a jam, the camera).
+    - [x] Q53. "the lowrider gets skipped for an upgrade. That is not correct, its upgrade is the Super Lowrider
+          (in the regular garage)." (`superOf` in `cars.js:379-380` returns nothing for `car.id ===
+          'lowrider'`, so the "souped up" mystery skips it. To do: a souped-up Lowrider becomes the Super
+          Lowrider, the Blue 5 garage car `superlowrider` (`cars.js:168`), for as long as the effect lasts,
+          not a livery and kit on its own model. With Q40: a car with no Super variant is told so; the
+          Lowrider is not one of those.)
+    - [ ] Q54. "The cone of fire on the Egg in a nest cargo is reversed". (Evil cargo `egg`, its furious state:
+          the hatched dragon's flame; `render/cargoModelsEvil2.js`. The cone points the wrong way, wide end
+          at the mouth.)
+    - [ ] Q55. "In the Spa level, the runoffs are really wide. At some points, the car pulls to the middle of the
+          runoff (it is a road shoulder) when the proper lanes carry on straight. This should not happen,
+          but turning off steering within a shoulder/runoff in races is also not feasible." (Spa's run-off
+          is up to 27.5 m wide, tapered since 10-Oct. Something centres the car in whatever strip it is in:
+          look at the lane assist with hands off and how it picks a lane where the run-off, treated as a
+          shoulder, is far wider than a lane. The fix must leave the player free to steer on run-off: the
+          pull should only ever be toward a real lane, or not act at all outside the lanes. Monza has the
+          same wide run-off; Albert Park has none.)
+- [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
+  - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
+    truck gimmick for now." What it is: the car's trait `tow` (`cars.js:127-129`): driven into fallen
+    wreckage that has come to rest, it marks the wreckage cleared (`wreckage.js:163-171`; `towAfter`,
+    `towKept` in `CONFIG.wreckage`; message `events.towed`), and the wreckage simply turns invisible that
+    frame (`render/wreckage.js:201`): nothing is dragged. To do: take the trait and perk off the Tow Truck
+    (it stays a car, wrecked by wreckage like any other), keeping the code path dormant or removing it
+    cleanly, with the garage's perk text, `.traits-check.mjs` and the Gimmicks page brought into line. The
+    other three traits stay.
+  - **Rubbernecking becomes an obstacle-based gimmick.** The owner: "Let's change rubbernecking to an
+    obstacle-based gimmick. Randomly on the shoulder we put two cars (in damaged model condition) and on
+    fire. Rubbernecking happens at this zone. This should only happen on roads with more than 1 lane per
+    direction." Today (`CONFIG.rubberneck`, `traffic.js:540-560`, `Traffic.noteWreck` from
+    `collision.js:934`): for 25 s after ANY traffic wreck, traffic slows to 35% from 70 m short of the spot;
+    an evil driver held under 40% of its speed for 3.5 s goes up the shoulder for up to 12 s and is arrested
+    if police within 90 m see it. To do: the slowing no longer follows wrecks; instead a crash scene of two
+    cars with the game's dented, scorched look (the damage models of `fda617c`), burning, stands on a
+    shoulder, and traffic rubbernecks past it (the slowing, and the impatient evil driver, kept). Only where
+    the road has two or more lanes each way at that spot. **To settle with the owner or in the brief:**
+    "randomly" against the standing rule that level content sits at fixed positions, the same every run
+    (suggest: the place is picked by a seed from the level, so it is the same every run, on levels that
+    qualify, or a level names it); whether the two cars are solid obstacles to anyone using that shoulder
+    (shoulder cash and shoulder dodges now exist on many levels: the scene must not sit on one); the
+    gamble it gives (the lane beside the scene crawls, the far lane flows: cash in the crawl?); a card on
+    the Gimmicks page and the road card; a check; stills.
+- **Stood down on the owner's word ("Draft a handover for the next delegation agent, push and stand down").**
+      `HANDOVER-orchestrator-10-Oct.md` is the handover for the next orchestrator. `main` pushed with it:
+      everything merged on 10-Oct is on the remote and deploying. Not checked on `main` itself before it
+      went: the six merges after `6409bb9` (each passed its own checks on its branch).
+- [x] **The last agent has stopped: NO agent is running.** Its results:
+  - **All 28 checks pass at `a29522e`** (what is live, `8fa45a6`, plus Speed Trap Alley, Mountain Pass and
+    the suburb scenery). At `6409bb9` (that plus the themed obstacles, batch F, one burst-main system,
+    Outback Express): levels, schema, bundle, hazards, obstacles and road-card checks pass, and the replay
+    check passes over ALL 68 levels; the other 22 were not re-run there. **Nothing after `6409bb9` has had
+    a check run on `main` itself:** the gap fills and seeded check, the level-text file, fog by theme,
+    Market Town, the mains follow-up, the obstacles tidy-up (each passed its own checks on its branch).
+  - **The built site was looked at for the first time** (a production build of `a29522e`, stills, no
+    console errors or failed requests): the start screen with a sharp large picture and the live car, the
+    Car ideas lot, a run on Toy Box Derby at two places, the Gimmicks page. Stills only.
+  - Menu pictures for Outback Express (`6409bb9`) and Market Town (`3a65b31`) from their agents' frames,
+    both sizes looked at. The README and HANDOVER screenshot paragraphs are up to date (`d5b157e`). The
+    script can shoot a built site (`--dist`) and name a level by id (`@id`).
+- [x] **Level 25 Market Town to the new standard: `delivery-rework-f` merged into `main` as `7a90971`, not
+      pushed; its agent has stopped (four running: fallout, Ring Road, Spring Thaw, the full checks).** 16
+      segments for 9 (two S-bends, a hump, a late S; longest straight 650 m through both crossroads); five
+      zones (Corn Street, Church Row, the market square, the park, the cattle market: the `market` set is
+      drawn at last, a new `livestock` set); a station, signal box, fences and poles at any suburb level
+      crossing; houses along a crossroads' arms. Cameras 2 to 4, crossings 1 to 2 (the second 180 m from
+      the finish), mains 1 to 4, cash 25 in 10 rows to 36 in 14 (seven reaching a shoulder), cargo puppy /
+      goose; kinds the same; clock 185 / 140 unchanged. All 27 checks passed on the branch; 37 stills
+      looked at; sheets sent to the owner. Weak: the crossroads' corners are still grass close in; the
+      beasts are plain boxes; the town hall repeats along the square; the side road never driven; a main
+      never caught spraying. Menu picture made from the default camera (houses only): a better frame
+      (`'market-town': '&at=900&ff=2&cineside=left'`) given to the screenshot agent. Its words are still in
+      its level file: to move into `levelText.json`. For the owner: the stop / go.
+- [x] **`delivery-themes-f2` merged into `main` as `c127d49`, not pushed; its agent has stopped (five running:
+      fallout, Market Town, Ring Road, Spring Thaw, and the full checks).** Fog takes its colour from the
+      theme's sky (`ff21b9a`, `render/roadside.js`): the same pale grey under a bright sky, three quarters
+      the sky's own colour under a dark one (After Hours and Northern Lights dark blue-grey, Eruption Day
+      red-brown, Seaquake blue silt); a theme may name a `fogColor`. A second fault fixed with it: a run
+      begun inside a bank had a white sky and almost no fog (every still taken with `&at=` inside one).
+      Visibility and play unchanged. Bundle, levels, hazards, gimmicks3 and HUD checks pass. Far backdrops
+      drawn with `fog: false` (the volcano, the aurora) still show through a bank. After Hours' menu picture
+      in both sizes (`f5f74a0`). The side roads of After Hours and Cattle Drive seen from on them: nothing
+      to fix (`&at=10000+` puts the car on a level's first side road, `40000+` its second); where Cattle
+      Drive's first side road crosses the ford's river was not caught. Night Shift never started.
+- [x] **`delivery-gapfill` merged into `main` as `3d4dfcb`, not pushed; its agent has stopped.** The gimmicks
+      check on `main` is now seeded and repeats. The four gap fills were looked at in 13 stills: all read
+      (the washboard's boards and corrugation on the toy track, the black tar lane with its cones in the
+      tube, ruts on moon dust, cushions on the favela street; every shoulder note on drivable shoulder).
+      Fixed from the stills: nothing warned of the barrier beyond Tranquility Base's crest, so a cone now
+      stands in its lane on the way up (a small cue; a bigger marker or moving the barrier are the
+      alternatives); the washboard's message reads the same on every level ("Washboard! Fast and it skims
+      smooth, or crawl. Not in between."). The full set of checks was not re-run after the last commit.
+      Tour de Coast was begun before the cancellation reached it: WIP on `delivery-rework-d`, written up
+      in `SCRATCHPAD-10-Oct-dropped.md`.
+- [x] **`delivery-obstacles-2` merged into `main` as `24587fe`, not pushed; its agent has stopped (seven
+      running).** A theme variant takes its parent's obstacle mapping; Eruption Day's six stand-in crates
+      are rocks again and so lava boulders (a rock costs a little more than a crate: 25 damage and 60%
+      speed kept against 18 and 75%); the Moon's flag is a wide striped banner; the snowdrift's stake is
+      stout and banded; a level's own card names what darts there (tumbleweeds on High Noon). Seen on their
+      roads: After Hours' carts, the lava boulders on the black road, in the tube and on the ruts, Stunt
+      Double's dollies, the director's chairs, the chair stack, the rice baskets, the brighter helmets, the
+      Derby's blocks. Eight checks pass; probes deliver; clocks unchanged. Stelvio was never started.
 - [x] **`delivery-mains-2` merged into `main` as `01c4f19`, not pushed; its agent has stopped (nine running).** The
       eight newer levels' mains all name a lane and carry no `every`; no leftover reference to the removed
       system; six checks pass on 68 levels. A main's whole slippery length is now marked: a thin blue sheet
@@ -1149,7 +1443,21 @@ pick ups and traffic."
       ranges on the skyline; kinds the same; clock 225 / 165 unchanged; cargo puppy / egg. All checks pass.
       19 stills looked at; pictures sent to the owner. Menu picture: its camera's address given to the
       screenshot agent. Not played; not seen as Evil; the Bathurst circuit not shot.
-- [~] **Level names and descriptions into a JSON of their own (owner, 10-Oct evening):** "Split the level names
+- [x] **Level names and descriptions in a JSON of their own: `0c9d2b0`, merged into `main` as `36517ff`, not
+      pushed; its agent has stopped (six running).** `src/delivery/levelText.json`: `{ id: { name,
+      description: { good, evil } } }`, in menu order; `levelText.js` gives `levelName(level)` and
+      `levelDescription(level, evil)`: the file first, then the level's own file, then the id. 65 levels'
+      words moved out of their level files (each file checked to parse to the same object less those two
+      keys); 9 stay in their files on the fallback until their branches land (`hong-kong`, `tour-de-coast`,
+      `ring-road`, `market-town`, `stelvio`, `toys`, `leaks`, `moon`, `morro`). Every reader goes through
+      the function (the stage and strip, the road card, the album, the race leaderboard, the summit sign,
+      the reference pages' level lists, the editor's list, the scripts). The editor opens a built-in level
+      with its words put in and writes them into a downloaded level. The descriptions check also fails a
+      level whose words are in both places with different text. Nine checks pass. Seen in stills: a moved
+      level as Good and as Evil, a fallback level, the road card's title. Not seen: the side switched live,
+      the editor in a browser, the album's captions. NOT run on the merged `main` (which had gained the gap
+      fills and the obstacles tidy-up since the branch was cut).
+- The request, for the record: **Level names and descriptions into a JSON of their own (owner, 10-Oct evening):** "Split the level names
       and descriptions into its own JSON. Fallback to the level's file if not available. Descriptions to
       change based on good or evil." Branch `delivery-level-text`, the Outback Express agent. Levels held
       by open branches (Hong Kong, Tour de Coast, Ring Road, Market Town, Stelvio, and the four gap-fill
