@@ -11,6 +11,36 @@ agents work in their own worktree and never push; the owner's uncommitted edits 
 `src/delivery/levelText.json`, `src/delivery/cars.js`) are not to be committed, stashed or overwritten by
 the orchestrator (on 11-Oct the owner said: "Just make the edits on the uncomitted files").
 
+## STATE AT THE 11-OCT STAND-DOWN ("Stand down, update all scratchpads and checklists, and write a handover prompt")
+
+Nothing is running. Handover and prompt: `HANDOVER-orchestrator-11-Oct.md`; loose ends: `SCRATCHPAD-11-Oct.md`.
+Live is `ceecc34`; local `main` is 24 commits ahead (`5a3b83a`), not pushed. Task assignment was paused by the
+owner ("Stop the assignment of new tasks from now please"), then the owner said stand down.
+
+**DONE and merged into local `main` (not all pushed; the sections below keep each item's detail):**
+A1 Ring Road (24), A3 fallout theme and Hot Zone (53), A4 Spring Thaw (52) and B1 Tour de Coast (23); F1 the
+cargo truck's open door; G3 the washboard (per-theme looks; slows and shakes at every speed); G8 and G9 (phone
+picture rule, later reversed to the LARGE picture on 11-Oct; no finish-line milestone sound); the tiers rework
+(I7, H1 to H4, K4, K6, K7, K9, K10: now the DEFAULT), the progress code; I3 and I4 cargo C41 to C60 and the
+lawyers' crate, reworked under K2 (bailiffs, salesman, party dropped); I5 and I6 (Q22 cargo per level, Title
+Case names), J6 and K8 (cargo circle on the level card, turning, also on a phone); J1 words files (Q41);
+J2 trains (Q44 and Q47); J3 ideas document (Good/Evil); K1 fallout balance; K5 (Q33 to Q37); Q54 and Q55;
+C1 the Tow Truck shelved; the "Mother Ship" rename; the phone's car row 92 px and 26 px under START.
+**Cancelled by the owner:** G7 (the vehicle-width audit: "pointless"). **Dropped by the owner:** question 19's
+gimmicks (the climbing lane, hairpin cut, tram lane, fork) except the Q6 tram fix.
+
+**NOT merged:** `delivery-crests` (G5/G6: the Moon airtime proposal and two scripts; files only),
+`delivery-rework-b` (Hong Kong: re-laid, no scenery), `delivery-stats` (HELD until the rebalance),
+`delivery-themes-toys-wip` (old). **NOT started / paused:** K3 (the prank-related cargo ideas DRAFT, for the
+owner's OK before any modelling), J4 (volcano rock comparison, not pressing), Q2 to Q21 and Q23 to Q32, Q38 to
+Q40, Q42, Q43, Q46, Q48 to Q51 (Q1, Q22, Q33 to Q37, Q41, Q44, Q47, Q52 to Q55 are done; Q48 and Q49 are
+standing rules kept in the handover prompt), Hong Kong, Stelvio, Tokyo, Mumbai, Night Shift and two more second
+levels, I2 (investigate dropping the game's commits from the origin: DEFERRED by the owner), the audit's
+performance and bloat work, and the clock sweep (for the rebalance).
+**Open with the owner:** the level card's height on a phone ("We will fix this later"); open question 22 (what
+players get for both medals); the surplus levels' tier places; picks from the Good/Evil ideas and the Moon
+airtime options; the smoke test's 74 failures (cause not known: a bisect was stopped by the owner).
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
