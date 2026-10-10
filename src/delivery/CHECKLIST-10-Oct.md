@@ -528,33 +528,19 @@ Not obstacles: road users with something of their own going on, that the player 
 hinder or keep clear of. Each is a random or timed event, as ambulances, funeral processions and
 convoys already are (a level's `every: { min, max }`), so any level can have them.
 
-- [ ] P1. **Police pursuit** (the owner's idea): a chase already under way comes through the
-      level: a getaway car weaving through the traffic flat out, and behind it a pursuit car that
-      is **a model of its own, seen only in this event** (a low, wide interceptor with a light bar
-      and push bar, unlike the patrol cars), its siren heard coming before it is seen. The
-      helicopter joins with its searchlight.
-      - *What they do:* the getaway car takes any gap, the shoulder and the oncoming side; the
-        interceptor follows its line and tries to get alongside to turn it. Traffic pulls aside
-        for the siren, so a clear channel opens behind the two of them and closes again.
-      - *A Good player's gamble:* get in the getaway car's way. Hold a lane it wants, box it in
-        against traffic or the kerb, and the interceptor gets its chance: social standing, a
-        cash reward, and a bust wiped. Getting it wrong means being hit by one or both.
-      - *An Evil player's gamble:* run interference for the criminal: block the interceptor, or
-        tuck into the channel behind the chase and ride it through the traffic. The getaway
-        driver throws a bag of cash out for the help; the police add the player to the chase.
-      - *Or keep out of it:* move over and let it go by, at the cost of nothing.
-      - *How it ends:* caught (the two of them stopped on the shoulder further up, lights going,
-        a thing to rubberneck at), crashed (wreckage ahead), or away. Which one depends on what
-        happened, and on the player if the player took part.
-      - *Builds on:* emergencies, the police and their sight, the helicopter, wrong-way drivers'
-        warning and horn, rubbernecking, wreckage, cash pickups.
-      - *To settle when built:* whether the interceptor can also be earned as a car; one
-        interceptor or two; whether it can happen on race levels (suggest not).
-- [ ] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
-      a man with a bag stands on the shoulder with his thumb out, as a passenger pickup does.
-      *Gamble:* carry him for a large payout and have every police car on the level after the
-      car until he is dropped; or drive him straight to the next patrol car for standing.
-      *Builds on:* the passenger pickup, P1.
+- [x] P1. **Police pursuit** (the owner's idea), built in its simple form: a traffic event, as an ambulance is.
+      Now and then (`pursuits: { every: { min, max } }`) a getaway car comes up from behind flat out, weaving
+      through the traffic, and after it an interceptor that is **a model of its own, seen only in this event**,
+      its siren heard before it is seen; traffic pulls aside as for an ambulance, and the two drive on through
+      and away. Nothing in it for the player and nothing against: hitting either is a collision like any other.
+      - *Built (10-Oct, `delivery-pursuit`):* `pursuit.js`, `render/pursuitModels.js`, `CONFIG.pursuit`, a Gimmicks
+        card, a `levelSchema.js` entry; on Big Business, Night Drive, Speed Trap Alley, Ring Road, Tokyo and Gimmick
+        Road 2; never on a race or the Battlefield. *Verified:* `node scripts/.pursuit-check.mjs`; stills of the chase
+        going by. *Not verified:* never played by hand, the siren never heard.
+      - *Taken out at the owner's word (10-Oct):* the first build's three endings (caught, crashed, away), the Good
+        and Evil gambles with their rewards, bag of cash and bust, and the helicopter.
+- [-] P2. **Bank robber wants a lift**: dropped at the owner's word (10-Oct). Built once on `delivery-pursuit`
+      and reverted: the pursuit is a simple traffic event, and nobody on the road wants a lift from it.
 - [ ] P3. **Street racers**: two tuned cars line up beside the player at speed, flash their
       lights, and go: a race through the traffic to a marked point a kilometre on. *Gamble:*
       take it up (cash for winning, and the police take an interest in all three) or let them
@@ -604,8 +590,8 @@ convoys already are (a level's `every: { min, max }`), so any level can have the
       not. *Gamble:* through the stubble field beside it (rough, slow, unpoliced) or wait for a
       gateway. *Builds on:* tractors, wide load, mud.
 
-The orchestrator's view: P1 is the best of these by some way, because both sides have something
-to do with it and it ends differently each time; P2 follows from it almost for free. P7 and P8
+The orchestrator's view (before P1 was cut down to a simple traffic event and P2 dropped, at the
+owner's word): P1 was the best of these by some way. P7 and P8
 are the freshest: other road users as something to use, not to avoid. P9 gives the horn a job.
 
 ## Car ideas lot: 30 models (assigned, agent 13)
