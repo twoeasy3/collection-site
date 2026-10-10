@@ -41,6 +41,10 @@
     { "type": "cash5", "s": 660, "lane": 5 },
     { "type": "cash10", "s": 1235, "lane": 3 },
     { "type": "cash10", "s": 1235, "lane": 5 },
+    { "type": "cash10", "s": 1800, "lane": 4 },
+    { "type": "cash10", "s": 1800, "lane": 5 },
+    { "type": "cash10", "s": 1900, "lane": 5 },
+    { "type": "cash20", "s": 2020, "lane": 5 },
     { "type": "cash20", "s": 2462, "lane": 4 },
     { "type": "cash10", "s": 2480, "lane": 3 },
     { "type": "cash10", "s": 2480, "lane": 5 },
@@ -101,6 +105,9 @@
   ],
   "ruts": [
     { "from": 4830, "to": 5030 }
+  ],
+  "tarmac": [
+    { "from": 1750, "to": 2050, "lane": 5 }
   ],
   "washboards": [
     { "from": 2950, "to": 3450 }

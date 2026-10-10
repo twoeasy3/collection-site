@@ -598,6 +598,17 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       empty and it is sticky: the longer the car stays on it the slower it gets, and the tyres
       stay slow for a while after. _Gamble:_ short hops along it. _Builds on:_ stop / go
       roadworks, mud, narrows.
+      _Built (`gambles.js`, field `tarmac: { from, to, lane }`):_ traffic keeps out of the tar lane
+      and crawls past at 29 km/h. On the tar the tyres fill in 4 s and the top speed falls with
+      them, by 90% when full (slower than the queue); they clean in 3 s, off it only. On Gimmick
+      Road 3 (1750-2050, lane 5), Hong Kong (2620-2920) and Tokyo (860-1140), cash on the tar.
+      Clocks not re-timed (measure them if the queue proves slow in play: it is new traffic
+      slowing). Verified by `.gimmicks3-check.mjs tarmac` (the queue 42 s, short hops 14 s
+      quicker, on it all the way 41 s slower than the queue and never stopped, the tyres' timing,
+      a van moves out and crawls past, both real levels) and in stills (Gimmick Road 3, the card,
+      Hong Kong). Not verified: played by hand; nothing on screen shows how full the tyres are
+      (no HUD was added: the HUD is another branch's); Tokyo on screen; the tar is black on a
+      night road in Hong Kong, read by its cones.
 - [ ] H17. **Climbing lane**: a hill with a short extra lane for overtaking the lorries, and a
       sign counting down to where it ends. _Gamble:_ one more lorry before the lane runs out.
       _Builds on:_ narrows, convoys, hills.

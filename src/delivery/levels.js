@@ -326,6 +326,10 @@
 //              In a rut a car runs at its own pace and is held to it; steered against for a moment it climbs out
 //              with a jolt, into the mud between, where it is slow until it drops into the next (see CONFIG.rut).
 //              Put something in one rut, well down it, and the cash in another: the choice is made at the start
+//   tarmac     { from, to, lane }: fresh tarmac: over the stretch that lane of the player's side (which needs another
+//              beside it) is new tar, coned off: traffic keeps out of it and crawls past in the other lanes. A car
+//              on it picks tar up on its tyres, which slows it more the longer it stays (in the end to less than
+//              the queue's pace) and for a few seconds after it is off (see CONFIG.tarmac)
 //   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
 //              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
 //              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a
