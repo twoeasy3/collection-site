@@ -1,10 +1,5 @@
 {
   "id": "monza",
-  "name": "Monza",
-  "description": {
-    "good": "Three laps of the temple of speed with thirty-nine others. Flat out, then the chicanes: miss one and the gravel keeps you.",
-    "evil": "Thirty-nine cars into the first chicane, and less time than any of them. Out-brake the lot: the gravel will catch whoever you push."
-  },
   "theme": "monza",
   "car": "f1",
   "flow": "north",

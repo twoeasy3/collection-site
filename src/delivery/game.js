@@ -13,7 +13,6 @@ import { Tide } from './tide.js';
 import { SpeedCameras } from './cameras.js';
 import { Crossings } from './crossing.js';
 import { StopGo } from './stopgo.js';
-import { WaterMains } from './watermains.js';
 import { Hippos } from './hippos.js';
 import { Elephants } from './elephants.js';
 import { Wreckage } from './wreckage.js';
@@ -211,7 +210,7 @@ export const Game = {
     Hazards.reset();
     Gambles.reset();
     Milestones.reset();
-    WaterMains.reset();
+    Track.slicks.length = 0; // (a run starts with no patch of its own on the road: the shade's black ice lays its again, see Gambles.updateShade)
     Pursuit.reset();
     if (LEVEL.battle) Message.say('events', 'battle');
     this.state = 'playing';
@@ -373,7 +372,6 @@ export const Game = {
     }
     if (playing) Crossings.update(dt);
     StopGo.update(dt);
-    if (playing) WaterMains.update(dt);
     Traffic.update(dt);
     if (playing) SpeedCameras.update(dt);
     if (playing) Pursuit.update(dt);

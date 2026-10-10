@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
+import { levelName } from './levelText.js';
 
 // ============================================================================
 // TRACK - path sampled by distance along track (s) and lateral offset (lat)
@@ -648,10 +649,19 @@ const createTrack = () => {
     return dir < 0 ? [0, LEFT - 1] : [LEFT + MID, LANES - 1]; // (never the median)
   };
 
-  // where the player's lane assist pulls to: a lane centre, or the middle of a wide shoulder
+  // where the player's lane assist pulls to: a lane centre, or the middle of a wide shoulder (the shoulder's own
+  // width, SH: run-off is wider than that, and a car in it is not drawn to the middle of it, tens of metres from the
+  // lanes. The first SH m of run-off behave as the shoulder they are; past that the assist does nothing, the
+  // car stays where it is left, and steering is as free as ever)
   const assistOffset = (lat, s) => {
-    if (lat > laneHi(s) && hi(s) - laneHi(s) >= LW * 0.8) return (laneHi(s) + hi(s)) / 2;
-    if (lat < laneLo(s) && laneLo(s) - lo(s) >= LW * 0.8) return (laneLo(s) + lo(s)) / 2;
+    const hiW = hi(s) - laneHi(s), loW = laneLo(s) - lo(s);
+    if (lat > laneHi(s)) {
+      if (hiW > SH + 0.01 && lat > laneHi(s) + SH) return lat;
+      if (Math.min(hiW, SH) >= LW * 0.8) return laneHi(s) + Math.min(hiW, SH) / 2;
+    } else if (lat < laneLo(s)) {
+      if (loW > SH + 0.01 && lat < laneLo(s) - SH) return lat;
+      if (Math.min(loW, SH) >= LW * 0.8) return laneLo(s) - Math.min(loW, SH) / 2;
+    }
     return laneOffset(nearestLane(lat, s), s);
   };
 
@@ -990,7 +1000,7 @@ const createTrack = () => {
     }
     for (const m of LEVEL.waterMains || []) {
       if (!(m.s >= 0 && m.s <= length)) problems.push('water main at ' + m.s + ': beyond the road');
-      else if (m.lane !== undefined && !(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road (or no lane: the centre line)');
+      else if (!(Number.isInteger(m.lane) && m.lane >= 0 && m.lane < LANES)) problems.push('water main at ' + m.s + ': in a lane on the road');
     }
     for (const z of LEVEL.landmines || []) {
       if (!(z.from < z.to) || !onRoad(z, z.from) || !onRoad(z, z.to) || !(z.count > 0)) problems.push('landmines at ' + z.from + '-' + z.to + where(z) + ': from before to, on the road, with a count');
@@ -1241,7 +1251,7 @@ const createTrack = () => {
         problems.push(name + ': at a junction');
       }
     }
-    for (const text of problems) console.warn('Level "' + LEVEL.name + '": ' + text);
+    for (const text of problems) console.warn('Level "' + levelName(LEVEL) + '": ' + text);
   }
 
   return {

@@ -316,4 +316,312 @@ const raceDay = (ctx) => {
   kit.draw();
 };
 
-export const THEME_EXTRAS = { construction, zones: raceDay };
+// ---- city: a ring road's places, only where a level's own zones ask for them (the theme's "sets": a city level
+// with no zones is drawn as it always was, grey blocks and poles). Along the whole of such a level: a sign gantry
+// over the road before each exit and at each end, and the towers of the centre on the skyline to the left (the
+// inside of the ring). By zone: 'estate', sound barriers down both sides and slab blocks of flats behind them;
+// 'retail', big sheds with coloured fascias across their car park, and totem signs by the road; 'stadium', the
+// bowl with its roof and floodlight masts, and banners down the road; 'services', a fuel canopy, a shop, a sign
+// mast and lorries parked up; 'centre', glass towers close in on both sides. The big pieces stand on the left,
+// away from the exits' side roads; road.js leaves its own blocks out where one stands (cityKeepsClear)
+const CITY_SETS = ['estate', 'retail', 'stadium', 'services', 'centre'];
+const cityZones = () => (LEVEL.zones || []).filter(z => CITY_SETS.includes(z.scenery));
+const STADIUM = { reach: 190 }, SERVICES = { reach: 130 }; // m each way from the middle of its zone that it takes up
+// is that stretch of that side (-1 left, 1 right) kept clear of the theme's own blocks, for a set-piece?
+export const cityKeepsClear = (s, side) => cityZones().some(z => {
+  if (s < z.from || s >= z.to) return false;
+  const middle = (z.from + z.to) / 2;
+  return z.scenery === 'centre' || (side < 0 && (z.scenery === 'retail' || (z.scenery === 'stadium' && Math.abs(s - middle) < STADIUM.reach) || (z.scenery === 'services' && Math.abs(s - middle) < SERVICES.reach)));
+});
+const city = (ctx) => {
+  const zones = cityZones();
+  if (!zones.length) return;
+  const { add, flat, sideStrip, beside, cube, tube } = ctx;
+  const kit = makeKit(ctx), rand = seeded(53);
+  const STEEL = 0x8a8f96, DARK = 0x2c3440, WHITE = 0xf2f2ee, WINDOW = 0x3b4654, GLASS = [0x5f8fb4, 0x4a7396, 0x7aa6c2, 0x3f5f7d, 0x86b0b8];
+  const RED = 0xd8262b, BLUE = 0x1f5fa8, GREEN = 0x2f8a4a, FASCIA = [RED, BLUE, 0xf2c21a, GREEN, 0xe8731c];
+  const inZone = (set, s) => zones.some(z => z.scenery === set && s >= z.from && s < z.to);
+  // a sign gantry over the whole road: two legs, a truss, blue boards with white lettering (a green one for an exit)
+  const gantry = (s, exit) => {
+    const lo = Track.lo(s) - 1.2, hi = Track.hi(s) + 1.2, mid = (lo + hi) / 2, w = hi - lo;
+    kit.of(STEEL).push([s, lo, 3.6, 0.5, 7.2, 0.5], [s, hi, 3.6, 0.5, 7.2, 0.5], [s, mid, 7.0, w, 0.3, 0.5], [s, mid, 6.1, w, 0.2, 0.5]);
+    for (let lat = lo + 1.5; lat < hi; lat += 3) kit.of(STEEL).push([s, lat, 6.55, 0.12, 0.9, 0.12]);
+    for (const [share, colour] of exit ? [[0.3, BLUE], [0.78, GREEN]] : [[0.3, BLUE], [0.7, BLUE]]) {
+      const lat = lo + w * share, bw = w * 0.3;
+      kit.of(colour).push([s - 0.35, lat, 6.6, bw, 2.2, 0.15]);
+      kit.of(WHITE).push([s - 0.45, lat, 7.1, bw * 0.7, 0.28, 0.06], [s - 0.45, lat - bw * 0.12, 6.5, bw * 0.46, 0.22, 0.06], [s - 0.45, lat + bw * 0.3, 6.1, bw * 0.18, 0.5, 0.06]);
+    }
+  };
+  gantry(160, false);
+  for (const x of LEVEL.exits || []) gantry(x.exitAt - 130, true);
+  gantry(Track.length - 90, false);
+  // the centre on the skyline, inside the ring: towers a long way off to the left, taller and nearer towards the end
+  for (let s = 100, k = 0; s < Track.length; s += 55 + rand() * 60, k++) {
+    const near = s / Track.length, d = 230 - near * 70 + rand() * 170, h = 55 + rand() * 75 + near * 35, w = 16 + rand() * 14;
+    if (inZone('centre', s)) continue;
+    kit.of(GLASS[k % GLASS.length]).push([s, beside(-1, s, d), h / 2, w, h, w]);
+    if (k % 3 === 0) kit.of(DARK).push([s, beside(-1, s, d), h + 5, 1, 10, 1]);
+  }
+  // a slab block of flats: its bands of windows, a lift tower on the roof
+  const flats = (s, lat, colour) => {
+    const h = 30 + rand() * 18, w = 13, l = 30;
+    kit.of(colour).push([s, lat, h / 2, w, h, l]);
+    for (let y = 4; y < h - 1; y += 3.2) kit.of(WINDOW).push([s, lat, y, w + 0.15, 1.1, l - 2.4]);
+    kit.of(0x6b7078).push([s - 6, lat, h + 1.6, 5, 3.2, 5]);
+  };
+  // a totem: a mast by the road with a stack of boards on it
+  const totem = (s, lat, colours) => {
+    kit.of(STEEL).push([s, lat, 5, 0.5, 10, 0.5]);
+    colours.forEach((colour, i) => kit.of(colour).push([s, lat, 10.2 + i * 1.9, 4.6, 1.7, 0.5]));
+  };
+  for (const z of zones) {
+    const middle = (z.from + z.to) / 2;
+    if (z.scenery === 'estate') {
+      // sound barriers: concrete panels with a clear strip along the top, a green one every fourth, a post every other
+      for (const side of [-1, 1]) {
+        for (let s = z.from + 3, k = 0; s < z.to; s += 6, k++) {
+          const lat = beside(side, s, 3.2);
+          kit.of(k % 4 === 0 ? 0x6f9a78 : 0xb9b6ab).push([s, lat, 1.6, 0.25, 3.2, 5.9]);
+          kit.of(0xbfe0ea).push([s, lat, 3.55, 0.12, 0.7, 5.9]);
+          if (k % 2 === 0) kit.of(STEEL).push([s - 3, lat, 2, 0.35, 4, 0.35]);
+        }
+      }
+      for (let s = z.from + 50, k = 0; s < z.to - 20; s += 85, k++) flats(s, beside(k % 2 ? 1 : -1, s, 62 + rand() * 14), [0xd9cdb4, 0xb98a6a, 0xc9c4b8][k % 3]);
+    } else if (z.scenery === 'retail') {
+      // the car park, its lamps and the cars in it; the sheds across it, each with its fascia and its doors
+      add(sideStrip(z.from + 20, z.to - 20, (s) => beside(-1, s, 12), (s) => beside(-1, s, 60), 0.02, 6), flat(0x4a4d53));
+      for (let s = z.from + 60, k = 0; s < z.to - 50; s += 105, k++) {
+        const lat = beside(-1, s, 78);
+        kit.of(0xd6d3c8).push([s, lat, 5, 30, 10, 62]);
+        kit.of(FASCIA[k % FASCIA.length]).push([s, lat + 15.3, 8.2, 0.5, 2.6, 62]);
+        kit.of(WHITE).push([s, lat + 15.7, 8.2, 0.2, 1.1, 22]);
+        kit.of(0x9aa0a8).push([s, lat, 10.3, 31, 0.6, 63]);
+        kit.of(WINDOW).push([s, lat + 15.2, 2, 0.3, 3.4, 16]);
+      }
+      const PAINT = [RED, WHITE, 0x1f3f8f, 0x23262b, 0xc9ccd2, GREEN];
+      for (let s = z.from + 30, k = 0; s < z.to - 30; s += 44, k++) {
+        for (const d of [22, 46]) {
+          kit.of(STEEL).push([s, beside(-1, s, d), 4.5, 0.25, 9, 0.25]);
+          kit.of(0xfff3c4, cube, true).push([s, beside(-1, s, d), 9.1, 2.2, 0.2, 0.6]);
+        }
+        [17, 28, 40, 52].forEach((d, i) => { if ((k + i) % 3) kit.of(PAINT[(k * 3 + i) % PAINT.length]).push([s + 9, beside(-1, s + 9, d), 0.8, 1.9, 1.3, 4.3]); });
+      }
+      for (let s = z.from + 110, k = 0; s < z.to - 40; s += 210, k++) totem(s, beside(-1, s, 7), [FASCIA[k % 5], FASCIA[(k + 1) % 5], FASCIA[(k + 2) % 5]]);
+    } else if (z.scenery === 'stadium') {
+      const s = middle, lat = beside(-1, s, 150), R = 150;
+      kit.of(0xc9ccd2, tube).push([s, lat, 12, R, 24, R]);             // the bowl,
+      kit.of(RED, tube).push([s, lat, 17, R + 1, 3, R + 1]);           // a band of the club's red round it,
+      kit.of(WINDOW, tube).push([s, lat, 6, R + 0.6, 2.4, R + 0.6]);   // its concourse windows,
+      kit.of(WHITE, tube).push([s, lat, 25.2, R + 14, 2.4, R + 14]);   // and its roof, out over the stands
+      for (const [ds, dl] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {    // four floodlight masts
+        const ms = s + ds * 82, ml = lat + dl * 82;
+        kit.of(STEEL).push([ms, ml, 26, 1.4, 52, 1.4]);
+        kit.of(DARK).push([ms, ml, 53.5, 12, 6, 0.6]);
+        kit.of(0xfff8d8, cube, true).push([ms, ml, 53.5, 11, 5, 1]);
+      }
+      // banners on masts down the road, in the club's red and white
+      for (let b = z.from + 20, k = 0; b < z.to - 10; b += 38, k++) {
+        for (const side of [-1, 1]) {
+          const bl = beside(side, b, 3.4);
+          kit.of(STEEL).push([b, bl, 3.5, 0.18, 7, 0.18]);
+          kit.of(k % 2 ? WHITE : RED).push([b, bl + side * 0.6, 5.4, 1, 2.6, 0.08]);
+        }
+      }
+    } else if (z.scenery === 'services') {
+      const s = middle, at = (ds, d) => [s + ds, beside(-1, s + ds, d)];
+      add(sideStrip(s - SERVICES.reach + 10, s + SERVICES.reach - 10, (q) => beside(-1, q, 6), (q) => beside(-1, q, 64), 0.02, 6), flat(0x4a4d53));
+      kit.of(WHITE).push([...at(0, 24), 6.2, 16, 0.9, 34]);            // the canopy,
+      kit.of(RED).push([...at(0, 24), 5.6, 16.3, 0.5, 34.3]);          // its red fascia,
+      for (const ds of [-12, 0, 12]) for (const dd of [-5, 5]) kit.of(STEEL).push([...at(ds, 24 + dd), 2.9, 0.5, 5.8, 0.5]);
+      for (const ds of [-12, -4, 4, 12]) kit.of(RED).push([...at(ds, 24), 0.9, 0.8, 1.8, 1.6]); // the pumps
+      kit.of(0xe6e1d2).push([...at(0, 50), 3, 14, 6, 44]);             // the shop and cafe, under a green roof
+      kit.of(GREEN).push([...at(0, 50), 6.3, 15, 0.6, 45]);
+      kit.of(WINDOW).push([...at(0, 42.9), 2.2, 0.3, 3, 36]);
+      totem(s - 96, beside(-1, s - 96, 7), [RED, WHITE, GREEN, 0xf2c21a]); // its sign, seen from well back
+      for (let ds = 40, k = 0; ds < SERVICES.reach - 20; ds += 7, k++) {   // lorries parked up side by side beyond it
+        kit.of([RED, BLUE, WHITE, GREEN][k % 4]).push([...at(ds, 22), 2.3, 2.6, 2.8, 2.6]);
+        kit.of([WHITE, 0xc9ccd2, 0xe8731c][k % 3]).push([...at(ds, 31), 2.6, 2.6, 3.6, 13]);
+      }
+    } else if (z.scenery === 'centre') {
+      // glass towers close in on both sides: bands of lit floors, a dark ground floor, masts on some
+      for (let s = z.from + 14, k = 0; s < z.to + 120; s += 30 + rand() * 14, k++) {
+        for (const side of [-1, 1]) {
+          const w = 16 + rand() * 10, h = 38 + rand() * 80, d = 9 + w / 2 + rand() * 26, lat = beside(side, s, d);
+          kit.of(GLASS[(k + (side > 0 ? 2 : 0)) % GLASS.length]).push([s, lat, h / 2, w, h, w]);
+          for (let y = 6; y < h - 2; y += 9) kit.of(0xdfeaf2).push([s, lat, y, w + 0.2, 0.7, w + 0.2]);
+          kit.of(WINDOW).push([s, lat, 2.2, w + 0.3, 4.4, w + 0.3]);
+          if ((k + (side > 0 ? 1 : 0)) % 3 === 0) kit.of(DARK).push([s, lat, h + 6, 0.8, 12, 0.8]);
+        }
+      }
+    }
+  }
+  kit.draw();
+};
+
+// ---- the bush road (the 'panorama' theme: road.js's bathurst scenery, roadside) as outback country: Outback
+// Express's places. Only where a level's own zones ask for one of the theme's sets (a level with no zones,
+// Panorama Avenue, gets nothing of this, and nor does the circuit):
+//   roadhouse   a forecourt on the right: the long low roadhouse with its veranda, a fuel canopy and two pumps, a
+//               tall sign, a tank on a stand and a windmill
+//   siding      at the zone's level crossing: three grain silos, an elevator and its conveyor on one side before
+//               the line, a station hut with its name board and a signal on the other, a tank on a stand after it
+//   floodway    depth posts down both edges, a warning board at each end, the creek's sand either side of the dip
+//   homestead   a tin-roofed house with a veranda, its rainwater tank, a shed, a windmill and a post-and-rail fence
+// and, on such a level, flat-topped ranges on the skyline. Everything stands on the land where it is (terrainAt),
+// within about 26 m of the road's edge; road.js keeps its gum trees out of each one's yard (outbackYard)
+const outbackPlaces = (theme) => {
+  const sets = theme.sets || [];
+  return (LEVEL.zones || []).filter(z => sets.includes(z.scenery)).map((z, k) => {
+    const crossing = (LEVEL.crossings || []).map(c => Track.place ? Track.place(c) : c.s).find(s => s >= z.from && s <= z.to);
+    return { set: z.scenery, from: z.from, to: z.to, k, at: z.scenery === 'siding' && crossing !== undefined ? crossing : (z.from + z.to) / 2,
+      side: z.scenery === 'roadhouse' ? 1 : k % 2 ? 1 : -1 };
+  });
+};
+// is a spot d m off the road's edge on that side, s m along, in one of those places' yards? (no tree there)
+export const outbackYard = (theme, s, side, d) => {
+  if (!theme.sets || theme.scenery !== 'bathurst' || !(LEVEL.zones || []).length) return false;
+  if (outbackYard.level !== LEVEL) { outbackYard.level = LEVEL; outbackYard.places = outbackPlaces(theme); }
+  return outbackYard.places.some(p => p.set === 'roadhouse' ? side === p.side && d < 36 && Math.abs(s - p.at) < 56
+    : p.set === 'siding' ? d < 28 && s > p.at - 92 && s < p.at + 56
+    : p.set === 'homestead' ? side === p.side && d < 32 && Math.abs(s - p.at) < 44
+    : d < 14 && s > p.from && s < p.to);
+};
+const bathurst = (ctx) => {
+  const { theme, add, flat, sideStrip, offRoads, beside, cube, tube, cone, terrainAt } = ctx;
+  const places = outbackPlaces(theme);
+  if (!places.length) return;
+  const kit = makeKit(ctx), rand = seeded(53);
+  const CREAM = 0xe6dcc3, TIN = 0x9aa3a8, RUST = 0x9c4a32, STEEL = 0x8a8f96, DARK = 0x2c3440, WOOD = 0x6b5a45, WHITE = 0xf4f4f4, TANK = 0xb9bcc0, RED = 0xd8262b;
+  // a thing standing on the land d m off the edge on that side, s m along, turned with the road: w across, h
+  // high, l along, its foot `up` m over the ground
+  const put = (color, s, side, d, w, h, l, up = 0, geometry = cube, glowing = false) => {
+    const q = kit.point(s, beside(side, s, d)), y = terrainAt ? Math.max(terrainAt(q.x, q.z), q.y - 1.5) : q.y;
+    return kit.at(color, geometry, q.x, y + up + h / 2, q.z, w, h, l, q.h, glowing, 1.5);
+  };
+  const spot = (s, side, d, up) => { const q = kit.point(s, beside(side, s, d)); q.y = (terrainAt ? Math.max(terrainAt(q.x, q.z), q.y - 1.5) : q.y) + up; return q; };
+  const legs = (color, s, side, d, half, h, t = 0.16) => { for (const [ds, dd] of [[-half, -half], [half, -half], [-half, half], [half, half]]) put(color, s + ds, side, d + dd, t, h, t); };
+  // a tank on a stand
+  const tankStand = (s, side, d) => {
+    legs(WOOD, s, side, d, 1.3, 4.2, 0.22);
+    put(WOOD, s, side, d, 3.4, 0.2, 3.4, 4.2);
+    put(TANK, s, side, d, 3.6, 2.6, 3.6, 4.4, tube);
+    put(TIN, s, side, d, 3.8, 0.7, 3.8, 7, cone);
+  };
+  // a windmill: a lattice mast, its wheel face on to the road, a tail vane
+  const windmill = (s, side, d) => {
+    legs(STEEL, s, side, d, 0.7, 8.6, 0.12);
+    for (const y of [2.6, 5.2, 7.8]) put(STEEL, s, side, d, 1.5, 0.08, 1.5, y);
+    const top = 9.4, r = 1.9;
+    for (let a = 0; a < 4; a++) {
+      const ca = Math.cos(a * Math.PI / 4) * r, sa = Math.sin(a * Math.PI / 4) * r;
+      kit.span(TANK, spot(s - ca, side, d, top - sa), spot(s + ca, side, d, top + sa), 0.5, 0.06);
+    }
+    put(DARK, s, side, d, 0.3, 0.3, 0.3, top - 0.15);
+    put(TANK, s, side, d + side * 0 + 1.6, 1.8, 0.9, 0.06, top - 0.45);
+  };
+  const roadhouse = (p) => {
+    const s = p.at, side = p.side;
+    put(0x9a9486, s - 4, side, 11.5, 17, 0.1, 62);                                    // the forecourt
+    put(CREAM, s + 12, side, 25, 9, 3.6, 24);                                          // the house
+    put(RUST, s + 12, side, 25, 10.6, 0.5, 25.6, 3.6);
+    put(RUST, s + 12, side, 18.8, 3.6, 0.18, 24, 2.9);                                 // its veranda
+    for (let k = 0; k < 5; k++) put(WOOD, s + 0.5 + k * 5.75, side, 17.2, 0.18, 2.9, 0.18);
+    put(DARK, s + 8, side, 20.4, 0.1, 1.3, 9, 1.1);
+    put(DARK, s + 19, side, 20.4, 0.1, 2.2, 1.4);
+    put(0xf2c21a, s + 12, side, 20, 0.3, 1, 12, 4.1);                                  // the board over the door
+    put(RED, s + 12, side, 19.8, 0.1, 0.36, 9, 4.42);
+    for (const ds of [-4.5, 4.5]) for (const dd of [-2.4, 2.4]) put(STEEL, s - 18 + ds, side, 10 + dd, 0.3, 4.8, 0.3); // the canopy
+    put(WHITE, s - 18, side, 10, 7.4, 0.5, 12, 4.8);
+    put(RED, s - 18, side, 10, 7.6, 0.24, 12.2, 4.9);
+    for (const ds of [-2.6, 2.6]) { put(RED, s - 18 + ds, side, 10, 0.8, 1.6, 1); put(WHITE, s - 18 + ds, side, 10, 0.84, 0.4, 1.04, 1.0); }
+    put(0xc9c2b2, s - 18, side, 10, 1.6, 0.25, 8.4);
+    put(STEEL, s - 44, side, 4.6, 0.34, 9.5, 0.34);                                    // the sign by the road
+    put(0xf2c21a, s - 44, side, 4.6, 3.6, 2.2, 0.3, 7.2);
+    put(RED, s - 44, side, 4.6, 3.6, 0.7, 0.34, 6.4, cube, true);
+    tankStand(s + 34, side, 24);
+    windmill(s + 44, side, 13);
+    for (let k = 0; k < 3; k++) put(k % 2 ? 0x3d6fa8 : RED, s + 28 + k * 1.2, side, 17, 0.9, 1.3, 0.9, 0, tube); // drums by the wall
+  };
+  const siding = (p) => {
+    const c = p.at, side = p.side, far = -side;
+    for (let k = 0; k < 3; k++) {                                                      // the silos
+      put(0xd9d6cc, c - 78 + k * 9.4, side, 17, 8, 15, 8, 0, tube);
+      put(TANK, c - 78 + k * 9.4, side, 17, 8.2, 2.6, 8.2, 15, cone);
+      put(STEEL, c - 78 + k * 9.4, side, 17, 8.15, 0.3, 8.15, 5, tube);
+      put(STEEL, c - 78 + k * 9.4, side, 17, 8.15, 0.3, 8.15, 10, tube);
+    }
+    put(0xc9c4b8, c - 46, side, 17, 4, 21, 4);                                         // the elevator, and its conveyor over the silos
+    put(RUST, c - 46, side, 17, 4.6, 0.5, 4.6, 21);
+    kit.span(STEEL, spot(c - 46, side, 17, 20), spot(c - 78, side, 17, 17.6), 1.2, 0.5);
+    put(0x9a9486, c - 60, side, 9, 6, 0.1, 44);
+    put(0xd8c9a2, c - 40, far, 9.5, 4.4, 3, 9);                                        // the station hut, its awning and its name board
+    put(RUST, c - 40, far, 9.5, 5.2, 0.4, 10, 3);
+    put(RUST, c - 40, far, 6.2, 2.4, 0.14, 9, 2.6);
+    put(DARK, c - 40, far, 7.25, 0.1, 1.9, 1.1);
+    for (const ds of [-2.2, 2.2]) put(WOOD, c - 52 + ds, far, 4.2, 0.16, 2.2, 0.16);
+    put(WHITE, c - 52, far, 4.2, 0.12, 0.9, 5, 1.5);
+    put(DARK, c - 52, far, 4.1, 0.1, 0.34, 3.6, 1.78);
+    put(STEEL, c - 24, far, 4, 0.24, 6.4, 0.24);                                       // the signal
+    put(RED, c - 24, far, 4.9, 2, 0.4, 0.12, 5.6);
+    put(WHITE, c - 24, far, 4.5, 0.5, 0.42, 0.14, 5.6);
+    put(RED, c - 24, far, 4, 0.36, 0.36, 0.36, 6.4, SPHERE, true);
+    tankStand(c + 36, far, 11);
+    for (let k = 0; k < 4; k++) put(0x4a3a2c, c + 30, side, 8 + k * 0.1, 2.6, 0.3 * (4 - k) / 4 + 0.3, 3 + k * 0.4, k * 0.3); // a stack of sleepers
+  };
+  const floodway = (p) => {
+    for (const side of [-1, 1]) {
+      add(sideStrip(p.from + 30, p.to - 30, (s) => beside(side, s, 1.7), (s) => beside(side, s, 11), 0.02, 6), flat(0xcdb07c)); // the creek's sand
+      for (let s = p.from + 20; s <= p.to - 20; s += 16) {
+        kit.of(WHITE).push([s, beside(side, s, 2.1), 1.2, 0.2, 2.4, 0.2]);
+        for (const y of [0.5, 1.0, 1.5]) kit.of(0x1c1c1c).push([s, beside(side, s, 2.1), y, 0.22, 0.1, 0.22]);
+        kit.of(RED).push([s, beside(side, s, 2.1), 2.3, 0.24, 0.3, 0.24]);
+      }
+    }
+    for (const [s, side] of [[p.from, 1], [p.to, -1]]) {                               // FLOODWAY boards
+      kit.of(STEEL).push([s, beside(side, s, 3), 1.1, 0.14, 2.2, 0.14]);
+      kit.of(0xf2c21a).push([s, beside(side, s, 3), 2.6, 2.2, 1.3, 0.1]);
+      kit.of(0x1c1c1c).push([s - side * 0.06, beside(side, s, 3), 2.6, 1.6, 0.24, 0.1]);
+    }
+    for (let k = 0; k < 10; k++) {                                                     // stones in the creek bed
+      const s = p.from + 40 + rand() * (p.to - p.from - 80), side = k % 2 ? 1 : -1, w = 0.8 + rand() * 1.4;
+      kit.of(0xb8915c, SPHERE).push([s, beside(side, s, 4 + rand() * 6), w * 0.2, w, w * 0.6, w * 1.2]);
+    }
+  };
+  const homestead = (p) => {
+    const s = p.at, side = p.side;
+    put(CREAM, s, side, 18, 9, 3, 13);                                                 // the house
+    put(TIN, s, side, 18, 11.6, 2.6, 15.6, 3, PYRAMID);
+    put(0x7f8a90, s, side, 12.2, 2.8, 0.14, 13, 2.5);                                  // the veranda
+    for (let k = 0; k < 4; k++) put(WOOD, s - 6.2 + k * 4.13, side, 11, 0.16, 2.5, 0.16);
+    put(DARK, s - 3.5, side, 13.45, 0.1, 1.2, 2.2, 1.1);
+    put(DARK, s + 3.5, side, 13.45, 0.1, 1.2, 2.2, 1.1);
+    put(RUST, s, side, 13.45, 0.1, 2.1, 1.1);
+    put(0x8b4a3a, s - 4, side, 20, 1, 5.6, 1);                                         // the chimney
+    put(TANK, s + 9.4, side, 19, 3.6, 3.2, 3.6, 0, tube);                              // the rainwater tank
+    put(TIN, s + 9.4, side, 19, 3.8, 0.6, 3.8, 3.2, cone);
+    put(RUST, s + 24, side, 21, 7, 3.6, 9);                                            // the shed
+    put(TIN, s + 24, side, 21, 7.8, 0.3, 9.8, 3.6);
+    put(DARK, s + 24, side, 17.45, 0.1, 2.8, 4);
+    windmill(s - 22, side, 14);
+    for (let q = s - 36; q < s + 36; q += 4) {                                         // the fence, a gap at the gate
+      kit.of(WOOD).push([q, beside(side, q, 5), 0.6, 0.16, 1.2, 0.16]);
+      if (Math.abs(q + 2 - s) < 3) continue;
+      for (const y of [0.45, 0.95]) kit.of(WOOD).push([q, beside(side, q, 5), y, 0.07, 0.1, 4, [q + 4, beside(side, q + 4, 5)]]);
+    }
+    put(RED, s - 3.6, side, 3.6, 0.4, 0.4, 0.6, 1.1);                                  // the mailbox
+    put(WOOD, s - 3.6, side, 3.6, 0.12, 1.1, 0.12);
+  };
+  const draw = { roadhouse, siding, floodway, homestead };
+  for (const p of places) draw[p.set](p);
+  // the ranges on the skyline: flat-topped, red, a long way off to either side all down the road
+  for (let k = 0; k < 12; k++) {
+    const s = (k + 0.5) / 12 * Track.length, side = k % 2 ? 1 : -1, r = 110 + rand() * 120, h = 50 + rand() * 50;
+    const q = kit.point(s, side * (400 + rand() * 220)), turn = rand() * 3;
+    if (!offRoads(q.x, q.z, r * 1.6 + 140)) continue;
+    kit.at(k % 3 ? 0xa5603c : 0xb4703f, tube, q.x, h / 2 - 6, q.z, r * 2, h, r * 2.6, turn, false, -1);
+    kit.at(0x8f5234, tube, q.x, h * 0.2 - 6, q.z, r * 2.5, h * 0.4, r * 3.1, turn, false, -1);
+  }
+  kit.draw();
+};
+
+export const THEME_EXTRAS = { construction, city, bathurst, zones: raceDay };

@@ -1,8 +1,10 @@
 // ---- the garage's "Car ideas" lot ---------------------------------------------------------------------
-// A second parking lot, behind the garage's "Car ideas" tab: the thirty ideas of ideas.js (IDEA_CARS), each
-// parked in a bay with its name painted in front of it, to look at and judge. They are not cars yet: nothing
-// here is bought, owned, saved or driven, and the button under the words does nothing. Hovering one (or
-// tapping it) shows its name, the real vehicle it is based on, its size and a line about it; the garage's
+// A second parking lot, behind the garage's "Car ideas" tab: the ideas of ideas.js (IDEA_CARS), each
+// parked in a bay with its name painted in front of it, to look at, judge and try. They are not garage cars
+// yet (no tier, no price: free and always open, with placeholder figures), but one tapped can be driven: the
+// button under the words reads "Drive it" ("Drive it as Evil" in the Evil livery), and makes it the car in
+// use as the garage's own button does (the click is the garage's: render/garage.js). A gold ring marks the one
+// in use. Hovering one (or tapping it) shows its name, the real vehicle it is based on, its size and a line about it; the garage's
 // Livery button shows them in their Good or Evil paint. The lot scrolls side to side as the garage's does.
 // The garage (render/garage.js) hands over to this while the tab is on: its drawing, its look() and hover().
 //   ?garage&tab=ideas               opens the garage on this tab; &look=<id> looks at one, &hover=<id> shows its tip
@@ -13,7 +15,7 @@ import * as THREE from 'three';
 import '../menus.css';
 import { IDEA_CARS } from '../ideas.js';
 import { renderer } from './scene.js';
-import { IDEA_MODELS } from './ideaModels.js';
+import { makeIdeaModel } from './ideaModels.js';
 
 // The lot: three rows of ten bays. The ten longest park in the back row, whose bays are deep enough for a bus;
 // the ten shortest in the front; each row otherwise in the order of the list
@@ -22,7 +24,12 @@ const ROWS = [{ z: 9, depth: 6.6 }, { z: 2.4, depth: 6.6 }, { z: -6.9, depth: 12
 const LOT_W = COLS * BAY_W, FRONT = ROWS[0].z + ROWS[0].depth / 2, BACK = ROWS[2].z - ROWS[2].depth / 2;
 const colX = (col) => col * BAY_W;
 const metres = (v) => (Math.round(v * 10) / 10).toFixed(1);
-const size = (car) => metres(car.hl * 2) + ' m long, ' + metres(car.hw * 2) + ' m wide, ' + metres(car.height) + ' m high';
+const sizeOf = (car) => metres(car.hl * 2) + ' m long, ' + metres(car.hw * 2) + ' m wide, ' + metres(car.height) + ' m high';
+// (one too wide for a lane is driven, and parked here, smaller than the real thing: ideas.js `real`, `scale`)
+const size = (car) => car.real ? sizeOf(car.real) + ' (driven at ' + Math.round(car.scale * 100) + '% of that, to fit a lane)' : sizeOf(car);
+// its placeholder figures, as the garage's line of stats
+const figures = (car) => 'Placeholder: ' + Math.round(car.maxSpeed * 3.6) + ' km/h  |  accel ' + car.accel +
+  '  |  health ' + car.health + '  |  handling ' + Math.round((car.agility ?? 1) * 100) + '%  |  weight ' + Math.round((car.mass ?? 1) * 100) + '%  |  crossing ' + Math.round(car.crossing * 100) + '%';
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x22304a);
@@ -64,7 +71,7 @@ const block = (car) => {
   return group;
 };
 const model = (car) => {
-  const mesh = (IDEA_MODELS[car.model] || block)(car);
+  const mesh = makeIdeaModel(car) || block(car); // (as it is driven: see makeIdeaModel)
   mesh.userData.car = car;
   return mesh;
 };
@@ -91,7 +98,7 @@ const buildLot = () => {
   box(lambert(0x3c5d92), LOT_W + 6, H, 0.4, mid, H / 2, wallZ);
   box(lambert(0xdfe9f7), LOT_W + 6, 0.25, 0.5, mid, H + 0.12, wallZ);
   const sign = label('CAR IDEAS', 512, 96, 64, '#ffd23f', '#16233a');
-  const small = label('ideas on show: not cars yet', 512, 56, 34, '#dfe9f7', '#16233a');
+  const small = label('ideas to try: placeholder figures, no tier', 512, 56, 34, '#dfe9f7', '#16233a');
   for (const x of [mid - LOT_W / 3, mid, mid + LOT_W / 3]) {
     for (const side of [-1, 1]) box(lambert(0x16233a), 0.3, 3, 0.3, x + side * 5.4, H + 1.5, wallZ);
     const board = new THREE.Mesh(new THREE.PlaneGeometry(12, 2.25), new THREE.MeshBasicMaterial({ map: sign }));
@@ -117,6 +124,11 @@ const lookRing = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.12, 8, 40), new T
 lookRing.rotation.x = Math.PI / 2;
 lookRing.visible = false;
 scene.add(lookRing);
+// (and a gold one under the idea in use, as the garage's lot has under its car in use)
+const useRing = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.12, 8, 40), new THREE.MeshBasicMaterial({ color: 0xffd23f }));
+useRing.rotation.x = Math.PI / 2;
+useRing.visible = false;
+scene.add(useRing);
 
 // ---- the studio (?studio=<ids>): for pictures of the models alone ------------------------------------------
 const params = new URLSearchParams(location.search);
@@ -163,6 +175,8 @@ const tabs = { garage: document.getElementById('garageTabBtn'), ideas: document.
 const line = (tag, text) => { const node = document.createElement(tag); node.textContent = text; return node; };
 // what there is to say about an idea: its name, what it is based on, its size, and its line
 const about = (car) => [line('strong', car.name), line('div', 'Based on: ' + car.basedOn), line('div', size(car)), line('div', car.note)];
+// (under the lot, for the one looked at: its figures too)
+const aboutToDrive = (car) => [...about(car), line('div', figures(car))];
 
 let hovered = null, looking = null, host = null; // host: what the garage handed over (see mount)
 const raycaster = new THREE.Raycaster(), pointer = new THREE.Vector2();
@@ -230,11 +244,12 @@ renderer.domElement.addEventListener('click', (event) => {
 const anchor = new THREE.Vector3();
 export const IdeasLot = {
   on: false, // the "Car ideas" tab is the one showing
+  get looking() { return looking; }, // the idea looked at (tapped), which the button drives; null: none
 
   // the garage's two tabs wired up. evil(): whether the garage's Livery button is on Evil; back(): the garage
-  // writes its own words and button again
-  mount({ evil, back }) {
-    host = { evil, back };
+  // writes its own words and button again; inUse(): the id of the car in use; side(): whether Evil is the side played
+  mount({ evil, back, inUse, side }) {
+    host = { evil, back, inUse, side };
     tabs.ideas.addEventListener('click', () => this.enter());
     tabs.garage.addEventListener('click', () => { if (this.on) { this.leave(); host.back(); } });
   },
@@ -263,17 +278,23 @@ export const IdeasLot = {
     tip.style.display = 'none';
     renderer.domElement.style.cursor = '';
   },
-  // the words under the lot, the button that does nothing, and every idea in the livery on show
+  // the words under the lot, the button that drives the idea looked at (the click is the garage's: see
+  // render/garage.js), and every idea in the livery on show
   refresh() {
-    const evil = host.evil();
-    if (looking) info.replaceChildren(...about(looking));
-    else info.replaceChildren(IDEA_CARS.length + ' ideas on show, not cars yet. Tap one to read about it.');
-    action.textContent = 'An idea, not a car yet';
-    action.disabled = true;
+    const evil = host.evil(), inUse = host.inUse(), using = !!looking && looking.id === inUse;
+    if (looking) info.replaceChildren(...aboutToDrive(looking));
+    else info.replaceChildren(IDEA_CARS.length + ' ideas to try: free, with no tier and placeholder figures. Tap one to read about it and drive it.');
+    // (as the garage's own button: the one in use, looked at in the other side's livery, takes that side)
+    const otherSide = using && evil !== host.side();
+    action.textContent = !looking ? 'Tap an idea to drive it' : using && !otherSide ? 'In use'
+      : evil ? 'Drive it as Evil' : otherSide ? 'Drive it as Good' : 'Drive it';
+    action.disabled = !looking || (using && !otherSide);
     for (const mesh of [...parked, ...(studio ? studio.meshes : [])]) paint(mesh, evil);
-    lookRing.visible = !!looking;
-    const mesh = parked.find(m => m.userData.car === looking);
+    const mesh = parked.find(m => m.userData.car === looking), used = parked.find(m => m.userData.car.id === inUse);
+    lookRing.visible = !!mesh && mesh !== used;
     if (mesh) lookRing.position.set(mesh.position.x, 0.12, mesh.position.z);
+    useRing.visible = !!used;
+    if (used) useRing.position.set(used.position.x, 0.12, used.position.z);
   },
   look(id) {
     const mesh = parked.find(m => m.userData.car.id === id);

@@ -18,7 +18,10 @@ try {
   const { FIELDS } = S;
   const dir = 'src/delivery/levels/';
   const files = readdirSync(dir).filter(f => f.endsWith('.json'));
-  const levels = files.map(f => [f, JSON.parse(readFileSync(dir + f, 'utf8'))]);
+  // (each as the level editor opens it: with its name and description in it, which for most are kept in
+  // levelText.json and not in the level's file: withWords. So "name" is still a field every level needs)
+  const { withWords } = await g.load('levelText.js');
+  const levels = files.map(f => [f, withWords(JSON.parse(readFileSync(dir + f, 'utf8')))]);
 
   // ---- every field used is in the schema ----
   const used = new Map();

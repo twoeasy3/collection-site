@@ -106,6 +106,7 @@ The core:
 | `cars.js` | The garage's cars, the levels' own vehicles, the secret ones |
 | `progress.js` | Saved progress: the whole of it in local storage, and the short of it (what is open, the bank, the cars) in a cookie as a fallback |
 | `messages.js`, `messages.json` | The lines that pop up during a run |
+| `levelText.js`, `levelText.json` | Every level's name and its description for Good and for Evil, by level id, in one file; `levelName(level)` and `levelDescription(level, evil)` read it, falling back to the level's own `name` and `description` |
 | `input.js` | Keys and touch turned into named actions and axes |
 | `track.js` | Builds the level's roads, lanes, ramps, flyovers and junctions; checks the level data |
 | `physics.js` | Helpers shared by all vehicles: damage, spin-outs, road limits, the effects queue |
@@ -205,10 +206,19 @@ ones, which are always open and open nothing.
     amphibious level and checks the water's rules on it. The save has room for any number of levels: it is kept in local
     storage, and the cookie beside it holds no best times (`node scripts/.save-check.mjs` saves and loads 100
     levels and 80 cars).
-  - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`:
-    `node scripts/shots.mjs <folder> --levels=<id>` saves it as a PNG, to be scaled to 600x267 and saved as a
-    JPEG. A level with none shows a plate of stripes (every level on the menu has one now). Where the camera's
-    usual place is inside a building or behind a wall, give the level a place of its own in `CINE` in `shots.mjs`.
+  - Its words (its name, and a description for Good and one for Evil, 160 characters each at most) go in
+    `levelText.json` under its id, in the menu's order, not in the level's file. A level whose file still has
+    `name` and `description` works too (that is the fallback, and what a level downloaded from the editor
+    carries); when moving them into `levelText.json`, take them out of the level's file.
+    `node scripts/.descriptions-check.mjs` checks both places.
+  - Its picture on the menu comes in two sizes, both from one `?cine` frame: `levelshots/<id>.jpg` (600x267:
+    the strip, the album, a phone) and `levelshots/large/<id>.jpg` (1920x854: the stage on a desktop).
+    `node scripts/shots.mjs --levels=<id> --write` makes both; `--write=<folder>` puts them in a folder to be
+    looked at first, and `node scripts/shots.mjs <folder> --levels=<id>` only saves a PNG there. A level with
+    none shows a plate of stripes (every level on the menu has one now). Six seconds from the start is seldom
+    the best view: give the level a place of its own in `CINE` in `shots.mjs` (`&at=<m>` a little short of its
+    landmark; `&cineside=left`, `&cineout`, `&cineup`, `&cineback` where a building, a stand or a tree is in the
+    way), and look at both pictures before they are committed.
   - Its `description`: a sentence or two for the menu's stage, one as Good and one as Evil, 160 characters each at
     most (`node scripts/.descriptions-check.mjs`; `--list` prints them all).
   - `node scripts/.roadcard-check.mjs --list` prints what the menu's "what's on this road" card will list for it.
@@ -226,6 +236,16 @@ ones, which are always open and open nothing.
   give the water its colours (`channel` in `themes.js`).
 - **An obstacle kind:** give it a size and behaviour in `collision.js`, a cost in `obstacleKinds`
   in `config.js`, and a model in `render/obstacleModels.js`.
+- **A theme's own obstacle** (a barrel where the Wild West's levels say `crate`): the plain obstacles are not
+  gimmicks, and a level goes on naming the plain kind. Give the new kind the cost of the kind it stands in for
+  in `obstacleKinds`, that kind's box in `collision.js` (the list under `SIZE`), a model in
+  `render/obstacleModels.js` that reads on that theme's road from the chase camera (tall, a colour that stands
+  off the road, a dark patch under it), and name it in the theme's line of `OBSTACLES` at the foot of
+  `themes.js` (`DRIFTING` beside it: what the kind is there when it is one of a level's drifters, if another
+  thing again: a bale that drifts in the Wild West is a tumbleweed). A cone that is roadworks stays a cone.
+  Add its line to `DRESS` at the foot of `gimmicks.js`, and it is on the Gimmicks page under Road dressing
+  (`gimmicks.html?group=road-dressing`: every one of them, to look at).
+  `node scripts/.obstacles-check.mjs` holds each to costing and measuring what it replaces.
 - **A gimmick:** a level field documented in `levels.js`, its logic in a file of its own here,
   its tuning in `config.js`, and its drawing in `render/`, called from the frame loop in
   `main.js`. Add it to `gimmicks.js` so it shows on the gimmicks page, and on the menu's road card for
@@ -244,14 +264,19 @@ ones, which are always open and open nothing.
   `carshots/<id>-evil.jpg`, taken with `?cine=car`. A vehicle that belongs to a level goes in
   `LEVEL_CARS`; one that should stay out of the garage goes in `SECRET_CARS`, with its own way
   in (the City Bus: type B U S on the start screen, or `?autostart&car=bus`).
-- **Car ideas lot:** the garage has a second tab, "Car ideas": a lot of thirty vehicles that are ideas
+- **Car ideas lot:** the garage has a second tab, "Car ideas": a lot of vehicles (twenty-six) that are ideas
   on show, not cars. Each is drawn after a real vehicle and has a generic name (the Bubble Car after the
   BMW Isetta, the Double Decker after the AEC Routemaster...); hovering or tapping one shows its name,
   what it is based on, its size and a line about it, and the Livery button shows its Good and Evil
   paint. They are listed in `IDEA_CARS` in `ideas.js` and built by `IDEA_MODELS` in
-  `render/ideaModels.js`; the lot is `render/ideaslot.js`. None is in `CARS` or `CONFIG.vehicles`:
-  nothing here is bought, saved, driven, in traffic or in a level, and no check counts them. To make
-  one a real car, give it an entry in `CARS` and move its builder into `MODELS`.
+  `render/ideaModels.js`; the lot is `render/ideaslot.js`. An idea can be driven: its button in the lot
+  reads "Drive it" (or `?car=<id>`), and it is then the car in use as a garage car is, on any level a
+  garage car may drive. But it is tierless (no stars, no price: free, always open, never written into the
+  save's list of cars: `Progress.freeCars`) and its figures are placeholders (`placeholder: true` on every
+  entry, not balanced). None is in `CARS` or `CONFIG.vehicles`: not in traffic, Car Swap, the garage's own
+  lot or any balance table; `cars.js` looks in `IDEA_CARS` only for the car in use. It borrows a garage
+  car's horn and engine (`sound`), has no Super version, and `scripts/.ideas-check.mjs` drives every one. To
+  make one a real car, give it an entry in `CARS` and move its builder into `MODELS`.
 - **A thing to deliver:** a model in `render/cargoModels.js` (a group about a metre tall with
   `userData.animate(t)`; an Evil one built with `stated`, which gives it `setState(0 | 1 | 2)`), its id
   and name in `CARGO` in `cargo.js`, and a level's `"cargo": { "good": id, "evil": id }` to carry it.

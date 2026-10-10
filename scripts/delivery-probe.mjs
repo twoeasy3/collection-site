@@ -9,7 +9,7 @@ const flag = (name) => process.argv.includes('--' + name);
 const IDS = process.argv.slice(2).filter(a => !a.startsWith('--'));
 if (!IDS.length) { console.log('Name the levels: node scripts/delivery-probe.mjs <id> ... [--secs=120] [--solid] [--evil] [--car=id]'); process.exit(1); }
 
-const g = await boot({ cars: ['commuter', 'sport', arg('car', 'commuter')] });
+const g = await boot({ cars: ['commuter', 'sport', 'floatvan', arg('car', 'commuter')] }); // (floatvan: an amphibious car owned, or a run on an amphibious level is refused)
 let failed = false;
 try {
   for (const id of IDS) {

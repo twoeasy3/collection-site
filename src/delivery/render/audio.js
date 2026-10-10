@@ -85,7 +85,6 @@ const SAMPLES = {
   camera: null,                 // a speed camera catching the player (a shutter's click and whine)
   bell: null,                   // a level crossing's bell, ringing while its lights flash
   jet: null,                    // a jet screaming over (the Battlefield's airstrikes)
-  waterMain: null,              // a water main bursting up through the road
   drum: null,                   // a parade's bass drum
   jingle: null,                 // an ice-cream van's chimes
   cargoDrop: ['Collide1', 'Plop Up'], // a load coming off a truck
@@ -131,6 +130,7 @@ const HORNS = {
   hearse: { file: C3, rate: 0.75 }, minivan: { file: C1, rate: 0.9 }, pickup: { file: C3, rate: 0.95 }, hotrod: { file: C1, rate: 0.85 },
   sleeper: { file: C1, rate: 1 }, rally: { file: C3, rate: 1.2 }, towtruck: { file: RIG, rate: 1.05 }, rotary: { file: C3, rate: 1.1 },
   taxi: { file: C1, rate: 1.05 }, suv: { file: C3, rate: 0.9 }, miata: { file: C1, rate: 1.15 },
+  gullwing: { file: C1, rate: 1.1 }, rearengine: { file: C3, rate: 1.05 }, snake: { file: C1, rate: 0.82 }, polytruck: { file: RIG, rate: 1.15 },
   muscle: { file: C1, rate: 0.8 }, fullsize: { file: C3, rate: 0.85 }, evsaloon: { file: C1, rate: 1.2 },
   superlowrider: { file: C3, rate: 0.75 }, classicgt: { file: C3, rate: 1 }, sixbysix: { file: RIG, rate: 1 },
   tank: { file: RIG, rate: 0.7 },
@@ -335,7 +335,6 @@ Object.assign(SYNTH, {
   bell: (v) => { tone(1350, 1350, 0.18, 0.12 * v, 'triangle'); tone(2700, 2700, 0.12, 0.05 * v, 'sine'); },
   jet: (v) => { noise(400, 3200, 1.8, 0.5 * v, 'bandpass'); noise(3000, 300, 1.4, 0.35 * v, 'bandpass', 1.2); tone(180, 90, 2.4, 0.12 * v, 'sawtooth'); },
   // a water main bursting: a thump under the road, and the hiss and rush of the water
-  waterMain: (v) => { tone(90, 40, 0.3, 0.4 * v); noise(2400, 900, 2.5, 0.35 * v, 'bandpass', 0.1); },
   drum: (v) => { tone(110, 45, 0.22, 0.5 * v); noise(600, 200, 0.08, 0.2 * v); },
   gravel: (v) => { noise(3200, 1400, 0.2, 0.3 * v, 'bandpass'); noise(900, 400, 0.16, 0.22 * v, 'lowpass', 0.03); }, // (stones under the car, in a gravel trap)
   jingle: (v) => [659, 587, 523, 587, 659, 659, 659].forEach((f, i) => tone(f, f, 0.28, 0.14 * v, 'triangle', i * 0.22)), // (a nursery tune's first phrase)

@@ -1,10 +1,5 @@
 {
   "id": "big-business",
-  "name": "Big Business",
-  "description": {
-    "good": "One way through downtown, with turbos lined up like parking meters. Stay smooth, take an exit round the jams, and let the police chase go by.",
-    "evil": "Everyone is going your way, so everyone is in your way. Twenty-nine turbos say you go through them. Join the police chase if you like."
-  },
   "theme": "city",
   "flow": "north",
   "clock": { "good": 216, "evil": 153 },

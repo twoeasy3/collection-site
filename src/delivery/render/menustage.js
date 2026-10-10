@@ -13,11 +13,12 @@
 // main.js); ?side=evil shows the Evil side for the visit; ?options opens the options; ?road the road card.
 import '../menu2.css';
 import { LEVELS, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace } from '../levels.js';
+import { levelName, levelDescription } from '../levelText.js';
 import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { medalFor, medalNeeds } from '../levelinfo.js';
-import { Garage, makeShowCar, paintShowCar } from './garage.js';
+import { Garage, makeShowCar, paintShowCar, IDEA_TAG } from './garage.js';
 import { standView, sharedRenderer, disposeViews, drawViews } from './modelviews.js';
 import { Sound } from './audio.js';
 
@@ -36,12 +37,15 @@ const SHOT = { w: 600, h: 267, slack: 1.15 }; // (the small picture's size; and 
 // the stage's picture of a level: the small one, with the large one over it where there is one and the stage
 // draws its picture bigger than the small one is (in the screen's own pixels: a dense screen counts). The small
 // one is under it all the same: it shows until the large one has come, and if it never does
+// A phone (a touch screen, or a window narrow enough for the menu's one column: the menu.css's own tests) always
+// gets the small one, however dense its screen
+const phone = () => !!window.matchMedia?.('(pointer: coarse), (max-width: 760px)').matches;
 const stageShot = (id) => {
   const small = LEVEL_SHOTS[id], large = LEVEL_SHOTS_LARGE[id];
   if (!small) return large ? `url("${large}")` : '';
   const w = stage.clientWidth || window.innerWidth * 0.7, h = stage.clientHeight || window.innerHeight * 0.6;
   const drawn = Math.max(w, h * SHOT.w / SHOT.h) * (window.devicePixelRatio || 1); // (covering the stage: as wide as it, or as tall)
-  const wanted = large && drawn > SHOT.w * SHOT.slack && !navigator.connection?.saveData;
+  const wanted = large && drawn > SHOT.w * SHOT.slack && !navigator.connection?.saveData && !phone();
   return (wanted ? `url("${large}"), ` : '') + `url("${small}")`;
 };
 // each car's picture, by car id and side: 'commuter-good', 'commuter-evil' ... (taken with ?cine=car). The car
@@ -170,10 +174,10 @@ const drawStage = () => {
   // (a special level's 6-star car, and the time to spare that earns it: see cars.js EARNED_CARS)
   const prizeLine = open && prize ? '6-star car: ' + prize.name + (Progress.earned(prize) ? ' (earned)'
     : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare') : null;
-  const words = level.description?.[evil ? 'evil' : 'good'] || level.description?.good || '';
+  const words = levelDescription(level, evil); // (for the side picked: see levelText.js)
   const best = Progress.bestTime(level.id, evil);
   const info = make('div', 'info',
-    make('h2', '', level.name),
+    make('h2', '', levelName(level)),
     open && words ? make('p', 'desc', words) : null,
     open ? make('div', 'facts',
       fact('Clock', formatTime(clockFor(level, evil)) + (oneSided(level) ? ' (always Good)' : '')),
@@ -204,10 +208,10 @@ const drawStrip = (first, last) => {
     const pips = make('span', 'pips', ...(open ? (oneSided(level) ? [false] : [false, true]).map(evil =>
       make('i', (evil ? 'evil ' : 'good ') + (medalFor(level, evil, Progress.bestTime(level.id, evil)) || 'none'))) : []));
     const thumb = make('button', 'thumb' + (level === cursor ? ' current' : '') + (open ? '' : ' locked'),
-      make('b', '', label(level)), pips, make('span', 'name', level.name));
+      make('b', '', label(level)), pips, make('span', 'name', levelName(level)));
     if (LEVEL_SHOTS[level.id]) thumb.style.backgroundImage = `url("${LEVEL_SHOTS[level.id]}")`;
     else thumb.classList.add('none');
-    thumb.title = open ? level.name : level.name + ': not open yet';
+    thumb.title = open ? levelName(level) : levelName(level) + ': not open yet';
     thumb.addEventListener('click', () => { if (level !== cursor) blip('menuMove'); show(level); });
     return thumb;
   }));
@@ -278,11 +282,12 @@ const showCarModel = (evil) => {
 const drawCar = () => {
   const evil = Game.evil && !oneSided(cursor);
   showCarModel(evil);
-  const starSpan = make('span', 'stars', stars(CAR));
-  starSpan.style.color = starColour(CAR);
+  // (a car idea, ideas.js, has no tier and so no stars: "Idea" stands where they would be)
+  const starSpan = make('span', 'stars', CAR.tier ? stars(CAR) : IDEA_TAG.text);
+  starSpan.style.color = CAR.tier ? starColour(CAR) : IDEA_TAG.colour;
   shop.replaceChildren(picture,
     make('span', 'words',
-      make('strong', '', CAR.name + ' ', CAR.tier ? starSpan : null),
+      make('strong', '', CAR.name + ' ', CAR.tier || CAR.idea ? starSpan : null),
       bar('Speed', Math.round(CAR.maxSpeed * 3.6) + ' km/h', CAR.maxSpeed / MOST.speed),
       bar('Accel', String(CAR.accel), CAR.accel / MOST.accel),
       bar('Health', String(CAR.health), CAR.health / MOST.health)),
@@ -379,7 +384,7 @@ const roadLine = (level, words) => {
   const closeBtn = make('button', 'menu-chip', 'Close');
   closeBtn.addEventListener('click', closeSheet);
   roadBox.replaceChildren(make('div', 'sheet-box road',
-    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', label(level) + '  ' + level.name)), closeBtn),
+    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', label(level) + '  ' + levelName(level))), closeBtn),
     make('div', 'sheet-main', make('div', 'sheet-body', make('p', 'road-wait', words)))));
 };
 const roadCard = async (level) => {

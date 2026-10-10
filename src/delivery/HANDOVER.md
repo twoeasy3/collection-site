@@ -39,7 +39,8 @@ Content now:
   6 (R1 to R6), three of them traced from real circuits (Monza, Spa-Francorchamps, Albert Park), always
   open. All are listed in the README. Five more are hidden (`testbed`, `grand-prix`, `gimmick-road`,
   `gimmick-road-2`, `gimmick-road-3`) and one is the screensaver's.
-- **37 garage cars:** 17 gold-star cars in five tiers, 14 Blue Star cars (a second season, open
+- **41 garage cars:** 17 gold-star cars in five tiers, 18 Blue Star cars (four at four stars since 2026-10-10:
+  the Stainless Gullwing, Rear-Engine Coupe, Snake Roadster and Polygon Truck, which were car ideas; a second season, open
   once level 20 is delivered), 5 amphibious cars, and the Tank.
 - **9 earned cars, the 6-star tier:** one for each special level and each of the first three races, owned
   once its level is delivered with enough time to spare (`EARNED_CARS` in `cars.js`; never bought).
@@ -47,8 +48,9 @@ Content now:
   effect (or `?car=super-<id>`); never owned.
 - **Vehicles that belong to levels:** UFO, F1 car, GT car, LMP prototype, jetboat and the
   Battlefield's 8x8. One secret car, the City Bus. On an amphibious level TANK RAGE gives the Amphibious Tank.
-- **A Car ideas lot** in the garage: thirty models on show that are not cars (`ideas.js`): nothing there is
-  bought, saved, driven or in traffic.
+- **A Car ideas lot** in the garage: models that are not garage cars yet (`ideas.js`), each of which can be
+  picked there and driven: tierless, free, with placeholder figures nobody has balanced; not in traffic, and
+  only the one in use is saved. Checked by `scripts/.ideas-check.mjs` and in stills; never driven by hand.
 - **18 mystery effects** (`CONFIG.mystery.effects`, `mysteries.js`), ten things to deliver (`cargo.js`),
   50 kinds of traffic vehicle and 38 themes.
 - **Amphibious cars and levels (added 2026-10-10):** five garage cars, one at each star level (Sailing
@@ -106,10 +108,18 @@ Things that bit:
 - A visit with a test switch in its address (`?autostart`, `?car`, `?pick`, `?edited`...) saves nothing
   (`Progress.noSave`). To test saving itself, play from the menu.
 
-Screenshots are taken by `scripts/shots.mjs`, which starts a server of its own and drives headless Edge (or
-Chrome): `node scripts/shots.mjs out "bridge=?level=4&ghost&at=1600&ff=4"`. Edge will not go narrower than
-about 500 px, so use `--size=520x900` for a portrait shot. `&cine` gives the still used for a level's menu
-picture and `&cine=car` the one for a car's. A page's console errors and warnings come out in the terminal.
+Screenshots are taken by `scripts/shots.mjs`, which starts a server of its own and drives ONE headless Edge
+(or Chrome) for the whole list over the DevTools protocol: `node scripts/shots.mjs out
+"bridge=?level=4&ghost&at=1600&ff=4"`. Any size (`--size=390x844` for a phone, with `--scale=3` for its pixel
+ratio). An address starting with `?` gets `autostart` added, so the menu is `index.html`. `&cine` gives the
+still used for a level's menu picture and `&cine=car` the one for a car's; `--levels=<id> --write` makes the
+menu's two sizes of a level's picture (README, "Adding content"). Each line gives the seconds the picture took,
+and under it the page's console errors and warnings. The first picture of a run waits for Vite to bundle (ten
+seconds on a quiet machine, a minute or two on a busy one); the rest take a few seconds each. At most two runs
+take pictures at once on the machine: a third says it is waiting, and waits. A run keeps everything it writes
+(the browser's profile and TEMP, Vite's cache) in `%LOCALAPPDATA%\Temp\delivery-shots-run-<pid>-<when>` and
+removes it however it ends; a run that was killed outright leaves that folder, and the next run removes it. The
+header of the script has the commands for the common jobs.
 
 ## How the game is built
 
@@ -292,8 +302,13 @@ Known limits:
   fields send the track builder round for ever (an exit with no place) still hangs the page: the game does
   not load the schema to check it.
 - A level's menu picture is taken from 9 m off the road's right-hand edge. Where a building, a wall or a stand
-  is there the picture is of its back: `scripts/shots.mjs` keeps another place for the camera for such a
-  level (`CINE`: Mumbai, Spa, Albert Park).
+  is there the picture is of its back, and six seconds from the start is often not where the level's landmark
+  is: `scripts/shots.mjs` keeps a place for the camera for such a level (`CINE`: about thirty of them). A
+  retake shows other traffic: the frame is never the same twice.
+- Never start a headless Edge for each picture, or without a TEMP of its own: every start left a `scoped_dir`
+  (up to 394 MB) and a 74 MB `.tmp` in the machine's temp folder for good, which filled the disk on 10-Oct.
+  `scripts/shots.mjs` is the pattern to copy (one browser, closed with `Browser.close`, its TEMP and profile in
+  a folder that is removed).
 
 ## Likely next steps
 

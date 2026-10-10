@@ -1,14 +1,9 @@
-// ---- BURST WATER MAINS: the geysers and the water on the road (the timing and the slicks: ../watermains.js) ----
-// At each main: a broken manhole cover beside a hole in the road; while it sprays, a fountain of white
-// water up out of the hole, breaking up into droplets that fall round about; and the puddle it leaves on
-// the road: an irregular, soft-edged pool that spreads while the main sprays and shrinks away as it drains,
-// with a sheen on it. (makePuddle and makeFountain are also what render/hazards.js draws Gimmick Road 2's with.)
+// ---- BURST WATER MAINS: the water's two models (what a main does: ../hazards.js; where they are put and how they
+// are moved: render/hazards.js) ----
+// makePuddle: the water on the road: an irregular, soft-edged pool with a sheen on it, that spreads and shrinks
+// away as it is told. makeFountain: white water up out of the road, breaking up into droplets that fall round
+// about, and mist.
 import * as THREE from 'three';
-import { CONFIG } from '../config.js';
-import { Track } from '../track.js';
-import { Game } from '../game.js';
-import { WaterMains } from '../watermains.js';
-import { scene, tmp, clearGroup } from './scene.js';
 import { Particles, Smoke, rnd } from './effects.js';
 
 // (seeded, so a puddle is the same shape every run)
@@ -120,42 +115,4 @@ export const makeFountain = (height) => {
     if (Math.random() < 0.5) Smoke.emit(x + rnd(0.8), y + h * 0.9 + rnd(0.6), z + rnd(0.8), rnd(1.5), -0.5, rnd(1.5), 0.7, 0.3 + Math.random() * 0.3, 1, 2, 0xeef6fb); // (mist)
   };
   return g;
-};
-
-const group = new THREE.Group();
-scene.add(group);
-let mains = [];
-
-const build = () => {
-  clearGroup(group);
-  const W = CONFIG.waterMain;
-  mains = WaterMains.list.map((m, k) => {
-    const g = new THREE.Group();
-    const h = Track.toWorld(m.s, m.lat, tmp);
-    g.position.copy(tmp);
-    g.rotation.y = h;
-    // the hole, its cover thrown beside it, and the water lying on the road round it (a pool a little
-    // bigger than the slick, since its picture fades out well inside its edge)
-    const hole = new THREE.Mesh(new THREE.CircleGeometry(0.55, 14).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x0a0a0c, polygonOffset: true, polygonOffsetFactor: -7, polygonOffsetUnits: -7 }));
-    hole.position.y = 0.045;
-    const cover = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.08, 14), new THREE.MeshLambertMaterial({ color: 0x4a4a4e }));
-    cover.position.set(1.4, 0.08, 0.6);
-    cover.rotation.z = 0.4;
-    const puddle = makePuddle(W.half * 2.5, W.radius * 2.5, 11 + k * 5);
-    const jet = makeFountain(W.height);
-    g.add(hole, cover, puddle, jet);
-    group.add(g);
-    return { g, puddle, jet, m };
-  });
-};
-Game.onLoad.push(build);
-
-let clock = 0;
-export const syncWaterMains = (dt) => {
-  if (!mains.length) return;
-  if (!Game.paused) clock += dt;
-  for (const { g, puddle, jet, m } of mains) {
-    jet.userData.set(WaterMains.jet(m), clock, g.position.x, g.position.y, g.position.z, Game.paused);
-    puddle.userData.set(WaterMains.spread(m), clock); // (spreading while it sprays, shrinking as it drains)
-  }
 };
