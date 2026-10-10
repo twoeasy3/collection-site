@@ -1263,6 +1263,32 @@ if (params.get('bend')) { // (a segment's handle dragged to that far on from whe
   const [i, fwd, lat] = params.get('bend').split(':').map(Number), end = segmentEnds()[i], p0 = points[clamp(Math.round(segmentStart(i) / STEP), 0, points.length - 1)];
   press(...toScreen(end.x, end.y));
   moveTo(...toScreen(p0.x + Math.sin(p0.h) * fwd + Math.cos(p0.h) * lat, p0.y + Math.cos(p0.h) * fwd - Math.sin(p0.h) * lat));
+// "Work out the clock": the game, loaded out of sight on the level as it stands, drives its clean run and says
+// what clock that gives (main.js ?edited&clock, cleanrun.js: what scripts/level-clocks.mjs does)
+let clockFrame = null;
+$('workClock').addEventListener('click', () => {
+  if (!hand()) { $('status').textContent = 'Could not hand the level to the game (storage is blocked).'; return; }
+  if (clockFrame) clockFrame.remove();
+  clockFrame = h('iframe', { hidden: true, title: 'The clean run' });
+  document.body.append(clockFrame);
+  $('workClock').disabled = true;
+  $('status').textContent = 'Driving the clean run...';
+  clockFrame.src = './?edited&clock&v=' + Date.now();
+});
+window.addEventListener('message', (e) => {
+  const m = e.data;
+  if (!m || m.type !== 'clock' || !clockFrame || e.source !== clockFrame.contentWindow) return;
+  clockFrame.remove();
+  clockFrame = null;
+  $('workClock').disabled = false;
+  if (m.problem || !m.delivered) { $('status').textContent = 'No clock: ' + (m.problem || 'the clean run was not delivered (' + m.outcome + ').'); return; }
+  const was = level.clock ? level.clock.good + ' / ' + level.clock.evil + ' s' : 'none';
+  level.clock = m.clock;
+  renderLevel();
+  changed({ layout: false });
+  $('status').textContent = 'The clock: ' + m.clock.good + ' s Good, ' + m.clock.evil + ' s Evil (it was ' + was + '), from a clean run of ' + m.time.toFixed(1) + ' s in the ' + m.car +
+    (m.pluses ? ', less ' + m.pluses + ' time plus' + (m.pluses === 1 ? '' : 'es') : '') + '.';
+});
   release();
 }
 if (params.get('undo') || params.get('redo')) { clearTimeout(pending); record(); for (let n = 0; n < Number(params.get('undo')); n++) undo(); for (let n = 0; n < Number(params.get('redo')); n++) redo(); }
