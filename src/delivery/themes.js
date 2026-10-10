@@ -232,3 +232,16 @@ export const themedKind = (theme, kind, drifting = false) => {
   const T = THEMES[theme || 'city'];
   return (drifting && T?.drifting?.[kind]) || T?.obstacles?.[kind] || kind;
 };
+// What a theme's washboard (a level's "washboards": gambles.js) is made of: the same corrugations, the same cost, drawn
+// in the stuff of the place (render/gambles.js, WASHBOARD_LOOKS). A theme not named has 'dirt'; a variant (portNight,
+// volcanoErupting...) has its parent's. Wooden planks only where a corduroy of boards belongs: a dock, a quay, the West
+const WASHBOARDS = {
+  port: 'plates', construction: 'plates', airport: 'plates', seabed: 'plates', tokyo: 'plates', hongkong: 'plates',
+  moon: 'dust', beach: 'sand',
+  wildwest: 'planks', venice: 'planks', backlot: 'planks',
+  iceroad: 'ice', snow: 'ice', christmas: 'ice',
+  city: 'cobbles', suburb: 'cobbles', hood: 'cobbles', canberra: 'cobbles', montreal: 'cobbles', singapore: 'cobbles', favela: 'cobbles', mumbai: 'cobbles', flooded: 'cobbles',
+  toyroom: 'ribs', volcano: 'lava', hell: 'lava',
+};
+for (const [name, look] of Object.entries(WASHBOARDS)) THEMES[name].washboard = look;
+export const washboardLook = (theme) => { const T = THEMES[theme || 'city']; return T?.washboard || THEMES[T?.scenery]?.washboard || 'dirt'; };

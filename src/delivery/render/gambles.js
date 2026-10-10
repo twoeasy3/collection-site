@@ -12,12 +12,30 @@ import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
 import { makeWindsock, makeSign, makeTransporter, makeHeightBar, makeDepthPost, makeCushion, makeShadeTree } from './gambleModels.js';
 import { buildStrip } from './road.js';
+import { LEVEL } from '../levels.js';
+import { washboardLook } from '../themes.js';
 
 const flat = (color, offset) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
-// bars across the road from..to, one every `every` m, each `wide` m along it, as one mesh's geometry
-const buildRipples = (from, to, every, wide, y) => {
+// What a washboard is made of, by the look its theme gives it (themes.js, washboardLook): a sheet right across the
+// road, and every `pitch` m (CONFIG.washboard.ripple if not said) a lit crest band and a dark trough band, each
+// `band` of the pitch wide, half a pitch apart: ripples. planks: a corduroy of boards instead, a dark gap every pitch
+// with the board's lit edge right behind it. seams: thin dark lines down the road as well, one at every lane's edge
+// ('lane': the joins of steel plates) or one every that many metres (the joints of a cobbled road)
+const WASHBOARD_LOOKS = {
+  dirt: { sheet: 0xa9865a, crest: 0xc8a676, trough: 0x6a4e33 },                                          // corrugated dirt
+  sand: { sheet: 0xd9ba86, crest: 0xf0dcae, trough: 0xa5804f },                                          // corrugated sand (a beach)
+  dust: { sheet: 0x9c9da3, crest: 0xb6b7bd, trough: 0x4e4f55 },                                          // rippled dust (the Moon)
+  plates: { sheet: 0x5b6069, crest: 0x959ba6, trough: 0x1f2227, seams: 0x2a2d33, seamEvery: 'lane' },   // buckled steel road plates (a port, a tunnel, roadworks)
+  ice: { sheet: 0xbdd7e7, crest: 0xf3f9fc, trough: 0x6c93ad },                                           // corrugated ice
+  cobbles: { sheet: 0x6f7074, crest: 0x9d9ea2, trough: 0x303236, seams: 0x3a3c40, seamEvery: 0.9, pitch: 1.2 }, // cobbles in ridges (a town)
+  planks: { sheet: 0xa67c50, crest: 0xcaa070, trough: 0x3f2a18, pitch: 1.2, planks: true },               // a corduroy of planks (a dock, a quay, the West)
+  ribs: { sheet: 0xff7a1a, crest: 0xffbb74, trough: 0xa3440a },                                          // the ribs of a toy track
+  lava: { sheet: 0x27221f, crest: 0x55494a, trough: 0xa33e10 },                                          // ropy cooled lava, a glow in its folds
+};
+// bars across the road from..to, one every `every` m from `phase` m in, each `wide` m along it, as one mesh's geometry
+const buildRipples = (from, to, every, wide, y, phase = every / 2) => {
   const pos = [], idx = [];
-  for (let s = from + every / 2; s < to; s += every) {
+  for (let s = from + phase; s < to; s += every) {
     const lo = Track.lo(s) - 1, hi = Track.hi(s) + 1, n = pos.length / 3;
     for (const [ds, lat] of [[0, lo], [0, hi], [wide, lo], [wide, hi]]) { Track.toWorld(s + ds, lat, tmp); pos.push(tmp.x, tmp.y + y, tmp.z); }
     idx.push(n, n + 1, n + 2, n + 1, n + 3, n + 2);
@@ -185,11 +203,24 @@ Game.onLoad.push(() => {
     const s = z.from - L.sign;
     if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign('LOW SUN', '#ffd23f', '#111', 5.4, 1.6));
   }
-  // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
+  // ---- washboard dirt: the stuff right across in the theme's look (WASHBOARD_LOOKS), its corrugations, and boards before
+  const look = WASHBOARD_LOOKS[washboardLook(LEVEL.theme)] || WASHBOARD_LOOKS.dirt;
   for (const b of Gambles.boards) {
-    const B = CONFIG.washboard;
-    group.add(new THREE.Mesh(buildStrip(b.from, b.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(0xa9865a, -2)));
-    group.add(new THREE.Mesh(buildRipples(b.from, b.to, B.ripple, B.ripple * 0.42, 0.02), flat(0x7a5d3c, -4)));
+    const B = CONFIG.washboard, pitch = look.pitch || B.ripple, mid = (b.from + b.to) / 2;
+    group.add(new THREE.Mesh(buildStrip(b.from, b.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(look.sheet, -2)));
+    if (look.planks) { // (a dark gap every pitch, the next board's lit edge right behind it)
+      group.add(new THREE.Mesh(buildRipples(b.from, b.to, pitch, pitch * 0.14, 0.02, 0), flat(look.trough, -4)));
+      group.add(new THREE.Mesh(buildRipples(b.from, b.to, pitch, pitch * 0.2, 0.018, pitch * 0.14), flat(look.crest, -3)));
+    } else { // (ripples: a lit crest, and half a pitch on a dark trough)
+      group.add(new THREE.Mesh(buildRipples(b.from, b.to, pitch, pitch * 0.3, 0.018, pitch * 0.1), flat(look.crest, -3)));
+      group.add(new THREE.Mesh(buildRipples(b.from, b.to, pitch, pitch * 0.3, 0.02, pitch * 0.6), flat(look.trough, -4)));
+    }
+    if (look.seams) { // (lines down the road: the plates' joins at the lanes' edges, or a cobbled road's joints so often)
+      const lats = [];
+      if (look.seamEvery === 'lane') { for (let lane = 0; lane <= Track.laneCount; lane++) lats.push((s) => Track.laneOffset(Math.min(lane, Track.laneCount - 1), s) + (lane === Track.laneCount ? 1 : -1) * CONFIG.laneWidth / 2); }
+      else { const w = Track.hi(mid) - Track.lo(mid); for (let k = 0.5; k * look.seamEvery < w; k++) { const f = k * look.seamEvery / w; lats.push((s) => Track.lo(s) + f * (Track.hi(s) - Track.lo(s))); } }
+      for (const lat of lats) group.add(new THREE.Mesh(buildStrip(b.from, b.to, (s) => lat(s) - 0.06, (s) => lat(s) + 0.06, 0.022, 3), flat(look.seams, -5)));
+    }
     for (const back of [B.sign, 20]) {
       if (b.from - back < 5) continue;
       for (const lat of [Track.hi(b.from - back) - 0.6, Track.lo(b.from - back) + 0.6]) at(b.from - back, lat).add(makeSign('WASHBOARD\nSLOWS, SHAKES', '#ffd23f', '#111', 5.8, 2.6));
