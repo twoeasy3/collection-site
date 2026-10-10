@@ -314,6 +314,12 @@
 //   id         unique name, used as the level's key in saved progress
 //   name       the level's name on the menu
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
+//              How a target stands is the level's theme's (a theme's "target": see themes.js and CONFIG.target),
+//              and one target can have its own where a stretch has sides of its own (an elevated road, a
+//              bridge, a zone's look): { s, side, offset?, height?, style?, base?, arm?, beam? }: offset: m
+//              beyond the pavement its ring is; height: m above the road; style: 'post' | 'wall' (on a
+//              stalk on a wall's top, `base` m up) | 'gantry' (hung from an arm, its mast `arm` m further
+//              out); beam: a beam of light over it. Not in a tunnel, nor where a junction or another road is
 //   clock      { good, evil }: seconds on the clock for each side. Worked out from a clean run in the
 //              reference car by scripts/level-clocks.mjs (see CONFIG.clock), unless set by hand
 //   tip        the money earned for finishing before the clock reaches zero

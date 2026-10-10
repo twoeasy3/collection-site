@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
-import { CAR, CARS, lendCar, returnCar, superOf } from './cars.js';
+import { CAR, CARS, lendCar, returnCar, superOf, rageTankFor } from './cars.js';
 import { clamp, damp } from './util.js';
 import { Track } from './track.js';
 import { updateYaw, keepOnRoad, sfx, cornerSpeed } from './physics.js';
@@ -56,6 +56,7 @@ export const Player = {
   pitch: 0,            // ...and rad its nose is up by (the leaf's slope; in the air, the way it is flying)
   testGhost: false,    // a ghost for the whole run, whatever happens (?ghost in the URL: screenshots and tests)
   tank: 0,             // 1 once TANK RAGE has started; it lasts for the rest of the level
+  rageTank: null,      // the tank that rage is in, if not the Tank: on an amphibious level, the Amphibious Tank (cars.js AMPHIBIOUS_TANK)
   danger: CONFIG.dangerTime, // s of shoulder driving left before the police come (see Social.dangerTime)
   busted: false,
   bustReason: '',      // why the police are after the car: shoulder | seen | assault | assaultCop | bump
@@ -96,6 +97,7 @@ export const Player = {
     this.respawn();
     this.shield = 0;
     this.tank = CAR.tank ? 1 : 0; // the Tank from the garage is in TANK RAGE all the time
+    this.rageTank = null;
   },
   // wrecked (or busted): pick where the new car lands, in a lane going its way. With the tide in,
   // the nearest of them that will still be dry when it is set down; if none will be, the nearest
@@ -183,8 +185,10 @@ export const Player = {
     if (line) line.text = Message.pick('bustCount', String(Math.min(CONFIG.maxBusts, Game.busts + 1))) + line.text;
   },
   // TANK RAGE: fully repaired, wrecks what it touches, fires a cannon (see Collision, Packages)
+  // (on an amphibious level, in the Amphibious Tank, on land and water alike; anywhere else, in the Tank)
   startTank() {
     this.tank = 1;
+    this.rageTank = rageTankFor(LEVEL);
     this.health = this.maxHealth;
   },
   collect(type) {
@@ -335,7 +339,7 @@ export const Player = {
     // (a turbo adds the same to every car's top speed: a slow car stays the slower one)
     // (bad gas and the weight hold the car back: a share of its top speed and acceleration)
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
-    let top = ((this.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1) *
+    let top = ((this.tank > 0 ? (this.rageTank ? this.rageTank.maxSpeed : CONFIG.tankMaxSpeed) : CAR.maxSpeed) + (boosted ? CONFIG.turboBoost : 0)) * (held ? held.topSpeed : 1) *
       (this.puncture ? CONFIG.puncture.topSpeed : 1); // (and a flat tyre)
     // in a race, in another car's slipstream: faster (see CONFIG.race); and pulling out of it, flung on
     // past it: the slingshot, a kick on top of the tow's speed, both fading away (the longer, the more
@@ -385,7 +389,8 @@ export const Player = {
     if (wet) top *= Math.max(CONFIG.tide.slowest, 1 - CONFIG.tide.crossing * (1 - R.slowest) * (1 - crossing));
     // on a water stage (see Water): a car that floats goes on as a boat, with less top speed, pull and braking
     const sea = Water.feel(this.s, Water.floats(CAR) || this.tank > 0), afloat = sea.depth > 0, seaAccel = sea.accel, seaBrake = sea.brake;
-    top *= sea.top;
+    // (the Amphibious Tank keeps a share of its own)
+    top *= this.rageTank && afloat ? 1 + (this.rageTank.afloat - 1) * Math.min(1, sea.depth / CONFIG.water.afloat) : sea.top;
     let drive = throttle;
     // the slowest the brakes bring it: on a lapped circuit, minSpeed; anywhere else, to a stop, for as long
     // as the brake is held (let go, it rolls on up to minSpeed again by itself)

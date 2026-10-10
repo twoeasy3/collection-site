@@ -1059,6 +1059,18 @@ export const CONFIG = {
   tankPieces: 5,
   tankParts: ['rearBody', 'turretHull', 'gunTurret', 'gunBarrel'], // the first four, in order (messages.json: tankParts)
   targetOffset: 5,         // m beyond the pavement the targets stand, out of the car's reach
+  // How a target stands, unless the level's theme (its "target": see themes.js) or the target itself (see
+  // levels.js) says otherwise: where a wall, a parapet or a row of buildings stands close to the road, the marker
+  // moves in front of it or on top of it. Targets (pickups.js) works out where each one is; rendering draws it there.
+  //   offset   m beyond the pavement's edge its ring is (the usual: targetOffset; less than 0: in over the shoulder)
+  //   height   m above the road the middle of its ring is
+  //   style    'post' (on a post from the ground), 'wall' (on a short stalk standing on a wall's or a parapet's
+  //            top, `base` m above the road) or 'gantry' (hung from an arm, from a mast `arm` m further out)
+  //   beam     true = a beam of light stands over it, to be seen from a distance
+  // A ring nearer the pavement than `clear` m could be driven through: it is carried at least `headroom` m up,
+  // over the tallest car (whatever the theme or the level asks for). hit: m from its middle, along the road and
+  // across it, within which a package has landed on it
+  target: { height: 2.7, style: 'post', base: 0, arm: 2.4, beam: false, clear: 1.8, headroom: 4.5, hit: 2.5, styles: ['post', 'wall', 'gantry'] },
   tankRamSlow: 0.15,       // share of its speed the tank loses per unit of mass it rams (a car is 1)
   tankMaxSpeed: 46,        // m/s: a tank is faster than any car in the garage
   tankHeadOnDamage: 0.2,   // share of full health a head-on costs the tank; nothing else hurts it
