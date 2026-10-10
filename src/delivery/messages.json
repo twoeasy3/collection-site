@@ -118,6 +118,12 @@
     }
   },
   "zones": {
+    "ringEstate": ["Northfield estate"],
+    "ringRetail": ["Ringway Retail Park"],
+    "ringStadium": ["City Stadium - match day"],
+    "ringServices": ["Ringway Services"],
+    "ringTowers": ["Eastgate towers"],
+    "ringCentre": ["City centre - nearly there!"],
     "sydney": ["Sydney"],
     "bush": ["Southern Highlands bushland"],
     "ousley": ["Mount Ousley - trucks on the descent!"],
