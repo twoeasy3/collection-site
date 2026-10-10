@@ -1926,11 +1926,109 @@ const buildRoad = () => {
       taken.push([lotSpot.x, lotSpot.z, run]);
       return true;
     };
+    // ---- sets (the theme's "sets" in themes.js): a zone of the level (its "zones") can be one of them, in place of
+    // the lots of houses, so a level is a town with parts to it. Along the expressway only. 'highstreet': a row of
+    // shops under awnings, bunting over the road; 'market': a market square: stalls under striped canopies, the town
+    // hall, a clock tower; 'retail': a retail park: big sheds behind their car parks; 'park': a town park: railings,
+    // a pond, a bandstand, a playground, flower beds. (All instanced, and all through the placement tests above)
+    const BRICK = [0xb5654a, 0xc9b79a, 0x8f5a48, 0xd8cdb8], BRIGHT = [0xc0392b, 0x2e7d5b, 0x2c5f9e, 0xe0a82e], PAINT = [0xc0392b, 0x2c5f9e, 0xe8e8e8, 0x2b2b2b, 0xe0a82e];
+    const shopWalls = BRICK.map(() => []), awnings = BRIGHT.map(() => []), fascias = [], shopGlass = [], paving = [], cornices = [], bollards = [], benches = [];
+    const carBodies = PAINT.map(() => []), carTops = [], carParks = [], sheds = [], shedBands = BRIGHT.map(() => []), pylons = [], hedges = [], chimneys = [], bins = [];
+    const stallPosts = [], stallTops = BRIGHT.map(() => []), stallTables = [], produce = BRIGHT.map(() => []), cobbles = [], stone = [], stoneRoofs = [], clockFaces = [], columns = [];
+    const railPosts = [], railBars = [], ponds = [], decks = [], bandRoofs = [], playBars = BRIGHT.map(() => []), beds = BRIGHT.map(() => []), bunting = BRIGHT.map(() => []);
+    const towered = new Set();
+    const parkedCar = (at, lat, alongRoad, k) => { // a car standing: a body and a cabin (alongRoad: nose along the road, not across it)
+      const [ax, az] = alongRoad ? [1.8, 4.2] : [4.2, 1.8];
+      carBodies[k % PAINT.length].push([at, lat, 0.6, ax, 0.7, az]);
+      carTops.push([at, lat, 1.2, ax * (alongRoad ? 0.86 : 0.5), 0.5, az * (alongRoad ? 0.5 : 0.86)]);
+    };
+    const SETS = {
+      highstreet(side, s, mid, lot) {
+        paving.push([mid, beside(side, mid, 3.6), 0.02, 2.4, 0.05, LOT]); // (a forecourt, from the pavement to the shop fronts)
+        for (const half of [0, 1]) {
+          const at = s + LOT * (0.25 + half * 0.5), k = lot * 2 + half + (side > 0 ? 1 : 0), w = LOT / 2 - 0.4, h = k % 3 ? 7 : 10, deep = 11, front = 4.8;
+          const face = beside(side, at, front - 0.06);
+          shopWalls[k % BRICK.length].push([at, beside(side, at, front + deep / 2), h / 2, deep, h, w]);
+          cornices.push([at, beside(side, at, front + 0.1), h + 0.2, 0.6, 0.4, w + 0.3]);
+          shopGlass.push([at - 1.2, face, 1.6, 0.1, 2.3, w * 0.6]);
+          doors.push([at + w * 0.36, face, 1.15, 0.1, 2.3, 1.2]);
+          fascias.push([at, face, 3.75, 0.16, 0.9, w * 0.94]);
+          awnings[(k * 3 + 1) % BRIGHT.length].push([at, beside(side, at, front - 1), 3.05, 2, 0.16, w * 0.9]);
+          for (let y = 5.4; y < h - 1; y += 3) for (const q of [-w * 0.28, w * 0.28]) windows.push([at + q, face, y, 0.1, 1.5, 1.4]);
+        }
+        for (let q = s + 2; q < s + LOT; q += 6.5) bollards.push([q, beside(side, q, 0.7), 0.45, 0.2, 0.9, 0.2]);
+        benches.push([mid + 4, beside(side, mid + 4, 4.1), 0.45, 0.5, 0.5, 1.8]);
+        if (lot % 2) tree(s + 3, beside(side, s + 3, 3.5));
+        if (side > 0 && lot % 2 === 0) { // bunting over the road, from a post on each pavement
+          const a = Track.lo(mid) - 1.2, b = Track.hi(mid) + 1.2, n = Math.round((b - a) / 0.9);
+          for (const lat of [a, b]) lampPosts.push([mid, lat, 5, 0.16, 10, 0.16]);
+          for (let i = 1; i < n; i++) bunting[i % BRIGHT.length].push([mid, a + (b - a) * i / n, 9.6 - Math.sin(Math.PI * i / n) * 1.1, 0.5, 0.5, 0.06]);
+        }
+      },
+      market(side, s, mid, lot, zone) {
+        cobbles.push([mid, beside(side, mid, 15.4), 0.02, 26, 0.05, LOT + 0.05]);
+        for (const d of [7.5, 14.5]) for (const q of [4.5, 13, 21.5]) { // stalls: a striped canopy on four posts, a table, crates of produce
+          const at = s + q, lat = beside(side, at, d), k = Math.floor(Math.random() * BRIGHT.length);
+          stallTops[k].push([at, lat, 2.7, 3.4, 0.22, 4.4]);
+          stallTops[(k + 2) % BRIGHT.length].push([at, lat, 2.86, 1.2, 0.12, 4.4]);
+          for (const i of [-1, 1]) for (const j of [-1, 1]) stallPosts.push([at + j * 2, lat + i * 1.5, 1.35, 0.1, 2.7, 0.1]);
+          stallTables.push([at, lat, 0.45, 2, 0.9, 3.4]);
+          for (let c = 0; c < 3; c++) produce[(k + c + 1) % BRIGHT.length].push([at - 1.1 + c * 1.1, lat, 1.05, 1.5, 0.3, 0.8]);
+        }
+        // behind the square: the town hall's stone front, columns along it
+        stone.push([mid, beside(side, mid, 36), 5.5, 14, 11, LOT - 1]);
+        stoneRoofs.push([mid, beside(side, mid, 36), 12.2, 15.5, 2.4, LOT + 0.6]);
+        for (let q = s + 2.5; q < s + LOT; q += 4.2) columns.push([q, beside(side, q, 28.6), 4, 0.7, 8, 0.7]);
+        for (const q of [s + 8, s + 18]) windows.push([q, beside(side, q, 28.9), 8.6, 0.1, 1.8, 2.2]);
+        if (side > 0 && zone && !towered.has(zone) && mid > (zone.from + zone.to) / 2 - LOT) { // the clock tower, once, half way along
+          towered.add(zone);
+          stone.push([mid, beside(side, mid, 23), 9, 4.6, 18, 4.6]);
+          stoneRoofs.push([mid, beside(side, mid, 23), 20.5, 5.6, 5, 5.6]);
+          clockFaces.push([mid, beside(side, mid, 20.6), 15, 0.16, 2.6, 2.6], [mid - 2.36, beside(side, mid, 23), 15, 2.6, 2.6, 0.16], [mid + 2.36, beside(side, mid, 23), 15, 2.6, 2.6, 0.16]);
+        }
+      },
+      retail(side, s, mid, lot) {
+        carParks.push([mid, beside(side, mid, 18.4), 0.02, 28, 0.05, LOT + 0.05]);
+        hedges.push([mid, beside(side, mid, 3.4), 0.5, 0.9, 1, LOT - 5]);
+        for (const d of [9, 14.5, 23, 28.5]) for (let q = s + 2; q < s + LOT - 1; q += 3) if (Math.random() < 0.55) parkedCar(q, beside(side, q, d), false, Math.floor(Math.random() * 97));
+        sheds.push([mid, beside(side, mid, 47), 4.5, 26, 9, LOT - 0.4]);
+        shedBands[Math.floor(lot / 2) % BRIGHT.length].push([mid, beside(side, mid, 33.8), 7.4, 0.3, 1.8, LOT - 0.4]);
+        if (lot % 2 === 0) shopGlass.push([mid + LOT / 2, beside(side, mid, 33.9), 1.9, 0.12, 3.8, 9]);
+        lampPosts.push([mid, beside(side, mid, 18.6), 4, 0.2, 8, 0.2]);
+        lampHeads.push([mid, beside(side, mid, 18.6), 8, 2.6, 0.2, 0.5]);
+        if (lot % 4 === 0) { // a pylon sign by the way in
+          pylons.push([s + 1.5, beside(side, s + 1.5, 5), 5, 0.5, 10, 0.5]);
+          shedBands[Math.floor(lot / 4) % BRIGHT.length].push([s + 1.5, beside(side, s + 1.5, 5), 10.6, 0.7, 3.2, 4.4]);
+        }
+      },
+      park(side, s, mid, lot) {
+        for (let q = s; q < s + LOT; q += 2.6) railPosts.push([q, beside(side, q, FENCE), 0.6, 0.1, 1.2, 0.1]);
+        for (const y of [0.45, 1.05]) railBars.push([mid, beside(side, mid, FENCE), y, 0.06, 0.08, LOT]);
+        for (let k = 0; k < 5; k++) tree(s + Math.random() * LOT, beside(side, mid, (k < 2 ? 5 : 24) + Math.random() * 20));
+        benches.push([mid, beside(side, mid, FENCE + 1.2), 0.45, 0.5, 0.5, 1.8]);
+        const kind = (lot + (side > 0 ? 2 : 0)) % 4, at = (d) => beside(side, mid, d);
+        if (kind === 0) ponds.push([mid, at(16), 0.05, 15, 0.06, 19]);
+        else if (kind === 1) { // a bandstand
+          decks.push([mid, at(15), 0.4, 7.4, 0.8, 7.4]);
+          for (let a = 0; a < 6; a++) stallPosts.push([mid + Math.sin(a * Math.PI / 3) * 3.2, at(15) + Math.cos(a * Math.PI / 3) * 3.2, 2.4, 0.14, 3.2, 0.14]);
+          bandRoofs.push([mid, at(15), 4.9, 8.4, 1.8, 8.4]);
+        } else if (kind === 2) { // a playground: swings, and a climbing frame
+          playBars[0].push([mid - 4, at(12), 2.6, 0.14, 0.14, 4.4]);
+          for (const i of [-1, 1]) for (const j of [-1, 1]) playBars[0].push([mid - 4 + j * 2.1, at(12) + i * 0.8, 1.3, 0.12, 2.6, 0.12]);
+          for (const j of [-0.8, 0.8]) playBars[3].push([mid - 4 + j, at(12), 0.7, 0.5, 0.08, 0.3]);
+          for (const i of [-1, 1]) for (const j of [-1, 1]) playBars[2].push([mid + 5 + j * 1.2, at(13) + i * 1.2, 1.2, 0.12, 2.4, 0.12]);
+          playBars[3].push([mid + 5, at(13), 2.4, 2.8, 0.14, 2.8]);
+          playBars[1].push([mid + 5, at(13), 1.2, 2.5, 0.12, 2.5]);
+        } else for (let k = 0; k < 4; k++) beds[k].push([s + 4 + k * 6, at(8 + (k % 2) * 4), 0.12, 3.2, 0.24, 3.2]); // flower beds
+      },
+    };
     for (const [runFrom, runTo, lot0] of runs) for (const side of [-1, 1]) {
       for (let s = runFrom + (side > 0 ? 0 : LOT / 2), lot = lot0; s < runTo - LOT; s += LOT, lot++) {
         const mid = s + LOT / 2;
         if (!clear(mid, beside(side, mid, 12))) continue;
         if (exits.length && !free(mid, beside(side, mid, 14), lot0)) continue;
+        const zone = lot0 === 0 ? (LEVEL.zones || []).find(z => mid >= z.from && mid < z.to) : null;
+        if (zone && SETS[zone.scenery]) { SETS[zone.scenery](side, s, mid, lot, zone); continue; }
         // (each lot the same every time: The Hood's shooters are in these houses, see gunfire.js)
         const house = houseAt(side, lot);
         if (!house) { // a little park
@@ -1957,6 +2055,7 @@ const buildRoad = () => {
         } else {
           walls[Math.floor(Math.random() * WALLS.length)].push([mid, lat, h / 2, across, h, along]);
           roofs.push([mid, lat, h + 1.1, across * 1.12, 2.2, along * 1.12]);
+          chimneys.push([mid - along * 0.28, lat, h + 1.5, 0.8, 1.9, 0.8]);
           if (festive) { // (fairy lights along the eave facing the road, and round the far side too)
             for (let q = -along * 0.55, k = 0; q <= along * 0.55; q += 0.7, k++) {
               fairy[(k + lot) % FAIRY.length].push([mid + q, beside(side, mid, front - 0.2), h + 0.05, 0.14, 0.14, 0.14]);
@@ -1986,8 +2085,13 @@ const buildRoad = () => {
         drives.push([drive, beside(side, drive, (front + across) / 2 + 1.2), 0.03, front + across - 2.4, 0.06, 3.2]);
         mailPosts.push([drive - 2.3, beside(side, drive - 2.3, FENCE - 0.3), 0.5, 0.1, 1.0, 0.1]);
         mailboxes.push([drive - 2.3, beside(side, drive - 2.3, FENCE - 0.3), 1.1, 0.32, 0.3, 0.55]);
+        // a car on the driveway (not at a burnt-out house, and fewer where it is run down), and the bins out by the kerb
+        if (!shell && Math.random() < (rundown ? 0.2 : 0.55)) parkedCar(drive, beside(side, drive, FENCE + 3.4 + Math.random() * 2), false, Math.floor(Math.random() * 97));
+        if (Math.random() < 0.5) for (const k of [0, 1]) bins.push([drive + 2.3 + k * 0.8, beside(side, drive, FENCE - 0.5), 0.55, 0.6, 1.1, 0.6]);
+        const hedged = !rundown && lot % 5 === 2; // (a clipped hedge along the front in place of the pickets)
         // the picket fence along the front of the lot, open where the driveway crosses it
         for (const [from, to] of [[s, drive - 1.8], [drive + 1.8, s + LOT]]) {
+          if (hedged && to - from >= 1) { hedges.push([(from + to) / 2, beside(side, (from + to) / 2, FENCE), 0.55, 0.8, 1.1, to - from]); continue; }
           if (to - from < 1 || odds(0.2)) continue; // (run down: some stretches of fence gone altogether...)
           for (let q = from; q <= to; q += 1.2) if (!odds(0.3)) pickets.push([q, beside(side, q, FENCE), 0.45, 0.1, 0.9, 0.1]); // (...and pickets missing)
           for (const y of [0.3, 0.65]) rails.push([(from + to) / 2, beside(side, (from + to) / 2, FENCE), y, 0.06, 0.08, to - from]);
@@ -2046,6 +2150,57 @@ const buildRoad = () => {
     }
     instances(cube, 0x55595f, lampPosts);
     instances(cube, 0xfff3c4, lampHeads, true);
+    // (the driveways' cars, the chimneys, bins and hedges; and the sets)
+    const drab = (color) => rundown ? new THREE.Color(color).lerp(new THREE.Color(0x7a7468), 0.55).getHex() : color;
+    PAINT.forEach((color, i) => instances(cube, drab(color), carBodies[i]));
+    instances(cube, 0x26303a, carTops);
+    instances(cube, rundown ? 0x5e4a40 : 0x8a4a3a, chimneys);
+    instances(cube, rundown ? 0x3c4038 : 0x2f6b3a, bins);
+    instances(cube, 0x2f6f35, hedges);
+    BRICK.forEach((color, i) => instances(cube, color, shopWalls[i]));
+    BRIGHT.forEach((color, i) => {
+      instances(cube, color, [...awnings[i], ...stallTops[i], ...shedBands[i], ...playBars[i], ...produce[i]]);
+      instances(tube, color, beds[i]);
+      instances(new THREE.ConeGeometry(0.5, 1, 3).rotateX(Math.PI), color, bunting[i]);
+    });
+    instances(cube, 0xf4efe2, [...fascias, ...cornices, ...stallPosts]);
+    instances(cube, 0x86b7d4, shopGlass);
+    instances(cube, 0xb9b3a6, paving);
+    instances(cube, 0x3c3f44, [...bollards, ...pylons]);
+    instances(cube, 0x7a5a3a, [...benches, ...stallTables]);
+    instances(cube, 0xa89f8c, cobbles);
+    instances(cube, 0xcfc6b0, stone);
+    instances(roof, 0x5a6a72, stoneRoofs);
+    instances(tube, 0xe6e0d0, columns);
+    instances(cube, 0xfbfbf4, clockFaces);
+    instances(cube, 0x55585d, carParks);
+    instances(cube, 0xdfe3e6, sheds);
+    instances(cube, 0x24402c, [...railPosts, ...railBars]);
+    instances(tube, 0x4f9ad0, ponds);
+    instances(tube, 0xe9e2d0, decks);
+    instances(new THREE.ConeGeometry(0.5, 1, 8), 0x9a3b2e, bandRoofs);
+    // low wooded hills out beyond the houses, all round, so the street has a horizon (each pushed out clear of every road)
+    {
+      const hills = [], at = {}, far = {}, shade = new THREE.Color(theme.ground);
+      for (let s = Track.start + 150, k = 0; s < Track.end; s += 240, k++) for (const side of [-1, 1]) {
+        const r = 70 + Math.random() * 70, h = 16 + Math.random() * 26;
+        Track.toWorld(s, 0, at);
+        Track.toWorld(s, side * 100, far);
+        const d = Math.hypot(far.x - at.x, far.z - at.z) || 1;
+        const p = clearOfRoads(at.x, at.z, (far.x - at.x) / d, (far.z - at.z) / d, 190 + Math.random() * 120 + r, r, 60);
+        hills.push([p.x, p.z, r, h]);
+      }
+      const mesh = new THREE.InstancedMesh(new THREE.SphereGeometry(1, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: shade.multiplyScalar(0.78) }), hills.length);
+      hills.forEach(([x, z, r, h], i) => {
+        dummy.position.set(x, -0.5, z);
+        dummy.rotation.set(0, 0, 0);
+        dummy.scale.set(r, h, r);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+      });
+      mesh.userData.flat = true; // (a backdrop: placed clear of the roads already)
+      levelGroup.add(mesh);
+    }
     if (festive) {
       FAIRY.forEach((color, i) => instances(cube, color, fairy[i], true));
       instances(tube, 0x4a3426, firTrunks);

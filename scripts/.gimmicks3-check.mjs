@@ -255,7 +255,7 @@ try {
     // on the real levels
     real('jamRamps', (l) => {
       const rr = Gambles.ramps[0], q = g.Traffic.cars.filter(c => c.active && c.jam).length, [first, last] = T().laneRange(1, rr.s);
-      check(q === Gambles.queueSpots(rr).length && rr.speed < 34, l.id + ': the ramp at ' + rr.s + ' m, lane ' + rr.lane + ' of ' + first + ' to ' + last + ': its whole queue is out (' + q + ' cars), clearing it takes ' + Math.round(rr.speed * 3.6) + ' km/h');
+      check(q === Gambles.ramps.reduce((n, r) => n + Gambles.queueSpots(r).length, 0) && Gambles.ramps.every(r => r.speed < 34), l.id + ': the ramp at ' + rr.s + ' m, lane ' + rr.lane + ' of ' + first + ' to ' + last + ': its whole queue is out (' + q + ' cars), clearing it takes ' + Math.round(rr.speed * 3.6) + ' km/h');
     });
   });
 
