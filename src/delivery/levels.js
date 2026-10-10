@@ -75,7 +75,7 @@
 //   pickups    { type, s, lane }   type: turbo | ghost | wrench | passenger | mystery | radarDetector | siren
 //                                       | badGas | heavyMass | timePlus | timeMinus
 //   theme      'city' (default), 'bathurst' (Mount Panorama: a mountain), 'panorama' (the same, as a road through the bush), 'montreal' (Circuit Gilles-Villeneuve's island: its landmarks 'river', 'basin',
-//              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'flooded' (the city under flood water, in the rain), 'toyroom' (the level at toy scale, on a playroom floor), 'seabed' (an underwater tunnel: the road in a glass tube on the sea bed), 'hell' or 'space': the look of the ground, sky and roadside.
+//              'casino', 'biosphere', 'skyline'), 'sea' (open water, unmarked, the edges blocked by rocks and buoys), 'farm', 'beach', 'suburb', 'canberra', 'snow', 'singapore', 'singaporeNight', 'coast' (in zones), 'safari' (in zones: a dirt road, unmarked), 'airport', 'construction', 'flooded' (the city under flood water, in the rain), 'toyroom' (the level at toy scale, on a playroom floor), 'seabed' (an underwater tunnel: the road in a glass tube on the sea bed), 'moon' (a moon base: regolith, craters, domes, the Earth in a black sky), 'hell' or 'space': the look of the ground, sky and roadside.
 //              'snow' is a mountainside: land that climbs and falls with the road and fills in between its switchbacks.
 //              In space there is no ground and no road surface, only the lane lines.
 //   car        a special vehicle the level is driven in whatever is in the garage ('ufo', 'f1')
@@ -376,6 +376,7 @@ import fjord from './levels/fjord.json';
 // (the themed levels, THEME_LEVELS below: one a line, a new one on the line above its batch's marker)
 import toys from './levels/toys.json';
 import leaks from './levels/leaks.json';
+import moonbase from './levels/moon.json';
 // (batch A's imports go above this line)
 // (batch B's imports go above this line)
 // (batch C's imports go above this line)
@@ -402,6 +403,7 @@ export const CIRCUIT_LEVELS = [monza, spa, albertPark];
 export const THEME_LEVELS = [
   toys,
   leaks,
+  moonbase,
   // (batch A: toy room, underwater tunnel, moon base: new levels go above this line)
   // (batch B: film studio, Venice, ice road: new levels go above this line)
   // (batch C: theme park, volcano island, container port: new levels go above this line)

@@ -380,7 +380,10 @@ Build the theme first, then the level. Make sure the theme is reusable
       temple gate over the road, kites. Gimmick: the terraces flood in turn, spilling across the
       road as moving slick patches; ducks crossing in a line. Reuses: terrain, water mains'
       slicks, herds.
-- [ ] T18. **Moon base**: grey regolith, domes, a low black sky with the Earth in it, a road of
+- [x] T18. **Moon base** (done as theme `moon` and level T3 "Tranquility Base", `levels/moon.json`, with the game's
+      existing gimmicks: four crests to fly, potholes for craterlets, rockfall and a boulder strike for meteors. NO low
+      gravity: the physics are the game's own (the stopped agent's start on it is on `delivery-themes-toys-wip`).
+      Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): grey regolith, domes, a low black sky with the Earth in it, a road of
       compacted dust. Gimmick: low gravity: every bump is a long jump and braking takes twice as
       far. Different from the space theme, which has no ground. Reuses: space's sky, potholes,
       the jump physics.
