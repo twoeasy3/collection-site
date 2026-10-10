@@ -216,6 +216,12 @@ const DRIFTING = {
 };
 for (const [name, map] of Object.entries(OBSTACLES)) THEMES[name].obstacles = map;
 for (const [name, map] of Object.entries(DRIFTING)) THEMES[name].drifting = map;
+// a variant of a theme (themeparkNight, volcanoErupting, favelaRain...: a theme of another name drawn with that theme's
+// scenery) has that theme's obstacles, unless it is given some of its own above: so a new variant needs nothing here
+for (const T of Object.values(THEMES)) {
+  const parent = THEMES[T.scenery];
+  if (parent && parent !== T && !T.obstacles && !T.drifting) { T.obstacles = parent.obstacles; T.drifting = parent.drifting; }
+}
 // the kind a level's obstacle of `kind` is on a level of that theme (a level's "theme"); drifting: one of its drifters
 export const themedKind = (theme, kind, drifting = false) => {
   const T = THEMES[theme || 'city'];
