@@ -12,6 +12,8 @@ import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { Garage } from './garage.js';
 import { Sound } from './audio.js';
+import './menuclick.js'; // (every click on a menu plays one sound)
+import { ask } from './dialog.js';
 import { Input } from '../input.js';
 import { draw, MenuStage } from './menustage.js';
 export { LEVEL_SHOTS } from './menustage.js'; // (the postcard album's pictures: render/album.js)
@@ -84,8 +86,8 @@ showRaceClass();
 draw();
 
 // a complete savegame, written to the progress cookie like any other progress
-document.getElementById('completeBtn').addEventListener('click', () => {
-  if (!confirm('Open every level, buy every car and fill the bank?')) return;
+document.getElementById('completeBtn').addEventListener('click', async () => {
+  if (!await ask({ title: 'Complete save', lines: ['Open every level, buy every car and fill the bank?'], ok: 'Do it' })) return;
   Progress.complete({
     levels: LEVELS.length,
     cars: CARS.map(car => car.id),
@@ -110,8 +112,8 @@ document.getElementById('completeBtn').addEventListener('click', () => {
   });
 }
 
-document.getElementById('resetBtn').addEventListener('click', () => {
-  if (!confirm('Erase your bank, unlocked levels and cars?')) return;
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (!await ask({ title: 'Reset progress', lines: ['Erase your bank, unlocked levels and cars?'], ok: 'Erase', danger: true })) return;
   Progress.reset();
   selectLevel(0);
   window.dispatchEvent(new Event('carchange')); // (the car in use may have been one that was bought)

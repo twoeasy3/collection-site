@@ -17,6 +17,7 @@ import { makeUfo } from './carExtras.js';
 import { GarageView, arrange, mountGarageView } from './garageview.js';
 import { showComparison } from './compare.js';
 import { IdeasLot } from './ideaslot.js';
+import { ask, tell } from './dialog.js';
 
 // The lot: three rows of bays, a long covered garage along the back, the cars parked strictly column by
 // column in order of their stars and price, cheapest first (one with no stars, the Tank, last), and in
@@ -192,8 +193,10 @@ const ui = document.getElementById('garageUi');
 const tip = document.getElementById('garageTip');
 const info = document.getElementById('garageInfo');
 const bank = document.getElementById('garageBank');
-const liveryBtn = document.getElementById('liveryBtn');
+const liveryBtn = document.getElementById('liveryBtn'); // (a Good / Evil pair of buttons: see index.html)
+const sideBtns = [...liveryBtn.querySelectorAll('button')];
 const action = document.getElementById('garageAction');
+const useBtn = document.getElementById('garageUse');
 const startScreen = document.getElementById('startScreen');
 const money = (amount) => '$' + amount.toFixed(2);
 const stats = (car) => 'Top speed ' + Math.round(car.maxSpeed * 3.6) + ' km/h  |  Acceleration ' +
@@ -214,21 +217,26 @@ const carAt = (event) => {
 };
 
 const refresh = () => {
+  GarageView.refreshControls?.(); // (a Show choice that parks no car is not offered: money and purchases change that)
   // (a secret vehicle in use has no bay, so no ring; nor has a car idea in this lot: its ring is in the Car ideas lot's)
   const inUse = carInUse();
   // (a level that restricts the car, tiers.js: the lot shows only the cars of its tier, and the bar says so)
   const only = GarageView.restrictTier;
   bank.replaceChildren('Bank ' + money(Progress.data.money), ...(only ? ['  |  Only ', tierStarsNode(only), ' cars may be driven on this level'] : []));
-  liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
+  for (const b of sideBtns) { const on = (b.dataset.side === 'evil') === Garage.evil; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); }
   const shown = looking || inUse, owned = Progress.owns(shown.id);
   info.replaceChildren(...withStars(shown), '  -  ' + stats(shown));
   showComparison(inUse, shown); // (the car in use against the one looked at: see render/compare.js)
   // the button under the stats: what can be done with the car shown
   // (the car in use, looked at in the other side's livery: the button takes that side)
   const otherSide = shown === inUse && Garage.evil !== Game.evil;
-  action.textContent = otherSide ? 'Drive it as ' + sideName() : shown === inUse ? 'In use' : owned ? 'Use this car as ' + sideName()
+  action.textContent = shown === inUse && !otherSide ? 'In use' : owned ? 'Switch'
     : Progress.data.money >= shown.price ? 'Buy for ' + money(shown.price) : 'Need ' + money(shown.price);
   action.disabled = (shown === inUse && !otherSide) || (!owned && Progress.data.money < shown.price);
+  action.title = owned ? 'Drive the ' + shown.name + ' as ' + sideName() + ', and stay in the garage' : '';
+  // (Use: the same, and back to the menu with it; a car not yet bought has none, only its Buy)
+  useBtn.style.display = owned ? '' : 'none';
+  useBtn.title = 'Drive the ' + shown.name + ' as ' + sideName() + ', and go back to the menu';
   ring.visible = parked.some(mesh => mesh.userData.car === inUse);
   lookRing.visible = !!looking && looking !== inUse;
   for (const mesh of parked) {
@@ -241,25 +249,83 @@ const refresh = () => {
   if (IdeasLot.on) IdeasLot.refresh(); // (the "Car ideas" tab: its own words, and its ideas in the livery on show)
 };
 
+// the band of the screen the lot is drawn in: under the bar, over the words and buttons at the bottom. What is in
+// the flow of the bottom block counts (the comparison card of a wide screen floats at its corner and does not). Measured
+// again whenever either block changes size (the stats opened, the bar wrapping, a turn of the phone)
+const barEl = ui.querySelector('.bar'), pickEl = ui.querySelector('.pick');
+let measured = { top: 0, bottom: 0 }; // px from the top of the screen: the bar's foot, the block's head
+const measure = () => {
+  if (!Garage.isOpen) return;
+  const H = renderer.domElement.clientHeight;
+  let bottom = H;
+  for (const child of pickEl.children) {
+    if (child.style.display === 'none' || getComputedStyle(child).position === 'fixed') continue;
+    const r = child.getBoundingClientRect();
+    if (r.height > 0) bottom = Math.min(bottom, r.top);
+  }
+  measured = { top: Math.max(0, barEl.getBoundingClientRect().bottom + 4), bottom: Math.max(0, bottom - 4) };
+};
+const bandOf = (H) => {
+  let { top, bottom } = measured;
+  if (!bottom || bottom > H) bottom = H;
+  const min = Math.max(120, H * 0.38); // (never squeezed to nothing: a very short screen keeps its lot, and the words go over its foot)
+  if (bottom - top < min) bottom = Math.min(H, top + min);
+  return { top, height: bottom - top };
+};
+if (window.ResizeObserver) { const watch = new ResizeObserver(measure); watch.observe(barEl); watch.observe(pickEl); watch.observe(document.documentElement); }
+window.addEventListener('resize', measure);
+
 // a car tapped: its stats shown, with the button to use it, or to buy it (locked or not, any car can be looked at)
 const pick = (mesh) => {
   looking = mesh.userData.car;
   refresh();
 };
-action.addEventListener('click', () => {
+// Buying is asked in the game's own sheet (render/dialog.js), never the browser's: the car, its price, the bank,
+// and what is left after. Not enough money is said in the same sheet (the button already says "Need $..."; this is
+// for a click that gets through anyway, as a bank that changed after the sheet was drawn); a purchase that
+// fails (Progress.buy throws, or the car is not owned after it) is said there too.
+const buy = async (car) => {
+  const have = Progress.data.money;
+  if (have < car.price) {
+    await tell({ title: 'Not enough money', ok: 'OK', lines: [
+      'The ' + car.name + ' costs ' + money(car.price) + ' and you have ' + money(have) + '.',
+      'You need ' + money(car.price - have) + ' more.'] });
+    return false;
+  }
+  const yes = await ask({ title: 'Buy the ' + car.name + '?', ok: 'Buy for ' + money(car.price), cancel: 'Cancel', lines: [
+    'Price ' + money(car.price) + '. You have ' + money(have) + ', and ' + money(have - car.price) + ' is left.',
+    'You get both liveries, Good and Evil.'] });
+  if (!yes) return false;
+  let bought = false;
+  try { bought = Progress.buy(car) && Progress.owns(car.id); } catch { /* (said below) */ }
+  if (!bought) {
+    await tell({ title: 'Could not buy it', lines: ['The ' + car.name + ' was not bought, and no money was taken.'] });
+    return false;
+  }
+  return true;
+};
+// the button under the stats: "Switch" (to the car looked at, and its side; stays in the garage) or "Buy"; and
+// "Use" beside it (the same, then back to the menu)
+const take = async (leave) => {
   // (on the Car ideas tab the button is that lot's "Drive it": the idea looked at there. It is free and always
   // open, so there is nothing to buy; it becomes the car in use just as a garage car does)
   const car = IdeasLot.on ? IdeasLot.looking : looking || CAR;
-  if (!car || (car.id === carInUse().id && Garage.evil === Game.evil)) return;
-  if (!Progress.owns(car.id)) {
-    if (Progress.data.money < car.price) return;
-    if (!confirm('Buy the ' + car.name + ' for ' + money(car.price) + '? You get both liveries.')) return;
-    Progress.buy(car);
+  if (!car) return;
+  const same = car.id === carInUse().id && Garage.evil === Game.evil;
+  if (same && !leave) return;
+  if (!same) {
+    if (!Progress.owns(car.id) && !await buy(car)) { refresh(); return; }
+    if (car.id !== carInUse().id) selectCar(car.id);
+    takeSide();
+    if (GarageView.settle()) GarageView.rebuild(); // (the choice in Show has no cars left: back to All)
   }
-  if (car.id !== carInUse().id) selectCar(car.id);
-  takeSide();
   refresh();
-});
+  if (leave) Garage.close(); // (to the menu: the car and its side go with it, as the garage's Back does)
+};
+// (on a phone the stats are one line, cut short, until the line is tapped: then all of them, below the lot, never over it)
+info.addEventListener('click', () => info.classList.toggle('open'));
+action.addEventListener('click', () => take(false));
+useBtn.addEventListener('click', () => take(true));
 // The side goes with the car: a car picked while the garage shows its Evil livery is driven as Evil, and one
 // picked in its Good livery as Good (remembered, as the menu's own Good / Evil button is: see render/menu.js)
 const sideName = () => Garage.evil ? 'Evil' : 'Good';
@@ -324,10 +390,10 @@ renderer.domElement.addEventListener('click', (event) => {
   if (mesh) pick(mesh); // (on touch there is no hover: the purchase prompt states the price)
 });
 
-liveryBtn.addEventListener('click', () => { Garage.evil = !Garage.evil; refresh(); });
+for (const b of sideBtns) b.addEventListener('click', () => { Garage.evil = b.dataset.side === 'evil'; refresh(); });
 // the bar's Sort and Show buttons: the lot built again, from its first column (a car looked at that is no longer
 // parked is let go)
-mountGarageView(() => {
+mountGarageView(() => garageCars(), () => {
   buildLot();
   if (!order.includes(looking)) looking = null;
   scrollX = clampScroll(0);
@@ -349,7 +415,10 @@ export const Garage = {
 
   open(evil = Game.evil) { // (evil: the livery to show the cars in; the side being played, unless told)
     const only = restrictedTier() ?? null;
-    if (built !== onShow() || GarageView.restrictTier !== only) { GarageView.restrictTier = only; buildLot(); } // (the lot filtered to the tier the level allows) (first time in, or the Blue Star cars have just arrived, or a 6-star car has been earned)
+    const retiered = GarageView.restrictTier !== only;
+    GarageView.restrictTier = only;
+    const emptied = GarageView.settle(); // (the Show choice may have fallen empty since: back to All)
+    if (built !== onShow() || retiered || emptied) buildLot(); // (the lot filtered to the tier the level allows) (first time in, or the Blue Star cars have just arrived, or a 6-star car has been earned)
     this.isOpen = true;
     carAtOpen = CAR;
     sideAtOpen = Game.evil;
@@ -365,6 +434,7 @@ export const Garage = {
     scrollTo(order.find(car => car && car.id === Progress.data.car) || order[0]);
     fling = 0;
     refresh();
+    measure();
   },
   close() {
     // a different car: tell the rest of the game (the player gets into it when a run starts)
@@ -398,7 +468,11 @@ export const Garage = {
   render(now) {
     if (IdeasLot.on) return IdeasLot.render(now); // (the Car ideas tab draws its own lot)
     const canvas = renderer.domElement;
-    const aspect = canvas.clientWidth / canvas.clientHeight;
+    // (the lot is drawn in the band between the bar and the words and buttons under it, never behind them: the
+    // camera's view is offset so that the rows are framed to the band, not to the screen's whole height)
+    const W = canvas.clientWidth, H = canvas.clientHeight, band = bandOf(H);
+    const aspect = W / band.height;
+    if (band.top || band.height < H) camera.setViewOffset(W, band.height, 0, -band.top, W, H); else camera.clearViewOffset();
     // (the three rows framed to the screen's height, whatever its shape: a wider screen just shows more columns)
     const back = 1;
     const dt = Math.min(0.05, (now - (Garage.last || now)) / 1000);

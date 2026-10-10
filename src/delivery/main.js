@@ -93,6 +93,9 @@ if (params.get('garage') !== null) {
   if (params.get('tab')) Garage.tab(params.get('tab')); // (&tab=ideas: its Car ideas lot, where &look and &hover name an idea)
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
+  // &click=<selector>: that control pressed once the garage is up (&click=%23garageAction on an unowned car: its buy
+  // sheet; &click=.view-pick%20.view-btn: the Sort list), for a picture of what it opens
+  if (params.get('click')) params.get('click').split('|').forEach((selector, i) => setTimeout(() => document.querySelector(selector)?.click(), 50 + i * 50)); // (several, with | between)
 }
 // ?pick=41 shows the menu with that level picked, open or not (for a look at its card: nothing starts; the levels
 // are all open for this visit); with &start, Start Game is pressed too (an amphibious level with no amphibious car)
