@@ -22,6 +22,8 @@ export const h = (tag, props, ...kids) => {
   for (const kid of kids.flat(3)) if (kid !== undefined && kid !== null && kid !== false) el.append(kid);
   return el;
 };
+// an element's children replaced by these (lists of them flattened, and nothing where there is none)
+export const fill = (el, ...kids) => { el.replaceChildren(...kids.flat(3).filter(kid => kid !== undefined && kid !== null && kid !== false)); return el; };
 const show = (v) => (typeof v === 'number' ? String(Math.round(v * 1000) / 1000) : typeof v === 'object' ? JSON.stringify(v) : String(v));
 const isObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const hexOf = (n) => '#' + n.toString(16).padStart(6, '0');
@@ -60,7 +62,7 @@ const mixTable = (S, get, set, ctx) => {
     const rest = S.choices.filter(k => !(k in mix));
     const add = h('select', { onchange: (e) => { if (!e.target.value) return; write({ ...(get() || {}), [e.target.value]: 0.1 }); render(); } },
       h('option', { value: '' }, '+ add a kind (' + rest.length + ' more)'), rest.map(k => h('option', {}, k)));
-    box.replaceChildren(h('table', {}, h('tbody', {}, rows)), add);
+    fill(box, h('table', {}, h('tbody', {}, rows)), add);
   };
   render();
   return box;
@@ -78,7 +80,7 @@ export const control = (S, get, set, ctx) => {
         set(to ? (altType === 'list' ? [initialValue({ type: 'object', settings: S.alt.settings })] : initialValue({ type: 'object', settings: S.alt.settings })) : undefined);
         ctx.changed(); render();
       } }, h('option', { value: 'one', selected: !detailed }, 'one number'), h('option', { value: 'alt', selected: detailed }, S.alt.label || 'each way'));
-      box.replaceChildren(h('div', { class: 'altHead' }, h('span', { class: 'cap', title: S.help || '' }, S.label), mode),
+      fill(box, h('div', { class: 'altHead' }, h('span', { class: 'cap', title: S.help || '' }, S.label), mode),
         detailed ? control({ ...S.alt, type: altType, label: '', required: true }, get, set, ctx) : numberBox(S, get, set, ctx));
     };
     render();
@@ -150,7 +152,7 @@ export const control = (S, get, set, ctx) => {
         const head = S.required ? (S.label ? h('legend', { title: S.help || '' }, S.label) : null)
           : h('legend', { title: S.help || '' }, h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: on,
             onchange: (e) => { set(e.target.checked ? initialValue(S) : undefined); ctx.changed(); render(); } }), h('span', {}, S.label)));
-        box.replaceChildren(head, on ? settingsForm(S.settings, v, ctx) : null);
+        fill(box, head, on ? settingsForm(S.settings, v, ctx) : null);
       };
       render();
       return box;
@@ -163,7 +165,7 @@ export const control = (S, get, set, ctx) => {
         if (S.item) { // (a few plain values: an entry's two colours)
           const values = Array.isArray(list) ? list : [];
           const n = S.length || values.length;
-          box.replaceChildren(h('legend', {}, S.label), h('div', { class: 'grid' }, Array.from({ length: n }, (_, i) => control({ ...S.item, label: '#' + (i + 1), required: true },
+          fill(box, h('legend', {}, S.label), h('div', { class: 'grid' }, Array.from({ length: n }, (_, i) => control({ ...S.item, label: '#' + (i + 1), required: true },
             () => values[i], (x) => { const next = Array.from({ length: n }, (_, k) => (k === i ? x : values[k] ?? initialValue(S.item))); set(next); }, ctx))));
           return;
         }
@@ -172,7 +174,7 @@ export const control = (S, get, set, ctx) => {
             h('button', { title: 'Remove', onclick: () => write(list.filter((_, k) => k !== i)) }, '×')),
           settingsForm(S.settings, item, ctx)));
         const full = S.max && rows.length >= S.max;
-        box.replaceChildren(S.label ? h('legend', { title: S.help || '' }, S.label) : null, rows,
+        fill(box, S.label ? h('legend', { title: S.help || '' }, S.label) : null, rows,
           full ? null : h('button', { onclick: () => write([...(Array.isArray(list) ? list : []), initialValue({ type: 'object', settings: S.settings })]) }, '+ Add'));
       };
       render();

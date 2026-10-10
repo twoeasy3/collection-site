@@ -17,6 +17,7 @@
 // drop into ./levels. The level is kept in local storage as it is edited (autosave), with undo and redo.
 // For a picture of it (scripts/shots.mjs), the address can say what to show: editor.html?level=<id>&tab=place
 // &q=<search>&tool=<field>[:<kind>]&click=<m>[:<lat>]&sideclick=<exit>:<m>&sel=<field>:<n>&zoom=<m>:<px a metre>&hide=a,b
+// and, to try the mouse and the history without one: &drag=<field>:<n>:<grab p|a|b|move>:<m to move it> &seglen=<segment>:<m> &undo=<times> &redo=<times>
 // ============================================================================
 import './editor.css';
 import { CONFIG } from './config.js';
@@ -26,7 +27,7 @@ import { THEMES } from './themes.js';
 import { PICKUP_COLOR } from './render/pickupModels.js';
 import { FIELDS, GROUPS, RULES, isPlaced, isList, entriesOf, placeOf, spanOf, triggerOf, makeEntry, roadFacts, brokenRules, checkLevel, loadLevel, saveLevel,
   asSetting, choiceValue, choiceLabel } from './levelSchema.js';
-import { h, control, settingsForm } from './editorForms.js';
+import { h, fill, control, settingsForm } from './editorForms.js';
 
 const $ = (id) => document.getElementById(id);
 const view3d = $('view3d'); // (the 3D view: see show3d)
@@ -410,7 +411,7 @@ const drawEntry = (key, e, i) => {
       }
       for (const [sx, sy] of [line[0], line[line.length - 1]]) { pen.beginPath(); pen.arc(sx, sy, 6, 0, Math.PI * 2); pen.fillStyle = '#ffd23f'; pen.fill(); pen.strokeStyle = '#11151c'; pen.lineWidth = 1; pen.stroke(); }
     }
-    if (on || view.k > 0.25 || entriesOf(level, key).length < 12) { pen.fillStyle = colour(key); pen.fillText(def.label, line[0][0] + 6, line[0][1] - 6); }
+    if (on || view.k > 1.5 || entriesOf(level, key).length < 12) { pen.fillStyle = colour(key); pen.fillText(def.label, line[0][0] + 6, line[0][1] - 6); }
   } else {
     const [sx, sy] = markerAt(key, e, place);
     if (ITEMS.includes(key)) {
@@ -430,7 +431,7 @@ const drawEntry = (key, e, i) => {
       pen.strokeStyle = on ? '#ffd23f' : '#11151c';
       pen.lineWidth = on ? 3 : 1;
       pen.stroke();
-      if (on || view.k > 0.25 || entriesOf(level, key).length < 12) pen.fillText(def.sub && e[def.sub] ? e[def.sub] : def.label, sx + r + 3, sy + 4);
+      if (on || view.k > 1.5 || entriesOf(level, key).length < 12) pen.fillText(def.sub && e[def.sub] ? e[def.sub] : def.label, sx + r + 3, sy + 4);
     }
     // (another spot of its own along the road: a marathon's water station)
     for (const [k, S] of Object.entries(def.settings || {})) {
@@ -550,7 +551,7 @@ const diagnose = () => {
 const showProblems = () => {
   const box = $('problems');
   box.hidden = !found.length;
-  box.replaceChildren(h('h3', {}, found.length === 1 ? '1 problem' : found.length + ' problems', h('span', { class: 'small' }, ' click one to go to what causes it')),
+  fill(box, h('h3', {}, found.length === 1 ? '1 problem' : found.length + ' problems', h('span', { class: 'small' }, ' click one to go to what causes it')),
     found.slice(0, 80).map(p => h('button', { class: 'problem', disabled: !p.ref, onclick: () => goTo(p.ref) }, '⚠ ' + p.text)),
     found.length > 80 ? h('p', { class: 'note' }, '...and ' + (found.length - 80) + ' more') : null);
 };
@@ -611,8 +612,8 @@ const groupSection = (group, rebuild) => {
 const renderLevel = () => {
   noteFor.clear();
   const top = $('side').scrollTop;
-  $('tab-level').replaceChildren(...['basics', 'look', 'traffic', 'events', 'modes', 'race'].map(g => groupSection(g, renderLevel)).filter(Boolean));
-  $('roadFields').replaceChildren(groupSection('road', renderLevel));
+  fill($('tab-level'), ...['basics', 'look', 'traffic', 'events', 'modes', 'race'].map(g => groupSection(g, renderLevel)).filter(Boolean));
+  fill($('roadFields'), groupSection('road', renderLevel));
   $('side').scrollTop = top;
   notes();
 };
@@ -629,7 +630,7 @@ const notes = () => {
     const rules = (def.rules || []).map(id => { const bad = !(e.road === 'side' && SPAN_RULES.includes(id)) && RULES[id].broken(facts, e, span); return h('li', { class: bad ? 'bad' : 'ok' }, (bad ? '✗ ' : '✓ ') + RULES[id].text); });
     const wrong = found.filter(p => same(p.ref, sel) && !(def.rules || []).some(id => p.text.endsWith(RULES[id].text))).map(p => h('li', { class: 'bad' }, '⚠ ' + p.text));
     const road = def.road === 'both' ? 'It can be on a side road too.' : isPlaced(def) && def.shape !== 'world' ? 'On the expressway only (not on a side road).' : '';
-    box.replaceChildren(h('ul', { class: 'rules' }, rules, wrong), road ? h('p', { class: 'note' }, road) : null);
+    fill(box, h('ul', { class: 'rules' }, rules, wrong), road ? h('p', { class: 'note' }, road) : null);
   }
 };
 
@@ -718,14 +719,14 @@ const renderTools = () => {
       const def = FIELDS[key];
       if (def.sub) { // (one button for each kind of it)
         const subs = def.settings[def.sub].choices.map(choiceValue).filter(v => match(v, key, def.label, title));
-        if (subs.length) buttons.push(h('h4', {}, def.label), ...subs.map(v => toolButton(v, { kind: 'place', key, sub: v }, key === 'pickups' ? hex(PICKUP_COLOR[v] ?? 0xffffff) : colour(key), describe(key), key)));
-      } else if (match(key, def.label, title, def.help)) buttons.push(toolButton(def.label, { kind: 'place', key }, colour(key), describe(key), key));
+        if (subs.length) buttons.push(h('h4', {}, def.label), ...subs.map(v => toolButton(v, { kind: 'place', key, sub: v }, key === 'pickups' ? hex(PICKUP_COLOR[v] ?? 0xffffff) : key === 'obstacles' ? '#ff8a3d' : colour(key), describe(key), key)));
+      } else if (match(key, def.label, title)) buttons.push(toolButton(def.label, { kind: 'place', key }, colour(key), describe(key), key));
     }
     if (group === 'sideRoads' && match('oncoming from here', 'side road')) buttons.push(toolButton('oncoming from here', { kind: 'oncomingFrom' }, '#ffd23f', 'Click a side road: its lane 0 is oncoming from there on (the yellow handle can be dragged too)'));
     if (buttons.length) out.push(h('h3', {}, title), ...buttons);
   }
   if (out.length === 0) out.push(h('p', { class: 'note' }, 'Nothing called that can be placed.'));
-  $('tools').replaceChildren(...out);
+  fill($('tools'), ...out);
 };
 const counts = () => { if (!$('tab-place').hidden) renderTools(); };
 const hint = () => {
@@ -780,7 +781,7 @@ const titleOf = (key, e, i) => {
 };
 const renderInspector = () => {
   const box = $('inspector'), e = sel && entry(sel);
-  if (!e || typeof e !== 'object') { sel = null; box.hidden = true; box.replaceChildren(); return; }
+  if (!e || typeof e !== 'object') { sel = null; box.hidden = true; fill(box, ); return; }
   const def = FIELDS[sel.key], place = placeOf(def, e), key = sel.key;
   const ctx = { changed: () => changed(), rebuild: () => renderInspector(), lanes: (S) => laneOptions(e, S, whereOf(key, e)) };
   const numberOf = (k, label, step = 5) => h('label', {}, h('span', { class: 'cap' }, label), h('input', { type: 'number', step, value: e[k] ?? '',
@@ -789,7 +790,6 @@ const renderInspector = () => {
   const along = e.road === 'side' ? ' (m along the side road)' : ' (m)';
   if (place && place.type === 'stretch') where.push(numberOf(place.a, def.ends ? 'Fork at (m)' : 'From' + along), numberOf(place.b, def.ends ? 'Merge at (m)' : 'To' + along));
   if (place && place.type === 'point') where.push(numberOf(place.p, 'At' + along));
-  if (place && place.type === 'world') where.push(numberOf('x', 'x (m, + is left on the map)'), numberOf('z', 'z (m, up the map)'));
   if (def.road === 'both' && place && place.type !== 'world') {
     const options = [h('option', { value: '', selected: e.road !== 'side' }, 'the expressway'), ...sideRoads.map(r => h('option', { value: r.i, selected: e.road === 'side' && (e.exit || 0) === r.i }, 'side road ' + r.i + ' (' + Math.round(r.x.length) + ' m)'))];
     if (e.road === 'side' && !sideOf(e)) options.push(h('option', { value: e.exit || 0, selected: true }, 'side road ' + (e.exit || 0) + ' (no such exit)'));
@@ -813,7 +813,7 @@ const renderInspector = () => {
   } }), jsonNote = h('p', { class: 'note' });
   const spot = place && place.type !== 'world' && place.type !== 'paths' && e.road !== 'side' ? e[place.a || place.p] : null;
   box.hidden = false;
-  box.replaceChildren(
+  fill(box, 
     h('div', { class: 'inspHead' }, h('h3', { style: 'color:' + colour(key) }, titleOf(key, e, sel.i)), h('button', { title: 'Close (the thing stays selected on the map until you click elsewhere)', onclick: () => select(null) }, '×')),
     h('p', { class: 'help' }, def.help),
     where.length ? h('div', { class: 'grid' }, where) : null,
@@ -877,7 +877,7 @@ const goTo = (ref) => {
 const SCENERY = ['zones', 'runoff', 'gravel', 'stands', 'quarries', 'landmarks', 'quietZones', 'trafficZones'];
 const renderList = () => {
   const present = PLACED.filter(k => entriesOf(level, k).length);
-  $('filters').replaceChildren(...present.map(k => h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: !hidden.has(k), onchange: (e) => { if (e.target.checked) hidden.delete(k); else hidden.add(k); draw(); } }),
+  fill($('filters'), ...present.map(k => h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: !hidden.has(k), onchange: (e) => { if (e.target.checked) hidden.delete(k); else hidden.add(k); draw(); } }),
     h('span', { class: 'swatch', style: 'background:' + colour(k) }), h('span', {}, FIELDS[k].label + ' (' + entriesOf(level, k).length + ')'))));
   const rows = [];
   for (const key of present) each(key, (e, i) => {
@@ -889,7 +889,7 @@ const renderList = () => {
   });
   rows.sort((a, b) => a.road - b.road || a.pos - b.pos);
   $('listCount').textContent = rows.length + (rows.length > 500 ? ' (the first 500 listed)' : '');
-  $('everything').replaceChildren(...rows.slice(0, 500).map(r => h('button', { class: 'row' + (same(r, sel) ? ' on' : ''), onclick: () => { select({ key: r.key, i: r.i }); centre(sel); renderList(); } },
+  fill($('everything'), ...rows.slice(0, 500).map(r => h('button', { class: 'row' + (same(r, sel) ? ' on' : ''), onclick: () => { select({ key: r.key, i: r.i }); centre(sel); renderList(); } },
     h('span', { class: 'swatch', style: 'background:' + colour(r.key) }), h('span', { class: 'pos' }, r.text), h('span', { class: 'name' }, r.name), h('span', { class: 'cap' }, r.more))));
 };
 $('showAll').addEventListener('click', () => { hidden.clear(); renderList(); draw(); });
@@ -1021,9 +1021,9 @@ const press = (px, py) => {
   draw();
 };
 canvas.addEventListener('pointerdown', (e) => { canvas.setPointerCapture(e.pointerId); press(...local(e)); });
-canvas.addEventListener('pointermove', (e) => {
+const moveTo = (px, py) => {
   if (!drag) return;
-  const [px, py] = local(e), [mx, my] = toMap(px, py);
+  const [mx, my] = toMap(px, py);
   if (drag.oncoming !== undefined) {
     const n = nearestSide(mx, my, drag.oncoming);
     if (n) setOncomingFrom(drag.oncoming, n.d);
@@ -1054,11 +1054,13 @@ canvas.addEventListener('pointermove', (e) => {
     }
   }
   draw();
-});
-canvas.addEventListener('pointerup', () => {
+};
+const release = () => {
   if (drag && (drag.moved || drag.oncoming !== undefined)) { renderInspector(); changed(); } // (the form and the game catch up with the drag)
   drag = null;
-});
+};
+canvas.addEventListener('pointermove', (e) => moveTo(...local(e)));
+canvas.addEventListener('pointerup', release);
 canvas.addEventListener('wheel', (e) => { // zoom about the pointer
   e.preventDefault();
   const [px, py] = local(e), [mx, my] = toMap(px, py), k = clamp(view.k * Math.exp(-e.deltaY * 0.0015), 0.02, 40);
@@ -1177,6 +1179,19 @@ if (params.get('tool')) { const [key, sub] = params.get('tool').split(':'); if (
 for (const spot of params.getAll('click')) { const [s, lat] = spot.split(':').map(Number), q = at(s, lat || 0); placeAt(q.x, q.y); }
 for (const spot of params.getAll('sideclick')) { const [i, d] = spot.split(':').map(Number), x = laid && Track.exits[i]; if (x) { const q = mapPoint(x.side0 + d, 0); placeAt(q.x, q.y); } }
 if (params.get('sel')) { const [key, n] = params.get('sel').split(':'); const ref = { key, i: FIELDS[key] && isList(FIELDS[key]) ? Number(n) || 0 : -1 }; if (FIELDS[key] && entry(ref)) select(ref); }
+for (const d of params.getAll('drag')) { // (a thing picked up where it is and let go that much further on, as the mouse would)
+  const [key, n, grab, by] = d.split(':'), ref = { key, i: isList(FIELDS[key]) ? Number(n) : -1 }, e = entry(ref), place = e && placeOf(FIELDS[key], e);
+  if (!place) continue;
+  rowsOf();
+  const line = place.type === 'stretch' ? bandLine(key, e, place) : null, from = place.type === 'point' ? markerAt(key, e, place) : grab === 'a' ? line[0] : grab === 'b' ? line[line.length - 1] : line[Math.floor(line.length / 2)];
+  const s0 = place.type === 'point' ? e[place.p] : grab === 'a' ? e[place.a] : grab === 'b' ? e[place.b] : (e[place.a] + e[place.b]) / 2, q = P(e, s0 + Number(by), place.type === 'point' ? latOf(key, e, s0) : bandLat(key, e, s0));
+  setTool({ kind: 'select' });
+  press(from[0], from[1]);
+  moveTo(...toScreen(q.x, q.y));
+  release();
+}
+if (params.get('seglen')) { const [i, to] = params.get('seglen').split(':').map(Number); resize(i, to); segmentRows(); renderInspector(); changed(); }
+if (params.get('undo') || params.get('redo')) { clearTimeout(pending); record(); for (let n = 0; n < Number(params.get('undo')); n++) undo(); for (let n = 0; n < Number(params.get('redo')); n++) redo(); }
 if (params.get('zoom')) { const [s, k] = params.get('zoom').split(':').map(Number), q = at(s, 0); view.ox = q.x; view.oy = q.y; view.k = k || 1; }
 else if (sel && params.get('sel')) centre(sel);
 if (params.get('scroll')) $('side').scrollTop = Number(params.get('scroll'));
