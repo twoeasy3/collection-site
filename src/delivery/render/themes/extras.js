@@ -279,9 +279,9 @@ const raceDay = (ctx) => {
         const side = k % 2 ? 1 : -1;
         if (k % 3 === 2) tent(s, side, 9 + rand() * 4, BANNERS[k % 4]); else camper(s, side, 8 + rand() * 5, BANNERS[k % BANNERS.length]);
       }
-      const at = lighthouse(z.to - 170, 1, 75, 26, 0xd22a2a);
+      const at = lighthouse(z.to - 110, -1, 90, 28, 0xd22a2a); // (on the left, well off the road: the road bends right here so the tower stands ahead in the view; a tall thing at the edge of the picture leans with the camera, as every tree does)
       if (at) {
-        const c = kit.point(z.to - 150, beside(1, z.to - 150, 68));
+        const c = kit.point(z.to - 90, beside(-1, z.to - 90, 80));
         kit.at(WHITE, cube, c.x, c.y + 1.6, c.z, 7, 3.2, 5, c.h, false, 4);
         kit.at(0xb5462f, PYRAMID, c.x, c.y + 4.2, c.z, 8, 2.2, 6, c.h, false, -1);
       }
