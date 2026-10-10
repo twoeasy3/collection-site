@@ -19,7 +19,7 @@ import { Game } from '../game.js';
 import { levelNotes, levelPickups, mysteryPool, levelTraffic, vehicleInfo } from '../levelinfo.js';
 import { GROUPS } from '../gimmicks.js';
 import { CARDS } from '../powerups.js';
-import { MODELS } from './models.js';
+import { MODELS, FIXED_PAINT, makeLightBar, placeLightBar, flashLightBar } from './models.js';
 import { makeTractorModel, makeUfo } from './carExtras.js';
 import { PICKUP_COLOR } from './pickupModels.js';
 import { standView, pickupView, sharedRenderer, disposeViews, drawViews } from './modelviews.js';
@@ -41,11 +41,23 @@ const KIND_CARD = { ufo: 'The UFO', jetboat: 'The jetboat', apc: 'Your 8x8', tra
 // a vehicle kind's own model, painted (a traffic kind's, or a level's own vehicle's)
 const CLOSE = 1.3; // (how much nearer than the pages' cards a tile's camera stands: its patch is small)
 const PAINTS = [0x3d7bd9, 0xd8463a, 0x3fa35a, 0xe0a52e, 0x8a5bd1, 0x2fb5b5, 0xd9d9d9];
-const vehicleModel = (kind, color) => {
+// a vehicle kind's paint on its tile, the n-th of the level's: the green army's on the Battlefield, the one
+// the game always gives it (a police car's white, whatever its place on the card: FIXED_PAINT), its one livery
+// or the garage car's (vehicleInfo), or else one of a few, by its place. The tile's glow is this colour too
+export const vehiclePaint = (level, kind, n) => (level.battle && CONFIG.battle.colors.good[kind]) || (FIXED_PAINT[kind] ?? vehicleInfo(kind).color) || PAINTS[n % PAINTS.length];
+export const vehicleModel = (kind, color) => {
   if (kind === 'ufo') return makeUfo();
   if (kind === 'tractor') return makeTractorModel();
   const car = LEVEL_CARS[kind] || CARS.find(c => c.id === kind), type = CONFIG.vehicles[kind] || car;
   const build = MODELS[type?.model || car?.model];
+  if (build && (kind === 'police' || kind === 'ambulance')) { // (with the light bar the game's traffic puts on its roof, flashing as there)
+    const model = build({ ...car, ...type, color }), animate = model.userData.animate, bar = makeLightBar();
+    placeLightBar(bar, kind, type);
+    model.add(bar);
+    model.userData.bar = bar;
+    model.userData.animate = (t) => { animate?.(t); flashLightBar(bar, kind, t * 1000); };
+    return model;
+  }
   if (build) return build({ ...car, ...type, color });
   const size = type || { hw: 1, hl: 2, height: 1.5 }; // (no model of its own: a block its size)
   const block = new THREE.Mesh(new THREE.BoxGeometry(size.hw * 2, size.height, size.hl * 2), new THREE.MeshLambertMaterial({ color }));
@@ -92,7 +104,7 @@ export const showRoadCard = (box, level, close) => {
   const named = new Set(cards.map(card => card.name));
   const vehicles = levelTraffic(level).filter(({ kind }) => !named.has(KIND_CARD[kind])).map(({ kind, role }, n) => {
     const info = vehicleInfo(kind, role);
-    const color = (level.battle && CONFIG.battle.colors.good[kind]) || info.color || PAINTS[n % PAINTS.length]; // (the Battlefield: the green army's paint)
+    const color = vehiclePaint(level, kind, n);
     const model = vehicleModel(kind, color);
     return tile(views, standView({ model, tick: (t) => model.userData.animate?.(t) }, CLOSE), color, info.name + (role === 'zone' ? ' (in places)' : ''), info.line);
   });

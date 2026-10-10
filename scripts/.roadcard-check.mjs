@@ -41,6 +41,30 @@ try {
       console.log('  vehicles: ' + (traffic.map(({ kind, role }) => info.vehicleInfo(kind, role).name + (role === 'traffic' ? '' : ' (' + role + ')')).join(', ') || '-'));
     }
   });
+  // A vehicle the game always paints one way (a police car, an ambulance: white; a drive-by car) is in that paint
+  // on its tile wherever it comes in the level's traffic (its place used to pick its paint, and so its tile's
+  // glow), and a police car and an ambulance have the game's light bar on the roof, flashing
+  const card = await g.load('render/levelcard3d.js');
+  const { FIXED_PAINT } = await g.load('render/models.js');
+  const hex = (n) => '0x' + n.toString(16).padStart(6, '0');
+  for (const kind of Object.keys(FIXED_PAINT)) {
+    const bodies = new Set(), paints = new Set();
+    for (let n = 0; n < 7; n++) {
+      const paint = card.vehiclePaint({}, kind, n), model = card.vehicleModel(kind, paint);
+      paints.add(hex(paint)); bodies.add(hex(model.userData.body.material.color.getHex()));
+    }
+    if (paints.size !== 1 || bodies.size !== 1 || !bodies.has(hex(FIXED_PAINT[kind]))) fail(kind + ': its body is ' + [...bodies].join(' / ') + ' by its place on the card, not always ' + hex(FIXED_PAINT[kind]));
+    else console.log(kind + ': body ' + [...bodies][0] + ' at every place on the card');
+  }
+  for (const kind of ['police', 'ambulance']) {
+    const model = card.vehicleModel(kind, FIXED_PAINT[kind]), bar = model.userData.bar, seen = new Set();
+    for (let t = 0; t < 1; t += 0.05) { model.userData.animate(t); seen.add(hex(bar?.material.color.getHex() ?? 0)); }
+    if (!bar || !bar.visible || bar.parent !== model || bar.position.y < CONFIG.vehicles[kind].height || seen.size !== 2) fail(kind + ': no light bar flashing on its roof');
+    else console.log(kind + ': light bar on the roof (y ' + bar.position.y.toFixed(2) + '), flashing ' + [...seen].join(' / '));
+  }
+  if (process.argv.includes('--police')) LEVELS.forEach((level, i) => { // (--police: the levels with a police car in their traffic, for a look: index.html?demo&cursor=<n>&road)
+    if (info.levelTraffic(level).some(({ kind }) => kind === 'police')) console.log('  police: cursor=' + (i + 1) + '  ' + levelLabel(i) + ' ' + level.name);
+  });
   console.log(failed ? failed + ' FAILED' : LEVELS.length + ' levels: every pickup and vehicle on them has its card, its line and its model');
 } finally {
   await g.close();
