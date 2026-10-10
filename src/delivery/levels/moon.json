@@ -144,7 +144,7 @@
     { "type": "cash5", "s": 4870, "lane": 4 }
   ],
   "obstacles": [
-    { "s": 440, "lane": 4, "kind": "barrier" },
+    { "s": 470, "lane": 4, "kind": "barrier" },
     { "s": 795, "lane": 3, "kind": "barrier" },
     { "s": 2760, "lane": 2, "kind": "crate" },
     { "s": 2790, "lane": 4, "kind": "crate" },
