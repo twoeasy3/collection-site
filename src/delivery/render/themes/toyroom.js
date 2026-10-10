@@ -37,8 +37,16 @@ export const toyroom = ({ add, flat, instances, sideStrip, offRoads, beside, inJ
   const rugs = BRIGHT.map(() => []), fringes = [];
   for (let s = Track.start + 120; s < Track.end; s += 420) {
     const side = rand() < 0.5 ? -1 : 1, w = 50 + rand() * 40, l = 80 + rand() * 60, lat = beside(side, s, 16 + w / 2);
-    rugs[Math.floor(rand() * 3) + 3].push([s, lat, 0.03, w, 0.06, l]);
-    rugs[Math.floor(rand() * 3)].push([s, lat, 0.05, w * 0.7, 0.07, l * 0.75]);
+    const outer = Math.floor(rand() * 3) + 3, inner = Math.floor(rand() * 3);
+    // (where the road doubles back, a hairpin's legs, a rug laid beside one leg would lie over the next: not there)
+    let clear = true;
+    for (const a of [-0.5, 0, 0.5]) for (const b of [-0.5, -0.25, 0, 0.25, 0.5]) {
+      Track.toWorld(s + b * l, lat + a * (w + 3), p);
+      if (Track.mainDistance(p.x, p.z) < Math.max(Track.hi(s), -Track.lo(s)) + 2) clear = false;
+    }
+    if (!clear) continue;
+    rugs[outer].push([s, lat, 0.03, w, 0.06, l]);
+    rugs[inner].push([s, lat, 0.05, w * 0.7, 0.07, l * 0.75]);
     fringes.push([s, lat, 0.02, w + 3, 0.04, l]);
   }
   rugs.forEach((list, i) => instances(cube, [0xb5483f, 0xd9a441, 0x3f7f6b, 0x7a3f58, 0x2d5f8a, 0xc9b79a][i], list, false, 4));
