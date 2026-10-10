@@ -95,7 +95,7 @@ const idle = (group, pose) => {
 };
 
 // ---- the shared pieces of the malicious ones ----------------------------------------------------
-const SLEEVE = lambert(0x2b2f3a), CUFF = lambert(0xf4f1e8), SKIN = lambert(0xf0b48a), CARD = lambert(0xc8955a), PLANK = lambert(0xb07e45);
+const SLEEVE = lambert(0x2b2f3a), CUFF = lambert(0xf4f1e8), SKIN = lambert(0xf0b48a), CARD = lambert(0xc8955a), CARD_FLAP = lambert(0xd9a66a), PLANK = lambert(0xb07e45);
 // a cuffed arm out of a hole, along its root's +z: a dark sleeve, a white cuff, a hand; `prop` hangs
 // from the hand (a briefcase, a clipboard, a stamp). Wave the root
 const arm = (parent, len = 0.3) => {
@@ -145,9 +145,10 @@ const openBox = (parent, w, h, d, mat = CARD, thick = 0.02, flaps = true) => {
     part(g, box(thick, h, d - thick * 2), mat, s * (w - thick) / 2, h / 2, 0);
   }
   part(g, plane(w - thick * 2, d - thick * 2), SHADE, 0, h - 0.012, 0, -FLAT);
+  const flapMat = mat === CARD ? CARD_FLAP : mat; // (a shade lighter, so a flap reads against the wall it hangs on)
   if (flaps) for (const s of [-1, 1]) {
-    part(g, box(w, d / 2 - 0.01, 0.012), mat, 0, h - d / 4 + 0.005, s * (d / 2 + 0.008));
-    part(g, box(0.012, w / 2 - 0.01, d), mat, s * (w / 2 + 0.008), h - w / 4 + 0.005, 0);
+    part(g, box(w, d / 2 - 0.01, 0.012), flapMat, 0, h - d / 4 + 0.005, s * (d / 2 + 0.008));
+    part(g, box(0.012, w / 2 - 0.01, d), flapMat, s * (w / 2 + 0.008), h - w / 4 + 0.005, 0);
   }
   return g;
 };
@@ -944,12 +945,12 @@ const makeBand = () => {
   // (its bell pipe lies above and behind the slide's two tubes, which run out beyond it and back)
   const trombone = sub(crateBox, -0.1, H + 0.02, 0.16);
   trombone.rotation.x = 0.55;
-  part(trombone, cyl(0.014, 0.014, 0.22, 8), brassMat, 0, 0.1, -0.1);
-  part(trombone, cone(0.07, 0.12, 14), brassMat, 0, 0.26, -0.1, Math.PI);
-  part(trombone, cyl(0.012, 0.012, 0.1, 8), brassMat, 0, 0.0, -0.05, FLAT); // (the bend joining the two)
+  part(trombone, cyl(0.018, 0.018, 0.26, 8), brassMat, 0, 0.12, -0.12);
+  part(trombone, cone(0.1, 0.16, 14), brassMat, 0, 0.32, -0.12, Math.PI);
+  part(trombone, cyl(0.016, 0.016, 0.12, 8), brassMat, 0, 0.0, -0.06, FLAT); // (the bend joining the two)
   const slide = sub(trombone);
-  for (const x of [-0.03, 0.03]) part(slide, cyl(0.01, 0.01, 0.34, 8), brassMat, x, 0.17, 0);
-  part(slide, torus(0.03, 0.01, 8, Math.PI), brassMat, 0, 0.34, 0);
+  for (const x of [-0.04, 0.04]) part(slide, cyl(0.014, 0.014, 0.4, 8), brassMat, x, 0.2, 0);
+  part(slide, torus(0.04, 0.014, 8, Math.PI), brassMat, 0, 0.4, 0);
   // full blast: the drumsticks over the drum, the baton in the air, the notes
   const sticks = [-1, 1].map(d => { const s = sub(crateBox, 0.02 + d * 0.12, H + 0.12, 0.28); part(s, cyl(0.008, 0.01, 0.3, 6), wood, 0, 0.0, 0); part(s, sphere(0.02, 8, 6), wood, 0, 0.15, 0); return { s, d }; });
   const baton = sub(all, 0.1, H + 0.7, -0.05);
