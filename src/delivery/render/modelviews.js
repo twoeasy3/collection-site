@@ -9,7 +9,8 @@
 import * as THREE from 'three';
 import { PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 
-const lit = () => {
+// an empty scene, lit as every card's is
+export const lit = () => {
   const scene = new THREE.Scene();
   scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2.2));
   const sun = new THREE.DirectionalLight(0xffffff, 1.5);

@@ -1,8 +1,8 @@
 // The cargo page (delivery/cargo.html): the things there are to deliver, the Evil ones in each of
 // their three states, and which levels carry what. The names and the levels come from cargo.js and the
 // numbers from config.js, so the page stays true as those change.
-// As the power-ups page: one renderer draws every picture, a canvas over the whole window, drawn into
-// the patch each one's box takes up.
+// As the power-ups page: one renderer draws every picture, each into a small canvas of its own in its
+// .view, so it scrolls with the page (render/modelviews.js).
 // ?side=good (or evil) shows only that side's. ?still freezes every model at one moment (&t=<s>: which), for a picture of the page.
 import * as THREE from 'three';
 import './powerups.css';
@@ -12,6 +12,7 @@ import { CONFIG } from './config.js';
 import { LEVELS, levelLabel } from './levels.js';
 import { CARGO, CARGO_STATES, cargoFor } from './cargo.js';
 import { makeCargoModel } from './render/cargoModels.js';
+import { lit, viewRenderer, drawViews } from './render/modelviews.js';
 
 const params = new URLSearchParams(location.search);
 const still = params.get('still') !== null ? Number(params.get('t') || 2.4) : null;
@@ -39,11 +40,7 @@ const where = (side, id) => LEVELS.map((level, i) => cargoFor(level, side === 'e
 const cardBox = document.getElementById('cards');
 const views = [];
 const makeView = (el, id, state) => {
-  const scene = new THREE.Scene();
-  scene.add(new THREE.HemisphereLight(0xffffff, 0x445566, 2.2));
-  const sun = new THREE.DirectionalLight(0xffffff, 1.5);
-  sun.position.set(3, 6, 5);
-  scene.add(sun);
+  const scene = lit();
   const model = makeCargoModel(id);
   model.userData.setState?.(state, true);
   const turn = new THREE.Group();
@@ -52,7 +49,11 @@ const makeView = (el, id, state) => {
   scene.add(turn);
   // every picture of an item is framed alike (on the most it ever takes up, furious), so its states compare
   const camera = new THREE.PerspectiveCamera(30, 1.4, 0.1, 50);
-  views.push({ el, scene, camera, turn, model });
+  // (a frame of it: it turns, and moves as its state has it; ?still holds it at one moment)
+  views.push({ el, scene, camera, step(t, dt) {
+    if (still === null) turn.rotation.y += dt * 0.4;
+    model.userData.animate(still ?? t);
+  } });
 };
 const frameOf = (id) => {
   const model = makeCargoModel(id);
@@ -100,32 +101,12 @@ for (const side of ['good', 'evil']) {
   }
 }
 
-const canvas = document.getElementById('stage');
-const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.setClearColor(0x000000, 0);
+const renderer = viewRenderer(); // (null if none can be had: the page is its words alone)
 let last = performance.now();
 const frame = (now) => {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  const w = window.innerWidth, h = window.innerHeight;
-  const size = renderer.getSize(new THREE.Vector2());
-  if (size.x !== w || size.y !== h) renderer.setSize(w, h, false);
-  renderer.setScissorTest(false);
-  renderer.clear();
-  renderer.setScissorTest(true);
-  for (const v of views) {
-    const r = v.el.getBoundingClientRect();
-    if (r.bottom < 0 || r.top > h || r.width === 0) continue; // (off screen: neither drawn nor moved)
-    const bottom = h - r.bottom;
-    renderer.setViewport(r.left, bottom, r.width, r.height);
-    renderer.setScissor(r.left, bottom, r.width, r.height);
-    v.camera.aspect = r.width / r.height;
-    v.camera.updateProjectionMatrix();
-    if (still === null) v.turn.rotation.y += dt * 0.4;
-    v.model.userData.animate(still ?? now / 1000);
-    renderer.render(v.scene, v.camera);
-  }
+  drawViews(renderer, views, now / 1000, dt);
   requestAnimationFrame(frame);
 };
-requestAnimationFrame(frame);
+if (renderer) requestAnimationFrame(frame);
