@@ -60,6 +60,117 @@ the morning's handover (architecture pointers, the earlier agents' notes and tra
   progress when this was written), with the level's own file as the fallback. A level rewritten on a
   branch keeps its words in its file until it lands; then they move.
 
+## A. Nuclear fallout: theme, level and gimmicks. The owner's HIGH PRIORITY. STOPPED with one piece of four done
+
+- **Where:** branch `delivery-fallout`, worktree `.claude/worktrees/delivery-levelfix`, fast-forwarded to
+  `main` at `36517ff`, tree clean, not merged. Safe to merge but pointless until it can be seen.
+- **The owner's words:** "New theme, level and gimmick. Nuclear fallout level, near a powerplant/industrial
+  area. Green skies. Gimmick 1 is radiation areas, driving into radiated areas causes health to tick down
+  slowly. A unique radiation meter ticks up, and at full the player is permanently infected and the health
+  ticks down regardless. Gimmick 2 is infected cars. Traffic cars can spawn infected, or have a chance to
+  get infected while driving in radiation. An infected car will have a radius where they have the same
+  radiation gimmick. Infected cars don't tick down other infected cars. Contact with an infected car will
+  infect you. The shield will prevent radiation damage, and will prevent the player from getting infected."
+- **Piece 1, the logic and its check: DONE (`ae29ceb`).** `src/delivery/radiation.js`; wired in `game.js`
+  (build / reset / update / wrecked) and `traffic.js` (`Radiation.deal` in `placeAt`); `CONFIG.radiation`;
+  the lasting-condition entry `events.infected` with a trefoil icon in `render/hudIcons.js`; five messages
+  and a sticky name in `messages.json`; field docs in `levels.js`; two schema entries;
+  `scripts/.radiation-check.mjs` (passes on seeds 2026 and 7); a case in `.hud-check.mjs` (no FAIL line
+  seen, its closing line not seen). Schema, bundle, hazards, levels and replay (testbed, noon) pass; the
+  other 25 or so checks were not run.
+- **Level fields:** `radiation: [{ from, to, lanes?, side? }]` (no `lanes` means the whole road and its
+  shoulders; `side` reaches out over that shoulder) and `infectedTraffic` (a share; left out, it is
+  `CONFIG.radiation.share` on a level with an area, else none).
+- **`CONFIG.radiation`:** tick 0.008 of full health a second; meterTime 40 s; meterFall 120 s; high 0.75;
+  infectedTick 0.006; radius 7 m; share 0.12; catch 0.08 a second; most 5 infected at once; Geiger click
+  slow 0.45 s / fast 0.07 s, volume 0.5; sign 110 m. Measured: a 200 m area at 25 m/s costs 6.3% health
+  and 19% of the meter; an infected car lasts 167 s, each wrench adding 42 s.
+- **Decisions made where the owner's words left a gap (the owner has not seen these):** "the shield" is the
+  Armour pickup (a helicopter drop's shield, the SuperCar mystery, a ghost and a tank keep radiation out
+  too); already infected then armoured: the tick stops while it lasts and resumes, no cure; a wreck or a
+  bust does not cure (`wreckCures: false`); infected AND in a dose: the greater of the two rates, not both;
+  ticks are a share of the car's full health, so every car lasts as long; it is the car's centre that
+  counts, so the lane beside an area is clean; the meter falls slowly outside radiation; infected traffic
+  takes no damage and drives as usual; never infected: police, ambulance, tank, interceptor, getaway,
+  emergencies, pursuit cars, racers and couriers, processions, parades, roadblocks, convoys, fixed or
+  parked vehicles, boats; contact is tested before collisions resolve, and a ghost or a car in the air
+  over it does not touch.
+- **Piece 2, how it is seen: about a tenth done (`8ab9bf2`, WIP).** `src/delivery/render/radiationModels.js`
+  exists (trefoil plate, hazard stripes, warning board, an infected car's shell, ring and badge, an area
+  patch for cards) but nothing imports it and it has never been run. **Left:** `render/radiation.js` on the
+  pattern of `render/gambles.js` (`Game.onLoad`, `buildStrip`, `at()`): the haze, hard edges and chevron
+  bands, the board un-mirrored on `drive: left`, the infected car's aura from `trafficMeshes`, a green
+  vignette while dosed; `syncRadiation(now, dt)` after `syncGambles` in `main.js`; the HUD gauge
+  (`delivery/index.html`, `style.css`, `render/hud.js`); sounds `geiger` and `infected` in
+  `render/audio.js` (`radiation.js` asks for them and they do not exist: silence is expected, not an error,
+  but that was never run in a browser); two cards in `gimmicks.js` with "Infected cars" in `TRAFFIC_CARDS`;
+  a `?rad=` / `?radcar=` test switch; every still. No picture of any of it exists.
+- **Broken right now:** a level using `radiation` works but shows nothing (no haze, no ring, no gauge:
+  only the infected icon and the messages). No level uses the fields, so `main` is unaffected.
+- **Piece 3, the theme `fallout`: NOT STARTED. Piece 4, the level: NOT STARTED.** The full brief for both
+  (green sky and haze, cooling towers, a reactor dome, pylons, pipe racks, tank farms, fences with
+  trefoils, abandoned checkpoints; its own obstacles through the theme mapping, e.g. a yellow waste drum;
+  the level to the standard, every radiated stretch with a clean line or a shield before it and the bigger
+  cash inside it) is in the orchestrator's brief, summarised in `CHECKLIST-10-Oct.md`. The level's words go
+  in `levelText.json`; a water main is `{ s, lane, length? }`.
+- **Very next step:** write `render/radiation.js`, call `syncRadiation` in `main.js`, add the HUD gauge,
+  and shoot it with a `?rad=` switch. Two throwaway scripts of the agent's are in `%TEMP%` (`rad_patch.py`,
+  `p.py`): harmless.
+
+## B. "Spring Thaw", the ice road's second level: STOPPED as WIP, most of the way there
+
+- **Where:** branch `delivery-themes-e2`, worktree `.claude/worktrees/delivery-city-levels`, tree clean,
+  `main` merged in once (`a31b8f7`); not merged into `main`.
+- **A stray process to clear first:** `node scripts/.bundle-check.mjs`, PID 26760 (started 20:26:56 on
+  10-Oct), hung; the agent's kill was refused by the permission system. A background shell of that agent
+  waits on it and would start a six-picture screenshot run if it ever unblocks. The owner must end it (kill
+  26760's tree), or it will be gone after a restart.
+- **Commits:** `f4acf3b` WIP: `levels/thaw.json`, the day theme `iceroadThaw` in `themes.js`, the stars,
+  moon and aurora drawn only at night in `render/themes/iceroad.js`, its place in `levels.js` (last in
+  `THEME_LEVELS`, level 52) and `INSERTED_AT` entry 52 in `progress.js`. `c19807d`: a theme can set `soft`
+  colours for mud, ruts and washboards (`render/road.js`, `render/gambles.js`): grey slush and rippled ice
+  on the thaw, other themes unchanged (this is also the hook for the washboard's brown planks on the Moon
+  and the sea bed, question 5b). `2a789c9` WIP: the words in `levelText.json`, clock 265 / 205.
+- **The level:** the lake road by day, 5.55 km, 2 + 2 lanes, two pressure ridges, one side road (exit 2760,
+  merge 3560) as the bridge round a meltwater ford at 3125. Kinds Northern Lights lacks: ruts, mud, spray,
+  washboards, fords, a jam ramp (1420), pursuits, emergencies; also potholes, fog, a crosswind. No
+  drifters; fixed crates and cones only. 35 cash, 15 rows, six using the right shoulder (120, 1100, 3760,
+  4460, 5340, 5500), four targets, cargo puppy / piranhas.
+- **How far:** it loads; levels and descriptions checks pass after the merge; a ghost probe delivered in
+  231.7 s BEFORE the merge and the clock change (not re-run). Seen in 12 stills at 80, 640, 1060, 1380,
+  2180, 3080, 3660, 4200, 5200: the day theme, the shoulder beside the snowbanks, the ramp, the ford and
+  the slush colours look right. NOT seen: 1500 to 2100, 2400 to 3000, the side road, 3200 to 3600, 4300 to
+  5100, the finish. No menu picture. The full checks, the replay check and the shoulder-items check not run.
+- **Next step:** `node scripts/delivery-probe.mjs thaw --secs=500`; shoot the unseen stretches; `--levels=thaw
+  --write`; every check; then it can merge. Pictures in `...\scratchpad\shots-second\thaw\`; the generator is
+  `...\scratchpad\disc\thaw.cjs` with `thaw-data.cjs` (re-running it rewrites `thaw.json`).
+
+## 0. Level 24, Ring Road: FINISHED and judged fit, but NOT MERGED: the merge conflicts
+
+- **Where:** branch `delivery-rework-e` (three commits on `main` at `9c3dfdc`, tip `f0dc0ee`), worktree
+  `.claude/worktrees/delivery-gimmicks`, tree clean. Its agent has stopped.
+- **Why not merged:** `git merge delivery-rework-e` into `main` (`7a90971`) conflicts in three files:
+  `src/delivery/render/themes/extras.js` (it adds a `city` entry; `main` has since gained `bathurst` for
+  Outback Express and others), `src/delivery/render/road.js` (one import and a four-line skip in the city's
+  block loop; Market Town's and Outback Express's reworks touched the same file) and
+  `src/delivery/messages.json` (six zone welcome lines; other levels added theirs). The orchestrator
+  aborted the merge and changed nothing. **Next step:** in that worktree `git merge main`, keep BOTH sides
+  in all three files (they are additions beside additions), run every check, then merge into `main`.
+- **What it is:** still 4600 m with its four exits; longest straight 250 m for 450; cameras 7 to 9, each
+  with a `cash20` just past it; low bridges 1 to 3 (1100, 2330, 3430), each between an exit and its merge
+  with cash under it; cash 2 to 37 in 15 rows, eight reaching the right shoulder; cargo coffees / skunk;
+  four targets; six zones (Northfield estate, Ringway Retail Park, City Stadium, Ringway Services,
+  Eastgate towers, City centre) drawn from new `sets` on the `city` theme; kinds the same; clock 265 / 200
+  unchanged; every check passed on the branch; probed to the finish in 178.9 s.
+- **Left:** its menu picture was made from the default camera; a better frame is `'ring-road':
+  '&at=4330&ff=1'` for the script's `CINE` table (the centre's glass towers, the last gantry, a row of
+  cash). Plain stretches at 2165 to 2450 and 3005 to 3300 are still only the old grey blocks. Naming its
+  cargo shifts what unnamed levels are dealt (Big Business now carries ramen). Its words are in its level
+  file: move them into `levelText.json` when it lands. Not seen: a target moved to 4150; the three low
+  bridges with a tall car; the level as Evil.
+- **Pictures** (`...\scratchpad\shots-rework\ring-road\`): for the owner `before\b1200.png` against
+  `after\a300.png`, `after\fix-1050.png`, `after\a1800.png`, `after\a4500.png`, `after\cine-centre.png`.
+
 ## 1. Level 27, Hong Kong: PARKED, half done
 
 - **Where:** branch `delivery-rework-b`, worktree `.claude/worktrees/delivery-themes-c`, tip `97d52c9` (a
@@ -91,10 +202,10 @@ the morning's handover (architecture pointers, the earlier agents' notes and tra
   at s 500, 1700 and 2900, where the clock towers go, on the promenade; junks along the tide (2260 to
   2860) on the sea side, beyond 14 m; the Peak about 330 m off the city side.
 
-## 2. Level 30, Stelvio: CANCELLED before it began (check the branch)
+## 2. Level 30, Stelvio: CANCELLED, never started (confirmed: no branch exists)
 
-- **Where:** it was to be branch `delivery-rework-g` from `main`, in worktree
-  `.claude/worktrees/delivery-circuits`. If that branch exists, its agent began it: read its last commit.
+- **Where:** make branch `delivery-rework-g` from `main`; the worktree `.claude/worktrees/delivery-circuits`
+  is free.
 - **The brief:** a LIGHT touch. Kinds: crosswinds, fog, ice, rockfall, police only in stretches. Take cash
   from 20 in 8 rows to 27 or more in 8 to 15 rows (a shoulder 20 only where a hairpin has shoulder to drive
   on), a second fog bank and a second crosswind on the way down, rocks on the steep ground between the
@@ -106,13 +217,30 @@ the morning's handover (architecture pointers, the earlier agents' notes and tra
   were suggested and both exist. Its written clock is 300 / 230 against the tool's 200 / 145: leave it
   unless the road's own time changes. The script's `CINE` has `stelvio: '&at=250'`.
 
-## 3. Level 23, Tour de Coast: CANCELLED before it began (check the branch)
+## 3. Level 23, Tour de Coast: STOPPED as WIP, the level done, the scenery part done. NOT fit to merge
 
-- **Where:** it was to be branch `delivery-rework-d` from `main`, in worktree
-  `.claude/worktrees/delivery-cargo-good`. If the branch exists, read its last commit.
-- **The brief:** to the full standard. Kinds: dropBears, narrows, pelotons, tide. The owner set its clock
-  to 210 / 160: change it by hand only by the difference a re-lay makes. Before-pictures from the morning
-  existed only in part and are gone. The script's `CINE` has `'tour-de-coast': '&at=1600'` (the cliff road).
+- **Where:** branch `delivery-rework-d` (two commits on `main` at `3cb4f2d`), worktree
+  `.claude/worktrees/delivery-cargo-good`, tree clean.
+- **`855fee4`, the level file, re-laid and working:** kinds the same four (dropBears, narrows, pelotons,
+  tide); still 4800 m, 20 segments for 9 (an S on the headland, a gentle rise, the cliff road winding, an S
+  into the harbour; longest straight 450 m for 1000); narrows 1 to 3, drop-bear stretches 1 to 2, pelotons
+  still 12 (7 the player's way, 5 oncoming), the tide unchanged; pickups 13 to 51, cash 0 to 36 (14 of them
+  20s) in 12 rows, 5 reaching a shoulder; traffic 7 kinds to 10; cargo surfboard / skunk; targets 2 to 4;
+  both descriptions rewritten. Levels, schema, descriptions, targets and cargo checks pass; probed to the
+  finish in 187.3 s. Clock: the clean run 146.0 s before and 145.3 s after; the tool prints 210 / 155
+  where it printed 210 / 160; the written 210 / 160 was left (0.7 s crossing a rounding step).
+- **`8e2b28b`, the scenery, WIP:** a `zones` entry in `render/themes/extras.js`, drawn only on a level that
+  has pelotons (Grand Pacific and Passage du Gois shot: nothing added there). Four arches over the road,
+  crowd barriers with banners and a crowd where each player-side bunch sets off and down the last 420 m,
+  tents and camper vans on the headland, flags through the harbour, fishing boats off the causeway, a jetty
+  of yachts, two lighthouses. Seen and fine: arches, barriers and crowds, tents, campers, flags, yachts, the
+  narrows.
+- **To do:** the headland lighthouse leans visibly (still `c1080`): fix; the causeway boats are tiny and
+  some lie on the sand near the zone's start; the cliffs zone got nothing new; the start arch's banner and
+  the harbour light were not clearly seen; the menu picture (the script's `CINE` has `'tour-de-coast':
+  '&at=1600'`, the cliff road); the full set of checks and the replay check; a look as Evil.
+- **Pictures** (`...\scratchpad\shots-rework\tour-de-coast\`): 16 before stills and 24 after, with sheets;
+  `before-2.jpg` against `after-3.jpg` (the harbour and finishing straight) is the pair for the owner.
 
 ## 4. "Night Shift", a second level on the container port: CANCELLED before it began
 

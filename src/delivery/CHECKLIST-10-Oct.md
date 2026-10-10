@@ -1115,6 +1115,56 @@ pick ups and traffic."
       Spring Thaw. **Cancelled or parked until the owner says:** Stelvio (30), Tour de Coast (23), Night
       Shift, the rest of Hong Kong (27, WIP `1b3a207` on `delivery-rework-b`), the README and HANDOVER
       screenshot paragraphs, the five weak menu pictures. No new task goes to an agent that finishes.
+- **The owner, later: "Usage is critical now. Spin down and write handovers for all agents except the ones
+      closest to finishing."** Stopped with handovers in `SCRATCHPAD-10-Oct-dropped.md`: the nuclear fallout
+      work (section A: the gimmick's logic and check done, `ae29ceb`; nothing drawn; theme and level not
+      started) and Spring Thaw (section B: WIP, loads and probes, half seen). Ring Road finished and is fit
+      but its merge into `main` conflicts in three files (section 0): NOT merged. Only the full check run
+      and the built site's look is still going. `main` is at `7a90971`, ten merges ahead of what is live
+      (`8fa45a6`), not pushed. One stray process: `node` PID 26760 (a hung bundle check; the agent's kill
+      was refused): for the owner to end.
+- [x] **Level 25 Market Town to the new standard: `delivery-rework-f` merged into `main` as `7a90971`, not
+      pushed; its agent has stopped (four running: fallout, Ring Road, Spring Thaw, the full checks).** 16
+      segments for 9 (two S-bends, a hump, a late S; longest straight 650 m through both crossroads); five
+      zones (Corn Street, Church Row, the market square, the park, the cattle market: the `market` set is
+      drawn at last, a new `livestock` set); a station, signal box, fences and poles at any suburb level
+      crossing; houses along a crossroads' arms. Cameras 2 to 4, crossings 1 to 2 (the second 180 m from
+      the finish), mains 1 to 4, cash 25 in 10 rows to 36 in 14 (seven reaching a shoulder), cargo puppy /
+      goose; kinds the same; clock 185 / 140 unchanged. All 27 checks passed on the branch; 37 stills
+      looked at; sheets sent to the owner. Weak: the crossroads' corners are still grass close in; the
+      beasts are plain boxes; the town hall repeats along the square; the side road never driven; a main
+      never caught spraying. Menu picture made from the default camera (houses only): a better frame
+      (`'market-town': '&at=900&ff=2&cineside=left'`) given to the screenshot agent. Its words are still in
+      its level file: to move into `levelText.json`. For the owner: the stop / go.
+- [x] **`delivery-themes-f2` merged into `main` as `c127d49`, not pushed; its agent has stopped (five running:
+      fallout, Market Town, Ring Road, Spring Thaw, and the full checks).** Fog takes its colour from the
+      theme's sky (`ff21b9a`, `render/roadside.js`): the same pale grey under a bright sky, three quarters
+      the sky's own colour under a dark one (After Hours and Northern Lights dark blue-grey, Eruption Day
+      red-brown, Seaquake blue silt); a theme may name a `fogColor`. A second fault fixed with it: a run
+      begun inside a bank had a white sky and almost no fog (every still taken with `&at=` inside one).
+      Visibility and play unchanged. Bundle, levels, hazards, gimmicks3 and HUD checks pass. Far backdrops
+      drawn with `fog: false` (the volcano, the aurora) still show through a bank. After Hours' menu picture
+      in both sizes (`f5f74a0`). The side roads of After Hours and Cattle Drive seen from on them: nothing
+      to fix (`&at=10000+` puts the car on a level's first side road, `40000+` its second); where Cattle
+      Drive's first side road crosses the ford's river was not caught. Night Shift never started.
+- [x] **`delivery-gapfill` merged into `main` as `3d4dfcb`, not pushed; its agent has stopped.** The gimmicks
+      check on `main` is now seeded and repeats. The four gap fills were looked at in 13 stills: all read
+      (the washboard's boards and corrugation on the toy track, the black tar lane with its cones in the
+      tube, ruts on moon dust, cushions on the favela street; every shoulder note on drivable shoulder).
+      Fixed from the stills: nothing warned of the barrier beyond Tranquility Base's crest, so a cone now
+      stands in its lane on the way up (a small cue; a bigger marker or moving the barrier are the
+      alternatives); the washboard's message reads the same on every level ("Washboard! Fast and it skims
+      smooth, or crawl. Not in between."). The full set of checks was not re-run after the last commit.
+      Tour de Coast was begun before the cancellation reached it: WIP on `delivery-rework-d`, written up
+      in `SCRATCHPAD-10-Oct-dropped.md`.
+- [x] **`delivery-obstacles-2` merged into `main` as `24587fe`, not pushed; its agent has stopped (seven
+      running).** A theme variant takes its parent's obstacle mapping; Eruption Day's six stand-in crates
+      are rocks again and so lava boulders (a rock costs a little more than a crate: 25 damage and 60%
+      speed kept against 18 and 75%); the Moon's flag is a wide striped banner; the snowdrift's stake is
+      stout and banded; a level's own card names what darts there (tumbleweeds on High Noon). Seen on their
+      roads: After Hours' carts, the lava boulders on the black road, in the tube and on the ruts, Stunt
+      Double's dollies, the director's chairs, the chair stack, the rice baskets, the brighter helmets, the
+      Derby's blocks. Eight checks pass; probes deliver; clocks unchanged. Stelvio was never started.
 - [x] **`delivery-mains-2` merged into `main` as `01c4f19`, not pushed; its agent has stopped (nine running).** The
       eight newer levels' mains all name a lane and carry no `every`; no leftover reference to the removed
       system; six checks pass on 68 levels. A main's whole slippery length is now marked: a thin blue sheet
@@ -1149,7 +1199,21 @@ pick ups and traffic."
       ranges on the skyline; kinds the same; clock 225 / 165 unchanged; cargo puppy / egg. All checks pass.
       19 stills looked at; pictures sent to the owner. Menu picture: its camera's address given to the
       screenshot agent. Not played; not seen as Evil; the Bathurst circuit not shot.
-- [~] **Level names and descriptions into a JSON of their own (owner, 10-Oct evening):** "Split the level names
+- [x] **Level names and descriptions in a JSON of their own: `0c9d2b0`, merged into `main` as `36517ff`, not
+      pushed; its agent has stopped (six running).** `src/delivery/levelText.json`: `{ id: { name,
+      description: { good, evil } } }`, in menu order; `levelText.js` gives `levelName(level)` and
+      `levelDescription(level, evil)`: the file first, then the level's own file, then the id. 65 levels'
+      words moved out of their level files (each file checked to parse to the same object less those two
+      keys); 9 stay in their files on the fallback until their branches land (`hong-kong`, `tour-de-coast`,
+      `ring-road`, `market-town`, `stelvio`, `toys`, `leaks`, `moon`, `morro`). Every reader goes through
+      the function (the stage and strip, the road card, the album, the race leaderboard, the summit sign,
+      the reference pages' level lists, the editor's list, the scripts). The editor opens a built-in level
+      with its words put in and writes them into a downloaded level. The descriptions check also fails a
+      level whose words are in both places with different text. Nine checks pass. Seen in stills: a moved
+      level as Good and as Evil, a fallback level, the road card's title. Not seen: the side switched live,
+      the editor in a browser, the album's captions. NOT run on the merged `main` (which had gained the gap
+      fills and the obstacles tidy-up since the branch was cut).
+- The request, for the record: **Level names and descriptions into a JSON of their own (owner, 10-Oct evening):** "Split the level names
       and descriptions into its own JSON. Fallback to the level's file if not available. Descriptions to
       change based on good or evil." Branch `delivery-level-text`, the Outback Express agent. Levels held
       by open branches (Hong Kong, Tour de Coast, Ring Road, Market Town, Stelvio, and the four gap-fill
