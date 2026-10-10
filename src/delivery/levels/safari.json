@@ -56,7 +56,12 @@
   "washboards": [
     { "from": 2520, "to": 2980 }
   ],
+  "dust": [
+    { "from": 3020, "to": 3480, "wind": "right" }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 3150, "lane": 1 },
+    { "type": "cash10", "s": 3150, "lane": 2 },
     { "type": "cash10", "s": 2640, "lane": 1 },
     { "type": "cash10", "s": 2640, "lane": 2 },
     { "type": "cash5", "s": 2760, "lane": 2 },

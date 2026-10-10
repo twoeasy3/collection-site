@@ -19,6 +19,10 @@
 //   tarmac       a coned-off lane of fresh tar beside a roadworks queue: empty, and sticky: the longer on it the
 //                slower the car, and for a while after
 //   spray        a wet stretch where every tall vehicle drags a cloud of spray: in it the player sees next to nothing
+//   lowSun       a stretch straight into a low sun: the picture washes out, except in the shadow of a tall vehicle
+//                just ahead, a bridge, a tunnel or a row of trees
+//   dust         a dry dirt stretch where every vehicle throws a plume that the wind carries to one side: blind in
+//                it, clear a lane upwind of it
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -68,7 +72,10 @@ export const Gambles = {
   tars: [],       // fresh tarmac: { from, to, lane, lo, hi (lat: the lane) }
   tar: 0,         // how much of it is on the player's tyres (0 clean .. 1 as much as they hold)
   wets: [],       // truck spray: { from, to }
-  veil: 0,        // how much of the view is gone just now (0 clear .. 1), eased; and what took it: 'spray' | null
+  suns: [],       // the low sun: { from, to }
+  dusts: [],      // dust trails: { from, to, dir (-1: the wind carries it to the left, 1: to the right) }
+  shadow: null,   // the vehicle whose shadow the player is in, in the low sun (null: none; true: a bridge's, a tunnel's, the trees')
+  veil: 0,        // how much of the view is gone just now (0 clear .. 1), eased; and what took it: 'spray' | 'sun' | 'dust' | null
   veilOf: null,
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
@@ -82,7 +89,8 @@ export const Gambles = {
     this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to, skim: b.skim ?? CONFIG.washboard.skim }));
     this.bars = (LEVEL.lowBridges || []).map((b) => ({ s: b.s, clearance: b.clearance ?? CONFIG.lowBridge.clearance, lo: Track.laneOffset(Track.laneRange(1, b.s)[0], b.s) - CONFIG.laneWidth / 2, hi: Track.hi(b.s),
       exit: Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null, hits: 0 }));
-    this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
+    // (a ford that `fills` is a flooded underpass: its depth is `depth` as the run starts and rises to fills.to over fills.over s)
+    this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, dry: f.depth ?? CONFIG.ford.depth, fills: f.fills || null, underpass: !!f.underpass, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
     this.rows = [];
     for (const c of LEVEL.cushions || []) for (let s = c.from; s <= c.to; s += c.every ?? CONFIG.cushion.every) this.rows.push({ s, from: c.from, to: c.to });
     this.shades = (LEVEL.shade || []).map((z) => {
@@ -94,6 +102,8 @@ export const Gambles = {
     this.ruts = (LEVEL.ruts || []).map(r => ({ from: r.from, to: r.to }));
     this.tars = (LEVEL.tarmac || []).map((z) => { const c = Track.laneOffset(z.lane, (z.from + z.to) / 2); return { from: z.from, to: z.to, lane: z.lane, lo: c - CONFIG.laneWidth / 2, hi: c + CONFIG.laneWidth / 2 }; });
     this.wets = (LEVEL.spray || []).map(z => ({ from: z.from, to: z.to }));
+    this.suns = (LEVEL.lowSun || []).map(z => ({ from: z.from, to: z.to }));
+    this.dusts = (LEVEL.dust || []).map(z => ({ from: z.from, to: z.to, dir: z.wind === 'left' ? -1 : 1 }));
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -138,6 +148,7 @@ export const Gambles = {
     this.tar = 0;
     this.veil = 0;
     this.veilOf = null;
+    this.shadow = null;
     this.cushionHits = 0;
     this.inFord = null;
     this.up = 0;
@@ -428,14 +439,17 @@ export const Gambles = {
   ford(s) { return Track.isMain(s) ? this.fords.find(f => s >= f.from && s <= f.to) || null : null; },
   // the fastest a car that wades `limit` m goes through water `depth` m deep (m/s)
   fordPace(depth, limit) { const F = CONFIG.ford; return depth > limit ? F.crawl : F.fast + (F.slow - F.fast) * depth / limit; },
+  // how deep a ford is `time` s into the run: its own depth, or, filling, on its way up to fills.to
+  fordDepth(f, time = Game.time) { return f.fills ? f.dry + (f.fills.to - f.dry) * clamp01(time / f.fills.over) : f.dry; },
   updateFords(dt) {
     const F = CONFIG.ford, P = Player;
     for (const f of this.fords) {
+      f.depth = this.fordDepth(f);
       const from = (f.exit ? f.exit.exitAt : f.from) - F.warn;
       if (P.active && Track.isMain(P.s) && P.s > from && P.s < f.from && !this.said['ford' + f.from]) {
         this.said['ford' + f.from] = true;
-        const line = Message.say('events', f.depth <= this.wades() ? 'fordFits' : 'fordDeep');
-        if (line) line.text += ' (' + f.depth.toFixed(1) + ' m deep: this car wades ' + this.wades().toFixed(1) + ' m)';
+        const line = Message.say('events', (f.fills ? 'flood' : 'ford') + (f.depth <= this.wades() ? 'Fits' : 'Deep'));
+        if (line) line.text += ' (' + f.depth.toFixed(1) + ' m deep' + (f.fills && f.depth < f.fills.to ? ' and rising' : '') + ': this car wades ' + this.wades().toFixed(1) + ' m)';
       }
     }
     for (const car of Traffic.cars) { // (the traffic wades through slowly)
@@ -611,6 +625,24 @@ export const Gambles = {
     const u = d / length;
     return Math.abs(lat - car.lat - drift * u) <= half + u ? 1 - u : 0;
   },
+  // what shades the player's car from a low sun dead ahead: a vehicle CONFIG.lowSun.height m tall or more just ahead
+  // in its line (its shadow reaches back `shadow` m for each m of its height), a bridge or a tunnel over the road,
+  // or the trees of a shade (see above). The vehicle, or true; null in the open
+  shaded() {
+    const L = CONFIG.lowSun, P = Player;
+    if (Track.tunnel(P.s) || Track.onBridge(P.s) || this.shadeAt(P.s, P.lat)) return true;
+    for (const car of Traffic.cars) {
+      if (!car.active || car.junction || car.height < L.height || !Track.isMain(car.s)) continue;
+      const d = car.s - car.hl - P.s - P.hl;
+      if (d > -2 && d < L.shadow * car.height && Math.abs(car.lat - P.lat) < car.hw + L.beside) return car;
+    }
+    return null;
+  },
+  // a dusty stretch: every moving vehicle, whatever its size and whichever way it is going, throws a plume
+  // CONFIG.dust.length m long at speed, which the wind carries `drift` m to its side by its far end
+  dusty(s) { return Track.isMain(s) ? this.dusts.find(z => s >= z.from && s <= z.to) || null : null; },
+  plumes(car) { return car.active && !car.junction && !car.noWheels && Math.abs(car.vs) > CONFIG.dust.slowest ? this.dusty(car.s) : null; },
+  plumeLength(car) { return CONFIG.dust.length * Math.min(1, Math.abs(car.vs) / CONFIG.dust.fullAt); },
   wet(s) { return Track.isMain(s) ? this.wets.find(z => s >= z.from && s <= z.to) || null : null; },
   // a wet stretch: every vehicle CONFIG.spray.height m tall or more that is moving drags a cloud of spray, as
   // long as CONFIG.spray.length m at speed. In it the view is gone, the nearer its tail the more
@@ -628,7 +660,26 @@ export const Gambles = {
           if (deep > want) { want = deep; of = 'spray'; }
         }
       }
-    }
+      // the low sun: dead ahead over the stretch (easing in and out over its ends), unless something shades the car
+      const sun = this.suns.find(z => P.s >= z.from && P.s <= z.to);
+      if (this.suns.some(z => P.s > z.from - CONFIG.lowSun.sign && P.s < z.to)) this.once('lowSun');
+      this.shadow = sun ? this.shaded() : null;
+      if (sun && !this.shadow) {
+        const L = CONFIG.lowSun, glare = L.most * Math.min(1, (P.s - sun.from) / L.edge, (sun.to - P.s) / L.edge);
+        if (glare > want) { want = glare; of = 'sun'; }
+      }
+      // dust: in the plume of anything ahead (or of anything that has just gone by the other way)
+      if (this.dusts.some(z => P.s > z.from - CONFIG.dust.sign && P.s < z.to)) this.once('dust');
+      if (this.dusts.length && this.dusty(P.s)) {
+        const D = CONFIG.dust;
+        for (const car of Traffic.cars) {
+          const z = this.plumes(car);
+          if (!z) continue;
+          const deep = this.cloud(car, P.s, P.lat, this.plumeLength(car), car.hw + D.spread, z.dir * D.drift) * D.most;
+          if (deep > want) { want = deep; of = 'dust'; }
+        }
+      }
+    } else this.shadow = null;
     if (want > 0) this.veilOf = of;
     this.veil += (want - this.veil) * Math.min(1, dt * (want > this.veil ? V.close : V.clear));
     if (this.veil < 0.004 && !want) { this.veil = 0; this.veilOf = null; }

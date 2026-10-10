@@ -41,7 +41,7 @@ const at = (s, lat, y = 0) => {
 
 let socks = [];   // { wind (its index in Gambles.winds), model }
 // the veil over the picture (Gambles.veil): a sheet over the canvas, under the HUD, with a hole round the car
-const VEILS = { spray: '214, 222, 228' };
+const VEILS = { spray: '214, 222, 228', sun: '255, 238, 196', dust: '201, 170, 124' };
 const veil = document.createElement('div');
 veil.style.cssText = 'position:fixed;inset:0;pointer-events:none;opacity:0;z-index:0';
 document.getElementById('game')?.insertAdjacentElement('afterend', veil);
@@ -49,8 +49,10 @@ let veilOf = null;
 // the clouds the traffic drags (one a vehicle, drawn only where it has one)
 const cloudGroup = new THREE.Group();
 scene.add(cloudGroup);
-const CLOUD = new THREE.BoxGeometry(1, 1, 1), cloudMats = { spray: new THREE.MeshBasicMaterial({ color: 0xdfe6ea, transparent: true, opacity: 0.4, depthWrite: false }) };
+const CLOUD = new THREE.BoxGeometry(1, 1, 1), cloudMats = { spray: new THREE.MeshBasicMaterial({ color: 0xdfe6ea, transparent: true, opacity: 0.4, depthWrite: false }), dust: new THREE.MeshBasicMaterial({ color: 0xc9aa7c, transparent: true, opacity: 0.5, depthWrite: false }) };
 let clouds = [];
+let floods = [];   // the fords that fill: { f, water, collars, y0 } (the water and the posts' collars rise with it)
+let sunDiscs = []; // the low sun's: { z (its stretch), sun (the model), x, zz (the way the stretch runs, in the world) }
 let leaned = 0;   // (the roll given the player's car last frame, taken off again before the next is put on)
 
 Game.onLoad.push(() => {
@@ -85,6 +87,7 @@ Game.onLoad.push(() => {
     }
     if (bar.s - 90 > 5) at(bar.s - 90, Track.lo(bar.s - 90) + 0.6).add(makeSign(text, '#fff', '#c1121f', 6, 1.6));
   }
+  floods = [];
   // ---- fords: the river across the road (wide of it on both sides), depth posts on its banks and down its
   // sides, and boards before the exit that is its bridge and at it
   for (const f of Gambles.fords) {
@@ -94,8 +97,17 @@ Game.onLoad.push(() => {
     const water = new THREE.Mesh(buildStrip(f.from, f.to, (s) => Track.lo(s) - 60, (s) => Track.hi(s) + reach(s), 0.05 + f.depth * 0.25, 4),
       new THREE.MeshBasicMaterial({ color: 0x2f7fb8, transparent: true, opacity: 0.62, side: THREE.DoubleSide, depthWrite: false }));
     group.add(water);
-    for (const s of [f.from - 1.5, (f.from + f.to) / 2, f.to + 1.5]) for (const lat of [Track.hi(s) - 0.5, Track.lo(s) + 0.5]) at(s, lat).add(makeDepthPost(f.depth));
-    const text = 'FORD ' + f.depth.toFixed(1) + ' m DEEP';
+    const posts = [];
+    for (const s of [f.from - 1.5, (f.from + f.to) / 2, f.to + 1.5]) for (const lat of [Track.hi(s) - 0.5, Track.lo(s) + 0.5]) { const post = makeDepthPost(f.fills ? f.fills.to : f.depth); at(s, lat).add(post); posts.push(post); }
+    if (f.fills) floods.push({ f, water, collars: posts.map(p => p.children.at(-1)), top: f.fills.to, at: f.depth });
+    if (f.underpass) { // (the railway over it: a girder deck across on a pier each side, rails on top)
+      const mid = (f.from + f.to) / 2, lo = Track.lo(mid) - 3, hi = Track.hi(mid) + 3, deck = at(mid, 0), steel = new THREE.MeshLambertMaterial({ color: 0x4a4f57 }), stone = new THREE.MeshLambertMaterial({ color: 0x8a8378 });
+      const part = (w, h, d, mat, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, 0); deck.add(m); };
+      part(hi - lo + 4, 1.2, 9, steel, -(lo + hi) / 2, 6.1);
+      for (const lat of [lo, hi]) part(2.2, 5.5, 9, stone, -lat, 2.75);
+      for (const z of [-1.6, 1.6]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(hi - lo + 4, 0.2, 0.2), new THREE.MeshLambertMaterial({ color: 0x1b1d21 })); rail.position.set(-(lo + hi) / 2, 6.85, z); deck.add(rail); }
+    }
+    const text = f.fills ? 'UNDERPASS FLOODING' : 'FORD ' + f.depth.toFixed(1) + ' m DEEP';
     for (const s of f.exit ? [f.exit.exitAt - F.sign, f.exit.exitAt - 30] : [f.from - F.sign]) {
       if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign(text + (f.exit ? '\nBRIDGE: EXIT' : ''), '#1f6fb2', '#fff', 6, 2.6));
     }
@@ -146,6 +158,33 @@ Game.onLoad.push(() => {
   }
   cloudGroup.clear();
   clouds = [];
+  sunDiscs = [];
+  // ---- dust trails: the road dry dirt, and before it a board and a windsock held out the way the wind blows
+  for (const z of Gambles.dusts) {
+    group.add(new THREE.Mesh(buildStrip(z.from, z.to, (s) => Track.lo(s) - 1, (s) => Track.hi(s) + 1, 0.012, 3), flat(0xb08d5e, -2)));
+    const s = z.from - CONFIG.dust.sign;
+    if (s < 5) continue;
+    at(s, Track.hi(s) - 0.6).add(makeSign('DUST', '#ffd23f', '#111', 4.4, 1.6));
+    const sock = makeWindsock();
+    sock.userData.set(0.8, z.dir, 0);
+    at(z.from - 10, Track.hi(z.from - 10) - 0.5).add(sock);
+  }
+  // ---- the low sun: the sun itself, low over the road beyond the stretch's end, and a board before
+  for (const z of Gambles.suns) {
+    const L = CONFIG.lowSun, a = {}, b = {};
+    Track.toWorld(z.to - 60, 0, a);
+    Track.toWorld(z.to, 0, b);
+    const dx = b.x - a.x, dz = b.z - a.z, n = Math.hypot(dx, dz) || 1;
+    // (it keeps its distance from the car, the way the stretch runs, as a sun does: placed each frame, see syncGambles)
+    const sun = new THREE.Group();
+    for (const [r, color, opacity] of [[62, 0xfff3c4, 0.35], [34, 0xfffbe8, 1]]) sun.add(new THREE.Mesh(new THREE.CircleGeometry(r, 28), new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, fog: false, depthWrite: false, side: THREE.DoubleSide })));
+    sun.rotation.y = Math.atan2(dx, dz);
+    sun.visible = false;
+    group.add(sun);
+    sunDiscs.push({ z, sun, x: dx / n, zz: dz / n });
+    const s = z.from - L.sign;
+    if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign('LOW SUN', '#ffd23f', '#111', 5.4, 1.6));
+  }
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {
     const B = CONFIG.washboard;
@@ -180,17 +219,30 @@ export const syncGambles = (now) => {
     veil.style.background = 'radial-gradient(ellipse 70% 60% at 50% 74%, rgba(' + c + ',0) ' + V.hole * 100 + '%, rgba(' + c + ',1) ' + V.full * 100 + '%)';
   }
   veil.style.opacity = Game.state === 'playing' ? Gambles.veil.toFixed(3) : '0';
-  if (Gambles.wets.length) {
-    const S = CONFIG.spray;
+  for (const fl of floods) { // (a flooded underpass: the water and the collars on its posts rise with its depth)
+    fl.water.position.y = (fl.f.depth - fl.at) * 0.25;
+    for (const c of fl.collars) c.position.y = fl.f.depth;
+  }
+  for (const d of sunDiscs) {
+    const L = CONFIG.lowSun;
+    d.sun.visible = Player.active && Track.isMain(Player.s) && Player.s > d.z.from - 2 * L.sign && Player.s < d.z.to;
+    if (!d.sun.visible) continue;
+    Track.toWorld(Player.s, Player.lat, tmp);
+    d.sun.position.set(tmp.x + d.x * L.far, tmp.y + L.up, tmp.z + d.zz * L.far);
+  }
+  if (Gambles.wets.length || Gambles.dusts.length) {
+    const S = CONFIG.spray, D = CONFIG.dust;
     for (let i = 0; i < Traffic.cars.length; i++) {
-      const car = Traffic.cars[i], on = Gambles.sprays(car);
+      const car = Traffic.cars[i], dusty = Gambles.dusts.length ? Gambles.plumes(car) : null, on = dusty || Gambles.sprays(car);
       if (!on) { if (clouds[i]) clouds[i].visible = false; continue; }
       const mesh = clouds[i] || (clouds[i] = cloudGroup.add(new THREE.Mesh(CLOUD, cloudMats.spray)).children.at(-1));
-      const length = Gambles.sprayLength(car), half = car.hw + S.spread * 0.6;
+      const length = dusty ? Gambles.plumeLength(car) : Gambles.sprayLength(car), half = dusty ? car.hw + D.spread : car.hw + S.spread * 0.6;
+      const drift = dusty ? dusty.dir * D.drift : 0; // (a plume is carried across by its far end: the box is laid along that line)
       mesh.visible = true;
-      mesh.rotation.y = Track.toWorld(car.s - car.dir * (car.hl + length / 2), car.lat, tmp);
+      mesh.material = dusty ? cloudMats.dust : cloudMats.spray;
+      mesh.rotation.y = Track.toWorld(car.s - car.dir * (car.hl + length / 2), car.lat + drift / 2, tmp) + Math.atan2(drift, length) * (Track.mirrored ? 1 : -1) * car.dir;
       mesh.position.set(tmp.x, tmp.y + 1.1 + 0.15 * Math.sin(t * 5 + i), tmp.z);
-      mesh.scale.set(2 * half, 2.2, length);
+      mesh.scale.set(2 * half, dusty ? 2.6 : 2.2, Math.hypot(length, drift));
     }
   }
   for (const sock of socks) {

@@ -75,7 +75,13 @@
     { "s": 7600, "side": "right" },
     { "s": 9400, "side": "left" }
   ],
+  "lowSun": [
+    { "from": 7020, "to": 7560 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 7200, "lane": 2 },
+    { "type": "cash10", "s": 7200, "lane": 3 },
+    { "type": "cash20", "s": 7450, "lane": 2 },
     { "type": "turbo", "s": 300, "lane": 3 },
     { "type": "wrench", "s": 1200, "lane": 2 },
     { "type": "siren", "s": 2000, "lane": 3 },
