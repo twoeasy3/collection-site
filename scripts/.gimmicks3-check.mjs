@@ -91,7 +91,7 @@ try {
     g.select('gimmick-road-3');
     G.start();
   };
-  rebuild = () => { g.select('gimmick-road-3'); G.loaded = null; }; // (the level built afresh, from the section's dice, at its first start)
+  rebuild = () => { g.select('gimmick-road-3'); G.loaded = null; G.start(); }; // (the level built afresh from the section's dice, and loaded: a section may read its gambles before its first start())
   for (let n = 0; n < SEEDS; n++) {
   seedNow = (SEED + n) >>> 0; sectionNow = ''; scenario = 0; reseed(); rebuild();
   start(100, 3, 20);
