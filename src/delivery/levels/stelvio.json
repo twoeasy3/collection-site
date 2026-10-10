@@ -58,7 +58,10 @@
     { "from": 3500, "to": 3660, "count": 6, "side": "right" }
   ],
   "fog": [
-    { "from": 2000, "to": 2500 }
+    { "from": 2440, "to": 2760 }
+  ],
+  "crosswinds": [
+    { "from": 2120, "to": 2400, "dir": "left" }
   ],
   "targets": [
     { "s": 1000, "side": "right" },
@@ -75,6 +78,10 @@
     { "type": "wrench", "s": 2800, "lane": 1 },
     { "type": "armour", "s": 3300, "lane": 1 },
     { "type": "timePlus", "s": 3650, "lane": 1 },
-    { "type": "turbo", "s": 4000, "lane": 1 }
+    { "type": "turbo", "s": 4000, "lane": 1 },
+    { "type": "timePlus", "s": 880, "lane": 0 },
+    { "type": "turbo", "s": 1700, "lane": 0 },
+    { "type": "passenger", "s": 2260, "lane": 0 },
+    { "type": "timePlus", "s": 3320, "lane": 0 }
   ]
 }

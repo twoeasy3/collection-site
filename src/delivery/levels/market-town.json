@@ -156,6 +156,20 @@
       "dir": -1
     }
   ],
+  "shoulderRows": [
+    {
+      "kind": "umbrella",
+      "from": 930,
+      "to": 1060,
+      "every": 10
+    }
+  ],
+  "waterMains": [
+    {
+      "s": 1600,
+      "lane": 1
+    }
+  ],
   "crossings": [
     {
       "s": 2000

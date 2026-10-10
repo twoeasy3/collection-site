@@ -2906,12 +2906,79 @@ const buildRoad = () => {
     instances(cube, 0x5a5f66, posts);
     instances(cube, 0xb9bec5, rails);
     instances(new THREE.SphereGeometry(0.5, 8, 6), 0xffffff, banks);
+    // snow poles: tall, orange, black at the top, every 24 m along both edges, so the road reads under snow
+    // and its bends show from a way off
+    const poles = [], tips = [];
+    for (let s = Track.start; s < Track.end; s += 24) {
+      for (const side of [-1, 1]) {
+        poles.push([s, beside(side, s, 0.95), 1.5, 0.09, 3, 0.09]);
+        tips.push([s, beside(side, s, 0.95), 2.8, 0.11, 0.45, 0.11]);
+      }
+    }
+    instances(cube, 0xf07a1a, poles);
+    instances(cube, 0x1b1d22, tips);
+    // a hairpin (a bend tighter than HAIRPIN m round) reads as one: round the outside of it, and a little way
+    // either side, a stone wall with snow along its top in place of the rail's snowbanks, a band of red and white
+    // boards along its face, pointing the bend out
+    const HAIRPIN = 1 / 30, LEAD = 16, stone = [], capping = [], red = [], pale = [];
+    const hairpinAt = (s) => { const c = Track.bend(s); return Math.abs(c) > HAIRPIN ? Math.sign(c) : 0; };
+    for (let s = Track.start, k = 0; s < Track.end; s += 2, k++) {
+      const turn = hairpinAt(s) || hairpinAt(s + LEAD) || hairpinAt(s - LEAD);
+      if (!turn) continue;
+      const side = -turn, a = [s, beside(side, s, 1.3)], b = [s + 2, beside(side, s + 2, 1.3)]; // (+ = a right turn: its outside is the left)
+      stone.push([a[0], a[1], 0.6, 0.6, 1.2, 1, b]);
+      capping.push([a[0], a[1], 1.27, 0.75, 0.16, 1, b]);
+      if (hairpinAt(s)) (Math.floor(k / 2) % 2 ? red : pale).push([s, beside(side, s, 0.97), 0.75, 0.06, 0.6, 1, [s + 2, beside(side, s + 2, 0.97)]]);
+    }
+    instances(cube, 0x7f8388, stone);
+    instances(cube, 0xffffff, capping);
+    instances(cube, 0xd23b2b, red);
+    instances(cube, 0xf4f4f4, pale);
+    // the top of the pass (on a level that climbs): a refuge hut of stone beside the road at its highest point,
+    // snow on its roof, and a board on two posts with the level's name on it
+    let hut = null; // (where it is along the road: no pines there)
+    if (Track.hilly) {
+      let top = 0, high = -Infinity, flatTo = 0;
+      for (let s = 0; s < Track.length; s += 10) { Track.toWorld(s, 0, tmp); if (tmp.y > high + 0.05) { high = tmp.y; top = flatTo = s; } else if (tmp.y > high - 0.05) flatTo = s; }
+      const at = Math.min(Track.length - 60, Math.max(60, (top + flatTo) / 2));
+      if (high > 20) {
+        hut = at + 26;
+        instances(cube, 0x8c8478, [[at + 26, beside(1, at + 26, 11), 2, 9, 4, 12]]);            // the hut's walls
+        instances(cube, 0x4d3b30, [[at + 26, beside(1, at + 26, 6.45), 1.1, 0.12, 2.2, 1.2]]);  // its door
+        instances(cube, 0xffd98a, [[at + 22.5, beside(1, at + 22.5, 6.45), 2.2, 0.12, 1, 1.4], [at + 29.5, beside(1, at + 29.5, 6.45), 2.2, 0.12, 1, 1.4]], true); // lit windows
+        instances(new THREE.ConeGeometry(Math.SQRT1_2, 1, 4).rotateY(Math.PI / 4), 0xf3f6f9, [[at + 26, beside(1, at + 26, 11), 5.2, 10.4, 2.4, 13.4]]); // a hip roof, under snow
+        instances(cube, 0x6a5a4a, [[at + 30, beside(1, at + 30, 13), 6.4, 0.9, 1.6, 0.9]]);   // the chimney
+        instances(cube, 0x5a4636, [[at, beside(1, at, 3.4), 1.6, 0.22, 3.2, 0.22], [at, beside(1, at, 8.6), 1.6, 0.22, 3.2, 0.22]]); // the board's posts
+        const canvas = document.createElement('canvas');
+        canvas.width = 512; canvas.height = 192;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#5b3a22';
+        ctx.fillRect(0, 0, 512, 192);
+        ctx.strokeStyle = '#f4ead2'; ctx.lineWidth = 8;
+        ctx.strokeRect(10, 10, 492, 172);
+        ctx.fillStyle = '#f4ead2';
+        ctx.textAlign = 'center';
+        ctx.font = 'bold 58px sans-serif';
+        ctx.fillText(String(LEVEL.name || 'The pass').toUpperCase().slice(0, 16), 256, 92, 460);
+        ctx.font = 'bold 40px sans-serif';
+        ctx.fillText('SUMMIT  ' + Math.round(2000 + high * 6) + ' m', 256, 150, 460);
+        const map = new THREE.CanvasTexture(canvas);
+        map.colorSpace = THREE.SRGBColorSpace;
+        const board = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 2.1), new THREE.MeshBasicMaterial({ map }));
+        board.rotation.y = Track.toWorld(at, beside(1, at, 6), tmp) + Math.PI; // (facing the car coming up)
+        board.scale.x = Track.mirrored ? -1 : 1; // (mirrored back on a left-hand level, so it still reads)
+        board.position.set(tmp.x, tmp.y + 2.3, tmp.z);
+        levelGroup.add(board);
+      }
+    }
     // pines: dark green tiers dusted with snow, standing on the land itself, never on another stretch of road
     const trunks = [], tiers = [], caps = [], spot = new THREE.Object3D(), p = {};
     for (let s = Track.start; s < Track.end; s += 9) {
       for (const side of [-1, 1]) {
         if (Math.random() < 0.35) continue;
         const d = 10 + Math.random() * 45;
+        if (d < 24 && (hairpinAt(s) || hairpinAt(s + LEAD) || hairpinAt(s - LEAD))) continue; // (none close in round a hairpin: a tall pine there fills the screen)
+        if (hut !== null && side > 0 && Math.abs(s - hut + 13) < 34 && d < 26) continue; // (nor on the hut and its board)
         Track.toWorld(s + Math.random() * 6, beside(side, s, d), p);
         if (Track.mainDistance(p.x, p.z) < Math.max(Track.hi(s), -Track.lo(s)) + 4 || !offRoads(p.x, p.z, 3)) continue;
         const y = terrainAt(p.x, p.z), h = 6 + Math.random() * 6;
