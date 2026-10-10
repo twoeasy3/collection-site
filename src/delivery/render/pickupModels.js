@@ -392,8 +392,13 @@ PICKUP_MODELS.timePlus = stopwatch(true);
 PICKUP_MODELS.timeMinus = stopwatch(false);
 
 // TANK RAGE target: a glowing green ring and bull's-eye on a post (userData.ring and .glow spin
-// and pulse); the group's origin is the ring's centre
-export const makeTargetModel = () => {
+// and pulse); the group's origin is the ring's centre.
+// look (how it stands: see CONFIG.target and Targets): height, m the ring's middle is above the ground; style:
+// 'post' (the post runs down to the ground), 'wall' (a short stalk down to a foot on a wall's top, `base` m above
+// the ground) or 'gantry' (hung from an arm, from a mast standing at (out.x, out.z) from the ring, in the
+// group's own axes); beam: a beam of light standing over it. With no look: the post, as it always was
+export const makeTargetModel = (look, out) => {
+  if (look && (look.style !== 'post' || look.beam || look.height !== 2.7)) return makeStyledTarget(look, out);
   const group = new THREE.Group();
   const green = new THREE.MeshBasicMaterial({ color: 0x39ff6a });
   const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.22, 8, 24), green);
@@ -404,5 +409,45 @@ export const makeTargetModel = () => {
   post.position.y = -1.6;
   group.add(ring, bull, glow, post);
   group.userData = { ring, glow };
+  return group;
+};
+const makeStyledTarget = (look, out = { x: 0, z: 0 }) => {
+  const group = new THREE.Group();
+  const green = new THREE.MeshBasicMaterial({ color: 0x39ff6a }), steel = lambert(0x2b2f38);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.22, 8, 24), green);
+  const bull = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 8), green);
+  const glow = new THREE.Mesh(new THREE.SphereGeometry(2.1, 16, 12), new THREE.MeshBasicMaterial({
+    color: 0x39ff6a, transparent: true, opacity: 0.22, depthWrite: false }));
+  group.add(ring, bull, glow);
+  const bar = (w, h, l, x, y, z, ry = 0) => part(group, new THREE.BoxGeometry(w, h, l), steel, x, y, z, 0, ry);
+  const H = look.height;
+  if (look.style === 'gantry') {
+    // the mast, from the ground to over the ring; the arm from its top to over the ring; the hanger down to it
+    const top = 2.1, reach = Math.hypot(out.x, out.z), turn = Math.atan2(out.x, out.z);
+    bar(0.26, H + top, 0.26, out.x, (top - H) / 2, out.z);
+    bar(0.6, 0.12, 0.6, out.x, -H + 0.06, out.z);
+    bar(0.16, 0.16, reach + 0.3, out.x / 2, top - 0.1, out.z / 2, turn);
+    bar(0.1, top - 1.5, 0.1, 0, (top + 1.5) / 2, 0);
+  } else {
+    const foot = look.style === 'wall' ? Math.min(H - 1.5, look.base || 0) : 0; // (m above the ground it stands)
+    bar(0.2, H - 0.5 - foot, 0.2, 0, -(H + 0.5 + foot) / 2 + foot, 0);
+    if (look.style === 'wall') bar(0.7, 0.1, 0.7, 0, -H + foot + 0.05, 0); // (its foot, on the wall's top)
+  }
+  if (look.beam) {
+    // a beam of light standing over it: pale green, see-through, fading out up into the sky (two shafts, a bright
+    // thin one in a wide faint one), and a lamp on the ring's top that it comes from
+    const shaft = (r, h, opacity) => {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.35, r, h, 10, 1, true), new THREE.MeshBasicMaterial({
+        color: 0x7dffa0, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+      mesh.position.y = 1.6 + h / 2;
+      group.add(mesh);
+      return mesh;
+    };
+    shaft(0.28, 26, 0.5);
+    group.userData.beam = shaft(0.7, 34, 0.16);
+    part(group, new THREE.SphereGeometry(0.3, 10, 8), green, 0, 1.62, 0);
+  }
+  group.userData.ring = ring;
+  group.userData.glow = glow;
   return group;
 };

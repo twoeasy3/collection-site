@@ -1,6 +1,10 @@
 {
   "id": "safari",
   "name": "Safari",
+  "description": {
+    "good": "A one-way track through the reserve. The herds are migrating, the elephants have right of way and the hippos are not friendly. Drive kindly.",
+    "evil": "Wildebeest on the road, elephants flattening tourists, hippos charging out of the river. At last, a place that drives the way you do."
+  },
   "cargo": { "good": "cake", "evil": "porcupine" },
   "theme": "safari",
   "flow": "north",

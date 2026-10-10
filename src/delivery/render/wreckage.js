@@ -104,7 +104,7 @@ const MODELS = {
     for (let x = -w / 2 + 1.2; x < w / 2; x += 2.2) {
       for (let k = 0; k < 2; k++) {
         const r = 1.3 + Math.random() * 0.8, rock = add(g, new THREE.DodecahedronGeometry(r, 0), lambert(tones[Math.floor(Math.random() * 4)]),
-          x + rnd(0.4), r * 0.75 + k * 0.6, rnd(d / 2 - r), Math.random() * 3, Math.random() * 3, Math.random() * 3);
+          x + rnd(0.4), r * 0.7, rnd(d / 2 - r), Math.random() * 3, Math.random() * 3, Math.random() * 3); // (each ON the road, a little sunk: the second of a pair was 0.6 m up, on nothing wherever it fell clear of the first)
         rock.scale.set(1, 0.85, 1);
       }
     }

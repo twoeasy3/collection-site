@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CAR } from '../cars.js';
+import { CAR, AMPHIBIOUS_TANK } from '../cars.js';
 import { LEVEL } from '../levels.js';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
@@ -8,13 +8,14 @@ import { Collision } from '../collision.js';
 import { Pickups, Targets } from '../pickups.js';
 import { Game } from '../game.js';
 import { scene, tmp, clearGroup } from './scene.js';
-import { buildStrip, THEMES } from './road.js';
+import { buildStrip, THEMES, landAt } from './road.js';
 import { carMesh, passengerMesh, makeTankMesh, shapeCarMesh, ufoMesh, trafficMeshes, syncLamps } from './cars.js';
 import { Traffic } from '../traffic.js';
 import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
 import { TURBO_COLOR, PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 import { OBSTACLE_MODELS } from './obstacleModels.js';
+import { makeAmphibiousTankMesh } from './tankModels.js';
 import { addSuperKit } from './carExtras.js';
 import { damageShare, dentModel, scorch } from './dents.js';
 import { SpeedCameras } from '../cameras.js';
@@ -136,10 +137,17 @@ const makePickup = (p) => {
   return group;
 };
 // TANK RAGE target: a spinning, glowing green ring on a post beside the road
+// (where it is, and how it stands there, are Targets' to say: t.lat, t.look. See CONFIG.target)
 const makeTarget = (t) => {
-  const group = makeTargetModel();
+  const look = t.look, out = { x: 0, z: 0 };
+  if (look.style === 'gantry') { // (its mast: `arm` m further from the road than the ring)
+    Track.toWorld(t.s, t.lat + t.side * look.arm, tmp);
+    out.x = tmp.x;
+    out.z = tmp.z;
+  }
   Track.toWorld(t.s, t.lat, tmp);
-  group.position.set(tmp.x, tmp.y + 2.7, tmp.z);
+  const group = makeTargetModel(look, { x: out.x - tmp.x, z: out.z - tmp.z });
+  group.position.set(tmp.x, tmp.y + look.height, tmp.z);
   return group;
 };
 
@@ -299,6 +307,64 @@ const bearTree = (o) => {
   clump({ x: (fork.x + over.x) / 2, y: (fork.y + over.y) / 2 + 1.5, z: (fork.z + over.z) / 2 }, 0, 0, 0, 2.2);
   return tree;
 };
+// ---- a rockfall's rocks, on the land (see CONFIG.rockfall) ----------------------------------------
+// The game only knows how far through its fall a rock is (o.h, of o.up) and where on the road it lands. Where it
+// waits and how it comes down are the land's, which is drawn here: so here each rock is given its way down. It
+// waits ON whatever is there, o.out m off the road's edge: the land, on a level whose land climbs (on the side the
+// level names if that is the uphill one, else the other); the level's own ledge, o.up m up (a quarry's bench); or,
+// on flat land, a crag o.up m tall, built for it. Then it tumbles down over that ground to where it lands, in
+// bounds, each lower than the last, and comes to rest on the road, a little sunk into it, a dark patch under it.
+//   way: { from, to: its lat waiting and landed; ground: [m above the road's own height, at steps across] }
+const cragRock = new THREE.MeshLambertMaterial({ color: 0x6f6a63, flatShading: true });
+const rockWay = (o) => {
+  const R = CONFIG.rockfall, N = 24, at = {};
+  Track.toWorld(o.s, 0, at);
+  const road = at.y, lo = Track.lo(o.s), hi = Track.hi(o.s);
+  const land = (lat) => { // (the land's height over the road's, at a spot across from it)
+    if (lat >= lo - 0.3 && lat <= hi + 0.3) return 0;
+    Track.toWorld(o.s, lat, at);
+    return landAt ? landAt(at.x, at.z) - road : 0;
+  };
+  const wait = (side) => side < 0 ? lo - o.out : hi + o.out;
+  let side = o.side, shape = land;
+  if (o.ledge && land(wait(side)) < R.hill) { // (the level's ledge: straight down off it to the road's edge)
+    const from = wait(side), edge = side < 0 ? lo : hi;
+    shape = (lat) => o.up * Math.max(0, Math.min(1, (lat - edge) / (from - edge)));
+  } else if (land(wait(side)) < R.hill) {
+    if (land(wait(-side)) >= R.hill) side = -side; // (the hillside is the other side's)
+    else { // (flat land: a crag for it to wait on, its foot short of the road)
+      const from = wait(side), top = o.r + 0.8, foot = Math.min(o.out - 1.5, Math.max(top + 2, o.up * 0.45));
+      shape = (lat) => o.up * Math.max(0, Math.min(1, (foot - Math.abs(lat - from)) / (foot - top)));
+      const geo = new THREE.CylinderGeometry(top, foot, o.up, 7, 3), p = geo.attributes.position;
+      for (let i = 0; i < p.count; i++) { // (roughed up, but for its top, which the rock sits on)
+        if (p.getY(i) > o.up / 2 - 0.01) continue;
+        const k = 1 + (Math.abs(Math.sin(i * 12.9898 + o.s) * 43758.5453) % 1 - 0.5) * 0.3;
+        p.setXYZ(i, p.getX(i) * k, p.getY(i), p.getZ(i) * k);
+      }
+      geo.computeVertexNormals();
+      const crag = place(new THREE.Mesh(geo, cragRock));
+      Track.toWorld(o.s, from, at);
+      crag.position.set(at.x, at.y + o.up / 2 - 0.4, at.z);
+      crag.rotation.y = o.s;
+    }
+  }
+  const from = wait(side), ground = [];
+  for (let i = 0; i <= N; i++) ground.push(shape(from + (o.land - from) * i / N));
+  ground[N] = 0;
+  return { from, to: o.land, ground };
+};
+// where a rock is now: its group on the ground under it, the rock itself that high over it, in its bound
+const placeRock = (o, mesh) => {
+  const R = CONFIG.rockfall, way = mesh.userData.way;
+  const u = o.h <= 0 ? 1 : o.fall ? Math.max(0, Math.min(1, 1 - o.h / o.up)) : 0; // (how far through its fall)
+  const f = Math.min(1, u * 1.25), g = f * (way.ground.length - 1), i = Math.min(way.ground.length - 2, Math.floor(g));
+  mesh.rotation.y = Track.toWorld(o.s, way.from + (way.to - way.from) * f, tmp);
+  mesh.position.set(tmp.x, tmp.y + way.ground[i] + (way.ground[i + 1] - way.ground[i]) * (g - i), tmp.z);
+  const hop = u < 1 ? R.hop * (1 - u) * Math.abs(Math.sin(u * Math.PI * R.bounds)) : 0;
+  mesh.userData.rock.position.y = mesh.userData.rest + hop;
+  mesh.userData.shade.visible = f >= 1; // (over the road: on the hillside there is no level ground to lay it on)
+  mesh.userData.shade.scale.setScalar(1 / (1 + hop * 0.5));
+};
 const buildItems = () => {
   clearGroup(levelItems);
   for (const o of Collision.obstacles) if (o.kind === 'dropBear') place(bearTree(o));
@@ -307,6 +373,7 @@ const buildItems = () => {
     const mesh = place(OBSTACLE_MODELS[o.kind](o));
     mesh.rotation.y = Track.toWorld(o.s, o.lat, tmp);
     mesh.position.copy(tmp);
+    if (o.kind === 'rock') { mesh.userData.way = rockWay(o); placeRock(o, mesh); }
     return mesh;
   });
   pickupMeshes = Pickups.items.map((p) => place(makePickup(p)));
@@ -354,7 +421,10 @@ export const syncPickups = (dt) => {
       mesh.position.set(tmp.x, tmp.y + o.h + (mesh.userData.bob ? Math.sin(performance.now() / 1000 * 2.2 + i) * 0.06 : 0), tmp.z);
     }
     if (o.roll && mesh.userData.roller) mesh.userData.roller.rotation.z = -o.roll.dir * (o.spun || 0); // (a pipe rolling across)
-    if (o.kind === 'rock') mesh.userData.rock.rotation.x = o.spin || 0; // (tumbling down the hillside)
+    if (o.kind === 'rock') { // (tumbling down the hillside: over the land, not the game's own straight drop)
+      mesh.userData.rock.rotation.x = o.spin || 0;
+      placeRock(o, mesh);
+    }
     if (o.ride) mesh.userData.animate(o.ride.on ? o.ride.t : 0); // (a cyclist pedalling)
     if (o.run && mesh.userData.animate) mesh.userData.animate(o.run.t || 0); // (a marathon runner running)
     if (mesh.userData.beacons) { // (a wide load's escort: its beacons flash while it is moving over to block)
@@ -399,7 +469,15 @@ export const syncPickups = (dt) => {
     ufoMesh.userData.lamps.rotation.y += dt * 4;
     paintOf(ufoMesh.userData.body).color.setHex(livery);
   }
-  tankMesh.visible = tank;
+  // (on an amphibious level the rage is in the Amphibious Tank, in its own livery for each side: Player.rageTank)
+  const amphibian = tank ? Player.rageTank : null;
+  tankMesh.visible = tank && !amphibian;
+  amphibiousTankMesh.visible = !!amphibian;
+  if (amphibian) {
+    paintOf(amphibiousTankMesh.userData.body).color.setHex(Player.evil ? amphibian.evilColor : amphibian.color);
+    amphibiousTankMesh.userData.livery(Player.evil);
+    amphibiousTankMesh.userData.animate(performance.now() / 1000, Player.afloat && Player.active);
+  }
   // the garage's Tank wears its own liveries; a car in TANK RAGE turns army olive
   paintOf(tankMesh.userData.body).color.setHex(!CAR.tank ? TANK_OLIVE : livery);
   paintOf(carMesh.userData.body).color.setHex(livery);
@@ -511,3 +589,7 @@ const TANK_OLIVE = 0x4b5a2a;
 const tankMesh = makeTankMesh(TANK_OLIVE);
 tankMesh.visible = false;
 carMesh.add(tankMesh);
+// ...and the one it turns into on an amphibious level (cars.js AMPHIBIOUS_TANK)
+const amphibiousTankMesh = makeAmphibiousTankMesh(AMPHIBIOUS_TANK.color);
+amphibiousTankMesh.visible = false;
+carMesh.add(amphibiousTankMesh);

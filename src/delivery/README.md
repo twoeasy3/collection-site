@@ -64,13 +64,20 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `?test` | The hidden test track (`?hidden=testbed`) |
 | `?edited` | The level as the editor left it |
 | `?garage`, `?garage=evil` | Opens the garage; `&hover=tank` shows that car's stats |
+| `?garage&tab=ideas` | The garage on its Car ideas tab; `&look=bug` looks at one, `&studio=bug,limo` (or `all`) shows those alone on a plain floor, for pictures (`&views=3` adds a side view) |
 | `?screensaver` | The traffic screensaver |
 | `?racewatch` | The race screensaver; `&camcheck` logs a check of its cameras |
 | `&touch` | Shows the on-screen controls on a desktop |
 | `&cargostate=2` | An Evil run's cargo in that state (0 calm, 1 agitated, 2 furious) whatever the clock says |
+| `&hudcheck` | Every part of the HUD showing at once and held there, for a picture: the shoulder's dial most of the way up, a flat tyre, a mystery running (`&mystery=` names it), two messages. With `&touch` and a level with a speed camera just ahead (`&level=20&at=760`) nothing is left out |
+| `&rage`, `&pieces=3` | In TANK RAGE from the start (on an amphibious level: in the Amphibious Tank, which is only ever that level's rage vehicle, never a garage car); that many pieces of the tank found already. `&cine=car&turn=120` turns the studio camera that many degrees round the car |
 | `&deliver=3.5` | Stops the delivery at the kerb that many seconds in, for a picture (with `&at=` just short of the finish and `&ff=14`) |
 | `&pursuit=3` | A police pursuit set off 3 s into the run, on any delivery level; `&pursuitbehind=60` starts it that far behind |
 | `?pick=41` | The menu with that level picked, every level open for the visit (a look at its card); `&start` presses Start Game too |
+| `?cursor=47` | The menu with that level on its stage, open or not (a locked one stays locked) |
+| `?side=evil` | The menu as Evil for the visit (not saved) |
+| `?options`, `?road` | The menu with its options sheet open; with the "what's on this road" card open on the level picked |
+| `?do=key:ArrowRight,key:KeyE,click:%23startBtn,swipe:left` | Works the menu from the address, a step every 150 ms: for checking its controls |
 
 An amphibious level started from the address with no amphibious car owned is driven in the Float Van for
 that visit (or `&car=toybota`). On `gimmicks.html`, `?group=vehicles` shows that group alone, and
@@ -134,8 +141,12 @@ Rendering and the rest:
 | `render/<gimmick>.js` | Draws the gimmick of the same name |
 | `render/audio.js` | Sound: the WAVs in `sounds/`, with synthesised stand-ins |
 | `render/cargoModels.js`, `render/cargo.js` | The cargo's models; and the cargo drawn, in its corner of the HUD and at the kerb |
-| `render/hud.js`, `render/menu.js`, `render/garage.js`, `render/touch.js` | HUD, start screen, garage, on-screen controls |
-| `editor.js`, `powerups.js`, `gimmicks.js`, `sides.js`, `police.js`, `cargopage.js` | The other pages' scripts |
+| `render/hud.js`, `render/garage.js`, `render/touch.js` | HUD, garage, on-screen controls |
+| `render/menustage.js`, `render/menu.js`, `menu2.css` | The start screen: the level stage, strip, car, side and keys; its options and the results buttons; its look |
+| `levelinfo.js`, `render/levelcard3d.js` | What the menu says of a level (medals, what is on its road); and the "what's on this road" card |
+| `powerups.js`, `gimmicks.js` | The catalogues of pickups and gimmicks: wording, and each gimmick's model. Shown by their pages and by the road card |
+| `render/modelviews.js` | A model turning in a patch of one shared canvas: how the pages and the road card draw their models |
+| `editor.js`, `poweruppage.js`, `gimmickspage.js`, `sides.js`, `police.js`, `cargopage.js` | The other pages' scripts |
 | `levelSchema.js`, `editorForms.js` | Every level field's shape, settings, rules and help (what the editor is built from, and `scripts/.schema-check.mjs` checks levels against); the editor's form controls |
 | `sounds/`, `levelshots/`, `carshots/` | WAVs, and the menu's pictures of levels and cars |
 | `scripts/delivery-smoke.mjs` | The headless test |
@@ -175,7 +186,12 @@ Levels unlock in menu order, each by delivering the one before.
     (the circuits after it are races, always open). `node scripts/.water-check.mjs` drives every
     amphibious level and checks the water's rules on it. Keep ids short: the save is a cookie
     (`node scripts/.save-check.mjs`: 3382 of 4096 bytes with 48 levels and 38 cars).
-  - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`.
+  - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`. (Eight levels have none yet, and show
+    a plate of stripes: Hong Kong Harbour, Tokyo Expressway, Mumbai Monsoon, Stelvio Pass, Christmas Eve, Monza,
+    Spa-Francorchamps, Albert Park.)
+  - Its `description`: a sentence or two for the menu's stage, one as Good and one as Evil, 160 characters each at
+    most (`node scripts/.descriptions-check.mjs`; `--list` prints them all).
+  - `node scripts/.roadcard-check.mjs --list` prints what the menu's "what's on this road" card will list for it.
 - **A theme:** add it to `themes.js`; its scenery is drawn in `render/road.js`.
 - **A traffic vehicle:** add it to `vehicles` in `config.js` (give it a `model` to draw it as one
   of the models in `render/models.js`), then list it in a level's `traffic`. On a level with water
@@ -188,7 +204,9 @@ Levels unlock in menu order, each by delivering the one before.
   in `config.js`, and a model in `render/obstacleModels.js`.
 - **A gimmick:** a level field documented in `levels.js`, its logic in a file of its own here,
   its tuning in `config.js`, and its drawing in `render/`, called from the frame loop in
-  `main.js`. Add it to `gimmicks.js` so it shows on the gimmicks page.
+  `main.js`. Add it to `gimmicks.js` so it shows on the gimmicks page, and on the menu's road card for
+  every level that has it (a card about a vehicle goes in `TRAFFIC_CARDS` in `render/levelcard3d.js` too).
+  A new traffic kind wants a name and a line in `VEHICLES` in `levelinfo.js`.
 - **A level field** (a gimmick's, or any other): besides its lines at the top of `levels.js`, one
   entry in `FIELDS` in `levelSchema.js`: its `shape` (`stretch`, `point`, `flag`, `timed`...), `group`,
   `label`, `help`, its `settings` (type, range, default), `road: 'both'` if it can be on a side road, and
@@ -202,20 +220,41 @@ Levels unlock in menu order, each by delivering the one before.
   `carshots/<id>-evil.jpg`, taken with `?cine=car`. A vehicle that belongs to a level goes in
   `LEVEL_CARS`; one that should stay out of the garage goes in `SECRET_CARS`, with its own way
   in (the City Bus: type B U S on the start screen, or `?autostart&car=bus`).
+- **Car ideas lot:** the garage has a second tab, "Car ideas": a lot of thirty vehicles that are ideas
+  on show, not cars. Each is drawn after a real vehicle and has a generic name (the Bubble Car after the
+  BMW Isetta, the Double Decker after the AEC Routemaster...); hovering or tapping one shows its name,
+  what it is based on, its size and a line about it, and the Livery button shows its Good and Evil
+  paint. They are listed in `IDEA_CARS` in `ideas.js` and built by `IDEA_MODELS` in
+  `render/ideaModels.js`; the lot is `render/ideaslot.js`. None is in `CARS` or `CONFIG.vehicles`:
+  nothing here is bought, saved, driven, in traffic or in a level, and no check counts them. To make
+  one a real car, give it an entry in `CARS` and move its builder into `MODELS`.
 - **A thing to deliver:** a model in `render/cargoModels.js` (a group about a metre tall with
   `userData.animate(t)`; an Evil one built with `stated`, which gives it `setState(0 | 1 | 2)`), its id
   and name in `CARGO` in `cargo.js`, and a level's `"cargo": { "good": id, "evil": id }` to carry it.
   `node scripts/.cargo-check.mjs` lists what every level carries and checks the ending.
 - **A sound:** drop a WAV in `sounds/` and name it in `SAMPLES` in `render/audio.js`. Game logic
   asks for it with `sfx()` or `sfxAt()` from `physics.js`.
-- **A message:** add its wording to `messages.json`.
+- **A message:** add its wording to `messages.json`. How long it stays up is in `CONFIG.messageTimes` (by its kind, its group or its own path), and so is the list of sticky ones, which stay until what they warn of is over; `node scripts/.hud-check.mjs` checks both, and the mystery effect's name in the pickup status (`mysteryNames` in `messages.json`).
 
 ## The start screen
 
 It is only a menu: a level is built when a run on it starts (`Game.load`), and nothing reloads
-the page. Besides the levels and the garage it has:
+the page. It is one screen that fits the window (nothing scrolls), laid out as a game's front end:
 
-- **Good / Evil:** the side to play on.
+- **The stage:** the level picked, large: its picture, number and name, its description for the side picked,
+  its clock, tip and best time, a ribbon of two halves (Good's medal and best on the left, Evil's on the
+  right), a line for what the level needs (an amphibious car, its own vehicle, the level before it), and
+  **What's on this road**: a card of the level's gimmicks, pickups and traffic, each with its model turning.
+- **The strip** under it: the levels of its group (five at a time); over it the **groups**, and over those the
+  **tabs** (Deliveries, Races). A level not open yet can be looked at, but not started.
+- **The car** (a tap opens the garage), **Good / Evil** (Evil turns the screen red), and **START**.
+- **Options** (a sheet): sound, auto accelerate, on-screen controls; postcards, milestones, the screensavers;
+  the reference pages; save codes, unlock everything, reset; how to play.
+- **Keys:** left / right (A / D) a level, up / down a group, T the other tab, E the other side, G the garage,
+  I what's on this road, O the options, Enter start, Escape closes a sheet, M sound. Touch: swipe the stage.
+
+In the options and beside the race controls:
+
 - **Sound, auto accelerate, on-screen controls:** switches, saved with progress.
 - **Race cars and race track:** the class every race is run in (F1, GT, LMP) and the race
   screensaver's circuit.

@@ -1059,6 +1059,18 @@ export const CONFIG = {
   tankPieces: 5,
   tankParts: ['rearBody', 'turretHull', 'gunTurret', 'gunBarrel'], // the first four, in order (messages.json: tankParts)
   targetOffset: 5,         // m beyond the pavement the targets stand, out of the car's reach
+  // How a target stands, unless the level's theme (its "target": see themes.js) or the target itself (see
+  // levels.js) says otherwise: where a wall, a parapet or a row of buildings stands close to the road, the marker
+  // moves in front of it or on top of it. Targets (pickups.js) works out where each one is; rendering draws it there.
+  //   offset   m beyond the pavement's edge its ring is (the usual: targetOffset; less than 0: in over the shoulder)
+  //   height   m above the road the middle of its ring is
+  //   style    'post' (on a post from the ground), 'wall' (on a short stalk standing on a wall's or a parapet's
+  //            top, `base` m above the road) or 'gantry' (hung from an arm, from a mast `arm` m further out)
+  //   beam     true = a beam of light stands over it, to be seen from a distance
+  // A ring nearer the pavement than `clear` m could be driven through: it is carried at least `headroom` m up,
+  // over the tallest car (whatever the theme or the level asks for). hit: m from its middle, along the road and
+  // across it, within which a package has landed on it
+  target: { height: 2.7, style: 'post', base: 0, arm: 2.4, beam: false, clear: 1.8, headroom: 4.5, hit: 2.5, styles: ['post', 'wall', 'gantry'] },
   tankRamSlow: 0.15,       // share of its speed the tank loses per unit of mass it rams (a car is 1)
   tankMaxSpeed: 46,        // m/s: a tank is faster than any car in the garage
   tankHeadOnDamage: 0.2,   // share of full health a head-on costs the tank; nothing else hurts it
@@ -1086,9 +1098,39 @@ export const CONFIG = {
 
 
   // messages (the wording is in messages.json)
-  messageTime: 2,          // s a message stays up (plus messageExtra for its kind)...
-  messageFade: 0.4,        // ...the last of which it spends fading away
-  messageExtra: { reaction: 0, pickup: 2, rage: 2, bust: 5 }, // s longer, by kind (see messages.js)
+  // Every time a message spends on the screen is in this one table (messages.js timeFor reads it; nothing
+  // else holds a time). A message's time is the first of these that names it: `keys` (its own path in
+  // messages.json: 'events.speedFine'), `groups` (its group there: 'zones'), `kinds` (its kind, which is
+  // also its colour: see messages.js kindOf), then `default`
+  messageTimes: {
+    default: 4,            // s a message stays up, where nothing below says otherwise...
+    fade: 0.4,             // ...the last of which it spends fading away
+    kinds: { reaction: 2, pickup: 4, rage: 4, bust: 7 }, // s, by kind: a driver's reaction, a pickup or an event, TANK RAGE and a car destroyed, a bust
+    groups: {},            // s, by group in messages.json, e.g. zones: 3, milestones: 6
+    keys: {},              // s, by the message's own path, e.g. 'events.speedFine': 6
+    // The sticky ones: a message about something that is still true of the player's car. It is said as any
+    // other, on the message lines, and then stays in a slot of its own in the meters' corner (ordinary
+    // messages never push it out) until the condition named here ends, or the car is wrecked or busted, or
+    // the run is over. path in messages.json: the condition it lasts for (see the foot of player.js:
+    // 'mystery' is "the mystery effect this message is for is running"). Take a line out and that message
+    // is an ordinary one again; add one, with a condition that player.js has
+    sticky: {
+      'events.puncture': 'puncture',                 // a flat tyre, until it is changed (its row shows the change going on)
+      'events.beached': 'beached',                   // stuck in the gravel, until the car digs itself out
+      'powerups.badGas': 'badGas',                   // the bad powerups: cheap fuel, for as long as it lasts
+      'powerups.heavyMass': 'heavy',                 // ...the extra weight
+      'powerups.butterfingers': 'butterfingers',     // ...and no throwing
+      'powerups.mystery.noBrakes': 'mystery',        // the mystery effects that are bad news, or change the rules: no brakes
+      'powerups.mystery.rickety': 'mystery',         // ...more damage from every knock
+      'powerups.mystery.jerk': 'mystery',            // ...every driver against the player
+      'powerups.mystery.swapSides': 'mystery',       // ...on the other side: the packages do something else
+      'powerups.mystery.blackout': 'mystery',        // ...the lights out
+      'powerups.mystery.earthquake': 'mystery',      // ...the road heaving
+      // (the good ones are left to the pickup status, which names them while they run: toad, angel,
+      // invincible, soupedUp, giant, magnet, trafficFreeze; and sundayDrivers, rushHour, carSwap, moodSwing)
+    },
+    stickyRows: 3,         // sticky messages shown at once, the newest first
+  },
 
   // night levels (theme "night"): the player's headlights, two spotlights riding on the car
   headlights: {
@@ -1213,6 +1255,12 @@ export const CONFIG = {
     out: 14,               // ...this far off the road's edge
     near: { min: 60, max: 130 }, // m short of it the player sets one off
     size: { min: 0.6, max: 1.4 }, // m, a rock's radius
+    // (the look of it, render/items.js: a rock waits on the land, and comes down over the land)
+    hill: 3,               // m above the road the land must stand, where a rock would wait, to be a hillside: on a level
+                           // whose land has none on the side its rockfall names, the rocks wait on the other side's;
+                           // with none on either (flat land), each waits on a crag of its own, `height` m tall
+    hop: 2.2,              // m high a rock's first bound is, each one after it lower...
+    bounds: 4,             // ...this many of them on its way down
   },
   // THE BATTLEFIELD (a level's "battle": see levels.js). Two armies drive at each other down every lane
   // of the road: the player's (good, green), all of it going the player's way, and the enemy's (evil, red),

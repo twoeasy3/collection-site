@@ -312,7 +312,8 @@ export const Collision = (() => {
       const s = Track.place(c);
       add('camera', s, c.side === 'centre' ? 0 : Track.shoulderOffset(c.side === 'left' ? -1 : 1, s), { camera: i });
       // (and its speed limit sign on the shoulder on its side, a little short of it: one on the centre line, on the right)
-      const at = s - CONFIG.speedCamera.signAhead;
+      let at = s - CONFIG.speedCamera.signAhead;
+      for (const jn of Track.junctions) if (Track.isMain(at) && at > jn.s - 9 && at < jn.end + 9) at = jn.s - 9; // (not in the mouth of a crossroads: short of it)
       if (Track.inBounds(at)) add('limitSign', at, Track.shoulderOffset(c.side === 'left' ? -1 : 1, at), { limit: c.limit ?? LEVEL.speedLimit ?? CONFIG.speedCamera.limit });
     });
     // rockfall: each rock somewhere in its stretch, landing anywhere across the road, up the hillside
@@ -326,7 +327,8 @@ export const Collision = (() => {
         const r = R.size.min + rockRand() * (R.size.max - R.size.min);
         const lat = Track.lo(s) + r + rockRand() * (Track.hi(s) - Track.lo(s) - 2 * r);
         add('rock', s, lat, { r, hw: r * 0.9, hl: r * 0.9, height: 2 * r, side, land: lat, nearAt: R.near.min + rockRand() * (R.near.max - R.near.min),
-          up: z.height ?? R.height, out: z.out ?? R.out }); // (where it waits: the level's, or the hillside's)
+          up: z.height ?? R.height, out: z.out ?? R.out, // (where it waits: the level's, or the hillside's)
+          ledge: z.height !== undefined }); // (the level says how high: something stands there for it to wait on, a quarry's bench)
       }
     }
     // landmines: scattered down the lanes over their stretch, in the middle of a lane, each with its light
