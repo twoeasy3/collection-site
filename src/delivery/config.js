@@ -1319,6 +1319,15 @@ export const CONFIG = {
   // rad per m/s^2). Windsocks stand `ahead` m before the stretch and every sockEvery m along it
   crosswind: { strength: 7, lull: 0.3, every: 6, length: 2.6, rise: 0.6, heightRef: 1.45, heightPower: 1.5, leeHeight: 2, leeReach: 5.5, lee: 0.1, shove: 2.4,
     traffic: 0.35, lean: 0.006, ahead: 90, sockEvery: 150 },
+  // crests (no field of their own: a level's segments, their "grade" and "ease"): where the road falls away under
+  // the car faster than `gravity` m/s^2 (the game's, as the drawbridge's) can pull the car down after it, the car
+  // leaves the ground (by more than `slack` m/s in a step), flies the arc it left on with no throttle, brake or
+  // steering, and lands on what is there: harder than landSoft m/s into the ground costs landDamage a m/s over.
+  // (A hop lower than `hop` m is not felt.) A crest counts as one where a car at `fastest` m/s or less would fly;
+  // one that flies at signUnder m/s or less gets a board with that speed `sign` m before it, and from camFrom m
+  // before it to its top the camera comes down to camHeight m and in to camBack m behind the car (easing over
+  // camEase m), so the far side is hidden until the car is over. "Airborne" is said after sayAfter s in the air
+  crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it
   // and start.pitch up (rad); it comes no nearer than `near` nor goes further than `far`, between `low` and `high`

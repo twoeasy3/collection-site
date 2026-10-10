@@ -42,6 +42,11 @@
     { "type": "wrench", "s": 3800, "lane": 3 },
     { "type": "wrench", "s": 5100, "lane": 3 }
   ],
+  "obstacles": [
+    { "s": 1218, "lane": 4, "kind": "barrier" },
+    { "s": 1518, "lane": 3, "kind": "barrier" },
+    { "s": 1518, "lane": 5, "kind": "barrier" }
+  ],
   "crosswinds": [
     { "from": 300, "to": 900, "dir": "left" }
   ],

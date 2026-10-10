@@ -2,7 +2,7 @@
   "id": "mystery-meadows",
   "name": "Mystery Meadows",
   "theme": "farm",
-  "clock": { "good": 234, "evil": 166 },
+  "clock": { "good": 145, "evil": 115 },
   "traffic": { "lowrider": 0.35, "darkvan": 0.25, "commuter": 0.12, "van": 0.22, "bus": 0.03, "police": 0.03 },
   "trafficCount": 16,
   "oncomingCount": 13,
@@ -15,7 +15,10 @@
     { "length": 300, "curve": 0, "grade": 0.035 },
     { "length": 400, "curve": 0.0015, "grade": -0.035 },
     { "length": 400, "curve": -0.001, "grade": 0 },
-    { "length": 400, "curve": 0, "grade": 0 }
+    { "length": 70, "curve": 0 },
+    { "length": 70, "curve": 0, "grade": 0.18, "ease": 6 },
+    { "length": 70, "curve": 0, "grade": -0.18, "ease": 6 },
+    { "length": 190, "curve": 0, "ease": 6 }
   ],
   "narrows": [
     { "from": 700, "to": 1300, "lanesPerSide": 1 },

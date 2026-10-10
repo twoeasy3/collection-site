@@ -120,6 +120,8 @@ if (params.get('racewatch') !== null) {
   Game.start();
   if (params.get('car')?.startsWith('super-') && superOf(CAR)) Player.takeCar(() => lendCar(superOf(CAR)));
   if (params.get('at')) Player.s = Number(params.get('at'));
+  if (params.get('speed')) Object.assign(Player, { speed: Number(params.get('speed')), launching: false }); // ?speed=31: doing that many m/s from the start (with ?ff: hands off, the speed holds)
+  if (params.get('lane')) Player.lat = Track.laneOffset(Number(params.get('lane')), Player.s); // ?lane=4: in that lane
   if (params.get('fly') !== null) startFly();
   const photo = params.get('photo') !== null; // ?photo: paused, in photo mode, once ?ff has run (a check of render/photo.js)
   // ?cine: a still for the level select. The traffic is dealt out afresh around the car, ?ff lets

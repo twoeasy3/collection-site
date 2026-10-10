@@ -69,7 +69,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -845,7 +845,22 @@ const GROUPS = [
       const g = road(9, 14), sock = makeWindsock(5, 3), bus = vehicle('bus', 0xd8262b);
       sock.position.set(-5.4, 0, 2); bus.position.set(-2.2, 0, 0);
       g.add(sock, bus);
-      return { model: g, tick: (t) => { const u = t % GB.wind.every, level = GB.wind.lull + (1 - GB.wind.lull) * Math.max(0, Math.min(1, Math.min(u, GB.wind.length - u) / GB.wind.rise)); sock.userData.set(level, 1, t); bus.rotation.z = -level * 0.08; bus.userData.animate?.(t); } };
+      return { model: g, spin: false, tick: (t) => { const u = t % GB.wind.every, level = GB.wind.lull + (1 - GB.wind.lull) * Math.max(0, Math.min(1, Math.min(u, GB.wind.length - u) / GB.wind.rise)); sock.userData.set(level, 1, t); bus.rotation.z = -level * 0.08; bus.userData.animate?.(t); } };
+    } },
+    { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
+      'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',
+      `In the air there is no steering, no brake and no throttle: the car lands where it was pointed, on whatever is over the top. The camera comes down behind the car on the way up, so the far side is hidden until you are over it.`,
+      `A landing harder than ${GB.crest.landSoft} m/s into the road costs health (${GB.crest.landDamage} for every m/s over): the faster, the further and the harder. Fast enough and the car clears what a slower flier lands on.`,
+      'The gamble: lift below the speed on the board, stay on the ground and see over the top in time to steer; or fly blind and gain the seconds.',
+    ], build: () => {
+      const g = new THREE.Group(), tar = lambert(0x3b3e44);
+      const up = box(7, 0.2, 8.2, tar, 0, 0.75, -3.9), down = box(7, 0.2, 8.2, tar, 0, 0.75, 3.9);
+      up.rotation.x = -0.19; down.rotation.x = 0.19;
+      const car = painted(vehicle('sport', 0xffffff), 0x39ff14), block = ob('barrier');
+      block.position.set(0, 0.55, 5.6); block.rotation.x = 0.19;
+      g.add(up, down, car, block, box(7, 0.1, 3, tar, 0, -0.05, -9.2), box(7, 0.1, 3, tar, 0, -0.05, 9.2));
+      return { model: g, spin: false, tick: (t) => { const u = (t % 3) / 3, z = -9 + u * 20, hill = 1.55 - Math.abs(z) * 0.19, arc = z > -0.5 && z < 7 ? 1.6 + (z + 0.5) * 0.19 - 0.075 * (z + 0.5) * (z + 0.5) * 0.6 : 0;
+        car.position.set(-1.6, Math.max(Math.max(0, hill), arc + 0.1), z); car.rotation.x = z < -0.5 && hill > 0 ? -0.19 : z > 7 && hill > 0 ? 0.19 : arc > hill ? (z - 2.5) * 0.06 : 0; car.userData.animate?.(t); } };
     } },
   ] },
 ];

@@ -60,6 +60,7 @@
     "jackknife": ["Road train jackknifing!! Find the open lane!"],
     "stampede": ["STAMPEDE!! They're coming down the road at you!"],
     "crosswind": ["Crosswind! Watch the windsocks: it gusts."],
+    "airborne": ["Airborne! No steering up here."],
     "wrongWay": ["WRONG-WAY DRIVER!! Coming at you in the right-hand lane!"],
     "tunnel": ["Tunnel! Lights on."],
     "parade": ["Street parade ahead! The whole road's taken."],

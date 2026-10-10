@@ -52,6 +52,7 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `&level=3` | Picks that level (by its position on the menu), locked or not |
 | `&at=1650` | Starts that many metres along |
 | `&ff=5` | Runs the game five seconds before the first frame |
+| `&speed=31`, `&lane=4` | Starts doing that many m/s (hands off, it holds), and in that lane: for pictures |
 | `&car=lowrider` | Drives that car, owned or not |
 | `&theme=snow` | The level in that theme, whatever its own |
 | `&rival`, `&rival=evil`, `&rival=good` | A rival courier on any delivery level |

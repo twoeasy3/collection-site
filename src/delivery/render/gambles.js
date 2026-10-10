@@ -1,6 +1,6 @@
 // ---- GAMBLES: Gimmick Road 3's gimmicks, drawn (what they do: ../gambles.js) ----
 // A crosswind: windsocks before and along the stretch, each swinging out with the gusts to the side the
-// wind blows to; and the cars in it leaning.
+// wind blows to; and the cars in it leaning. A crest a car can fly: a board before it with the speed that does.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { Track } from '../track.js';
@@ -10,7 +10,7 @@ import { Traffic } from '../traffic.js';
 import { Gambles } from '../gambles.js';
 import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
-import { makeWindsock } from './gambleModels.js';
+import { makeWindsock, makeSign } from './gambleModels.js';
 
 const group = new THREE.Group();
 scene.add(group);
@@ -31,6 +31,15 @@ Game.onLoad.push(() => {
   socks = [];
   const W = CONFIG.crosswind;
   Gambles.build(); // (its lists, for the level just loaded)
+  // ---- crests: a board on each side, on the way up
+  const kmh = (v) => Math.ceil(v * 3.6 / 5) * 5;
+  for (const c of Gambles.crests) {
+    if (c.speed > CONFIG.crest.signUnder) continue;
+    const s = c.from - CONFIG.crest.sign;
+    if (s < 5) continue;
+    for (const lat of [Track.hi(s) - 0.6, Track.lo(s) + 0.6]) at(s, lat).add(makeSign('CREST\n' + kmh(c.speed) + '+ FLIES', '#ffd23f', '#111', 5.4, 2.6));
+  }
+  // ---- crosswinds: windsocks
   Gambles.winds.forEach((w, k) => {
     for (let s = w.from - W.ahead; s < w.to; s += s < w.from ? W.ahead : W.sockEvery) {
       if (s < 5) continue;
