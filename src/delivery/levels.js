@@ -453,6 +453,7 @@ import rice from './levels/rice.json';
 // (batch E's imports go above this line)
 import glow from './levels/glow.json';
 import erupt from './levels/erupt.json';
+import cattle from './levels/cattle.json';
 // (batch F's imports go above this line)
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
@@ -497,6 +498,7 @@ export const THEME_LEVELS = [
   // (batch E: second levels on the toy room, sea bed, moon, backlot, Venice, ice road: new levels go above this line)
   glow,
   erupt,
+  cattle,
   // (batch F: second levels on the theme park, volcano, port, Wild West, favela, rice terraces: new levels go above this line)
 ];
 export const MAIN_LEVELS = [...FIRST_LEVELS, ...THEME_LEVELS]; // (every numbered level: 1, 2, 3...)

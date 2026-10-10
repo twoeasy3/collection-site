@@ -26,9 +26,10 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // Lights went in at 35 to 37, ahead of those three (now 38 to 40). The next goes in where it sits in the list.
 // Orders 36 to 38: High Noon, Favela Heights and Emerald Steps at 41 to 43.
 // Order 39: After Hours (the first of the second levels on those themes) at 44. Order 40: Eruption Day at 45.
+// Order 41: Cattle Drive at 46.
 // (Order 27 was, for a few hours on 10-Oct and never on the live site, a cap at 46 with those levels after the
 // amphibious ones: no save was made with it outside a developer's machine.)
-const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34, 35, 36, 37, 35, 36, 37, 41, 42, 43, 44, 45]; // (for orders 2, 3, ...)
+const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34, 35, 36, 37, 35, 36, 37, 41, 42, 43, 44, 45, 46]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 // races (the lapped levels, on the menu's Races tab) are always open, and never hold up the delivery levels: the
