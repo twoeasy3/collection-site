@@ -601,6 +601,7 @@ export const CONFIG = {
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
+    rock: { min: 0.8, max: 1.3 }, // m: the radius of a drifter of a kind sized by its radius (a rock, an asteroid)
     across: 0.85,          // share of the road's half-width a pattern reaches out to from the centre
     circleRadius: 25,      // m along the road a circle spans either side of its centre
     circleRate: 0.9,       // radians/s round the circle
