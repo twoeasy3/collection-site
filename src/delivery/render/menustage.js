@@ -239,6 +239,9 @@ export const draw = () => {
     button.addEventListener('click', () => { if (g !== shown) { blip('menuMove'); show(list[a]); } });
     return button;
   }));
+  // (where the groups are a row to swipe along, the one shown is brought into it)
+  const chip = groupBox.children[shown];
+  if (chip && groupBox.scrollWidth > groupBox.clientWidth) groupBox.scrollTo({ left: chip.offsetLeft - (groupBox.clientWidth - chip.offsetWidth) / 2 });
   drawStage();
   drawStrip(first, last);
   drawCar();
@@ -251,8 +254,9 @@ export const draw = () => {
     button.disabled = oneSided(cursor) && button.dataset.side === 'evil';
   }
   sideNote.textContent = oneSided(cursor) ? 'This level is always played as Good.'
-    : evil ? 'Less time. Flaming packages do real damage, and the police bust you for them.'
-      : 'More time. Care packages increase your social standing and gains you benefits.';
+    : cursor.noPackages ? (evil ? 'Less time on the clock.' : 'More time on the clock.') // (a race: nothing is thrown)
+      : evil ? 'Less time. Flaming packages do real damage, and the police bust you for them.'
+        : 'More time. Care packages increase your social standing and gains you benefits.';
   startBtn.disabled = !open;
   startBtn.firstElementChild.textContent = !open ? 'Locked' : tab === 'race' ? 'Race' : 'Start';
 };
