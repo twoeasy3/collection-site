@@ -22,10 +22,11 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // Orders 27 to 29 put the first levels of the new themes (Toy Room, Twenty Thousand Leaks, Tranquility Base:
 // THEME_LEVELS) in at 32 to 34: they are ordinary numbered levels, after the last of the old ones and ahead of the
 // special levels. Orders 30 to 32: Thrill Park, Cinder Island and Dock Run at 35 to 37. EVERY level added to
-// THEME_LEVELS needs its place added here, one order each (38, 39...).
+// THEME_LEVELS needs its place added here, one order each. Orders 33 to 35: Quiet on Set, Acqua Alta and Northern
+// Lights went in at 35 to 37, ahead of those three (now 38 to 40). The next goes in where it sits in the list.
 // (Order 27 was, for a few hours on 10-Oct and never on the live site, a cap at 46 with those levels after the
 // amphibious ones: no save was made with it outside a developer's machine.)
-const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34, 35, 36, 37]; // (for orders 2, 3, ...)
+const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34, 35, 36, 37, 35, 36, 37]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 // races (the lapped levels, on the menu's Races tab) are always open, and never hold up the delivery levels: the
