@@ -1229,13 +1229,17 @@ export const CONFIG = {
     every: { min: 14, max: 24 }, // s between trains after that, while the player hasn't gone by...
     again: 300,            // ...and is within this many m of it
     speed: 80,             // m/s the train goes at...
-    cars: 2,               // ...carriages...
+    cars: 3,               // ...carriages (the hit boxes, whatever train is drawn: see `train`)...
     carLength: 18,         // ...each this long...
     hw: 1.6,               // ...and half this wide
     reach: 300,            // m either side of the road the line runs out to (the train comes from that far, seen coming)
     stopLine: 6,           // m short of the line traffic stops at (the booms stand there)
-    boomDamage: 10,        // health a lowered boom costs the player driving through it...
-    boomKept: 0.8,         // ...and the share of its speed kept
+    boomDamage: 10,        // health a lowered boom costs the player driving through it (it costs no speed: the train is the danger)
+    // the train drawn (a crossing's "train", or its theme's; else `usual`): 'bullet', the bullet train's carriages
+    // cut down, or 'steam', the Wild West's locomotive, tender, boxcar, two passenger cars and caboose, the
+    // same cars x carLength long in all (render/roadside.js draws them)
+    trains: ['bullet', 'steam'],
+    usual: 'bullet',
   },
   // stop / go roadworks (a level's "stopGo": stopgo.js): the oncoming side dug up, so both ways take
   // turns through the one lane left, a worker at each end turning a STOP / GO sign. Evil drivers
