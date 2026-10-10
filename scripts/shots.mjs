@@ -89,6 +89,7 @@ if (opt('levels', false) || opt('cars', false) || shots.some(([, address]) => ad
     'marina-bay': '&cineout=-1&cineup=10&cineback=30', montreal: '&at=350', bathurst: '&at=600', // (each one's start is between grandstands, and the camera inside one)
     slipway: '&at=720', harbour: '&at=520', ford: '&at=1320', fjord: '&at=1950', // (the amphibious levels: afloat)
     stunts: '&cineout=-1&cineup=10&cineback=30', // (a New York street set: over the road, as its level's agent found it)
+    'market-town': '&at=900&ff=2&cineside=left', // (the market square, its stalls and clock tower: its level's agent's frame)
     'albert-park': '&cineside=left&at=150' }); // (the tree again, further on)
   if (opt('levels', false)) {
     levels.LEVELS.forEach((level, i) => {
