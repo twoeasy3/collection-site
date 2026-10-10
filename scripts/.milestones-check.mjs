@@ -53,7 +53,7 @@ try {
   G.finish('delivered');
   check(stats.levelsDelivered === 1 && g.Message.lines.some(l => l.text.includes('On the payroll')), 'a delivery: 1 level delivered, and its milestone');
   check(!Progress.countDirty, 'and the counters are saved with the run');
-  check(JSON.parse(decodeURIComponent(document.cookie.split('=')[1].split(';')[0])).stats.levelsDelivered === 1, 'in the cookie');
+  check(JSON.parse(localStorage.getItem('delivery_racer_progress_backup')).stats.levelsDelivered === 1, 'in local storage (the cookie holds no counters: see progress.js)');
 
   // ---- packages landed, for real: a run on a busy level, throwing all the way
   start('ring-road');

@@ -104,7 +104,7 @@ The core:
 | `levels.js`, `levels/*.json` | One JSON file per level: where things are. The format is documented at the top of `levels.js` |
 | `themes.js` | The looks a level can have: colours and scenery, as data |
 | `cars.js` | The garage's cars, the levels' own vehicles, the secret ones |
-| `progress.js` | Saved progress: a cookie, with a copy in local storage |
+| `progress.js` | Saved progress: the whole of it in local storage, and the short of it (what is open, the bank, the cars) in a cookie as a fallback |
 | `messages.js`, `messages.json` | The lines that pop up during a run |
 | `input.js` | Keys and touch turned into named actions and axes |
 | `track.js` | Builds the level's roads, lanes, ramps, flyovers and junctions; checks the level data |
@@ -202,9 +202,9 @@ ones, which are always open and open nothing.
     amphibious level is timed in `CONFIG.clock.amphibious`, the Float Van, holding its lane).
   - An amphibious level goes at the end of `AMPHIBIOUS_LEVELS`, which needs no entry in `INSERTED_AT`
     (the circuits after it are races, always open). `node scripts/.water-check.mjs` drives every
-    amphibious level and checks the water's rules on it. Keep ids short: the save is a cookie
-    (`node scripts/.save-check.mjs`: 3760 of 4096 bytes with 57 levels and 38 cars: about eight more
-    levels' worth of room).
+    amphibious level and checks the water's rules on it. The save has room for any number of levels: it is kept in local
+    storage, and the cookie beside it holds no best times (`node scripts/.save-check.mjs` saves and loads 100
+    levels and 80 cars).
   - Its picture on the menu is `levelshots/<id>.jpg`, taken with `?cine`:
     `node scripts/shots.mjs <folder> --levels=<id>` saves it as a PNG, to be scaled to 600x267 and saved as a
     JPEG. A level with none shows a plate of stripes (every level on the menu has one now). Where the camera's

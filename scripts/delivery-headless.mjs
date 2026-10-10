@@ -26,6 +26,9 @@ export const boot = async ({ cars = ['commuter', 'sport', 'floatvan'] } = {}) =>
   globalThis.window = globalThis.window || { addEventListener() {}, dispatchEvent() {} };
   const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars }));
   globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: 'delivery_racer_progress=' + allOpen };
+  // (local storage, where the save is kept: a stand-in that lasts as long as the script)
+  const stored = new Map();
+  globalThis.localStorage = globalThis.localStorage || { getItem: (key) => (stored.has(key) ? stored.get(key) : null), setItem: (key, value) => { stored.set(key, String(value)); }, removeItem: (key) => { stored.delete(key); } };
   const server = await logicServer();
   const load = (path) => server.ssrLoadModule('/src/delivery/' + path);
   const levels = await load('levels.js');

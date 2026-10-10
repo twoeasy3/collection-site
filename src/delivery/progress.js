@@ -50,10 +50,12 @@ const fresh = () => ({
   levelOrder: LEVEL_ORDER, // the order of levels `unlocked` counts by
 });
 
-// The save is kept twice with every save: in local storage (BACKUP: the main store, read first), and in the
-// cookie, which brings it back should local storage go or not be there at all. A browser drops a cookie over
-// 4096 bytes without a word, which is why local storage is the one trusted: a full save's cookie was 4013
-// bytes with 40 levels (scripts/.save-check.mjs measures it), and is about 3,000 now that times are rounded
+// The save is kept in local storage (BACKUP: the store of record, read first, the whole save, as big as it
+// likes). The cookie is only a fallback, should local storage go or not be there at all, and holds the short of
+// it: what is open, the bank, the cars, the switches (cookieText). Not the best times nor the counters, which
+// grow with every level: a browser drops a cookie over 4096 bytes without a word and keeps the old one, and the
+// whole save in the cookie had reached 3882 bytes with 60 levels. A cookie from before, holding everything, is
+// still read as it is. scripts/.save-check.mjs saves and loads a full save of 100 levels and 80 cars
 const BACKUP = 'delivery_racer_progress_backup';
 const savedCopies = () => {
   const copies = [];
@@ -108,6 +110,18 @@ const saveText = (data) => JSON.stringify({
   bestTime: Object.fromEntries(Object.entries(data.bestTime).map(([side, times]) =>
     [side, Object.fromEntries(Object.entries(times).map(([id, t]) => [id, rounded(t, SAVE_STEP.time)]))])),
 });
+// The cookie's share of the save (see BACKUP above): never over COOKIE_ROOM bytes as written, whatever the save
+// holds. Should even the list of cars be too long for it (hundreds of them), it goes down to the car in use
+const COOKIE_KEYS = ['money', 'unlocked', 'levelOrder', 'cars', 'car', 'tankPieces', 'evil', 'muted', 'touch', 'autoGas', 'raceClass', 'raceTrack'];
+const COOKIE_ROOM = 3600; // bytes of cookie value (the cap is 4096 for the name, the value and its attributes)
+const cookieText = (data) => {
+  const short = Object.fromEntries(COOKIE_KEYS.map(key => [key, key === 'money' ? rounded(data.money, SAVE_STEP.money) : data[key]]));
+  for (const cars of [short.cars, [...new Set(['commuter', short.car])]]) {
+    const text = encodeURIComponent(JSON.stringify({ ...short, cars }));
+    if (text.length <= COOKIE_ROOM) return text;
+  }
+  return encodeURIComponent(JSON.stringify({ unlocked: short.unlocked, levelOrder: short.levelOrder })); // (a car or a class with an absurd name: what is open, at least)
+};
 // A save code: the save as one line of text to copy out of one browser and into another (the menu's Export
 // save and Import save: see render/savecode.js). CODE_MARK says what it is and which version of the code
 const CODE_MARK = 'DR1.';
@@ -143,6 +157,8 @@ const COUNT_SAVE_EVERY = 5000; // ms between saves of the milestone counters dur
 export const Progress = {
   data: read(),
 
+  // the save read again from where it is kept (as when the page loads)
+  reload() { this.data = read(); },
   // the save as it is written (see saveText)
   saved() { return saveText(this.data); },
   // the save as a code, to take to another browser
@@ -174,8 +190,8 @@ export const Progress = {
     this.countDirty = false;
     if (this.noSave) return;
     const text = this.saved();
-    document.cookie = COOKIE + '=' + encodeURIComponent(text) + '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
-    try { localStorage.setItem(BACKUP, text); } catch { /* (no storage: the cookie alone) */ }
+    try { localStorage.setItem(BACKUP, text); } catch { /* (no storage: the cookie alone, and the short of the save) */ }
+    document.cookie = COOKIE + '=' + cookieText(this.data) + '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
   },
   // a level delivered on time: bank the tip, remember the best time to spare (for the side it was
   // played on), open the next level. True: that was a new best
