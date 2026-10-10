@@ -783,7 +783,7 @@ export const CONFIG = {
     // a police pursuit's two cars (a level's "pursuits": see CONFIG.pursuit and pursuit.js), never in a level's traffic list:
     // the getaway car, and the interceptor, a model seen nowhere else (low and wide, a light bar, a push bar)
     getaway: { hw: 0.95, hl: 2.3, height: 1.3, mass: 1.3, health: 220, speed: 1, special: true, model: 'getaway', livery: 0x7a1420, crit: 0.5 },
-    interceptor: { hw: 1.05, hl: 2.45, height: 1.15, mass: 1.7, health: 400, speed: 1, special: true, model: 'interceptor', livery: 0x10151f, crit: 0, spin: 0 },
+    interceptor: { hw: 1.05, hl: 2.45, height: 1.15, mass: 1.7, health: 400, speed: 1, special: true, model: 'interceptor', livery: 0x1a2236, crit: 0, spin: 0 },
   },
   // an ice-cream van's stop (a level's "iceCreamStops": { s, lane, wait? }): the van stopped in its lane, its
   // jingle going, and the traffic behind it in a residential street brakes to a halt and waits, nobody
@@ -898,7 +898,7 @@ export const CONFIG = {
     standDown: 16,         // m/s the interceptor goes on at, the chase given up...
     standDownFor: 10,      // ...for this long (s), before it pulls in and stops
     linger: 130,           // m behind the player at which what is left of it is cleared away
-    heli: { height: 16, lead: 6, beam: 5 }, // the helicopter over the getaway car (render/pursuit.js): m up, m ahead of it, m across its light
+    heli: { height: 9, beam: 5 }, // the helicopter over the getaway car (render/pursuit.js): m up (low enough to be in the chase camera's view), m across its light
   },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)

@@ -155,7 +155,7 @@ export const Pursuit = (() => {
   const listeners = []; // called as one ends: (kind, s) => {} (see robber.js)
   let last = null;     // how the last one ended: { kind, s, helped }
 
-  const allowed = () => !!LEVEL.pursuits && !LEVEL.laps && !LEVEL.battle && !(LEVEL.grid && !LEVEL.grid.rival) &&
+  const allowed = () => (!!LEVEL.pursuits || !!Pursuit.force?.anywhere) && !LEVEL.laps && !LEVEL.battle && !(LEVEL.grid && !LEVEL.grid.rival) &&
     Track.flow !== 'south' && Track.flow !== 'mixed';
 
   // a car of the traffic's, taken from those the level leaves unused, to be driven from here
@@ -176,7 +176,7 @@ export const Pursuit = (() => {
   // if there is no room for it just now
   const start = () => {
     if (st || !allowed() || !Player.active || !Track.isMain(Player.s)) return false;
-    const s0 = Player.s - P.behind;
+    const s0 = Player.s - (Pursuit.force?.behind ?? P.behind);
     if (!Track.inBounds(s0 - P.gap - 20) || Player.s > Track.length - P.clearOfEnd) return false;
     const [first, last] = Track.laneRange(1, s0), lanes = [];
     for (let l = first; l <= last; l++) {
@@ -263,6 +263,8 @@ export const Pursuit = (() => {
   // caught: both pull over and stop, the interceptor behind, its lights still going
   const stopped = (car, dt) => {
     const g = st.robber, isCop = car === st.cop;
+    // (the interceptor, if it is a way behind still, drives up to it first)
+    if (isCop && g.active && car.s < g.s - P.attendFrom) { drive(car, dt, P.standDown * 1.5, { partner: g }); return; }
     const done = pullOver(car, dt, isCop && g.active ? Math.max(car.s, g.s - g.hl - car.hl - P.parkGap) : Infinity);
     car.hazards = !isCop && done;
   };
@@ -344,7 +346,7 @@ export const Pursuit = (() => {
     st = null;
     last = null;
     bags.length = 0;
-    next = allowed() ? between(LEVEL.pursuits.every) : Infinity;
+    next = allowed() && LEVEL.pursuits ? between(LEVEL.pursuits.every) : Infinity;
     if (Pursuit.force && allowed()) next = Pursuit.force.at;
   };
   const update = (dt) => {
@@ -363,7 +365,7 @@ export const Pursuit = (() => {
       if (b.taken || b.s < Player.s - 150) bags.splice(i, 1);
     }
     if (!st) {
-      if (allowed() && Player.active && (next -= dt) <= 0) next = start() ? between(LEVEL.pursuits.every) : P.retry;
+      if (allowed() && Player.active && (next -= dt) <= 0) next = !start() ? P.retry : LEVEL.pursuits ? between(LEVEL.pursuits.every) : Infinity;
       return;
     }
     st.t += dt;
@@ -371,7 +373,7 @@ export const Pursuit = (() => {
     if (st.phase === 'chase') {
       if (!g.active || !g.driver) end(g.health <= 0 ? 'crashed' : 'away'); // (wrecked: by a head-on, or whatever it ran into)
       else if (!cop.active || !cop.driver) end('away');                     // (the interceptor wrecked)
-      else if (g.s - Player.s > (Pursuit.force?.end ? P.forceSettle : P.settle) || st.t > P.longest || g.s > Track.length - 60) settle();
+      else if (g.s - Player.s > (Pursuit.force?.end ? Pursuit.force.settle ?? P.forceSettle : P.settle) || st.t > P.longest || g.s > Track.length - 60) settle();
       return;
     }
     // over: what is left of it stays where it is until the player is well past, the traffic slowing to look
@@ -391,6 +393,8 @@ export const Pursuit = (() => {
     get state() { return st; },   // (for the drawing, and the checks)
     get last() { return last; },
     get next() { return next; }, set next(v) { next = v; },
-    force: null, // { at, end? }: one set off `at` s into every run, to end that way (for a picture, or a check)
+    // { at, end?, behind?, settle?, anywhere? }: one set off `at` s into every run, to end that way (settle m up the road), from that far behind,
+    // on a level with no pursuits of its own too (for a picture, or a check: see render/characters.js)
+    force: null,
   };
 })();

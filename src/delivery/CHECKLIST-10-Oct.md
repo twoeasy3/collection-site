@@ -481,7 +481,7 @@ Not obstacles: road users with something of their own going on, that the player 
 hinder or keep clear of. Each is a random or timed event, as ambulances, funeral processions and
 convoys already are (a level's `every: { min, max }`), so any level can have them.
 
-- [ ] P1. **Police pursuit** (the owner's idea): a chase already under way comes through the
+- [x] P1. **Police pursuit** (the owner's idea): a chase already under way comes through the
       level: a getaway car weaving through the traffic flat out, and behind it a pursuit car that
       is **a model of its own, seen only in this event** (a low, wide interceptor with a light bar
       and push bar, unlike the patrol cars), its siren heard coming before it is seen. The
@@ -503,6 +503,18 @@ convoys already are (a level's `every: { min, max }`), so any level can have the
         warning and horn, rubbernecking, wreckage, cash pickups.
       - *To settle when built:* whether the interceptor can also be earned as a car; one
         interceptor or two; whether it can happen on race levels (suggest not).
+      - *Built (10-Oct, `delivery-pursuit`):* `pursuits: { every: { min, max } }`, `pursuit.js`, `render/pursuit.js`,
+        `render/pursuitModels.js`, `CONFIG.pursuit`, a card on the Gimmicks page; on Big Business, Night Drive,
+        Speed Trap Alley, Ring Road, Tokyo and Gimmick Road 2. Good: hold the getaway car below 78% of its pace
+        for 2.2 s and the interceptor turns it (20 standing, $40, a bust wiped, if it was the player holding it).
+        Evil: 1.5 s in the interceptor's way is a $60 bag thrown out; 3.5 s in its way or 9 s in its channel is a
+        bust for obstructing. Left alone it is decided up the road (caught 40 / crashed 25 / away 35).
+        *Verified:* `node scripts/.pursuit-check.mjs` (43 checks: it fires, the three endings, each gamble pays
+        and costs, moving over costs nothing in 11 of 12 runs, a run still finishes); stills of the interceptor,
+        the chase by day and night with the helicopter, a caught getaway car on the shoulder, a wreck.
+        *Not verified:* never played by hand, the siren never heard, nothing seen moving; no still of the two
+        parked together with the lights going; the editor has no control for the field.
+        *Settled so:* one interceptor; the interceptor is not a garage car; never on a race or the Battlefield.
 - [ ] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
       a man with a bag stands on the shoulder with his thumb out, as a passenger pickup does.
       *Gamble:* carry him for a large payout and have every police car on the level after the

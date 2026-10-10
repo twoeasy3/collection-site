@@ -68,6 +68,7 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `&touch` | Shows the on-screen controls on a desktop |
 | `&cargostate=2` | An Evil run's cargo in that state (0 calm, 1 agitated, 2 furious) whatever the clock says |
 | `&deliver=3.5` | Stops the delivery at the kerb that many seconds in, for a picture (with `&at=` just short of the finish and `&ff=14`) |
+| `&pursuit=3` | A police pursuit set off 3 s into the run, on any delivery level; `&pursuitend=caught` (or `crashed`, `away`) ends it that way a little way up the road, `&pursuitbehind=60` starts it that far behind |
 | `?pick=41` | The menu with that level picked, every level open for the visit (a look at its card); `&start` presses Start Game too |
 
 An amphibious level started from the address with no amphibious car owned is driven in the Float Van for
