@@ -200,4 +200,120 @@ const construction = (ctx) => {
   kit.draw();
 };
 
-export const THEME_EXTRAS = { construction };
+// ---- zones (the coast): race day, on a level with pelotons (Tour de Coast; nothing on a coast level without them):
+// an arch over the road at the start, before the cliff road (for the climb), into the harbour (for the sprint) and
+// with the finish in sight; crowd barriers hung with banners and a crowd behind them where a bunch sets off and all
+// down the finishing straight, team tents and camper vans on the verge, flags on poles through the harbour. And the
+// place: a lighthouse and its cottage on the headland, fishing boats off the causeway, a jetty of yachts and a
+// harbour light off the harbour. Nothing in the zone of the cliffs (the cliff stands on one side, the rail on the other)
+const raceDay = (ctx) => {
+  if (!(LEVEL.pelotons || []).length) return;
+  const { beside, cube, tube, cone } = ctx;
+  const kit = makeKit(ctx), rand = seeded(53);
+  const zones = LEVEL.zones || [], zoneAt = (s) => zones.find(z => s >= z.from && s < z.to), looks = (s) => zoneAt(s)?.scenery;
+  const BANNERS = [0xe23b3b, 0xf2c21a, 0x2f7fd0, 0x3aa655, 0xf4f4f0, 0xe8721c], SHIRTS = [0xd94b4b, 0x3f6fc4, 0xf0d24a, 0x4aa36a, 0xf2f2ee, 0x8a4fb0, 0x2f3542, 0xe98a3a];
+  const SKIN = [0xe6b894, 0xc98e63, 0x8a5a3c], WHITE = 0xf6f6f2, STEEL = 0x8a8f96;
+  // an arch over the whole road: two fat legs and a beam, a banner hung under it
+  const arch = (s, color, trim) => {
+    const lo = beside(-1, s, 1.3), hi = beside(1, s, 1.3), mid = (lo + hi) / 2;
+    for (const lat of [lo, hi]) kit.of(color, tube).push([s, lat, 3.3, 1.2, 6.6, 1.2]);
+    kit.of(color).push([s, mid, 7.1, hi - lo + 1.2, 1.3, 1.2]);
+    kit.of(trim).push([s - 0.7, mid, 6.1, (hi - lo) * 0.55, 0.8, 0.15]);
+  };
+  // crowd barriers along a verge, a banner on every one, and people behind them (share: how many of the places are taken)
+  const crowd = (from, to, side, share) => {
+    for (let s = from, k = 0; s < to; s += 4, k++) {
+      kit.of(STEEL).push([s, beside(side, s, 0.9), 0.55, 0.1, 1.1, 3.8]);
+      kit.of(BANNERS[(k + (side > 0 ? 3 : 0)) % BANNERS.length]).push([s, beside(side, s, 0.82), 0.6, 0.06, 0.7, 3.4]);
+      for (const ds of [0.6, 2, 3.3]) {
+        if (rand() > share) continue;
+        const at = s - 1.8 + ds, d = 1.6 + rand() * 1.8, tall = 1.45 + rand() * 0.35;
+        kit.of(SHIRTS[Math.floor(rand() * SHIRTS.length)]).push([at, beside(side, at, d), tall / 2, 0.45, tall, 0.35]);
+        kit.of(SKIN[Math.floor(rand() * SKIN.length)]).push([at, beside(side, at, d), tall + 0.17, 0.3, 0.3, 0.3]);
+      }
+    }
+  };
+  // a team tent: four poles and a pointed roof
+  const tent = (s, side, d, color) => {
+    for (const [ds, dd] of [[-1.6, -1.6], [1.6, -1.6], [-1.6, 1.6], [1.6, 1.6]]) kit.of(WHITE).push([s + ds, beside(side, s, d + dd), 1.2, 0.12, 2.4, 0.12]);
+    kit.of(color, PYRAMID).push([s, beside(side, s, d), 3, 4, 1.3, 4]);
+  };
+  // a camper van come to watch: a white box, a coloured band, a pop-top
+  const camper = (s, side, d, color) => {
+    const lat = beside(side, s, d);
+    kit.of(WHITE).push([s, lat, 1.35, 2.1, 1.9, 5.2], [s - 0.4, lat, 2.5, 1.8, 0.4, 3]);
+    kit.of(color).push([s, lat, 1.05, 2.14, 0.45, 5.24]);
+    kit.of(0x1c1c1c).push([s - 1.6, lat, 0.4, 2.2, 0.8, 0.8], [s + 1.6, lat, 0.4, 2.2, 0.8, 0.8], [s + 2.1, lat, 1.75, 1.9, 0.6, 1.05]);
+  };
+  // a lighthouse: a white tower with a band, a lit lantern and a cap, at a point off the road
+  const lighthouse = (s, side, d, h, band, margin = 6) => {
+    const at = kit.point(s, beside(side, s, d));
+    if (!kit.at(WHITE, tube, at.x, at.y + h / 2, at.z, h * 0.2, h, h * 0.2, 0, false, margin)) return null;
+    kit.at(band, tube, at.x, at.y + h * 0.55, at.z, h * 0.205, h * 0.16, h * 0.205, 0, false, -1);
+    kit.at(0xfff3c4, tube, at.x, at.y + h + 1, at.z, h * 0.14, 2, h * 0.14, 0, true, -1);
+    kit.at(band, cone, at.x, at.y + h + 2.9, at.z, h * 0.2, 1.8, h * 0.2, 0, false, -1);
+    return at;
+  };
+
+  // the arches (none where the cliff road's sides leave no room for its legs, nor on the causeway, in the sea)
+  for (const [s, color, trim] of [[45, 0x2f7fd0, WHITE], [1385, WHITE, 0xe23b3b], [3640, 0x3aa655, WHITE], [4345, 0xe23b3b, WHITE]]) {
+    if (s < Track.end && !['seacliff', 'gois'].includes(looks(s))) arch(s, color, trim);
+  }
+  // where a bunch on the player's side sets off: the crowd on the right verge, a tent or two behind it
+  for (const p of LEVEL.pelotons) {
+    if (p.dir === -1 || p.road === 'side') continue;
+    const look = looks(p.s);
+    if (look === 'seacliff') continue;
+    const side = look === 'gois' ? -1 : 1; // (the right of the causeway is the sea)
+    crowd(p.s - 28, p.s + 36, side, 0.55);
+    tent(p.s - 14, side, 7.5, BANNERS[Math.floor(rand() * 4)]);
+    if (rand() < 0.6) tent(p.s + 12, side, 8.5, BANNERS[Math.floor(rand() * 4)]);
+  }
+  // the finishing straight: barriers and a crowd both sides, the last 420 m
+  crowd(Math.max(0, Track.length - 420), Track.length - 12, -1, 0.75);
+  crowd(Math.max(0, Track.length - 420), Track.length - 12, 1, 0.75);
+  for (const z of zones) {
+    if (z.scenery === 'bush') {
+      // camper vans and tents on the verges of the headland, and the lighthouse out on its point, a cottage by it
+      for (let s = z.from + 90, k = 0; s < z.to - 60; s += 110 + rand() * 70, k++) {
+        const side = k % 2 ? 1 : -1;
+        if (k % 3 === 2) tent(s, side, 9 + rand() * 4, BANNERS[k % 4]); else camper(s, side, 8 + rand() * 5, BANNERS[k % BANNERS.length]);
+      }
+      const at = lighthouse(z.to - 170, 1, 75, 26, 0xd22a2a);
+      if (at) {
+        const c = kit.point(z.to - 150, beside(1, z.to - 150, 68));
+        kit.at(WHITE, cube, c.x, c.y + 1.6, c.z, 7, 3.2, 5, c.h, false, 4);
+        kit.at(0xb5462f, PYRAMID, c.x, c.y + 4.2, c.z, 8, 2.2, 6, c.h, false, -1);
+      }
+    } else if (z.scenery === 'gois') {
+      // fishing boats lying off the causeway, on the sea side
+      for (let s = z.from + 80, k = 0; s < z.to - 60; s += 90 + rand() * 80, k++) {
+        const d = 28 + rand() * 70, lat = beside(1, s, d), hull = [0x2f5f8f, 0xb5462f, 0x2f7d5a, 0xf2f2ee][k % 4];
+        kit.of(hull).push([s, lat, 0.45, 2.6, 1.1, 7]);
+        kit.of(WHITE).push([s - 1.4, lat, 1.6, 1.8, 1.3, 2.2]);
+        kit.of(0x5b4632).push([s + 1, lat, 3.4, 0.14, 4.6, 0.14]);
+      }
+    } else if (z.scenery === 'shellharbour') {
+      // flags on poles down both verges, a jetty with yachts moored along it, and the harbour light
+      for (let s = z.from + 20, k = 0; s < z.to - 430; s += 28, k++) for (const side of [-1, 1]) {
+        kit.of(WHITE).push([s, beside(side, s, 1.5), 2.6, 0.1, 5.2, 0.1]);
+        kit.of(BANNERS[(k + (side > 0 ? 2 : 0)) % BANNERS.length]).push([s + 0.75, beside(side, s, 1.5), 4.5, 0.05, 1, 1.5]);
+      }
+      const out = (z.sea ?? 8) + 34, js = z.from + 520;
+      if (js < z.to - 100) {
+        kit.of(0x9a7b55).push([js, beside(1, js, out + 24), 0.7, 52, 0.3, 2.6]);
+        for (let k = 0; k < 6; k++) {
+          kit.of(0x5b4632).push([js, beside(1, js, out + 2 + k * 9), 0.2, 0.4, 1.6, 0.4]);
+          const ys = js + (k % 2 ? 6.5 : -6.5), lat = beside(1, ys, out + 6 + k * 8);
+          kit.of(k % 3 ? WHITE : 0x2f5f8f).push([ys, lat, 0.5, 2.2, 1.1, 6.4]);
+          kit.of(0xd9d6cc).push([ys, lat, 5, 0.12, 8, 0.12]);
+          kit.of(WHITE, cone).push([ys - 1.3, lat, 4.6, 0.12, 6, 2.4]);
+        }
+      }
+      lighthouse(z.from + 880, 1, out + 80, 13, 0x2f7d5a);
+    }
+  }
+  kit.draw();
+};
+
+export const THEME_EXTRAS = { construction, zones: raceDay };
