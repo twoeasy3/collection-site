@@ -679,3 +679,74 @@ Branch `delivery-cargo-good` (from `main` at 533c75b), never pushed. Stills only
 - Market Town: exit `out` 90 -> 70, `bends` removed (it swung out twice: 7 changes of hand in 986 m; now 971 m, tightest 100 m); camera 1250 -> 1300.
 - Other levels looked at after: back-roads, quarry-run, ring-road forks, singapore crossroads: unchanged (`scratchpad/levelfix/t5`).
 - NOT done: no change to the fork geometry in track.js (the 130 m `shapeLead` before `out` starts is why a side road runs beside the road, then swings: left alone, other branches are in track.js); no give-way line where a side road meets a crossroads (no level has that); no spacing rule in the validator.
+
+### Part 4: both levels brought up (done, c513726)
+- Alpine look (render/road.js, so stelvio, mountain-pass and fjord all get it): snow poles every 24 m both edges; round the outside of any bend tighter than 30 m (a hairpin) a stone wall under snow with a red and white band, and no pine within 24 m of it; at the road's highest point (if it climbs over 20 m) a refuge hut and a board with the level's name and "SUMMIT".
+- Stelvio: `crosswinds` 2120-2400 blowing left (the one road gamble this branch has); fog moved off the summit to 2440-2760 so the hut and board are seen; pickups in the oncoming lane at 880, 1700, 2260, 3320 (reward for the risk). Length and clock unchanged.
+- Market Town: `shoulderRows` of market umbrellas 930-1060 both shoulders (between the crossroads, clear of the parked cars); `waterMains` at 1600 lane 1. Side road now has houses, pavement, lamps both sides. Length and clock unchanged.
+- NOT done: S3 (the face between legs is still a smooth ramp on an 8 m grid: needs a finer terrain grid or a rock-face mesh, a job of its own); S6 (no new view over the valley); houses along the cross road's arms (trees only); M6 (the railway band). Stelvio had no menu picture at all: one is being made.
+
+## Agent 17: in-game UI (.claude/worktrees/delivery-ui, delivery-ui)
+
+- Done, two commits on `delivery-ui` (not pushed): 8cb5d78 (U1 to U5, the code), then the check script, README and checklist ticks.
+- U1: the level bar is a ring in the meters' corner (distance left in its middle, lap notches and LAP n/N on a lapped level). Pause / Exit level: bottom centre in landscape, top centre upright and in the screensavers.
+- U2: the shoulder's danger is a dial with a needle beside the ring, always there, 0 at rest, last quarter red.
+- U3: messages in a strip along the top edge between the corners (landscape); at the foot of the screen between the THROW buttons (upright). `#topStrip` in index.html holds `#sticky`, `#messages`, `#camAlert`.
+- U4: `CONFIG.messageTimes` { default, fade, kinds, groups, keys, sticky, stickyRows } replaces messageTime / messageExtra / messageFade (times unchanged). Sticky: `Message.sticky`, `Message.conditions` (filled at the foot of player.js), `Message.settle()` (called at the top of Game.update and by the HUD).
+- U5: `Player.mysteryName`, words in messages.json `mysteryNames` (a new group, added before `milestones`; no other line of messages.json changed).
+- Shared files touched: config.js (the three message lines replaced by the table), messages.json (one new group), game.js (+`distanceLeft` getter, +1 line in update), player.js (+`mysteryName` getter, +conditions block at the foot), main.js (+`&hudcheck`, for pictures).
+- Checked: node --check, delivery-levels-check, .bundle-check, .mysteries-check, .cargo-check, the new `scripts/.hud-check.mjs` (all ok); pictures at 1100x650, 520x900, 900x420 in scratchpad `shots-ui/before` and `shots-ui/after`. Smoke test NOT run. Nothing seen moving, nothing on a real phone, nothing narrower than 500 px.
+
+## Agent 13: car ideas lot (main checkout, main)
+
+Done, never pushed. Commits on `main`: 18125cb (the tab, the table, the first ten models), 9ce0665 (the next ten),
+657beea (the last ten), and the one after it (fixes from the pictures, README, checklist ticks).
+Files: `ideas.js` (IDEA_CARS), `render/ideaModels.js` (IDEA_MODELS), `render/ideaslot.js` (the lot and a studio for
+pictures); small edits in `render/garage.js`, `main.js` (one line), `delivery/index.html`, `menus.css`.
+Addresses: `?garage&tab=ideas&look=<id>`, `&hover=<id>`, `&studio=<ids or all>&views=3`.
+Pictures: scratchpad `shots-ideas/` (`sheet.png`, `<id>.png`, `lot/`, `evil/`).
+Not verified: nothing clicked by hand (tab buttons, drag scrolling, pointer hover). Weakest models: splitwindow,
+midnight, twostroke.
+
+## Agent 18: menu UI (.claude/worktrees/delivery-menu, delivery-menu)
+
+Status: in progress.
+
+- [x] M1 barebones (1eb9ece): `#startScreen` rebuilt as one screen (stage, strip, groups, tabs; car, side, START; options sheet). New `render/menustage.js`, `menu2.css`; `render/menu.js` slimmed; `render/levelcards.js` gone. Keys and `?do=`, `?cursor=`, `?side=evil`, `?options` for checks.
+- [ ] M1 polish at 1400x900, 520x900, 900x420
+- [ ] M2 level descriptions (Good / Evil)
+- [ ] M3 the road card (gimmicks, pickups, traffic with 3D models)
+
+## Agent 19: road gimmicks, resumed (.claude/worktrees/delivery-gimmicks, delivery-gimmicks)
+
+Task: finish H2 from the stopped agent's saved work, then H8, H4, H5 and down the list. Never runs the smoke test. Nothing played by hand.
+The saved H2 work (`4b617b5`) was sound: main merged in cleanly (`d0538f8`), and it loaded; one check of its own was wrong.
+
+Level fields added (shapes):
+- `jamRamps: [{ s, lane, queue?, lanes?: [first, last] }]` (expressway, straight and level, clear of exits' ramps)
+- `washboards: [{ from, to, skim? }]` (expressway; skim in m/s, 13 to 40, CONFIG.washboard.skim if not said)
+
+Progress:
+- [x] H2 ramp over the jam: done, `72a0765`. On Gimmick Road 3 (2400), Night (2250, queue 2, a turbo at 2110), Speed Trap Alley (2860, queue 3). Clocks not re-timed. Cash beyond each queue, two side by side. `.gimmicks3-check.mjs ramp` passes (14), `finish` added (a whole run, hands off). Stills: `shots-gimmicks3/ramp-1-sign`, `ramp-2-foot`, `ramp-3-air`, `card-ramp`, `night-ramp`.
+- [x] H8 washboard dirt: done, `61e67dc`. Field below. On Gimmick Road 3 (2950-3450, barriers at 3120, 3200, 3330), Safari (2520-2980), Outback Express (3960-4380), cash on each. Clocks not re-timed. One additive line in `player.js` (the steering's response times `1 - steerLoss * shaken`). `washboard` passes (12). Stills: `wash-1-sign`, `wash-2-on`, `card-wash`, `safari-wash`. A board's long line is now squeezed to fit (`makeBoard`).
+- [ ] H4 low bridge: in progress.
+
+For the owner:
+- H2: the queue fills the player's whole side, so the way round is the oncoming side or the shoulder (both a risk of their own), or the jump. Ring Road was wanted but has no 250 m clear of its exits' ramps.
+- Not mine, seen in passing: `gimmicks.html?group=the-road-itself` logs "THREE.Object3D.add: object not an instance of THREE.Object3D" once (a card there adds an undefined model).
+- Cash pickups (the new standing rule) added on Gimmick Road 3 beyond the wind (660), the crest (1235, two side by side) and the ramp.
+
+## Agent 20: theme levels A: toy room, underwater tunnel, moon base (.claude/worktrees/delivery-city-levels, delivery-themes)
+
+- Base for the three theme branches: `0c74bd6` (main merged in). Themed levels are `THEME_LEVELS` in `levels.js` (T1..., a menu group of their own after the amphibious levels; `progress.js` order 27, `{ cap: 46 }`). One level a line, each batch above its own marker comment, the same in `render/themes/index.js` and at the end of `themes.js`.
+- Cut from the stopped agent's work and kept on branch `delivery-themes-toys-wip` (`ad3a435`): marbles, loops, the cat's paw, low gravity (`air.js`, `extras.js`, `toys.js`, their renderers and checks). Not finished, not checked.
+- T14 Toy Room: level `toys` (T1), 4600 m, done. Checks, ghost probe and screenshots only; not played by hand.
+- T15 underwater tunnel: started.
+- T18 moon base: not started.
+
+### Cash and rows (the owner's new rule; done, ff83536) and part 5
+- Stelvio: 20 cash pickups, 8 rows of two across (340, 880, 1420, 1700, 2260, 2800, 3320, 3850). Market Town: 17 on the road + 8 on the side road, 10 rows (350, 990, 1600, 1800, 2350, 3100, 3600; side 200, 420 three across, 700). Clocks untouched.
+- A row at one `s` draws and collects properly (`scratchpad/levelfix/rows.mjs`): in a lane the car takes that lane's only; astride the line between two lanes it takes both at once.
+- Engine gap found, NOT fixed: on the expressway a pickup's `lane: 'left' | 'right'` (the shoulder) fails the level check ("lane right is merged away there", track.js ~1155: only a side road's shoulders pass), though levels.js says a pickup can be on a shoulder. So on a 2-lane road a row is two across at most; three only on a side road.
+- Part 5: 81 "after" shots in `scratchpad/shots-levelfix/after` (the 68 of "before" plus rocks, summit, hairpin, market, rows); contact sheets `scratchpad/levelfix/sheets/b-*.jpg` (before) and `a-*.jpg` (after). The 68 were taken before the cash went in. Menu pictures: `levelshots/stelvio.jpg` (new: it had none), `market-town.jpg` (retaken).
+- All commits on `delivery-levelfix`: 2050f4e, 1d787fa, c513726, ff83536. Not pushed, not merged. Checks run after the last: levels-check all good, schema passed (hazards and bundle checks last run at c513726; only level JSON and two JPEGs since).

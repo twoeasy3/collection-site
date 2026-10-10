@@ -465,9 +465,17 @@ OBSTACLE_MODELS.rock = (o) => {
   const rock = new THREE.Mesh(new THREE.IcosahedronGeometry(o.r, 0), lambert([0x7a7066, 0x8d8174, 0x6b625a][Math.floor(Math.random() * 3)]));
   rock.scale.set(1, 0.8, 1.1);
   rock.rotation.set(Math.random() * 3, Math.random() * 3, 0);
-  rock.position.y = o.r * 0.75;
+  rock.position.y = o.r * 0.62; // (a little sunk into what it rests on: its lowest point is 0.8 of its radius below its middle)
   group.add(rock);
   group.userData.rock = rock;
+  group.userData.rest = rock.position.y;
+  // (the dark patch under it where it meets the road, and under it as it bounds across: see render/items.js)
+  const shade = new THREE.Mesh(new THREE.CircleGeometry(o.r * 1.15, 14), new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32,
+    depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 }));
+  shade.rotation.x = -Math.PI / 2;
+  shade.position.y = 0.03;
+  group.add(shade);
+  group.userData.shade = shade;
   return group;
 };
 // a cyclist, cartoon style: a chunky rider in a bright jersey, a big round head under a striped

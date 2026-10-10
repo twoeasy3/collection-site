@@ -61,6 +61,7 @@ import { Garage } from './render/garage.js';
 import { Sound } from './render/audio.js';
 import { Social } from './social.js';
 import { CAR, lendCar, superOf, ownedAmphibious } from './cars.js';
+import { Message } from './messages.js';
 
 // ?autostart (or ?autostart=evil) in the address skips the start screen: handy when testing.
 // ?test (or ?hidden=testbed) starts the hidden test track straight away (?test&evil: as Evil).
@@ -123,6 +124,8 @@ if (params.get('racewatch') !== null) {
   if (params.get('at')) Player.s = Number(params.get('at'));
   if (params.get('speed')) Object.assign(Player, { speed: Number(params.get('speed')), launching: false }); // ?speed=31: doing that many m/s from the start (with ?ff: hands off, the speed holds)
   if (params.get('lane')) Player.lat = Track.laneOffset(Number(params.get('lane')), Player.s); // ?lane=4: in that lane
+  if (params.get('pieces')) Game.tankPieces = Math.min(CONFIG.tankPieces - 1, Number(params.get('pieces')) || 0); // ?pieces=3: that many pieces of the tank found already
+  if (params.get('rage') !== null) { Game.tankPieces = CONFIG.tankPieces; Player.startTank(); } // ?rage: in TANK RAGE from the start (a check, a picture: on an amphibious level, the Amphibious Tank)
   if (params.get('fly') !== null) startFly();
   const photo = params.get('photo') !== null; // ?photo: paused, in photo mode, once ?ff has run (a check of render/photo.js)
   // ?cine: a still for the level select. The traffic is dealt out afresh around the car, ?ff lets
@@ -134,6 +137,7 @@ if (params.get('racewatch') !== null) {
   if (cine) {
     Cinematic.on = true;
     Cinematic.studio = params.get('cine') === 'car'; // (?cine=car: the car alone, on white)
+    Cinematic.turn = Number(params.get('turn')) || 0; // (&turn=120: the studio's camera that many degrees round the car, for its other sides)
     Game.paused = true;
     document.body.classList.add('cinematic');
     if (Cinematic.studio) {
@@ -161,6 +165,19 @@ const silence = () => {
   Sound.powerWarning(false);
   Sound.ufoStrike(false);
   Sound.lowriders(0);
+};
+
+// ?hudcheck (with ?autostart): every part of the HUD showing at once and held there, for a picture of it:
+// the shoulder's danger most of the way up, a flat tyre, a mystery running (?mystery= names it, or the
+// earthquake), half a tank found, and two ordinary messages kept up (a long one and a bust's)
+const hudCheck = params.get('hudcheck') === null ? null : () => {
+  if (Game.state !== 'playing' || !Player.active || Game.screensaver) return;
+  if (!Player.mystery) { Player.nextMystery = params.get('mystery') || 'earthquake'; Player.collect('mystery'); }
+  if (!Player.puncture) Player.punctureTyre(1);
+  Player.danger = Social.dangerTime * 0.3;
+  Game.tankPieces = 2;
+  if (!Message.lines.some(line => line.kind === 'bust')) { Message.say('events', 'wideLoad'); Message.say('busts', 'seen'); }
+  for (const line of Message.lines) line.at = performance.now();
 };
 
 let last = performance.now();
@@ -232,6 +249,7 @@ const frame = (now) => {
     syncMysteries(dt); // (after the camera: the earthquake bobs it)
     syncRaceWatch(now);
     syncEmotes(dt, now);
+    if (hudCheck) hudCheck();
     updateHud();
     // the engine note follows the speed; silent once the run is over or the car is gone
     // (and in the screensaver, where there is no car, or while paused)
@@ -240,7 +258,7 @@ const frame = (now) => {
     const heard = Game.raceWatch && Game.state === 'playing' && !Game.paused ? raceAudio(dt) : null;
     if (heard) Sound.engine(heard.speed, CAR.id, CAR.maxSpeed, heard.gain, heard.pitch);
     else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : Player.afloat ? 'jetboat' : CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher; afloat on a water stage, a boat's)
-      Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
+      Player.tank > 0 ? Player.rageTank?.maxSpeed ?? CONFIG.tankMaxSpeed : CAR.maxSpeed);
     Sound.pack(heard ? heard.pack : 0);
     // the siren, louder the nearer the nearest police car or ambulance (the screensaver's too), and a radar
     // ping as one comes near enough to bust you (nobody busts a tank)

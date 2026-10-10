@@ -270,7 +270,12 @@
 //   potholes   { s, lane, r }: a pothole in that lane (r: its radius, m): a jolt, and maybe a flat tyre
 //   rockfall   { from, to, count, side, out?, height? }: rocks tumbling down onto the road from that side as the player
 //              comes near: obstacles, which only the player hits (see CONFIG.rockfall). out / height: where they wait,
-//              m off the road's edge and m up, if not CONFIG.rockfall's (the hillside's): on a quarry's bench, say
+//              m off the road's edge and m up, if not CONFIG.rockfall's (the hillside's): on a quarry's bench, say.
+//              A rock waits ON something and comes down over it (render/items.js): on a level whose land climbs (a theme
+//              with terrain), the land itself, out m off, on whichever side is uphill (leave height out there: with a
+//              height it is taken to be a ledge that high, wherever the land is, and hangs in the air if there is none);
+//              on flat land, a crag `height` m tall built for it. Keep a stretch 40 m clear of a hairpin, where the
+//              legs either side are level with each other and there is no slope for a rock to come down
 //   (Gimmick Road 2's: see hazards.js and CONFIG, each under its own name. Any can be on a side road, as cameras,
 //   crossings and potholes can: { road: 'side', exit: n }, s then m along that side road)
 //   schoolCrossings { s }: a lollipop person stops the traffic for the children; running it is a bust
@@ -309,6 +314,12 @@
 //   id         unique name, used as the level's key in saved progress
 //   name       the level's name on the menu
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
+//              How a target stands is the level's theme's (a theme's "target": see themes.js and CONFIG.target),
+//              and one target can have its own where a stretch has sides of its own (an elevated road, a
+//              bridge, a zone's look): { s, side, offset?, height?, style?, base?, arm?, beam? }: offset: m
+//              beyond the pavement its ring is; height: m above the road; style: 'post' | 'wall' (on a
+//              stalk on a wall's top, `base` m up) | 'gantry' (hung from an arm, its mast `arm` m further
+//              out); beam: a beam of light over it. Not in a tunnel, nor where a junction or another road is
 //   clock      { good, evil }: seconds on the clock for each side. Worked out from a clean run in the
 //              reference car by scripts/level-clocks.mjs (see CONFIG.clock), unless set by hand
 //   tip        the money earned for finishing before the clock reaches zero

@@ -171,6 +171,20 @@ export const CARS = [
     maxSpeed: 46, accel: 8, crossing: 1, health: 100, hw: 1.25, hl: 2.3, height: 1.9 }, // (TANK RAGE's top speed: CONFIG.tankMaxSpeed)
 ];
 
+// The Amphibious Tank: what TANK RAGE is in on an amphibious level (a level's "amphibious"), on its land and on
+// its water alike, and nowhere else: every other level's TANK RAGE is the Tank's, as ever. It is not one of the
+// garage's cars (not in CARS: no bay, no price, nothing in saved progress): it is only ever met in a rage, pieced
+// together from the same five targets. A tracked amphibious assault vehicle (render/tankModels.js): it floats
+// (amphibious; its own draft, deep in the water), is as fast as the Tank on land (maxSpeed) and slower afloat
+// (afloat: the share of its top speed it keeps, where an amphibious car keeps CONFIG.water.topSpeed: still no
+// slower on the water than the quickest amphibious car, so a rage is never a step down),
+// and throws a big bow wave (bowWave: times a car's). It fires as the Tank does. Player.rageTank is this while
+// such a rage is on (see Player.startTank)
+export const AMPHIBIOUS_TANK = { id: 'amphibioustank', name: 'Amphibious Tank', color: 0x5f7a5a, evilColor: 0x2c3138, tank: true, amphibious: true,
+  maxSpeed: 46, afloat: 0.72, draft: 1.0, bowWave: 2.2, height: 2.2 };
+// the tank a level's TANK RAGE is in: null = the Tank, as ever
+export const rageTankFor = (level) => level && level.amphibious ? AMPHIBIOUS_TANK : null;
+
 // Vehicles that belong to a level, not to the garage (a level's "car" field).
 export const LEVEL_CARS = {
   ufo: { id: 'ufo', name: 'UFO', price: 0, color: 0xc9d2dc, evilColor: 0x4a3a66, ufo: true, noWheels: true,
