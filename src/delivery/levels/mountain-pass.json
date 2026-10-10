@@ -6,7 +6,7 @@
     "evil": "A loose cannonball, four icy hairpins and half the mountain coming down. Cut every corner, squeeze past the roadworks and let the fog hide the rest."
   },
   "theme": "snow",
-  "clock": { "good": 205, "evil": 160 },
+  "clock": { "good": 195, "evil": 155 },
   "tip": 160,
   "lanes": 2,
   "cargo": { "good": "clock", "evil": "cannonball" },
