@@ -155,7 +155,7 @@ const VEHICLES = {
   tractor: ['Tractor', 'Slow traffic that sets off from the same spot every run.'],
   police: ['Police car', 'Bump it, or use the shoulder while it is near, and you are busted.'],
   semi: ['18-wheeler', 'Keeps to the kerb lane and runs fast whatever the level\'s pace. It never spins out: hit hard enough, it wobbles, then blows up.'],
-  cargotruck: ['Cargo truck', 'An 18-wheeler with an open load, which comes off the back as it goes.'],
+  cargotruck: ['Cargo truck', 'An 18-wheeler with its back doors swung open and its load showing, which comes off the back as it goes.'],
   f1: [null, 'What you and the whole grid race in: Formula 1 cars, light, quick and nimble.'],
   gt: [null, 'What you and the whole grid race in: GT road cars, heavier than an F1 car, and tougher.'],
   lmp: [null, 'What you and the whole grid race in: Le Mans prototypes, the toughest of the three, and they never spin out.'],

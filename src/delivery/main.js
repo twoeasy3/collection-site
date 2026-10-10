@@ -37,6 +37,7 @@ import { syncSite } from './render/site.js';
 import { syncRoadside } from './render/roadside.js';
 import { syncHazards } from './render/hazards.js';
 import { syncGambles } from './render/gambles.js';
+import { syncRadiation } from './render/radiation.js';
 import { syncBattle } from './render/battle.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
@@ -157,6 +158,13 @@ if (params.get('racewatch') !== null) {
   else selectLevel((Number(params.get('level')) || 1) - 1);
   // ?theme=snow: the level in that theme, whatever its own (a copy of it: nothing of the run is saved)
   if (params.get('theme') && THEMES[params.get('theme')]) selectSpecial({ ...LEVEL, theme: params.get('theme') });
+  // ?rad=300-500 (or &rad=300-500:2, that lane only): a radiated area over that stretch on top of the level's own;
+  // ?radcar=0.5: that share of its traffic dealt out infected (bare ?radcar: half). Tests of radiation.js on any level
+  if (/^\d+-\d+(:\d+)?$/.test(params.get('rad') || '')) {
+    const [from, to, lane] = params.get('rad').split(/[-:]/).map(Number);
+    selectSpecial({ ...LEVEL, radiation: [...(LEVEL.radiation || []), lane >= 0 ? { from, to, lanes: [lane, lane] } : { from, to }] });
+  }
+  if (params.get('radcar') !== null) selectSpecial({ ...LEVEL, infectedTraffic: Math.min(1, Math.max(0, Number(params.get('radcar')) || 0.5)) });
   if (params.get('car')) { // ?car=lowrider: drive that car for this visit, owned or not (nothing is saved); ?car=super-sport: its Super version (cars.js superOf)
     Progress.data.cars.push(params.get('car').replace(/^super-/, ''));
     Progress.data.car = params.get('car').replace(/^super-/, '');
@@ -298,6 +306,7 @@ const frame = (now) => {
     syncRoadside(dt);
     syncHazards(now);
     syncGambles(now, dt); // (after the car and the traffic are placed: it leans and shakes them)
+    syncRadiation(now, dt); // (after the traffic is placed: the infected cars' rings go with them)
     syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
     syncReversible();
     syncBattle(dt);

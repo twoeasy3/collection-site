@@ -10,6 +10,7 @@ const check = (ok, what) => { if (!ok) failures++; console.log((ok ? '  ok    ' 
 try {
   const { Message, timeFor } = await g.load('messages.js');
   const { Pickups } = await g.load('pickups.js');
+  const { Radiation } = await g.load('radiation.js');
   const MESSAGES = JSON.parse(readFileSync(new URL('../src/delivery/messages.json', import.meta.url), 'utf8'));
   const P = g.Player, G = g.Game, T = g.CONFIG.messageTimes, M = g.CONFIG.mystery;
 
@@ -64,6 +65,7 @@ try {
     'powerups.badGas': [() => { P.collect('badGas'); Message.say('powerups', 'badGas'); }, () => { P.badGas = 0; }],
     'powerups.heavyMass': [() => { P.collect('heavyMass'); Message.say('powerups', 'heavyMass'); }, () => { P.heavy = 0; }],
     'powerups.butterfingers': [() => { P.collect('butterfingers'); Message.say('powerups', 'butterfingers'); }, () => { P.butterfingers = 0; }],
+    'events.infected': [() => Radiation.infect(), () => { Radiation.infected = false; }], // (radiation.js: a full meter, or an infected car touched)
   };
   for (const path of Object.keys(T.sticky)) {
     const effect = path.startsWith('powerups.mystery.') ? path.split('.')[2] : null;

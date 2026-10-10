@@ -82,8 +82,11 @@
 //   alwaysGood true = the player is Good on it, whatever the side picked on the menu (as on the Battlefield)
 //   cargo      { good, evil }: what the player is delivering, for each side (the ids of cargo.js: good 'pizza' |
 //              'cake' | 'goldfish' | 'cactus' | 'clock'; evil 'parcel' | 'porcupine' | 'bees' | 'doll' | 'tentacle').
-//              Only a sight: it rides in a corner of the HUD and is set down at the kerb at the end. Left out (or
-//              either side of it), the level's place on the menu picks one. Races and the Battlefield carry nothing
+//              Only a sight: it rides in a corner of the HUD and is set down at the kerb at the end, and the menu names
+//              it on the stage. A built-in level's cargo is kept in levelText.json, with its name and description (the
+//              file's first, a side at a time; this field is the fallback: levelText.js, cargo.js); an id that is no
+//              item is passed over. Left out (or either side of it), the level's place on the menu deals one. Races
+//              and the Battlefield carry nothing
 //   grid       { count, kind, gap, pace: { min, max }, from }: a race. `count` cars of that kind on a
 //              grid, two by two, `gap` m apart, ahead of the player, all the player's way, half of them
 //              evil, each at its own share (pace) of the player's car's top speed; they race on,
@@ -158,7 +161,7 @@
 //                                  'cameraDolly', 'mooringPosts', 'fuelDrum', 'popcornCart', 'barrel',
 //                                  'chairStack', 'riceBasket', 'present', 'toyDrum', 'sackStack', 'beachBall',
 //                                  'tumbleweed', 'cafeTable', 'wheelieBin', 'snowdrift', 'brimstone', 'flagStand',
-//                                  'lavaRock' (the volcano's rock). All of them are on the Gimmicks page, last,
+//                                  'lavaRock' (the volcano's rock), 'wasteDrum' (the fallout zone's). All of them are on the Gimmicks page, last,
 //                                  under Road dressing (gimmicks.html?group=road-dressing)
 //   dropBears  { from, to, count } drop bears up in the trees over that stretch, dropping onto the
 //              road as the player comes near (see CONFIG.dropBear)
@@ -345,6 +348,15 @@
 //              beside it) is new tar, coned off: traffic keeps out of it and crawls past in the other lanes. A car
 //              on it picks tar up on its tyres, which slows it more the longer it stays (in the end to less than
 //              the queue's pace) and for a few seconds after it is off (see CONFIG.tarmac)
+//   radiation  { from, to, lanes?: [first, last], side?: 'left' | 'right' }: a radiated area: over the stretch, in those
+//              lanes (out to the road's edge on `side`, if given; with no lanes, the whole road, shoulders and all),
+//              the player's car loses health slowly and its radiation meter rises; out of it the meter falls
+//              back. A full meter infects the player for the rest of the run: its health ticks down everywhere.
+//              The Armour pickup keeps all of it out. Always leave a clean line (other lanes, a shoulder, a side
+//              road) or put an armour before it (see radiation.js and CONFIG.radiation)
+//   infectedTraffic  the share of the traffic dealt out infected (0 .. 1; left out: CONFIG.radiation.share on a
+//              level with a radiated area, none on any other). An infected car doses the player within its ring
+//              as an area does, and touching it infects at once; a clean vehicle can catch it in an area
 //   spray      { from, to }: truck spray: over the stretch the expressway is wet, and every tall vehicle moving on it
 //              (a van, a bus, a lorry) drags a cloud of spray behind it, as wide as its lane and the next each
 //              side: in the cloud the player sees next to nothing. Nothing is done to the car (see CONFIG.spray)
@@ -355,10 +367,11 @@
 //              it throws a plume of dust, which the wind carries to the side it blows to ('left' | 'right'). In a
 //              plume the player sees next to nothing; a lane upwind of the vehicle is clear, which may be the
 //              oncoming one. Nothing is done to the car (see CONFIG.dust)
-//   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
-//              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
-//              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a
-//              bend it is carried wide. Boards before it give the speed. Put something in it to be steered round
+//   washboards { from, to }: washboard dirt: the road is corrugated right across over the stretch. On it, at any speed,
+//              the steering takes less and the car wanders (the faster, the worse), in a bend it is carried wide, and
+//              it is held to CONFIG.washboard.most m/s (a faster car dragged down to that: never stopped). Boards
+//              before it. Leave a lane or shoulder it does not reach, or put something in it to be steered round. Drawn
+//              in what the theme makes it of (themes.js, WASHBOARDS)
 //   pelotons  { s, count, speed, trigger, dir }: cyclists two abreast by the kerb on the player's side,
 //              setting off as the player comes near: obstacles, which only the player hits (see CONFIG.peloton).
 //              dir -1: on the far side instead, riding towards the player (the bunch strung out behind
@@ -476,11 +489,13 @@ import seaquake from './levels/seaquake.json';
 import farside from './levels/farside.json';
 import stunts from './levels/stunts.json';
 import ponti from './levels/ponti.json';
+import thaw from './levels/thaw.json';
 // (batch E's imports go above this line)
 import glow from './levels/glow.json';
 import erupt from './levels/erupt.json';
 import cattle from './levels/cattle.json';
 // (batch F's imports go above this line)
+import fallout from './levels/fallout.json';
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
@@ -530,7 +545,9 @@ export const THEME_LEVELS = [
   glow,
   erupt,
   cattle,
+  thaw, // (batch E's last, the ice road's: written after batch F's three, so after them: its place in saved progress is 52)
   // (batch F: second levels on the theme park, volcano, port, Wild West, favela, rice terraces: new levels go above this line)
+  fallout, // (Hot Zone, the fallout level, after Spring Thaw: order 48, INSERTED_AT 53 in progress.js)
 ];
 export const MAIN_LEVELS = [...FIRST_LEVELS, ...THEME_LEVELS]; // (every numbered level: 1, 2, 3...)
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...AMPHIBIOUS_LEVELS, ...CIRCUIT_LEVELS];

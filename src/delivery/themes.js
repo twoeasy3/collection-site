@@ -140,6 +140,11 @@ export const THEMES = {
   // iceroad: a ploughed road across a frozen lake at night (render/themes/iceroad.js): bare blue ice between snowbanks and marker poles, pressure ridges (a hump in the road is one), fishing huts with their windows lit, the dark shore far off, stars, a moon and the aurora
   iceroad: { sky: 0x06122a, ground: 0xdfe9f2, road: 0x6f9cbc, scenery: 'iceroad', line: 0xf2f7fb, centre: 0xffa23a, lit: true, headlights: true, night: true, channel: { shallow: 0x6f9fb8, deep: 0x16384f, glint: 0x8fc4dc },
     light: { sky: 0xa8c8ff, ground: 0x3a4a66, ambient: 0.95, sun: 0xcfe2ff, sunlight: 0.55 } },
+  // iceroadThaw: the same lake road by day, in the thaw (the second ice-road level): a pale spring sky, daylight, no headlights; the theme leaves out its stars, moon and aurora (night: its own)
+  // (soft: what a theme's soft ground is made of, where it is not earth: here mud and ruts are grey slush with dark wet tracks. mud, track, puddle: see render/road.js and render/gambles.js; its washboard is corrugated ice, WASHBOARDS below)
+  iceroadThaw: { sky: 0xb4d2e8, ground: 0xe6eef4, road: 0x7fa3ba, scenery: 'iceroad', line: 0xf2f7fb, centre: 0xffa23a, lit: true, channel: { shallow: 0x6f9fb8, deep: 0x16384f, glint: 0x8fc4dc },
+    soft: { mud: 0xc6d0d8, track: 0x4f6474, puddle: 0x5f8fae },
+    light: { sky: 0xffffff, ground: 0x8aa0b4, ambient: 1.2, sun: 0xfff2dc, sunlight: 0.9 } },
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // themepark: the road through a theme park (render/themes/themepark.js): a promenade behind candy-striped kerbs, bunting and rainbow arches over the road, striped tents and stalls, carousels and Ferris wheels turning, a rollercoaster over the road and beside it, a castle on the skyline; a tunnel is the ghost train's
   themepark: { sky: 0x6ec3f5, ground: 0x7fc66b, road: 0x4b4a55, scenery: 'themepark', tunnel: { wall: 0x5a2d82, tiles: 0xffd21f, roof: 0x24143a, face: 0xe23b3b, lamp: 0xff9ff0 } },
@@ -182,6 +187,14 @@ export const THEMES = {
     target: { height: 4.2, beam: true },
     light: { sky: 0xd8e2e0, ground: 0x44503e, ambient: 1.1, sun: 0xe8f0ea, sunlight: 0.6 } },
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
+  // fallout: the exclusion zone round a power plant that has gone wrong (render/themes/fallout.js): a sick green sky and
+  // a green haze over dead grey land, the plant's cooling towers and reactor dome on the skyline, pylons marching
+  // across the land, pipe racks and a tank farm by the road, chain-link fences hung with trefoils, abandoned
+  // checkpoints, a dead village; ash drifting down. Its radiated stretches are the level's "radiation" (radiation.js).
+  // sets: what a zone's scenery can ask for: the plant itself, the pylons, the tank farm, a checkpoint, the village
+  fallout: { sky: 0x9cc06e, ground: 0x6b6852, road: 0x3a3c3e, scenery: 'fallout', fogColor: 0xa9cc78, sets: ['pylons', 'checkpoint', 'plant', 'tankfarm', 'village'],
+    target: { height: 4.2, beam: true }, // (up over the fence)
+    light: { sky: 0xe4ffb8, ground: 0x3a3a2c, ambient: 1.3, sun: 0xf2ffd0, sunlight: 0.9 } },
 };
 
 // ---- the themes' own obstacles ---------------------------------------------------------------------------
@@ -211,6 +224,7 @@ const OBSTACLES = {
   mumbai: { bale: 'sackStack' },
   beach: { bale: 'beachBall' },
   hell: { cone: 'brimstone' },
+  fallout: { crate: 'wasteDrum' }, // (a yellow drum of waste, the trefoil on it; the cones and barriers are a checkpoint's own)
   // (the port keeps its crates, the farm and the Wild West their bales: there they belong)
 };
 // drifting: the same, for the things of a level's "drifters" alone, where what moves about the road wants to be
@@ -232,3 +246,16 @@ export const themedKind = (theme, kind, drifting = false) => {
   const T = THEMES[theme || 'city'];
   return (drifting && T?.drifting?.[kind]) || T?.obstacles?.[kind] || kind;
 };
+// What a theme's washboard (a level's "washboards": gambles.js) is made of: the same corrugations, the same cost, drawn
+// in the stuff of the place (render/gambles.js, WASHBOARD_LOOKS). A theme not named has 'dirt'; a variant (portNight,
+// volcanoErupting...) has its parent's. Wooden planks only where a corduroy of boards belongs: a dock, a quay, the West
+const WASHBOARDS = {
+  port: 'plates', construction: 'plates', airport: 'plates', seabed: 'plates', tokyo: 'plates', hongkong: 'plates',
+  moon: 'dust', beach: 'sand',
+  wildwest: 'planks', venice: 'planks', backlot: 'planks',
+  iceroad: 'ice', snow: 'ice', christmas: 'ice',
+  city: 'cobbles', suburb: 'cobbles', hood: 'cobbles', canberra: 'cobbles', montreal: 'cobbles', singapore: 'cobbles', favela: 'cobbles', mumbai: 'cobbles', flooded: 'cobbles',
+  toyroom: 'ribs', volcano: 'lava', hell: 'lava',
+};
+for (const [name, look] of Object.entries(WASHBOARDS)) THEMES[name].washboard = look;
+export const washboardLook = (theme) => { const T = THEMES[theme || 'city']; return T?.washboard || THEMES[T?.scenery]?.washboard || 'dirt'; };

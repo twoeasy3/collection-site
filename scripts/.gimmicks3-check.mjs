@@ -303,41 +303,55 @@ try {
   // 3200 (lanes 3 and 5) and 3330 (lane 4): the line through is lane 3, lane 4, lane 3)
   await section('washboard', async () => {
     const B = C.washboard, b = () => Gambles.boards[0];
-    // through it held at v, steering for the line through the barriers as a player would (at the stick's full
-    // throw towards the lane wanted, let go within 0.3 m of it)
+    // through it, in at v and never driven faster than that (the dirt may slow it), steering for the line through
+    // the barriers as a player would (at the stick's full throw towards the lane wanted, let go within 0.3 m of it)
     const through = (v, car = 'sport') => {
       start(2900, 3, v, { car });
       const health = P.health;
-      let off = 0, rough = 0, slowest = 99;
+      let off = 0, rough = 0, least = 1, slowest = 99, at40 = null;
       const t = g.run(120, () => {
         quiet();
         P.speed = Math.min(P.speed, v);
         const want = lane(P.s > 3140 && P.s < 3270 ? 4 : 3, P.s), d = want - P.lat;
         g.drive(1, Math.abs(d) < 0.3 ? 0 : Math.sign(d));
-        if (P.s > 2960 && P.s < 3440) { off = Math.max(off, Math.abs(d)); rough = Math.max(rough, Gambles.rough); slowest = Math.min(slowest, P.speed); }
+        if (P.s > 2960 && P.s < 3440) { off = Math.max(off, Math.abs(d)); rough = Math.max(rough, Gambles.rough); least = Math.min(least, Gambles.rough); slowest = Math.min(slowest, P.speed); }
+        if (at40 === null && P.s >= b().from + 40) at40 = P.speed;
         return P.s > 3460 || G.wrecks > 0;
       });
-      return { t, off, rough, slowest, lost: health - P.health, wrecks: G.wrecks, busted: P.busted };
+      return { t, off, rough, least, slowest, at40, lost: health - P.health, wrecks: G.wrecks, busted: P.busted };
     };
-    check(Gambles.roughness(B.calm) === 0 && Gambles.roughness(b().skim) === 0 && Gambles.roughness((B.calm + b().skim) / 2) === 1, 'washboard: smooth at ' + Math.round(B.calm * 3.6) + ' km/h or less and at ' + Math.round(b().skim * 3.6) + ' km/h or more, worst half way between');
-    const fast = through(b().skim + 4);
-    check(fast.rough === 0 && fast.lost === 0 && fast.wrecks === 0, 'washboard, the risk taken and right: at ' + Math.round((b().skim + 4) * 3.6) + ' km/h it skims: never rough, round all three barriers unhurt in ' + fast.t.toFixed(1) + ' s');
+    check(Gambles.roughness(0) === 0 && Gambles.roughness(B.full / 2) > 0.3 && Gambles.roughness(B.full / 2) < 1 && Gambles.roughness(B.full) === 1 && Gambles.roughness(40) === 1, 'washboard: rough at any speed, the faster the worse, all of it at ' + Math.round(B.full * 3.6) + ' km/h or more');
+    // fast: in at 25 m/s (90 km/h), slowed to its `most` and no further, shaken off the line, through and never stopped
+    const fast = through(25);
+    const lost40 = 25 - fast.at40;
+    check(fast.at40 !== null && lost40 >= 5 && lost40 <= 9, 'washboard, straight across at 90 km/h: ' + (lost40 * 3.6).toFixed(0) + ' km/h gone 40 m in (' + lost40.toFixed(1) + ' m/s: ' + (fast.at40 * 3.6).toFixed(0) + ' km/h), dragged at ' + B.drag + ' m/s^2');
+    check(fast.slowest >= B.most - 0.6 && fast.slowest <= B.most + 0.6, 'washboard, straight across: held at ' + Math.round(B.most * 3.6) + ' km/h over the rest of it, no slower (slowest ' + (fast.slowest * 3.6).toFixed(0) + ' km/h)');
+    check(fast.rough === 1 && !fast.busted && fast.slowest > 2, 'washboard, straight across: all of its rough, through in ' + fast.t.toFixed(1) + ' s, never stopped (' + (fast.wrecks ? 'wrecked on a barrier' : fast.lost.toFixed(0) + ' health lost') + ')');
     check(said('Washboard'), 'washboard: it is announced');
-    const mid = through((B.calm + b().skim) / 2);
-    check(mid.rough > 0.95 && (mid.lost > 0 || mid.wrecks > 0), 'washboard, the risk taken and wrong: at ' + Math.round((B.calm + b().skim) / 2 * 3.6) + ' km/h, the same steering: it hops, wanders ' + mid.off.toFixed(1) + ' m off the line and hits a barrier (' + (mid.wrecks ? 'wrecked' : mid.lost.toFixed(0) + ' health lost') + ')');
-    const slow = through(B.calm - 0.5);
-    check(slow.rough === 0 && slow.lost === 0 && slow.wrecks === 0 && !slow.busted && slow.slowest > B.calm - 1.5, 'washboard, the safe line: crawling at ' + Math.round((B.calm - 0.5) * 3.6) + ' km/h it is never rough: round all three unhurt, never stopped, in ' + slow.t.toFixed(1) + ' s (' + (slow.t - fast.t).toFixed(1) + ' s slower than skimming)');
-    // lifting off in it from above the skim speed drops the car into the rough
-    start(3000, 3, b().skim + 2);
-    let worst = 0;
-    g.run(6, () => { quiet(); g.drive(-1, 0); worst = Math.max(worst, Gambles.rough); return P.speed < B.calm; });
-    check(worst > 0.95, 'washboard: braking on it from skimming goes down through the rough (' + worst.toFixed(2) + ' at its worst)');
-    // every garage car here can reach the skim speed; a ghost feels nothing
-    check(g.cars.CARS.every(c => c.noWheels || c.maxSpeed > b().skim), 'washboard: every car in the garage has the speed to skim it (' + Math.round(b().skim * 3.6) + ' km/h)');
+    // hands off down the first straight of it (before the barrier at 3120): shaken about the lane, not out of it
+    const wobble = (v) => { start(2960, 3, v); const lat0 = P.lat; let most = 0; g.run(20, () => { quiet(); P.speed = Math.min(P.speed, v); g.drive(1, 0); if (P.s > 2970) most = Math.max(most, Math.abs(P.lat - lat0)); return P.s > 3100; }); return most; };
+    const wobbleFast = wobble(25), wobbleSlow = wobble(6);
+    check(wobbleFast > 0.3 && wobbleFast < 1.6, 'washboard, hands off at 90 km/h: shaken ' + wobbleFast.toFixed(2) + ' m about its line, not out of the lane');
+    check(wobbleSlow > 0.08 && wobbleSlow < wobbleFast, 'washboard, hands off crawling: shaken ' + wobbleSlow.toFixed(2) + ' m, less');
+    // crawling: still shaken, a little; not slowed at all; round the barriers unhurt; and slower than straight across
+    const slow = through(6);
+    check(slow.least > 0 && slow.rough < 0.8 && slow.rough > 0.3, 'washboard, crawling at 22 km/h: shaken the whole way, less (' + slow.rough.toFixed(2) + ' of the rough at most)');
+    check(slow.slowest > 5.4 && slow.lost === 0 && slow.wrecks === 0 && !slow.busted, 'washboard, crawling: keeps its speed (slowest ' + (slow.slowest * 3.6).toFixed(0) + ' km/h), round all three barriers unhurt, in ' + slow.t.toFixed(1) + ' s');
+    check(fast.t < slow.t, 'washboard: straight across is the quicker (' + (slow.t - fast.t).toFixed(1) + ' s quicker than crawling)');
+    // a car in under its `most`, foot down, pulls up to that and no more
+    start(2960, 3, 10);
+    let top = 0;
+    g.run(12, () => { quiet(); g.drive(1, 0); if (P.s > 2965 && P.s < 3440) top = Math.max(top, P.speed); return P.s > 3440; });
+    check(top >= B.most - 0.5 && top <= B.most + 0.5, 'washboard: in at 36 km/h, foot down, it pulls up to ' + Math.round(B.most * 3.6) + ' km/h and no more (' + (top * 3.6).toFixed(0) + ' km/h)');
+    // off it, the speed comes back: no cap past its end
+    start(3400, 3, B.most);
+    g.run(8, () => { quiet(); g.drive(1, 0); return P.s > 3600; });
+    check(P.speed > B.most + 4 && !P.corrugated, 'washboard: past its end the car pulls away again (' + (P.speed * 3.6).toFixed(0) + ' km/h at 3600)');
+    // a ghost feels nothing
     start(3000, 3, 14, { ghost: true });
     g.run(0.5, () => { P.speed = 14; });
-    check(Gambles.rough === 0, 'washboard: a ghost feels nothing of it');
-    real('washboards', () => check(Gambles.boards.length > 0, '  its washboard: ' + Gambles.boards.map(x => x.from + ' to ' + x.to + ' m, skims at ' + Math.round(x.skim * 3.6) + ' km/h').join('; ')));
+    check(Gambles.rough === 0 && !P.corrugated, 'washboard: a ghost feels nothing of it');
+    real('washboards', () => check(Gambles.boards.length > 0, '  its washboard: ' + Gambles.boards.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
   });
 
   // ---- low bridge (the bar at 4400, 2 m; the exit at 4000 goes round it, back at 4800)
