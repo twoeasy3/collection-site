@@ -4,6 +4,8 @@
 // and the editor both read the one list. Any theme can go on any level (?theme=snow in the address tries one
 // on the level picked): what a theme's scenery makes of something a level may have of its own (a runway,
 // zones, landmarks, grandstands) it does without where the level has none.
+// fogColor: the colour of a fog bank (a level's "fog") in this theme, if not the one worked out from its sky (pale grey
+// under a bright sky, mostly the sky's own colour under a dark one: see CONFIG.fog and render/roadside.js).
 // channel: { shallow, deep, glint }: the colours of the water of a water stage (a level's "water": see
 // render/water.js) in this theme, if not CONFIG.water.colours: a harbour at night, a muddy river, a fjord, a flood.
 // river: the colour of what runs under a drawbridge in this theme (render/hazards.js), if not its channel's deep water,
