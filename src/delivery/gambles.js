@@ -516,7 +516,7 @@ export const Gambles = {
   updateShade() {
     const Z = CONFIG.shade, P = Player;
     for (const z of this.shades) {
-      if (!Track.slicks.includes(z.slick)) Track.slicks.push(z.slick); // (the water mains clear that list as a run starts)
+      if (!Track.slicks.includes(z.slick)) Track.slicks.push(z.slick); // (Game.start clears that list as a run starts)
       if (P.active && Track.isMain(P.s) && P.s > z.from - Z.warn && P.s < z.from) this.once('blackIce');
       if (P.onIce && this.shadeAt(P.s, P.lat) === z) P.shaken = Math.max(P.shaken, Z.steerLoss); // (black ice: less to steer with even than on ice that shows)
       if (Math.abs(z.from - P.s) > 700) continue;
