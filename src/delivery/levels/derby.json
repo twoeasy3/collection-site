@@ -3,7 +3,7 @@
   "name": "Toy Box Derby",
   "description": {
     "good": "A four-lane slot track round the playroom, and two wind-up racers want your tip. Thread the bumps, hop the queue by the ramp and be first to the toy box.",
-    "evil": "Two clockwork couriers think this is their track. Fly the ramps over the traffic jam, flatten the farm set and leave them both under the bulldozer."
+    "evil": "Two clockwork couriers think this is their track. Fly the ramp over the traffic jam, flatten the farm set and leave them both under the bulldozer."
   },
   "theme": "toyroom",
   "clock": { "good": 155, "evil": 120 },
@@ -79,6 +79,12 @@
     { "s": 210, "side": "right" },
     { "s": 2060, "side": "left" }
   ],
+  "tarmac": [
+    { "from": 2120, "to": 2270, "lane": 1 }
+  ],
+  "washboards": [
+    { "from": 3545, "to": 3700 }
+  ],
   "targets": [
     { "s": 380, "side": "right" },
     { "s": 1400, "side": "left" },
@@ -96,9 +102,7 @@
     { "type": "cash10", "s": 615, "lane": 2 },
     { "type": "cash20", "s": 615, "lane": 3 },
     { "type": "cash10", "s": 762, "lane": 0 },
-    { "type": "cash5", "s": 762, "lane": 1 },
     { "type": "wrench", "s": 850, "lane": 3 },
-    { "type": "cash10", "s": 968, "lane": 0 },
     { "type": "cash20", "s": 992, "lane": 2 },
     { "type": "cash10", "s": 1142, "lane": 3 },
     { "type": "timePlus", "s": 1142, "lane": 2 },
@@ -114,10 +118,9 @@
     { "type": "cash20", "s": 1968, "lane": 2 },
     { "type": "cash10", "s": 1968, "lane": 3 },
     { "type": "wrench", "s": 2100, "lane": 0 },
-    { "type": "cash10", "s": 2205, "lane": 3 },
-    { "type": "cash20", "s": 2232, "lane": 1 },
+    { "type": "cash10", "s": 2232, "lane": 1 },
+    { "type": "cash20", "s": 2232, "lane": "right" },
     { "type": "cash10", "s": 2345, "lane": 3 },
-    { "type": "cash5", "s": 2345, "lane": 2 },
     { "type": "cash10", "s": 2520, "lane": 1 },
     { "type": "armour", "s": 2520, "lane": 2 },
     { "type": "cash10", "s": 2520, "lane": 3 },
@@ -143,6 +146,7 @@
     { "s": 1420, "lane": 2, "kind": "bale" },
     { "s": 2310, "lane": 0, "kind": "crate" },
     { "s": 2690, "lane": 3, "kind": "crate" },
-    { "s": 2700, "lane": 2, "kind": "cone" }
+    { "s": 2700, "lane": 2, "kind": "cone" },
+    { "s": 3625, "lane": 2, "kind": "cone" }
   ]
 }

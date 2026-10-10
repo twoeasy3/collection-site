@@ -81,6 +81,9 @@
     { "s": 200, "side": "right" },
     { "s": 1760, "side": "left" }
   ],
+  "tarmac": [
+    { "from": 2700, "to": 2880, "lane": 1 }
+  ],
   "targets": [
     { "s": 450, "side": "right" },
     { "s": 1400, "side": "left" },
@@ -112,7 +115,6 @@
     { "type": "cash20", "s": 1642, "lane": 1 },
     { "type": "cash20", "s": 1642, "lane": 2 },
     { "type": "ghost", "s": 1820, "lane": 0 },
-    { "type": "cash10", "s": 1900, "lane": 3 },
     { "type": "cash10", "s": 1960, "lane": 2 },
     { "type": "wrench", "s": 2040, "lane": 1 },
     { "type": "cash20", "s": 2230, "lane": "left" },
@@ -121,8 +123,8 @@
     { "type": "cash10", "s": 2320, "lane": 3 },
     { "type": "cash20", "s": 2484, "lane": 1 },
     { "type": "armour", "s": 2484, "lane": 0 },
-    { "type": "cash10", "s": 2805, "lane": 3 },
     { "type": "cash20", "s": 2832, "lane": 1 },
+    { "type": "cash10", "s": 2832, "lane": "right" },
     { "type": "timePlus", "s": 2900, "lane": 0 },
     { "type": "cash20", "s": 3034, "lane": 2 },
     { "type": "cash10", "s": 3034, "lane": 3 },

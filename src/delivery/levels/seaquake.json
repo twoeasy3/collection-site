@@ -77,6 +77,9 @@
     { "s": 250, "side": "right" },
     { "s": 2440, "side": "right" }
   ],
+  "washboards": [
+    { "from": 3080, "to": 3260 }
+  ],
   "targets": [
     { "s": 600, "side": "right" },
     { "s": 1650, "side": "left" },
@@ -131,6 +134,7 @@
     { "type": "cash5", "s": 3660, "lane": "right" }
   ],
   "obstacles": [
+    { "s": 3140, "lane": 2, "kind": "cone" },
     { "s": 560, "lane": 3, "kind": "crate" },
     { "s": 1560, "lane": 2, "kind": "barrier" },
     { "s": 2215, "lane": 3, "kind": "cone" },
