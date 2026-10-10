@@ -18,9 +18,10 @@
 //   corner     true = parked in the far corner bay of the garage
 //   tier       which tier of the garage it is in (1-5): its star rating, shown with its name
 //   trait      a perk of its own, by name: 'slim' (the Mini: a scrape down another car's side costs it nothing: see
-//              Collision), 'mud' (the Rally Car: mud neither slows it nor dulls its steering: see Player), 'tow' (the
-//              Tow Truck: it clears landed wreckage out of the lanes: see Wreckage), 'rocks' (the 6x6: a fallen rock
-//              is smashed aside at no cost: see Collision). perk: the words for it, shown in the garage
+//              Collision), 'mud' (the Rally Car: mud neither slows it nor dulls its steering: see Player), 'rocks' (the 6x6: a fallen rock
+//              is smashed aside at no cost: see Collision). perk: the words for it, shown in the garage.
+//              SHELVED: 'tow' (the Tow Truck clearing landed wreckage: see Wreckage, CONFIG.wreckage towAfter/towKept
+//              and the 'towed' message). No car has it now; give one trait: 'tow' and a perk to bring it back
 //   blue       true = a Blue Star car (the second season): better than a car of its tier with gold
 //              stars, but not as good as one a tier up; priced like a car two tiers up
 //   amphibious true = it floats: it drives down a slipway into a water stage (a level's "water") and on across
@@ -126,7 +127,8 @@ export const CARS = [
     trait: 'mud', perk: 'Ignores mud: no slower in it, and it steers as well as ever' },
   { id: 'towtruck', tier: 3, blue: true, name: 'Tow Truck', price: 750, color: 0xeeeeee, evilColor: 0x2a6fb8, fixedLivery: true, model: 'towtruck',
     maxSpeed: 36, accel: 10, crossing: 0.8, health: 220, mass: 2.0, hw: 1.05, hl: 2.85, height: 2.1,
-    trait: 'tow', perk: 'Clears a wreck: it drags fallen wreckage out of the lanes instead of being wrecked by it' },
+    // (the 'tow' trait, which cleared landed wreckage, is shelved: see the note on trait above)
+  },
   { id: 'rotary', tier: 3, blue: true, name: 'Rotary Coupe', price: 780, color: 0xf2c218, evilColor: 0x1f8a5c, fixedLivery: true, model: 'rotary',
     maxSpeed: 40, accel: 14.8, agility: 1.45, crossing: 0.3, health: 120, hw: 0.88, hl: 2.15, height: 1.2 },
   // ---- tier 4
