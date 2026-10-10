@@ -5,7 +5,8 @@
 // other livery: buying a car buys both.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CAR, carInUse, selectCar, stars, starColour, STAR_COLOURS, blueStarsOpen, garageCars } from '../cars.js';
+import { CAR, carInUse, selectCar, stars, starColour, STAR_COLOURS, blueStarsOpen, garageCars, restrictedTier } from '../cars.js';
+import { Tiers } from '../tiers.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { renderer } from './scene.js';
@@ -215,7 +216,9 @@ const carAt = (event) => {
 const refresh = () => {
   // (a secret vehicle in use has no bay, so no ring; nor has a car idea in this lot: its ring is in the Car ideas lot's)
   const inUse = carInUse();
-  bank.textContent = 'Bank ' + money(Progress.data.money);
+  // (a level that restricts the car, tiers.js: the lot shows only the cars of its tier, and the bar says so)
+  const only = GarageView.restrictTier;
+  bank.textContent = 'Bank ' + money(Progress.data.money) + (only ? '  |  Only ' + Tiers.tierName(only) + ' cars may be driven on this level' : '');
   liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
   const shown = looking || inUse, owned = Progress.owns(shown.id);
   info.replaceChildren(...withStars(shown), '  -  ' + stats(shown));
@@ -247,13 +250,13 @@ action.addEventListener('click', () => {
   // (on the Car ideas tab the button is that lot's "Drive it": the idea looked at there. It is free and always
   // open, so there is nothing to buy; it becomes the car in use just as a garage car does)
   const car = IdeasLot.on ? IdeasLot.looking : looking || CAR;
-  if (!car || (car.id === Progress.data.car && Garage.evil === Game.evil)) return;
+  if (!car || (car.id === carInUse().id && Garage.evil === Game.evil)) return;
   if (!Progress.owns(car.id)) {
     if (Progress.data.money < car.price) return;
     if (!confirm('Buy the ' + car.name + ' for ' + money(car.price) + '? You get both liveries.')) return;
     Progress.buy(car);
   }
-  if (car.id !== Progress.data.car) selectCar(car.id);
+  if (car.id !== carInUse().id) selectCar(car.id);
   takeSide();
   refresh();
 });
@@ -345,7 +348,8 @@ export const Garage = {
   evil: false, // which livery is on show
 
   open(evil = Game.evil) { // (evil: the livery to show the cars in; the side being played, unless told)
-    if (built !== onShow()) buildLot(); // (first time in, or the Blue Star cars have just arrived, or a 6-star car has been earned)
+    const only = restrictedTier() ?? null;
+    if (built !== onShow() || GarageView.restrictTier !== only) { GarageView.restrictTier = only; buildLot(); } // (the lot filtered to the tier the level allows) (first time in, or the Blue Star cars have just arrived, or a 6-star car has been earned)
     this.isOpen = true;
     carAtOpen = CAR;
     sideAtOpen = Game.evil;

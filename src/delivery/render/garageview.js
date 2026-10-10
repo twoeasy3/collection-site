@@ -5,7 +5,7 @@
 // it always has, every car in order of its stars.
 import '../menus.css';
 import { Progress } from '../progress.js';
-import { blueStarsOpen, EARNED_CARS } from '../cars.js';
+import { blueStarsOpen, EARNED_CARS, carTier } from '../cars.js';
 
 // (by: how two cars compare; none: as the garage has them, by stars and then price)
 const SORTS = [
@@ -30,6 +30,7 @@ const SHOWS = [
 
 export const GarageView = {
   sort: SORTS[0],
+  restrictTier: null, // a tier number: only the cars of that tier are parked (a level that restricts the car: see tiers.js)
   show: SHOWS[0],
   // true: parked as the garage always has them (so in each column the biggest goes at the back)
   get usual() { return this.sort === SORTS[0]; },
@@ -42,7 +43,7 @@ export const GarageView = {
 }
 // the cars to park, in order, out of the garage's own list (already in order of stars and price)
 export const arrange = (cars) => {
-  const shown = cars.filter(GarageView.show.has);
+  const shown = cars.filter(GarageView.show.has).filter(car => GarageView.restrictTier === null || carTier(car) === GarageView.restrictTier);
   return GarageView.sort.by ? shown.sort(GarageView.sort.by) : shown; // (a stable sort: ties stay in star order)
 };
 

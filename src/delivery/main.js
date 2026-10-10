@@ -74,7 +74,18 @@ import { Message } from './messages.js';
 const params = new URLSearchParams(location.search);
 // A visit with any of these is a test, not play: it lends cars and opens levels, so none of it is saved
 // (Progress.noSave: the save stays as it was before the visit, whatever is delivered, bought or counted in it)
-if (['autostart', 'hidden', 'test', 'edited', 'pick', 'car', 'ghost', 'mystery', 'theme'].some(key => params.get(key) !== null)) Progress.noSave = true;
+if (['autostart', 'hidden', 'test', 'edited', 'pick', 'car', 'ghost', 'mystery', 'theme', 'beaten', 'owns'].some(key => params.get(key) !== null)) Progress.noSave = true;
+// ?beaten=expressway,back-roads:evil,farm:both and ?owns=lovebus,wagon&money=500: a state to look at (the level tiers:
+// ribbons are best times; nothing is saved). A level listed alone is a Good half.
+if (params.get('beaten')) {
+  for (const token of params.get('beaten').split(',')) {
+    const [id, side = 'good'] = token.split(':');
+    for (const s of side === 'both' ? ['good', 'evil'] : [side]) Progress.data.bestTime[s][id] = 10;
+  }
+}
+if (params.get('owns')) for (const id of params.get('owns').split(',')) if (!Progress.data.cars.includes(id)) Progress.data.cars.push(id);
+if (params.get('money')) Progress.data.money = Number(params.get('money')) || 0;
+if (params.get('beaten') || params.get('owns') || params.get('money')) window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.open(params.get('garage') === 'evil');
@@ -86,6 +97,7 @@ if (params.get('garage') !== null) {
 // are all open for this visit); with &start, Start Game is pressed too (an amphibious level with no amphibious car)
 if (params.get('pick')) {
   Progress.data.unlocked = Math.max(Progress.data.unlocked, LEVELS.length);
+  Progress.data.tierBase = Math.max(Progress.data.tierBase || 0, LEVELS.length); // (the tiers, tiers.js: all open too)
   selectLevel(Number(params.get('pick')) - 1);
   window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
   if (params.get('start') !== null) Game.start();

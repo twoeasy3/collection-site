@@ -58,7 +58,31 @@ export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only t
 export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff', earned: '#ff5fd2', amphibious: '#35d6b4' };
 export const starColour = (car) => car.earned ? STAR_COLOURS.earned : car.amphibious ? STAR_COLOURS.amphibious : car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
 // the Blue Star cars are in the garage once level CONFIG.blueStarsAfter is delivered (which opens the next)
-export const blueStarsOpen = () => Progress.data.unlocked > CONFIG.blueStarsAfter;
+export const blueStarsOpen = () => tierHooks.blueOpen?.() ?? Progress.data.unlocked > CONFIG.blueStarsAfter;
+// ---- the level tiers (tiers.js): which tier a car is in, and the car rule on a level not yet beaten ----
+// a car's tier number: 1 to 5 for the gold-star cars, 6 to 10 for the Blue Star ones (Blue 1 is 6); null for a car
+// outside the tiers (earned, amphibious, tierless, secret, a level's own vehicle)
+export const carTier = (car) => car && car.tier >= 1 && car.tier <= TIERS && !car.earned && !car.amphibious && !car.super && CARS.includes(car) ? car.tier + (car.blue ? 5 : 0) : null;
+// hooks tiers.js sets when it loads: restricted() the tier a car must be from on the level picked (null: any),
+// blueOpen() whether the Blue Star cars are in the garage (null: the old rule)
+const tierHooks = {};
+export const setTierHooks = (hooks) => Object.assign(tierHooks, hooks);
+export const restrictedTier = () => tierHooks.restricted?.() ?? null;
+// the silhouette shown where the player has no car the level allows: the cheapest car of the tier, drawn dark
+// (silhouette: true; id 'null-car'), never owned and never driven (Game.canStart is false while it is in use)
+const nullCars = {};
+export const nullCarFor = (tier) => nullCars[tier] ||= (() => {
+  const like = CARS.filter(car => carTier(car) === tier).sort((a, b) => a.price - b.price)[0] || CARS[0];
+  return { ...like, id: 'null-car', name: 'No car for this level', silhouette: true, tierNeeded: tier, price: 0 };
+})();
+// the car the level's rule puts the player in: their pick if it is allowed; else the car they last chose for that
+// tier (Progress.data.tierCars) or the best they own of it; else the null car. The pick itself is not touched
+const forcedCar = (pick, tier) => {
+  if (tier === null || carTier(pick) === tier) return pick;
+  const owned = CARS.filter(car => carTier(car) === tier && Progress.owns(car.id));
+  const chosen = owned.find(car => car.id === Progress.data.tierCars?.[tier]);
+  return chosen || owned.sort((a, b) => b.price - a.price)[0] || nullCarFor(tier);
+};
 // the cars the garage shows now (an earned car only once it is earned: see EARNED_CARS)
 export const garageCars = () => [...CARS.filter(car => !car.blue || blueStarsOpen()), ...EARNED_CARS.filter(car => Progress.earned(car))];
 // The amphibious cars (a car's "amphibious"): the garage's Amphibious section, there from the start, so an
@@ -286,20 +310,30 @@ const find = () => [...CARS, ...EARNED_CARS, ...Object.values(SECRET_CARS), ...I
   .find(car => car.id === Progress.data.car && Progress.owns(car.id)) || CARS[0];
 export let CAR = find();
 // the car in use as the save has it, whatever the level picked has put the player in (the garage's ring and words)
-export const carInUse = find;
+export const carInUse = () => forcedCar(find(), restrictedTier());
+// can a run be started in what the level's rule puts the player in? (false: no car of the tier is owned)
+export const carAllowed = () => { const t = restrictedTier(); return t === null || forcedCar(find(), t).id !== 'null-car'; };
 
 // A level with a vehicle of its own puts the player in that; any other level gives back
 // the car picked in the garage. Called when a level is picked and when a run starts.
 // (amphibious: the level is an amphibious one, its "amphibious": the car in use if it floats, or else the best
 // amphibious car the player owns. With none owned the car in use stays, and Game.start won't start the level)
 export const useLevelCar = (id, amphibious) => {
-  CAR = (id && (LEVEL_CARS[id] || CARS.find(c => c.id === id))) || find(); // (a special vehicle, or one of the garage's)
+  CAR = (id && (LEVEL_CARS[id] || CARS.find(c => c.id === id))) || forcedCar(find(), amphibious ? null : restrictedTier()); // (a special vehicle, or one of the garage's, or what the level's tier rule allows)
   if (amphibious && !id && !CAR.amphibious) CAR = ownedAmphibious() || CAR;
   lent = null;
 };
 
 // switch to a car the player owns (saved to their progress)
 export const selectCar = (id) => {
+  const tier = restrictedTier(), car = CARS.find(c => c.id === id);
+  if (tier !== null && car && carTier(car) === tier && Progress.owns(id)) { // (picked for a level that restricts the car: kept apart from the player's own pick)
+    (Progress.data.tierCars ||= {})[tier] = id;
+    Progress.save();
+    CAR = forcedCar(find(), tier);
+    lent = null;
+    return;
+  }
   Progress.useCar(id);
   CAR = find();
   lent = null;

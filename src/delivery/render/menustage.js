@@ -17,6 +17,7 @@ import { levelName, levelDescription } from '../levelText.js';
 import { cargoFor } from '../cargo.js';
 import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } from '../cars.js';
 import { Progress } from '../progress.js';
+import { Tiers } from '../tiers.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { medalFor, medalNeeds } from '../levelinfo.js';
 import { Garage, makeShowCar, paintShowCar, IDEA_TAG } from './garage.js';
@@ -82,12 +83,24 @@ for (let i = 0; i < MAIN_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Ma
   for (let i = specials; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
 }
 for (let i = 0; i < RACE_LEVELS.length; i += 5) TABS.race.groups.push([i, Math.min(RACE_LEVELS.length, i + 5)]);
+// (the level tiers, tiers.js: the delivery tab in the table's order, a group a tier, then the levels outside them in
+// runs of one kind, five at most. A group's third item is its tier number)
+if (Tiers.on()) {
+  const list = [...Tiers.order, ...DELIVERY_LEVELS.filter(level => !Tiers.order.includes(level))], groups = [];
+  let i = 0;
+  Tiers.tiers.forEach((tier, k) => { if (tier.length) { groups.push([i, i + tier.length, k + 1]); i += tier.length; } });
+  const kind = (level) => AMPHIBIOUS_LEVELS.includes(level) ? 2 : MAIN_LEVELS.includes(level) ? 0 : 1;
+  while (i < list.length) { let j = i + 1; while (j < list.length && j - i < 5 && kind(list[j]) === kind(list[i])) j++; groups.push([i, j]); i = j; }
+  TABS.delivery.list = list;
+  TABS.delivery.groups = groups;
+}
 const tabOf = (level) => isRace(level) ? 'race' : 'delivery';
-const label = (level) => levelLabel(LEVELS.indexOf(level));
+// (under the tiers a level's number is its place in its tier, 1 to 5; its kind says which tier)
+const label = (level) => Tiers.on() && Tiers.place(level) ? String(Tiers.place(level).pos) : levelLabel(LEVELS.indexOf(level));
 // what kind of level it is, for the plate over its picture
-const kindOf = (level) => isRace(level) ? 'Race' : AMPHIBIOUS_LEVELS.includes(level) ? 'Amphibious' : MAIN_LEVELS.includes(level) ? 'Level' : 'Special';
+const kindOf = (level) => isRace(level) ? 'Race' : Tiers.on() && Tiers.place(level) ? Tiers.tierName(Tiers.place(level).tier) : AMPHIBIOUS_LEVELS.includes(level) ? 'Amphibious' : MAIN_LEVELS.includes(level) ? 'Level' : 'Special';
 // a race is always open; a delivery level once the one before it has been delivered
-const isOpen = (level) => isRace(level) || LEVELS.indexOf(level) < Progress.data.unlocked;
+const isOpen = (level) => isRace(level) || (Tiers.on() ? Tiers.isOpen(level) : LEVELS.indexOf(level) < Progress.data.unlocked);
 // a level played on one side only (the Battlefield, All Heck: always Good)
 const oneSided = (level) => !!(level.battle || level.alwaysGood);
 
@@ -167,7 +180,11 @@ const drawStage = () => {
   const ribbon = make('div', 'ribbon', ...(open ? (oneSided(level) ? [false] : [false, true]).map(side => ribbonHalf(level, side)) : []));
   // what the level needs (a line of its own: a car that floats, the vehicle it is driven in, the level before it)
   const prize = earnedFor(level.id);
-  const needs = !open ? 'Locked: deliver level ' + label(list[at - 1]) + ' on time to open it'
+  const place = Tiers.on() ? Tiers.place(level) : null, rule = Tiers.restriction(level, evil);
+  const cheapest = rule !== null ? Tiers.carsOfTier(rule).sort((a, b) => a.price - b.price)[0] : null;
+  const needs = !open ? (Tiers.on() ? Tiers.lockedBecause(level) : 'Locked: deliver level ' + label(list[at - 1]) + ' on time to open it')
+    : rule !== null ? (CAR.silhouette ? 'You own no ' + Tiers.tierName(rule) + ' car: buy one in the garage to play this level (the cheapest is the ' + cheapest.name + ', ' + money(cheapest.price) + ')'
+        : 'Not yet delivered as ' + (evil ? 'Evil' : 'Good') + ': only ' + Tiers.tierName(rule) + ' cars may be driven. Deliver it once and any car will do on this side')
     : level.car ? 'Driven in the ' + CAR.name + ': the garage car returns on other levels'
       : level.amphibious ? (CAR.amphibious ? 'Amphibious cars only: you drive your ' + CAR.name
         : 'Needs an amphibious car: get the ' + cheapestAmphibious().name + ' (' + money(cheapestAmphibious().price) + ') in the garage')
@@ -190,6 +207,7 @@ const drawStage = () => {
       cargoFact,
       fact('Best to spare', best === undefined ? 'Not delivered yet' : formatTime(best))) : null,
     needs ? make('p', 'needs' + (open && !Game.canStart ? ' warn' : ''), needs) : null,
+    open && place ? make('p', 'prize', Tiers.tierName(place.tier) + ': ' + Tiers.tierHalves(place.tier) + ' of ' + Tiers.tiers[place.tier - 1].length * 2 + ' half-ribbons') : null,
     prizeLine ? make('p', 'prize', prizeLine) : null,
     open && roadCard ? make('button', 'menu-chip road', 'What’s on this road') : null);
   info.querySelector('.road')?.addEventListener('click', () => roadCard(level));
@@ -249,7 +267,8 @@ const syncPicture = () => {
   if (carView?.canvas) carView.canvas.style.display = carLive ? 'block' : 'none';
 };
 const showCarModel = (evil) => {
-  carUrl = CAR_SHOTS[CAR.id + (evil ? '-evil' : '-good')] || '';
+  carUrl = CAR.silhouette ? '' : CAR_SHOTS[CAR.id + (evil ? '-evil' : '-good')] || '';
+  picture.classList.toggle('silhouette', !!CAR.silhouette);
   try {
     if (carView?.car === CAR) { // (the same car: the other side's paint, where it stands)
       if (carView.evil !== evil) paintShowCar(carView.model, CAR, carView.evil = evil);
@@ -289,6 +308,13 @@ const drawCar = () => {
   const evil = Game.evil && !oneSided(cursor);
   showCarModel(evil);
   // (a car idea, ideas.js, has no tier and so no stars: "Idea" stands where they would be)
+  if (CAR.silhouette) { // (a car of the level's tier is to be bought: a dark outline of the cheapest, and no figures)
+    shop.replaceChildren(picture,
+      make('span', 'words', make('strong', '', 'No car for this level'), make('span', 'stat', make('small', '', Tiers.tierName(CAR.tierNeeded) + ' only'))),
+      make('span', 'go', 'Garage'));
+    shop.title = 'This level needs a car of exactly its tier: open the garage to buy one (G)';
+    return;
+  }
   const starSpan = make('span', 'stars', CAR.tier ? stars(CAR) : IDEA_TAG.text);
   starSpan.style.color = CAR.tier ? starColour(CAR) : IDEA_TAG.colour;
   shop.replaceChildren(picture,
@@ -307,6 +333,7 @@ export const draw = () => {
   if (isOpen(cursor) && cursor !== LEVEL && LEVELS.includes(LEVEL)) { cursor = LEVEL; tab = tabOf(LEVEL); }
   if (!TABS[tab].list.includes(cursor)) cursor = lastOn[tab] || TABS[tab].list[0];
   lastOn[tab] = cursor;
+  if (Tiers.on() && isOpen(cursor)) useLevelCar(LEVEL.car, LEVEL.amphibious); // (the tier rule: it goes by the side and the ribbons, which change)
   const open = isOpen(cursor), evil = Game.evil && !oneSided(cursor);
   bank.replaceChildren(make('small', '', 'Bank'), money(Progress.data.money));
   for (const [name, button] of Object.entries(tabBtns)) button.classList.toggle('current', name === tab);
@@ -316,8 +343,10 @@ export const draw = () => {
   const { list, groups } = TABS[tab], at = list.indexOf(cursor);
   const shown = Math.max(0, groups.findIndex(([a, b]) => at >= a && at < b)), [first, last] = groups[shown];
   groupBox.replaceChildren(...groups.map(([a, b], g) => {
-    const button = make('button', (g === shown ? 'current' : '') + (isOpen(list[a]) ? '' : ' locked'), label(list[a]) + (b - a > 1 ? '–' + label(list[b - 1]) : ''));
-    button.title = isOpen(list[a]) ? '' : 'Not open yet';
+    const tierNo = groups[g][2]; // (under the tiers: the stars of the tier, gold or blue)
+    const button = make('button', (g === shown ? 'current' : '') + (isOpen(list[a]) ? '' : ' locked') + (tierNo ? (Tiers.tierIsBlue(tierNo) ? ' blue' : ' gold') : ''),
+      tierNo ? '★'.repeat(Tiers.tierStars(tierNo)) : label(list[a]) + (b - a > 1 ? '–' + label(list[b - 1]) : ''));
+    button.title = tierNo ? Tiers.tierName(tierNo) + (isOpen(list[a]) ? '' : ': not open yet') : isOpen(list[a]) ? '' : 'Not open yet';
     button.addEventListener('click', () => { if (g !== shown) { blip('menuMove'); show(list[a]); } });
     return button;
   }));
@@ -339,8 +368,9 @@ export const draw = () => {
     : cursor.noPackages ? (evil ? 'Less time on the clock.' : 'More time on the clock.') // (a race: nothing is thrown)
       : evil ? 'Less time. Flaming packages do real damage, and the police bust you for them.'
         : 'More time. Care packages increase your social standing and gains you benefits.';
-  startBtn.disabled = !open;
-  startBtn.firstElementChild.textContent = !open ? 'Locked' : tab === 'race' ? 'Race' : 'Start';
+  const noCar = Tiers.on() && CAR.silhouette; // (the level's tier rule allows only cars the player has none of)
+  startBtn.disabled = !open || noCar;
+  startBtn.firstElementChild.textContent = !open ? 'Locked' : noCar ? 'No car' : tab === 'race' ? 'Race' : 'Start';
 };
 
 // ---- the controls ----------------------------------------------------------------------------------------
@@ -428,7 +458,7 @@ window.addEventListener('keydown', (e) => {
     // (a button reached with the keyboard is pressed by Enter, and nothing else happens)
     if (focused && focused !== startBtn && startScreen.contains(focused) && focused.matches('button, a') && focused.matches(':focus-visible')) { e.stopPropagation(); return; }
     e.preventDefault();
-    if (!isOpen(cursor)) e.stopPropagation();
+    if (startBtn.disabled) e.stopPropagation();
     else blip('menuPick');
     return;
   }

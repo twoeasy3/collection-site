@@ -6,7 +6,8 @@
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
 import { levelName } from '../levelText.js';
-import { CARS, SECRET_CARS, useLevelCar, selectCar, amphibiousCars } from '../cars.js';
+import { CARS, SECRET_CARS, useLevelCar, selectCar, amphibiousCars, restrictedTier } from '../cars.js';
+import { Tiers } from '../tiers.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { Garage } from './garage.js';
@@ -24,7 +25,9 @@ window.addEventListener('carchange', () => { useLevelCar(LEVEL.car, LEVEL.amphib
 Game.onRefused.push(() => {
   draw();
   Garage.open();
-  Garage.look(amphibiousCars().sort((a, b) => a.price - b.price)[0].id); // (the cheapest)
+  const tier = restrictedTier(); // (a level whose tier rule allows only cars the player has none of: the cheapest of the tier)
+  const wanted = tier !== null ? Tiers.carsOfTier(tier) : amphibiousCars();
+  Garage.look(wanted.sort((a, b) => a.price - b.price)[0].id); // (the cheapest)
 });
 
 // sound on / off: this button, or the M key at any time
@@ -120,7 +123,9 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 // a save brought in by its code (render/savecode.js): everything the menu shows is the new save's
 window.addEventListener('progresschange', () => {
   Game.evil = !!Progress.data.evil;
-  selectLevel(Math.min(Math.max(0, LEVEL_INDEX), Progress.data.unlocked - 1)); // (never left on a level it has not opened)
+  // (never left on a level it has not opened)
+  if (Tiers.on()) selectLevel(Tiers.isOpen(LEVELS[Math.max(0, LEVEL_INDEX)]) ? Math.max(0, LEVEL_INDEX) : 0);
+  else selectLevel(Math.min(Math.max(0, LEVEL_INDEX), Progress.data.unlocked - 1));
   selectCar(Progress.data.car);
   window.dispatchEvent(new Event('carchange'));
   Sound.toggleMute(); toggleMute(); // (twice, so as it was saved: this sets the volume by it, and the button's words)
