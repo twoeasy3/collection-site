@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CAR } from '../cars.js';
+import { CAR, AMPHIBIOUS_TANK } from '../cars.js';
 import { LEVEL } from '../levels.js';
 import { Track } from '../track.js';
 import { Player } from '../player.js';
@@ -15,6 +15,7 @@ import { Particles, rnd } from './effects.js';
 import { MODELS } from './models.js';
 import { TURBO_COLOR, PICKUP_COLOR, PICKUP_MODELS, makeTargetModel } from './pickupModels.js';
 import { OBSTACLE_MODELS } from './obstacleModels.js';
+import { makeAmphibiousTankMesh } from './tankModels.js';
 import { addSuperKit } from './carExtras.js';
 import { damageShare, dentModel, scorch } from './dents.js';
 import { SpeedCameras } from '../cameras.js';
@@ -136,10 +137,17 @@ const makePickup = (p) => {
   return group;
 };
 // TANK RAGE target: a spinning, glowing green ring on a post beside the road
+// (where it is, and how it stands there, are Targets' to say: t.lat, t.look. See CONFIG.target)
 const makeTarget = (t) => {
-  const group = makeTargetModel();
+  const look = t.look, out = { x: 0, z: 0 };
+  if (look.style === 'gantry') { // (its mast: `arm` m further from the road than the ring)
+    Track.toWorld(t.s, t.lat + t.side * look.arm, tmp);
+    out.x = tmp.x;
+    out.z = tmp.z;
+  }
   Track.toWorld(t.s, t.lat, tmp);
-  group.position.set(tmp.x, tmp.y + 2.7, tmp.z);
+  const group = makeTargetModel(look, { x: out.x - tmp.x, z: out.z - tmp.z });
+  group.position.set(tmp.x, tmp.y + look.height, tmp.z);
   return group;
 };
 
@@ -461,7 +469,15 @@ export const syncPickups = (dt) => {
     ufoMesh.userData.lamps.rotation.y += dt * 4;
     paintOf(ufoMesh.userData.body).color.setHex(livery);
   }
-  tankMesh.visible = tank;
+  // (on an amphibious level the rage is in the Amphibious Tank, in its own livery for each side: Player.rageTank)
+  const amphibian = tank ? Player.rageTank : null;
+  tankMesh.visible = tank && !amphibian;
+  amphibiousTankMesh.visible = !!amphibian;
+  if (amphibian) {
+    paintOf(amphibiousTankMesh.userData.body).color.setHex(Player.evil ? amphibian.evilColor : amphibian.color);
+    amphibiousTankMesh.userData.livery(Player.evil);
+    amphibiousTankMesh.userData.animate(performance.now() / 1000, Player.afloat && Player.active);
+  }
   // the garage's Tank wears its own liveries; a car in TANK RAGE turns army olive
   paintOf(tankMesh.userData.body).color.setHex(!CAR.tank ? TANK_OLIVE : livery);
   paintOf(carMesh.userData.body).color.setHex(livery);
@@ -573,3 +589,7 @@ const TANK_OLIVE = 0x4b5a2a;
 const tankMesh = makeTankMesh(TANK_OLIVE);
 tankMesh.visible = false;
 carMesh.add(tankMesh);
+// ...and the one it turns into on an amphibious level (cars.js AMPHIBIOUS_TANK)
+const amphibiousTankMesh = makeAmphibiousTankMesh(AMPHIBIOUS_TANK.color);
+amphibiousTankMesh.visible = false;
+carMesh.add(amphibiousTankMesh);

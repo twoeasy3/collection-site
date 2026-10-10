@@ -99,7 +99,7 @@ for (const level of AMPHIBIOUS_LEVELS.filter(l => !named.length || named.include
   Progress.importCode(old(43));
   check(Progress.data.unlocked === first, 'an old save with every level open: ' + Progress.data.unlocked + ' open now (the first amphibious level is number ' + first + ')');
   Progress.importCode(old(40));
-  check(Progress.data.unlocked === 40, 'an old save with the last special level open but not delivered: ' + Progress.data.unlocked + ' open');
+  check(Progress.data.unlocked === first - 1, 'an old save with the last special level open but not delivered: ' + Progress.data.unlocked + ' open (levels added among the numbered ones since count too)');
   Progress.importCode(old(12));
   check(Progress.data.unlocked === 12, 'an old save part-way through: ' + Progress.data.unlocked + ' open');
 }

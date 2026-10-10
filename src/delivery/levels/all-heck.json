@@ -1,6 +1,9 @@
 {
   "id": "all-heck",
   "name": "All Heck",
+  "description": {
+    "good": "A hearse, a road through the underworld, and every single car coming straight at you. Down here you are the good one. Deliver anyway."
+  },
   "cargo": { "good": "clock", "evil": "doll" },
   "theme": "hell",
   "car": "hearse",

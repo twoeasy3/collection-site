@@ -1,6 +1,10 @@
 {
   "id": "back-roads",
   "name": "Back Roads",
+  "description": {
+    "good": "A short hop out past the city limits. One bridge, one exit, one lane closure: signal early, smile often, and the tip is yours.",
+    "evil": "Quiet roads, slow vans, and nobody watching but two frogs and the odd patrol car. Ideal conditions for a bad influence."
+  },
   "clock": { "good": 168, "evil": 119 },
   "traffic": { "darkvan": 0.43, "commuter": 0.27, "van": 0.21, "bus": 0.04, "police": 0.05 },
   "trafficCount": 11,
@@ -33,7 +37,12 @@
     { "s": 1750, "side": "left" },
     { "s": 460, "side": "right", "road": "side" }
   ],
+  "fords": [
+    { "from": 1790, "to": 1850, "depth": 0.45 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 1820, "lane": 2 },
+    { "type": "cash10", "s": 1820, "lane": 3 },
     { "type": "siren", "s": 60, "lane": 2 },
     { "type": "radarDetector", "s": 2200, "lane": 2 },
     { "type": "wrench", "s": 2370, "lane": 3 },

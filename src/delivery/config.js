@@ -1054,6 +1054,18 @@ export const CONFIG = {
   tankPieces: 5,
   tankParts: ['rearBody', 'turretHull', 'gunTurret', 'gunBarrel'], // the first four, in order (messages.json: tankParts)
   targetOffset: 5,         // m beyond the pavement the targets stand, out of the car's reach
+  // How a target stands, unless the level's theme (its "target": see themes.js) or the target itself (see
+  // levels.js) says otherwise: where a wall, a parapet or a row of buildings stands close to the road, the marker
+  // moves in front of it or on top of it. Targets (pickups.js) works out where each one is; rendering draws it there.
+  //   offset   m beyond the pavement's edge its ring is (the usual: targetOffset; less than 0: in over the shoulder)
+  //   height   m above the road the middle of its ring is
+  //   style    'post' (on a post from the ground), 'wall' (on a short stalk standing on a wall's or a parapet's
+  //            top, `base` m above the road) or 'gantry' (hung from an arm, from a mast `arm` m further out)
+  //   beam     true = a beam of light stands over it, to be seen from a distance
+  // A ring nearer the pavement than `clear` m could be driven through: it is carried at least `headroom` m up,
+  // over the tallest car (whatever the theme or the level asks for). hit: m from its middle, along the road and
+  // across it, within which a package has landed on it
+  target: { height: 2.7, style: 'post', base: 0, arm: 2.4, beam: false, clear: 1.8, headroom: 4.5, hit: 2.5, styles: ['post', 'wall', 'gantry'] },
   tankRamSlow: 0.15,       // share of its speed the tank loses per unit of mass it rams (a car is 1)
   tankMaxSpeed: 46,        // m/s: a tank is faster than any car in the garage
   tankHeadOnDamage: 0.2,   // share of full health a head-on costs the tank; nothing else hurts it
@@ -1379,6 +1391,53 @@ export const CONFIG = {
   // one that flies at signUnder m/s or less gets a board with that speed `sign` m before it, and from camFrom m
   // before it to its top the camera comes down to camHeight m and in to camBack m behind the car (easing over
   // camEase m), so the far side is hidden until the car is over. "Airborne" is said after sayAfter s in the air
+  // a ramp over the jam ("jamRamps": { s, lane, queue?, lanes? }): a car transporter stopped in that lane, the foot
+  // of its ramps at s, its deck a slope `run` m long at `angle` rad up to its lip, with a queue of stopped traffic
+  // from there on: `queue` cars in its own lane beyond its cab (the first `gap` m past the lip, then one every
+  // `spacing` m), and in each of the level's `lanes` ([first, last]; the player's whole side if not said) from
+  // beside its ramps to as far. In line with the ramps (within `half` m) at their foot (the first `foot` m), the
+  // car goes up them (the climb takes speed, as up a drawbridge's leaf) and off the lip, on the arc of a crest's
+  // flight: over the queue if it came fast enough, landing `margin` m or more past the last car (a board `sign` m
+  // before gives the speed that does it hands off), or down into the queue. Beside it the car is kept out of the
+  // trailer and its cab (`cab` m past the lip). Traffic coming up its lane moves over from keepClear m before.
+  // (From `commit` m before its foot, in line with it, the car no longer brakes by itself for the queue beyond;
+  // on the ramps it is never slower than `crawl` m/s, so nothing comes to a stand on them)
+  // (The queue is the level's ordinary traffic no longer than `longest` m (half its length) or taller than `tallest` m)
+  jamRamp: { crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
+  // a low bridge ("lowBridges": { s, clearance? }): a height bar across the player's side and its shoulder, `clearance`
+  // m off the road (the bridge's own, or this), between an exit and its merge. A car taller than that which goes at
+  // it loses `damage` health and perMetre more for each m too tall, keeps `keep` of its speed, and is through. Said
+  // from `warn` m before the exit; boards `sign` m before the exit and at it. Tall traffic takes the exit (one found
+  // within `traffic` m of the bar, more than `unseen` m from the player, is taken off the road)
+  lowBridge: { clearance: 2, damage: 30, perMetre: 25, keep: 0.4, warn: 260, sign: 200, traffic: 120, unseen: 140 },
+  // a ford ("fords": { from, to, depth? }): the road through a river `depth` m deep (the ford's own, or this), between
+  // an exit and its merge: the side road is the bridge. A car wades `shallow` m (crossing 0) to `deepest` m (crossing
+  // 1). In water no deeper than it wades it is slowed, to `fast` m/s in next to none and `slow` m/s at its limit;
+  // in deeper it crawls at `crawl` m/s and loses `damage` health a second for each m out of its depth. (`bite`: m/s^2
+  // the water takes speed off at.) Traffic goes through at `traffic` m/s. Said from `warn` m before the exit;
+  // boards `sign` m before the exit and at it
+  ford: { depth: 0.5, shallow: 0.25, deepest: 1.0, fast: 30, slow: 13, crawl: 4.5, damage: 10, bite: 34, traffic: 8, warn: 260, sign: 200 },
+  // speed cushions ("cushions": { from, to, every? }): a row across the road every `every` m (the stretch's own, or
+  // this), a cushion `width` m wide and `long` m long in the middle of each lane, a gap on each lane line. A car
+  // whose middle is within `line` m of a lane line goes between two and feels nothing (less by each m its half
+  // width is over hwRef, never less than `least`). Over one at `soft` m/s or less it is a bump; faster, the car
+  // loses `damage` health and perSpeed more for each m/s over, keeps `keep` of its speed, and is thrown up at
+  // `throw` m/s for each m/s over (throwMost at most). Traffic takes the stretch at `traffic` m/s (slowing at
+  // `brake` m/s^2). Boards `sign` m before
+  cushion: { every: 45, width: 2.3, long: 3, line: 0.45, hwRef: 0.85, least: 0.2, soft: 8.3, damage: 3, perSpeed: 0.25, keep: 0.85, throw: 0.3, throwMost: 6, traffic: 8, brake: 12, sign: 110 },
+  // black ice in the shade ("shade": { from, to, side, lanes? }): over the stretch something tall on that side of the
+  // road shades the `lanes` lanes of the player's side nearest it (the stretch's own, or this; and the shoulder
+  // beyond, on the right), and they are black ice (CONFIG.ice: nothing of it drawn but the shadow). Traffic
+  // moves out of them from keepClear m before. Said from `warn` m before; a tree every `tree` m casts it
+  // (On black ice steerLoss more of the steering's bite is gone, on top of what ice takes)
+  shade: { lanes: 1, steerLoss: 0.9, keepClear: 150, warn: 160, tree: 11 },
+  // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
+  // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
+  // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,
+  // the car wanders (`wander` m/s^2 sideways, to and fro) and in a bend it is carried to the outside (`slide` of
+  // what the bend asks, speed^2 x curvature, up to slideMost m/s^2), the screen shaking (`shake`). Boards `sign` m
+  // before it give the speed; ripples every `ripple` m are drawn across it
+  washboard: { calm: 9, skim: 20, shape: 0.6, steerLoss: 0.88, wander: 9, slide: 1.6, slideMost: 14, shake: 0.4, soundEvery: 0.22, sign: 120, ripple: 2.4 },
   crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it

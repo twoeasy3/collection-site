@@ -1039,6 +1039,43 @@ const createTrack = () => {
       else if (w.dir !== 'left' && w.dir !== 'right') problems.push('crosswind at ' + w.from + ': dir is left or right (the side it blows to)');
       else if ([w.strength, w.every, w.length].some(v => v !== undefined && !(v > 0)) || (w.every ?? CONFIG.crosswind.every) < (w.length ?? CONFIG.crosswind.length)) problems.push('crosswind at ' + w.from + ': strength, every and length are more than 0, a gust no longer than the time between gusts');
     }
+    for (const b of LEVEL.lowBridges || []) {
+      const name = 'low bridge at ' + b.s;
+      if (b.road === 'side' || !(b.s >= 60 && b.s <= length - 30)) problems.push(name + ': on the expressway, 60 m from the start, 30 m from the finish');
+      else if (b.clearance !== undefined && !(b.clearance >= 1 && b.clearance <= 5)) problems.push(name + ': clearance is 1 to 5 m');
+      else if (!exits.some(x => x.exitAt + 40 < b.s && x.mergeAt - 40 > b.s)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the way round for tall vehicles)');
+    }
+    for (const f of LEVEL.fords || []) {
+      const name = 'ford at ' + f.from;
+      if (!mainStretch(f) || f.to - f.from > 300) problems.push(name + ': from before to, on the expressway, 300 m long at most');
+      else if (f.depth !== undefined && !(f.depth >= 0.1 && f.depth <= 1.5)) problems.push(name + ': depth is 0.1 to 1.5 m');
+      else if (!exits.some(x => x.exitAt + 40 < f.from && x.mergeAt - 40 > f.to)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the bridge)');
+    }
+    for (const c of LEVEL.cushions || []) {
+      if (!mainStretch(c)) problems.push('speed cushions at ' + c.from + ': from before to, on the expressway');
+      else if (c.every !== undefined && !(c.every >= 15 && c.every <= 200)) problems.push('speed cushions at ' + c.from + ': every is 15 to 200 m');
+    }
+    for (const z of LEVEL.shade || []) {
+      if (!mainStretch(z)) problems.push('shade at ' + z.from + ': from before to, on the expressway');
+      else if (z.side !== 'left' && z.side !== 'right') problems.push('shade at ' + z.from + ': side is left or right (the side what casts it stands on)');
+      else if (z.lanes !== undefined && !(Number.isInteger(z.lanes) && z.lanes >= 1 && z.lanes <= 8)) problems.push('shade at ' + z.from + ': lanes is 1 to 8');
+    }
+    for (const b of LEVEL.washboards || []) {
+      if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
+      else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');
+    }
+    for (const r of LEVEL.jamRamps || []) {
+      const J = CONFIG.jamRamp, far = r.s + J.run + J.gap + (r.queue ?? J.queue) * J.spacing + 40, name = 'ramp over the jam at ' + r.s;
+      if (r.road === 'side' || !(r.s >= 60 && far <= length)) { problems.push(name + ': on the expressway, 60 m from the start, room for its queue before the finish'); continue; }
+      const [first, last] = laneRange(1, r.s);
+      let sloped = false;
+      for (let s = r.s - 40; s <= far; s += STEP) if (Math.abs(grade(s)) > 0.002) sloped = true;
+      if (!(Number.isInteger(r.lane) && r.lane >= first && r.lane <= last)) problems.push(name + ': lane is one on the player\'s side (' + first + ' to ' + last + ')');
+      else if (r.lanes !== undefined && !(Array.isArray(r.lanes) && r.lanes[0] >= first && r.lanes[1] <= last && r.lanes[0] <= r.lane && r.lanes[1] >= r.lane)) problems.push(name + ': lanes [first, last] on the player\'s side, its own among them');
+      else if (r.queue !== undefined && !(Number.isInteger(r.queue) && r.queue >= 1 && r.queue <= 10)) problems.push(name + ': a queue of 1 to 10 cars');
+      else if (!straight(r.s - 40, far) || sloped) problems.push(name + ': the road must run straight and level through it');
+      else for (const x of exits) if (overlaps(r.s - 40, far, x.exitAt - X.laneZone, x.exitAt + 20) || overlaps(r.s - 40, far, x.mergeAt - 20, x.mergeAt + X.laneZone)) problems.push(name + ': an exit\'s ramps are in it');
+    }
     LEVEL.segments.forEach((seg, i) => { if (seg.ease !== undefined && !(seg.ease >= 2 && seg.ease <= 200)) problems.push('segment ' + (i + 1) + ': ease is 2 to 200 m'); });
     for (const e of LEVEL.wreckage || []) {
       const name = 'wreckage at ' + e.at;
@@ -1183,6 +1220,10 @@ const createTrack = () => {
         problems.push(name + ': beyond the road');
       } else if (onBridge(s)) {
         problems.push(name + ': inside a bridge\'s structure');
+      } else if (tunnel(s) > 0) {
+        problems.push(name + ': in a tunnel');
+      } else if (isMain(s) && junctions.some(j => s > j.s - 12 && s < j.end + 12)) {
+        problems.push(name + ': at a junction');
       }
     }
     for (const text of problems) console.warn('Level "' + LEVEL.name + '": ' + text);

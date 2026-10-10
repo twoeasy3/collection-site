@@ -18,6 +18,7 @@ import { Crossings } from './crossing.js';
 import { StopGo } from './stopgo.js';
 import { Water } from './water.js';
 import { Hazards } from './hazards.js';
+import { Gambles } from './gambles.js';
 
 // ---- traffic ---------------------------------------------------------------
 // One pool of cars recycled ahead of the player: some northbound (the player's way), the
@@ -344,6 +345,7 @@ export const Traffic = (() => {
     car.halted = 0;         // pulled over for good (to the shoulder on this side: -1 | 1), its lane blocked ahead (see Wreckage)
     car.junction = null;    // leaving the road at a junction: on its way off, in the world (see leaveAtJunction)
     car.junctionSeen = -1;  // the s of the last junction it came to (and chose a way at)
+    car.jam = false;        // stopped in the queue at a ramp over the jam (see placeFixed, Gambles)
     car.parked = false;     // parked on a shoulder, hazards on (see placeFixed)...
     car.parkSide = 1;       // ...on this side (-1 left, 1 right)
     car.pulledFor = null;   // the siren it is pulled over for: Player, or an emergency vehicle
@@ -438,6 +440,21 @@ export const Traffic = (() => {
       outfit(car, 'icecream', st.lane);
       Object.assign(car, { fixed: true, icecream: { pace: car.baseSpeed, wait: st.wait ?? CONFIG.iceCream.wait, timer: null, jingle: 0, said: false },
         viaSide: false, evil: false, defiant: false, hesitant: false, baseSpeed: 0, vs: 0, hazards: true, showMood: false });
+    }
+    // ...and the queue at a ramp over the jam (a level's "jamRamps": see Gambles and CONFIG.jamRamp): stopped cars,
+    // brake lights on, that never move off
+    for (const ramp of Gambles.ramps) {
+      // (cars and vans only, the same ones every run: nothing in it too long or too tall to be flown over)
+      const small = ordinary.map(([kind]) => kind).filter((kind) => CONFIG.vehicles[kind].hl <= CONFIG.jamRamp.longest && CONFIG.vehicles[kind].height <= CONFIG.jamRamp.tallest);
+      Gambles.queueSpots(ramp).forEach((spot, k) => {
+        const car = spareNorth();
+        if (!car) return;
+        car.dir = 1;
+        car.bound = 'north';
+        car.s = spot.s;
+        outfit(car, small.length ? small[(k * 7 + spot.lane) % small.length] : 'commuter', spot.lane);
+        Object.assign(car, { fixed: true, jam: true, viaSide: false, evil: false, defiant: false, hesitant: false, baseSpeed: 0, vs: 0, showMood: false });
+      });
     }
     // ...and a police roadblock's cars (a level's "roadblocks": see CONFIG.roadblock): one across every lane of
     // the player's side at s but the gap (the roadblock's own, or one at random each run), lights going
@@ -1808,6 +1825,15 @@ export const Traffic = (() => {
         }
       }
 
+      if (car.jam) { // in the queue at a ramp over the jam (see Gambles): stopped in its lane for good; a shove moves it along
+        car.vs -= car.vs * Math.min(1, dt * 3);
+        car.s += car.vs * dt;
+        car.latVel = 0;
+        car.braking = true;
+        car.signal = 0;
+        updateYaw(car, dt);
+        continue;
+      }
       if (car.parked) { // parked, hazards on: it goes nowhere, but a shove moves it along the shoulder
         car.vs -= car.vs * Math.min(1, dt * 3);
         car.s += car.vs * dt;

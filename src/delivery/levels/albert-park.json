@@ -1,6 +1,10 @@
 {
   "id": "albert-park",
   "name": "Albert Park",
+  "description": {
+    "good": "Three laps round the lake in the park. Quick, flowing and lined with walls: keep it tidy and bring the car home.",
+    "evil": "A lap of the lake, three times, with walls on both sides and a grid in between. Shove first, apologise never."
+  },
   "theme": "albert-park",
   "car": "f1",
   "flow": "north",

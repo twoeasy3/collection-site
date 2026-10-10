@@ -50,6 +50,7 @@ export const MACHINERY_KINDS = ['bulldozer', 'excavator', 'dumpTruck', 'roller',
 export const SITE_KINDS = ['trench', 'excavator', 'workers', 'pipes'];
 export const BRIDGE_STYLES = ['harbour', 'seacliff'];
 export const ZONE_SCENERY = ['sydney', 'bush', 'ousley', 'seacliff', 'wollongong', 'shellharbour', 'kiama', 'marais', 'gois', 'noirmoutier', 'savanna', 'kopjes', 'river', 'plains'];
+ZONE_SCENERY.push(...Object.values(THEMES).flatMap(theme => theme.sets || [])); // (and the sets of a theme with a file of its own: its "sets" in themes.js)
 export const LANDMARK_KINDS = ['bay', 'flyer', 'mbs', 'esplanade', 'fullerton', 'merlion', 'padang', 'gardens', 'artscience', 'helix', 'float', 'cbd', 'suntec', 'gallery', 'domes',
   'river', 'basin', 'casino', 'biosphere', 'skyline', 'lake', 'oldStraight', 'stream', 'banking', 'hotel'];
 // ...and the ones it has: read from its own tables, never copied
@@ -119,6 +120,8 @@ export const FIELDS = {
   // ---- the level ----
   id: { shape: 'text', group: 'basics', label: 'Id', required: true, help: 'Unique name: the level\'s key in saved progress. Keep it short.' },
   name: { shape: 'text', group: 'basics', label: 'Name', required: true, help: 'The level\'s name on the menu.' },
+  description: { shape: 'object', group: 'basics', label: 'Description', help: 'A sentence or two about the level for the menu, one for each side (160 characters each at most). Good: a cheerful, careful courier\'s briefing. Evil: the same job, relished.',
+    settings: { good: text('Good'), evil: text('Evil (left out on a level that is always Good)') } },
   clock: { shape: 'object', group: 'basics', label: 'Clock', required: true, help: 'Seconds on the clock for each side (scripts/level-clocks.mjs works them out from a clean run).',
     settings: { good: num('Good (s)', { min: 1, max: 100000, required: true, init: 150 }), evil: num('Evil (s)', { min: 1, max: 100000, required: true, init: 115 }) } },
   tip: { shape: 'number', group: 'basics', label: 'Tip ($)', min: 0, max: 100000, init: 50, help: 'The money earned for finishing before the clock reaches zero.' },
@@ -188,7 +191,9 @@ export const FIELDS = {
     settings: { type: pick('Type', PICKUP_TYPES, { required: true, init: 'turbo' }), lane: lane('Lane', { shoulders: true, required: true }) } },
   obstacles: { shape: 'point', group: 'items', label: 'Obstacle', road: 'both', sub: 'kind', help: 'Something on the road that explodes when hit.',
     settings: { lane: lane('Lane', { shoulders: true, required: true }), kind: pick('Kind', OBSTACLE_KINDS, { default: 'barrier' }), drift: pick('Darts about', ['dart'], { help: 'It darts about its spot at random.' }) } },
-  targets: { shape: 'point', group: 'items', label: 'TANK RAGE target', road: 'both', help: 'A target beside the road.', settings: { side: side() } },
+  targets: { shape: 'point', group: 'items', label: 'TANK RAGE target', road: 'both', help: 'A target beside the road. How it stands is the theme\'s, unless set here.',
+    settings: { side: side(), offset: num('Beyond the pavement (m)', { min: -4, max: 30, step: 0.1 }), height: num('Ring height (m)', { min: 1.5, max: 14, step: 0.1 }),
+      style: pick('Style', C.target.styles), base: num('Wall top (m)', { min: 0, max: 12, step: 0.1 }), arm: num('Gantry arm (m)', { min: 0.5, max: 8, step: 0.1 }), beam: flag('Beam of light') } },
 
   // ---- stretches that change the road ----
   narrows: { shape: 'stretch', group: 'shape', label: 'Narrowing', help: 'Each side of the expressway drops to that many lanes (or only one side).',
@@ -246,6 +251,18 @@ export const FIELDS = {
   crosswinds: { shape: 'stretch', group: 'hazards', label: 'Crosswind', span: 500, help: 'An exposed stretch with a gusting wind across it: tall cars are pushed harder, a tall vehicle alongside gives shelter.',
     settings: { dir: pick('Blows to the', SIDES, { required: true, init: 'left' }), strength: num('Strength (m/s²)', { min: 0.5, max: 50, step: 0.5, default: C.crosswind?.strength }),
       every: num('A gust every (s)', { min: 1, max: 60, step: 0.5, default: C.crosswind?.every }), length: num('A gust lasts (s)', { min: 0.5, max: 60, step: 0.1, default: C.crosswind?.length }) } },
+  lowBridges: { shape: 'point', group: 'hazards', label: 'Low bridge', help: 'A height bar over the side the player drives on, between an exit and its merge: a car that fits goes under, a taller one takes the side road or the knock.',
+    settings: { clearance: num('Clearance (m)', { min: 1, max: 5, step: 0.1, default: C.lowBridge?.clearance }) } },
+  fords: { shape: 'stretch', group: 'hazards', label: 'Ford', span: 70, help: 'The road through a river, between an exit and its merge (the side road is the bridge): a car is slowed by how well it wades, and one out of its depth crawls and is damaged.',
+    settings: { depth: num('Depth (m)', { min: 0.1, max: 1.5, step: 0.05, default: C.ford?.depth }) } },
+  cushions: { shape: 'stretch', group: 'hazards', label: 'Speed cushions', span: 180, help: 'Rows of speed cushions, one in each lane with gaps on the lane lines: thread a gap, crawl over, or be thrown up and knocked.',
+    settings: { every: num('A row every (m)', { min: 15, max: 200, step: 5, default: C.cushion?.every }) } },
+  shade: { shape: 'stretch', group: 'hazards', label: 'Black ice in the shade', span: 200, help: 'Trees on one side shade the nearest lanes, and the shade is black ice: nothing shows but the shadow. Traffic keeps to the sun.',
+    settings: { side: pick('Shaded from the', SIDES, { required: true, init: 'right' }), lanes: int('Lanes in the shade', { min: 1, max: 8, default: C.shade?.lanes }) } },
+  washboards: { shape: 'stretch', group: 'hazards', label: 'Washboard dirt', span: 400, help: 'Corrugated dirt: at a middling speed the grip is shaken away; crawling, or at the skim speed or more, it is smooth.',
+    settings: { skim: num('Skims from (m/s)', { min: (C.washboard?.calm ?? 9) + 4, max: 40, step: 0.5, default: C.washboard?.skim }) } },
+  jamRamps: { shape: 'point', group: 'hazards', label: 'Ramp over the jam', rules: ['straight', 'level'], reach: () => (C.jamRamp?.run ?? 15) + 60, help: 'A car transporter with its ramps down at the back of a queue of stopped traffic: fast enough, the car flies the queue.',
+    settings: { lane: lane('Its lane', { required: true, player: true }), queue: int('Cars in the queue', { min: 1, max: 10, default: C.jamRamp?.queue }), lanes: lanes('Lanes the queue fills', { span: true, help: 'Left out: the player\'s whole side.' }) } },
   mud: { shape: 'stretch', group: 'hazards', label: 'Mud', help: 'The road gives way to mud: a car is slowed in it by how well it crosses.' },
   fog: { shape: 'stretch', group: 'hazards', label: 'Fog bank', span: 300, help: 'The fog closes right in, and the police see less.' },
   potholes: { shape: 'point', group: 'hazards', label: 'Pothole', road: 'both', help: 'A jolt, and maybe a flat tyre.', settings: { lane: lane('Lane', { required: true }), r: num('Radius (m)', { min: 0.2, max: 5, step: 0.1, default: C.site?.potholeR }) } },

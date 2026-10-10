@@ -1,6 +1,10 @@
 {
   "id": "outback-express",
   "name": "Outback Express",
+  "description": {
+    "good": "Three level crossings on a long outback road. When the bells ring, stop: the train always wins. Mind the kangaroos in the fog.",
+    "evil": "Lights flashing, booms coming down, a train on its way. You can make it. Probably. The caravans behind you can't."
+  },
   "theme": "panorama",
   "clock": { "good": 225, "evil": 170 },
   "tip": 180,
@@ -42,7 +46,14 @@
     { "s": 1000, "side": "right" },
     { "s": 4400, "side": "left" }
   ],
+  "washboards": [
+    { "from": 3960, "to": 4380 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 4040, "lane": 2 },
+    { "type": "cash10", "s": 4040, "lane": 3 },
+    { "type": "cash5", "s": 4200, "lane": 2 },
+    { "type": "cash20", "s": 4320, "lane": 3 },
     { "type": "turbo", "s": 400, "lane": 2 },
     { "type": "timePlus", "s": 900, "lane": 3 },
     { "type": "turbo", "s": 1050, "lane": 3 },

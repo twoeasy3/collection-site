@@ -89,6 +89,8 @@ const SAMPLES = {
   drum: null,                   // a parade's bass drum
   jingle: null,                 // an ice-cream van's chimes
   cargoDrop: ['Collide1', 'Plop Up'], // a load coming off a truck
+  menuMove: null,               // the start screen: a step to another level, group or tab (render/menustage.js)...
+  menuPick: null,               // ...and a choice made (the side, the garage, a sheet opened, START)
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -338,6 +340,8 @@ Object.assign(SYNTH, {
   gravel: (v) => { noise(3200, 1400, 0.2, 0.3 * v, 'bandpass'); noise(900, 400, 0.16, 0.22 * v, 'lowpass', 0.03); }, // (stones under the car, in a gravel trap)
   jingle: (v) => [659, 587, 523, 587, 659, 659, 659].forEach((f, i) => tone(f, f, 0.28, 0.14 * v, 'triangle', i * 0.22)), // (a nursery tune's first phrase)
   cargoDrop: (v) => { noise(900, 200, 0.2, 0.5 * v); tone(140, 60, 0.15, 0.3 * v, 'square'); },
+  menuMove: (v) => tone(520, 660, 0.05, 0.12 * v, 'triangle'),                                        // (a short tick up)
+  menuPick: (v) => { tone(660, 660, 0.06, 0.12 * v, 'triangle'); tone(990, 990, 0.1, 0.1 * v, 'triangle', 0.05); }, // (two notes)
 });
 
 export const Sound = {

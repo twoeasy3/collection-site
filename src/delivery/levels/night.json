@@ -1,6 +1,10 @@
 {
   "id": "night",
   "name": "Night Drive",
+  "description": {
+    "good": "A late delivery under the street lights. Lowriders cruise and a police chase may come through: headlights on, eyes up, parcel safe.",
+    "evil": "A dark road, slow lowriders, and a getaway car screaming past with the law behind it. Nobody will notice one more troublemaker."
+  },
   "cargo": { "good": "clock", "evil": "doll" },
   "theme": "night",
   "clock": { "good": 168, "evil": 119 },
@@ -18,7 +22,14 @@
     { "length": 300, "curve": -0.003 },
     { "length": 500, "curve": 0 }
   ],
+  "jamRamps": [
+    { "s": 2250, "lane": 3, "queue": 2 }
+  ],
   "pickups": [
+    { "type": "turbo", "s": 2110, "lane": 3 },
+    { "type": "cash20", "s": 2296, "lane": 3 },
+    { "type": "cash10", "s": 2312, "lane": 2 },
+    { "type": "cash10", "s": 2312, "lane": 3 },
     { "type": "siren", "s": 850, "lane": 3 },
     { "type": "radarDetector", "s": 1200, "lane": 2 },
     { "type": "mystery", "s": 120, "lane": 2 },

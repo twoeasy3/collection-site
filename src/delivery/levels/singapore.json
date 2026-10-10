@@ -1,6 +1,10 @@
 {
   "id": "singapore",
   "name": "Singapore",
+  "description": {
+    "good": "City streets, driving on the left. Ten junctions turn the route this way and that: follow the chevrons and wait your turn at the box.",
+    "evil": "Ten junctions full of taxis waiting their turn. You are not waiting for yours. Keep left, mostly."
+  },
   "theme": "singapore",
   "drive": "left",
   "clock": { "good": 132, "evil": 94 },

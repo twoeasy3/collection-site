@@ -713,9 +713,15 @@ midnight, twostroke.
 Status: in progress.
 
 - [x] M1 barebones (1eb9ece): `#startScreen` rebuilt as one screen (stage, strip, groups, tabs; car, side, START; options sheet). New `render/menustage.js`, `menu2.css`; `render/menu.js` slimmed; `render/levelcards.js` gone. Keys and `?do=`, `?cursor=`, `?side=evil`, `?options` for checks.
-- [ ] M1 polish at 1400x900, 520x900, 900x420
-- [ ] M2 level descriptions (Good / Evil)
-- [ ] M3 the road card (gimmicks, pickups, traffic with 3D models)
+- [x] M2 (f6fa1bc): a `description: { good, evil }` in every menu level's JSON (48 levels; only `good` on All Heck and the Battlefield), documented in `levels.js`, in `levelSchema.js`; `node scripts/.descriptions-check.mjs [--list]`.
+- [x] M3 (0c54493): "What's on this road" card, `render/levelcard3d.js` (one renderer, made on opening, let go on closing). `levelinfo.js` gained `levelPickups`, `levelTraffic`, `vehicleInfo`, `levelNotes`; `node scripts/.roadcard-check.mjs [--list]`.
+- NOTE for whoever merges, and for Agent 19 (gimmicks): `gimmicks.js` and `powerups.js` are now only the catalogues (`export const GROUPS` / `CARDS`); the page part at the foot of each moved to `gimmickspage.js` / `poweruppage.js` (the HTML pages point at those), and both pages draw through `render/modelviews.js`. New gimmick cards still go in `GROUPS` in `gimmicks.js`, as before. An edit to the old foot of `gimmicks.js` (from `// ---- the page:` down) will conflict.
+- The old menu's rules were cut out of `style.css` (`.car-row`, `.side-btn`, `.cards`, `button.card`, `#tabs`, `.groups`, `#levels` on phones, `details`) and `menus.css` (the level cards' medals and chips). `delivery/index.html`: only `#startScreen` rewritten (ids kept: `startBtn`, `shop`, `sideBtn`, `levels`, `levelGroups`, `bank`, the options' buttons).
+- [x] Polish and docs (6ffb4fd): arrows clear of the level's name, the side's note on a race, the groups row follows the group shown; README (the start screen, the file table, the new addresses, the recipes) and HANDOVER (not verified).
+- Checks run: `node --check` on every file touched, `.bundle-check`, `.schema-check`, `.save-check`, `.descriptions-check`, `.roadcard-check`, `delivery-levels-check`: all pass. `npx vite build` (into the scratchpad) builds. The smoke test was NOT run.
+- Pictures: scratchpad `shots-menu2/before` (7) and `shots-menu2/after` (13 states at 1100x650, 1400x900, 520x900, 900x420, and the controls worked by `?do=`).
+- Not verified: nothing clicked, tapped or swiped by hand; no sound heard; no animation seen moving; not on a real phone. Eight levels have no menu picture (hong-kong, tokyo, mumbai, stelvio, christmas, monza, spa, albert-park: none before either) and show a plate of stripes; `shots.mjs --levels` now gives a ghost car in the picture and puts Mumbai's camera behind a building, so they were left.
+- Left for the tiers rework: the stage's ribbon is already two halves (Good left, Evil right: today each shows its medal and best time), the "needs" line is there (an amphibious car, the level's own vehicle, the level before), and the groups are fives.
 
 ## Agent 19: road gimmicks, resumed (.claude/worktrees/delivery-gimmicks, delivery-gimmicks)
 
@@ -724,14 +730,31 @@ The saved H2 work (`4b617b5`) was sound: main merged in cleanly (`d0538f8`), and
 
 Level fields added (shapes):
 - `jamRamps: [{ s, lane, queue?, lanes?: [first, last] }]` (expressway, straight and level, clear of exits' ramps)
+- `lowBridges: [{ s, clearance? }]` (expressway, between an exit and its merge, 40 m clear of both; clearance 1 to 5 m, 2 if not said)
+- `fords: [{ from, to, depth? }]` (expressway, 300 m at most, between an exit and its merge, 40 m clear of both; depth 0.1 to 1.5 m, 0.5 if not said)
+- `cushions: [{ from, to, every? }]` (expressway; a row every 15 to 200 m, 45 if not said)
+- `shade: [{ from, to, side: 'left' | 'right', lanes? }]` (expressway; lanes of the player's side in shadow, 1 if not said)
+- `ruts: [{ from, to }]` (expressway)
+- `washboards: [{ from, to, skim? }]` (expressway; skim in m/s, 13 to 40, CONFIG.washboard.skim if not said)
 
 Progress:
 - [x] H2 ramp over the jam: done, `72a0765`. On Gimmick Road 3 (2400), Night (2250, queue 2, a turbo at 2110), Speed Trap Alley (2860, queue 3). Clocks not re-timed. Cash beyond each queue, two side by side. `.gimmicks3-check.mjs ramp` passes (14), `finish` added (a whole run, hands off). Stills: `shots-gimmicks3/ramp-1-sign`, `ramp-2-foot`, `ramp-3-air`, `card-ramp`, `night-ramp`.
-- [ ] H8 washboard dirt: in progress.
+- [x] H8 washboard dirt: done, `61e67dc`. Field below. On Gimmick Road 3 (2950-3450, barriers at 3120, 3200, 3330), Safari (2520-2980), Outback Express (3960-4380), cash on each. Clocks not re-timed. One additive line in `player.js` (the steering's response times `1 - steerLoss * shaken`). `washboard` passes (12). Stills: `wash-1-sign`, `wash-2-on`, `card-wash`, `safari-wash`. A board's long line is now squeezed to fit (`makeBoard`).
+- [x] H4 low bridge: done, `c07fa19`. Built as a height bar over the player's side (not a bridge over the whole road), which must stand between an exit and its merge. On Gimmick Road 3 (4400; exit 0's `out` 70 to 150 so the way round costs 4 s), Ring Road (1100), Back Roads (1320), cash under each. Clocks not re-timed. `bridge` passes (11). Stills: `bar-1-sign`, `bar-2-bar`, `bar-3-close`, `card-bar`, `ringroad-bar`.
+- [x] H5 ford: done, `a7736ae`. Between an exit and its merge (the side road is the bridge). On Gimmick Road 3 (5650-5720, 0.6 m; exit 1's `out` 70 to 150), Back Roads (1790-1850, 0.45 m), Quarry Run (4060-4105, 0.7 m), cash in each. The low bridge moved from Back Roads to Quarry Run (1510). Clocks not re-timed. `ford` passes (13). Stills: `ford-1-sign`, `ford-2-bank`, `ford-3-in`, `backroads-ford`, `quarry-ford`, `quarry-bar`.
+- [x] H19 speed cushions: done, `e05c602`. On Gimmick Road 3 (3520-3700), Suburbs (1460-1600), The Hood (1460-1595), Christmas (1480-1615), cash between the rows. Clocks not re-timed. `cushions` passes (15). Stills: `cush-1-sign`, `cush-2-rows`, `cush-3-thrown`, `card-cush`, `suburbs-cush`.
+- [x] H10 black ice in the shade: done, `c18c446`. Trees of its own cast the shadow; the shadow is ice (a patch in `Track.slicks`) with 90% more of the steering gone. On Gimmick Road 3 (6250-6450, a barrier at 6410), Mountain Pass (2370-2450), Fjord (1340-1470). Not on Christmas (night). `Player.shaken` is now the share of steering taken (washboard and black ice both set it). `shade` passes (11). Stills: `shade-1`, `shade-2-in`, `pass-shade`, `fjord-shade`.
+- Vite cache fix `69b8ae1` cherry-picked (`c454f6e`); all checks pass after it.
+- main merged in again (`f6e0648`, one conflict in levels.js's field docs); "ready to merge" sent.
+- [x] H9 ruts: done, `c82ce9a`. On Gimmick Road 3 (4830-5030, a barrier at 5000 in lane 4), Farm (2810-2970, a bale at 2945), Outback Express (2560-2860). `gambles.js` now reads `Input.steer` (the rut is climbed out of by steering against it). `ruts` passes (12). Stills: `ruts-1`, `ruts-2-in`, `card-ruts`, `farm-ruts`.
+- Not started: H16, H17, H7, H11, H12, H13, G4, H3, H20, H14, H18, H6, H15, G10, G11, G25, G24, G26, G22, G18, G3.
 
 For the owner:
 - H2: the queue fills the player's whole side, so the way round is the oncoming side or the shoulder (both a risk of their own), or the jump. Ring Road was wanted but has no 250 m clear of its exits' ramps.
 - Not mine, seen in passing: `gimmicks.html?group=the-road-itself` logs "THREE.Object3D.add: object not an instance of THREE.Object3D" once (a card there adds an undefined model).
+- H4: tall traffic that cannot reach the exit lane is taken off the road when 140 m or more from the player, and otherwise drives through the bar. A stuck lorry at the bar would be the honest answer; not built.
+- H5: a ford's depth is fixed per ford, not changing during a run (the checklist's "how deep it is today" read as: each ford its own). The road does not dip: the water lies on it.
+- H10: the game's ice costs nothing in a straight line, so a shade is only a gamble with a bend, a hazard or a braking point in it. Traffic goes into the shade after cash left there (it goes for any pickup).
 - Cash pickups (the new standing rule) added on Gimmick Road 3 beyond the wind (660), the crest (1235, two side by side) and the ramp.
 
 ## Agent 20: theme levels A: toy room, underwater tunnel, moon base (.claude/worktrees/delivery-city-levels, delivery-themes)
@@ -739,5 +762,53 @@ For the owner:
 - Base for the three theme branches: `0c74bd6` (main merged in). Themed levels are `THEME_LEVELS` in `levels.js` (T1..., a menu group of their own after the amphibious levels; `progress.js` order 27, `{ cap: 46 }`). One level a line, each batch above its own marker comment, the same in `render/themes/index.js` and at the end of `themes.js`.
 - Cut from the stopped agent's work and kept on branch `delivery-themes-toys-wip` (`ad3a435`): marbles, loops, the cat's paw, low gravity (`air.js`, `extras.js`, `toys.js`, their renderers and checks). Not finished, not checked.
 - T14 Toy Room: level `toys` (T1), 4600 m, done. Checks, ghost probe and screenshots only; not played by hand.
-- T15 underwater tunnel: started.
-- T18 moon base: not started.
+- T15 underwater tunnel: theme `seabed` (`render/themes/seabed.js`, `seabedModels.js`) and level `leaks` (T2, "Twenty Thousand Leaks", 4500 m), done. Checks, ghost probe and screenshots only; not played by hand.
+- T18 moon base: theme `moon` (`render/themes/moon.js`, `moonModels.js`) and level `moon` (T3, "Tranquility Base", 4930 m), done. No low gravity: the game's own physics. Checks, ghost probe and screenshots only; not played by hand.
+- Engine fix on the way (`render/road.js`, one line): a lit theme on a hilly level had black land beside the road (the land ribbon and its banks had no normals).
+- All three committed on `delivery-themes`. Every level has 20 or more cash pickups and rows of two or three side by side. Save cookie now 3502 of 4096 bytes (about 41 a themed level).
+- Screenshots: scratchpad `shots-themes/toyroom`, `shots-themes/seabed`, `shots-themes/moon`.
+
+### Cash and rows (the owner's new rule; done, ff83536) and part 5
+- Stelvio: 20 cash pickups, 8 rows of two across (340, 880, 1420, 1700, 2260, 2800, 3320, 3850). Market Town: 17 on the road + 8 on the side road, 10 rows (350, 990, 1600, 1800, 2350, 3100, 3600; side 200, 420 three across, 700). Clocks untouched.
+- A row at one `s` draws and collects properly (`scratchpad/levelfix/rows.mjs`): in a lane the car takes that lane's only; astride the line between two lanes it takes both at once.
+- Engine gap found, NOT fixed: on the expressway a pickup's `lane: 'left' | 'right'` (the shoulder) fails the level check ("lane right is merged away there", track.js ~1155: only a side road's shoulders pass), though levels.js says a pickup can be on a shoulder. So on a 2-lane road a row is two across at most; three only on a side road.
+- Part 5: 81 "after" shots in `scratchpad/shots-levelfix/after` (the 68 of "before" plus rocks, summit, hairpin, market, rows); contact sheets `scratchpad/levelfix/sheets/b-*.jpg` (before) and `a-*.jpg` (after). The 68 were taken before the cash went in. Menu pictures: `levelshots/stelvio.jpg` (new: it had none), `market-town.jpg` (retaken).
+- All commits on `delivery-levelfix`: 2050f4e, 1d787fa, c513726, ff83536. Not pushed, not merged. Checks run after the last: levels-check all good, schema passed (hazards and bundle checks last run at c513726; only level JSON and two JPEGs since).
+
+## Agent 23: Tank Rage markers and the amphibious tank (.claude/worktrees/delivery-ui, delivery-tank)
+- A (0c72eb6): a theme's `target: { offset, height, style, base, arm, beam }` (defaults `CONFIG.target` + `targetOffset`; a level's target can carry the same keys). `Targets` (pickups.js) owns where each stands (`t.lat`, `t.look`); `render/items.js` draws from that. Styles: post / wall (stalk on a wall top) / gantry (hung from a mast's arm). A ring nearer than 1.8 m to the pavement is carried at 4.5 m or more. Track now reports a target in a tunnel or at a junction.
+- Set: mumbai gantry over the shoulder (buildings 3.5 m off swallowed the post at 5 m); hongkong post on the pavement at 2.2 m (ring was half in the towers' faces at 6 m); tokyo on the parapet (it hung in the air beyond it); singapore gantry (under the rain trees); singaporeNight / bathurst / montreal / monza / spa / albert-park on the catch fence; safari raised over the grass; Grand Pacific's 4600 target (in Mount Ousley's cutting) its own. All with a beam of light. Other themes untouched.
+- `node scripts/.targets-check.mjs`: 257 targets pass (every level, and the testbed in every theme).
+- B (a735f67): `AMPHIBIOUS_TANK` (cars.js, not in CARS: no garage bay, nothing saved), model `render/tankModels.js`; `Player.rageTank` set by `startTank` on an amphibious level; draft 1.0, 46 m/s ashore, 0.72 of it afloat, bigger bow wave; HUD corner shows it on amphibious levels. `?rage`, `?pieces=n`, `?cine=car&turn=deg`. `node scripts/.tank-check.mjs` passes.
+- Checks run: levels-check, schema, bundle, water, save: all pass. Pictures: scratchpad/shots-tank/before, /after. Nothing played by hand.
+
+## Agent 22: theme levels C: theme park, volcano island, container port (.claude/worktrees/delivery-themes-c, delivery-themes-c)
+
+- Theme park: DONE. Theme `themepark` (`d7352fb`: render/themes/themepark.js, parkModels.js, sceneryClock.js for scenery that moves); level `park` "Thrill Park" (`41a6f06`), 4950 m, clock 225/170, menu picture, 31 cash pickups ($265), 9 rows across the road on the expressway and 2 on the side road. Checks: levels-check, schema, bundle, save, probe (delivered as a ghost), rows (each pickup of a row taken only from its own lane). Pictures: scratchpad/shots-themes/themepark. Nothing played by hand.
+- Volcano island: DONE. Theme `volcano` (`07a6558`: render/themes/volcano.js, volcanoModels.js); level `cinder` "Cinder Island" (`f060ead`), 4950 m, 37 m up and down, clock 225/170, menu picture, 29 cash pickups ($275), 8 rows across the road and 1 on the side road. Same checks pass. Pictures: scratchpad/shots-themes/volcano. Known: from far off the lava under the drawbridge shows over its leaves when they are down (the drawbridge's own water does the same). Nothing played by hand.
+- Scripts fix `69b8ae1` cherry-picked as `9e2c9fa`.
+- Container port: DONE (agent 22). Theme `port` (`fb8b1e9`: render/themes/port.js, portModels.js); level `docks` "Dock Run" (`5a658a5`), 4700 m, flat, six lanes, clock 215/160, menu picture, 27 cash pickups ($275), 7 rows across the road and 1 on the side road. Pictures: scratchpad/shots-themes/port.
+- ALL THREE DONE (agent 22). `main` merged in (`131e1b4`, no conflicts); descriptions for the three levels and T7, T11, T12 ticked (`306f731`). Targets looked at on each theme (scratchpad/shots-themes/targets): the rings show, no theme `target` set. Checks passing after the merge: descriptions, targets, schema, levels, bundle, save, probe of all three. Nothing played by hand; not pushed.
+- Done. Pictures looked at: after/_sheet1..6.png (targets on Mumbai, Hong Kong, Tokyo, Singapore day and night, Mount Ousley, safari, ford, harbour, the circuits; the Amphibious Tank from three sides in both liveries, in a rage ashore and afloat on Slipway Beach and Harbour Lights, the HUD corner). Last commit: README (?rage, ?pieces, ?turn). For the owner: the Amphibious Tank has no garage bay; it is as fast as the Tank ashore.
+
+## Agent 21: theme levels B: film studio, Venice, ice road (.claude/worktrees/delivery-themes-b, delivery-themes-b)
+
+- Film studio: DONE. Theme `backlot` (`29d651b`: render/themes/backlot.js, backlotModels.js; sets by the level's `zones`: studioLot, western, soundstage, newyork, skies; a tunnel is a soundstage with a spaceship corridor inside). Level `backlot` "Quiet on Set" (`65e69cf`), 4150 m, clock 200/150, menu picture, 29 cash pickups, 9 rows side by side. One line added outside the markers: `levelSchema.js` takes a theme's `sets` into `ZONE_SCENERY`. Checks (levels, schema, bundle, save), ghost probe to the finish, rows check and 30 screenshots (scratchpad/shots-themes/backlot); not played by hand.
+- Found, not fixed: drifters of kind `asteroid` off the space theme log "computeBoundingSphere(): Computed radius is NaN" every frame (used `mine` instead).
+- Venice: DONE. Theme `venice` (`4efb9c8`: render/themes/venice.js, veniceModels.js; the ground is the lagoon; a hump in the road is a bridge over a side canal: the theme hides road.js's land under a hilly road; a tunnel is a sotoportego; a tide's stretch is the open lagoon). Level `venice` "Acqua Alta" (`bf2c77d`), 4500 m, clock 185/140, menu picture, 35 cash pickups, 13 rows of two. Checks, ghost probe to the finish, rows check, 24 screenshots (scratchpad/shots-themes/venice); not played by hand. It has a parade (the whole side taken at a crawl, passed in the oncoming lanes): for the owner to overrule.
+- Scripts fix `69b8ae1` cherry-picked (`3a4c3fa`).
+- Ice road: DONE. Theme `iceroad` (`4b41285`: render/themes/iceroad.js, iceroadModels.js; night, aurora, stars; a hump in the road is a pressure ridge). Level `iceroad` "Northern Lights" (`45b99b9`), 4600 m with one side road, clock 200/150, menu picture, 37 cash pickups, 11 rows. Checks, ghost probe, 21 screenshots (scratchpad/shots-themes/iceroad); not played by hand.
+- Found, not fixed in road.js: the land under a hilly road has no normals, so it is black on a `lit` theme (the ice road's file gives it normals itself; Venice's hides it).
+- `main` merged in (`c7187ef`; one conflict, the checklist, both sides kept). Descriptions for the three levels and `target` for backlot and Venice: `02ee505`. Descriptions, targets, schema, levels, bundle and save checks pass. ALL THREE DONE; branch not pushed, not merged into main.
+
+## Agent 24: known problems (.claude/worktrees/delivery-levelfix, delivery-fixes)
+
+- 1 Flaky headless checks: DONE `0a40e57`. Cause: one shared `node_modules/.vite` (junction) and Vite's cache key includes the server's root, so every start from another worktree deleted the cache and re-bundled React/Leaflet/three; two close together: `EPERM unlink node_modules\.vite\deps\...` in `createServer` (reproduced, 1 in 48 four-at-once). Fix: `logicServer()` in `delivery-headless.mjs` (no config, no bundling, no websocket: port 24678 was fought over too), used by every logic script; `shots.mjs` has a temp cache and browser profile per run. 100 runs four-at-once + 10 pairs: 0 failures.
+- Audit C4 (editor innerHTML), C2 (address-bar loans saved), C5 (bad `?edited` level), C6 (save code whitelist): written, being checked and committed.
+- Then: C3 with replay (baseline over all 53 levels running), shoulders pickups, Gimmicks page console errors, duplicate keys, stale notes, editor leftovers, menu pictures.
+
+## Agent 26: theme levels D: Wild West, favela, rice terraces (.claude/worktrees/delivery-city-levels, delivery-themes-d)
+- Markers for batch D below batch C's (f773f0d, faa20fe); cache fix cherry-picked (b359c19); main merged in (b9039f5).
+- Wild West DONE (017cb47, descriptions in the next commit): theme `wildwest` (render/themes/wildwest.js + wildwestModels.js), level `noon` "High Noon", 4.8 km, 37 cash pickups, 15 side-by-side rows, clock 205/155, levelshots/noon.jpg. Checks pass (levels, schema, bundle, save, targets, cargo, descriptions), ghost probe delivered. Shots: scratchpad/shots-themes/wildwest. Not played by hand.
+- Favela: in progress.
+- Rice terraces: not started.

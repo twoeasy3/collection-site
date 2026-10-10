@@ -151,6 +151,8 @@ if (params.get('racewatch') !== null) {
   if (params.get('at')) Player.s = Number(params.get('at'));
   if (params.get('speed')) Object.assign(Player, { speed: Number(params.get('speed')), launching: false }); // ?speed=31: doing that many m/s from the start (with ?ff: hands off, the speed holds)
   if (params.get('lane')) Player.lat = Track.laneOffset(Number(params.get('lane')), Player.s); // ?lane=4: in that lane
+  if (params.get('pieces')) Game.tankPieces = Math.min(CONFIG.tankPieces - 1, Number(params.get('pieces')) || 0); // ?pieces=3: that many pieces of the tank found already
+  if (params.get('rage') !== null) { Game.tankPieces = CONFIG.tankPieces; Player.startTank(); } // ?rage: in TANK RAGE from the start (a check, a picture: on an amphibious level, the Amphibious Tank)
   if (params.get('fly') !== null) startFly();
   const photo = params.get('photo') !== null; // ?photo: paused, in photo mode, once ?ff has run (a check of render/photo.js)
   // ?cine: a still for the level select. The traffic is dealt out afresh around the car, ?ff lets
@@ -162,6 +164,7 @@ if (params.get('racewatch') !== null) {
   if (cine) {
     Cinematic.on = true;
     Cinematic.studio = params.get('cine') === 'car'; // (?cine=car: the car alone, on white)
+    Cinematic.turn = Number(params.get('turn')) || 0; // (&turn=120: the studio's camera that many degrees round the car, for its other sides)
     Game.paused = true;
     document.body.classList.add('cinematic');
     if (Cinematic.studio) {
@@ -282,7 +285,7 @@ const frame = (now) => {
     const heard = Game.raceWatch && Game.state === 'playing' && !Game.paused ? raceAudio(dt) : null;
     if (heard) Sound.engine(heard.speed, CAR.id, CAR.maxSpeed, heard.gain, heard.pitch);
     else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : Player.afloat ? 'jetboat' : CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher; afloat on a water stage, a boat's)
-      Player.tank > 0 ? CONFIG.tankMaxSpeed : CAR.maxSpeed);
+      Player.tank > 0 ? Player.rageTank?.maxSpeed ?? CONFIG.tankMaxSpeed : CAR.maxSpeed);
     Sound.pack(heard ? heard.pack : 0);
     // the siren, louder the nearer the nearest police car or ambulance (the screensaver's too), and a radar
     // ping as one comes near enough to bust you (nobody busts a tank)
