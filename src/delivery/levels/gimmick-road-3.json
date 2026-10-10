@@ -63,7 +63,9 @@
     { "type": "cash10", "s": 5685, "lane": 3 },
     { "type": "cash10", "s": 5685, "lane": 4 },
     { "type": "cash20", "s": 5740, "lane": 4 },
-    { "type": "cash5", "s": 400, "lane": 1, "road": "side", "exit": 1 }
+    { "type": "cash5", "s": 400, "lane": 1, "road": "side", "exit": 1 },
+    { "type": "cash20", "s": 6330, "lane": 5 },
+    { "type": "cash5", "s": 6330, "lane": 4 }
   ],
   "obstacles": [
     { "s": 1218, "lane": 4, "kind": "barrier" },
@@ -72,7 +74,8 @@
     { "s": 3120, "lane": 4, "kind": "barrier" },
     { "s": 3200, "lane": 3, "kind": "barrier" },
     { "s": 3200, "lane": 5, "kind": "barrier" },
-    { "s": 3330, "lane": 4, "kind": "barrier" }
+    { "s": 3330, "lane": 4, "kind": "barrier" },
+    { "s": 6410, "lane": 5, "kind": "barrier" }
   ],
   "jamRamps": [
     { "s": 2400, "lane": 4 }
@@ -88,6 +91,9 @@
   ],
   "cushions": [
     { "from": 3520, "to": 3700 }
+  ],
+  "shade": [
+    { "from": 6250, "to": 6450, "side": "right" }
   ],
   "washboards": [
     { "from": 2950, "to": 3450 }

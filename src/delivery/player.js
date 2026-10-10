@@ -54,7 +54,7 @@ export const Player = {
   nextMystery: '',     // the effect the next mystery will be, if not left to chance (?mystery= in the URL)
   air: 0,              // m the car is above the road (on a drawbridge's raised leaf, or jumping its gap: see Hazards)
   pitch: 0,            // ...and rad its nose is up by (the leaf's slope; in the air, the way it is flying)
-  shaken: 0,           // how much of its steering a washboard is shaking away (0 .. 1: see Gambles)
+  shaken: 0,           // the share of its steering's bite a washboard, or black ice, is taking away (0 .. 1: see Gambles)
   rampAhead: false,    // lined up with a ramp over the jam close ahead, on it, or in the air (see Gambles): no braking by itself for the queue
   testGhost: false,    // a ghost for the whole run, whatever happens (?ghost in the URL: screenshots and tests)
   tank: 0,             // 1 once TANK RAGE has started; it lasts for the rest of the level
@@ -501,7 +501,7 @@ export const Player = {
     // (a car sliding wide in a bend, on a level where cars understeer or with no brakes, has lost its grip, as on ice)
     const push = understeer(this), sliding = !this.onIce && push !== 0;
     const response = CONFIG.steerResponse * (this.stun > 0 ? 0.3 : 1) * Math.sqrt(this.agility) * (this.onIce || sliding ? CONFIG.ice.steerGrip : 1) *
-      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) && CAR.trait !== 'mud' ? CONFIG.mud.steerGrip : 1) * (this.inGravel ? CONFIG.gravel.steerGrip : 1) * (1 - CONFIG.washboard.steerLoss * this.shaken) * seaGrip; // (and afloat, its steering takes slowly)
+      (this.wading > CONFIG.tide.wet ? CONFIG.tide.steerGrip : 1) * (Track.muddy(this.s) && CAR.trait !== 'mud' ? CONFIG.mud.steerGrip : 1) * (this.inGravel ? CONFIG.gravel.steerGrip : 1) * (1 - this.shaken) * seaGrip; // (and afloat, its steering takes slowly)
     this.latVel += (wantVel - this.latVel) * damp(response, dt);
     // afloat, a current carries the car sideways and a boat's wake shoves it off the boat's line (see Water.push)
     if (this.afloat && !this.busted) this.latVel += Water.push(this) * dt;

@@ -1382,6 +1382,12 @@ export const CONFIG = {
   // `throw` m/s for each m/s over (throwMost at most). Traffic takes the stretch at `traffic` m/s (slowing at
   // `brake` m/s^2). Boards `sign` m before
   cushion: { every: 45, width: 2.3, long: 3, line: 0.45, hwRef: 0.85, least: 0.2, soft: 8.3, damage: 3, perSpeed: 0.25, keep: 0.85, throw: 0.3, throwMost: 6, traffic: 8, brake: 12, sign: 110 },
+  // black ice in the shade ("shade": { from, to, side, lanes? }): over the stretch something tall on that side of the
+  // road shades the `lanes` lanes of the player's side nearest it (the stretch's own, or this; and the shoulder
+  // beyond, on the right), and they are black ice (CONFIG.ice: nothing of it drawn but the shadow). Traffic
+  // moves out of them from keepClear m before. Said from `warn` m before; a tree every `tree` m casts it
+  // (On black ice steerLoss more of the steering's bite is gone, on top of what ice takes)
+  shade: { lanes: 1, steerLoss: 0.9, keepClear: 150, warn: 160, tree: 11 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

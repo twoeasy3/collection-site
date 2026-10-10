@@ -1055,6 +1055,11 @@ const createTrack = () => {
       if (!mainStretch(c)) problems.push('speed cushions at ' + c.from + ': from before to, on the expressway');
       else if (c.every !== undefined && !(c.every >= 15 && c.every <= 200)) problems.push('speed cushions at ' + c.from + ': every is 15 to 200 m');
     }
+    for (const z of LEVEL.shade || []) {
+      if (!mainStretch(z)) problems.push('shade at ' + z.from + ': from before to, on the expressway');
+      else if (z.side !== 'left' && z.side !== 'right') problems.push('shade at ' + z.from + ': side is left or right (the side what casts it stands on)');
+      else if (z.lanes !== undefined && !(Number.isInteger(z.lanes) && z.lanes >= 1 && z.lanes <= 8)) problems.push('shade at ' + z.from + ': lanes is 1 to 8');
+    }
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
       else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');

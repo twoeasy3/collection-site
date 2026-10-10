@@ -25,7 +25,7 @@ import { makeCarriage } from './render/trainModel.js';
 import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
-import { makeWindsock, makeTransporter, makeHeightBar, makeDepthPost, makeCushion } from './render/gambleModels.js';
+import { makeWindsock, makeTransporter, makeHeightBar, makeDepthPost, makeCushion, makeShadeTree } from './render/gambleModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -70,7 +70,7 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford, cushion: CONFIG.cushion }; // (Gimmick Road 3's: the road gambles)
+const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford, cushion: CONFIG.cushion, shade: CONFIG.shade }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -917,6 +917,18 @@ const GROUPS = [
       g.add(car);
       return { model: g, spin: true, tick: (t) => { const u = (t % 5) / 5, line = u < 0.5, v = line ? u * 2 : (u - 0.5) * 2, z = -7 + v * 14, near = Math.min(Math.abs(z + 3.5), Math.abs(z - 3.5));
         car.position.set(line ? -2.25 : 0, line ? 0 : Math.max(0, 0.6 - near * 0.4), z); car.rotation.x = line ? 0 : (near < 1.5 ? (Math.abs(z + 3.5) < Math.abs(z - 3.5) ? z + 3.5 : z - 3.5) * -0.12 : 0); } };
+    } },
+    { name: 'Black ice in the shade', color: 0x5d7fa8, has: (l) => l.shade?.length, rules: [
+      'On a cold road the ice lies only where the sun has not reached: in the shadow of a row of tall trees. <strong>Black ice cannot be seen. The shadow can.</strong>',
+      `In the shade it is ice like any other: ${pct(IC.steerGrip)} of the steering, ${pct(IC.brakeGrip)} of the brakes, and in a bend the car is carried to the outside.`,
+      'The traffic knows, and moves over into the sun before it: the shaded lane is empty, and the sunny one is where the queue is.',
+      'Straight through the shade at speed costs nothing. Having to steer or brake in it is what costs: look at what is in the shadow before you go in, or stay in the sun.',
+    ], build: () => {
+      const g = road(9, 14), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      g.add(box(4.5, 0.02, 14, new THREE.MeshBasicMaterial({ color: 0x05070c, transparent: true, opacity: 0.5 }), -2.25, 0.02, 0));
+      for (let z = -5.5; z < 7; z += 3.6) { const tree = makeShadeTree(6); tree.position.set(-6, 0, z); g.add(tree); }
+      g.add(car);
+      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4; car.position.set(-2.25 + (u > 0.45 ? Math.min(1, (u - 0.45) * 3) * 1.6 : 0), 0, -7 + u * 14); car.rotation.y = u > 0.45 ? Math.sin((u - 0.45) * 14) * 0.5 : 0; } };
     } },
     { name: 'Crest jumps', color: 0xffd23f, has: (l) => l.segments.some(seg => seg.ease && seg.grade), rules: [
       'A steep climb and a steep drop straight after it: a crest sharp enough that a fast car <strong>leaves the ground</strong> over the top. A board on the way up gives the speed that does it.',

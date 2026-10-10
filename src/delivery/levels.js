@@ -312,6 +312,11 @@
 //              (CONFIG.cushion.every if not said), the first at `from`: a cushion in the middle of each lane, a gap
 //              on each lane line. A car on a lane line goes between two and feels nothing; over one slowly it is a
 //              bump; over one at speed it is thrown up and knocked. Traffic crawls over them (see CONFIG.cushion)
+//   shade      { from, to, side, lanes? }: black ice in the shade: over the stretch a row of tall trees on that side
+//              ('left' | 'right') shades the `lanes` lanes of the player's side nearest it (CONFIG.shade.lanes if
+//              not said; on the right, the shoulder too), and those are ice (CONFIG.ice), with nothing drawn of it
+//              but the shadow. Traffic moves into the sun before it where there is a sunny lane. Put it on a bend,
+//              or put something in the shade to be steered round: ice in a straight line costs nothing
 //   washboards { from, to, skim? }: washboard dirt: the road is corrugated right across over the stretch. A car crawling
 //              (CONFIG.washboard.calm m/s or less) rides it, and one at `skim` m/s or more (CONFIG.washboard.skim if
 //              not said) skims the tops, smooth; between the two the steering hardly takes, the car wanders, and in a

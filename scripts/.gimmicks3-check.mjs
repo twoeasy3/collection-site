@@ -5,7 +5,7 @@
 import { boot } from './delivery-headless.mjs';
 
 const ONLY = process.argv.slice(2);
-const g = await boot({ cars: ['commuter', 'sport', 'darkvan', 'lowrider', 'liftedtruck', 'pickup', 'buggy', 'miata'] });
+const g = await boot({ cars: ['commuter', 'sport', 'darkvan', 'lowrider', 'liftedtruck', 'pickup', 'buggy', 'miata', 'floatvan'] });
 let failures = 0;
 const check = (ok, what) => { if (!ok) failures++; console.log((ok ? '  ok    ' : '  FAIL  ') + what); };
 const section = (name, run) => { if (!ONLY.length || ONLY.includes(name)) { console.log('---- ' + name); return run(); } };
@@ -47,7 +47,7 @@ try {
     const found = g.levels.LEVELS.filter(l => Array.isArray(l[field]) ? l[field].length : l[field]);
     check(found.length >= 2, field + ': on ' + found.length + ' real levels (' + found.map(l => l.id).join(', ') + ')');
     for (const l of found) {
-      g.select(l); Progress.data.car = 'sport'; G.start();
+      g.select(l); Progress.data.car = l.amphibious ? 'floatvan' : 'sport'; G.start();
       check(!T().problems.length, l.id + ': loads without problems' + (T().problems.length ? ': ' + T().problems.join(' | ') : ''));
       each(l);
     }
@@ -331,6 +331,7 @@ try {
     bus.fixed = van.fixed = false; bus.viaSide = van.viaSide = false;
     let under = false;
     g.run(40, () => { for (const c of g.Traffic.cars) if (c !== bus && c !== van && !c.fixed) c.active = false; P.speed = 0; P.s = 3700; if (bus.active && T().isMain(bus.s) && bus.s > 4390 && bus.s < 4410) under = true; return !bus.active || (!T().isMain(bus.s)) || bus.s > 4500; });
+    if (under || !bus.active || T().isMain(bus.s) || van.viaSide) console.log('    (bus: under ' + under + ', active ' + bus.active + ', s ' + bus.s.toFixed(0) + ', lane ' + bus.lane + ', lat ' + bus.lat.toFixed(1) + ', viaSide ' + bus.viaSide + '; van viaSide ' + van.viaSide + ', s ' + van.s.toFixed(0) + ')');
     check(!under && bus.active && !T().isMain(bus.s) && !van.viaSide, 'low bridge: a bus coming up to it, with room to move over, takes the exit (a car that fits is left to choose)');
     real('lowBridges', () => check(Gambles.bars.every(x => x.exit), '  its bar' + (Gambles.bars.length > 1 ? 's' : '') + ': ' + Gambles.bars.map(x => x.s + ' m, ' + x.clearance + ' m up, round by the exit at ' + x.exit?.exitAt).join('; ')));
   });
@@ -422,6 +423,51 @@ try {
     g.run(30, () => { P.speed = 0; P.s = 3300; if (van.active && van.s > 3530 && van.s < 3700) fastest = Math.max(fastest, van.vs); return !van.active || van.s > 3720; });
     check(fastest > 0 && fastest <= K.traffic + 3, 'cushions: traffic takes them slowly (' + fastest.toFixed(1) + ' m/s at most between the rows)');
     real('cushions', () => check(Gambles.rows.length > 0, '  its rows: ' + Gambles.rows.map(r => r.s).join(', ') + ' m'));
+  });
+
+  // ---- black ice in the shade (6250 - 6450, trees on the right: lane 5 and the shoulder in shadow; a barrier in
+  // the shade at 6410, lane 5)
+  await section('shade', async () => {
+    const z = () => Gambles.shades[0];
+    // from 6200 at v in lane n; from `turn` m on, steering for lane `to`
+    const run = (v, n, to = n, turn = 0) => {
+      start(6200, n, v);
+      const health = P.health;
+      let ice = 0, slowest = 99;
+      const t = g.run(60, () => {
+        quiet();
+        P.speed = Math.min(P.speed, v);
+        const want = lane(P.s >= turn ? to : n, P.s), d = want - P.lat;
+        g.drive(1, Math.abs(d) < 0.2 ? 0 : Math.sign(d));
+        if (P.onIce) ice += 1 / 60;
+        slowest = Math.min(slowest, P.speed);
+        return P.s > 6480 || G.wrecks > 0;
+      });
+      return { t, ice, slowest, lost: health - P.health, wrecks: G.wrecks, busted: P.busted };
+    };
+    check(z().first === 5 && z().last === 5 && Gambles.shadeAt(6300, lane(5, 6300)) && !Gambles.shadeAt(6300, lane(4, 6300)) && !Gambles.shadeAt(6200, lane(5, 6200)), 'shade: lane 5 is in shadow from 6250 to 6450 m, lane 4 in the sun');
+    const sun = run(30, 4);
+    check(sun.ice === 0 && sun.lost === 0, 'shade, the safe line: the sunny lane is never ice (' + sun.t.toFixed(1) + ' s)');
+    check(said('black ice'), 'shade: it is said on the way in');
+    const out = run(30, 5, 4, 6290);
+    check(out.ice > 1 && out.lost === 0 && out.wrecks === 0, 'shade, the risk taken and right: into the shaded lane at ' + Math.round(30 * 3.6) + ' km/h (' + out.ice.toFixed(1) + ' s on ice), out of it in good time (steering from 6290 m): past the barrier unhurt');
+    const late = run(30, 5, 4, 6385);
+    check(late.ice > 1 && late.lost > 0, 'shade, the risk taken and wrong: steering out only 25 m before the barrier, the ice does not let it: it hits (' + (late.wrecks ? 'wrecked' : late.lost.toFixed(0) + ' health lost') + ')');
+    // the same late move on a dry road clears a barrier (the one on the crest at 1218, lane 4, on the flat before it: none; so the same geometry with the ice patch taken away)
+    start(6200, 5, 30);
+    const patch = z().slick; patch.to = patch.from; // (no ice for this one)
+    const dry = (() => { const health = P.health; g.run(60, () => { quiet(); P.speed = Math.min(P.speed, 30); const d = lane(P.s >= 6385 ? 4 : 5, P.s) - P.lat; g.drive(1, Math.abs(d) < 0.2 ? 0 : Math.sign(d)); return P.s > 6480 || G.wrecks > 0; }); return health - P.health; })();
+    check(dry === 0, 'shade: the same late move with no ice there clears the barrier (so it is the ice that costs)');
+    const slow = run(12, 5, 4, 6385);
+    check(slow.lost === 0 && slow.slowest > 10, 'shade: in slowly (' + Math.round(12 * 3.6) + ' km/h), the same late move clears it even on the ice');
+    // traffic moves into the sun before it
+    start(6000, 3, 0);
+    const van = put('commuter', 6120, lane(5, 6120), 18);
+    van.fixed = false;
+    let shaded = 0;
+    g.run(25, () => { for (const c of g.Traffic.cars) if (c !== van && !c.fixed) c.active = false; P.speed = 0; P.s = 6000; if (van.active && Gambles.shadeAt(van.s, van.lat)) shaded++; return !van.active || van.s > 6460; });
+    check(shaded === 0 && van.lane < 5, 'shade: a van coming up the shaded lane moves into the sun before it and never touches the shade');
+    real('shade', () => check(Gambles.shades.length > 0, '  its shade: ' + Gambles.shades.map(x => x.from + ' to ' + x.to + ' m, lanes ' + x.first + ' to ' + x.last).join('; ')));
   });
 
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)

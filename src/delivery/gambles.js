@@ -12,6 +12,8 @@
 //                a car that wades that deep is only slowed; one that does not crawls through, and is damaged
 //   cushions     rows of speed cushions, one in the middle of each lane: on a lane line the car goes between two and
 //                feels nothing; over one at speed it is thrown up and knocked
+//   shade        black ice, which cannot be seen, lies only in the shadow of what stands beside the road: the shaded
+//                lanes are empty and icy, the sunny one has the traffic
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -53,6 +55,7 @@ export const Gambles = {
   inFord: null,   // the ford the player's car is in (null: none)
   rows: [],       // speed cushions: { s (a row of them across the lanes), from, to (the stretch it is one of) }
   cushionHits: 0, // how many the player's car has gone over at speed this run (for a check)
+  shades: [],     // black ice in the shade: { from, to, side (-1 left, 1 right), first, last (the player's lanes in shadow), lo, hi (lat: the shadow, which is the ice), slick (its entry in Track.slicks) }
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
 
@@ -68,6 +71,12 @@ export const Gambles = {
     this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
     this.rows = [];
     for (const c of LEVEL.cushions || []) for (let s = c.from; s <= c.to; s += c.every ?? CONFIG.cushion.every) this.rows.push({ s, from: c.from, to: c.to });
+    this.shades = (LEVEL.shade || []).map((z) => {
+      const mid = (z.from + z.to) / 2, [first, last] = Track.laneRange(1, mid), side = z.side === 'left' ? -1 : 1, n = Math.min(last - first + 1, z.lanes ?? CONFIG.shade.lanes), LW = CONFIG.laneWidth;
+      const a = side > 0 ? last - n + 1 : first, b = side > 0 ? last : first + n - 1;
+      const lo = side > 0 ? Track.laneOffset(a, mid) - LW / 2 : Track.lo(mid), hi = side > 0 ? Track.hi(mid) : Track.laneOffset(b, mid) + LW / 2;
+      return { from: z.from, to: z.to, side, first: a, last: b, lo, hi, slick: { from: z.from, to: z.to, lat: (lo + hi) / 2, half: (hi - lo) / 2, shade: true } };
+    });
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -311,7 +320,8 @@ export const Gambles = {
     const B = CONFIG.washboard, P = Player;
     const b = P.active && !this.fly && !CAR.noWheels && P.ghost <= 0 && !(P.tank > 0) ? this.board(P.s) : null;
     if (P.active && this.board(P.s)) this.once('washboard');
-    this.rough = P.shaken = b ? this.roughness(P.speed, b.skim) : 0;
+    this.rough = b ? this.roughness(P.speed, b.skim) : 0;
+    P.shaken = B.steerLoss * this.rough;
     if (!this.rough || P.busted) return;
     const t = Game.time, r = this.rough;
     P.latVel += B.wander * r * (Math.sin(t * 2.3) + Math.sin(t * 3.9 + 1.7)) * dt; // (hopping about)
@@ -430,6 +440,30 @@ export const Gambles = {
     }
   },
 
+  // ---- black ice in the shade -----------------------------------------------------------------------------
+  // Where something tall beside the road shades it, the lanes in its shadow are black ice: nothing of the ice
+  // is drawn, only the shadow, and it is ice in every way (see CONFIG.ice and Track.icy: its patch is one of
+  // Track.slicks). Traffic knows, and moves out of the shaded lanes into the sun before it where it can: the
+  // shade is empty, the sunny lane is where the queue is
+  shadeAt(s, lat) { return Track.isMain(s) ? this.shades.find(z => s >= z.from && s <= z.to && lat >= z.lo && lat <= z.hi) || null : null; },
+  updateShade() {
+    const Z = CONFIG.shade, P = Player;
+    for (const z of this.shades) {
+      if (!Track.slicks.includes(z.slick)) Track.slicks.push(z.slick); // (the water mains clear that list as a run starts)
+      if (P.active && Track.isMain(P.s) && P.s > z.from - Z.warn && P.s < z.from) this.once('blackIce');
+      if (P.onIce && this.shadeAt(P.s, P.lat) === z) P.shaken = Math.max(P.shaken, Z.steerLoss); // (black ice: less to steer with even than on ice that shows)
+      if (Math.abs(z.from - P.s) > 700) continue;
+      const [first, last] = Track.laneRange(1, (z.from + z.to) / 2), sunny = z.side > 0 ? z.first - 1 : z.last + 1;
+      if (sunny < first || sunny > last) continue; // (every lane is in the shade)
+      for (const car of Traffic.cars) {
+        if (!car.active || car.fixed || car.dir < 0 || car.lane < z.first || car.lane > z.last || car.s > z.to || car.s < z.from - Z.keepClear || !Track.isMain(car.s)) continue;
+        car.signal = sunny - car.lane;
+        car.lane = sunny;
+        car.pendingLane = null;
+      }
+    }
+  },
+
   update(dt) {
     if (Traffic.frozen) return; // (TRAFFIC FREEZE, a mystery: everything here stands still too)
     this.updateFlight(dt);
@@ -437,6 +471,7 @@ export const Gambles = {
     this.updateFords(dt);
     this.updateBars();
     this.updateBoards(dt);
+    this.updateShade(); // (after the washboard's: both have a say in Player.shaken)
     this.updateWinds(dt);
   },
 };

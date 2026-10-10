@@ -533,6 +533,19 @@ says what the gamble is. All are things that happen on real roads, as the eleven
       shade the road, so it can be read from the shadows before reaching it. _Gamble:_ brake
       before the shadow, or stay in the sunny lane with the traffic. _Builds on:_ ice, the
       scenery already casting the shade.
+      _Built (`gambles.js`, field `shade: { from, to, side, lanes? }`):_ a row of tall trees of its
+      own on that side (not the theme's scenery) shades the nearest lane or lanes, and the shadow
+      is ice (the game's own, through `Track.slicks`) with 90% more of the steering gone; nothing
+      is drawn but the shadow. Traffic moves into the sun before it. On Gimmick Road 3 (6250-6450,
+      a barrier in the shade at 6410, the bigger cash in the shade), Mountain Pass (2370-2450, the
+      braking for the hairpin) and Fjord (1340-1470, the shaded lane the way past the barriers).
+      Not on Christmas: it is a night level, with no sun to be out of. Clocks not re-timed.
+      Verified by `.gimmicks3-check.mjs shade` (the sunny lane never ice, out of the shade early
+      unhurt, a move 25 m before the barrier hits on the ice and clears with the ice taken away,
+      slowly it clears, a van moves into the sun, both real levels) and in stills (Gimmick Road 3,
+      Mountain Pass, Fjord). Not verified: played by hand; the card on screen. Weak point: the
+      game's ice costs nothing in a straight line, so a shade needs a bend, a hazard or a braking
+      point in it to be a gamble at all.
 - [ ] H11. **Truck spray**: in rain every lorry drags a cloud of spray: nothing can be seen
       behind one. _Gamble:_ hang back and see, or overtake blind. _Builds on:_ rain, fog.
 - [ ] H12. **Low sun**: one stretch runs straight into the sun and the screen washes out,

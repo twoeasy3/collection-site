@@ -65,6 +65,14 @@ export const makeCushion = (width = 2.3, long = 3) => {
   return g;
 };
 
+// a tall dark conifer, `height` m: what shades the road
+export const makeShadeTree = (height = 13) => {
+  const g = new THREE.Group(), green = lambert(0x1f3d2b);
+  add(g, new THREE.CylinderGeometry(0.3, 0.4, height * 0.25, 6), lambert(0x4a3524), 0, height * 0.125, 0);
+  for (const [r, y, h] of [[2.6, 0.38, 0.5], [2.0, 0.62, 0.42], [1.3, 0.84, 0.32]]) add(g, new THREE.ConeGeometry(r, height * h, 7), green, 0, height * y, 0);
+  return g;
+};
+
 // a depth post: a white post banded every quarter metre, red up to `depth` m (the water's level), `height` m tall
 export const makeDepthPost = (depth = 0.5, height = 2) => {
   const g = new THREE.Group();

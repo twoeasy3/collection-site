@@ -10,7 +10,7 @@ import { Traffic } from '../traffic.js';
 import { Gambles } from '../gambles.js';
 import { scene, tmp } from './scene.js';
 import { carMesh, trafficMeshes } from './cars.js';
-import { makeWindsock, makeSign, makeTransporter, makeHeightBar, makeDepthPost, makeCushion } from './gambleModels.js';
+import { makeWindsock, makeSign, makeTransporter, makeHeightBar, makeDepthPost, makeCushion, makeShadeTree } from './gambleModels.js';
 import { buildStrip } from './road.js';
 
 const flat = (color, offset) => new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: offset, polygonOffsetUnits: offset });
@@ -100,6 +100,13 @@ Game.onLoad.push(() => {
     }
     if (!stretches.has(row.from) && row.from - K.sign > 5) at(row.from - K.sign, Track.hi(row.from - K.sign) - 0.6).add(makeSign('SPEED CUSHIONS\n' + kmh(K.soft) + ' OR THE LINES', '#ffd23f', '#111', 6.2, 2.6));
     stretches.add(row.from);
+  }
+  // ---- black ice in the shade: the shadow (which is all that shows of the ice) and the trees that cast it
+  for (const z of Gambles.shades) {
+    const Z = CONFIG.shade, shadow = new THREE.MeshBasicMaterial({ color: 0x05070c, transparent: true, opacity: 0.42, side: THREE.DoubleSide, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -3 });
+    group.add(new THREE.Mesh(buildStrip(z.from, z.to, z.side > 0 ? z.lo : (s) => Track.lo(s) - 6, z.side > 0 ? (s) => Track.hi(s) + 6 : z.hi, 0.03, 3), shadow));
+    let k = 0;
+    for (let s = z.from + 2; s < z.to; s += Z.tree) at(s, z.side > 0 ? Track.hi(s) + 4 + (k++ % 2) * 2.5 : Track.lo(s) - 4 - (k++ % 2) * 2.5).add(makeShadeTree(12 + (k * 7 % 4)));
   }
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {

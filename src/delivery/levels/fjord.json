@@ -48,7 +48,12 @@
     { "s": 1820, "side": "left" },
     { "s": 3200, "side": "right" }
   ],
+  "shade": [
+    { "from": 1340, "to": 1470, "side": "right" }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 1445, "lane": 2 },
+    { "type": "cash10", "s": 1445, "lane": 3 },
     { "type": "turbo", "s": 220, "lane": 2 },
     { "type": "wrench", "s": 560, "lane": 3 },
     { "type": "timePlus", "s": 800, "lane": 2 },
