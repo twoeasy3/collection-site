@@ -4,7 +4,7 @@
 // A level driven in a car of its own (its "car") is timed in that. Only the levels named are timed.
 //   node scripts/level-clocks.mjs mountain-pass tour-de-coast          prints their clean runs and clocks
 //   node scripts/level-clocks.mjs mountain-pass tour-de-coast --write  and writes the clocks into their files
-import { createServer } from 'vite';
+import { logicServer } from './delivery-headless.mjs'; // (a Vite server that shares no cache with any other run)
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const WRITE = process.argv.includes('--write');
@@ -16,7 +16,7 @@ globalThis.window = { addEventListener() {} };
 const allOpen = encodeURIComponent(JSON.stringify({ unlocked: 99, cars: ['commuter', 'sport', 'floatvan'] })); // (floatvan: CONFIG.clock.amphibious)
 globalThis.document = { getElementById: element, querySelectorAll: () => [], body: element(), cookie: 'delivery_racer_progress=' + allOpen };
 
-const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+const server = await logicServer();
 try {
   const load = (path) => server.ssrLoadModule(path);
   const levels = await load('/src/delivery/levels.js');
