@@ -264,8 +264,8 @@ export const EARNED_CARS = [
   // (the three race cars are a little tamer on the road than on their circuits: about a tenth off the speed and the getaway)
   earnedCar('marina-bay', { good: 99, evil: 56 }, { ...LEVEL_CARS.gt, name: 'GT Racer', maxSpeed: 57, accel: 13, color: 0x6fb7d8, evilColor: 0x5a6b7a }, LEVEL_CARS.gt),
   earnedCar('oh-mine', { good: 66, evil: 37 }, { ...LEVEL_CARS.jetboat, name: 'Land Jetboat', color: 0xf2f2f2, evilColor: 0x2a4a3a, perk: 'It drives on land too, somehow' }, LEVEL_CARS.jetboat),
-  earnedCar('montreal', { good: 87, evil: 49 }, { ...LEVEL_CARS.f1, name: 'Road F1', maxSpeed: 68, accel: 18, color: 0x1d3f9c, evilColor: 0x7a1fa8 }, LEVEL_CARS.f1),
-  earnedCar('bathurst', { good: 90, evil: 51 }, { ...LEVEL_CARS.lmp, name: 'Road Prototype', maxSpeed: 68, accel: 18, color: 0x18a35a, evilColor: 0x8a1a2a }, LEVEL_CARS.lmp),
+  earnedCar('montreal', { good: 87, evil: 49 }, { ...LEVEL_CARS.f1, name: 'Road F1', maxSpeed: 68, accel: 18, health: 80, color: 0x1d3f9c, evilColor: 0x7a1fa8 }, LEVEL_CARS.f1),
+  earnedCar('bathurst', { good: 90, evil: 51 }, { ...LEVEL_CARS.lmp, name: 'Road Prototype', maxSpeed: 68, accel: 18, health: 160, color: 0x18a35a, evilColor: 0x8a1a2a }, LEVEL_CARS.lmp),
   earnedCar('rival-run', { good: 75, evil: 57 }, { id: 'courier', name: 'Courier Special', color: 0xffb400, evilColor: 0x2b1a3a, model: 'sleeper',
     maxSpeed: 50, accel: 19, agility: 1.5, crossing: 0.6, health: 220, hw: 0.92, hl: 2.5, height: 1.45 }),
   earnedCar('showdown', { good: 50, evil: 38 }, { id: 'showdown', name: 'Showdown Muscle', color: 0x8a1030, evilColor: 0x1a1f3a, model: 'muscle',
