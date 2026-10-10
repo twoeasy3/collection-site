@@ -19,6 +19,8 @@
 //   tarmac       a coned-off lane of fresh tar beside a roadworks queue: empty, and sticky: the longer on it the
 //                slower the car, and for a while after
 //   spray        a wet stretch where every tall vehicle drags a cloud of spray: in it the player sees next to nothing
+//   lowSun       a stretch straight into a low sun: the picture washes out, except in the shadow of a tall vehicle
+//                just ahead, a bridge, a tunnel or a row of trees
 //   washboards   corrugated dirt: at a middling speed the grip is shaken away; faster, the car skims the tops
 // What each does is here; render/gambles.js draws it. Like Hazards, this runs after the player's own update
 // (Game.update) and puts its hand on the car there: Player itself knows nothing of it.
@@ -68,7 +70,9 @@ export const Gambles = {
   tars: [],       // fresh tarmac: { from, to, lane, lo, hi (lat: the lane) }
   tar: 0,         // how much of it is on the player's tyres (0 clean .. 1 as much as they hold)
   wets: [],       // truck spray: { from, to }
-  veil: 0,        // how much of the view is gone just now (0 clear .. 1), eased; and what took it: 'spray' | null
+  suns: [],       // the low sun: { from, to }
+  shadow: null,   // the vehicle whose shadow the player is in, in the low sun (null: none; true: a bridge's, a tunnel's, the trees')
+  veil: 0,        // how much of the view is gone just now (0 clear .. 1), eased; and what took it: 'spray' | 'sun' | 'dust' | null
   veilOf: null,
   boards: [],     // washboards: { from, to, skim (m/s: at this speed or more the car skims it) }
   rough: 0,       // how much of its grip the washboard is shaking away from the player's car just now (0 .. 1)
@@ -94,6 +98,7 @@ export const Gambles = {
     this.ruts = (LEVEL.ruts || []).map(r => ({ from: r.from, to: r.to }));
     this.tars = (LEVEL.tarmac || []).map((z) => { const c = Track.laneOffset(z.lane, (z.from + z.to) / 2); return { from: z.from, to: z.to, lane: z.lane, lo: c - CONFIG.laneWidth / 2, hi: c + CONFIG.laneWidth / 2 }; });
     this.wets = (LEVEL.spray || []).map(z => ({ from: z.from, to: z.to }));
+    this.suns = (LEVEL.lowSun || []).map(z => ({ from: z.from, to: z.to }));
     this.ramps = (LEVEL.jamRamps || []).map((r) => {
       const R = CONFIG.jamRamp, [first, last] = Track.laneRange(1, r.s), queue = r.queue ?? R.queue;
       const ramp = { s: r.s, lane: r.lane, lat: Track.laneOffset(r.lane, r.s), run: R.run, top: R.run * Math.tan(R.angle), queue, lanes: r.lanes || [first, last] };
@@ -138,6 +143,7 @@ export const Gambles = {
     this.tar = 0;
     this.veil = 0;
     this.veilOf = null;
+    this.shadow = null;
     this.cushionHits = 0;
     this.inFord = null;
     this.up = 0;
@@ -611,6 +617,19 @@ export const Gambles = {
     const u = d / length;
     return Math.abs(lat - car.lat - drift * u) <= half + u ? 1 - u : 0;
   },
+  // what shades the player's car from a low sun dead ahead: a vehicle CONFIG.lowSun.height m tall or more just ahead
+  // in its line (its shadow reaches back `shadow` m for each m of its height), a bridge or a tunnel over the road,
+  // or the trees of a shade (see above). The vehicle, or true; null in the open
+  shaded() {
+    const L = CONFIG.lowSun, P = Player;
+    if (Track.tunnel(P.s) || Track.onBridge(P.s) || this.shadeAt(P.s, P.lat)) return true;
+    for (const car of Traffic.cars) {
+      if (!car.active || car.junction || car.height < L.height || !Track.isMain(car.s)) continue;
+      const d = car.s - car.hl - P.s - P.hl;
+      if (d > -2 && d < L.shadow * car.height && Math.abs(car.lat - P.lat) < car.hw + L.beside) return car;
+    }
+    return null;
+  },
   wet(s) { return Track.isMain(s) ? this.wets.find(z => s >= z.from && s <= z.to) || null : null; },
   // a wet stretch: every vehicle CONFIG.spray.height m tall or more that is moving drags a cloud of spray, as
   // long as CONFIG.spray.length m at speed. In it the view is gone, the nearer its tail the more
@@ -628,7 +647,15 @@ export const Gambles = {
           if (deep > want) { want = deep; of = 'spray'; }
         }
       }
-    }
+      // the low sun: dead ahead over the stretch (easing in and out over its ends), unless something shades the car
+      const sun = this.suns.find(z => P.s >= z.from && P.s <= z.to);
+      if (this.suns.some(z => P.s > z.from - CONFIG.lowSun.sign && P.s < z.to)) this.once('lowSun');
+      this.shadow = sun ? this.shaded() : null;
+      if (sun && !this.shadow) {
+        const L = CONFIG.lowSun, glare = L.most * Math.min(1, (P.s - sun.from) / L.edge, (sun.to - P.s) / L.edge);
+        if (glare > want) { want = glare; of = 'sun'; }
+      }
+    } else this.shadow = null;
     if (want > 0) this.veilOf = of;
     this.veil += (want - this.veil) * Math.min(1, dt * (want > this.veil ? V.close : V.clear));
     if (this.veil < 0.004 && !want) { this.veil = 0; this.veilOf = null; }

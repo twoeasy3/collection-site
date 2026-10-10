@@ -1456,6 +1456,11 @@ export const CONFIG = {
   // width and `spread` m more either side, widening by a metre to its far end. In it `most` of the view is gone
   // at its tail, less in proportion further back. A board `sign` m before
   spray: { height: 2.2, slowest: 4, length: 45, fullAt: 18, spread: 3.6, most: 0.92, sign: 120 },
+  // the low sun ("lowSun": { from, to }): over the stretch the sun is low and dead ahead: `most` of the view is gone
+  // (easing in and out over `edge` m at its ends), except in shadow: `shadow` m behind a vehicle for each m of its
+  // height, if it is `height` m tall or more and within its own width and `beside` m of the car's line; or under a
+  // bridge, in a tunnel, or under a shade's trees. A board `sign` m before; the sun is drawn `far` m ahead of the car, `up` m up
+  lowSun: { most: 0.88, edge: 40, height: 2.2, shadow: 9, beside: 0.5, sign: 120, far: 560, up: 46 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

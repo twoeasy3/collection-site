@@ -263,6 +263,7 @@ export const FIELDS = {
   tarmac: { shape: 'stretch', group: 'hazards', label: 'Fresh tarmac', span: 300, help: 'A coned-off lane of new tar beside a crawling queue: empty and sticky, slowing a car the longer it stays on and for a while after.',
     settings: { lane: lane('Its lane', { required: true, player: true }) } },
   spray: { shape: 'stretch', group: 'hazards', label: 'Truck spray', span: 400, help: 'A wet stretch: every tall vehicle drags a cloud of spray, and in it next to nothing can be seen.' },
+  lowSun: { shape: 'stretch', group: 'hazards', label: 'Low sun', span: 400, help: 'The road runs straight into a low sun: the picture washes out, except in the shadow of a tall vehicle ahead, a bridge, a tunnel or a shade.' },
   washboards: { shape: 'stretch', group: 'hazards', label: 'Washboard dirt', span: 400, help: 'Corrugated dirt: at a middling speed the grip is shaken away; crawling, or at the skim speed or more, it is smooth.',
     settings: { skim: num('Skims from (m/s)', { min: (C.washboard?.calm ?? 9) + 4, max: 40, step: 0.5, default: C.washboard?.skim }) } },
   jamRamps: { shape: 'point', group: 'hazards', label: 'Ramp over the jam', rules: ['straight', 'level'], reach: () => (C.jamRamp?.run ?? 15) + 60, help: 'A car transporter with its ramps down at the back of a queue of stopped traffic: fast enough, the car flies the queue.',

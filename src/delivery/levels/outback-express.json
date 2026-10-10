@@ -52,7 +52,12 @@
   "ruts": [
     { "from": 2560, "to": 2860 }
   ],
+  "lowSun": [
+    { "from": 820, "to": 1180 }
+  ],
   "pickups": [
+    { "type": "cash10", "s": 960, "lane": 2 },
+    { "type": "cash10", "s": 960, "lane": 3 },
     { "type": "cash10", "s": 2650, "lane": 2 },
     { "type": "cash10", "s": 2650, "lane": 3 },
     { "type": "cash20", "s": 2800, "lane": 2 },

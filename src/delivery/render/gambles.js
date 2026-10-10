@@ -41,7 +41,7 @@ const at = (s, lat, y = 0) => {
 
 let socks = [];   // { wind (its index in Gambles.winds), model }
 // the veil over the picture (Gambles.veil): a sheet over the canvas, under the HUD, with a hole round the car
-const VEILS = { spray: '214, 222, 228' };
+const VEILS = { spray: '214, 222, 228', sun: '255, 238, 196' };
 const veil = document.createElement('div');
 veil.style.cssText = 'position:fixed;inset:0;pointer-events:none;opacity:0;z-index:0';
 document.getElementById('game')?.insertAdjacentElement('afterend', veil);
@@ -51,6 +51,7 @@ const cloudGroup = new THREE.Group();
 scene.add(cloudGroup);
 const CLOUD = new THREE.BoxGeometry(1, 1, 1), cloudMats = { spray: new THREE.MeshBasicMaterial({ color: 0xdfe6ea, transparent: true, opacity: 0.4, depthWrite: false }) };
 let clouds = [];
+let sunDiscs = []; // the low sun's: { z (its stretch), sun (the model), x, zz (the way the stretch runs, in the world) }
 let leaned = 0;   // (the roll given the player's car last frame, taken off again before the next is put on)
 
 Game.onLoad.push(() => {
@@ -146,6 +147,23 @@ Game.onLoad.push(() => {
   }
   cloudGroup.clear();
   clouds = [];
+  sunDiscs = [];
+  // ---- the low sun: the sun itself, low over the road beyond the stretch's end, and a board before
+  for (const z of Gambles.suns) {
+    const L = CONFIG.lowSun, a = {}, b = {};
+    Track.toWorld(z.to - 60, 0, a);
+    Track.toWorld(z.to, 0, b);
+    const dx = b.x - a.x, dz = b.z - a.z, n = Math.hypot(dx, dz) || 1;
+    // (it keeps its distance from the car, the way the stretch runs, as a sun does: placed each frame, see syncGambles)
+    const sun = new THREE.Group();
+    for (const [r, color, opacity] of [[62, 0xfff3c4, 0.35], [34, 0xfffbe8, 1]]) sun.add(new THREE.Mesh(new THREE.CircleGeometry(r, 28), new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity, fog: false, depthWrite: false, side: THREE.DoubleSide })));
+    sun.rotation.y = Math.atan2(dx, dz);
+    sun.visible = false;
+    group.add(sun);
+    sunDiscs.push({ z, sun, x: dx / n, zz: dz / n });
+    const s = z.from - L.sign;
+    if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign('LOW SUN', '#ffd23f', '#111', 5.4, 1.6));
+  }
   // ---- washboard dirt: the dirt right across, its corrugations, and boards with the speed that skims it
   for (const b of Gambles.boards) {
     const B = CONFIG.washboard;
@@ -180,6 +198,13 @@ export const syncGambles = (now) => {
     veil.style.background = 'radial-gradient(ellipse 70% 60% at 50% 74%, rgba(' + c + ',0) ' + V.hole * 100 + '%, rgba(' + c + ',1) ' + V.full * 100 + '%)';
   }
   veil.style.opacity = Game.state === 'playing' ? Gambles.veil.toFixed(3) : '0';
+  for (const d of sunDiscs) {
+    const L = CONFIG.lowSun;
+    d.sun.visible = Player.active && Track.isMain(Player.s) && Player.s > d.z.from - 2 * L.sign && Player.s < d.z.to;
+    if (!d.sun.visible) continue;
+    Track.toWorld(Player.s, Player.lat, tmp);
+    d.sun.position.set(tmp.x + d.x * L.far, tmp.y + L.up, tmp.z + d.zz * L.far);
+  }
   if (Gambles.wets.length) {
     const S = CONFIG.spray;
     for (let i = 0; i < Traffic.cars.length; i++) {

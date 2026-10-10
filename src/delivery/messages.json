@@ -76,6 +76,7 @@
     "tarAhead": ["Roadworks! The coned-off lane is fresh tar: empty, and sticky."],
     "tarOn": ["On the fresh tar! It's building up on the tyres: don't stay long."],
     "spray": ["Wet road: every lorry is dragging a cloud of spray. Hang back and see, or go through blind."],
+    "lowSun": ["Low sun, dead ahead! Tuck into something tall's shadow to see, or drive into the glare."],
     "washboard": ["Washboard dirt! Fast and it skims smooth, or crawl. Not in between."],
     "jamRamp": ["Up the transporter! Hope that was fast enough."],
     "jamCleared": ["Sirens! The jam is clearing out of their way."],

@@ -624,6 +624,16 @@ says what the gamble is. All are things that happen on real roads, as the eleven
 - [ ] H12. **Low sun**: one stretch runs straight into the sun and the screen washes out,
       except in the shadow of a lorry, a bridge or a row of trees. _Gamble:_ tuck in behind
       something slow to see, or run in the glare. _Builds on:_ fog, tunnels' light change.
+      _Built (`gambles.js`, field `lowSun: { from, to }`):_ in the open 88% of the picture washes
+      out (the same veil as the spray's, in the sun's colour); in shadow it is clear: up to 9 m
+      behind a vehicle for each metre of its height (2.2 m or taller, in the car's own line),
+      under a bridge, in a tunnel, or under a shade's trees. A sun is drawn low ahead. On Gimmick
+      Road 3 (6470-6690, a barrier at 6640 behind the cash), Grand Pacific (7020-7560) and Outback
+      Express (820-1180). Clocks not re-timed. Verified by `.gimmicks3-check.mjs sun` (88% gone in
+      the open, clear 10 m behind a lorry, glare again beyond its shadow and in the next lane, a
+      car shades nothing, the car untouched, both real levels) and in stills (the glare, the sun
+      and its board on Outback Express). Not verified: played by hand; a lorry's shadow on
+      screen (no shadow is drawn on the road: the picture just clears); Grand Pacific on screen.
 - [ ] H13. **Dust trail**: on dirt every car throws a plume that drifts with the wind.
       Following in it is blind; driving a lane upwind of it is clear. _Gamble:_ the clear lane
       may be the oncoming one. _Builds on:_ fog, crosswind (G16), the safari.

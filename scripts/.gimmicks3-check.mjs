@@ -605,6 +605,40 @@ try {
     real('spray', () => check(Gambles.wets.length > 0, '  its wet road: ' + Gambles.wets.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
   });
 
+  // ---- the low sun (6470 - 6690, to the finish)
+  await section('sun', async () => {
+    const L = C.lowSun;
+    // the player held at 6540 .. doing 15 m/s for 2.5 s, `back` m behind a vehicle of `kind` in lane 4 (none: alone),
+    // `over` lanes to its side
+    const view = (kind = null, back = 10, over = 0, at = 6540) => {
+      start(at - 40, 4, 15);
+      const lead = kind ? put(kind, at, lane(4, at), 15) : null;
+      let slowest = 99;
+      g.run(2.5, () => {
+        for (const c of g.Traffic.cars) if (c !== lead && !c.fixed) c.active = false;
+        if (lead) { lead.vs = 15; lead.lat = lane(4, lead.s); }
+        Object.assign(P, { s: lead ? lead.s - lead.hl - P.hl - back : P.s, lat: lane(4 + over, P.s), speed: 15 });
+        slowest = Math.min(slowest, P.speed);
+      });
+      return { veil: Gambles.veil, of: Gambles.veilOf, shadow: Gambles.shadow, health: P.health === P.maxHealth, slowest };
+    };
+    const open = view();
+    check(open.veil > L.most - 0.1 && open.of === 'sun' && !open.shadow, 'low sun, in the open: ' + Math.round(open.veil * 100) + '% of the view is gone');
+    check(open.health && open.slowest >= 15, 'low sun: nothing is done to the car itself (no damage, never slowed)');
+    check(said('Low sun'), 'low sun: it is announced');
+    const tucked = view('semi', 10);
+    check(tucked.veil === 0 && tucked.shadow, 'low sun, the safe line: 10 m behind a lorry, in its shadow, the view is clear (at the lorry\'s pace)');
+    const far = view('semi', L.shadow * 4 + 15);
+    check(far.veil > 0.5, 'low sun: ' + (L.shadow * 4 + 15) + ' m behind it is beyond its shadow (' + Math.round(far.veil * 100) + '% gone)');
+    const beside = view('semi', 10, 1);
+    check(beside.veil > 0.5, 'low sun: in the next lane there is no shadow: pulling out to pass is into the glare');
+    const low = view('commuter', 6);
+    check(low.veil > 0.5, 'low sun: a car is too low to shade anything');
+    const before = view(null, 0, 0, 6200);
+    check(before.veil === 0, 'low sun: none before the stretch');
+    real('lowSun', () => check(Gambles.suns.length > 0, '  its low sun: ' + Gambles.suns.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
+  });
+
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)
   await section('finish', async () => {
     start(0, 3, 20, { ghost: true, keep: true });
