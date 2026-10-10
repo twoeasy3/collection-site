@@ -63,6 +63,12 @@ export const CARGO = {
     { id: 'jack', name: 'Jack-in-the-box', states: ['Winding itself', 'Lid twitching', 'Sprung'] },
     { id: 'cloud', name: 'Thundercloud in a jar', states: ['Grey cloud', 'Rumbling', 'Lightning'] },
     { id: 'piranhas', name: 'Piranha tank', states: ['Idling', 'Circling', 'Leaping out'] },
+    // the malicious deliveries: bad news for whoever gets them, seen only in part (hands, hats, paper)
+    { id: 'lawyers', name: 'Crate of lawyers', states: ['Waving', 'Flailing', 'Paper everywhere'] },
+    { id: 'chainletter', name: 'Chain letter', states: ['One letter', 'Five letters', 'A swarm'] },
+    { id: 'glitter', name: 'Glitter bomb', states: ['Gift-wrapped', 'Shaking', 'Erupting'] },
+    { id: 'recorders', name: 'Recorder class', states: ['Tuning up', 'Sour notes', 'Shrieking'] },
+    { id: 'subpoena', name: 'Subpoena', states: ['Rolled up', 'Unrolling', 'Coiled round the crate'] },
   ],
 };
 export const CARGO_STATES = ['calm', 'agitated', 'furious'];
