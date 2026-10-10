@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 Nothing is pushed.
 
-Last updated: round 2 started from `2e0a296` (main). Agents 1 to 7 are finished and merged; agents 8, 9 and 10 are running.
+Last updated: after `5fe99da` (main, the editor merged). Agents 1 to 8 are finished and merged; agents 9, 10 and 11 are running.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -111,11 +111,13 @@ $1. Largest step between neighbouring widths: Monza 47.5 m to 0, Spa 27.5 m to 0
 The owner's standing instruction (10-Oct): assign the unassigned lists, and give any new task to
 whichever agent is free, without asking first.
 
-5. Level editor, full control: **started**, agent 8, branch `delivery-editor` (in the city-levels worktree). Items E1 to E7 below, in the order given at the end of that section
+5. Level editor, full control: **finished**, agent 8, merged into `main` as `5fe99da` (no conflicts). A schema of 99 level fields (`levelSchema.js`); the editor builds every form, place-button and its map from it; all level files load and save through it unchanged. Not started: E1.4 (the game validating with the schema), E6.2 (clock button). Partly: E2.6, E3.5, E5.3, E6.1. Nothing clicked by hand. The item ticks are in the editor section below
 6. Police pursuit and the other road characters: **started**, agent 9, branch `delivery-pursuit` (in the circuits worktree). P1 then P2, then P9, P7, P8, P6, P5, P3, P4, P10, P11, P12, P13
-7. Road gimmicks: **started**, agent 10, on `main`. A hidden Gimmick Road 3, then G16 crosswind, H1 crest jumps, H2 ramp over the jam, H8 washboard, H4 low bridge, H5 ford, then the rest of the kept G and H lists; each also put on two or three real levels
-8. New themes: **queued**, next free slot. In the owner's order (most unlike the game first): T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio backlot, T1 Venice, T4 ice road, then on down the ranking; a level for each
+7. Road gimmicks: **started**, agent 10, on `main`. Done so far: G16 crosswinds (`1d48924`: on Grand Pacific, Hurricane, Tokyo) and H1 crest jumps (`9d7711b`: on Rival Run, Mystery Meadows), both on the hidden Gimmick Road 3. It re-timed two clocks by a lot; told to put them back. A hidden Gimmick Road 3, then G16 crosswind, H1 crest jumps, H2 ramp over the jam, H8 washboard, H4 low bridge, H5 ford, then the rest of the kept G and H lists; each also put on two or three real levels
+8. New themes: **started**, agent 11, branch `delivery-themes` (in the city-levels worktree). In the owner's order (most unlike the game first): T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio backlot, T1 Venice, T4 ice road, then on down the ranking; a level for each
 9. Queued after that, as slots free: menu pictures and clocks (the three circuits, the five themed levels, Super and 6-star cars); 28 liveries; 31 endless mode; the replay system's next step (`REPLAY-NOTES.md`); 51 performance on phones; 49 and 50 (test speed, lint and CI)
+
+- [x] Super cars screenshotted: all 35, Good and Evil (70 pictures, two contact sheets, sent to the owner). Every one has its livery, stripe and kit. To look at closer: the Super of the Super Lowrider (caught mid-hop, parts apart), the Dampervan (too big for the frame), the Tow Truck's wing beside its crane
 
 ## Not assigned
 
