@@ -1061,19 +1061,112 @@ pick ups and traffic."
         phone qualifies too: owner to say), over the small one. NO large pictures exist yet. To take them:
         `shots.mjs --levels` to render once at 1920x854 and write that as `large/<id>.jpg` and a 600x267
         copy as `<id>.jpg`, both JPEG at about 80.
+- [~] HUD (owner, 10-Oct evening): "Permanent messages block too much of the screen. They should show up as
+      normal messages and stay there with a icon." The eleven sticky messages (puncture, beached, bad gas,
+      heavy, butterfingers, six bad mystery effects) to show for the normal time like any message, then
+      leave a small icon each for as long as the condition lasts, clear of the road, the meters, the cargo
+      window and the touch buttons. A seventh agent, branch `delivery-hud-sticky`, stills included.
+- [x] **Screenshot script fixed: `5929c09`, `a175592` on `main`.** One Edge a run over the DevTools protocol,
+      its TEMP, profile and Vite cache in the run's own folder (`delivery-shots-run-<pid>-<when>`), removal
+      retried, dead runs swept, two runs at a time on the machine, `--scale`, `--size` exact (under 500 wide
+      works), `--wait` counted from the page's load. Shared temp counts did not move over about 20 runs;
+      kill, SIGINT and thrown-error tests left nothing. First picture of a run 13 to 113 s on a loaded
+      machine, later ones 2 to 9 s. Not verified: a real Ctrl+C, the 15-minute stale rule. **For the owner:
+      eight old `delivery-shots-*` folders (about 340 MB together) are left in `%LOCALAPPDATA%\Temp`; nobody
+      may delete them without the owner's word.** Its agent is now making `--levels` write both picture
+      sizes (M4) and retaking every level's picture.
+- [x] **`delivery-menu3d` merged into `main` as `208f8b0`, not pushed**, after 18 stills: no blank tile, models in
+      their boxes after scrolling, the car whole on its card at desktop and phone size (Commuter, Hearse,
+      the 8x8), the police car black and white with its bar on levels 13, 25 and 33. Pictures sent to the
+      owner. TO TRY BY HAND before it goes live: (1) a real phone, the menu then a run (the menu holds one
+      more WebGL context for good); (2) traffic with police and an ambulance in a run (the game's light-bar
+      code was moved, read only); (3) open and close the road card a few times, then start a run; (4) scroll
+      the Gimmicks page on a phone.
+- [~] **Second levels, batch F (`delivery-themes-f`, NOT merged: none of it seen since; stills being taken).**
+      `4694b46` (main merged in), `3178fc4`, `3e37c87`, `1e28dc5`, `b5b162a`; all 26 checks pass bar the
+      unseeded crosswind line of the gimmicks check. After Hours 34 cash / 15 rows / 150-110; Eruption Day
+      37 / 15 / 250-190 (its two rock drifters replaced by fixed rocks); **Cattle Drive** (`cattle`, Wild
+      West, new: 5.62 km, two side roads, a ford, a low trestle, three stampedes, two crossings) 36 / 15 /
+      255-195. For the owner: Cattle Drive's bridge at 1280 narrows the player's side to one lane for
+      190 m (the oncoming lane is the way past).
+- [~] Levels 20 and 21 to the new standard (`delivery-rework-a`): picked up by the menu agent, stills included.
+- [x] **Every check on `main` at `74f3bfa` (the code that was pushed as `fc365ba`): all 26 pass**, each run by
+      itself; logs in the session scratch folder, `checks-main-a`. Not run since on the later local merges
+      (`f3302a9` tyres, `7e0290d` visual fixes).
+- [~] **Second levels, batch E (`delivery-themes-e`, NOT merged: no level of it has been seen yet; stills being
+      taken).** `69725b1` (main merged in), `8edaac8`, `77bd94a`, `2f8bd7a`; all 26 checks pass on the
+      branch; ghost probes deliver all five. Toy Box Derby 37 cash / 15 rows / 155-120; Seaquake 35 / 13 /
+      165-120; Far Side 37 / 15 / 265-200; Stunt Double 37 / 15 / 150-115; **Seven Bridges** (`ponti`,
+      Venice, new: 3.99 km, seven humps, cobbles, cushions, crosswinds, spray, two tar lanes) 34 / 14 /
+      175-135. Where the removed ramps were: a fresh-tar lane with shoulder cash (Derby 2120, Stunt Double
+      2700), a washboard with a cone (Derby's finale, Seaquake 3080). `INSERTED_AT` has 44 to 48; it will
+      conflict in one line with batch F's at the merge (keep both sides' numbers). For the owner: the four
+      older ones keep the moving things they were written with (crate drifters on Derby and Seaquake, cows,
+      frogs, portaloos, moving asteroids, runners). The ice road's second level is next.
+- [x] **`delivery-visfix` merged into `main` as `7e0290d`, not pushed**, after its agent looked at all three in
+      stills (27 pictures; before and after pairs sent to the owner). The tube and the drawbridge needed no
+      change after looking; the wrench got a dark rim and brighter steel (`b40d45a`), having been grey on
+      grey on the road. The "before" stills confirmed both complaints: a rib across the whole picture at
+      camera height; the river drawn over the lowered deck and the raised leaf eaten by lava. Still weak:
+      the tube's glass is faint, so it reads from its frame; the raised leaf's lip is not bold. Not seen:
+      anything moving, `drive: left`, the wrench at 60 m after the rim. Its agent is now on Quarry Run
+      (`delivery-rework-b`).
+- Menu agent, further pieces on `delivery-menu3d` (still NOT merged; its stills are being taken now):
+      the car framed by its length so a long one is not cropped (`6d98e7e`); reduced motion honoured by all
+      the model views (`e764fa5`); the road card opens at once on the tap with "Loading…", and says so if
+      it cannot load or draw, in place of a dead button (`177d09e`). The first stills showed no blank tile
+      on the Gimmicks, power-ups or cargo pages.
+- [~] `delivery-visfix`, as first built by numbers (bundle, schema, hazards, levels, gimmicks3 checks pass):
+  - Sea bed tube, `b0ea829` (`render/themes/seabed.js`). Cause: the tube's crown was 11.5 m up and the
+    chase camera rides at 11 m: the roof stringer ran 0.5 m over it, every rib's crown crossed at eye
+    level, and in the outer lanes the camera was outside the glass. Now a rounded arch 19 m to the crown,
+    stringers at 16.5 m and above, slimmer ribs: the nearest member is 4 m from the camera (was 0.3 m).
+    To judge in stills: whether it still reads as a tube.
+  - Drawbridge, `7f36407` (`render/hazards.js`). Cause: the river is a sheet 0.08 m over the road, and
+    the leaf's slab and girders hung 1.4 m below its deck, so the hinge end stood in the water at every
+    angle; the sheet's depth offset would also draw it over the lowered deck. Now a thin deck plate with
+    its girders standing above it along the edges; nothing below the water through the whole swing. The
+    river is still a sheet at road level, not a sunk channel.
+  - Wrench, `ba6843c` (`render/pickupModels.js`). Was a box, a disc and a ring, all orange, standing edge
+    on to the road (0.21 m wide from behind). Now a steel open-ended spanner with a slot in its jaw, a
+    tapered handle with an orange panel and a ring end, facing the road. Nobody has looked at it yet.
 - [~] Wrench pickup (owner, 10-Oct evening): "Improve the wrench model." A spanner that reads at a glance
       from the chase camera and as a tile (open jaw, flat handle, ring end), same size and pickup radius.
       Given to the `delivery-visfix` agent; to be looked at in stills and corrected once screenshots work.
-- [~] Road card (owner, 10-Oct evening): "The police car in the What's on this road turns colour if the card
-      glow is not white. It is also missing its siren." Fixed-livery vehicles to keep their own colours
-      under any glow, and emergency vehicles to carry their light bars on the card as in the game. Given to
-      the `delivery-menu3d` agent.
+- [~] **`delivery-menu3d`: built, five commits, NOT merged** (held until it has been looked at in stills: `main`
+      is live as of `fc365ba`). The agent is merging `main` into it and taking the stills itself.
+  - [~] Road card's police car (owner: "turns colour if the card glow is not white. It is also missing its
+        siren"). `042d5bb`. Cause: the tile's glow and the body paint were one variable, and a police car,
+        having no livery, took a paint by its place in the level's traffic (blue on Sydney to Kiama, red on
+        Singapore II, green on Market Town). Now `FIXED_PAINT` in `render/models.js` (police, ambulance,
+        drive-by), used by the game's traffic too; the light bar moved out of `render/cars.js` into shared
+        code and added on the card for police and ambulance. The road-card check asserts both. The
+        Gimmicks page did not share the fault. The game's own traffic renderer was refactored and is
+        checked by reading only.
+  - [~] Models trailing their tiles on the reference pages (bug 4). `6a53b37`, `9fe613d`, `65dc20c`: one
+        renderer off the page, each tile its own small canvas, so pictures scroll with the page; no
+        renderer means text with empty pictures, never a throw; the road card opens regardless; the cargo
+        page on the shared code. New `scripts/.modelviews-check.mjs` (11 ok). Blank tiles are possible until
+        seen in a browser.
+  - [~] M5 the live 3D car on the car card. `576e927`: the car's model on a turntable in the side's livery,
+        sharing the road card's renderer (one extra WebGL context for the whole menu), the picture as the
+        fallback, still under reduced motion. Framing numbers are guesses: long vehicles may be cropped.
 - [ ] Drawbridge (owner, 10-Oct evening): "The drawbridge, when opened, phases through the water." A raised
       leaf (or its counterweight end as it swings down) cuts through the river's surface. The river was made
       to take the theme's colour on 10-Oct (`29e78ba`: lava on Cinder Island, lagoon green on Venice, a blue
       ribbon on the toy carpet), so look at each. To do: find which part crosses the water sheet and at what
       angle of the leaf; fix by the pivot, the leaf's length or the water's level and banks; stills of the
       leaf fully open and half open on a plain level and on Venice. Waits on the screenshot script's fix.
+- [x] **Tyres out as obstacles: `612e59b`, `da40e09`, merged into `main` as `f3302a9`, not pushed.** The four
+      drifter entries were the only tyres in any level file. The cargo truck sheds crates and bales, half
+      and half (it was half crates, a quarter bales, a quarter tyres: the tyre was the light one, so shed
+      cargo hurts more on average). The kind is out of the obstacle table, its hitbox and model, and so
+      out of the editor's pickers. Tyres thrown by explosions stay. Levels, schema, bundle, hazards, cargo,
+      traffic-quirks, descriptions, road-card and replay checks pass; ghost probes deliver; no clock moved.
+      Not seen. Left behind: gaps of 378 m (Toy Room 322-700), 490 m (Leaks 3490-3980), 612 m (Tranquility
+      Base 288-900) and 490 m (Favela Heights 1330-1820), being filled on `delivery-gapfill` with fixed
+      gambles the game has. Also there: seeding `.gimmicks3-check.mjs`, which fails now and then on three
+      unrelated lines (the bus at the low bridge, a semi in the crosswind, a van at the shade).
 - [~] A moving black disc on the later numbered levels (owner, 10-Oct evening): "I don't know what this is and
       I never asked for it. It's too hard to spot." Identified, about 80% sure, from the code and a headless
       run (no picture): a loose TYRE used as a drifter, a flat near-black ring 1 m across
