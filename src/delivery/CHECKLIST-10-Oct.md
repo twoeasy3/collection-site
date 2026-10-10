@@ -1314,6 +1314,17 @@ pick ups and traffic."
           Lowrider, the Blue 5 garage car `superlowrider` (`cars.js:168`), for as long as the effect lasts,
           not a livery and kit on its own model. With Q40: a car with no Super variant is told so; the
           Lowrider is not one of those.)
+    - [ ] Q54. "The cone of fire on the Egg in a nest cargo is reversed". (Evil cargo `egg`, its furious state:
+          the hatched dragon's flame; `render/cargoModelsEvil2.js`. The cone points the wrong way, wide end
+          at the mouth.)
+    - [ ] Q55. "In the Spa level, the runoffs are really wide. At some points, the car pulls to the middle of the
+          runoff (it is a road shoulder) when the proper lanes carry on straight. This should not happen,
+          but turning off steering within a shoulder/runoff in races is also not feasible." (Spa's run-off
+          is up to 27.5 m wide, tapered since 10-Oct. Something centres the car in whatever strip it is in:
+          look at the lane assist with hands off and how it picks a lane where the run-off, treated as a
+          shoulder, is far wider than a lane. The fix must leave the player free to steer on run-off: the
+          pull should only ever be toward a real lane, or not act at all outside the lanes. Monza has the
+          same wide run-off; Albert Park has none.)
 - [ ] **QUEUED for the next session (owner, after the stand-down; not labelled to jump the queue): two changes.**
   - **Shelve the Tow Truck's gimmick.** The owner: "That is a useless feature. Let's just shelve the tow
     truck gimmick for now." What it is: the car's trait `tow` (`cars.js:127-129`): driven into fallen

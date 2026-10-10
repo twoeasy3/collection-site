@@ -45,8 +45,18 @@ neither is a standing permission. Ask before deleting anything on the machine.
 
 ## Where the code is
 
-- **`main` is pushed as of this handover** (see the last line of the checklist for the hash). Live and
-  local are the same.
+- **Live is `3075475`. Local `main` is ahead of it and NOT pushed** (run `git log --oneline origin/main..main`):
+  checklist and handover commits; ESLint installed (`72b97de`: `eslint.config.js`, `npm run lint`, 59
+  findings on first run, none fixed; the push will make Cloudflare install the new dev dependencies); and
+  one code change the owner asked the orchestrator to make directly (`0aff68e`: the earned cars drive by
+  their own figures with no cap, the three race cars a little tamer on the road; a souped-up Lowrider
+  becomes the Super Lowrider; earned, mysteries, balance and bundle checks pass, the rest not run).
+- **The owner has uncommitted edits of their own in the main checkout** (`delivery/index.html`,
+  `src/delivery/levelText.json`, `src/delivery/cars.js` when this was written). They are not yours: never
+  commit, stash or overwrite them, and a merge that touches those files will be refused until the owner
+  commits them: ask.
+- **The owner's list runs to Q55** (Q1 to Q55 at the top of the checklist's evening block, with two earlier
+  queued items below them). Q52 and Q53 are done; the rest are not started.
 - **Checked:** all 28 check scripts pass at `a29522e`; six of them and the replay check over all 68 levels
   pass at `6409bb9`; a production build of `a29522e` was looked at in stills and works. **Not checked on
   `main` itself:** the six merges after `6409bb9` (the mains follow-up, the gap fills and the seeded
