@@ -2,7 +2,7 @@
   "id": "rival-run",
   "name": "Rival Run",
   "theme": "farm",
-  "clock": { "good": 255, "evil": 195 },
+  "clock": { "good": 300, "evil": 285 },
   "tip": 300,
   "rival": "opposite",
   "traffic": { "darkvan": 0.4, "commuter": 0.26, "van": 0.24, "bus": 0.04, "police": 0.06 },

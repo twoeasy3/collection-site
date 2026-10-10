@@ -856,7 +856,7 @@ const GROUPS = [
       const g = new THREE.Group(), tar = lambert(0x3b3e44);
       const up = box(7, 0.2, 8.2, tar, 0, 0.75, -3.9), down = box(7, 0.2, 8.2, tar, 0, 0.75, 3.9);
       up.rotation.x = -0.19; down.rotation.x = 0.19;
-      const car = painted(vehicle('sport', 0xffffff), 0x39ff14), block = ob('barrier');
+      const car = painted(vehicle('commuter', 0xffffff), 0x39ff14), block = ob('barrier', { hw: 1.4, hl: 0.4, height: 1 });
       block.position.set(0, 0.55, 5.6); block.rotation.x = 0.19;
       g.add(up, down, car, block, box(7, 0.1, 3, tar, 0, -0.05, -9.2), box(7, 0.1, 3, tar, 0, -0.05, 9.2));
       return { model: g, spin: false, tick: (t) => { const u = (t % 3) / 3, z = -9 + u * 20, hill = 1.55 - Math.abs(z) * 0.19, arc = z > -0.5 && z < 7 ? 1.6 + (z + 0.5) * 0.19 - 0.075 * (z + 0.5) * (z + 0.5) * 0.6 : 0;

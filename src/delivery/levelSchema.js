@@ -77,6 +77,7 @@ const segmentSettings = {
   length: int('Length (m)', { min: 1, max: 20000, required: true, init: 300 }),
   curve: num('Curve (rad/m, + right)', { min: -0.2, max: 0.2, step: 0.0005, init: 0 }),
   grade: num('Slope (rise per m)', { min: -1, max: 1, step: 0.005 }),
+  ease: num('Ease (m: a short one makes a crest)', { min: 2, max: 200, step: 1, default: CONFIG.gradeEase, help: 'How sharply this slope blends into the next. A steep climb and drop with 6 or so: a fast car flies over the top.' }),
 };
 
 // ---- the groups the editor lists fields in -----------------------------------------------------------
@@ -239,6 +240,9 @@ export const FIELDS = {
 
   // ---- hazards on the road ----
   ice: { shape: 'stretch', group: 'hazards', label: 'Ice', help: 'An ice patch on that lane (no lane: across the road).', settings: { lane: lane('Lane', { help: 'Left out: across the road.' }) } },
+  crosswinds: { shape: 'stretch', group: 'hazards', label: 'Crosswind', span: 500, help: 'An exposed stretch with a gusting wind across it: tall cars are pushed harder, a tall vehicle alongside gives shelter.',
+    settings: { dir: pick('Blows to the', SIDES, { required: true, init: 'left' }), strength: num('Strength (m/s²)', { min: 0.5, max: 50, step: 0.5, default: C.crosswind?.strength }),
+      every: num('A gust every (s)', { min: 1, max: 60, step: 0.5, default: C.crosswind?.every }), length: num('A gust lasts (s)', { min: 0.5, max: 60, step: 0.1, default: C.crosswind?.length }) } },
   mud: { shape: 'stretch', group: 'hazards', label: 'Mud', help: 'The road gives way to mud: a car is slowed in it by how well it crosses.' },
   fog: { shape: 'stretch', group: 'hazards', label: 'Fog bank', span: 300, help: 'The fog closes right in, and the police see less.' },
   potholes: { shape: 'point', group: 'hazards', label: 'Pothole', road: 'both', help: 'A jolt, and maybe a flat tyre.', settings: { lane: lane('Lane', { required: true }), r: num('Radius (m)', { min: 0.2, max: 5, step: 0.1, default: C.site?.potholeR }) } },

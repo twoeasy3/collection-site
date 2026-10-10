@@ -391,9 +391,14 @@ leave.
 
 ### How the car answers
 
-- [ ] G16. **Crosswind**: a steady push sideways on an exposed stretch (a viaduct, a dam), with
+- [x] G16. **Crosswind**: a steady push sideways on an exposed stretch (a viaduct, a dam), with
       gusts announced by a windsock. Tall cars are pushed more; passing a truck gives shelter,
       then a shove as you clear it.
+      _Built (`1d48924`, `gambles.js`, field `crosswinds`):_ on Gimmick Road 3 (300-900), Grand Pacific's
+      sea cliff bridge, Hurricane, Tokyo. Verified by `scripts/.gimmicks3-check.mjs wind` (push by
+      height, taps hold the lane, shelter beside a bus and the shove on clearing it, traffic drifts in
+      lane, the low car's safe line) and in stills on Gimmick Road 3 (socks, the card). Not verified:
+      played by hand; the lean on screen; the three real levels on screen.
 - [ ] G18. **Fuel**: a long level where the tank will not make it. Petrol stations are on the
       shoulder: pull in and stop (time lost) or run dry and coast.
 - [ ] G20. **Fragile cargo**: on this level the package breaks with bumps, kerbs and hard
@@ -416,9 +421,15 @@ leave.
 Written to the counterplay rule: every one is a gamble the player can take or leave, and each
 says what the gamble is. All are things that happen on real roads, as the eleven kept ones are.
 
-- [ ] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
+- [x] H1. **Crest jumps**: a street of steep crests, San Francisco style. Take one fast and the
       car flies: no steering in the air, and it lands on whatever is over the top. _Gamble:_ lift
       and see, or fly blind and gain seconds. _Builds on:_ the drawbridge's jump, hills.
+      _Built (`9d7711b`, `gambles.js`, a segment's `ease`: no object placed):_ on Gimmick Road 3 (tops at
+      1190 and 1490), Rival Run (4400), Mystery Meadows (2740, the cows over the top). Verified by
+      `.gimmicks3-check.mjs crest` (flies in a clear lane unhurt, lands in the barrier in the wrong one,
+      no steering in the air, the safe line under the board's speed, faster by 2.4 s, a hard landing
+      costs, no other level has a crest by accident) and in stills (the hidden far side, the car in the
+      air, the card). Not verified: played by hand; the two real crests on screen; sound.
 - [ ] H2. **Ramp over the jam**: a car transporter with its ramps down, or a roadworks ramp, sits
       in one lane at the back of a queue. Hit it fast enough and the car clears the queue; too
       slow and it lands in it. _Gamble:_ the jump or the slow way round. _Builds on:_ drawbridge
