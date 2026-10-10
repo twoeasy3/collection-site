@@ -64,6 +64,7 @@ export const makeUfo = () => {
 // down onto it, so it neither floats nor sinks whatever the shape. car.kit turns parts off ({ wing: false })
 // or on ({ lights: true }: a roof rack of lamps, for a van).
 const RAY = new THREE.Raycaster(), FROM = new THREE.Vector3(), DOWN = new THREE.Vector3(0, -1, 0);
+const GLASS_COLOURS = new Set([0x232a35, 0x1a2230, 0x9fc6d8]); // (the glass of the models in models.js: GLASS there, and the three with their own)
 export const addSuperKit = (model, car) => {
   const kit = { wing: true, scoop: true, exhausts: true, skirts: true, glow: true, stripe: true, lights: false, ...(car.kit || {}) };
   const w = car.hw * 2, l = car.hl * 2, H = car.height;
@@ -74,6 +75,13 @@ export const addSuperKit = (model, car) => {
     RAY.set(FROM, DOWN);
     const hit = RAY.intersectObject(model, true)[0];
     return hit ? hit.point.y : null;
+  };
+  // is the surface there glass? (a windscreen or a window, by its colour: see GLASS_COLOURS)
+  const glassAt = (x, z) => {
+    FROM.set(x, H + 5, z);
+    RAY.set(FROM, DOWN);
+    const hit = RAY.intersectObject(model, true)[0];
+    return !!hit && !!hit.object.material.color && GLASS_COLOURS.has(hit.object.material.color.getHex());
   };
   // the wheels (the tyres: cylinders on their side), for where the skirts and exhausts fit between them
   const tyres = [];
@@ -105,6 +113,9 @@ export const addSuperKit = (model, car) => {
     for (let z = -l * 0.49; z < l * 0.49; z += step) {
       const a = top(0, z), b = top(0, Math.min(l * 0.49, z + step));
       if (a === null || b === null || Math.abs(a - b) > 0.5) continue; // (a gap, or a step too steep: a windscreen's foot)
+      // (never over glass: the stripe is on the bonnet, the roof and the boot, and stops at each screen, with a
+      // little clear of the glass's edge)
+      if ([-0.5, 0, 0.5, 1, 1.5].some(k => glassAt(0, z + k * step))) continue;
       const seg = box(stripeMat, sw, 0.03, Math.hypot(step, b - a) + 0.01, 0, (a + b) / 2 + 0.015, z + step / 2);
       seg.rotation.x = -Math.atan2(b - a, step);
     }
