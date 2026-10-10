@@ -9,6 +9,7 @@ import { scene, tmp, applySky, applyLight, clearGroup } from './scene.js';
 import { setHeadlights } from './headlights.js';
 import { THEMES } from '../themes.js';
 import { CIRCUITS } from './circuits/index.js';
+import { THEME_SCENERY } from './themes/index.js';
 
 // ---- track meshes ----------------------------------------------------------
 // flat strip following a road between lateral offsets latA and latB,
@@ -1409,6 +1410,8 @@ const buildRoad = () => {
       geo.setIndex(idx);
       levelGroup.add(new THREE.Mesh(geo, bank));
     }
+    // (a lit theme's land and banks need to know which way they face, as `add` sees to for the strips: without, they are black)
+    if (theme.lit) levelGroup.traverse((o) => { if (o.isMesh && o.geometry.attributes.position && !o.geometry.attributes.normal) o.geometry.computeVertexNormals(); });
     // where the land stops at each end of a bridge, an embankment down to the water, right across
     // the land and its banks, so that it never ends in the air
     for (const b of LEVEL.bridges || []) {
@@ -3325,6 +3328,9 @@ const buildRoad = () => {
     instances(cube, 0x2a2a2a, tanks);
     instances(tube, 0x6b5436, trunks);
     instances(cube, 0x3f7a2e, fronds);
+  } else if (THEME_SCENERY[theme.scenery]) {
+    // ---- a theme with a file of its own (render/themes/<scenery>.js): given what stands things beside a road here
+    THEME_SCENERY[theme.scenery]({ theme, add, flat, instances, sideStrip, buildStrip, offRoads, standsClear, clearOfRoads, beside, inJunction, exits, cube, tube, cone, levelGroup, elevatedRoad });
   }
   if (theme.snow && theme.scenery !== 'alpine') snowfall();
   if (theme.rain) rainfall();

@@ -107,4 +107,23 @@ export const THEMES = {
   // on the doors), snow falling (snow: true), a sleigh among whatever the level's "storm" blows over
   christmas: { sky: 0x1a2340, ground: 0xeef2f6, road: 0x4a4e55, scenery: 'suburb', festive: true, snow: true, lit: true, headlights: true, night: true,
     light: { sky: 0x9fb4ff, ground: 0x3a3f55, ambient: 0.9, sun: 0xdfe6ff, sunlight: 0.55 } },
+  // toyroom: the whole level at toy scale (render/themes/toyroom.js): a run of orange plastic track across a blue
+  // carpet, alphabet blocks, bricks, crayons, marbles and dominoes beside it, a wooden railway, a cat asleep, the
+  // furniture for a skyline; the sky is the wallpaper
+  toyroom: { sky: 0xf1e3c8, ground: 0x6f8fb8, road: 0xff7a1a, scenery: 'toyroom', line: 0xffffff, centre: 0x1f6fd0,
+    tunnel: { wall: 0xb98a55, tiles: 0xd9b077, roof: 0xa87c4a, face: 0xc49a66, lamp: 0xfff3d0 } },
+  // seabed: an underwater tunnel (render/themes/seabed.js): the road in a glass tube along the sea bed, coral, kelp,
+  // shoals, a whale, a wreck and a yellow submarine outside it, shafts of light from the surface; the fog is the water
+  seabed: { sky: 0x0d5f86, ground: 0x6aa79c, road: 0x39434e, scenery: 'seabed', line: 0xe8f6ff, centre: 0xffd23a,
+    light: { sky: 0xc8f0ff, ground: 0x2a6a78, ambient: 1.45, sun: 0xd8f6ff, sunlight: 0.9 },
+    tunnel: { wall: 0x5f7482, tiles: 0x8fa6b5, roof: 0x4a5a66, face: 0x7a8f9c, lamp: 0xcff3ff } },
+  // moon: a moon base (render/themes/moon.js): grey regolith and craters under a black sky with the stars and the Earth in
+  // it, a road of compacted dust between marker lamps, domes, habitat tubes, solar panels, a lander, a rocket on its pad.
+  // Hard sunlight and little else (lit); the dark is the horizon. Unlike 'space', it has ground and a road
+  moon: { sky: 0x04050a, ground: 0x8b8c92, road: 0x55565c, scenery: 'moon', line: 0xf2f2f2, centre: 0xffa51f, lit: true, headlights: true,
+    light: { sky: 0xffffff, ground: 0x24242c, ambient: 0.8, sun: 0xfff6e6, sunlight: 2.1 },
+    tunnel: { wall: 0xb8bcc4, tiles: 0xe2e6ec, roof: 0x8a8f98, face: 0xc9cdd4, lamp: 0xfff0c8 } },
+  // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
+  // (batch B: film studio, Venice, ice road: new themes go above this line)
+  // (batch C: theme park, volcano island, container port: new themes go above this line)
 };

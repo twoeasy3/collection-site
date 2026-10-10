@@ -367,11 +367,15 @@ Build the theme first, then the level. Make sure the theme is reusable
       a painted sky on a flat, with cameras on cranes and a director's chair. Gimmick: stunt
       cars that crash on cue (scripted wreckage) and a "cut!" that freezes traffic. Reuses:
       zones (a look per stretch), wreckage, the traffic-freeze mystery.
-- [ ] T14. **Toy room**: the whole level at toy scale: a road of plastic track across a carpet,
+- [x] T14. **Toy room** (done as level T1 "Toy Room", `levels/toys.json`, with the game's existing gimmicks, not the
+      three below: those are unfinished on branch `delivery-themes-toys-wip`. Verified: the level's checks, a ghost
+      probe to the end, screenshots along it. Not played by hand): the whole level at toy scale: a road of plastic track across a carpet,
       building blocks, a train set, a sleeping cat. Gimmick: marbles rolling down the track, the
       cat's paw as a hazard, a ramp-and-loop jump. Reuses: drifters, drawbridge jump, the models
       are already toy-like.
-- [ ] T15. **Underwater tunnel**: a glass tube on the sea bed: whales and shoals outside, a
+- [x] T15. **Underwater tunnel** (done as theme `seabed` and level T2 "Twenty Thousand Leaks", `levels/leaks.json`, with
+      the game's existing gimmicks: burst mains for the leaks, two tunnels for the dark stretches. No pump, no gimmick
+      of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a glass tube on the sea bed: whales and shoals outside, a
       leaking stretch, an air-lock at each end. Gimmick: leaks that flood a lane until a pump
       catches up; a section with the lights out. Reuses: tunnels, water mains, blackout.
 - [ ] T16. **Old Wild West**: a dirt main street, saloon, water tower, a steam railway beside the
@@ -382,7 +386,10 @@ Build the theme first, then the level. Make sure the theme is reusable
       temple gate over the road, kites. Gimmick: the terraces flood in turn, spilling across the
       road as moving slick patches; ducks crossing in a line. Reuses: terrain, water mains'
       slicks, herds.
-- [ ] T18. **Moon base**: grey regolith, domes, a low black sky with the Earth in it, a road of
+- [x] T18. **Moon base** (done as theme `moon` and level T3 "Tranquility Base", `levels/moon.json`, with the game's
+      existing gimmicks: four crests to fly, potholes for craterlets, rockfall and a boulder strike for meteors. NO low
+      gravity: the physics are the game's own (the stopped agent's start on it is on `delivery-themes-toys-wip`).
+      Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): grey regolith, domes, a low black sky with the Earth in it, a road of
       compacted dust. Gimmick: low gravity: every bump is a long jump and braking takes twice as
       far. Different from the space theme, which has no ground. Reuses: space's sky, potholes,
       the jump physics.
