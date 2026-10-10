@@ -376,6 +376,7 @@ import fjord from './levels/fjord.json';
 // (the themed levels, THEME_LEVELS below: one a line, a new one on the line above its batch's marker)
 import toys from './levels/toys.json';
 // (batch A's imports go above this line)
+import backlot from './levels/backlot.json';
 // (batch B's imports go above this line)
 // (batch C's imports go above this line)
 
@@ -401,6 +402,7 @@ export const CIRCUIT_LEVELS = [monza, spa, albertPark];
 export const THEME_LEVELS = [
   toys,
   // (batch A: toy room, underwater tunnel, moon base: new levels go above this line)
+  backlot,
   // (batch B: film studio, Venice, ice road: new levels go above this line)
   // (batch C: theme park, volcano island, container port: new levels go above this line)
 ];
