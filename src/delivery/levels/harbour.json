@@ -1,10 +1,5 @@
 {
   "id": "harbour",
-  "name": "Harbour Lights",
-  "description": {
-    "good": "Three crossings of the harbour among ferries and barges, with a tunnel and potholed streets in between. Keep left, afloat or not.",
-    "evil": "Ferries, barges and dinghies, all slower than you would like. Leave a wake across the harbour and the potholes for everyone else."
-  },
   "theme": "hongkong",
   "drive": "left",
   "amphibious": true,

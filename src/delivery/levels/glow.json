@@ -1,10 +1,5 @@
 {
   "id": "glow",
-  "name": "After Hours",
-  "description": {
-    "good": "A telescope for the night watchman, after closing. One way round the service road: thread the speed humps, mind the forklifts and duck the coaster.",
-    "evil": "A mimic chest through a park with nobody left to scream. Fly the ride transporter over the queue, plough the fresh tar and lose security in the ghost train."
-  },
   "theme": "themeparkNight",
   "clock": { "good": 150, "evil": 110 },
   "tip": 280,

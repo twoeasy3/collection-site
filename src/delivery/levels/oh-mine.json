@@ -1,10 +1,5 @@
 {
   "id": "oh-mine",
-  "name": "Oh Mine!",
-  "description": {
-    "good": "By jetboat through a minefield, three hundred and more of them, some adrift. The trawlers are working: go round, gently, wake and all.",
-    "evil": "A jetboat, a sea full of mines and trawlers too slow to get out of the way. Something is going to go bang, and you are steering."
-  },
   "theme": "sea",
   "car": "jetboat",
   "clock": { "good": 264, "evil": 187 },

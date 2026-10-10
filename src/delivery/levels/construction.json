@@ -1,10 +1,5 @@
 {
   "id": "construction",
-  "name": "Construction Site",
-  "description": {
-    "good": "Through a working building site: mud, trenches, machines on the move and portaloos that dance. Hard hat on, and leave the bad petrol alone.",
-    "evil": "Diggers swinging, sewage everywhere, portaloos dancing in the road. Knock over what you can: the mud will hide the evidence."
-  },
   "theme": "construction",
   "flow": "north",
   "lanes": 3,

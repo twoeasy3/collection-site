@@ -1,10 +1,5 @@
 {
   "id": "outback-express",
-  "name": "Outback Express",
-  "description": {
-    "good": "Dingo Flat roadhouse to the railhead: four crossings, a grain siding at each, a pub in the S, roos in the Emu Creek floodway. The train always wins.",
-    "evil": "Bells ringing, booms coming down, a wheat train due, a twenty lying just past the rails. You can make it. Probably. Leave the ruts to the caravans."
-  },
   "theme": "panorama",
   "clock": { "good": 225, "evil": 170 },
   "tip": 180,

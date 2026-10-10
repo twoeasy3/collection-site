@@ -1,10 +1,5 @@
 {
   "id": "night",
-  "name": "Night Drive",
-  "description": {
-    "good": "A late delivery under the street lights. Lowriders cruise and a police chase may come through: headlights on, eyes up, parcel safe.",
-    "evil": "A dark road, slow lowriders, and a getaway car screaming past with the law behind it. Nobody will notice one more troublemaker."
-  },
   "cargo": { "good": "clock", "evil": "doll" },
   "theme": "night",
   "clock": { "good": 168, "evil": 119 },

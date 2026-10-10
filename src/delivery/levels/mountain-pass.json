@@ -1,10 +1,5 @@
 {
   "id": "mountain-pass",
-  "name": "Mountain Pass",
-  "description": {
-    "good": "Over the pass in winter: ice on the bends, black ice in the shade, rocks off the walls and fog at the summit roadworks. Cut no corners; the clock is fragile.",
-    "evil": "A loose cannonball, four icy hairpins and half the mountain coming down. Cut every corner, squeeze past the roadworks and let the fog hide the rest."
-  },
   "theme": "snow",
   "clock": { "good": 195, "evil": 155 },
   "tip": 160,

@@ -16,7 +16,7 @@ const classOf = (kind) => CONFIG.vehicles[kind].boat ? 'boat' : CONFIG.vehicles[
 
 const named = process.argv.slice(2);
 for (const level of AMPHIBIOUS_LEVELS.filter(l => !named.length || named.includes(l.id))) {
-  console.log(level.id + ' (' + level.name + ')');
+  console.log(level.id + ' (' + g.levels.levelName(level) + ')');
   let seed = 12345;
   Math.random = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
   g.select(level);
@@ -84,7 +84,7 @@ for (const level of AMPHIBIOUS_LEVELS.filter(l => !named.length || named.include
   g.Game.toMenu();
   g.select(level);
   g.Game.start();
-  check(g.Game.state !== 'playing', 'with no amphibious car owned, ' + level.name + ' does not start (state: ' + g.Game.state + ')');
+  check(g.Game.state !== 'playing', 'with no amphibious car owned, ' + g.levels.levelName(level) + ' does not start (state: ' + g.Game.state + ')');
   // ...and with one owned but another car in use, it starts in the amphibious one
   Progress.data.cars = ['commuter', 'sport', 'herald'];
   g.Game.start();

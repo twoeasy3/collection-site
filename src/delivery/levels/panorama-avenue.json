@@ -1,10 +1,5 @@
 {
   "id": "panorama-avenue",
-  "name": "Panorama Avenue",
-  "description": {
-    "good": "A long highway through the bush. Kangaroos cross without looking, semis thunder by and drop bears wait in the trees. Keep moving.",
-    "evil": "An empty highway, big trucks, bouncing wildlife and drop bears overhead. Out here nobody can hear the horn."
-  },
   "theme": "panorama",
   "clock": { "good": 360, "evil": 255 },
   "tip": 160,

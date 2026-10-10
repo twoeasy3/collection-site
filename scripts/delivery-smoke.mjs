@@ -69,7 +69,7 @@ try {
 
   for (let n = 0; n < levels.LEVELS.length; n++) {
     levels.selectLevel(n);
-    section(`level ${n + 1}: ${levels.LEVEL.name}`);
+    section(`level ${n + 1}: ${levels.levelName(levels.LEVEL)}`);
 
     // drive flat out, throwing packages, kept alive so the whole course is covered
     // (in quick mode, only the Good side's level checks: no drive)
@@ -290,7 +290,7 @@ try {
     const T = track.Track;
     check(Game.state === 'playing' && Game.screensaver && levels.LEVEL === levels.SCREENSAVER_LEVEL && T.problems.length === 0 &&
       T.laneCount === 8 && T.flow === 'south' && Traffic.cars.every(c => c.unused || c.dir < 0),
-    `starts on "${levels.LEVEL.name}": ${T.laneCount} lanes, everything oncoming, no level problems`);
+    `starts on "${levels.levelName(levels.LEVEL)}": ${T.laneCount} lanes, everything oncoming, no level problems`);
     const inPlay = Traffic.cars.filter(c => !c.unused).length;
     let laps = 0, ghost = true, lowest = Infinity, highest = -Infinity, maxActive = 0, lastS = 0;
     // (half a minute of it, and then, the dolly put down 150 m short of the end of its lap, the lap coming round)
@@ -477,8 +477,8 @@ try {
     });
     const extra = Object.keys(seen).filter(k => !kinds.includes(k) && !(levels.LEVEL.trafficZones || []).some(z => k in z.traffic));
     check(kinds.length ? close && !extra.length : count === 0, kinds.length
-      ? `${levels.LEVEL.name}: ${kinds.map(k => k + ' ' + ((seen[k] || 0) / count * 100).toFixed(0) + '%').join(', ')} (as listed)`
-      : `${levels.LEVEL.name}: an empty list, so no traffic`);
+      ? `${levels.levelName(levels.LEVEL)}: ${kinds.map(k => k + ' ' + ((seen[k] || 0) / count * 100).toFixed(0) + '%').join(', ')} (as listed)`
+      : `${levels.levelName(levels.LEVEL)}: an empty list, so no traffic`);
   }
 
   // one-way levels, and rows of cones / signs on the shoulders
@@ -507,7 +507,7 @@ try {
     const T = track.Track;
     const inPlay = (L.trafficCount ?? CONFIG.trafficCount) + (L.oncomingCount ?? CONFIG.oncomingCount);
     if (L.flow) check(live > inPlay * 10 * 0.5 && wrongWay === 0 && lanes.size === T.laneCount && T.flow === L.flow,
-      `${L.name}: every vehicle is ${L.flow === 'mixed' ? 'tagged by the way it goes, both ways in every lane' : L.flow + 'bound'} (${live} seen over 10 starts), and they use all ${T.laneCount} lanes` +
+      `${levels.levelName(L)}: every vehicle is ${L.flow === 'mixed' ? 'tagged by the way it goes, both ways in every lane' : L.flow + 'bound'} (${live} seen over 10 starts), and they use all ${T.laneCount} lanes` +
       (oncomingSeen ? ` (but for ${oncomingSeen} coming the other way along a side road that has oncoming traffic)` : ''));
     if (!L.shoulderRows) continue;
     const rows = Collision.obstacles.filter(o => !o.drift && (o.kind === 'cone' || o.kind === 'sign'));
@@ -594,7 +594,7 @@ try {
     }
     const order = [...seen].join(' > ');
     check(order === 'main > A > side > B' && Player.active && T.isMain(Player.s) && Player.s > x.flyoverAt,
-      `${levels.LEVEL.name}: the player drives up flyover A from the left shoulder, along the side road's oncoming lane, over flyover B and back (${order})`);
+      `${levels.levelName(levels.LEVEL)}: the player drives up flyover A from the left shoulder, along the side road's oncoming lane, over flyover B and back (${order})`);
   }
 
   section('busted');
@@ -733,7 +733,7 @@ try {
 
   section('levels list');
   {
-    const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + l.name);
+    const main = levels.MAIN_LEVELS.length, labels = levels.LEVELS.map((l, i) => levels.levelLabel(i) + ' ' + levels.levelName(l));
     // (the first of them in the order they have always been in: saved progress counts unlocked levels by position)
     // (after the main levels: the special ones, then the real circuits. Each tab numbers its own: the deliveries
     // among them S1.., the races, the lapped levels, R1..)

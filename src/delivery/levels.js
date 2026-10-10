@@ -375,7 +375,10 @@
 //              stretch, out of which a hippo charges across the road every min-max s, aimed at the
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
 //   id         unique name, used as the level's key in saved progress
-//   name       the level's name on the menu
+//   name       the level's name on the menu. A built-in level's name and description are kept in levelText.json,
+//              every level's words in one file, by id; these two fields in a level's own file are the fallback
+//              (a level not in that file yet, a level from the editor). Read them with levelName(level) and
+//              levelDescription(level, evil) (levelText.js), never as level.name
 //   description  { good, evil }: a sentence or two about the level, shown on the menu's stage for the side picked
 //              (160 characters each at most; scripts/.descriptions-check.mjs). Good's is a cheerful, careful
 //              courier's briefing; Evil's the same job, relished. A level played on one side only (alwaysGood,
@@ -586,3 +589,5 @@ export const selectSpecial = (level) => {
   LEVEL_INDEX = -1;
   LEVEL = level;
 };
+// a level's name, and its description for the side played: asked of levelText.js, never read off the level
+export { levelName, levelDescription } from './levelText.js';

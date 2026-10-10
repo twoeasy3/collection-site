@@ -1,10 +1,5 @@
 {
   "id": "park",
-  "name": "Thrill Park",
-  "description": {
-    "good": "A bunch of balloons through the park on its busiest day: mind the parade, the fun run and the park train, and smile for the rollercoaster.",
-    "evil": "A jack-in-the-box, wound tight, through a park full of queues: scatter the fun run, gatecrash the parade and fly both crests."
-  },
   "theme": "themepark",
   "clock": { "good": 225, "evil": 170 },
   "tip": 260,

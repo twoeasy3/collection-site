@@ -35,7 +35,7 @@ try {
     }
     if (!has.length && !pickups.length && !traffic.length) fail(level.id + ': nothing at all on its road');
     if (process.argv.includes('--list')) {
-      console.log('\n' + levelLabel(i) + ' ' + level.name + (notes.length ? '   [' + notes.join(', ') + ']' : ''));
+      console.log('\n' + levelLabel(i) + ' ' + g.levels.levelName(level) + (notes.length ? '   [' + notes.join(', ') + ']' : ''));
       console.log('  gimmicks, traffic cards: ' + (has.join(', ') || '-'));
       console.log('  pickups: ' + (pickups.join(', ') || '-'));
       console.log('  vehicles: ' + (traffic.map(({ kind, role }) => info.vehicleInfo(kind, role).name + (role === 'traffic' ? '' : ' (' + role + ')')).join(', ') || '-'));
@@ -63,7 +63,7 @@ try {
     else console.log(kind + ': light bar on the roof (y ' + bar.position.y.toFixed(2) + '), flashing ' + [...seen].join(' / '));
   }
   if (process.argv.includes('--police')) LEVELS.forEach((level, i) => { // (--police: the levels with a police car in their traffic, for a look: index.html?demo&cursor=<n>&road)
-    if (info.levelTraffic(level).some(({ kind }) => kind === 'police')) console.log('  police: cursor=' + (i + 1) + '  ' + levelLabel(i) + ' ' + level.name);
+    if (info.levelTraffic(level).some(({ kind }) => kind === 'police')) console.log('  police: cursor=' + (i + 1) + '  ' + levelLabel(i) + ' ' + g.levels.levelName(level));
   });
   console.log(failed ? failed + ' FAILED' : LEVELS.length + ' levels: every pickup and vehicle on them has its card, its line and its model');
 } finally {

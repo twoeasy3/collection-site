@@ -10,6 +10,7 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
+import { levelName } from './levelText.js';
 import { themedKind } from './themes.js';
 import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
@@ -73,7 +74,7 @@ const sign = (text, bg, fg = '#fff', w = 3.2, h = 1.4) => {
 };
 // where the levels are: every level (on the menu) that has it, by its number and name; and the test
 // level, Gimmick Road (off the menu: ?hidden=gimmick-road), where the newest are tried out first
-export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null),
+export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${levelName(level)}` : null),
   has(HIDDEN_LEVELS['gimmick-road']) ? '<span>Test</span> Gimmick Road (?hidden=gimmick-road)' : null,
   has(HIDDEN_LEVELS['gimmick-road-2']) ? '<span>Test</span> Gimmick Road 2 (?hidden=gimmick-road-2)' : null,
   has(HIDDEN_LEVELS['gimmick-road-3']) ? '<span>Test</span> Gimmick Road 3 (?hidden=gimmick-road-3)' : null].filter(Boolean);
