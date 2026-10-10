@@ -68,6 +68,7 @@ All on `/delivery/`. Nothing below saves progress unless it says so.
 | `?racewatch` | The race screensaver; `&camcheck` logs a check of its cameras |
 | `&touch` | Shows the on-screen controls on a desktop |
 | `&cargostate=2` | An Evil run's cargo in that state (0 calm, 1 agitated, 2 furious) whatever the clock says |
+| `&hudcheck` | Every part of the HUD showing at once and held there, for a picture: the shoulder's dial most of the way up, a flat tyre, a mystery running (`&mystery=` names it), two messages. With `&touch` and a level with a speed camera just ahead (`&level=20&at=760`) nothing is left out |
 | `&deliver=3.5` | Stops the delivery at the kerb that many seconds in, for a picture (with `&at=` just short of the finish and `&ff=14`) |
 | `?pick=41` | The menu with that level picked, every level open for the visit (a look at its card); `&start` presses Start Game too |
 
@@ -207,7 +208,7 @@ Levels unlock in menu order, each by delivering the one before.
   `node scripts/.cargo-check.mjs` lists what every level carries and checks the ending.
 - **A sound:** drop a WAV in `sounds/` and name it in `SAMPLES` in `render/audio.js`. Game logic
   asks for it with `sfx()` or `sfxAt()` from `physics.js`.
-- **A message:** add its wording to `messages.json`.
+- **A message:** add its wording to `messages.json`. How long it stays up is in `CONFIG.messageTimes` (by its kind, its group or its own path), and so is the list of sticky ones, which stay until what they warn of is over; `node scripts/.hud-check.mjs` checks both, and the mystery effect's name in the pickup status (`mysteryNames` in `messages.json`).
 
 ## The start screen
 

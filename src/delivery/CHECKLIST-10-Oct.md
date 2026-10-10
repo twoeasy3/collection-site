@@ -130,7 +130,7 @@ Three agents at a time; the next item starts as each one finishes.
 - [~] Police pursuit redone as a plain traffic event: agent 12
 - [~] Car ideas lot: agent 13
 - [~] Forty more cargo items: agent 15 (Good, C1 to C20, branch `delivery-cargo-good`) and agent 16 (Evil, C21 to C40, branch `delivery-cargo-evil`). Five agents running, on the owner's word ("Get a couple of agents on these")
-- [ ] Next 0: in-game UI improvements (the owner's five, in the section "In-game UI improvements" below)
+- [x] Next 0: in-game UI improvements (the owner's five, in the section "In-game UI improvements" below)
 - [ ] Next 1: road gimmicks, picking up the half-built ramp (H2) in the main checkout, then H8, H4, H5 and on down the kept G and H lists
 - [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
 - [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
@@ -730,31 +730,60 @@ at thumbnail size, calm at the start, agitated at half the clock, furious for th
 
 ## In-game UI improvements (owner, 10-Oct; queued as "Next 0")
 
-The owner's five, in their words, each with what it comes to. None is started.
+The owner's five, in their words, each with what it comes to. All five built on `delivery-ui` (Agent 17).
 
-- [ ] U1. "The level meter takes up too much of the screen, rework it to different style in the
+- [x] U1. "The level meter takes up too much of the screen, rework it to different style in the
       same corner as the other meters." The progress bar across the top centre goes; the distance
       through the level becomes a compact meter in the top-left block with the clock, tip, busts
       and social standing, in a style of its own (not another long bar). Pause and Exit level,
       which sit under it now, need a new place that is out of the way.
-- [ ] U2. "Have a odometer for the danger/shoulder meter instead, have it sit at 0 danger when not
+      **Done (8cb5d78).** The bar is gone. In the meters' corner, beside the readouts (under them on a phone held
+      upright), a ring 64 px across fills clockwise round to a chequered flag at its top, with the distance left in
+      its middle (km, then m in the last one) and TO GO under it; on a lapped level, a notch where each lap ends and
+      LAP 1/3 under it (the lap came off the POSITION line, which no longer fits beside it). Pause and Exit level:
+      bottom centre in landscape (the gap between the two pads, stacking where it is narrow), top centre and small
+      on a phone held upright, top centre in the screensavers. Seen in pictures at 1100x650, 520x900 and 900x420;
+      not seen moving, nothing touched on a real phone, nothing narrower than 500 px seen (the browser goes no narrower).
+- [x] U2. "Have a odometer for the danger/shoulder meter instead, have it sit at 0 danger when not
       active." The shoulder's danger timer becomes a dial (a small gauge with a needle, as a car's
       instrument is): always there, resting at 0 while the car is on the road, climbing while it
       is on the shoulder, falling back when it leaves. No element that appears and disappears.
-- [ ] U3. "The messages are right in the way of the horizon in both desktop and mobile." Event and
+      **Done (8cb5d78).** A dial with a needle (SVG), beside the level's ring, always there: 0 at the lower left,
+      the bust at the lower right, the last quarter red, an amber arc following the needle; needle and label turn
+      red in the red zone; dim on a level with no shoulder rule. Read as "a gauge", not rolling digits. Seen at
+      70% in the pictures and at 0 in plain ones; the needle not seen moving.
+- [x] U3. "The messages are right in the way of the horizon in both desktop and mobile." Event and
       status messages move off the horizon line, where the road ahead is read: to a strip clear
       of it (low on the screen above the controls, or the top edge), on desktop and on a phone,
       checked against the on-screen buttons, the cargo window and the tank corner.
-- [ ] U4. "Some critical messages should stay indefinitely like punctures. I'll let you have the
+      **Done (8cb5d78).** Landscape (desktop and a phone on its side): a strip along the top edge between the two
+      corners, in the sky: the two lines, then the speed camera's warning under them. A phone held upright: the
+      lines at the foot of the screen, above the pads and between the THROW buttons (on the road behind the car);
+      the camera's warning under the corners. Checked in pictures with everything up at once at the three sizes.
+      Known: a long message that wraps pushes the camera's warning down toward the horizon; upright, five lines
+      of text at once reach the car's tail.
+- [x] U4. "Some critical messages should stay indefinitely like punctures. I'll let you have the
       judgement call but extract all message times to a config." Every message's time on screen
       comes out of the code into one table in `config.js` (by kind of message). Messages about a
       condition that is still true stay until it ends: a puncture, no brakes, a stalled engine, a
       wanted level, a mystery effect running, being on fire, the wrong way down a road. Which
       ones are "critical" is the builder's call, written down in the table for the owner to edit.
-- [ ] U5. "The mystery effect should be written as the pick up status, so the player can remember
+      **Done (8cb5d78).** `CONFIG.messageTimes`: default, fade, kinds, groups, keys (the first that names a message
+      wins), and `sticky` (path in messages.json: the condition it lasts for; conditions at the foot of player.js).
+      The times themselves are unchanged (2 / 4 / 4 / 7 s). A sticky message is said as usual, then stays as an
+      amber row with a lamp (top of the strip; under the meters on a phone on its side) until its condition ends,
+      or a wreck, a bust or the end of the run. Sticky: puncture (its row shows the tyre being changed), beached,
+      badGas, heavyMass, butterfingers, and the mysteries noBrakes, rickety, jerk, swapSides, blackout, earthquake.
+      `node scripts/.hud-check.mjs`: all 153 messages have a time; each sticky one comes and goes with its condition.
+      No message exists for: shoulder danger about to bust, a police car watching, the tip countdown (not added).
+- [x] U5. "The mystery effect should be written as the pick up status, so the player can remember
       what it was." While a mystery effect runs, the pickup's status line names the effect
       (Earthquake, Giant, Traffic freeze...) with its time left, as a turbo or ghost shows its
       own name, not just "Mystery".
+      **Done (8cb5d78).** `Player.mysteryName` (words in messages.json `mysteryNames`); the status reads
+      EARTHQUAKE 9.8, NO BRAKES 11.8, TRAFFIC FREEZE 7.8, SUPERCAR (the fallback)... for as long as it lasts.
+      Checked headless for all 18 effects, the 4 unused ones and the fallback; the four that are over at once
+      (insurance up / down, UFO, bullet train, rewind) have no status, as before.
 
 Files this will touch: `render/hud.js`, `delivery/index.html`, `style.css`, `render/touch.js`
 (the phone layout), `messages.js` and `messages.json` (the times), `config.js`, `player.js` or
