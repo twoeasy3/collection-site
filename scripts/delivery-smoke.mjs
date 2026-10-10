@@ -2,7 +2,7 @@
 // that nothing breaks. Run with: npm run test:delivery, or with --quick (npm run
 // test:delivery:quick), which skips driving every level to the finish on both sides (the
 // slowest part by far) but keeps every other check. Each section says how long it took.
-import { createServer } from 'vite';
+import { logicServer } from './delivery-headless.mjs'; // (a Vite server that shares no cache with any other run)
 
 // the game logic touches the DOM only to show / hide screens
 const element = () => ({ classList: { add() {}, remove() {} }, addEventListener() {}, style: {}, textContent: '' });
@@ -29,7 +29,7 @@ const reseed = (...parts) => { // (FNV-1a over the seed and the parts)
   for (const ch of [SEED, ...parts].join('|')) h = Math.imul(h ^ ch.charCodeAt(0), 0x01000193);
   dice = h | 0;
 };
-const server = await createServer({ server: { middlewareMode: true }, appType: 'custom', logLevel: 'error' });
+const server = await logicServer();
 let failures = 0;
 const QUICK = process.argv.includes('--quick');
 // a section's heading, after how long the one before took
