@@ -668,12 +668,14 @@ export const MODELS = {
       twine.rotation.z = Math.PI / 2;
       twine.position.copy(bale.position);
       group.add(twine);
-      // the doors, hinged at the back corners and swung wide, out past the sides, where the chase
-      // camera sees them flare (flat against the sides they would be lost)
+      // the doors, hinged at the back corners and swung right back along the sides, ajar by 15
+      // degrees, so that nothing of the truck reaches past half a lane (no car exceeds a lane:
+      // the doors' tips stop short of 1.75 m). From behind they show as two white wedges beside
+      // the open, dark mouth
       for (const side of [-1, 1]) {
         const hinge = new THREE.Group();
-        hinge.position.set(side * (w / 2 - 0.02), 2.62, back);
-        hinge.rotation.y = -side * 2.4;                                               // (about 140 degrees open)
+        hinge.position.set(side * (w / 2 + 0.04), 2.62, back);
+        hinge.rotation.y = -side * 4.45;                                              // (about 255 degrees round)
         group.add(hinge);
         box(hinge, white, w / 2 - 0.04, 2.7, 0.06, -side * (w / 4 - 0.02), 0, 0);
         box(hinge, steel, 0.08, 2.0, 0.08, -side * (w / 4 - 0.02), 0, -0.05);         // its lock bar
