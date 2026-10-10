@@ -13,6 +13,7 @@ import { moon } from './moon.js';
 // (batch A's imports go above this line)
 // (batch B's imports go above this line)
 // (batch C's imports go above this line)
+import { wildwest } from './wildwest.js';
 // (batch D's imports go above this line)
 
 export const THEME_SCENERY = {
@@ -22,5 +23,6 @@ export const THEME_SCENERY = {
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // (batch C: theme park, volcano island, container port: new themes go above this line)
+  wildwest,
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
 };

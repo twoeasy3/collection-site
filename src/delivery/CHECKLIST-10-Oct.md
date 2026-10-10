@@ -378,7 +378,9 @@ Build the theme first, then the level. Make sure the theme is reusable
       of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a glass tube on the sea bed: whales and shoals outside, a
       leaking stretch, an air-lock at each end. Gimmick: leaks that flood a lane until a pump
       catches up; a section with the lights out. Reuses: tunnels, water mains, blackout.
-- [ ] T16. **Old Wild West**: a dirt main street, saloon, water tower, a steam railway beside the
+- [x] T16. **Old Wild West** (done as theme `wildwest` and level "High Noon", `levels/noon.json`, with the game's existing
+      gimmicks: stampedes for the cattle drive, a level crossing, a mine tunnel, three crests, pursuits for the posse. NO train
+      robbery or duel of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a dirt main street, saloon, water tower, a steam railway beside the
       road, cactus. Gimmick: a train robbery (riders alongside the train, across the road), a
       cattle drive, a duel at noon that stops the traffic. Reuses: railway, stampedes, gunfire,
       the safari's unmarked dirt road.
