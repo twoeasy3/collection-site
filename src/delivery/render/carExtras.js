@@ -64,9 +64,33 @@ export const makeUfo = () => {
 // down onto it, so it neither floats nor sinks whatever the shape. car.kit turns parts off ({ wing: false })
 // or on ({ lights: true }: a roof rack of lamps, for a van).
 const RAY = new THREE.Raycaster(), FROM = new THREE.Vector3(), DOWN = new THREE.Vector3(0, -1, 0);
-const GLASS_COLOURS = new Set([0x232a35, 0x1a2230, 0x9fc6d8]); // (the glass of the models in models.js: GLASS there, and the three with their own)
+// the underglow's colour: the livery's stripe colour, or its body colour where the stripe is too dark to be a
+// light (a black stripe), or an ice blue where both are; brought up to full brightness, as a light is
+const bright = (hex) => Math.max(hex >> 16, (hex >> 8) & 255, hex & 255);
+const glowColour = (stripe, body) => {
+  const hex = bright(stripe) >= 0x80 ? stripe : bright(body) >= 0x80 ? body : 0x6fd8ff, k = 255 / bright(hex);
+  return (Math.round((hex >> 16) * k) << 16) | (Math.round(((hex >> 8) & 255) * k) << 8) | Math.round((hex & 255) * k);
+};
+// the underglow's picture: white in the middle, fading out to nothing (made once, tinted by each car's material)
+let pool = null;
+const poolTexture = () => {
+  if (pool) return pool;
+  const fade = document.createElement('canvas');
+  fade.width = fade.height = 64;
+  const ctx = fade.getContext('2d'), light = ctx.createRadialGradient(32, 32, 6, 32, 32, 32);
+  light.addColorStop(0, 'rgba(255,255,255,1)');
+  light.addColorStop(0.55, 'rgba(255,255,255,0.7)');
+  light.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = light;
+  ctx.fillRect(0, 0, 64, 64);
+  return (pool = new THREE.CanvasTexture(fade));
+};
+// glass, by its colour: the pale glass one model has, or anything dark that is not the body's own paint (every
+// model's screens and cabin are a near-black of its own choosing: 0x232a35, 0x1a2230, 0x23262d...)
+const PALE_GLASS = new Set([0x9fc6d8]), DARK = 0x48;
+const glassy = (hex, paint) => PALE_GLASS.has(hex) || (hex !== paint && (hex >> 16) < DARK && ((hex >> 8) & 255) < DARK && (hex & 255) < DARK);
 export const addSuperKit = (model, car) => {
-  const kit = { wing: true, scoop: true, exhausts: true, skirts: true, glow: true, stripe: true, lights: false, ...(car.kit || {}) };
+  const kit = { wing: true, scoop: true, exhausts: true, skirts: true, glow: true, stripe: true, lights: false, bullbar: false, snorkel: false, ...(car.kit || {}) };
   const w = car.hw * 2, l = car.hl * 2, H = car.height;
   model.updateMatrixWorld(true);
   // the height of the model's surface at (x, z), seen from above (null where there is nothing)
@@ -76,12 +100,12 @@ export const addSuperKit = (model, car) => {
     const hit = RAY.intersectObject(model, true)[0];
     return hit ? hit.point.y : null;
   };
-  // is the surface there glass? (a windscreen or a window, by its colour: see GLASS_COLOURS)
+  // is the surface there glass? (a windscreen, a window or the dark of a cabin, by its colour: see glassy)
   const glassAt = (x, z) => {
     FROM.set(x, H + 5, z);
     RAY.set(FROM, DOWN);
     const hit = RAY.intersectObject(model, true)[0];
-    return !!hit && !!hit.object.material.color && GLASS_COLOURS.has(hit.object.material.color.getHex());
+    return !!hit && !!hit.object.material.color && glassy(hit.object.material.color.getHex(), model.userData.body.material.color?.getHex());
   };
   // the wheels (the tyres: cylinders on their side), for where the skirts and exhausts fit between them
   const tyres = [];
@@ -97,7 +121,8 @@ export const addSuperKit = (model, car) => {
   const sill = Math.max(0.12, bodyBox.min.y), side = Math.max(w / 2, bodyBox.max.x);
   const parts = new THREE.Group();
   const stripeMat = new THREE.MeshLambertMaterial({ color: car.stripe });
-  const glowMat = new THREE.MeshBasicMaterial({ color: car.stripe, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
+  // (a soft pool of light, bright under the car and fading out to nothing: it shows on any ground, pale or dark)
+  const glowMat = new THREE.MeshBasicMaterial({ color: glowColour(car.stripe, car.color), map: poolTexture(), transparent: true, opacity: 0.9, depthWrite: false });
   const dark = new THREE.MeshLambertMaterial({ color: 0x1b1d22 }), chrome = new THREE.MeshLambertMaterial({ color: 0xd8d8d8 });
   const lamp = new THREE.MeshBasicMaterial({ color: 0xfff3c4 });
   const box = (material, sx, sy, sz, x, y, z) => {
@@ -155,6 +180,29 @@ export const addSuperKit = (model, car) => {
       }
     }
   }
+  // for a van, a bus or an off-roader: a bull bar across the nose with a pair of spot lamps on it
+  if (kit.bullbar) {
+    const z = l / 2 + 0.07, nose = top(0, l * 0.46) ?? H * 0.5, y0 = Math.max(0.2, sill), y1 = Math.max(y0 + 0.3, nose + 0.06);
+    for (const s of [-1, 1]) box(chrome, 0.06, y1 - y0, 0.06, s * w * 0.27, (y0 + y1) / 2, z);
+    for (const y of [y0 + 0.03, (y0 + y1) / 2, y1]) box(chrome, w * 0.86, 0.06, 0.06, 0, y, z);
+    for (const s of [-1, 1]) {
+      const can = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.11, 0.12, 12), dark);
+      can.rotation.x = Math.PI / 2;
+      can.position.set(s * w * 0.2, y1 + 0.16, z);
+      const face = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 0.02, 12), lamp);
+      face.rotation.x = Math.PI / 2;
+      face.position.set(s * w * 0.2, y1 + 0.16, z + 0.07);
+      parts.add(can, face);
+    }
+  }
+  // and a snorkel: up the right-hand screen pillar from the bonnet to over the roof, its intake facing forward
+  if (kit.snorkel) {
+    const z = l * 0.2, x = side + 0.05, foot = Math.max(sill + 0.2, (top(w * 0.3, l * 0.36) ?? H * 0.5) - 0.1), head = (top(0, 0) ?? H) + 0.12;
+    box(dark, 0.09, 0.09, l * 0.16, x, foot, z + l * 0.08);          // along the wing, from the bonnet's side
+    box(dark, 0.09, head - foot, 0.09, x, (foot + head) / 2, z);      // up the pillar
+    box(dark, 0.14, 0.16, 0.2, x, head + 0.04, z + 0.05);             // the intake
+    box(chrome, 0.1, 0.1, 0.02, x, head + 0.04, z + 0.16);
+  }
   // side skirts between the wheels, hanging from the sill nearly to the ground
   const from = rearZ + R + 0.08, to = frontZ - R - 0.08;
   if (kit.skirts && to - from > 0.4) {
@@ -174,19 +222,31 @@ export const addSuperKit = (model, car) => {
       parts.add(pipe, tip);
     }
   }
-  // the underglow: a flat quad of light under the car
+  // the underglow: a pool of light on the road under the car, out past its sides (every Super car has one)
   if (kit.glow) {
-    const glow = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.5, l * 1.05), glowMat);
+    const glow = new THREE.Mesh(new THREE.PlaneGeometry(w * 1.9, l * 1.3), glowMat);
     glow.rotation.x = -Math.PI / 2;
     glow.position.y = 0.03;
-    parts.add(glow);
+    model.add(glow); // (on the road, not on the body: it stays put when the body hops or sways)
   }
   model.add(parts);
+  // The kit rides the body: whatever the model's own animation does to its body (the Lowrider's hop, the
+  // Junker's shudder, the Love Bus's sway), the kit does with it. It was fitted to the body as it stands at
+  // rest, so each frame it is given the body's move away from that (the body's place in the model now,
+  // times the inverse of its place at rest).
+  const body = model.userData.body, animate = model.userData.animate;
+  const place = (out) => { body.updateWorldMatrix(true, false); return out.copy(model.matrixWorld).invert().multiply(body.matrixWorld); };
+  const restInverse = place(new THREE.Matrix4()).invert(), now = new THREE.Matrix4();
+  parts.matrixAutoUpdate = false;
+  model.userData.animate = (t) => {
+    animate?.(t);
+    parts.matrix.copy(place(now)).multiply(restInverse);
+  };
   const livery = model.userData.livery;
   model.userData.livery = (evil) => { // (the stripe and the glow in the livery's second colour)
     livery?.(evil);
     stripeMat.color.setHex(evil ? car.evilStripe : car.stripe);
-    glowMat.color.setHex(evil ? car.evilStripe : car.stripe);
+    glowMat.color.setHex(evil ? glowColour(car.evilStripe, car.evilColor) : glowColour(car.stripe, car.color));
   };
   model.userData.kit = parts;
   return model;
