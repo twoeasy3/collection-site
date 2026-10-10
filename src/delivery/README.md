@@ -249,9 +249,14 @@ ones, which are always open and open nothing.
   BMW Isetta, the Double Decker after the AEC Routemaster...); hovering or tapping one shows its name,
   what it is based on, its size and a line about it, and the Livery button shows its Good and Evil
   paint. They are listed in `IDEA_CARS` in `ideas.js` and built by `IDEA_MODELS` in
-  `render/ideaModels.js`; the lot is `render/ideaslot.js`. None is in `CARS` or `CONFIG.vehicles`:
-  nothing here is bought, saved, driven, in traffic or in a level, and no check counts them. To make
-  one a real car, give it an entry in `CARS` and move its builder into `MODELS`.
+  `render/ideaModels.js`; the lot is `render/ideaslot.js`. An idea can be driven: its button in the lot
+  reads "Drive it" (or `?car=<id>`), and it is then the car in use as a garage car is, on any level a
+  garage car may drive. But it is tierless (no stars, no price: free, always open, never written into the
+  save's list of cars: `Progress.freeCars`) and its figures are placeholders (`placeholder: true` on every
+  entry, not balanced). None is in `CARS` or `CONFIG.vehicles`: not in traffic, Car Swap, the garage's own
+  lot or any balance table; `cars.js` looks in `IDEA_CARS` only for the car in use. It borrows a garage
+  car's horn and engine (`sound`), has no Super version, and `scripts/.ideas-check.mjs` drives every one. To
+  make one a real car, give it an entry in `CARS` and move its builder into `MODELS`.
 - **A thing to deliver:** a model in `render/cargoModels.js` (a group about a metre tall with
   `userData.animate(t)`; an Evil one built with `stated`, which gives it `setState(0 | 1 | 2)`), its id
   and name in `CARGO` in `cargo.js`, and a level's `"cargo": { "good": id, "evil": id }` to carry it.

@@ -17,7 +17,7 @@ import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } 
 import { Progress } from '../progress.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { medalFor, medalNeeds } from '../levelinfo.js';
-import { Garage, makeShowCar, paintShowCar } from './garage.js';
+import { Garage, makeShowCar, paintShowCar, IDEA_TAG } from './garage.js';
 import { standView, sharedRenderer, disposeViews, drawViews } from './modelviews.js';
 import { Sound } from './audio.js';
 
@@ -278,11 +278,12 @@ const showCarModel = (evil) => {
 const drawCar = () => {
   const evil = Game.evil && !oneSided(cursor);
   showCarModel(evil);
-  const starSpan = make('span', 'stars', stars(CAR));
-  starSpan.style.color = starColour(CAR);
+  // (a car idea, ideas.js, has no tier and so no stars: "Idea" stands where they would be)
+  const starSpan = make('span', 'stars', CAR.tier ? stars(CAR) : IDEA_TAG.text);
+  starSpan.style.color = CAR.tier ? starColour(CAR) : IDEA_TAG.colour;
   shop.replaceChildren(picture,
     make('span', 'words',
-      make('strong', '', CAR.name + ' ', CAR.tier ? starSpan : null),
+      make('strong', '', CAR.name + ' ', CAR.tier || CAR.idea ? starSpan : null),
       bar('Speed', Math.round(CAR.maxSpeed * 3.6) + ' km/h', CAR.maxSpeed / MOST.speed),
       bar('Accel', String(CAR.accel), CAR.accel / MOST.accel),
       bar('Health', String(CAR.health), CAR.health / MOST.health)),

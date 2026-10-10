@@ -5,12 +5,13 @@
 // other livery: buying a car buys both.
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
-import { CARS, CAR, SECRET_CARS, EARNED_CARS, selectCar, stars, starColour, STAR_COLOURS, blueStarsOpen, garageCars } from '../cars.js';
+import { CAR, carInUse, selectCar, stars, starColour, STAR_COLOURS, blueStarsOpen, garageCars } from '../cars.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { renderer } from './scene.js';
 import { makeCarMesh, shapeCarMesh, makeTankMesh } from './cars.js';
 import { MODELS } from './models.js';
+import { makeIdeaModel } from './ideaModels.js';
 import { makeUfo } from './carExtras.js';
 import { GarageView, arrange, mountGarageView } from './garageview.js';
 import { showComparison } from './compare.js';
@@ -23,12 +24,15 @@ import { IdeasLot } from './ideaslot.js';
 // screen's height, so on a phone held upright each car is big, and a few columns show at a time
 const ROWS = 3, BAY_W = 3.9, BAY_D = 6.6;
 const ROW_Z = [7.6, 0.6, -6.4];      // centre lines of the rows, front to back (the back row under the roof)
+// what a car idea in use shows in place of stars: it has no tier (here, and on the start screen's car card)
+export const IDEA_TAG = { text: 'Idea', colour: '#9fc0ee' };
 // a car's name and its stars, in their colour (gold or blue), as nodes to put in a line of text
+// (a car with no tier has no stars: the Tank, the City Bus; and a car idea, ideas.js, says "Idea" where they would be)
 export const withStars = (car) => {
-  if (!car.tier) return [car.name];
+  if (!car.tier && !car.idea) return [car.name];
   const span = document.createElement('span');
-  span.textContent = stars(car);
-  span.style.color = starColour(car);
+  span.textContent = car.tier ? stars(car) : IDEA_TAG.text;
+  span.style.color = car.tier ? starColour(car) : IDEA_TAG.colour;
   return [car.name + ' ', span];
 };
 const bulk = (car) => car.hw * car.hl * car.height; // how big a car is, to park the bigger ones further back
@@ -137,6 +141,7 @@ const buildLot = () => {
 // ---- a car on show: its own model, and its paint for a side (the lot's cars, and the start screen's car card:
 // render/menustage.js). Whoever makes one adds it to a scene of their own: makeCarMesh puts it in the game's
 export const makeShowCar = (car) => {
+  if (car.idea) return makeIdeaModel(car); // (a car idea in use: its own model, ideas.js; one with none throws below, and the card shows no picture)
   const mesh = car.tank ? makeTankMesh(car.color) : car.ufo ? makeUfo() : car.model ? MODELS[car.model](car) : makeCarMesh(car.color); // (ufo: the earned Saucer)
   if (!car.tank && !car.ufo && !car.model) shapeCarMesh(mesh, car);
   return mesh;
@@ -208,8 +213,8 @@ const carAt = (event) => {
 };
 
 const refresh = () => {
-  // (a secret vehicle in use has no bay, so no ring)
-  const inUse = [...CARS, ...EARNED_CARS].find(car => car.id === Progress.data.car) || SECRET_CARS[Progress.data.car] || CARS[0];
+  // (a secret vehicle in use has no bay, so no ring; nor has a car idea in this lot: its ring is in the Car ideas lot's)
+  const inUse = carInUse();
   bank.textContent = 'Bank ' + money(Progress.data.money);
   liveryBtn.textContent = 'Livery: ' + (Garage.evil ? 'Evil' : 'Good');
   const shown = looking || inUse, owned = Progress.owns(shown.id);
@@ -239,7 +244,9 @@ const pick = (mesh) => {
   refresh();
 };
 action.addEventListener('click', () => {
-  const car = looking || CAR;
+  // (on the Car ideas tab the button is that lot's "Drive it": the idea looked at there. It is free and always
+  // open, so there is nothing to buy; it becomes the car in use just as a garage car does)
+  const car = IdeasLot.on ? IdeasLot.looking : looking || CAR;
   if (!car || (car.id === Progress.data.car && Garage.evil === Game.evil)) return;
   if (!Progress.owns(car.id)) {
     if (Progress.data.money < car.price) return;
@@ -326,7 +333,8 @@ mountGarageView(() => {
   refresh();
 });
 // the "Garage" and "Car ideas" tabs: the second lot is render/ideaslot.js's
-IdeasLot.mount({ evil: () => Garage.evil, back: refresh });
+// (inUse: the id of the car in use; side: true when Evil is the side being played)
+IdeasLot.mount({ evil: () => Garage.evil, back: refresh, inUse: () => Progress.data.car, side: () => Game.evil });
 document.getElementById('garageBackBtn').addEventListener('click', () => Garage.close());
 
 const anchor = new THREE.Vector3();

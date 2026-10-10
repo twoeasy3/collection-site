@@ -1461,3 +1461,15 @@ export const IDEA_MODELS = {
     return group;
   },
 };
+
+// An idea's model, as it stands in the lot and as it is driven: built at the vehicle's real size, and (one too
+// wide for a lane: ideas.js `real`, `scale`) scaled down to the size it is driven at. Always with an animate
+// (the game calls it every frame). Null: no model of that name
+export const makeIdeaModel = (car) => {
+  const build = IDEA_MODELS[car.model];
+  if (!build) return null;
+  const mesh = build(car.real ? { ...car, ...car.real } : car);
+  if (car.scale) mesh.scale.setScalar(car.scale);
+  mesh.userData.animate = mesh.userData.animate || (() => {});
+  return mesh;
+};

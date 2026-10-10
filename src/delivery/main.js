@@ -91,6 +91,13 @@ if (params.get('pick')) {
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
+// ?car=bubble with no run started: the menu with that car in use for this visit, owned or not (a look at its card:
+// nothing is saved). With ?autostart it is driven: see below
+if (params.get('car') && autostart === null && !['hidden', 'test', 'edited', 'racewatch', 'screensaver'].some(key => params.get(key) !== null)) {
+  Progress.data.cars.push(params.get('car'));
+  Progress.data.car = params.get('car');
+  window.dispatchEvent(new Event('carchange')); // (the menu puts the player in it, and draws itself again)
+}
 const hidden = params.get('hidden') || (params.get('test') !== null ? 'testbed' : params.get('edited') !== null ? 'edited' : null); // (a hidden level: see levels.js)
 if (params.get('rival') !== null) Game.rival = params.get('rival') || 'opposite'; // ?rival[=evil|good]: a rival courier on every delivery level
 if (params.get('gt') !== null) setRaceClass('gt'); // ?gt: every race in GT road cars, whatever the menu says
@@ -298,7 +305,7 @@ const frame = (now) => {
     // (in the race screensaver: the watched car, and the rest of the field, as the camera hears them)
     const heard = Game.raceWatch && Game.state === 'playing' && !Game.paused ? raceAudio(dt) : null;
     if (heard) Sound.engine(heard.speed, CAR.id, CAR.maxSpeed, heard.gain, heard.pitch);
-    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : Player.afloat ? 'jetboat' : CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher; afloat on a water stage, a boat's)
+    else Sound.engine(live ? Player.speed : -1, Player.tank > 0 ? 'tank' : Player.afloat ? 'jetboat' : CAR.sound || CAR.base?.id || CAR.id, // (a Super car: its base car's engine, wound higher; a car idea: the engine of the car its `sound` names; afloat on a water stage, a boat's)
       Player.tank > 0 ? Player.rageTank?.maxSpeed ?? CONFIG.tankMaxSpeed : CAR.maxSpeed);
     Sound.pack(heard ? heard.pack : 0);
     // the siren, louder the nearer the nearest police car or ambulance (the screensaver's too), and a radar

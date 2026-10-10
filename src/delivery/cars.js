@@ -34,6 +34,13 @@
 // ============================================================================
 import { Progress } from './progress.js';
 import { CONFIG } from './config.js';
+import { IDEA_CARS } from './ideas.js';
+
+// The car ideas (ideas.js IDEA_CARS: thirty placeholders, tierless and free) are driven as garage cars are,
+// but kept out of CARS, which traffic, Car Swap, "Unlock everything", the garage's lot and its filters, the
+// start screen's bars and the balance checks all go by: only the lookups of the car in use (find, below)
+// look in both. Progress.owns() says yes to every one, so none is ever in a save's list of cars
+Progress.freeCars = IDEA_CARS;
 
 // a car's star rating, by its tier (none for a car out of the tiers)
 export const TIERS = 5;
@@ -255,9 +262,12 @@ export const earnedFor = (levelId) => EARNED_CARS.find(car => car.earned.level =
 
 // The car in use. It is a live binding: every module that imports CAR sees the new car as
 // soon as selectCar() changes it, so swapping cars needs no reload.
-const find = () => [...CARS, ...EARNED_CARS, ...Object.values(SECRET_CARS)]
+// (a car idea too: ideas.js. They come last, so an idea can never stand in for a car of the same id)
+const find = () => [...CARS, ...EARNED_CARS, ...Object.values(SECRET_CARS), ...IDEA_CARS]
   .find(car => car.id === Progress.data.car && Progress.owns(car.id)) || CARS[0];
 export let CAR = find();
+// the car in use as the save has it, whatever the level picked has put the player in (the garage's ring and words)
+export const carInUse = find;
 
 // A level with a vehicle of its own puts the player in that; any other level gives back
 // the car picked in the garage. Called when a level is picked and when a run starts.
@@ -343,8 +353,8 @@ const shade = (hex, lift, sat) => {
 const superLivery = (car) => SUPER_LIVERIES[car.id] ||
   { good: [shade(car.color, 1.25, 1.4), shade(car.evilColor, 0.7, 1.2)], evil: [shade(car.evilColor, 0.6, 1.3), shade(car.color, 1.25, 1.4)] };
 const supers = {}; // the Super versions built so far, by the base car's id
-// the Super version of a garage car (null for a car that has none: one out of the tiers, the Lowrider,
-// a level's vehicle, an earned car, or a Super car itself): built once and kept. `base` is the car it is made from
+// the Super version of a garage car (null for a car that has none: one out of the tiers (the Tank, a car idea),
+// the Lowrider, a level's vehicle, an earned car, or a Super car itself): built once and kept. `base` is the car it is made from
 export const superOf = (car) => {
   if (!car || !car.tier || car.earned || car.id === 'lowrider' || car.super) return null;
   if (!supers[car.id]) {
