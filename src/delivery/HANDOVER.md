@@ -161,9 +161,11 @@ picture and `&cine=car` the one for a car's. A page's console errors and warning
 - **Vehicle models** are in `render/models.js`; each returns a group facing +z with
   `userData.body` (the mesh whose material is the paint) and `userData.animate(t)`. Traffic
   kinds with a `model` in `CONFIG.vehicles` reuse them.
-- **Saved progress** is one cookie, `delivery_racer_progress`, with `path=/`, so it is shared
-  across the whole site's origin, and a copy in local storage that brings it back if the cookie
-  goes. Level unlocks are counted by position in `LEVELS` (a level added to `THEME_LEVELS` goes in ahead of the
+- **Saved progress** is kept in local storage (`delivery_racer_progress_backup`: the whole save, the store of
+  record, read first). A cookie, `delivery_racer_progress` (`path=/`, so shared across the whole site's
+  origin), is the fallback should local storage go: it holds only what is open, the bank, the cars and the
+  switches, so it cannot outgrow a cookie's 4096 bytes however many levels there are. Best times and the
+  milestone counters are in local storage alone. Level unlocks are counted by position in `LEVELS` (a level added to `THEME_LEVELS` goes in ahead of the
   special levels, so it needs its place in `INSERTED_AT` too). `INSERTED_AT` in `progress.js`
   records every position a level has been put in at, so an older save opens the right levels:
   add to it whenever a level goes in among the others.
@@ -249,8 +251,8 @@ made the thing. So:
 - **The level editor**: its forms and map were checked by `.schema-check.mjs` and in stills; no level has
   been made in it from nothing by a person.
 - **Replays**: exact headless on every level; nothing of it is in the browser.
-- **The save**: a full save's cookie is 3760 of 4096 bytes with 57 levels (`.save-check.mjs`): about eight
-  more levels fit. Past the cap the browser keeps the old cookie without a word (local storage stays right).
+- **The save**: `.save-check.mjs` saves and loads 100 levels and 80 cars headless, with a stand-in for local
+  storage. Not tried in a browser: a save made before the change loading after it, private windows, a phone.
 - **The cargo and the delivery at the kerb** (2026-10-10): seen only in headless-browser stills
   (the corner at 1100x650 and 520x900; the ending on Farm Lanes, Expressway, Night Drive, Singapore,
   Tokyo and All Heck). Not seen moving, not heard (the tick as an Evil item changes state, the thump
