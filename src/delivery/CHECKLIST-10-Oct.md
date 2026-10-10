@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `e862094` (main). Agents 9, 10 and 11 were all stopped at about 09:21 by an interruption and cannot be resumed; one new agent (12) is redoing the pursuit. Nothing else is running.
+Last updated: after `2109867` (main). Running: agent 12 (pursuit redo), agent 13 (car ideas lot), agent 14 (Stelvio and Market Town). The owner has asked for the whole list to be cleared: the queue is in "Round 3" below.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -121,6 +121,22 @@ whichever agent is free, without asking first.
 - [x] Super cars: the stripe stops at every screen and window; the kit rides the body's animation; an underglow under every Super car; vans and off-roaders get a wing, a bull bar, a snorkel and roof lamps. `136c0d5`, `35e0ac3`
 - [x] Menu pictures of the 35 Super cars, Good and Evil, in `carshots/` as `super-<id>-good.jpg` / `-evil.jpg`. `8d7ab8f`. Nothing shows them yet
 - [x] A car picked in the garage takes the side whose livery is showing; the garage opens in the livery of the side being played. `8a0bd79`. Seen in one screenshot ("Drive it as Evil"); not clicked
+
+## Round 3: clearing the list (owner, 10-Oct: "Delegate agents to properly clear the list")
+
+Three agents at a time; the next item starts as each one finishes.
+
+- [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
+- [~] Police pursuit redone as a plain traffic event: agent 12
+- [~] Car ideas lot: agent 13
+- [ ] Next 1: road gimmicks, picking up the half-built ramp (H2) in the main checkout, then H8, H4, H5 and on down the kept G and H lists
+- [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
+- [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
+- [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
+- [ ] Next 5: 28 liveries, 31 endless mode, replay in the browser
+- [ ] Next 6: 51 phone performance, 49 parallel smoke test, 50 lint and CI
+- [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
+- Not in the queue unless the owner says: road characters P3 to P13 (the owner wanted the pursuit kept simple); anything needing a person (listening, playing by hand, a real phone)
 
 ## Not assigned
 
