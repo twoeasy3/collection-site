@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import '../menus.css';
 import { IDEA_CARS } from '../ideas.js';
+import { tierStarsNode } from '../tiers.js';
 import { renderer } from './scene.js';
 import { makeIdeaModel } from './ideaModels.js';
 
@@ -248,8 +249,8 @@ export const IdeasLot = {
 
   // the garage's two tabs wired up. evil(): whether the garage's Livery button is on Evil; back(): the garage
   // writes its own words and button again; inUse(): the id of the car in use; side(): whether Evil is the side played
-  mount({ evil, back, inUse, side }) {
-    host = { evil, back, inUse, side };
+  mount({ evil, back, inUse, side, barred }) {
+    host = { evil, back, inUse, side, barred };
     tabs.ideas.addEventListener('click', () => this.enter());
     tabs.garage.addEventListener('click', () => { if (this.on) { this.leave(); host.back(); } });
   },
@@ -289,6 +290,13 @@ export const IdeasLot = {
     action.textContent = !looking ? 'Tap an idea to drive it' : using && !otherSide ? 'In use'
       : evil ? 'Drive it as Evil' : otherSide ? 'Drive it as Good' : 'Drive it';
     action.disabled = !looking || (using && !otherSide);
+    // (a level that restricts the car, on the side on show: an idea has no tier, so it cannot be driven; said, not just greyed)
+    const need = host.barred?.() ?? null, why = document.getElementById('garageWhy');
+    if (need !== null && looking && !using) {
+      action.disabled = true;
+      action.textContent = 'Not allowed here';
+      if (why) { why.classList.remove('hidden'); why.replaceChildren('Not allowed on this level: needs ', tierStarsNode(need)); }
+    } else if (why) { why.classList.add('hidden'); why.replaceChildren(); }
     for (const mesh of [...parked, ...(studio ? studio.meshes : [])]) paint(mesh, evil);
     const mesh = parked.find(m => m.userData.car === looking), used = parked.find(m => m.userData.car.id === inUse);
     lookRing.visible = !!mesh && mesh !== used;
