@@ -1,7 +1,8 @@
 import { CONFIG } from './config.js';
-import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial, nextOnTab } from './levels.js';
+import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial, nextOnTab, isRace } from './levels.js';
 import { Progress } from './progress.js';
-import { useLevelCar, returnCar, earnedFor, ownedAmphibious } from './cars.js';
+import { useLevelCar, returnCar, earnedFor, ownedAmphibious, carAllowed } from './cars.js';
+import { Tiers } from './tiers.js';
 import { Input } from './input.js';
 import { clamp } from './util.js';
 import { Track, buildTrack } from './track.js';
@@ -62,7 +63,8 @@ export const Game = {
   onFinish: [], // called when a run ends (the menu refreshes its cards)
   onRefused: [], // called when a run is not started: an amphibious level, and no amphibious car owned (the menu says so)
   // can a run on the level picked be started? Not an amphibious level (its "amphibious") without an amphibious car
-  get canStart() { return !LEVEL.amphibious || !!LEVEL.car || !!ownedAmphibious(); },
+  // (nor a level whose tier rule, tiers.js, allows only cars the player has none of: the menu shows the silhouette)
+  get canStart() { return (!LEVEL.amphibious || !!LEVEL.car || !!ownedAmphibious()) && carAllowed(); },
 
   // how far through the run the player is, 0 .. 1 (on a lapped level, all its laps)
   get progress() { return LEVEL.laps ? (this.lap + Track.progress(Player.s)) / LEVEL.laps : Track.progress(Player.s); },
@@ -140,8 +142,9 @@ export const Game = {
   },
   // from the results screen: on to the next level, on the same side
   nextLevel() {
-    const next = LEVEL_INDEX < 0 ? null : nextOnTab(LEVEL); // (a hidden level has no next; a race's next is the next race)
-    if (!next) { this.toMenu(); return; }
+    let next = LEVEL_INDEX < 0 ? null : nextOnTab(LEVEL); // (a hidden level has no next; a race's next is the next race)
+    if (next && Tiers.on() && !isRace(LEVEL)) next = Tiers.next(LEVEL); // (the tiers' own order; and a level not open yet is not next)
+    if (!next || (Tiers.on() && !Tiers.isOpen(next))) { this.toMenu(); return; }
     selectLevel(LEVELS.indexOf(next));
     this.start();
   },
@@ -426,6 +429,7 @@ export const Game = {
     }
   },
 };
+Tiers.sideIsEvil = () => !!Game.evil; // (the side picked on the menu: the car rule of a tier's level goes by it)
 
 // a message about a rival courier, by its name ("your rival" if it has none)
 export const sayRival = (key, rival, ...more) => {
