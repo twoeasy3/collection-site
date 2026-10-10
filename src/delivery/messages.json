@@ -140,7 +140,12 @@
     "cameraHill": ["Camera Hill - there is one over the brow!"],
     "retailPark": ["The retail park - it is backed up!"],
     "theParade": ["The Parade - two cameras in the fog!"],
-    "lastJam": ["The last jam - and the last camera!"]
+    "lastJam": ["The last jam - and the last camera!"],
+    "cornStreet": ["Corn Street - mind the burst main!"],
+    "marketSquare": ["The market square - 60 past the stalls!"],
+    "churchRow": ["Church Row - one more camera!"],
+    "townPark": ["The town park - the bypass is on the right!"],
+    "cattleMarket": ["The cattle market - one more train to beat!"]
   },
   "bustCount": {
     "1": ["First Offence - "],
