@@ -70,6 +70,9 @@ import { Message } from './messages.js';
 // With it, ?level=3 picks the level (locked or not), ?at=1650 starts that many metres along
 // the expressway and ?ff=5 runs the game for that many seconds before the first frame is drawn.
 const params = new URLSearchParams(location.search);
+// A visit with any of these is a test, not play: it lends cars and opens levels, so none of it is saved
+// (Progress.noSave: the save stays as it was before the visit, whatever is delivered, bought or counted in it)
+if (['autostart', 'hidden', 'test', 'edited', 'pick', 'car', 'ghost', 'mystery', 'theme'].some(key => params.get(key) !== null)) Progress.noSave = true;
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.open(params.get('garage') === 'evil');

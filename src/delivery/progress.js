@@ -151,14 +151,20 @@ export const Progress = {
       if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return false;
       if (typeof saved.unlocked !== 'number' || !Array.isArray(saved.cars)) return false; // (some other JSON)
       this.data = restore(tidy(saved));
+      this.noSave = false; // (a save brought in replaces everything such a visit lent)
       this.save();
       return true;
     } catch {
       return false; // (not base64, or not JSON)
     }
   },
+  // True on a visit that began from one of the address bar's test switches (?autostart, ?pick, ?car, a hidden
+  // level...: main.js sets it). Such a visit lends cars and opens levels by writing them into `data`, so nothing
+  // of it is written down: not by a counter, a delivery, the garage or anything else
+  noSave: false,
   save() {
     this.countDirty = false;
+    if (this.noSave) return;
     const text = this.saved();
     document.cookie = COOKIE + '=' + encodeURIComponent(text) + '; max-age=' + ONE_YEAR + '; path=/; SameSite=Lax';
     try { localStorage.setItem(BACKUP, text); } catch { /* (no storage: the cookie alone) */ }
@@ -226,6 +232,7 @@ export const Progress = {
   },
   reset() {
     this.data = fresh();
+    this.noSave = false; // (nothing lent is left in it)
     this.save(); // (the backup too: a reset is meant)
   },
 };
