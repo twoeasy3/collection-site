@@ -25,7 +25,11 @@ export const lit = () => {
 // camera stands, for a small patch). The camera is put back far enough for the
 // whole of it over the whole of its animation: it is played through a few seconds and measured all the way,
 // so nothing that hops, drops or tumbles goes out of the picture.
-export const standView = ({ model, tick, spin = true, lift = 0.42, angle = 0 }, close = 1) => {
+// That framing is by the picture's height. fitWidth: the picture may be narrow (the start screen's car card:
+// taller than wide on a desktop, 64 x 44 on a phone), and the model long, so the camera's view is opened out
+// until the model's whole length is in it whichever way it has turned (drawViews does it, by the view's
+// `reach`: the tangent of the half angle the model takes up)
+export const standView = ({ model, tick, spin = true, lift = 0.42, angle = 0, fitWidth = false }, close = 1) => {
   const scene = lit();
   const turn = new THREE.Group(); // (the turntable: the model turns on it, and animates on its own)
   turn.rotation.y = angle;
@@ -42,7 +46,7 @@ export const standView = ({ model, tick, spin = true, lift = 0.42, angle = 0 }, 
   camera.position.set(0, size.y * 0.5 + far * Math.sin(lift), far * Math.cos(lift));
   camera.lookAt(0, size.y * 0.5, 0);
   const phase = Math.random() * 6;
-  return { scene, camera, step(t, dt) {
+  return { scene, camera, reach: fitWidth ? Math.tan(Math.asin(Math.min(0.95, radius / far))) : 0, step(t, dt) {
     if (spin) turn.rotation.y += dt * 0.5;
     tick?.(t + phase, dt);
   } };
@@ -142,6 +146,8 @@ export const drawViews = (renderer, views, t, dt, within = null) => {
     renderer.setScissor(0, 0, w, h);
     renderer.clear();
     v.camera.aspect = r.width / r.height;
+    // (a view that fits its model's length to the picture's width: zoomed out, never in, until it does)
+    if (v.reach) v.camera.zoom = Math.min(1, Math.tan(THREE.MathUtils.degToRad(v.camera.fov / 2)) * v.camera.aspect / v.reach);
     v.camera.updateProjectionMatrix();
     v.step(t, dt);
     renderer.render(v.scene, v.camera);

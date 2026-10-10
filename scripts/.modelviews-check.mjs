@@ -58,6 +58,15 @@ try {
   check(Math.abs(c.camera.aspect - 112 / 84) < 1e-9, 'the camera takes the view\'s shape');
   stepped = 0;
   check(drawViews(fake, [a, b, c], 1, 0.016, { getBoundingClientRect: () => rect(0, 0, 350, 600) }) === true && stepped === 1, 'within a box: only the view inside it');
+  // ---- a long model in a narrow picture (the car card: 290 x 270 on a desktop, 64 x 44 on a phone, wide elsewhere)
+  for (const [w, h] of [[290, 270], [64, 44], [400, 120]]) {
+    const car = new THREE.Mesh(new THREE.BoxGeometry(2, 1.5, 11), new THREE.MeshBasicMaterial()); // (as long as a bus)
+    const v = { el: { getBoundingClientRect: () => rect(0, 0, w, h), append() {} }, ...standView({ model: car, spin: false, lift: 0.3, angle: Math.PI / 2, fitWidth: true }, 1.35) };
+    drawViews(fake, [v], 0, 0);
+    v.scene.updateMatrixWorld(true); v.camera.updateMatrixWorld(true);
+    const ends = [-5.5, 5.5].map(z => Math.abs(new THREE.Vector3(0, 0.75, z).applyMatrix4(car.matrixWorld).project(v.camera).x)); // (its two ends, side on: 1 is the picture's edge)
+    check(Math.max(...ends) <= 1 && v.camera.zoom <= 1, 'a bus side on in a ' + w + ' x ' + h + ' picture: its ends at ' + Math.max(...ends).toFixed(2) + ' of the way to the edge (zoom ' + v.camera.zoom.toFixed(2) + ')');
+  }
   fake.lost = true; stepped = 0;
   check(drawViews(fake, [a], 1, 0.016) === false && stepped === 0, 'a lost context: false, nothing drawn');
 } catch (e) {

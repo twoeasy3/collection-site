@@ -252,7 +252,7 @@ const showCarModel = (evil) => {
       if (sharedRenderer()) {
         const model = makeShowCar(CAR);
         paintShowCar(model, CAR, evil);
-        const stand = standView({ model, tick: (t) => model.userData.animate?.(t), spin: !reducedMotion, lift: CAR_VIEW.lift, angle: CAR_VIEW.angle }, CAR_VIEW.close);
+        const stand = standView({ model, tick: (t) => model.userData.animate?.(t), spin: !reducedMotion, lift: CAR_VIEW.lift, angle: CAR_VIEW.angle, fitWidth: true }, CAR_VIEW.close); // (fitWidth: the picture is narrow, and a car long)
         carView = { el: picture, canvas: old?.canvas, ctx: old?.ctx, ...stand, model, car: CAR, evil }; // (the canvas is kept from car to car)
       }
     }
