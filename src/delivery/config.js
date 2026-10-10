@@ -855,50 +855,22 @@ export const CONFIG = {
     aside: 3,              // m/s they move
     warn: 220,             // m short of it the player is warned
   },
-  // a police pursuit (a level's "pursuits": { every: { min, max } }; pursuit.js): a getaway car and, `gap` m behind
-  // it, an interceptor, set off `behind` m behind the player, the interceptor's siren heard from `heard` m.
-  // The getaway car runs at `pace` times the player's car's top speed (between speed.min and speed.max), and
-  // `rush` m/s more while it is over `near` m from the player (so it comes up quickly, hangs about, and goes).
+  // a police pursuit (a level's "pursuits": { every: { min, max } }; pursuit.js), a traffic event: a getaway car and,
+  // `gap` m behind it (closing on that at `closing` m/s per m out), an interceptor, set off `behind` m behind the
+  // player, the interceptor's siren heard from `heard` m. The getaway car runs at `pace` times the player's car's
+  // top speed (between speed.min and speed.max), and `rush` m/s more while it is over `near` m from the player
+  // (so it comes up quickly, is a few seconds going by, and is gone).
   pursuit: {
-    behind: 260, gap: 30, heard: 420,
-    pace: 1.12, speed: { min: 29, max: 54 }, rush: 24, near: 70,
+    behind: 260, gap: 30, closing: 0.8, heard: 420,
+    pace: 1.3, speed: { min: 30, max: 75 }, rush: 24, near: 40,
     clearOfEnd: 700,       // m short of the finish beyond which none sets off
     retry: 2,              // s before it tries again, with no room for it
-    // how the two are driven: `look` s ahead for the way across the road that stays clear longest, thought
-    // over every `rethink` s (the oncoming side costs `wrongSide` s of clear road, the shoulder `shoulder`, each
-    // metre across `drift`; the way it is on already is worth `stick`); `swerve` m/s sideways; and brakes that
-    // are not always enough (`brake` m/s^2, to `followGap` m behind what is in the way)
-    driving: { look: 3, rethink: 0.2, margin: 0.35, wrongSide: 0.8, shoulder: 0.4, drift: 0.04, stick: 0.3, swerve: 8, accel: 9, brake: 15, followGap: 3 },
-    // caught: held below `turnBelow` of its pace for `turnTime` s all told (easing off at `letUp` s a second
-    // otherwise), the interceptor (closing at `closing` m/s per m, up to `catchUp` m/s over the pace) is up
-    // beside it, `beside` m between them, and within `turnWithin` m turns it (a `turnKick` rad/s swing)
-    turnBelow: 0.78, turnTime: 2.2, letUp: 0.4, closing: 0.8, catchUp: 8, beside: 0.4, turnWithin: 2.5, turnKick: 2.5,
-    // ...and that was the player's doing with `credit` s of it spent in the getaway car's path, or boxing it in
-    // from beside (within box.along m along the road and box.across m across it)
-    credit: 0.8, box: { along: 9, across: 4.5 },
-    reward: { standing: 20, cash: 40, busts: 1 }, // a Good player's, for that: points of standing, $, busts wiped
-    // the interceptor is hindered with the player in its way within `reach` m; `lost` m behind the getaway car,
-    // it has lost it. An Evil player who hinders it bag.after s is thrown a bag worth bag.cash $, bag.ahead m up the road
-    reach: 30, lost: 150,
-    bag: { after: 1.5, cash: 60, ahead: 45, slide: 0.5, drag: 12 },
-    // riding the channel: from..to m behind the interceptor, within `width` m of its line, at `speed` m/s or more
-    ride: { from: 2, to: 45, width: 2.4, speed: 12 },
-    // the interceptor's interest in an Evil player, 0 to 1: full after `block` s in its way or `ride` s in its
-    // channel, `ram` more for running into it, gone again in `cool` s; a warning at `warn`; at 1 a bust (and
-    // `after` of it left)
-    heat: { block: 3.5, ride: 9, cool: 7, ram: 0.5, warn: 0.55, after: 0.3 },
-    // left alone they are `settle` m up the road (or `longest` s on) when it is decided, by these odds, a hand
-    // in it from the player counting `weigh` times
-    settle: 230, forceSettle: 110, longest: 60, odds: { caught: 0.4, crashed: 0.25, away: 0.35 }, weigh: 2.5,
-    seenWithin: 420,       // m from the player within which its ending is announced
-    stop: 9,               // m/s^2 they brake at, pulling over
-    parkGap: 3,            // m the interceptor stops behind the getaway car
-    attendFrom: 70,        // m short of a wreck the interceptor starts pulling over for it
-    wreckHealth: 0.15, wreckSpin: 2.2, wreckYaw: 0.7, // a getaway car wrecked off the road: its health left, and how it lies
-    standDown: 16,         // m/s the interceptor goes on at, the chase given up...
-    standDownFor: 10,      // ...for this long (s), before it pulls in and stops
-    linger: 130,           // m behind the player at which what is left of it is cleared away
-    heli: { height: 9, beam: 5 }, // the helicopter over the getaway car (render/pursuit.js): m up (low enough to be in the chase camera's view), m across its light
+    leftBehind: 450,       // m behind the player at which one that never got by is taken off
+    // how the two are driven: every `rethink` s, into the lane with the most clear road ahead (looking `look` s
+    // on; a car within `margin` m of its side is in the way; each metre across the road costs `drift` m of clear
+    // road, and the lane it is in already is worth `stick` m); `swerve` m/s sideways; and brakes that are not
+    // always enough (`brake` m/s^2, to `followGap` m behind what is in the way)
+    driving: { look: 3, rethink: 0.2, margin: 0.35, drift: 1.5, stick: 12, swerve: 8, accel: 9, brake: 15, followGap: 3 },
   },
   garagePace: { min: 0.75, max: 0.95 }, // share of its own top speed a garage car cruises at in traffic
   sirenRange: 160,         // m from a police car within which its siren is heard (louder the nearer)

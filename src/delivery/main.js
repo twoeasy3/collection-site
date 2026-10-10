@@ -47,7 +47,7 @@ import { syncTunnel } from './render/tunnel.js';
 import { syncWaterMains } from './render/watermains.js';
 import { syncReversible } from './render/reversible.js';
 import { syncMysteries } from './render/mysteries.js';
-import { syncCharacters } from './render/characters.js';
+import './render/pursuit.js';
 import { Mysteries } from './mysteries.js';
 import { updateHud } from './render/hud.js';
 import './render/menu.js';
@@ -208,7 +208,6 @@ const frame = (now) => {
     syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
     syncWaterMains(dt);
     syncReversible();
-    syncCharacters(dt, now); // (after the traffic: a police pursuit's lights, helicopter and bags, ...)
     syncBattle(dt);
     syncZones(dt);
     syncStorm(dt);

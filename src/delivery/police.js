@@ -42,7 +42,6 @@ document.getElementById('page').innerHTML = `
     ['Attacking a police car', quote('assaultCop'), 'Evil only: a flaming package hits a police car.'],
     ['Attacking anyone in view', quote('assault'), 'Evil only: a flaming package hits any car while a police car is watching.'],
     ['Blocking an ambulance', quote('emergency'), `An ambulance comes up within ${m(E.reach)} behind you in its lane, and you're still in its way ${E.giveWay} s later.`],
-    ['Obstructing a pursuit', quote('pursuit'), `Evil only: ${C.pursuit.heat.block} s in a pursuit's interceptor's way, or ${C.pursuit.heat.ride} s riding the channel right behind it (it cools off in ${C.pursuit.heat.cool} s if you back away).`],
   ])}
 </section>
 

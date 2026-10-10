@@ -345,8 +345,7 @@ export const Traffic = (() => {
     car.stopGoFor = null;   // the stop / go works it has decided whether to run the STOP at (see StopGo)
     car.passingPack = null; // where it is steering by a peloton, out past it (see passPeloton)
     car.driver = null;      // driven by another module (a police pursuit's cars: see pursuit.js): a function (car, dt) called from update in place of all a driver does...
-    car.sirenOn = false;    // ...its siren going: traffic gives way to it as to an ambulance (see sirenFor)...
-    car.role = null;        // ...and what it is there (for the drawing)
+    car.sirenOn = false;    // ...its siren going: traffic gives way to it as to an ambulance (see sirenFor)
     if (toads) makeToad(car);
     car.throwTimer = CONFIG.enemyThrowMin + Math.random() * (CONFIG.enemyThrowMax - CONFIG.enemyThrowMin);
     car.think = Math.random() * 2;
@@ -2397,6 +2396,6 @@ export const Traffic = (() => {
 
   return { cars, reset, update, lap, policeNear, toadify, rushHour, moodSwing, startProcession, mourn, arrest, startEmergency, addRacer, sortGrid, tow, wreckedByPlayer,
     noteWreck, hornedAt, get reversibles() { return reversibles; },
-    outfit, spare: () => cars.find(c => !c.active && c.unused) || null, // (for the road's other characters, each in a file of its own: see characters.js)
+    outfit, spare: () => cars.find(c => !c.active && c.unused) || null, // (for a police pursuit: see pursuit.js)
     frozen: false }; // (TRAFFIC FREEZE: set by Mysteries; update, Collision.updateObstacles and Hazards.update stand still while it is)
 })();

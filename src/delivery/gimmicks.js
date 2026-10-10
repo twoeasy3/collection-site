@@ -68,7 +68,6 @@ const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelL
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
-const PS = CONFIG.pursuit; // (the road's other characters')
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 const GROUPS = [
   { name: 'The road itself', cards: [
@@ -411,15 +410,12 @@ const GROUPS = [
       return { model: group(car, mount, red, white), tick: (t) => { const on = Math.floor(t * 6) % 2 === 0; red.visible = on; white.visible = !on; } };
     } },
     { name: 'Police pursuit', color: 0x2060ff, has: (l) => l.pursuits, rules: [
-      `Now and then a chase already under way comes through from behind, its siren heard from ${PS.heard} m: a getaway car flat out, taking any gap, the shoulder and the oncoming side, and ${PS.gap} m behind it an interceptor (a car seen nowhere else), the traffic in its lane pulling aside. A helicopter holds its light on the getaway car.`,
-      `<strong>Good:</strong> get in the getaway car's way. Held below ${pct(PS.turnBelow)} of its pace for ${PS.turnTime} s, the interceptor comes up beside it and turns it. If you were what held it (in its path, or boxing it in from beside): ${PS.reward.standing} points of standing, $${PS.reward.cash}, and a bust wiped. Its brakes are not as good as yours.`,
-      `<strong>Evil:</strong> get in the interceptor's way. After ${PS.bag.after} s the getaway driver throws out a bag worth $${PS.bag.cash}, and ${PS.lost} m behind, the interceptor has lost him. Or ride the channel it clears, right behind it. Either has its interest: ${PS.heat.block} s in its way, or ${PS.heat.ride} s behind it, and you are part of the chase (a bust). Back off at the warning and it cools in ${PS.heat.cool} s.`,
-      'Or move over: it costs nothing. It ends with the two stopped on the shoulder and the traffic slowing to look, with the getaway car wrecked, or with it clean away.',
+      `Now and then a chase already under way comes through from behind, its siren heard from ${CONFIG.pursuit.heard} m: a getaway car flat out, weaving through the traffic, and ${CONFIG.pursuit.gap} m behind it an interceptor, a police car seen nowhere else.`,
+      'Traffic pulls aside for the siren, as it does for an ambulance. Move over and the two go by and away up the road; get in the way and it is a collision like any other.',
     ], build: () => {
-      // (the interceptor, up beside the getaway car, about to turn it)
-      const cop = vehicle('interceptor', CONFIG.vehicles.interceptor.livery), robber = vehicle('getaway', CONFIG.vehicles.getaway.livery);
-      cop.position.set(-1.25, 0, -1.2); robber.position.set(1.25, 0, 1.2);
-      return { model: group(cop, robber), tick: (t) => { cop.userData.animate(t); robber.userData.animate(t); robber.rotation.y = Math.sin(t * 2) * 0.08; } };
+      const cop = vehicle('interceptor', CONFIG.vehicles.interceptor.livery), getaway = vehicle('getaway', CONFIG.vehicles.getaway.livery);
+      cop.position.set(-0.6, 0, -3); getaway.position.set(0.6, 0, 3);
+      return { model: group(cop, getaway), tick: (t) => { cop.userData.animate(t); getaway.userData.animate(t); getaway.rotation.y = Math.sin(t * 2) * 0.08; } };
     } },
     { name: 'Wrong-way drivers', color: 0xffd23f, has: (l) => !l.flow && l.exits?.some(x => !x.flyovers && x.oncoming !== false), rules: [
       'A side road with oncoming traffic and no flyover has nowhere to send it: where its lane meets the expressway, a car carries straight on into your right-hand lane, coming at you.',

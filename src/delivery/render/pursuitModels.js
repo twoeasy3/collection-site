@@ -1,8 +1,7 @@
 // ---- THE POLICE PURSUIT'S MODELS (see pursuit.js, CONFIG.pursuit): the interceptor, which is drawn for nothing
 // else in the game, and the getaway car, both added to MODELS (./models.js) so they are drawn like any other
 // vehicle (each faces local +z, its paint is userData.body's material, and userData.animate(t) moves what
-// moves); and the bag of cash, the police helicopter with its light, and the robber with his bag. No game
-// state in here: the gimmicks page shows them too.
+// moves). No game state in here: the gimmicks page shows them too.
 import * as THREE from 'three';
 import { MODELS } from './models.js';
 
@@ -29,7 +28,7 @@ const RED = 0xff2020, BLUE = 0x2060ff, OFF = 0x22252b;
 
 Object.assign(MODELS, {
   // the interceptor: low and wide, black with white doors, a full-width light bar low on the roof, a steel
-  // push bar on the nose, a wing on the tail, strobes in the grille. userData.lights(on): its lights going or not
+  // push bar on the nose, a wing on the tail, strobes in the grille, its lights always going
   interceptor: (car) => {
     const group = new THREE.Group(), w = car.hw * 2, l = car.hl * 2, paint = lambert(car.color), white = lambert(0xf2f2f2);
     const body = box(group, paint, w, 0.44, l, 0, 0.5, 0);                                // a low slab of a body,
@@ -60,11 +59,10 @@ Object.assign(MODELS, {
     box(group, paint, w * 0.92, 0.04, 0.32, 0, 0.93, -l / 2 + 0.2);
     box(group, DARK, 0.03, 0.5, 0.03, w * 0.3, 1.38, -l * 0.3);                           // and an aerial
     wheels(group, w, [l * 0.31, -l * 0.31], 0.37, 0.36);
-    let lit = true;
-    group.userData = { body, lights: (on) => { lit = on; }, animate: (t) => {
+    group.userData = { body, animate: (t) => {
       const phase = Math.floor(t * 9) % 4; // (red side, red side, blue side, blue side: each a double flash)
-      lamps.forEach((lamp, k) => lamp.material.color.setHex(!lit ? OFF : (k < 3) === (phase < 2) && Math.floor(t * 18) % 2 === 0 ? (k < 3 ? RED : BLUE) : OFF));
-      strobes.forEach((lamp, k) => lamp.material.color.setHex(lit && Math.floor(t * 6) % 2 === k ? (k ? BLUE : RED) : OFF));
+      lamps.forEach((lamp, k) => lamp.material.color.setHex((k < 3) === (phase < 2) && Math.floor(t * 18) % 2 === 0 ? (k < 3 ? RED : BLUE) : OFF));
+      strobes.forEach((lamp, k) => lamp.material.color.setHex(Math.floor(t * 6) % 2 === k ? (k ? BLUE : RED) : OFF));
     } };
     return group;
   },
@@ -101,88 +99,3 @@ Object.assign(MODELS, {
     return group;
   },
 });
-
-// a bag of cash on the road: a tied sack with a green $ panel, notes turning over it. userData.animate(t)
-export const makeCashBag = () => {
-  const group = new THREE.Group(), cloth = lambert(0xc9b27c);
-  const sack = new THREE.Mesh(new THREE.SphereGeometry(0.55, 12, 10), cloth);
-  sack.scale.set(1, 0.85, 1);
-  sack.position.y = 0.47;
-  const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.12, 0.3, 8), cloth);
-  neck.position.y = 1.0;
-  const tie = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.04, 6, 10).rotateX(Math.PI / 2), lambert(0x6b4a2a));
-  tie.position.y = 0.9;
-  group.add(sack, neck, tie);
-  for (const z of [-1, 1]) { // a "$" either side: two bars and a stroke, in green
-    const sign = new THREE.Group();
-    box(sign, glow(0x1f9d3a), 0.34, 0.07, 0.02, 0, 0.14, 0);
-    box(sign, glow(0x1f9d3a), 0.34, 0.07, 0.02, 0, 0, 0);
-    box(sign, glow(0x1f9d3a), 0.34, 0.07, 0.02, 0, -0.14, 0);
-    box(sign, glow(0x1f9d3a), 0.07, 0.14, 0.02, -0.135, 0.07, 0);
-    box(sign, glow(0x1f9d3a), 0.07, 0.14, 0.02, 0.135, -0.07, 0);
-    box(sign, glow(0x1f9d3a), 0.05, 0.46, 0.02, 0, 0, 0);
-    sign.position.set(0, 0.5, z * 0.55);
-    group.add(sign);
-  }
-  const notes = [0, 1, 2].map((k) => box(group, glow(0x58c36a), 0.34, 0.01, 0.18, 0, 0, 0));
-  group.userData = { animate: (t) => notes.forEach((note, k) => {
-    const a = t * 2 + k * 2.1;
-    note.position.set(Math.cos(a) * 0.8, 1.35 + Math.sin(t * 3 + k) * 0.15, Math.sin(a) * 0.8);
-    note.rotation.set(t * 3 + k, a, 0.4);
-  }) };
-  return group;
-};
-
-// the police helicopter over a pursuit: blue and white, a beacon, and a searchlight: a cone of light `height`
-// m down to a pool `beam` m across. userData.animate(t), userData.rotor
-export const makePursuitHeli = (height = 9, beam = 5) => {
-  const group = new THREE.Group(), blue = lambert(0x1d3f8f), white = lambert(0xeef1f5), dark = lambert(0x1c1c1c);
-  box(group, blue, 2.2, 1.9, 4.4, 0, 0, 0);
-  box(group, white, 2.24, 0.5, 4.44, 0, -0.3, 0);
-  box(group, GLASS, 2.0, 0.9, 0.6, 0, 0.25, 2.0);
-  box(group, blue, 0.5, 0.5, 4, 0, 0.4, -4);
-  box(group, white, 0.2, 1.4, 0.8, 0, 1, -5.8);
-  for (const side of [-1, 1]) box(group, dark, 0.15, 0.15, 3.5, side, -1.25, 0);
-  const rotor = new THREE.Group();
-  box(rotor, dark, 9, 0.1, 0.5, 0, 0, 0);
-  box(rotor, dark, 0.5, 0.1, 9, 0, 0, 0);
-  rotor.position.y = 1.25;
-  const beacon = box(group, glow(RED), 0.5, 0.35, 0.5, 0, -1.15, -1.2);
-  const lamp = box(group, glow(0xfff6cf), 0.6, 0.3, 0.6, 0, -1.1, 1.3);
-  const cone = new THREE.Mesh(new THREE.ConeGeometry(beam / 2, height, 20, 1, true).translate(0, -height / 2, 0),
-    glow(0xfff2b0, { transparent: true, opacity: 0.2, depthWrite: false, side: THREE.DoubleSide }));
-  cone.position.set(0, -1.1, 1.3);
-  const pool = new THREE.Mesh(new THREE.CircleGeometry(beam / 2, 24).rotateX(-Math.PI / 2), glow(0xfff2b0, { transparent: true, opacity: 0.3, depthWrite: false }));
-  pool.position.set(0, -height - 1.0, 1.3);
-  group.add(rotor, cone, pool);
-  group.userData = { rotor, cone, pool, lamp, animate: (t) => { beacon.material.color.setHex(Math.floor(t * 6.5) % 2 ? RED : BLUE); } };
-  return group;
-};
-
-// a man with a bag (the bank robber wanting a lift: see robber.js): striped jersey, mask, a sack over one
-// shoulder, the other arm out with its thumb up. About 1.8 m tall, facing local +z. userData.animate(t)
-export const makeRobber = () => {
-  const group = new THREE.Group(), skin = lambert(0xe2b48c), black = lambert(0x16181c), white = lambert(0xf2f2f2);
-  for (const side of [-1, 1]) box(group, black, 0.2, 0.8, 0.22, side * 0.14, 0.4, 0);       // legs
-  for (let k = 0; k < 5; k++) box(group, k % 2 ? white : black, 0.56, 0.13, 0.3, 0, 0.865 + k * 0.13, 0); // a striped jersey
-  const head = box(group, skin, 0.3, 0.32, 0.3, 0, 1.63, 0);
-  box(group, black, 0.32, 0.09, 0.32, 0, 1.66, 0);                                          // the mask
-  box(group, black, 0.34, 0.1, 0.34, 0, 1.82, 0);                                           // a cap,
-  box(group, black, 0.3, 0.04, 0.16, 0, 1.78, 0.22);                                        // its peak
-  const arm = new THREE.Group();                                                             // the thumbing arm, out to his left (the road's side)
-  box(arm, black, 0.5, 0.13, 0.14, -0.25, 0, 0);
-  box(arm, skin, 0.13, 0.13, 0.14, -0.55, 0, 0);
-  box(arm, skin, 0.06, 0.16, 0.06, -0.55, 0.13, 0);
-  arm.position.set(-0.28, 1.36, 0);
-  group.add(arm);
-  box(group, black, 0.13, 0.5, 0.14, 0.34, 1.28, -0.05);                                    // the other arm, holding
-  const sack = new THREE.Mesh(new THREE.SphereGeometry(0.36, 10, 8), lambert(0xc9b27c));    // the sack over his shoulder
-  sack.scale.set(1, 1.15, 1);
-  sack.position.set(0.38, 1.2, -0.38);
-  group.add(sack);
-  box(group, glow(0x1f9d3a), 0.05, 0.3, 0.02, 0.38, 1.2, -0.75);
-  box(group, glow(0x1f9d3a), 0.2, 0.05, 0.02, 0.38, 1.28, -0.75);
-  box(group, glow(0x1f9d3a), 0.2, 0.05, 0.02, 0.38, 1.12, -0.75);
-  group.userData = { head, animate: (t) => { arm.rotation.z = Math.sin(t * 5) * 0.25; arm.rotation.y = Math.sin(t * 2.5) * 0.2; } };
-  return group;
-};
