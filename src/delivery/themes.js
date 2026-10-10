@@ -103,5 +103,7 @@ export const THEMES = {
     tunnel: { wall: 0xb98a55, tiles: 0xd9b077, roof: 0xa87c4a, face: 0xc49a66, lamp: 0xfff3d0 } },
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
   // (batch B: film studio, Venice, ice road: new themes go above this line)
+  // themepark: the road through a theme park (render/themes/themepark.js): a promenade behind candy-striped kerbs, bunting and rainbow arches over the road, striped tents and stalls, carousels and Ferris wheels turning, a rollercoaster over the road and beside it, a castle on the skyline; a tunnel is the ghost train's
+  themepark: { sky: 0x6ec3f5, ground: 0x7fc66b, road: 0x4b4a55, scenery: 'themepark', tunnel: { wall: 0x5a2d82, tiles: 0xffd21f, roof: 0x24143a, face: 0xe23b3b, lamp: 0xff9ff0 } },
   // (batch C: theme park, volcano island, container port: new themes go above this line)
 };
