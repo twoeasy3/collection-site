@@ -33,8 +33,8 @@ site. This repo is the only copy to edit.
 
 Content now:
 
-- **57 levels on the menu**, on two tabs. Deliveries: 40 numbered levels (the last nine each in a theme
-  built for it: a toy room, an undersea tunnel, the Moon, a film studio, Venice, an ice road, a theme park,
+- **57 levels on the menu**, on two tabs. Deliveries: 40 numbered levels (the last nine, ordinary levels
+  like the rest though kept in a list of their own, `THEME_LEVELS`, each in a theme built for it: a toy room, an undersea tunnel, the Moon, a film studio, Venice, an ice road, a theme park,
   a volcano island, a container port), 6 special ones (S1 to S6) and 5 amphibious ones (A1 to A5). Races:
   6 (R1 to R6), three of them traced from real circuits (Monza, Spa-Francorchamps, Albert Park), always
   open. All are listed in the README. Five more are hidden (`testbed`, `grand-prix`, `gimmick-road`,
@@ -122,7 +122,8 @@ picture and `&cine=car` the one for a car's. A page's console errors and warning
   level field that switches it on is documented at the top of `levels.js`, and its tuning is in
   `config.js`.
 - **The cargo is only a sight** (added 2026-10-10). Every delivery level carries one thing for Good and
-  one for Evil (`cargo.js`; a level's `cargo`, or by its place on the menu). It turns in a round window
+  one for Evil (`cargo.js`; a level's `cargo`, or dealt from the items no level names, down the menu, so
+  every item turns up somewhere). It turns in a round window
   on the right of the HUD, drawn by the game's own renderer into that patch of the canvas
   (`render/cargo.js`: a scissor, no extra WebGL context); an Evil item's state follows the share of the
   clock left. Its tuning is `CONFIG.consignment` (`CONFIG.cargo` is the shedding truck's load).
@@ -162,7 +163,8 @@ picture and `&cine=car` the one for a car's. A page's console errors and warning
   kinds with a `model` in `CONFIG.vehicles` reuse them.
 - **Saved progress** is one cookie, `delivery_racer_progress`, with `path=/`, so it is shared
   across the whole site's origin, and a copy in local storage that brings it back if the cookie
-  goes. Level unlocks are counted by position in `LEVELS`. `INSERTED_AT` in `progress.js`
+  goes. Level unlocks are counted by position in `LEVELS` (a level added to `THEME_LEVELS` goes in ahead of the
+  special levels, so it needs its place in `INSERTED_AT` too). `INSERTED_AT` in `progress.js`
   records every position a level has been put in at, so an older save opens the right levels:
   add to it whenever a level goes in among the others.
 - **Sound** is WAV files in `sounds/`, loaded by `render/audio.js`, with synthesised WebAudio

@@ -173,7 +173,8 @@ ones, which are always open and open nothing.
   Kiama, Passage du Gois, Safari, Airport Apocalypse, Construction Site, The Hood, Panorama
   Avenue, Speed Trap Alley, Mountain Pass, Outback Express, Tour de Coast, Ring Road, Market
   Town, Quarry Run, Hong Kong Harbour, Tokyo Expressway, Mumbai Monsoon, Stelvio Pass, Christmas Eve; and the
-  themed levels (`THEME_LEVELS`), each in a theme built for it: Toy Room, Twenty Thousand Leaks, Tranquility
+  levels kept in `THEME_LEVELS`, each in a theme built for it (they are ordinary numbered levels like the
+  rest, opened in order: only the list they are kept in is their own): Toy Room, Twenty Thousand Leaks, Tranquility
   Base, Quiet on Set, Acqua Alta, Northern Lights, Thrill Park, Cinder Island, Dock Run.
 - **Special levels (S1 to S6):** All Heck, Asteroid Run, Oh Mine!, Rival Run, Showdown, Battlefield: some driven
   in a vehicle of their own (UFO, jetboat, 8x8). Delivering one well enough earns a 6-star car (`EARNED_CARS`).
@@ -194,7 +195,8 @@ ones, which are always open and open nothing.
   to `MAIN_LEVELS` or `SPECIAL_LEVELS`. Problems with the data are shown in the HUD when the
   level loads. Then:
   - Saved progress counts unlocked levels by position. A level put in among those already there
-    needs its position added to `INSERTED_AT` in `progress.js`, so returning players keep what
+    needs its position added to `INSERTED_AT` in `progress.js` (so does every level added to `THEME_LEVELS`,
+    which sits ahead of the special levels), so returning players keep what
     they had open.
   - `node scripts/level-clocks.mjs <id> --write` works out its clock and writes it into the file (an
     amphibious level is timed in `CONFIG.clock.amphibious`, the Float Van, holding its lane).
