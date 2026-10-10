@@ -7,11 +7,18 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `29e78ba` (main; not pushed). 57 levels on the menu. Running: agent 19 (road gimmicks, from H17), 24 (known problems), 26 (theme levels D). Everything else is merged.
+**Pushed again on the owner's word ("Push the new menu please"): `main` at `b132c15` is on the remote and deploying.** The production build passed; 23 of 25 headless checks pass; the smoke test was not run. Known when pushed: the police pursuit misbehaves (below).
+
+Last updated: after `b132c15` (main, pushed). 60 levels on the menu. Running: agent 19 (the pursuit regression, then road gimmicks from H17), 24 (the UFO check, the save cookie's cap, the editor's leftovers). Everything else is merged.
 
 **Two checks fail on `main` right now:**
-- `.pursuit-check.mjs` (3 failures: the chase no longer gets past and away, and the player is hit). It passed before the road gimmicks were merged; agent 19 is finding which of its gimmicks did it.
-- `.cargo-check.mjs` ("every item turns up"): with 57 levels the rotation no longer reaches all 50 items. Agent 24 has it.
+- `.pursuit-check.mjs` (3 failures: the chase no longer gets past and away, and the player is hit). It passed before the road gimmicks were merged; agent 19 is finding which of its gimmicks did it. **This is live.**
+- `.ufo-check.mjs` dies with a Node error before any check runs, as it has all day. Agent 24 has it.
+
+**Merged in the last round:**
+- Theme levels D (agent 26): **41 High Noon** (the Wild West: false-front towns, a railway, mesas), **42 Favela Heights** (a hillside of stacked houses, hairpins, a cable car), **43 Emerald Steps** (rice terraces, palms, gates). 35 to 37 cash pickups, 13 to 15 rows each. Seen as their menu pictures. Not played.
+- Known problems, second lot (`172d923`): the Gimmicks page's console error (the bullet train's card); HANDOVER and README up to date; a menu picture for every level (seven had none); cargo dealt so that all 50 items turn up (33 levels changed cargo; none that names its own).
+- The save cookie is 3882 of 4096 bytes with 60 levels: agent 24 is making local storage the store of record so it cannot overflow.
 
 **Merged since the last update:**
 - Known problems, first ten commits (`4b7421e`): audit C4 (the editor never writes a level's values into the page as HTML: the script injection is closed), C6 (a pasted save code keeps only a save's fields), C2 (a visit with an address switch, plain `?autostart` included, never writes the save), C5 (a bad edited level is refused with a reason; one that makes the track builder loop for ever still hangs), C3 (a traffic slot is wiped when dealt out), pickups and obstacles allowed on the main road's shoulders (the check was wrong, the docs right), duplicate config keys removed. **Replay: 53 of 53 levels replay exactly from a seed (it was 31 of 53).** Behaviour changes from the duplicate keys: traffic honks less (70 m, 5 s apart, as first written), and the ice-cream van is its own model with its tune again (a later duplicate had made it a pink delivery van and silenced it).
