@@ -17,7 +17,10 @@
 // (on a circuit's trackside: a ring on a stalk on top of the catch fence, 4.7 m up, a beam of light over it)
 const FENCE_TOP = { style: 'wall', offset: 0.3, base: 4.7, height: 6.6, beam: true };
 export const THEMES = {
-  city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city' },
+  // (sets: the set-pieces a level's zones can ask for there, drawn by render/themes/extras.js and only where a
+  // level's own zones name them: a housing estate behind sound barriers, a retail park, a stadium, a service
+  // area, the towers of the centre. A city level with no zones is drawn as it always was)
+  city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city', sets: ['estate', 'retail', 'stadium', 'services', 'centre'] },
   // flooded: the city after the river broke its banks: the city's own scenery standing in brown flood water (the
   // ground is the water's colour), under a low sky, in the rain (rain: true). Made for water stages (a level's
   // "water": see water.js), whose channels are the avenues under water and whose dry stretches the rises between

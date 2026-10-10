@@ -123,6 +123,12 @@
     }
   },
   "zones": {
+    "ringEstate": ["Northfield estate"],
+    "ringRetail": ["Ringway Retail Park"],
+    "ringStadium": ["City Stadium - match day"],
+    "ringServices": ["Ringway Services"],
+    "ringTowers": ["Eastgate towers"],
+    "ringCentre": ["City centre - nearly there!"],
     "dingoFlat": ["Dingo Flat roadhouse: last fuel for 500 km"],
     "mulgaSiding": ["Mulga Siding - listen for the bells!"],
     "coolabah": ["Coolabah Station"],
