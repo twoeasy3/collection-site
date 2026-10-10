@@ -90,6 +90,7 @@ if (opt('levels', false) || opt('cars', false) || shots.some(([, address]) => ad
     slipway: '&at=720', harbour: '&at=520', ford: '&at=1320', fjord: '&at=1950', // (the amphibious levels: afloat)
     stunts: '&cineout=-1&cineup=10&cineback=30', // (a New York street set: over the road, as its level's agent found it)
     'market-town': '&at=900&ff=2&cineside=left', // (the market square, its stalls and clock tower: its level's agent's frame)
+    fallout: '&at=1660&ff=1&cineout=2&cineup=9', // (the plant's gate: the cooling towers and the dome ahead over the pipe racks, drums on the shoulder, the green on the road)
     'ring-road': '&at=4330&ff=1', // (the city centre's towers over the last stretch, the exit gantry ahead: its level's agent's frame)
     'albert-park': '&cineside=left&at=150' }); // (the tree again, further on)
   if (opt('levels', false)) {

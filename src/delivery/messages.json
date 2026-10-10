@@ -167,7 +167,12 @@
     "marketSquare": ["The market square - 60 past the stalls!"],
     "churchRow": ["Church Row - one more camera!"],
     "townPark": ["The town park - the bypass is on the right!"],
-    "cattleMarket": ["The cattle market - one more train to beat!"]
+    "cattleMarket": ["The cattle market - one more train to beat!"],
+    "zoneGate": ["The checkpoint - exclusion zone ahead, nobody on the gate"],
+    "zonePylons": ["Under the pylons - the first green is on the right"],
+    "zonePlant": ["The plant - keep out of the green, mind the drums"],
+    "zoneTanks": ["The tank farm - the flare still burns"],
+    "zoneVillage": ["The dead village - the bypass is the clean way round"]
   },
   "bustCount": {
     "1": ["First Offence - "],

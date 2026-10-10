@@ -83,7 +83,8 @@ Game.onLoad.push(() => {
     const s = a.from - R.sign;
     if (s > 5) {
       const lanes = a.lanes ? (a.lanes[0] === a.lanes[1] ? 'ONE LANE' : 'SOME LANES') : 'ALL LANES';
-      const text = 'RADIATION ' + Math.round(a.to - a.from) + ' m\n' + lanes + (a.lanes ? ': KEEP OUT OF THE GREEN' : ': ARMOUR OR RUN IT');
+      const bypass = !a.lanes && Track.exits.some(x => x.exitAt > s && x.exitAt < a.from && x.mergeAt > a.to); // (a side road round it, leaving between the board and the green)
+      const text = 'RADIATION ' + Math.round(a.to - a.from) + ' m\n' + lanes + (a.lanes ? ': KEEP OUT OF THE GREEN' : bypass ? ': EXIT, OR ARMOUR' : ': ARMOUR OR RUN IT');
       const board = makeRadiationBoard(text, 6.8, 2.4);
       board.userData.words.scale.x = Track.mirrored ? -1 : 1; // (mirrored back on a left-hand level, so it still reads)
       at(s, Track.hi(s) - 0.6).add(board);
