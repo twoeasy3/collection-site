@@ -205,7 +205,7 @@ export const Tiers = {
 setTierHooks({
   // (held for the whole of a run and its results: delivering a level earns its medal and ends the rule, which
   // must not change the car the run's finish animation draws mid-way: Game.start sets `hold`, Game.toMenu clears it)
-  restricted: () => { try { return Tiers.hold ? Tiers.hold.tier : Tiers.on() ? Tiers.restriction(currentLevel(), Tiers.sideIsEvil()) : null; } catch { return null; } },
+  restricted: (evil) => { try { return Tiers.hold ? Tiers.hold.tier : Tiers.on() ? Tiers.restriction(currentLevel(), evil ?? Tiers.sideIsEvil()) : null; } catch { return null; } },
   blueOpen: () => Tiers.on() ? Tiers.tierOpen(6) || Tiers.legacy() > CONFIG.blueStarsAfter : null,
 });
 const currentLevel = () => LEVEL; // (the live binding: the level picked)

@@ -101,6 +101,55 @@ check(cars.CAR.id === 'wagon' && Progress.data.car === 'commuter' && Progress.da
 g.select(a.id); beat(a);
 cars.useLevelCar(null, false);
 check(cars.CAR.id === 'commuter', 'on a level that allows it the pick comes back: ' + cars.CAR.id);
+// ---- the owner's garage bug: a level restricted on ONE side. The garage's side (Good | Evil pair) changes the rule:
+// the lot, the car in use and "Use" all go by the side on show, in both directions; and the menu's own toggle + START
+{
+  g.CONFIG.progression.tiers = true;
+  for (const goodFree of [true, false]) {
+    fresh();
+    Progress.data.cars.push('junker', 'darkvan'); // (owned tier 1 cars)
+    Progress.data.car = 'sport'; // (the player's own pick: not a tier 1 car)
+    Progress.data.cars.push('sport');
+    g.select(a.id);
+    beat(a, !goodFree); // (the side whose medal is earned is the FREE one)
+    const free = !goodFree ? true : false, locked = !free; // (the evil flag of the free side, of the restricted)
+    const name = goodFree ? 'Good free, Evil restricted' : 'Evil free, Good restricted';
+    const commuter = cars.CARS.find(x => x.id === 'commuter'), sport = cars.CARS.find(x => x.id === 'sport');
+    // the garage opens on the restricted side, then the free one, then back: the allowed set follows the side shown
+    side(locked); cars.setViewSide(locked);
+    check(cars.restrictedTier() === 1 && cars.carAllowedOn(commuter, locked) && !cars.carAllowedOn(sport, locked), name + ': on the restricted side only tier 1 cars are allowed');
+    cars.setViewSide(free);
+    check(cars.restrictedTier() === null && cars.carAllowedOn(sport, free) && cars.carInUse().id === 'sport', name + ': switching to the free side: any car, the pick is in use');
+    cars.setViewSide(locked);
+    check(cars.restrictedTier() === 1 && !cars.carAllowedOn(sport, locked) && cars.carAllowedOn(commuter, locked), name + ': switching back to the restricted side filters again');
+    check(cars.carTier(cars.carInUse()) === 1, name + ': the car in use on the restricted side is a tier 1 car (' + cars.carInUse().id + ')');
+    check(cars.restrictedTier(free) === null && cars.restrictedTier(locked) === 1, name + ': the rule asked for a given side does not depend on the side on show');
+    // the garage closed: the rule goes by the side played again
+    cars.setViewSide(null); side(free);
+    check(cars.restrictedTier() === null, name + ': garage closed, playing the free side: no rule');
+    side(locked);
+    check(cars.restrictedTier() === 1, name + ': playing the restricted side: the rule');
+    // the other direction: the menu's own toggle (Game.evil) then START: a forced car on the run
+    side(free); g.Game.evil = free;
+    cars.useLevelCar(null, false);
+    check(cars.CAR.id === 'sport', name + ': the free side picked: the pick drives');
+    g.Game.evil = locked; side(locked); // (the menu's Good / Evil toggle, or E, to the restricted side)
+    cars.useLevelCar(null, false);
+    check(cars.carTier(cars.CAR) === 1 && Progress.data.car === 'sport', name + ': toggled to the restricted side: a tier 1 car is forced, the pick kept (' + cars.CAR.id + ')');
+    g.Game.start();
+    check(cars.carTier(cars.CAR) === 1 && Tiers.hold && Tiers.hold.tier === 1, name + ': START on the restricted side: the run holds the forced car (' + cars.CAR.id + ')');
+    g.Game.toMenu();
+    side(free); g.Game.evil = free;
+    g.Game.start();
+    check(cars.CAR.id === 'sport', name + ': START on the free side: the pick drives');
+    g.Game.toMenu();
+  }
+  // "Use" of a disallowed car is refused: the guard is a function of the car and the side, not the lot
+  fresh(); g.select(a.id); beat(a); side(true); cars.setViewSide(true);
+  check(!cars.carAllowedOn(cars.CARS.find(x => x.id === 'sport'), true) && !cars.carAllowedOn(cars.nullCarFor(1), true), 'Use refused for a car not of the tier, and for the null car, on the restricted side');
+  check(cars.carAllowedOn(cars.CARS.find(x => x.id === 'sport'), false), 'the same car is allowed on the free side');
+  cars.setViewSide(null); side(false);
+}
 // ---- an old save
 fresh();
 Progress.data.tierBase = null;

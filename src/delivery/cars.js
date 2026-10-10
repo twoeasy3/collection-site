@@ -68,7 +68,13 @@ export const carTier = (car) => car && car.tier >= 1 && car.tier <= TIERS && !ca
 // blueOpen() whether the Blue Star cars are in the garage (null: the old rule)
 const tierHooks = {};
 export const setTierHooks = (hooks) => Object.assign(tierHooks, hooks);
-export const restrictedTier = () => tierHooks.restricted?.() ?? null;
+// (evil: the side to ask for; left out, the side the garage is looking at while it is open, else the side being played)
+let viewSide = null;
+export const setViewSide = (evil) => { viewSide = evil === null || evil === undefined ? null : !!evil; };
+export const restrictedTier = (evil) => tierHooks.restricted?.(evil ?? viewSide) ?? null;
+// may this car be driven on the level picked, on that side (or the garage's side)? A car in no tier, an earned or idea
+// car, is not allowed where a tier is wanted; the null car is never allowed
+export const carAllowedOn = (car, evil) => { const t = restrictedTier(evil); return !!car && !car.silhouette && (t === null || carTier(car) === t); };
 // the silhouette shown where the player has no car the level allows: the cheapest car of the tier, drawn dark
 // (silhouette: true; id 'null-car'), never owned and never driven (Game.canStart is false while it is in use)
 const nullCars = {};
