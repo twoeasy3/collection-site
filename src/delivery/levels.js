@@ -391,6 +391,7 @@ import moonbase from './levels/moon.json';
 // (batch A's imports go above this line)
 // (batch B's imports go above this line)
 // (batch C's imports go above this line)
+// (batch D's imports go above this line)
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
 // menu. All of them unlock in this order, each by delivering the one before, and saved progress
@@ -418,6 +419,7 @@ export const THEME_LEVELS = [
   // (batch A: toy room, underwater tunnel, moon base: new levels go above this line)
   // (batch B: film studio, Venice, ice road: new levels go above this line)
   // (batch C: theme park, volcano island, container port: new levels go above this line)
+  // (batch D: Wild West, favela, rice terraces: new levels go above this line)
 ];
 export const LEVELS = [...MAIN_LEVELS, ...SPECIAL_LEVELS, ...AMPHIBIOUS_LEVELS, ...THEME_LEVELS, ...CIRCUIT_LEVELS];
 // The menu has two tabs: deliveries, and races. A race is any lapped level (its "laps"), wherever it sits in
