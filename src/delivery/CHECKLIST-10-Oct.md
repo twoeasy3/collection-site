@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `2109867` (main). Running: agent 12 (pursuit redo), agent 13 (car ideas lot), agent 14 (Stelvio and Market Town). The owner has asked for the whole list to be cleared: the queue is in "Round 3" below.
+Last updated: after `65478c1` (main, the pursuit merged; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 15 and 16 (cargo, Good and Evil), 17 (in-game UI).
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -112,7 +112,7 @@ The owner's standing instruction (10-Oct): assign the unassigned lists, and give
 whichever agent is free, without asking first.
 
 5. Level editor, full control: **finished**, agent 8, merged into `main` as `5fe99da` (no conflicts). A schema of 99 level fields (`levelSchema.js`); the editor builds every form, place-button and its map from it; all level files load and save through it unchanged. Not started: E1.4 (the game validating with the schema), E6.2 (clock button). Partly: E2.6, E3.5, E5.3, E6.1. Nothing clicked by hand. The item ticks are in the editor section below
-6. Police pursuit: **being redone**, agent 12, branch `delivery-pursuit`. The owner's verdict on the first version: "It is supposed to just be a simple traffic event." So: a getaway car and the interceptor (a model of its own) come through from behind like an ambulance does and drive on; no endings, rewards or gambles. The bank robber wanting a lift (P2, the orchestrator's idea, never asked for) is removed. The other road characters (P3 to P13) are NOT being built. First version, stopped at 09:21: `881f429`, `ee6dde8`, `bcd6b25`
+6. Police pursuit: **redone and merged** into `main` as `65478c1` (agent 12; `f2404a4`, `cab1580`, `dcaa98c`, `b64201e`). Now 152 lines of logic where it was 402. The owner's verdict on the first version: "It is supposed to just be a simple traffic event." So: a getaway car and the interceptor (a model of its own) come through from behind like an ambulance does and drive on; no endings, rewards or gambles. The bank robber wanting a lift (P2, the orchestrator's idea, never asked for) is removed. The other road characters (P3 to P13) are NOT being built. First version, stopped at 09:21: `881f429`, `ee6dde8`, `bcd6b25`
 7. Road gimmicks: **stopped at 09:21**, agent 10, on `main`. Unfinished ramp-over-the-jam work is sitting uncommitted in the main checkout (17 files). Nobody is on it. Done so far: G16 crosswinds (`1d48924`: on Grand Pacific, Hurricane, Tokyo) and H1 crest jumps (`9d7711b`: on Rival Run, Mystery Meadows), both on the hidden Gimmick Road 3. It re-timed two clocks by a lot; told to put them back. A hidden Gimmick Road 3, then G16 crosswind, H1 crest jumps, H2 ramp over the jam, H8 washboard, H4 low bridge, H5 ford, then the rest of the kept G and H lists; each also put on two or three real levels
 8. New themes: **stopped at 09:21**, agent 11, branch `delivery-themes` (in the city-levels worktree). The toy room's look is committed (`14e3c56`); its gimmick is uncommitted in that worktree. Nobody is on it. In the owner's order (most unlike the game first): T14 toy room, T15 underwater tunnel, T18 moon base, T13 film studio backlot, T1 Venice, T4 ice road, then on down the ranking; a level for each
 9. Queued after that, as slots free: menu pictures and clocks (the three circuits, the five themed levels, Super and 6-star cars); 28 liveries; 31 endless mode; the replay system's next step (`REPLAY-NOTES.md`); 51 performance on phones; 49 and 50 (test speed, lint and CI)
@@ -127,11 +127,11 @@ whichever agent is free, without asking first.
 Three agents at a time; the next item starts as each one finishes.
 
 - [~] **Stelvio and Market Town** ("two of the lowest quality levels. Visually the boulders float, side road markings are all over the place. Might need a side road enhancement"): agent 14, branch `delivery-levelfix` (a new worktree)
-- [~] Police pursuit redone as a plain traffic event: agent 12
+- [x] Police pursuit redone as a plain traffic event: a getaway car and its interceptor come through from behind and drive on; nothing gained or lost by the player. Merged, `65478c1`; levels, schema, pursuit and hazards checks pass. Seen as two small stills and its Gimmicks card. For the owner: the pair now pass at 130% of the player's top speed; the getaway car is no longer an "evil" car; the helicopter was removed
 - [~] Car ideas lot: agent 13
 - [~] Forty more cargo items: agent 15 (Good, C1 to C20, branch `delivery-cargo-good`) and agent 16 (Evil, C21 to C40, branch `delivery-cargo-evil`). Five agents running, on the owner's word ("Get a couple of agents on these")
-- [ ] Next 0: in-game UI improvements (the owner's five, in the section "In-game UI improvements" below)
-- [ ] Next 1: road gimmicks, picking up the half-built ramp (H2) in the main checkout, then H8, H4, H5 and on down the kept G and H lists
+- [~] In-game UI improvements (U1 to U5): agent 17, branch `delivery-ui`. The owner asked what the "on fire" message was: there is none (the orchestrator had listed it without checking); the agent has been told to build the stay-on-screen list only from messages that exist
+- [ ] Next 1: road gimmicks, picking up the half-built ramp (H2), now saved on the branch `delivery-gimmicks-wip` (`4b617b5`) and no longer in the main checkout, then H8, H4, H5 and on down the kept G and H lists
 - [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
 - [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
 - [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
@@ -139,6 +139,8 @@ Three agents at a time; the next item starts as each one finishes.
 - [ ] Next 6: 51 phone performance, 49 parallel smoke test, 50 lint and CI
 - [ ] Next 7: more circuits (Baku, Brands Hatch, Caesars Palace, Monaco, Donington, Sepang, Suzuka); Albert Park's traps from another source
 - Not in the queue unless the owner says: road characters P3 to P13 (the owner wanted the pursuit kept simple); anything needing a person (listening, playing by hand, a real phone)
+
+- **Asked by the owner, not on any list:** a "level tier rework / progression". Nothing about it is in the checklists, handovers, scratchpads or commit history. Waiting for the owner to say what it should be.
 
 ## Not assigned
 
