@@ -119,6 +119,8 @@ export const FIELDS = {
   // ---- the level ----
   id: { shape: 'text', group: 'basics', label: 'Id', required: true, help: 'Unique name: the level\'s key in saved progress. Keep it short.' },
   name: { shape: 'text', group: 'basics', label: 'Name', required: true, help: 'The level\'s name on the menu.' },
+  description: { shape: 'object', group: 'basics', label: 'Description', help: 'A sentence or two about the level for the menu, one for each side (160 characters each at most). Good: a cheerful, careful courier\'s briefing. Evil: the same job, relished.',
+    settings: { good: text('Good'), evil: text('Evil (left out on a level that is always Good)') } },
   clock: { shape: 'object', group: 'basics', label: 'Clock', required: true, help: 'Seconds on the clock for each side (scripts/level-clocks.mjs works them out from a clean run).',
     settings: { good: num('Good (s)', { min: 1, max: 100000, required: true, init: 150 }), evil: num('Evil (s)', { min: 1, max: 100000, required: true, init: 115 }) } },
   tip: { shape: 'number', group: 'basics', label: 'Tip ($)', min: 0, max: 100000, init: 50, help: 'The money earned for finishing before the clock reaches zero.' },

@@ -1,6 +1,9 @@
 {
   "id": "battlefield",
   "name": "Battlefield",
+  "description": {
+    "good": "Two armies at war along the road, and your 8x8 rolls with the green one. Mines, pillboxes, tanks head-on: the bigger vehicle wins. Get through."
+  },
   "clock": { "good": 312, "evil": 221 },
   "tip": 80,
   "lanes": 6,

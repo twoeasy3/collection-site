@@ -1,6 +1,10 @@
 {
   "id": "stelvio",
   "name": "Stelvio Pass",
+  "description": {
+    "good": "The great alpine pass in the cold: ice on the bends, rockfall off the walls and fog near the top. Slow in, slow out, parcel intact.",
+    "evil": "Ice, fog and half the mountain coming down on a road of careful drivers. Overtake every one of them on the outside."
+  },
   "theme": "snow",
   "clock": { "good": 300, "evil": 230 },
   "tip": 220,

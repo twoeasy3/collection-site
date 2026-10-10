@@ -1,6 +1,10 @@
 {
   "id": "expressway",
   "name": "Expressway",
+  "description": {
+    "good": "A straight run up the expressway to learn the ropes. Mind the lane closure, keep off the bridge's steel shoulders, and give the frogs a wave.",
+    "evil": "Lanes full of commuters who have never met you. Introduce yourself with something on fire, and don't let the frogs or the bridge spoil it."
+  },
   "cargo": { "good": "pizza", "evil": "parcel" },
   "clock": { "good": 198, "evil": 140 },
   "traffic": { "darkvan": 0.47, "commuter": 0.17, "van": 0.19, "bus": 0.12, "police": 0.05 },

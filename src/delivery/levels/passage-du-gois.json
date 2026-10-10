@@ -1,6 +1,10 @@
 {
   "id": "passage-du-gois",
   "name": "Passage du Gois",
+  "description": {
+    "good": "A causeway the sea covers twice a day, and the tide is coming in. Cross the Gois before the waves do, and keep to the dry lanes.",
+    "evil": "The tide is swallowing the causeway and the tourists are dawdling. Push through: the sea can have whoever is left."
+  },
   "cargo": { "good": "goldfish", "evil": "tentacle" },
   "theme": "coast",
   "clock": { "good": 348, "evil": 247 },
