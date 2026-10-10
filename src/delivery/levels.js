@@ -294,6 +294,7 @@
 //              stretch, out of which a hippo charges across the road every min-max s, aimed at the
 //              player: whatever it touches is destroyed, and it carries on (see hippos.js)
 //   id         unique name, used as the level's key in saved progress
+//   name       the level's name on the menu
 //   targets    { s, side }         TANK RAGE targets beside the road; side: 'left' | 'right'
 //   clock      { good, evil }: seconds on the clock for each side. Worked out from a clean run in the
 //              reference car by scripts/level-clocks.mjs (see CONFIG.clock), unless set by hand
