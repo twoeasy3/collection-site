@@ -433,6 +433,7 @@ import docks from './levels/docks.json';
 // (batch C's imports go above this line)
 import noon from './levels/noon.json';
 import morro from './levels/morro.json';
+import rice from './levels/rice.json';
 // (batch D's imports go above this line)
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
@@ -472,6 +473,7 @@ export const THEME_LEVELS = [
   // (batch C: theme park, volcano island, container port: new levels go above this line)
   noon,
   morro,
+  rice,
   // (batch D: Wild West, favela, rice terraces: new levels go above this line)
 ];
 export const MAIN_LEVELS = [...FIRST_LEVELS, ...THEME_LEVELS]; // (every numbered level: 1, 2, 3...)

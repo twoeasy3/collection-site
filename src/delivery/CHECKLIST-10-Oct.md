@@ -393,7 +393,10 @@ Build the theme first, then the level. Make sure the theme is reusable
       road, cactus. Gimmick: a train robbery (riders alongside the train, across the road), a
       cattle drive, a duel at noon that stops the traffic. Reuses: railway, stampedes, gunfire,
       the safari's unmarked dirt road.
-- [ ] T17. **Rice terraces**: a narrow road stepping down green terraces, water buffalo, a
+- [x] T17. **Rice terraces** (done as theme `rice` and level "Emerald Steps", `levels/rice.json`, with the game's existing
+      gimmicks: a ford with its side road for the bridge, burst mains and mud for the spill, herds for the buffalo, tractors,
+      speed cushions, cyclists, fog in the valley, a crest and a crosswind on the ridge. NO flooding terraces or ducks of its
+      own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a narrow road stepping down green terraces, water buffalo, a
       temple gate over the road, kites. Gimmick: the terraces flood in turn, spilling across the
       road as moving slick patches; ducks crossing in a line. Reuses: terrain, water mains'
       slicks, herds.

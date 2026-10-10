@@ -151,5 +151,9 @@ export const THEMES = {
   favela: { sky: 0x9fd6f2, ground: 0x3f8fc0, road: 0x55575c, scenery: 'favela', terrain: { gentle: 0xb3a07c, steep: 0x9a6a48, rough: 0.3, flat: 10, rise: 40 },
     target: { style: 'gantry', offset: -1.2, arm: 2.2, height: 5, beam: true }, // (a mast at the kerb, the ring hung out over the shoulder: the houses stand 3 m off)
     tunnel: { wall: 0x8a8f96, tiles: 0xf2c14e, roof: 0x4a4d52, face: 0x9a958a, lamp: 0xfff0c8 } },
+  // rice: rice terraces (render/themes/rice.js): the land (terrain) cut into level paddies that follow its contours, flooded, in
+  // every green, palms, huts on stilts, farmers and buffalo, kites, tall brick gates over the road, mist in the low ground
+  rice: { sky: 0xcfe9ea, ground: 0x86c08a, road: 0x66625c, scenery: 'rice', terrain: { gentle: 0x4f9a3f, steep: 0x6b5a3c, rough: 0.5, flat: 2, rise: 30 },
+    target: { height: 4.2, beam: true } }, // (up over the roadside palms' feet)
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
 };
