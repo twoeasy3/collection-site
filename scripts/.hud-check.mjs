@@ -17,7 +17,7 @@ try {
   const paths = [];
   const walk = (node, path) => Array.isArray(node) ? paths.push(path) : Object.keys(node).forEach(k => walk(node[k], [...path, k]));
   walk(MESSAGES, []);
-  const said = paths.filter(p => p[0] !== 'bustCount' && p[0] !== 'mysteryNames'); // (those two are words put into a message or the status, never said)
+  const said = paths.filter(p => p[0] !== 'bustCount' && p[0] !== 'mysteryNames' && p[0] !== 'stickyNames'); // (those three are words put into a message, the status or an icon's label, never said)
   const timeless = said.filter(p => !(timeFor(...p) > 0 && Number.isFinite(timeFor(...p))));
   check(!timeless.length, `${said.length} messages in messages.json, each with a time from CONFIG.messageTimes` + (timeless.length ? ': none for ' + timeless.map(p => p.join('.')).join(', ') : ''));
   check(T.default > 0 && T.fade > 0 && ['reaction', 'pickup', 'rage', 'bust'].every(k => T.kinds[k] > 0), 'a default, a fade and a time for each kind (reaction, pickup, rage, bust)');
@@ -48,6 +48,12 @@ try {
     for (const p of Pickups.items) p.taken = true;
   };
   const sticky = (path) => Message.sticky.find(h => h.path === path);
+  // (the messages' clock, in this check's hands from here: a message's time passes when `clock` is moved on)
+  let clock = performance.now();
+  Object.defineProperty(performance, 'now', { value: () => clock, configurable: true });
+  const showing = (text) => Message.lines.some(l => l.text === text && clock - l.at < l.time * 1000);
+  // (what the HUD draws an icon for: every message held, by its path)
+  const icons = () => Message.sticky.map(h => h.path);
   const mystery = (effect) => { P.nextMystery = effect; P.collect('mystery'); P.nextMystery = ''; };
 
   // ---- each sticky message comes with its condition and goes with it
@@ -67,15 +73,58 @@ try {
     begin();
     g.run(0.5);
     const up = sticky(path), text = up?.line.text;
+    // (its words are an ordinary message: up now, for the time the table gives any message of its kind...)
+    const said = !!up && showing(text) && up.line.time === timeFor(...path.split('.'));
+    // (...and gone after that time, the condition still on and its icon with it)
+    clock += up ? up.line.time * 1000 + 50 : 0;
+    g.run(0.2);
+    const wordsGone = !showing(text), iconStays = !!sticky(path) && icons().length === 1;
     // (ordinary messages don't push it out: four more said, and it is still held)
     Message.say('events', 'fog'); Message.say('busts', 'seen'); Message.say('wrecks', 'byPlayer'); Message.say('events', 'tunnel');
     g.run(0.2);
     const kept = !!sticky(path) && !Message.lines.some(l => l.text === text);
     end();
     g.run(0.1);
-    check(!!up && kept && !sticky(path), `sticky ${path}: up with its condition ("${text}"), still up once pushed off the message lines, gone when it ends` +
-      (up && kept && !sticky(path) ? '' : ` [up ${!!up}, kept ${kept}, gone ${!sticky(path)}]`));
+    const ok = said && wordsGone && iconStays && kept && !sticky(path) && !icons().length;
+    check(ok, `sticky ${path}: said as a message ("${text}", ${up?.line.time} s), its words gone after that with the condition still on and its icon up, the icon gone when it ends` +
+      (ok ? '' : ` [said ${said}, words gone ${wordsGone}, icon stays ${iconStays}, kept ${kept}, gone ${!sticky(path)}]`));
   }
+  // ---- several at once: an icon each, and no words left once their messages have had their time
+  start();
+  P.punctureTyre(1); mystery('noBrakes');
+  // (in play one powerup cuts short the one before, so three icons is the most: the timers are set by hand here)
+  for (const [type, timer] of [['badGas', 'badGas'], ['heavyMass', 'heavy'], ['butterfingers', 'butterfingers']]) { P[timer] = g.CONFIG[type].time; Message.say('powerups', type); }
+  g.run(0.3);
+  const five = Message.sticky.map(h => h.line.text), wordsUp = five.filter(showing).length;
+  clock += Math.max(...Message.sticky.map(h => h.line.time)) * 1000 + 50;
+  g.run(0.2);
+  check(five.length === 5 && wordsUp <= Message.lines.length && icons().length === 5 && new Set(icons()).size === 5 && !five.some(showing),
+    `five conditions at once: five icons, each its own; never more words than the ${Message.lines.length} message lines (${wordsUp} at first), none after their time`);
+  // (the icon of one with time left drains: half way through the bad gas, about half its ring)
+  g.run(g.CONFIG.badGas.time / 2 - 0.5);
+  const half = sticky('powerups.badGas')?.progress;
+  check(half > 0.4 && half < 0.6 && sticky('powerups.mystery.noBrakes')?.progress > 0.3, `an icon's ring drains with the time left (bad gas ${(half * 100 || 0).toFixed(0)}% gone half way through)`);
+  // (touched, an icon says its message again, for the recall time, as an ordinary message)
+  const again = Message.recall('powerups.badGas'), badGasText = sticky('powerups.badGas')?.line.text;
+  check(!!again && showing(badGasText) && again.time === T.recall && Message.lines.includes(again) && Message.recall('events.fog') === null,
+    `an icon touched: its message again for ${T.recall} s ("${badGasText}"), on a message line; nothing for a message not held`);
+  clock += T.recall * 1000 + 50;
+  check(!showing(badGasText) && !!sticky('powerups.badGas'), '...and gone again after that, the icon still there');
+  // (each has a picture of its own and a name; the HUD draws icons, and no rows of words)
+  const { STICKY_ICONS, stickyIcon } = await g.load('render/hudIcons.js');
+  const drawn = Object.entries(T.sticky).map(([path, condition]) => {
+    const key = path.split('.').pop(), h = { condition, key };
+    return { path, art: stickyIcon(h), name: Message.pick(condition === 'mystery' ? 'mysteryNames' : 'stickyNames', condition === 'mystery' ? key : condition) };
+  });
+  const bare = drawn.filter(d => !d.name || d.art === STICKY_ICONS.other || !d.art.startsWith('<'));
+  check(!bare.length && new Set(drawn.map(d => d.art)).size === drawn.length && new Set(drawn.map(d => d.name)).size === drawn.length,
+    `${drawn.length} sticky messages, each with an icon and a name of its own (${drawn.map(d => d.name).join(', ')})` + (bare.length ? ': none for ' + bare.map(d => d.path).join(', ') : ''));
+  const hudSource = readFileSync(new URL('../src/delivery/render/hud.js', import.meta.url), 'utf8'), css = readFileSync(new URL('../src/delivery/style.css', import.meta.url), 'utf8');
+  check(hudSource.includes('stickyIcon(h)') && hudSource.includes("setAttribute('aria-label'") && !/line\.text;\s*\n?\s*row/.test(hudSource) && !hudSource.includes("className = 'row'") && !css.includes('#sticky .row') && T.stickyRows === undefined,
+    'render/hud.js draws an icon for each (labelled), and no row of words: #sticky .row and stickyRows are gone');
+  const I = T.stickyIcons;
+  check(['size', 'gap', 'across', 'shift'].every(k => ['wide', 'portrait', 'short'].every(shape => I?.[k]?.[shape] !== undefined)) && T.recall > 0 && !/#sticky[^}]*[\s{;](width|height|gap):\s*\d+px/.test(css),
+    'the icons\' size, gap, row and place are in CONFIG.messageTimes.stickyIcons for each screen shape, not written into style.css');
   // (the puncture's progress: the tyre being changed, stopped)
   start();
   P.punctureTyre(1);
