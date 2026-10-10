@@ -152,7 +152,7 @@ Rendering and the rest:
 | `render/menustage.js`, `render/menu.js`, `menu2.css` | The start screen: the level stage, strip, car, side and keys; its options and the results buttons; its look |
 | `levelinfo.js`, `render/levelcard3d.js` | What the menu says of a level (medals, what is on its road); and the "what's on this road" card |
 | `powerups.js`, `gimmicks.js` | The catalogues of pickups and gimmicks: wording, and each gimmick's model. Shown by their pages and by the road card |
-| `render/modelviews.js` | A model turning in a patch of one shared canvas: how the pages and the road card draw their models |
+| `render/modelviews.js` | A model turning in a small canvas of its own, all drawn by one renderer off the page: how the pages and the road card draw their models |
 | `editor.js`, `poweruppage.js`, `gimmickspage.js`, `sides.js`, `police.js`, `cargopage.js` | The other pages' scripts |
 | `levelSchema.js`, `editorForms.js` | Every level field's shape, settings, rules and help (what the editor is built from, and `scripts/.schema-check.mjs` checks levels against); the editor's form controls |
 | `sounds/`, `levelshots/`, `carshots/` | WAVs, and the menu's pictures of levels and cars |
