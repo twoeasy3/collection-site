@@ -106,6 +106,12 @@ export const THEMES = {
   seabed: { sky: 0x0d5f86, ground: 0x6aa79c, road: 0x39434e, scenery: 'seabed', line: 0xe8f6ff, centre: 0xffd23a,
     light: { sky: 0xc8f0ff, ground: 0x2a6a78, ambient: 1.45, sun: 0xd8f6ff, sunlight: 0.9 },
     tunnel: { wall: 0x5f7482, tiles: 0x8fa6b5, roof: 0x4a5a66, face: 0x7a8f9c, lamp: 0xcff3ff } },
+  // moon: a moon base (render/themes/moon.js): grey regolith and craters under a black sky with the stars and the Earth in
+  // it, a road of compacted dust between marker lamps, domes, habitat tubes, solar panels, a lander, a rocket on its pad.
+  // Hard sunlight and little else (lit); the dark is the horizon. Unlike 'space', it has ground and a road
+  moon: { sky: 0x04050a, ground: 0x8b8c92, road: 0x55565c, scenery: 'moon', line: 0xf2f2f2, centre: 0xffa51f, lit: true, headlights: true,
+    light: { sky: 0xffffff, ground: 0x24242c, ambient: 0.8, sun: 0xfff6e6, sunlight: 2.1 },
+    tunnel: { wall: 0xb8bcc4, tiles: 0xe2e6ec, roof: 0x8a8f98, face: 0xc9cdd4, lamp: 0xfff0c8 } },
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // (batch C: theme park, volcano island, container port: new themes go above this line)

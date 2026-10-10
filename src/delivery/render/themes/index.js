@@ -9,6 +9,7 @@
 // keep their additions apart, so the branches merge).
 import { toyroom } from './toyroom.js';
 import { seabed } from './seabed.js';
+import { moon } from './moon.js';
 // (batch A's imports go above this line)
 // (batch B's imports go above this line)
 // (batch C's imports go above this line)
@@ -16,6 +17,7 @@ import { seabed } from './seabed.js';
 export const THEME_SCENERY = {
   toyroom,
   seabed,
+  moon,
   // (batch A: toy room, underwater tunnel, moon base: new themes go above this line)
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // (batch C: theme park, volcano island, container port: new themes go above this line)
