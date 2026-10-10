@@ -63,7 +63,7 @@ if (opt('levels', false) || opt('cars', false)) {
   const CINE = { mumbai: '&cineout=-1&cineup=10&cineback=30', spa: '&cineside=left', 'albert-park': '&cineside=left', // (a block of flats; the pit building; a tree)
     expressway: '&at=880', 'back-roads': '&at=600', canberra: '&at=1200', // (each one's bridge)
     'grand-pacific': '&at=6000', 'passage-du-gois': '&at=900', safari: '&at=2350', airport: '&at=850', // (the Sea Cliff Bridge; the causeway; the hippos' river; a parked plane)
-    'mountain-pass': '&at=420', 'outback-express': '&at=1080', 'tour-de-coast': '&at=1600', stelvio: '&at=250', // (a rockfall; a level crossing; the cliff road; clear of a fir that fills the frame)
+    'mountain-pass': '&at=2460&ff=4', 'outback-express': '&at=1080', 'tour-de-coast': '&at=1600', stelvio: '&at=250', // (a hairpin under the peaks, on the way down: 420 is behind a fir since the level was re-laid; a level crossing; the cliff road; clear of a fir that fills the frame)
     // (an entry with an &ff of its own is taken after that many seconds, not six: a place chosen to the metre)
     'quarry-run': '&at=2520&ff=1&cineside=left&cineup=8' }; // (the crag before its blast, benches, stockpiles, a stacker, a siren mast: its level's agent's choice)
   const FF = (id) => /[?&]ff=/.test(CINE[id] || '') ? '' : '&ff=6';
