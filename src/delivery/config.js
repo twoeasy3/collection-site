@@ -601,6 +601,7 @@ export const CONFIG = {
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
+    rock: { min: 0.8, max: 1.3 }, // m: the radius of a drifter of a kind sized by its radius (a rock, an asteroid)
     across: 0.85,          // share of the road's half-width a pattern reaches out to from the centre
     circleRadius: 25,      // m along the road a circle spans either side of its centre
     circleRate: 0.9,       // radians/s round the circle
@@ -1422,15 +1423,29 @@ export const CONFIG = {
   // whose middle is within `line` m of a lane line goes between two and feels nothing (less by each m its half
   // width is over hwRef, never less than `least`). Over one at `soft` m/s or less it is a bump; faster, the car
   // loses `damage` health and perSpeed more for each m/s over, keeps `keep` of its speed, and is thrown up at
-  // `throw` m/s for each m/s over (throwMost at most). Traffic takes the stretch at `traffic` m/s (slowing at
-  // `brake` m/s^2). Boards `sign` m before
-  cushion: { every: 45, width: 2.3, long: 3, line: 0.45, hwRef: 0.85, least: 0.2, soft: 8.3, damage: 3, perSpeed: 0.25, keep: 0.85, throw: 0.3, throwMost: 6, traffic: 8, brake: 12, sign: 110 },
+  // `throw` m/s for each m/s over (throwMost at most). Traffic takes the stretch at `traffic` m/s.
+  // Boards `sign` m before
+  cushion: { every: 45, width: 2.3, long: 3, line: 0.45, hwRef: 0.85, least: 0.2, soft: 8.3, damage: 3, perSpeed: 0.25, keep: 0.85, throw: 0.3, throwMost: 6, traffic: 8, sign: 110 },
   // black ice in the shade ("shade": { from, to, side, lanes? }): over the stretch something tall on that side of the
   // road shades the `lanes` lanes of the player's side nearest it (the stretch's own, or this; and the shoulder
   // beyond, on the right), and they are black ice (CONFIG.ice: nothing of it drawn but the shadow). Traffic
   // moves out of them from keepClear m before. Said from `warn` m before; a tree every `tree` m casts it
   // (On black ice steerLoss more of the steering's bite is gone, on top of what ice takes)
   shade: { lanes: 1, steerLoss: 0.9, keepClear: 150, warn: 160, tree: 11 },
+  // ruts ("ruts": { from, to }): deep mud over the stretch with a rut down the middle of each lane, `half` m either
+  // side of it. In one the car is held (drawn back to its middle at `hold` a second) until it has been steered
+  // against for `climb` s: then it is out, `damage` health and 1 - `keep` of its speed the worse, lurching that way
+  // at `lurch` m/s (`yaw`: rad/s its tail swings). Between ruts it is slowed to `mud` m/s (crossing 0) .. mudBest
+  // m/s (crossing 1), at `bite` m/s^2. Traffic keeps its lane, at `traffic` m/s. A board `sign` m before
+  rut: { half: 0.7, hold: 6, climb: 0.45, damage: 8, keep: 0.8, lurch: 2.5, yaw: 1.5, mud: 7, mudBest: 15, bite: 30, traffic: 10, sign: 110 },
+  // fresh tarmac ("tarmac": { from, to, lane }): that lane of the player's side is new tar over the stretch, coned
+  // off. Traffic moves out of it from keepClear m before and, to its end, goes at `queue`
+  // m/s at most. On it, tar builds on the player's tyres, all they hold in `fill` s;
+  // off it, it wears off in `clean` s. With the tyres full the car's top speed is down by `slow` of itself (in
+  // proportion with less), brought down at `bite` m/s^2. A board `sign` m before; a cone every `cone` m
+  tarmac: { fill: 4, clean: 3, slow: 0.9, bite: 45, queue: 8, keepClear: 160, sign: 120, cone: 14 },
+  // (traffic that one of these slows comes down to its pace over the `reach` m before: perMetre m/s more for each m short of it)
+  gambleApproach: { reach: 60, perMetre: 0.25 },
   // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
   // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
   // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,

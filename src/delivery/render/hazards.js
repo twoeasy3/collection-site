@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
+import { THEMES } from '../themes.js';
 import { Track } from '../track.js';
 import { Game } from '../game.js';
 import { Player } from '../player.js';
@@ -164,8 +165,11 @@ Game.onLoad.push(() => {
   const D = CONFIG.drawbridge;
   bridges = (LEVEL.drawbridges || []).map((c) => {
     const s = Track.place(c), lo = Track.lo(s), hi = Track.hi(s), width = hi - lo, mid = (lo + hi) / 2, L = D.leaf;
-    // (the river under the whole span: the leaves, down, cover it)
-    group.add(new THREE.Mesh(buildStrip(s - L, s + L, lo - 120, hi + 120, 0.08, 2), flat(0x2e6c8f, -14)));
+    // (the river under the whole span: the leaves, down, cover it. Its colour is the theme's: its `river`, or its
+    // water stages' deep water, or blue; with a `riverCore`, a brighter band down the middle of it: lava)
+    const look = THEMES[LEVEL.theme] || THEMES.city;
+    group.add(new THREE.Mesh(buildStrip(s - L, s + L, lo - 120, hi + 120, 0.08, 2), flat(look.river ?? look.channel?.deep ?? 0x2e6c8f, -14)));
+    if (look.riverCore !== undefined) group.add(new THREE.Mesh(buildStrip(s - L * 0.4, s + L * 0.4, lo - 120, hi + 120, 0.085, 2), flat(look.riverCore, -15)));
     for (const d of [-1, 1]) { // (its banks: a stone quay each side, and a pier with a cabin either side of the road at each hinge)
       group.add(new THREE.Mesh(buildStrip(s + d * L, s + d * (L + 1.2), lo - 120, lo, 0.3, 2), flat(0x8a8378, -1)));
       group.add(new THREE.Mesh(buildStrip(s + d * L, s + d * (L + 1.2), hi, hi + 120, 0.3, 2), flat(0x8a8378, -1)));

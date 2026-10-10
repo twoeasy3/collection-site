@@ -421,7 +421,7 @@ try {
     van.fixed = false;
     let fastest = 0;
     g.run(30, () => { P.speed = 0; P.s = 3300; if (van.active && van.s > 3530 && van.s < 3700) fastest = Math.max(fastest, van.vs); return !van.active || van.s > 3720; });
-    check(fastest > 0 && fastest <= K.traffic + 3, 'cushions: traffic takes them slowly (' + fastest.toFixed(1) + ' m/s at most between the rows)');
+    check(fastest > 0 && fastest <= K.traffic + 0.5, 'cushions: traffic takes them slowly (' + fastest.toFixed(1) + ' m/s at most between the rows)');
     real('cushions', () => check(Gambles.rows.length > 0, '  its rows: ' + Gambles.rows.map(r => r.s).join(', ') + ' m'));
   });
 
@@ -468,6 +468,96 @@ try {
     g.run(25, () => { for (const c of g.Traffic.cars) if (c !== van && !c.fixed) c.active = false; P.speed = 0; P.s = 6000; if (van.active && Gambles.shadeAt(van.s, van.lat)) shaded++; return !van.active || van.s > 6460; });
     check(shaded === 0 && van.lane < 5, 'shade: a van coming up the shaded lane moves into the sun before it and never touches the shade');
     real('shade', () => check(Gambles.shades.length > 0, '  its shade: ' + Gambles.shades.map(x => x.from + ' to ' + x.to + ' m, lanes ' + x.first + ' to ' + x.last).join('; ')));
+  });
+
+  // ---- ruts (4830 - 5030: a rut down each lane; a barrier in lane 4's at 5000, the bigger cash in it at 4925)
+  await section('ruts', async () => {
+    const R = C.rut;
+    // from 4790 at up to v in lane n; from `turn` m on, steering for lane `to`
+    const run = (v, n, to = n, turn = 0, car = 'sport') => {
+      start(4790, n, v, { car });
+      const health = P.health;
+      let slowest = 99, held = 0, mud = 0;
+      const t = g.run(90, () => {
+        quiet();
+        P.speed = Math.min(P.speed, v);
+        const d = lane(P.s >= turn ? to : n, P.s) - P.lat;
+        g.drive(1, Math.abs(d) < 0.2 ? 0 : Math.sign(d));
+        if (Gambles.rut) held += 1 / 60; else if (Gambles.rutted(P.s)) mud += 1 / 60;
+        slowest = Math.min(slowest, P.speed);
+        return P.s > 5060 || G.wrecks > 0;
+      });
+      return { t, held, mud, slowest, lost: health - P.health, jolts: Gambles.rutJolts, wrecks: G.wrecks, busted: P.busted };
+    };
+    const clear = run(30, 3);
+    check(clear.jolts === 0 && clear.lost === 0 && clear.mud === 0 && clear.slowest > 29, 'ruts, the right rut picked before the mud: held in it the whole way at ' + Math.round(clear.slowest * 3.6) + ' km/h, nothing lost (' + clear.t.toFixed(1) + ' s)');
+    check(said('Deep ruts'), 'ruts: they are announced');
+    // a tap of the steering does not get the car out; holding it does
+    start(4850, 3, 25);
+    g.run(0.5, () => { quiet(); P.speed = 25; g.drive(1, 0); });
+    g.run(R.climb - 0.15, () => { quiet(); P.speed = 25; g.drive(1, 1); });
+    g.run(0.6, () => { quiet(); P.speed = 25; g.drive(1, 0); });
+    check(Gambles.rut && Gambles.rutJolts === 0 && Math.abs(P.lat - lane(3, P.s)) < 0.3 && P.health === P.maxHealth, 'ruts: steered against for less than ' + R.climb + ' s, the rut holds the car (back to ' + Math.abs(P.lat - lane(3, P.s)).toFixed(2) + ' m from its middle, at no cost)');
+    const wrong = run(30, 4);
+    check(wrong.lost >= 25 && wrong.jolts === 0, 'ruts, the wrong rut picked and kept: lane 4 has the big cash and then a barrier: into it (' + (wrong.wrecks ? 'wrecked' : wrong.lost.toFixed(0) + ' health lost') + ')');
+    const out = run(30, 4, 3, 4935);
+    check(out.jolts === 1 && out.lost > 0 && out.lost < 15 && out.mud > 0 && out.slowest < 30 * R.keep + 0.5 && out.wrecks === 0, 'ruts, changing rut: out of lane 4 after its cash with one jolt (' + out.lost.toFixed(0) + ' health, down to ' + Math.round(out.slowest * 3.6) + ' km/h, ' + out.mud.toFixed(1) + ' s in the mud between) and into lane 3: past the barrier (' + out.t.toFixed(1) + ' s: ' + (out.t - clear.t).toFixed(1) + ' s slower than the right rut)');
+    check(said('Out of the rut'), 'ruts: climbing out is said');
+    // the mud between is slower for a car that crosses rough ground badly
+    const paceOf = (car) => { start(4850, 3, 25, { car }); P.lat = (lane(3, 4850) + lane(4, 4850)) / 2; let v = 99; g.run(2.5, () => { quiet(); g.drive(1, 0); P.lat = (lane(3, P.s) + lane(4, P.s)) / 2; v = P.speed; }); return v; };
+    const low = paceOf('lowrider'), high = paceOf('liftedtruck');
+    check(low < high && low > R.mud - 0.1 && high < R.mudBest + 0.1, 'ruts: kept on the mud between two, the Lowrider makes ' + Math.round(low * 3.6) + ' km/h and the Lifted Truck ' + Math.round(high * 3.6) + ' (never stopped)');
+    const ghost = (() => { start(4850, 4, 28, { ghost: true }); g.run(1, () => { quiet(); g.drive(1, 1); }); return !Gambles.rut && Gambles.rutJolts === 0; })();
+    check(ghost, 'ruts: a ghost is not held by them');
+    real('ruts', () => check(Gambles.ruts.length > 0, '  its ruts: ' + Gambles.ruts.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
+  });
+
+  // ---- fresh tarmac (1750 - 2050, lane 5; the queue crawls past in lanes 3 and 4)
+  await section('tarmac', async () => {
+    const K = C.tarmac;
+    // from 1700 to 2150 (100 m beyond it): on the tar when on(tar so far, on it now) says so, and otherwise in lane 4
+    // at the queue's pace, as if in the queue
+    const run = (on) => {
+      start(1700, 4, 28);
+      let most = 0, tarred = 0, slowest = 99, onNow = false, atEnd = 0;
+      const t = g.run(120, () => {
+        quiet();
+        const zone = P.s > 1750 && P.s < 2050;
+        onNow = zone && on(Gambles.tar, onNow);
+        const d = lane(onNow ? 5 : 4, P.s) - P.lat;
+        g.drive(1, Math.abs(d) < 0.2 ? 0 : Math.sign(d));
+        if (zone && !Gambles.onTar(P.s, P.lat)) P.speed = Math.min(P.speed, K.queue); // (in the queue)
+        most = Math.max(most, Gambles.tar);
+        if (Gambles.onTar(P.s, P.lat)) tarred += 1 / 60;
+        if (P.s > 1760) slowest = Math.min(slowest, P.speed);
+        if (!atEnd && P.s >= 2050) atEnd = P.speed;
+        return P.s > 2150 || G.wrecks > 0;
+      });
+      return { t, most, tarred, slowest, atEnd, health: P.health === P.maxHealth };
+    };
+    const queue = run(() => false);
+    check(queue.most === 0 && queue.health && queue.slowest > K.queue - 0.5, 'tarmac, the safe line: in the queue the whole way, at its ' + Math.round(K.queue * 3.6) + ' km/h: no tar, never stopped (' + queue.t.toFixed(1) + ' s)');
+    check(said('fresh tar'), 'tarmac: it is announced');
+    const hops = run((tar, on) => on ? tar < 0.45 : tar < 0.08);
+    check(hops.most < 0.6 && hops.t < queue.t - 5 && hops.health, 'tarmac, the risk taken and right: short hops (on until the tyres are half full, off until they are clean): ' + hops.tarred.toFixed(0) + ' s on the tar in all, ' + hops.t.toFixed(1) + ' s: ' + (queue.t - hops.t).toFixed(1) + ' s quicker than the queue');
+    check(said('On the fresh tar'), 'tarmac: being on it is said');
+    const stay = run(() => true);
+    check(stay.most === 1 && stay.slowest < K.queue && stay.atEnd < K.queue && stay.t > hops.t + 5 && stay.slowest > 1, 'tarmac, the risk taken and wrong: on it the whole way: the tyres fill, down to ' + Math.round(stay.slowest * 3.6) + ' km/h (slower than the queue, never stopped), still ' + Math.round(stay.atEnd * 3.6) + ' km/h as it ends (' + stay.t.toFixed(1) + ' s: ' + (stay.t - hops.t).toFixed(1) + ' s slower than the hops, ' + (stay.t - queue.t).toFixed(1) + ' s against the queue)');
+    // the tar wears off only off it
+    start(1800, 5, 20);
+    g.run(K.fill + 0.5, () => { quiet(); g.drive(1, 0); });
+    const full = Gambles.tar;
+    Object.assign(P, { s: 2100, lat: lane(4, 2100) });
+    const t0 = g.run(20, () => { quiet(); g.drive(1, 0); return Gambles.tar === 0; });
+    check(full === 1 && Math.abs(t0 - K.clean) < 0.2, 'tarmac: full after ' + K.fill + ' s on it, clean again ' + t0.toFixed(1) + ' s after leaving it');
+    // traffic keeps off it and crawls past
+    start(1500, 3, 0);
+    const van = put('commuter', 1640, lane(5, 1640), 18);
+    van.fixed = false;
+    let onIt = 0, fastest = 0;
+    g.run(60, () => { for (const c of g.Traffic.cars) if (c !== van && !c.fixed) c.active = false; P.speed = 0; P.s = 1500; if (van.active && Gambles.onTar(van.s, van.lat)) onIt++; if (van.active && van.s > 1800 && van.s < 2040) fastest = Math.max(fastest, van.vs); return !van.active || van.s > 2050; });
+    check(onIt === 0 && fastest > 0 && fastest <= K.queue + 0.5, 'tarmac: a van coming up its lane moves out of it and crawls past (' + fastest.toFixed(1) + ' m/s at most)');
+    real('tarmac', () => check(Gambles.tars.length > 0, '  its tar: ' + Gambles.tars.map(x => x.from + ' to ' + x.to + ' m, lane ' + x.lane).join('; ')));
   });
 
   // ---- a whole run, start to finish, hands off the wheel in the middle lane, a ghost (nothing here stops it)

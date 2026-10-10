@@ -52,15 +52,8 @@ export const volcano = ({ add, instances, sideStrip, buildStrip, offRoads, besid
       across((to - from) * 0.3, 0.3, 0.11, CORE);
     }
   }
-  // (a drawbridge has a river of its own under it, drawn with it, from bank to bank: that one is lava too, laid over
-  // the water from bank to bank, so that it is lava the car jumps when the leaves are up. From far off it shows
-  // over the leaves too, as the water does)
-  const over = (color) => glow(color, { polygonOffsetFactor: -15, polygonOffsetUnits: -15 });
-  for (const [from, to] of draws) {
-    const lo = (q) => Track.lo(q) - 121, hi = (q) => Track.hi(q) + 121;
-    add(buildStrip(from, to, lo, hi, 0.085, 2), over(0xff4a12));
-    add(buildStrip(from + 9, to - 9, lo, hi, 0.09, 2), over(0xffb52e));
-  }
+  // (a drawbridge has a river of its own under it, drawn with it from bank to bank, in this theme's `river` and
+  // `riverCore` colours (../../themes.js, render/hazards.js): so it is lava the car jumps when the leaves are up)
   const clearOfLava = (s, side, d, pad = 2) => !rivers.some(([a, b, at, d0, d1]) => at === side && s > a - pad && s < b + pad && d > d0 - pad && d < d1 + pad) && !spanned(s, pad + 4);
 
   // ---- the sea, off to the right beyond the land, and its line of surf (at the height of the sea, whatever

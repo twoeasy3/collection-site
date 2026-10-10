@@ -41,6 +41,10 @@
     { "type": "cash5", "s": 660, "lane": 5 },
     { "type": "cash10", "s": 1235, "lane": 3 },
     { "type": "cash10", "s": 1235, "lane": 5 },
+    { "type": "cash10", "s": 1800, "lane": 4 },
+    { "type": "cash10", "s": 1800, "lane": 5 },
+    { "type": "cash10", "s": 1900, "lane": 5 },
+    { "type": "cash20", "s": 2020, "lane": 5 },
     { "type": "cash20", "s": 2462, "lane": 4 },
     { "type": "cash10", "s": 2480, "lane": 3 },
     { "type": "cash10", "s": 2480, "lane": 5 },
@@ -64,6 +68,9 @@
     { "type": "cash10", "s": 5685, "lane": 4 },
     { "type": "cash20", "s": 5740, "lane": 4 },
     { "type": "cash5", "s": 400, "lane": 1, "road": "side", "exit": 1 },
+    { "type": "cash10", "s": 4900, "lane": 3 },
+    { "type": "cash10", "s": 4900, "lane": 5 },
+    { "type": "cash20", "s": 4925, "lane": 4 },
     { "type": "cash20", "s": 6330, "lane": 5 },
     { "type": "cash5", "s": 6330, "lane": 4 }
   ],
@@ -75,7 +82,8 @@
     { "s": 3200, "lane": 3, "kind": "barrier" },
     { "s": 3200, "lane": 5, "kind": "barrier" },
     { "s": 3330, "lane": 4, "kind": "barrier" },
-    { "s": 6410, "lane": 5, "kind": "barrier" }
+    { "s": 6410, "lane": 5, "kind": "barrier" },
+    { "s": 5000, "lane": 4, "kind": "barrier" }
   ],
   "jamRamps": [
     { "s": 2400, "lane": 4 }
@@ -94,6 +102,12 @@
   ],
   "shade": [
     { "from": 6250, "to": 6450, "side": "right" }
+  ],
+  "ruts": [
+    { "from": 4830, "to": 5030 }
+  ],
+  "tarmac": [
+    { "from": 1750, "to": 2050, "lane": 5 }
   ],
   "washboards": [
     { "from": 2950, "to": 3450 }

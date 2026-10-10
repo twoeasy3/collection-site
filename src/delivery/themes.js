@@ -6,6 +6,8 @@
 // zones, landmarks, grandstands) it does without where the level has none.
 // channel: { shallow, deep, glint }: the colours of the water of a water stage (a level's "water": see
 // render/water.js) in this theme, if not CONFIG.water.colours: a harbour at night, a muddy river, a fjord, a flood.
+// river: the colour of what runs under a drawbridge in this theme (render/hazards.js), if not its channel's deep water,
+// nor the usual blue; riverCore: a brighter band down its middle (lava).
 // target: { offset, height, style, base, arm, beam }: how this theme's TANK RAGE targets stand (see CONFIG.target and
 // Targets in pickups.js), where the usual post 5 m beyond the pavement would be hidden: in front of a wall of
 // buildings, on top of a parapet or a catch fence, hung out over the shoulder. A theme without one gets the usual.
@@ -110,7 +112,7 @@ export const THEMES = {
   // toyroom: the whole level at toy scale (render/themes/toyroom.js): a run of orange plastic track across a blue
   // carpet, alphabet blocks, bricks, crayons, marbles and dominoes beside it, a wooden railway, a cat asleep, the
   // furniture for a skyline; the sky is the wallpaper
-  toyroom: { sky: 0xf1e3c8, ground: 0x6f8fb8, road: 0xff7a1a, scenery: 'toyroom', line: 0xffffff, centre: 0x1f6fd0,
+  toyroom: { sky: 0xf1e3c8, ground: 0x6f8fb8, road: 0xff7a1a, scenery: 'toyroom', river: 0x2f57b3, line: 0xffffff, centre: 0x1f6fd0,
     tunnel: { wall: 0xb98a55, tiles: 0xd9b077, roof: 0xa87c4a, face: 0xc49a66, lamp: 0xfff3d0 } },
   // seabed: an underwater tunnel (render/themes/seabed.js): the road in a glass tube along the sea bed, coral, kelp,
   // shoals, a whale, a wreck and a yellow submarine outside it, shafts of light from the surface; the fog is the water
@@ -136,7 +138,7 @@ export const THEMES = {
   // themepark: the road through a theme park (render/themes/themepark.js): a promenade behind candy-striped kerbs, bunting and rainbow arches over the road, striped tents and stalls, carousels and Ferris wheels turning, a rollercoaster over the road and beside it, a castle on the skyline; a tunnel is the ghost train's
   themepark: { sky: 0x6ec3f5, ground: 0x7fc66b, road: 0x4b4a55, scenery: 'themepark', tunnel: { wall: 0x5a2d82, tiles: 0xffd21f, roof: 0x24143a, face: 0xe23b3b, lamp: 0xff9ff0 } },
   // volcano: a volcano island (render/themes/volcano.js): a black road over black sand under an ashen sky, rivers of lava glowing beside it and across under every bridge, basalt, palms, steam vents, torches, the sea beyond the surf, ash coming down, and the volcano smoking on the skyline; a tunnel is a lava tube
-  volcano: { sky: 0xa89aa0, ground: 0x29272b, road: 0x161518, scenery: 'volcano', line: 0xe8e2d4, centre: 0xffa51e, tunnel: { wall: 0x2a2224, tiles: 0xff6a1e, roof: 0x151113, face: 0x3a3032, lamp: 0xffb060 },
+  volcano: { sky: 0xa89aa0, ground: 0x29272b, road: 0x161518, scenery: 'volcano', river: 0xff4a12, riverCore: 0xffb52e, line: 0xe8e2d4, centre: 0xffa51e, tunnel: { wall: 0x2a2224, tiles: 0xff6a1e, roof: 0x151113, face: 0x3a3032, lamp: 0xffb060 },
     light: { sky: 0xffe6cf, ground: 0x6a3a26, ambient: 1.35, sun: 0xffd2a8, sunlight: 1.15 } },
   // port: a container port (render/themes/port.js): concrete under a grey sky, walls of stacked containers in every colour, gantry cranes over the road, straddle carriers up and down beside it, rails let into the road, floodlight masts, and on the right the quay: quay cranes over container ships, and the harbour
   port: { sky: 0xb5c3cd, ground: 0x8b8e91, road: 0x33363b, scenery: 'port' },

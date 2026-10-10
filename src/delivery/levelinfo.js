@@ -71,6 +71,8 @@ const GIMMICKS = [
   ['Washboard dirt', (l) => some(l.washboards)],
   ['Low bridge', (l) => some(l.lowBridges)],
   ['Ford', (l) => some(l.fords)],
+  ['Fresh tarmac', (l) => some(l.tarmac)],
+  ['Ruts', (l) => some(l.ruts)],
   ['Black ice in the shade', (l) => some(l.shade)],
   ['Speed cushions', (l) => some(l.cushions)],
   ['Crest jumps', (l) => l.segments.some(seg => seg.ease && seg.grade)],
