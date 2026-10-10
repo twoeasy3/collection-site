@@ -344,3 +344,6 @@
 .tierstars.gold { color: #ffd23f; }
 .tierstars.blue { color: #4fa8ff; }
 #startScreen .menu-stage .plate small .tierstars { font-size: 13px; }
+/* a tiered level's plate is dark, so its stars show in their own colour (the plate is the accent colour otherwise: gold on gold) */
+#startScreen .menu-stage .plate.tiered { background: rgba(14, 18, 26, .9); color: #fff; }
+#startScreen .menu-stage .plate.tiered small .tierstars { font-size: 17px; letter-spacing: .1em; }
