@@ -7,7 +7,7 @@ the branch is in brackets where it is not yet on `main`. Detail is in `SCRATCHPA
 **Nothing below has been seen by a person in a browser, and the smoke test has not been run.**
 **Pushed on the owner's word on 10-Oct: `main` up to `8a0bd79` is on the remote and deploying** (the production build of that commit passed; the smoke test was not run). Later commits are local until pushed.
 
-Last updated: after `6fc32e2` (main, both cargo branches merged; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 17 (in-game UI), 18 (menu UI), 19 (road gimmicks, resumed).
+Last updated: after `3047fac` (main; not pushed). Running: agent 13 (car ideas lot), 14 (Stelvio and Market Town), 17 (in-game UI), 18 (menu UI), 19 (road gimmicks), 20 (theme levels A). Theme levels B and C start as soon as A has committed the shared base.
 
 ## Agent 1: port from the discarded city-levels work (`main`, finished)
 
@@ -135,7 +135,12 @@ Three agents at a time; the next item starts as each one finishes.
 - [~] Menu UI rework (M1 to M3 in the section "Menu UI" at the end): agent 18, branch `delivery-menu`
 - [~] In-game UI improvements (U1 to U5): agent 17, branch `delivery-ui`. The owner asked what the "on fire" message was: there is none (the orchestrator had listed it without checking); the agent has been told to build the stay-on-screen list only from messages that exist
 - [~] Road gimmicks, resumed from the saved ramp work: agent 19, branch `delivery-gimmicks` (a new worktree)
-- [ ] Next 2: themes, picking up the toy room on `delivery-themes`, then on down the owner's ranking
+- [~] New levels on new themes, built from the gimmicks the game has now (owner, 10-Oct: "Let's get some agents going making new levels with the new themes and the gimmicks we have right now"). No new gimmick per theme. Three agents, three themes each, a level on each:
+  - [~] A (agent 20, `delivery-themes`): the shared base first (where the new levels live, saved progress undisturbed), then T14 toy room, T15 underwater tunnel, T18 moon base
+  - [ ] B (`delivery-themes-b`, waiting for A's base): T13 film studio backlot, T1 Venice, T4 ice road
+  - [ ] C (`delivery-themes-c`, waiting for A's base): T12 theme park, T7 volcano island, T11 container port
+- **Standing rule for level content (owner, 10-Oct):** "add more Cash bonus pickups on the level from now, and have parts of the level where two or more pickups are side by side." Given to the theme agents, the Stelvio and Market Town agent and the gimmicks agent. Older levels have between none and four cash pickups
+- **The level progression rework waits:** the owner will do "a full rebalance later"
 - [ ] Next 3: pictures and clocks (the three circuits, the five themed levels), and Gimmick Road 2's gimmicks into real levels
 - [ ] Next 4: known problems: the replay failures (Expressway, Grand Prix, Market Town), the hazards check's flake, the editor's leftovers (E1.4, E6.2, E2.6, E3.5, E5.3, E6.1), side roads' remaining limits
 - [ ] Next 5: 28 liveries, 31 endless mode, replay in the browser
