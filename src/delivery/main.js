@@ -71,6 +71,7 @@ const params = new URLSearchParams(location.search);
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.open(params.get('garage') === 'evil');
+  if (params.get('tab')) Garage.tab(params.get('tab')); // (&tab=ideas: its Car ideas lot, where &look and &hover name an idea)
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
 }
