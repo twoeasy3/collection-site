@@ -291,7 +291,7 @@ It is only a menu: a level is built when a run on it starts (`Game.load`), and n
 the page. It is one screen that fits the window (nothing scrolls), laid out as a game's front end:
 
 - **The stage:** the level picked, large: its picture, number and name, its description for the side picked,
-  its clock, tip and best time, a ribbon of two halves (Good's medal and best on the left, Evil's on the
+  its clock, tip and best time, its two medals (Good's grade and best time on the left, Evil's on the
   right), a line for what the level needs (an amphibious car, its own vehicle, the level before it), and
   **What's on this road**: a card of the level's gimmicks, pickups and traffic, each with its model turning.
 - **The strip** under it: the levels of its group (five at a time); over it the **groups**, and over those the
