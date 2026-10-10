@@ -515,11 +515,19 @@ convoys already are (a level's `every: { min, max }`), so any level can have the
         *Not verified:* never played by hand, the siren never heard, nothing seen moving; no still of the two
         parked together with the lights going; the editor has no control for the field.
         *Settled so:* one interceptor; the interceptor is not a garage car; never on a race or the Battlefield.
-- [ ] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
+- [x] P2. **Bank robber wants a lift**: after a pursuit that ended in a crash, or on his own,
       a man with a bag stands on the shoulder with his thumb out, as a passenger pickup does.
       *Gamble:* carry him for a large payout and have every police car on the level after the
       car until he is dropped; or drive him straight to the next patrol car for standing.
       *Builds on:* the passenger pickup, P1.
+      - *Built (10-Oct, `delivery-pursuit`):* `robbers: [{ s }]`, `robber.js`, `render/robber.js`,
+        `CONFIG.robber`, a Gimmicks card; on Big Business, Night Drive, The Hood, Ring Road and Gimmick Road 2,
+        and wherever a pursuit's getaway car is wrecked. Drive over where he stands to pick him up: $15 per 100
+        m of a 1000 m lift; every police car going the player's way comes after the car (97% of its top speed,
+        so it is being held up that gets it caught: 1.4 s within 9 m is a bust and his money goes); or slow
+        below 9 m/s beside any police car to hand him over (25 standing for Good, no bust). *Verified:* `node
+        scripts/.robber-check.mjs` (all ok); stills of him on the shoulder, on the roof, and his card. *Not
+        verified:* never played; whether 97% is the right pace for the police.
 - [ ] P3. **Street racers**: two tuned cars line up beside the player at speed, flash their
       lights, and go: a race through the traffic to a marked point a kilometre on. *Gamble:*
       take it up (cash for winning, and the police take an interest in all three) or let them
