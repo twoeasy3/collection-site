@@ -424,6 +424,9 @@ import leaks from './levels/leaks.json';
 import moonbase from './levels/moon.json';
 // (batch A's imports go above this line)
 // (batch B's imports go above this line)
+import park from './levels/park.json';
+import cinder from './levels/cinder.json';
+import docks from './levels/docks.json';
 // (batch C's imports go above this line)
 
 // the numbered levels, and the special ones (S1, S2...), which always come after them on the
@@ -454,6 +457,9 @@ export const THEME_LEVELS = [
   moonbase,
   // (batch A: toy room, underwater tunnel, moon base: new levels go above this line)
   // (batch B: film studio, Venice, ice road: new levels go above this line)
+  park,
+  cinder,
+  docks,
   // (batch C: theme park, volcano island, container port: new levels go above this line)
 ];
 export const MAIN_LEVELS = [...FIRST_LEVELS, ...THEME_LEVELS]; // (every numbered level: 1, 2, 3...)
