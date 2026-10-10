@@ -734,6 +734,7 @@ Level fields added (shapes):
 - `fords: [{ from, to, depth? }]` (expressway, 300 m at most, between an exit and its merge, 40 m clear of both; depth 0.1 to 1.5 m, 0.5 if not said)
 - `cushions: [{ from, to, every? }]` (expressway; a row every 15 to 200 m, 45 if not said)
 - `shade: [{ from, to, side: 'left' | 'right', lanes? }]` (expressway; lanes of the player's side in shadow, 1 if not said)
+- `ruts: [{ from, to }]` (expressway)
 - `washboards: [{ from, to, skim? }]` (expressway; skim in m/s, 13 to 40, CONFIG.washboard.skim if not said)
 
 Progress:
@@ -744,7 +745,9 @@ Progress:
 - [x] H19 speed cushions: done, `e05c602`. On Gimmick Road 3 (3520-3700), Suburbs (1460-1600), The Hood (1460-1595), Christmas (1480-1615), cash between the rows. Clocks not re-timed. `cushions` passes (15). Stills: `cush-1-sign`, `cush-2-rows`, `cush-3-thrown`, `card-cush`, `suburbs-cush`.
 - [x] H10 black ice in the shade: done, `c18c446`. Trees of its own cast the shadow; the shadow is ice (a patch in `Track.slicks`) with 90% more of the steering gone. On Gimmick Road 3 (6250-6450, a barrier at 6410), Mountain Pass (2370-2450), Fjord (1340-1470). Not on Christmas (night). `Player.shaken` is now the share of steering taken (washboard and black ice both set it). `shade` passes (11). Stills: `shade-1`, `shade-2-in`, `pass-shade`, `fjord-shade`.
 - Vite cache fix `69b8ae1` cherry-picked (`c454f6e`); all checks pass after it.
-- Stopped here, handing back. Not started: H9, H16, H17, H7, H11, H12, H13, G4, H3, H20, H14, H18, H6, H15, G10, G11, G25, G24, G26, G22, G18, G3.
+- main merged in again (`f6e0648`, one conflict in levels.js's field docs); "ready to merge" sent.
+- [x] H9 ruts: done, `c82ce9a`. On Gimmick Road 3 (4830-5030, a barrier at 5000 in lane 4), Farm (2810-2970, a bale at 2945), Outback Express (2560-2860). `gambles.js` now reads `Input.steer` (the rut is climbed out of by steering against it). `ruts` passes (12). Stills: `ruts-1`, `ruts-2-in`, `card-ruts`, `farm-ruts`.
+- Not started: H16, H17, H7, H11, H12, H13, G4, H3, H20, H14, H18, H6, H15, G10, G11, G25, G24, G26, G22, G18, G3.
 
 For the owner:
 - H2: the queue fills the player's whole side, so the way round is the oncoming side or the shoulder (both a risk of their own), or the jump. Ring Road was wanted but has no 250 m clear of its exits' ramps.
@@ -784,7 +787,8 @@ For the owner:
 - Theme park: DONE. Theme `themepark` (`d7352fb`: render/themes/themepark.js, parkModels.js, sceneryClock.js for scenery that moves); level `park` "Thrill Park" (`41a6f06`), 4950 m, clock 225/170, menu picture, 31 cash pickups ($265), 9 rows across the road on the expressway and 2 on the side road. Checks: levels-check, schema, bundle, save, probe (delivered as a ghost), rows (each pickup of a row taken only from its own lane). Pictures: scratchpad/shots-themes/themepark. Nothing played by hand.
 - Volcano island: DONE. Theme `volcano` (`07a6558`: render/themes/volcano.js, volcanoModels.js); level `cinder` "Cinder Island" (`f060ead`), 4950 m, 37 m up and down, clock 225/170, menu picture, 29 cash pickups ($275), 8 rows across the road and 1 on the side road. Same checks pass. Pictures: scratchpad/shots-themes/volcano. Known: from far off the lava under the drawbridge shows over its leaves when they are down (the drawbridge's own water does the same). Nothing played by hand.
 - Scripts fix `69b8ae1` cherry-picked as `9e2c9fa`.
-- Container port: in progress (agent 22).
+- Container port: DONE (agent 22). Theme `port` (`fb8b1e9`: render/themes/port.js, portModels.js); level `docks` "Dock Run" (`5a658a5`), 4700 m, flat, six lanes, clock 215/160, menu picture, 27 cash pickups ($275), 7 rows across the road and 1 on the side road. Pictures: scratchpad/shots-themes/port.
+- ALL THREE DONE (agent 22). `main` merged in (`131e1b4`, no conflicts); descriptions for the three levels and T7, T11, T12 ticked (`306f731`). Targets looked at on each theme (scratchpad/shots-themes/targets): the rings show, no theme `target` set. Checks passing after the merge: descriptions, targets, schema, levels, bundle, save, probe of all three. Nothing played by hand; not pushed.
 - Done. Pictures looked at: after/_sheet1..6.png (targets on Mumbai, Hong Kong, Tokyo, Singapore day and night, Mount Ousley, safari, ford, harbour, the circuits; the Amphibious Tank from three sides in both liveries, in a rage ashore and afloat on Slipway Beach and Harbour Lights, the HUD corner). Last commit: README (?rage, ?pieces, ?turn). For the owner: the Amphibious Tank has no garage bay; it is as fast as the Tank ashore.
 
 ## Agent 21: theme levels B: film studio, Venice, ice road (.claude/worktrees/delivery-themes-b, delivery-themes-b)
@@ -793,10 +797,18 @@ For the owner:
 - Found, not fixed: drifters of kind `asteroid` off the space theme log "computeBoundingSphere(): Computed radius is NaN" every frame (used `mine` instead).
 - Venice: DONE. Theme `venice` (`4efb9c8`: render/themes/venice.js, veniceModels.js; the ground is the lagoon; a hump in the road is a bridge over a side canal: the theme hides road.js's land under a hilly road; a tunnel is a sotoportego; a tide's stretch is the open lagoon). Level `venice` "Acqua Alta" (`bf2c77d`), 4500 m, clock 185/140, menu picture, 35 cash pickups, 13 rows of two. Checks, ghost probe to the finish, rows check, 24 screenshots (scratchpad/shots-themes/venice); not played by hand. It has a parade (the whole side taken at a crawl, passed in the oncoming lanes): for the owner to overrule.
 - Scripts fix `69b8ae1` cherry-picked (`3a4c3fa`).
-- Ice road: in progress.
+- Ice road: DONE. Theme `iceroad` (`4b41285`: render/themes/iceroad.js, iceroadModels.js; night, aurora, stars; a hump in the road is a pressure ridge). Level `iceroad` "Northern Lights" (`45b99b9`), 4600 m with one side road, clock 200/150, menu picture, 37 cash pickups, 11 rows. Checks, ghost probe, 21 screenshots (scratchpad/shots-themes/iceroad); not played by hand.
+- Found, not fixed in road.js: the land under a hilly road has no normals, so it is black on a `lit` theme (the ice road's file gives it normals itself; Venice's hides it).
+- `main` merged in (`c7187ef`; one conflict, the checklist, both sides kept). Descriptions for the three levels and `target` for backlot and Venice: `02ee505`. Descriptions, targets, schema, levels, bundle and save checks pass. ALL THREE DONE; branch not pushed, not merged into main.
 
 ## Agent 24: known problems (.claude/worktrees/delivery-levelfix, delivery-fixes)
 
 - 1 Flaky headless checks: DONE `0a40e57`. Cause: one shared `node_modules/.vite` (junction) and Vite's cache key includes the server's root, so every start from another worktree deleted the cache and re-bundled React/Leaflet/three; two close together: `EPERM unlink node_modules\.vite\deps\...` in `createServer` (reproduced, 1 in 48 four-at-once). Fix: `logicServer()` in `delivery-headless.mjs` (no config, no bundling, no websocket: port 24678 was fought over too), used by every logic script; `shots.mjs` has a temp cache and browser profile per run. 100 runs four-at-once + 10 pairs: 0 failures.
 - Audit C4 (editor innerHTML), C2 (address-bar loans saved), C5 (bad `?edited` level), C6 (save code whitelist): written, being checked and committed.
 - Then: C3 with replay (baseline over all 53 levels running), shoulders pickups, Gimmicks page console errors, duplicate keys, stale notes, editor leftovers, menu pictures.
+
+## Agent 26: theme levels D: Wild West, favela, rice terraces (.claude/worktrees/delivery-city-levels, delivery-themes-d)
+- Markers for batch D below batch C's (f773f0d, faa20fe); cache fix cherry-picked (b359c19); main merged in (b9039f5).
+- Wild West DONE (017cb47, descriptions in the next commit): theme `wildwest` (render/themes/wildwest.js + wildwestModels.js), level `noon` "High Noon", 4.8 km, 37 cash pickups, 15 side-by-side rows, clock 205/155, levelshots/noon.jpg. Checks pass (levels, schema, bundle, save, targets, cargo, descriptions), ghost probe delivered. Shots: scratchpad/shots-themes/wildwest. Not played by hand.
+- Favela: in progress.
+- Rice terraces: not started.
