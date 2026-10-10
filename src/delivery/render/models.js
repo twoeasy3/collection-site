@@ -634,8 +634,51 @@ export const MODELS = {
     }
     box(group, trim, w * 0.55, 0.35, l - 1, 0, 0.75, -0.2);                         // chassis
     const trailer = l - cabL - 0.6;
-    box(group, white, w, 2.9, trailer, 0, 2.6, -l / 2 + trailer / 2);                // trailer
-    box(group, paint, w + 0.02, 0.35, trailer, 0, 1.3, -l / 2 + trailer / 2);        // a stripe of the livery
+    // The cargo truck (a kind that sheds its load: CONFIG.vehicles' "sheds") is this truck in another
+    // state: its back doors swung wide, the back of the trailer open with its load showing (crates and
+    // a bale, one crate on the lip ready to go), so the truck that drops things is told from an
+    // ordinary semi at a glance. The same size and hitbox: the doors and the lip's crate are looks only.
+    const open = car.sheds ? 1.6 : 0;                                                // the open back's depth
+    box(group, white, w, 2.9, trailer - open, 0, 2.6, -l / 2 + open + (trailer - open) / 2); // trailer
+    box(group, paint, w + 0.02, 0.35, trailer - open, 0, 1.3, -l / 2 + open + (trailer - open) / 2); // a stripe of the livery
+    if (open) {
+      const dark = lambert(0x2b2622), crate = lambert(0xb8894a), band = lambert(0x6b4a2b), straw = lambert(0xe2c25a);
+      const back = -l / 2, floor = 1.3;
+      // the open end is a shell (the load sits inside it, so it cannot be a solid block): a white
+      // floor, roof and walls, lined dark inside, with a dark wall at the far end
+      box(group, white, w, 0.14, open, 0, floor - 0.07, back + open / 2);              // its floor...
+      box(group, white, w, 0.12, open, 0, 4.0, back + open / 2);                      // ...roof...
+      for (const side of [-1, 1]) box(group, white, 0.06, 2.9, open, side * (w / 2 - 0.03), 2.6, back + open / 2); // ...and walls
+      box(group, dark, w - 0.12, 2.74, 0.06, 0, 2.6, back + open - 0.03);             // the far end, dark
+      box(group, dark, w - 0.12, 0.04, open, 0, 3.92, back + open / 2);               // the roof's underside...
+      for (const side of [-1, 1]) box(group, dark, 0.04, 2.74, open, side * (w / 2 - 0.08), 2.6, back + open / 2); // ...and the walls' insides
+      // the load: two crates stacked by the left wall, a bale on its side by the right, and a crate
+      // on the lip between them, skewed, half over the edge
+      const load = (mat, sx, sy, sz, x, y, z, turn = 0) => { const m = box(group, mat, sx, sy, sz, x, y, z); m.rotation.y = turn; return m; };
+      for (const [x, y, z, turn] of [[-w * 0.28, floor + 0.45, back + 0.6, 0.1], [-w * 0.28, floor + 1.35, back + 0.65, -0.15], [-w * 0.06, floor + 0.45, back - 0.1, 0.35]]) {
+        load(crate, 0.9, 0.9, 0.9, x, y, z, turn);
+        load(band, 0.94, 0.08, 0.12, x, y, z, turn);                                  // its bands
+        load(band, 0.12, 0.08, 0.94, x, y, z, turn);
+      }
+      const bale = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.9, 12), straw);
+      bale.rotation.z = Math.PI / 2;
+      bale.position.set(w * 0.28, floor + 0.5, back + 0.7);
+      group.add(bale);
+      const twine = new THREE.Mesh(new THREE.CylinderGeometry(0.53, 0.53, 0.14, 12), lambert(0xa8842f));
+      twine.rotation.z = Math.PI / 2;
+      twine.position.copy(bale.position);
+      group.add(twine);
+      // the doors, hinged at the back corners and swung wide, out past the sides, where the chase
+      // camera sees them flare (flat against the sides they would be lost)
+      for (const side of [-1, 1]) {
+        const hinge = new THREE.Group();
+        hinge.position.set(side * (w / 2 - 0.02), 2.62, back);
+        hinge.rotation.y = -side * 2.4;                                               // (about 140 degrees open)
+        group.add(hinge);
+        box(hinge, white, w / 2 - 0.04, 2.7, 0.06, -side * (w / 4 - 0.02), 0, 0);
+        box(hinge, steel, 0.08, 2.0, 0.08, -side * (w / 4 - 0.02), 0, -0.05);         // its lock bar
+      }
+    }
     for (const side of [-1, 1]) box(group, TAIL, 0.3, 0.25, 0.05, side * w * 0.38, 1.1, -l / 2 - 0.02);
     // wheels: the steer axle, two drive axles, and three under the trailer's tail
     for (const z of [front - 1.1, front - cabL - 0.4, front - cabL - 1.6, -l / 2 + 1.2, -l / 2 + 2.5, -l / 2 + 3.8]) {
