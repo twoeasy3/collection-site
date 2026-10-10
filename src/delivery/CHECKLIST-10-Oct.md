@@ -651,3 +651,77 @@ saved progress and the balance of the tiers are untouched.
 - [ ] A table of the 30 (name, what it is based on, size, colours for Good and Evil, a line about it)
 - [ ] A "Car ideas" tab in the garage: a second lot where they are parked, to look at, with the Livery button working
 - [ ] A picture of each, looked at and corrected until it reads as what it is based on
+
+## More cargo: 40 ideas (draft, not assigned)
+
+Drafted by the orchestrator on 10-Oct at the owner's request. None is built. The game has ten now
+(Good: tower of pizzas, wedding cake, goldfish, gift-wrapped cactus, grandfather clock; Evil:
+ticking parcel, porcupine, crate of bees, cursed doll, specimen jar). The same pattern is kept:
+a Good item has some charm and one small idle animation; an Evil item has three states that read
+at thumbnail size, calm at the start, agitated at half the clock, furious for the last fifth.
+"Fits" is a level or theme it would suit.
+
+### Good: 20 ordinary things, none of them a plain box
+
+| # | Item | Idle animation | Fits |
+|---|---|---|---|
+| C1 | Tray of coffees | Four cups in a holder; steam curls, one lid rattles | City, Rush hour |
+| C2 | Bunch of balloons | Tied to a weight, bobbing and tugging at their strings | Suburbs, Christmas |
+| C3 | Birthday present with a huge bow | The bow's tails flutter; something inside makes it hop now and then | Suburbs |
+| C4 | Bouquet in a vase | Flowers nod; a petal falls and a new one grows back | Farm, Market Town |
+| C5 | Stack of pancakes | Wobbles; syrup drips slowly down the side | Back Roads |
+| C6 | Ice-cream sundae | The cherry slides, stops, slides back up; melting drips | Beach, Hurricane |
+| C7 | Sushi boat | The little wooden boat rocks; a piece slides and returns | Tokyo, Hong Kong |
+| C8 | Tiered tea set | Cups chatter on their saucers; the pot's lid lifts with a puff | Canberra, Market Town |
+| C9 | Record player | The record turns, the arm bobs, notes float off | The Hood, Night Drive |
+| C10 | Lava lamp | Blobs rise and sink | Night levels |
+| C11 | Snow globe | A tiny village inside; the snow swirls and settles | Stelvio, Christmas, Mountain Pass |
+| C12 | Potted bonsai | Leaves shiver; a tiny bird hops along a branch | Tokyo, Singapore |
+| C13 | Puppy in a basket | Ears flop, tail wags, head tilts | Suburbs, Farm |
+| C14 | Canary in a cage | Hops between perches; the cage swings | Oh Mine! (the mine), Hong Kong |
+| C15 | Bowl of ramen | Steam rises; the chopsticks lift a noodle and drop it | Tokyo, Night levels |
+| C16 | Globe on a stand | Spins slowly, tilts, spins back | Airport, Canberra |
+| C17 | Trophy | Gleams; a star of light travels round the rim | Big Business, the circuits' menus |
+| C18 | Surfboard with a ribbon | Leans and rocks like a see-saw on its fin | Grand Pacific, Beach |
+| C19 | Tool box, open | Spanners rattle in their trays; the lid creaks | Construction, Quarry Run |
+| C20 | Telescope on a tripod | Swings round to look at things; the lens glints | Asteroid Run, Mountain Pass |
+
+### Evil: 20 things nobody should be driving about with
+
+| # | Item | Calm | Agitated (half the clock left) | Furious (a fifth left) | Fits |
+|---|---|---|---|---|---|
+| C21 | Egg in a nest | A large speckled egg, rocking a little | Cracked, an eye at the crack | Hatched: a furious little dragon (or goose) flapping in the shell | Farm, Safari |
+| C22 | Pressure cooker | Hissing gently | Lid rattling, valve whistling, steam jets | Red hot, lid bouncing, about to go | City, Mumbai |
+| C23 | Venus flytrap | Jaws shut, swaying | Jaws open, tracking things, drooling | Snapping in every direction, straining out of its pot | Mystery Meadows, Safari |
+| C24 | Barrel of toxic waste | Sealed, a soft green glow | Lid bulging, ooze down the side | Lid off, bubbling over, a tentacle of slime | Construction, Oh Mine! |
+| C25 | Haunted mirror | An ordinary mirror | A face in it that is not yours | Hands coming out of the glass | Night Drive, All Heck |
+| C26 | Skunk in a carrier | Asleep | Awake, tail up through the bars | Stamping, a green cloud | Back Roads, Farm |
+| C27 | Cannonball with a fuse | A black ball, fuse unlit | Fuse lit, short sparks | Fuse nearly gone, rolling about by itself | Battlefield, Passage du Gois |
+| C28 | Mimic chest | A treasure chest | Lid lifts on a row of teeth, a tongue | Running in circles on stubby legs, snapping | All Heck, Mystery Meadows |
+| C29 | Beehive piñata of fireworks | A bundle of rockets, tied | One fizzing | Rockets going off in turn, the bundle spinning | Christmas, Hong Kong |
+| C30 | Baby alien in an incubator | Curled up, a slow pulse of light | Awake, hands on the glass, the light quickening | Glass cracked, antennae out, the whole thing levitating | Asteroid Run, Airport |
+| C31 | Possessed teddy bear | Sitting, button eyes | Head turned all the way round | Standing, eyes red, holding its own stuffing | Suburbs, Night Drive |
+| C32 | Cage of bats | Hanging asleep | A few awake, eyes glowing | All of them battering the bars | Night levels, tunnels |
+| C33 | Ice block with something in it | A frosty block, a shape inside | Dripping, the shape has moved | Shattered open: a thawed, cross yeti cub (or caveman's arm) | Stelvio, Mountain Pass |
+| C34 | Sack of snakes | A tied sack, shifting | Heads poking through holes | The neck come undone, snakes spilling | Safari, Mumbai |
+| C35 | Bottle with a genie | A corked bottle, smoke inside | Cork wobbling, a face in the smoke | Cork out, an arm and a scowl coming out | Mumbai, Hong Kong |
+| C36 | Unstable reactor core | A canister, steady blue rings | Rings spinning fast, turning yellow, alarms | White hot, arcs of lightning, humming upward | Big Business, Construction |
+| C37 | Angry goose in a crate | A crate with a beak hole, quiet | Head out, hissing | Out of the crate entirely, wings wide | Farm, Canberra |
+| C38 | Jack-in-the-box | Closed, the handle turning by itself | Lid twitching, the tune speeding up | Sprung: a leering clown lunging on its spring | Christmas, Suburbs |
+| C39 | Thundercloud in a jar | A small grey cloud | Dark, rumbling, flickers of light | Lightning cracking the glass, rain inside | Hurricane, Mumbai |
+| C40 | Piranha tank | Fish idling | Circling fast, the water churning | Leaping out, snapping, water everywhere | Passage du Gois, the amphibious levels |
+
+### Notes for whoever builds them
+
+- **Pairs that suit a level** (one Good, one Evil, as each level carries): snow globe and ice block
+  (Stelvio); canary and toxic barrel (Oh Mine!); sushi boat and fireworks (Hong Kong); telescope
+  and baby alien (Asteroid Run); puppy and skunk (Farm); ramen and cage of bats (Night Drive);
+  surfboard and piranha tank (the amphibious levels); tool box and reactor core (Construction).
+- **Cheapest to build first** (shapes the game mostly has): pressure cooker, cannonball, toxic
+  barrel, jack-in-the-box, lava lamp, snow globe, trophy, tray of coffees.
+- **Hardest to make read small:** haunted mirror (a flat thing seen at an angle), genie (smoke),
+  thundercloud (soft shapes): each needs a strong colour change between states to carry it.
+- **Close to ones the game has** (keep apart if both are used): possessed teddy bear and the
+  cursed doll; cage of bats and the crate of bees; pressure cooker and the ticking parcel.
+- With 50 items, a level's cargo could be picked from two or three that suit it instead of one,
+  the same every run by level and side, so replays of a level are not always the same parcel.
