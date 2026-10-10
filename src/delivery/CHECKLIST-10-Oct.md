@@ -367,7 +367,9 @@ Build the theme first, then the level. Make sure the theme is reusable
       building blocks, a train set, a sleeping cat. Gimmick: marbles rolling down the track, the
       cat's paw as a hazard, a ramp-and-loop jump. Reuses: drifters, drawbridge jump, the models
       are already toy-like.
-- [ ] T15. **Underwater tunnel**: a glass tube on the sea bed: whales and shoals outside, a
+- [x] T15. **Underwater tunnel** (done as theme `seabed` and level T2 "Twenty Thousand Leaks", `levels/leaks.json`, with
+      the game's existing gimmicks: burst mains for the leaks, two tunnels for the dark stretches. No pump, no gimmick
+      of its own. Verified: the checks, a ghost probe to the end, screenshots along it. Not played by hand): a glass tube on the sea bed: whales and shoals outside, a
       leaking stretch, an air-lock at each end. Gimmick: leaks that flood a lane until a pump
       catches up; a section with the lights out. Reuses: tunnels, water mains, blackout.
 - [ ] T16. **Old Wild West**: a dirt main street, saloon, water tower, a steam railway beside the
