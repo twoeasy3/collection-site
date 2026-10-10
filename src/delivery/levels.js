@@ -133,6 +133,9 @@
 //   pursuits   { every: { min, max } }: now and then (every min-max s) a police pursuit comes through from behind:
 //              a getaway car flat out and an interceptor after it, to help, hinder or keep clear of (see
 //              CONFIG.pursuit and pursuit.js). Not on a race, the Battlefield, or an all-oncoming road
+//   robbers    { s }: a bank robber on the right-hand shoulder there, thumbing a lift: drive over where he stands to
+//              pick him up. He pays by the 100 m, and the police come after the car; or he can be handed over
+//              (see CONFIG.robber and robber.js). Not on a bridge. (One also turns up where a pursuit's getaway car is wrecked)
 //   hesitation false = traffic too fast for the player never hesitates, and none comes up from
 //              behind (see CONFIG.hesitation)
 //   asteroidFields  { from, to, count, moving, seed }: `count` asteroids of assorted sizes

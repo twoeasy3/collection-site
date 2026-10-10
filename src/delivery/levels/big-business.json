@@ -6,6 +6,7 @@
   "clock": { "good": 216, "evil": 153 },
   "tip": 90,
   "pursuits": { "every": { "min": 35, "max": 60 } },
+  "robbers": [{ "s": 2000 }],
   "traffic": { "darkvan": 0.18, "commuter": 0.08, "van": 0.1, "bus": 0.06, "police": 0.08, "junker": 0.1, "sport": 0.16, "wagon": 0.13, "lovebus": 0.11 },
   "segments": [
     { "length": 300, "curve": 0 },

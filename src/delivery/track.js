@@ -981,6 +981,11 @@ const createTrack = () => {
       else if (ONE_WAY) problems.push('reversible lane at ' + r.from + ': only on a two-way road');
     }
     if (LEVEL.convoys && !(LEVEL.convoys.every && LEVEL.convoys.every.min > 0 && LEVEL.convoys.every.max >= LEVEL.convoys.every.min)) problems.push('convoys: every { min, max } s');
+    for (const r of LEVEL.robbers || []) {
+      if (!(r.s >= 0 && r.s <= length - 60)) problems.push('robber at ' + r.s + ': on the road, short of the finish');
+      else if (onBridge(r.s)) problems.push('robber at ' + r.s + ': no shoulder to stand on, on a bridge');
+      else if (LEVEL.laps || LEVEL.battle) problems.push('robber at ' + r.s + ': not on a race, nor the Battlefield');
+    }
     if (LEVEL.pursuits) {
       const e = LEVEL.pursuits.every;
       if (!(e && e.min > 0 && e.max >= e.min)) problems.push('pursuits: every { min, max } s');
