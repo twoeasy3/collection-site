@@ -96,6 +96,8 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 
 **12-Oct, owner's feedback on the merged damage work (BUMPED, `delivery-damage` a45c0b1):** Q18 "I think the clamp is too harsh. 25 is barely any damage. ... I was complaining about sportcars (weak cars) oneshotting commuters with speed. Take weight into account." (replace the flat clamp with a mass-aware rule); Q19 "The lower end of obstacles do little damage" (raise the floor to about 25 to 30). Q15, Q3, Q12 parked behind them.
 
+**12-Oct, owner's heavy-lock priority:** Beginner stills (L1), then the damage rework Q18/Q19 checks, then carfix stills, then the rest. `delivery-i2` merged (docs only; open question 25: the owner decides on the history drop).
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
