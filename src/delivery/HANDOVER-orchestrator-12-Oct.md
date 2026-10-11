@@ -94,6 +94,23 @@ worktree (listed in section 3).
   and others: not looked into). **Never played by hand; no sound heard.**
 - Levels on the menu: 70. Tiers are the default (`?tiers=0` turns them off).
 
+- **UPDATE, after the owner's "Merge in all completed work to main" (12-Oct, late; local main only, nothing pushed):**
+  merged since the table above: `delivery-sweep` `4181d06` (Q21 doubtful removals), `delivery-gimmicklogic` (all six
+  items incl. Q13), `delivery-tests` (quick smoke repaired, groups runner, TESTS.md), `delivery-prank-c` (P8 to
+  P10 and the cargo-check exemption), `delivery-crests` (files only). `git log --first-parent` on main shows the
+  hashes. NOT merged, because the merge CONFLICTED and went back to the branch's agent (`git merge main`, keep
+  both sides): `delivery-prank-b` (cargo.js, cargoText.json, cargoModels.js) and `delivery-rework-b` Hong Kong
+  (config.js). Check `git branch --merged main` for which have since landed. The light checks on the new tip
+  (levels, replay, words, cargo, mysteries, tiers, ufo, pursuit) were handed to the tests agent; the results are
+  in the orchestrator's report to front, not here. The branch rows of section 3 for sweep, gimmicklogic, tests,
+  prank-c and crests are therefore DONE; the unseen-stills branches (carfix, prank-ideas, garagetiers, prank-a,
+  Good/Evil x3), `delivery-stats` and `delivery-themes-toys-wip` stay unmerged by the owner's reading of
+  "completed".
+- **The new repo for a cloud agent (owner, 12-Oct):** "I have a new repo, I would like the uncompleted work to be
+  centralised and committed to the new repo for a cloud agent to take a look at." Being PREPARED by the history
+  agent in a scratch clone (branches, `CLOUD-AGENT-README.md`, size, a sensitive-data grep of the tree and the
+  history). NOTHING is pushed and no remote is added until the owner gives the URL and the go.
+
 ## 3. Every unmerged branch (worktree, state, next step)
 
 Worktrees are under `.claude/worktrees/<name>` (the branch's own scratchpad is
