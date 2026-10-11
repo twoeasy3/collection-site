@@ -168,3 +168,8 @@ into.
 ## Asked 11-Oct, late
 
 22. **What do players get for earning both medals on a level?** As built, nothing beyond the unlock counts and the per-side bronze, silver or gold grade. Options: a one-time tip bonus scaled to the tier (orchestrator pick, stays inside the existing systems); a cosmetic mark on the plate and card and a tier-complete mark; a cosmetic unlock (a livery or trail) for a whole tier; a cargo collection page or special Evil cargo state. Left alone: no reward.
+
+## Asked 12-Oct
+
+23. **Q19 damage numbers.** Merged (`delivery-damage`): exploding-obstacle damage = 10 + 6.5 x sqrt(volume), machinery up (bulldozer, excavator, dump truck 70; roller 42; forklift 33), but the formula also LOWERS a few: barrier 30 to 22, rail barrier 30 to 21, cow 30 to 25, kangaroo 25 to 21; and raises piles 15 to 33, umbrellas 15 to 37, sewage 10 to 23. Keep as is, or hold the barrier, rail barrier and animals at their old values? (Machine heights are estimates.)
+24. **Q9 "move all blasts into the blasting gimmick".** Built as a card change only: the gimmick page's "Quarries and blasts" card is now two cards, Quarries and Blasts. Did you mean a real data/mechanics move (one `blasting` gimmick key for the airport blasts and Quarry Run's Blast)? That is a separate, riskier job.

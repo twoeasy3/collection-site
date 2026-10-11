@@ -88,6 +88,12 @@ Draft at `bcc7570` on `delivery-prank-ideas` (`IDEAS-prank-cargo-12-Oct.md`, not
 not wired to levels. (B) Good/Evil indicator, idea 2 (underglow with a pulse): "for 2) have the agent model and show it": `delivery-underglow`
 (a3b461d, Sonnet Medium), behind a CONFIG flag; DO NOT MERGE until the owner has seen the before/after stills.
 
+**12-Oct, Good/Evil indicator widened (owner: "Just try all of them and report back."):** all 12 ideas behind `?ge=1,5,8` / `?ge=all` (shared `src/delivery/sidecues.js`,
+none on by default), nothing merges until the owner has seen the stills: `delivery-underglow` (a3b461d: ideas 1 to 4), `delivery-ge-road` (af95595: 5 to 7),
+`delivery-ge-ui` (a834466: 8 to 12; 11 and 12 are sound: not heard).
+**12-Oct, MERGED `delivery-damage`:** Q18 damage speed cap 15 m/s (`CONFIG.damageSpeedCap`), Q19 explosive obstacle damage 10 + 6.5 x sqrt(volume), Q4 45 m wet after a
+burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 24). Not checked in a browser; levels and replay checks passed.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
