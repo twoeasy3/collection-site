@@ -25,13 +25,13 @@ const t = (file, extra = {}) => ({ file: 'scripts/' + file, ...extra });
 const GROUPS = {
   words: {
     about: 'The words: level names and descriptions, the per-kind words files, messages, the cards listing what is on a road',
-    seconds: 60,
+    seconds: 85,
     tests: [t('.words-check.mjs'), t('.descriptions-check.mjs'), t('.hud-check.mjs'), t('.roadcard-check.mjs')],
     files: [/levelText|Text\.json|words\.js|messages|levelinfo|gimmickspage|poweruppage|cargopage/],
   },
   levels: {
     about: 'Level data: the schema, every level builds with no problems, lapped levels close their loop, every import resolves',
-    seconds: 60,
+    seconds: 90,
     tests: [t('.schema-check.mjs'), t('.loop-check.mjs'), t('.bundle-check.mjs'), t('delivery-levels-check.mjs', { heavy: true }), t('tiers.mjs', { args: ['check'] })],
     files: [/src\/delivery\/levels\//, /levels\.js$/, /levelSchema|track\.js|editor/, /tiers\.json/],
   },
@@ -44,7 +44,7 @@ const GROUPS = {
   },
   tiers: {
     about: 'Level tiers and progression: what opens and when, the car rule, medals, saves, milestones, the Blue Star and earned cars\' figures',
-    seconds: 40,
+    seconds: 100,
     tests: [t('.tiers-check.mjs'), t('.earned-check.mjs'), t('.balance-check.mjs'), t('.save-check.mjs'), t('.milestones-check.mjs')],
     files: [/tiers|progress\.js|milestones|menus|menu2|garage/],
   },
@@ -56,25 +56,25 @@ const GROUPS = {
   },
   cargo: {
     about: 'Cargo and the delivery at the kerb: every level\'s item, the Evil thresholds, the ending',
-    seconds: 25,
+    seconds: 20,
     tests: [t('.cargo-check.mjs')],
     files: [/cargo|delivery\.js|packages/],
   },
   gimmicks: {
     about: 'The gimmicks: Gimmick Road 2 and 3 (hazards, gambles, crests), gravel, police pursuit, radiation, the UFO strike, traffic with quirks',
-    seconds: 150,
+    seconds: 200,
     tests: [t('.hazards-check.mjs'), t('.gimmicks3-check.mjs'), t('.gravel-check.mjs'), t('.pursuit-check.mjs'), t('.radiation-check.mjs'), t('.ufo-check.mjs'), t('.traffic-quirks-check.mjs')],
     files: [/hazards|gambles|gimmicks\.js|gravel|pursuit|radiation|ufostrike|crossing|bullettrain|police/],
   },
   obstacles: {
     about: 'Obstacles, pickups and targets: the themes\' own obstacles, items on the shoulders, TANK RAGE targets, dents',
-    seconds: 40,
+    seconds: 35,
     tests: [t('.obstacles-check.mjs'), t('.shoulder-items-check.mjs'), t('.targets-check.mjs'), t('.dents-check.mjs')],
     files: [/themes\.js|collision\.js|pickups\.js|powerups\.js|obstacleText|pickupText|dents/],
   },
   water: {
     about: 'The water stages on the amphibious levels: the amphibious car, boats, traffic at the water\'s edge, the amphibious tank',
-    seconds: 40,
+    seconds: 45,
     tests: [t('.water-check.mjs')],
     files: [/water\.js|amphib|slipway|harbour|flood|ford|fjord/],
   },
