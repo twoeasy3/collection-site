@@ -127,6 +127,8 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 
 **12-Oct STAND-DOWN (owner: "Get all to write a scratchpad and suspend." / "write a full handover"):** `HANDOVER-orchestrator-12-Oct.md` (full, with the prompt) and `SCRATCHPAD-12-Oct.md`; every branch has its own scratchpad. Then the owner: "Merge in all completed work to main." Merged to LOCAL main (unpushed): sweep `4181d06`, gimmicklogic, tests, prank-c, crests; prank-b and Hong Kong conflicted and went back to their agents; carfix Q8/Q16, prank-ideas, garagetiers, prank-a, Good/Evil x3, stats, toys-wip are NOT completed (stills unseen / unchosen / held). And: "I have a new repo, I would like the uncompleted work to be centralised and committed to the new repo for a cloud agent to take a look at": preparation only (history agent), nothing pushed until the owner's URL and go.
 
+**12-Oct, LIVE COMMIT CORRECTION:** `origin/main` is `1077340` (pushed 11-Oct 02:22 per `git reflog show origin/main`), not `ceecc34` as the 11-Oct state block says; local `main` is 111 commits ahead (about 36 first-parent merges and notes), unpushed. Merged to local main since the stand-down: sweep `4181d06`, gimmicklogic (six items), tests, prank-c, prank-b, crests, Hong Kong (`delivery-rework-b`). Post-merge check results: pending (tests agent).
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
