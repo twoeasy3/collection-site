@@ -81,7 +81,9 @@ export const Collision = (() => {
     // Contact with a police car is a bust, unless it wasn't the player's doing: the police car
     // ran into the back of the player, sideswiped it or turned into it (it was the one moving
     // sideways towards the other, and faster), it was out of control, or it was oncoming.
-    const police = a.isPlayer && b.kind === 'police' ? b : b.isPlayer && a.kind === 'police' ? a : null;
+    // (a pursuit's interceptor is a police car for this: it is too busy to see anything else, but hitting it is a bust)
+    const isCop = (v) => v.kind === 'police' || v.kind === 'interceptor';
+    const police = a.isPlayer && isCop(b) ? b : b.isPlayer && isCop(a) ? a : null;
     if (police) {
       const behind = (police.s - Player.s) * Player.dir < 0;
       const closing = (police.vs - Player.speed) * Player.dir > 0;
