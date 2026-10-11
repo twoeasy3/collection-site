@@ -327,17 +327,24 @@ export const GROUPS = [
       pipe.position.set(2.6, 0, -1);
       return { model: group(worker, barrow, pipe) };
     } },
-    { name: 'Falling wreckage', color: 0xff5a2a, has: (l) => l.wreckage?.length, rules: [
+    { name: 'Falling wreckage', color: 0xff5a2a, has: (l) => l.wreckage?.some(e => e.kind !== 'blast' && e.kind !== 'boulders'), rules: [
       'Scripted destruction as you come near: tankers, containers and hangars go up beside the road, a plane falls out of the sky, an airliner comes in to land and slides across the lanes.',
-      'Whatever its wreckage lands on is wrecked, and it blocks those lanes for good; traffic pulls over for it. A building can blow out across the road too: keep up and you\'ll be past it, or not.',
+      'Whatever its wreckage lands on is wrecked, and it blocks those lanes for good; traffic pulls over for it. (A building blowing out is a Blast: its own card.)',
     ], build: () => ({ model: makeAirliner(14, 30, true) }) },
-    { name: 'Quarries and blasts', color: 0xb9a37c, has: (l) => l.quarries?.length, rules: [
+    { name: 'Quarries', color: 0xb9a37c, has: (l) => l.quarries?.length, rules: [
       `A quarry is cut into the hillside beside the road: ${CONFIG.quarry.benches} benches, each ${CONFIG.quarry.benchHeight} m high and ${CONFIG.quarry.benchDepth} m deep, with the works on its floor.`,
-      `Now and then a crag of the face is blasted out across the road. Its red box flashes for ${W.blastWarn} s first, then rock and dust sweep over the lanes in ${W.blastTime} s: whatever is in the box is wrecked, you included.`,
-      'It is timed to your pace, not to a spot: keep up and you are just short of it as it goes; ease off, or be through it already. The road is left clear afterwards.',
+      'Its face is scenery until a level blasts it (see Blasts) or sends boulders off it (see Boulders).',
     ], build: () => {
       const g = road(9, 14), rock = lambert(0xb9a37c), dark = lambert(0x8f7c5c), Q = CONFIG.quarry;
       for (let k = 0; k < Q.benches; k++) g.add(box(3, 1.5, 14, k % 2 ? dark : rock, 7.5 + k * 3, 0.75 + k * 1.5, 0));
+      return { model: g, spin: false };
+    } },
+    { name: 'Blasts', color: 0xe0642a, has: (l) => l.wreckage?.some(e => e.kind === 'blast'), rules: [
+      `Now and then a building beside the road, or a crag of a quarry's face, is blasted out across the road. Its red box flashes for ${W.blastWarn} s first, then fire (or rock and dust) sweeps over the lanes in ${W.blastTime} s: whatever is in the box is wrecked, you included.`,
+      'It is timed to your pace, not to a spot: keep up and you are just short of it as it goes; ease off, or be through it already. The road is left clear afterwards.',
+    ], build: () => {
+      const g = road(9, 14), rock = lambert(0xb9a37c), dark = lambert(0x8f7c5c);
+      for (let k = 0; k < 2; k++) g.add(box(3, 1.5, 14, k % 2 ? dark : rock, 7.5 + k * 3, 0.75 + k * 1.5, 0));
       const boxMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
       const warn = mesh(new THREE.PlaneGeometry(9, 5).rotateX(-Math.PI / 2), boxMat, 0, 0.06, -1);
       const dust = [0, 1, 2, 3].map(k => mesh(new THREE.SphereGeometry(1.1, 10, 8), lambert(0xcbb894, { transparent: true, opacity: 0.8 }), 0, 1, -1 + (k % 2 ? 1 : -1)));
