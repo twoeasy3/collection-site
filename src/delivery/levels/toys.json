@@ -57,9 +57,6 @@
   "drawbridges": [
     { "s": 3050 }
   ],
-  "tunnels": [
-    { "from": 3340, "to": 3560 }
-  ],
   "balloons": [
     { "s": 3720, "lanes": [3, 4] }
   ],

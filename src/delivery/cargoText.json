@@ -68,5 +68,8 @@
   "band": { "name": "Marching Band in a Box", "blurb": "A whole marching band in an open box.", "states": ["A faint oompah","Trombone out","Full blast"] },
   "piecatapult": { "name": "Custard Pie Catapult", "blurb": "A spring-loaded arm with a cream pie on it, set to fire.", "states": ["Set","Twitching","Firing"] },
   "airhorn": { "name": "Air Horn under a Cushion", "blurb": "An air horn with a cushion sat on the button.", "states": ["Primed","Parping","Blaring"] },
-  "ghost": { "name": "Bedsheet Ghost", "blurb": "A sheet with two eyeholes, and someone under it.", "states": ["Folded","Rising","BOO"] }
+  "ghost": { "name": "Bedsheet Ghost", "blurb": "A sheet with two eyeholes, and someone under it.", "states": ["Folded","Rising","BOO"] },
+  "nestedboxes": { "name": "Boxes within Boxes", "blurb": "A huge present with a smaller box inside, and so on.", "states": ["Wrapped","Opening","Gotcha"] },
+  "spider": { "name": "Spider on a Fishing Line", "blurb": "A rubber spider dangled from a rod, price tag and all.", "states": ["Hanging","Bobbing","Dropped"] },
+  "ink": { "name": "Disappearing Ink", "blurb": "A bottle of disappearing ink and a quill, on a blotter.", "states": ["Corked","Blotting","Splashing"] }
 }

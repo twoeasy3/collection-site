@@ -3,7 +3,7 @@
 //   node scripts/.mysteries-check.mjs
 import { boot } from './delivery-headless.mjs';
 
-const g = await boot({ cars: ['commuter', 'sport', 'lowrider'] });
+const g = await boot({ cars: ['commuter', 'sport', 'lowrider'], ownAll: true, tiers: false });
 let failures = 0;
 const check = (ok, what) => { if (!ok) failures++; console.log((ok ? '  ok    ' : '  FAIL  ') + what); };
 try {

@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { boot } from './delivery-headless.mjs';
 
-const g = await boot();
+const g = await boot({ ownAll: true });
 const { Targets } = await g.load('pickups.js');
 const { Packages } = await g.load('packages.js');
 const { THEMES } = await g.load('themes.js');

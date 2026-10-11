@@ -81,7 +81,9 @@ export const Collision = (() => {
     // Contact with a police car is a bust, unless it wasn't the player's doing: the police car
     // ran into the back of the player, sideswiped it or turned into it (it was the one moving
     // sideways towards the other, and faster), it was out of control, or it was oncoming.
-    const police = a.isPlayer && b.kind === 'police' ? b : b.isPlayer && a.kind === 'police' ? a : null;
+    // (a pursuit's interceptor is a police car for this: it is too busy to see anything else, but hitting it is a bust)
+    const isCop = (v) => v.kind === 'police' || v.kind === 'interceptor';
+    const police = a.isPlayer && isCop(b) ? b : b.isPlayer && isCop(a) ? a : null;
     if (police) {
       const behind = (police.s - Player.s) * Player.dir < 0;
       const closing = (police.vs - Player.speed) * Player.dir > 0;
@@ -624,7 +626,9 @@ export const Collision = (() => {
         }
       } else if (o.kind === 'dropBear') {
         if (o.h <= 0) continue; // (down, and staying there)
-        if (!o.fall && o.s - Player.s > 0 && o.s - Player.s < o.near) o.fall = 0.01; // the player is near: down it comes
+        // the player is near: down it comes. Near is reckoned in time as well as metres: the car covers the fall's
+        // distance while the bear is in the air, so a fast car is dropped on from that much further back
+        if (!o.fall && o.s - Player.s > 0 && o.s - Player.s < o.near + Math.max(0, Player.speed) * Math.sqrt(2 * CONFIG.dropBear.height / 9.8)) o.fall = 0.01;
         if (o.fall) {
           o.fall += 9.8 * dt;
           o.h = Math.max(0, o.h - o.fall * dt);

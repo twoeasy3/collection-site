@@ -265,8 +265,10 @@ export const Player = {
     for (let i = 0; i < effects.length; i++) if ((roll -= weights[i]) < 0) { drawn = effects[i]; break; }
     let effect = this.tank > 0 ? 'ufo'
       : [...effects, ...extraEffects].find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || drawn; // (?mystery=UFO works too, and picks from the unused pool)
-    // (one that doesn't suit this level, or this car: souped up, in a car with no Super version. Another in its place)
-    if (!Mysteries.fits(effect) || (effect === 'soupedUp' && !superOf(CAR))) effect = CONFIG.mystery.fallback;
+    // (one that doesn't suit this level: another in its place)
+    if (!Mysteries.fits(effect)) effect = CONFIG.mystery.fallback;
+    // (souped up, in a car with no Super version: nothing is upgraded, and the line says so)
+    if (effect === 'soupedUp' && !superOf(CAR)) return Message.say('powerups', 'mystery', 'soupedUpNone');
     Message.say('powerups', 'mystery', effect);
     if (effect === 'ufo') UfoStrike.start();
     if (effect === 'bulletTrain') BulletTrain.start();
@@ -286,6 +288,18 @@ export const Player = {
       const others = CARS.includes(CAR) || CAR.idea ?CARS.filter(c => c !== CAR && !c.tank && !c.earned && (!LEVEL.amphibious || c.amphibious)) : [];
       if (others.length) this.takeCar(() => lendCar(others[Math.floor(Math.random() * others.length)]));
     }
+  },
+  // the Jerk mechanic for `time` s, set off by something other than the mystery pickup (crashing a funeral
+  // procession: see Traffic.mourn). Another mystery already running is ended cleanly first (endMystery: the
+  // car swap given back, the toad calmed, and so on); a jerk's time is only ever topped up
+  startJerk(time) {
+    if (this.busted) return false;
+    if (this.mystery && this.mystery !== 'jerk') this.endMystery();
+    const fresh = this.mystery !== 'jerk';
+    this.mystery = 'jerk';
+    this.mysteryTime = Math.max(this.mysteryTime, time);
+    if (fresh) for (const car of Traffic.cars) car.showMood = true;
+    return fresh;
   },
   // the mystery effect running, in a word or two, for the pickup status (messages.json: mysteryNames); '' with none
   get mysteryName() { return this.mystery ? Message.pick('mysteryNames', this.mystery) || this.mystery : ''; },
@@ -345,6 +359,9 @@ export const Player = {
     // hands off, the speed simply holds; pulling away and recovering from a hit are automatic
     const boosted = this.turbo > 0;
     this.turbo = Math.max(0, this.turbo - dt);
+    // (the same turbo as a share of the car's own top speed: its bends are taken that much faster too)
+    const baseTop = this.tank > 0 ? (this.rageTank ? this.rageTank.maxSpeed : CONFIG.tankMaxSpeed) : CAR.maxSpeed;
+    const turboCorner = boosted && baseTop > 0 ? 1 + CONFIG.turboBoost / baseTop : 1;
     // (a turbo adds the same to every car's top speed: a slow car stays the slower one)
     // (bad gas and the weight hold the car back: a share of its top speed and acceleration)
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
@@ -373,7 +390,7 @@ export const Player = {
     }
     // in a bend, a lower top speed: the sharper, and the heavier and less agile the car, the lower
     // (but not on ice, nor where cars understeer, nor with no brakes: there they slide wide instead)
-    if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility));
+    if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility) * turboCorner);
     // in a gravel trap (see CONFIG.gravel): a far lower top speed, little drive, and a drag that grows with the
     // speed; stopped in it, the car is beached for a while, then crawls out
     const GR = CONFIG.gravel, gravel = this.inGravel = this.active && this.ghost <= 0 && this.tank <= 0 && !CAR.noWheels && Track.gravelAt(this.s, this.lat);

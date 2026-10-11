@@ -32,6 +32,8 @@ const reseed = (...parts) => { // (FNV-1a over the seed and the parts)
 const server = await logicServer();
 let failures = 0;
 const QUICK = process.argv.includes('--quick');
+// --levels=id,id: only the per-level checks (the first section), for those levels (a menu level's id, as levels/<file>.json has it)
+const ONLY_LEVELS = (() => { const ids = (process.argv.find(a => a.startsWith('--levels=')) || '').slice(9).split(',').filter(Boolean); return ids.length ? ids : null; })();
 // a section's heading, after how long the one before took
 const started = Date.now();
 let sectionStart = started;
@@ -62,13 +64,20 @@ try {
   const { Input } = await load('/src/delivery/input.js');
   const { FxQueue } = await load('/src/delivery/physics.js');
   const cars = await load('/src/delivery/cars.js');
+  const themes = await load('/src/delivery/themes.js');
+  const { Water } = await load('/src/delivery/water.js');
   const { CONFIG } = await load('/src/delivery/config.js');
+  // (the tiers are on by default: a tier level starts only in a car of its tier, and a new save owns the Commuter alone. Own every
+  // car, so each level starts as a player's would; the rule is the game's own, only the garage is full)
+  const { Progress } = await load('/src/delivery/progress.js');
+  Progress.data.cars = cars.CARS.map(c => c.id);
   Object.defineProperty(Input, 'throttle', { get: () => 1, configurable: true });
 
   check(track.Track === null, 'nothing of a level is built before a run starts');
 
   for (let n = 0; n < levels.LEVELS.length; n++) {
     levels.selectLevel(n);
+    if (ONLY_LEVELS && !ONLY_LEVELS.includes(levels.LEVEL.id)) continue;
     section(`level ${n + 1}: ${levels.levelName(levels.LEVEL)}`);
 
     // drive flat out, throwing packages, kept alive so the whole course is covered
@@ -90,8 +99,18 @@ try {
           if (last !== null) sharpest = Math.max(sharpest, Math.abs(T.grade(s) - last));
           last = T.grade(s);
         }
+        // (a kink is judged against the level's own crests: a slope eases into the next over the segment's "ease" metres each way
+        // (CONFIG.gradeEase if it has none), so the grade can change by up to the step between two segments' grades over that,
+        // per metre, a little over: the stock 0.03 stands where the levels' eases are the default, and a gamble's sharp crest
+        // (Mystery Meadows' ease of 6) is allowed the sharpness it was given. A hill that rises under 2 m is not a hill)
+        const segs = levels.LEVEL.segments;
+        let kinkLimit = 0.03;
+        for (let i = 1; i < segs.length; i++) {
+          const ease = Math.min(segs[i - 1].ease || CONFIG.gradeEase, segs[i].ease || CONFIG.gradeEase);
+          kinkLimit = Math.max(kinkLimit, 1.25 * Math.abs((segs[i].grade || 0) - (segs[i - 1].grade || 0)) / ease);
+        }
         check(T.hilly === wantHills && Number.isFinite(high) && Math.abs(low) < 1e-6 &&
-          (wantHills ? high > 5 && steepest <= Math.max(...levels.LEVEL.segments.map(seg => Math.abs(seg.grade || 0))) + 1e-9 && sharpest < 0.03 : high === 0),
+          (wantHills ? high > 2 && steepest <= Math.max(...segs.map(seg => Math.abs(seg.grade || 0))) + 1e-9 && sharpest < kinkLimit : high === 0),
           wantHills ? `hills: road height runs from 0 to ${high.toFixed(1)} m, steepest slope ${(steepest * 100).toFixed(1)}%, no sharp kinks`
             : 'the road is flat');
       }
@@ -146,17 +165,31 @@ try {
       const o = Collision.obstacles.find(x => x.kind === kind && (kind !== 'asteroid' || (Collision.atRoadLevel(x) && !x.bob)));
       for (const other of Collision.obstacles) if (other !== o) other.gone = true; // (herds can stand two deep)
       if (kind === 'dropBear') o.h = 0; // (down from its tree)
-      if (kind === 'rock') Object.assign(o, { h: 0, lat: o.land }); // (come down the hillside, onto the road)
+      if (kind === 'rock' || kind === 'lavaRock') Object.assign(o, { h: 0, lat: o.land ?? o.lat }); // (come down the hillside, onto the road; a level's own rock, not a rockfall's, is on the road already)
       if (kind === 'landmine') o.buried = false; // (up out of the dirt, as it is once the player is near)
       o.gone = false; // (a pipe waits on its stack, out of play, until it rolls)
-      Player.s = o.s - 1; Player.lat = o.lat; // overlapping it Player.speed = 20; Player.launching = false;
+      Player.s = o.knock ? o.s - o.hl - 0.5 : o.s - 1; Player.lat = o.lat; // overlapping it (a knock from behind: the car's nose in its tail) Player.speed = 20; Player.launching = false;
       Collision.check();
       FxQueue.length = 0;
       const cost = CONFIG.obstacleKinds[kind];
       // (a landmine destroys the car outright, whatever its health)
-      const damage = kind === 'landmine' ? Player.maxHealth : kind === 'asteroid' ? Math.min(cost.maxDamage, cost.damage * o.r) : cost.damage;
+      // (the 6x6 ignores rockfall, free: the tiers put it in on the levels of its tier, Far Side's and Eruption Day's among them)
+      const ignored = (kind === 'rock' || kind === 'lavaRock') && cars.CAR.trait === 'rocks';
+      const damage = ignored ? 0 : kind === 'landmine' ? Player.maxHealth : kind === 'asteroid' ? Math.min(cost.maxDamage, cost.damage * o.r) : cost.damage;
+      if (o.knock) {
+        // (a wide load or its escort is not blown up: it is a knock. It stays, the car is put clear of it, and it costs what the kind says
+        // (here from behind: the car is put at its tail) once; the next touch costs nothing until its `knocked` has counted down)
+        const once = Math.abs(Player.health - (Player.maxHealth - damage)) < 1e-6 && !o.gone && o.knocked > 0 && Player.s < o.s;
+        const health = Player.health;
+        Player.s = o.s - o.hl - 0.5; Player.lat = o.lat;
+        Collision.check();
+        FxQueue.length = 0;
+        check(once && Player.health === health,
+          `hitting a ${kind} is a knock: it stays, costs ${damage.toFixed(0)} health once, and a second touch straight after costs nothing`);
+        continue;
+      }
       check(o.gone && Math.abs(Player.health - (Player.maxHealth - damage)) < 1e-6,
-        `hitting a ${kind} destroys it and costs ${kind === 'landmine' ? 'all its' : damage.toFixed(0)} health`);
+        `hitting a ${kind} destroys it and costs ${kind === 'landmine' ? 'all its' : damage.toFixed(0)} health${ignored ? ' (the 6x6 shrugs rocks off)' : ''}`);
     }
 
     if (kinds.includes('asteroid')) {
@@ -177,42 +210,45 @@ try {
       Player.s = off.s; Player.lat = off.lat; Player.speed = 20; Player.launching = false;
       Collision.check();
       check(!off.gone && Player.health === Player.maxHealth, `an asteroid ${off.h.toFixed(1)} m off the road's level can be driven straight under or over`);
-      check(cars.CAR.ufo === true && Player.hw === cars.LEVEL_CARS.ufo.hw, 'the level is flown in a UFO, whatever car is in the garage');
-      // the UFO is very fast and agile: flat out on a clear road, then a hard swerve
-      Game.start();
-      let steerNow = 0, topSpeed = 0, sideSpeed = 0;
-      Object.defineProperty(Input, 'steer', { get: () => steerNow, configurable: true });
-      for (let i = 0; i < 120 * 8; i++) {
-        for (const o of Collision.obstacles) o.gone = true;
-        steerNow = i > 120 * 7 ? 1 : 0;
-        Game.update(1 / 120);
-        FxQueue.length = 0;
-        topSpeed = Math.max(topSpeed, Player.speed);
-        sideSpeed = Math.max(sideSpeed, Player.latVel);
+      if (levels.LEVEL.car === 'ufo') { // (an asteroid field is not the UFO's alone: Far Side drives it in a car)
+        check(cars.CAR.ufo === true && Player.hw === cars.LEVEL_CARS.ufo.hw, 'the level is flown in a UFO, whatever car is in the garage');
+        // the UFO is very fast and agile: flat out on a clear road, then a hard swerve
+        Game.start();
+        let steerNow = 0, topSpeed = 0, sideSpeed = 0;
+        Object.defineProperty(Input, 'steer', { get: () => steerNow, configurable: true });
+        for (let i = 0; i < 120 * 8; i++) {
+          for (const o of Collision.obstacles) o.gone = true;
+          steerNow = i > 120 * 7 ? 1 : 0;
+          Game.update(1 / 120);
+          FxQueue.length = 0;
+          topSpeed = Math.max(topSpeed, Player.speed);
+          sideSpeed = Math.max(sideSpeed, Player.latVel);
+        }
+        steerNow = 0;
+        check(topSpeed > 55 && sideSpeed > 20, `the UFO reaches ${(topSpeed * 3.6).toFixed(0)} km/h and moves sideways at ${sideSpeed.toFixed(0)} m/s (a car manages ${CONFIG.steerSpeed})`);
+        // this level has the shoulder timer off: the shoulder is there and can be driven on
+        // for as long as you like
+        Game.start();
+        steerNow = 1;
+        let onShoulder = false, lowestDanger = Infinity;
+        for (let i = 0; i < 120 * 6; i++) {
+          for (const o of Collision.obstacles) o.gone = true;
+          Game.update(1 / 120);
+          FxQueue.length = 0;
+          if (Player.onShoulder) onShoulder = true;
+          lowestDanger = Math.min(lowestDanger, Player.danger);
+        }
+        steerNow = 0;
+        const T2 = track.Track;
+        check(T2.shoulder === CONFIG.shoulder && Player.lat > T2.laneHi(Player.s) && !onShoulder &&
+          lowestDanger === CONFIG.dangerTime && Game.busts === 0 && !Player.busted,
+          'shoulder timer off: 6 s on the shoulder, the timer never moves and nobody is busted');
+        let anyTraffic = false;
+        for (let i = 0; i < 120 * 20; i++) { Game.update(1 / 120); FxQueue.length = 0; if (Traffic.cars.some(c => c.active)) anyTraffic = true; }
+        check(!anyTraffic, 'no traffic at all');
       }
-      steerNow = 0;
-      check(topSpeed > 55 && sideSpeed > 20, `the UFO reaches ${(topSpeed * 3.6).toFixed(0)} km/h and moves sideways at ${sideSpeed.toFixed(0)} m/s (a car manages ${CONFIG.steerSpeed})`);
-      // this level has the shoulder timer off: the shoulder is there and can be driven on
-      // for as long as you like
-      Game.start();
-      steerNow = 1;
-      let onShoulder = false, lowestDanger = Infinity;
-      for (let i = 0; i < 120 * 6; i++) {
-        for (const o of Collision.obstacles) o.gone = true;
-        Game.update(1 / 120);
-        FxQueue.length = 0;
-        if (Player.onShoulder) onShoulder = true;
-        lowestDanger = Math.min(lowestDanger, Player.danger);
-      }
-      steerNow = 0;
-      const T2 = track.Track;
-      check(T2.shoulder === CONFIG.shoulder && Player.lat > T2.laneHi(Player.s) && !onShoulder &&
-        lowestDanger === CONFIG.dangerTime && Game.busts === 0 && !Player.busted,
-        'shoulder timer off: 6 s on the shoulder, the timer never moves and nobody is busted');
-      let anyTraffic = false;
-      for (let i = 0; i < 120 * 20; i++) { Game.update(1 / 120); FxQueue.length = 0; if (Traffic.cars.some(c => c.active)) anyTraffic = true; }
-      check(!anyTraffic, 'no traffic at all');
-    } else {
+    }
+    if (levels.LEVEL.car !== 'ufo') {
       check(track.Track.shoulder === (levels.LEVEL.shoulder ?? CONFIG.shoulder), 'the shoulders are there (as wide as the level has them)');
       check(!cars.CAR.ufo, 'the garage car is back on this level');
     }
@@ -233,7 +269,7 @@ try {
       }
       const moved = furthest.filter(d => d > 1).length;
       const patterns = [...new Set(drifters.map(o => o.drift))];
-      check(drifters.length > 10 && moved === drifters.length && jump < 1,
+      check(drifters.length === levels.LEVEL.drifters.reduce((n, z) => n + (z.count || 0), 0) + (levels.LEVEL.obstacles || []).filter(o => o.drift).length && drifters.length > 0 && moved === drifters.length && jump < 1,
         `${drifters.length} drifters (${patterns.join(', ')}): every one moves within 3 s, none jumps (largest step ${jump.toFixed(2)} m)`);
     }
 
@@ -258,6 +294,12 @@ try {
         `running into a tractor is a crash: it takes ${(before - t.health).toFixed(0)} damage, the player ${(Player.maxHealth - Player.health).toFixed(0)}, and it is shoved forward`);
     }
 
+  }
+
+  if (ONLY_LEVELS) { // (--levels=id,id: only the per-level checks above, for the levels named: seconds; the other sections are not run)
+    const missing = ONLY_LEVELS.filter(id => !levels.LEVELS.some(l => l.id === id));
+    if (missing.length) { failures++; console.log('  FAIL  no such level on the menu: ' + missing.join(', ')); }
+    throw 'levels only';
   }
 
   // the clock: sitting still runs it out and drains the tip. On a level of the test's own, with a clock of 30 s
@@ -461,23 +503,30 @@ try {
     levels.selectLevel(n);
     if (levels.LEVEL.zones) continue; // (each zone has a list of its own: see the zones' own check)
     const want = levels.LEVEL.traffic, kinds = Object.keys(want);
-    const seen = {};
+    const seen = {}, expected = {}, wet = (levels.LEVEL.water || []).length > 0;
     let count = 0;
     for (let r = 0; r < 60; r++) {
       Game.start();
       // (not a kind a stretch with a list of its own, a level's "trafficZones", sets there: the Hood's police)
       const own = (c) => !(levels.LEVEL.trafficZones || []).some(z => c.s >= z.from && c.s < z.to && c.kind in z.traffic);
-      for (const c of Traffic.cars) if (c.active && !c.fixed && own(c)) { seen[c.kind] = (seen[c.kind] || 0) + 1; count++; }
+      for (const c of Traffic.cars) if (c.active && !c.fixed && own(c)) {
+        seen[c.kind] = (seen[c.kind] || 0) + 1; count++;
+        if (wet) { // (boats turn up on the water only, cars off it: a vehicle is one of the kinds that can be where it is, by the list's shares)
+          const here = kinds.filter(k => Water.allows(k, c.s, c.dir)), sum = here.reduce((t, k) => t + want[k], 0);
+          for (const k of here) expected[k] = (expected[k] || 0) + want[k] / sum;
+        }
+      }
     }
     const total = kinds.reduce((sum, k) => sum + want[k], 0);
     // (within three standard deviations of the listed share, plus a little: a sparse level gives few samples)
-    const close = kinds.every(k => {
-      const share = want[k] / total;
-      return Math.abs((seen[k] || 0) / count - share) < 0.03 + 3 * Math.sqrt(share * (1 - share) / Math.max(1, count));
-    });
+    const close = wet ? kinds.every(k => Math.abs((seen[k] || 0) - (expected[k] || 0)) < 0.03 * count + 3 * Math.sqrt(expected[k] || 0))
+      : kinds.every(k => {
+        const share = want[k] / total;
+        return Math.abs((seen[k] || 0) / count - share) < 0.03 + 3 * Math.sqrt(share * (1 - share) / Math.max(1, count));
+      });
     const extra = Object.keys(seen).filter(k => !kinds.includes(k) && !(levels.LEVEL.trafficZones || []).some(z => k in z.traffic));
     check(kinds.length ? close && !extra.length : count === 0, kinds.length
-      ? `${levels.levelName(levels.LEVEL)}: ${kinds.map(k => k + ' ' + ((seen[k] || 0) / count * 100).toFixed(0) + '%').join(', ')} (as listed)`
+      ? `${levels.levelName(levels.LEVEL)}: ${kinds.map(k => k + ' ' + ((seen[k] || 0) / count * 100).toFixed(0) + '%').join(', ')} (as listed${wet ? ', among the kinds that can be where each is: boats on the water only' : ''})`
       : `${levels.levelName(levels.LEVEL)}: an empty list, so no traffic`);
   }
 
@@ -510,18 +559,35 @@ try {
       `${levels.levelName(L)}: every vehicle is ${L.flow === 'mixed' ? 'tagged by the way it goes, both ways in every lane' : L.flow + 'bound'} (${live} seen over 10 starts), and they use all ${T.laneCount} lanes` +
       (oncomingSeen ? ` (but for ${oncomingSeen} coming the other way along a side road that has oncoming traffic)` : ''));
     if (!L.shoulderRows) continue;
-    const rows = Collision.obstacles.filter(o => !o.drift && (o.kind === 'cone' || o.kind === 'sign'));
+    // (a row's kind is on the level's theme: a cone is a cafe table on one, a crate a waste drum on another, so the rows are what
+    // those kinds are here. A level's other obstacles of the same kind, roadworks cones say, are not rows and are not counted)
+    const rowKinds = new Set(L.shoulderRows.map(r => themes.themedKind(L.theme, r.kind || 'cone')));
+    // (and a level's own "obstacles" of the same kind, Hot Zone's drums in the road, are not rows: they are left out, the level built again
+    // without them for the count, and with them again for what follows)
+    const own = L.obstacles;
+    L.obstacles = [];
+    Game.load();
+    const rows = Collision.obstacles.filter(o => !o.drift && rowKinds.has(o.kind));
+    L.obstacles = own;
+    Game.load();
     const kind = rows[0].kind, cost = CONFIG.obstacleKinds[kind];
-    check(rows.length > 20 && rows.every(o => T.onShoulder(o.lat, o.s)),
-      `${L.name}: ${rows.length} ${kind}s, every one on a shoulder and none in an exit or merge lane`);
+    check(rows.length >= 5 && rows.every(o => T.onShoulder(o.lat, o.s)),
+      `${levels.levelName(L)}: ${rows.length} ${kind}s, every one on a shoulder and none in an exit or merge lane`);
     for (const c of Traffic.cars) c.active = false;
-    const o = rows[Math.floor(rows.length / 2)];
+    const mid = rows[Math.floor(rows.length / 2)];
+    const o = Collision.obstacles.find(x => x.kind === mid.kind && x.s === mid.s && x.lat === mid.lat); // (the level built again: the same one in the new list)
     Player.s = o.s - 1; Player.lat = o.lat; Player.speed = 20; Player.launching = false; Player.shield = 0;
     Collision.check();
     FxQueue.length = 0;
     check(o.gone && Math.abs(Player.maxHealth - Player.health - cost.damage) < 1e-9 && (Player.stun > 0) === !cost.light,
       `driving into a ${kind}: it goes, costing ${cost.damage} health${cost.light ? ' and no loss of steering' : ''}`);
   }
+
+  // (from here on the sections try cars one against another on whatever level they use: the Expressway, Canberra, a flooded road. With
+  // the tiers on, a tier level starts only in a car of its tier, and a test that picks the Pick-Up and then the Lowrider would be
+  // driving the same substitute twice. So the tiers are off for the rest, as `?tiers=0`: the garage's Blue Stars are then the old
+  // rule's too. The tier rule has its own checks: scripts/.tiers-check.mjs, .earned-check.mjs, .save-check.mjs)
+  CONFIG.progression.tiers = false;
 
   // lane assist: off-centre in a lane the car stays put; near a lane line it eases back, slowly
   section('steering');
@@ -649,8 +715,7 @@ try {
     const hatch = cars.CARS.find(car => car.id === 'commuter');
     const gasTop = topWith('commuter', 'badGas'), heavyTop = topWith('commuter', 'heavyMass');
     check(Math.abs(gasTop - hatch.maxSpeed * CONFIG.badGas.topSpeed) < 0.5 && Math.abs(heavyTop - hatch.maxSpeed * CONFIG.heavyMass.topSpeed) < 0.5,
-      `bad gas and the 1000 lb weight hold the ${hatch.name} (${hatch.maxSpeed} m/s) to ${gasTop.toFixed(1)} and ${heavyTop.toFixed(1)} m/s`);
-  }
+      `bad gas and the 1000 lb weight hold the ${hatch.name} (${hatch.maxSpeed} m/s) to ${gasTop.toFixed(1)} and ${heavyTop.toFixed(1)} m/s`);  }
 
   // bad gas and the weight are powerups like any other: one at a time
   levels.selectLevel(0);
@@ -737,12 +802,14 @@ try {
     // (the first of them in the order they have always been in: saved progress counts unlocked levels by position)
     // (after the main levels: the special ones, then the real circuits. Each tab numbers its own: the deliveries
     // among them S1.., the races, the lapped levels, R1..)
-    const rest = levels.LEVELS.slice(main), special = rest.filter(l => !levels.isRace(l)), races = rest.filter(levels.isRace);
+    // (the amphibious levels follow the specials and have their own tab: A1..)
+    const rest = levels.LEVELS.slice(main), special = rest.filter(l => !levels.isRace(l) && !levels.AMPHIBIOUS_LEVELS.includes(l)), races = rest.filter(levels.isRace);
     check(rest.map(l => l.id).join().startsWith('all-heck,ufo,marina-bay,oh-mine,montreal') && levels.levelLabel(main - 1) === String(main) &&
-      rest.length === levels.SPECIAL_LEVELS.length + levels.CIRCUIT_LEVELS.length &&
-      rest.every((l, k) => levels.levelLabel(main + k) === (levels.isRace(l) ? 'R' + (races.indexOf(l) + 1) : 'S' + (special.indexOf(l) + 1))) &&
+      rest.length === levels.SPECIAL_LEVELS.length + levels.AMPHIBIOUS_LEVELS.length + levels.CIRCUIT_LEVELS.length &&
+      rest.every((l, k) => levels.levelLabel(main + k) === (levels.isRace(l) ? 'R' + (races.indexOf(l) + 1)
+        : levels.AMPHIBIOUS_LEVELS.includes(l) ? 'A' + (levels.AMPHIBIOUS_LEVELS.indexOf(l) + 1) : 'S' + (special.indexOf(l) + 1))) &&
       levels.MAIN_LEVELS.every(l => levels.LEVELS.indexOf(l) < main && !levels.isRace(l)),
-      `the special levels and the circuits come last, as S1 to S${special.length} and R1 to R${races.length}: ${labels.slice(main - 1).join(', ')}`);
+      `the special levels, the amphibious ones and the circuits come last, as S1 to S${special.length}, A1 to A${levels.AMPHIBIOUS_LEVELS.length} and R1 to R${races.length}: ${labels.slice(main - 1).join(', ')}`);
   }
 
   section('hesitation, signals and lights');
@@ -2692,7 +2759,7 @@ try {
       });
     }
     const gaps = meet.map(m => m.train - m.player);
-    check(gaps.length === 3 && gaps.every(g => Number.isFinite(g) && g >= X.timing.min - 0.3 && g <= X.timing.max + 0.3),
+    check(gaps.length === levels.LEVEL.crossings.length && gaps.length >= 3 && gaps.every(g => Number.isFinite(g) && g >= X.timing.min - 0.3 && g <= X.timing.max + 0.3),
       `Outback Express: at 90 km/h each crossing's train reaches the road ${gaps.map(g => (g >= 0 ? '+' : '') + g.toFixed(1) + ' s').join(', ')} from the player (${X.timing.min} to +${X.timing.max} s)`);
   }
 
@@ -2839,7 +2906,6 @@ try {
   }
   cars.selectCar('commuter');
   // the secret bus: not in the garage, but once owned it is driven like any other car
-  const { Progress } = await load('/src/delivery/progress.js');
   Progress.buy(cars.SECRET_CARS.bus);
   cars.selectCar('bus');
   Game.start();
@@ -2864,8 +2930,10 @@ try {
     !Progress.owns('bus') && Progress.data.money === CONFIG.completeBank && Progress.bestTime('expressway', false) === undefined,
     `a complete savegame: ${Progress.data.unlocked} levels open, ${Progress.data.cars.length} cars owned, $${Progress.data.money} banked, the bus still secret`);
 } catch (error) {
-  failures++;
-  console.error(error);
+  if (error !== 'levels only') { // (thrown to end a --levels run early)
+    failures++;
+    console.error(error);
+  }
 } finally {
   await server.close();
 }

@@ -14,6 +14,7 @@ import { GOOD2_MODELS } from './cargoModelsGood2.js';
 import { EVIL2_MODELS } from './cargoModelsEvil2.js';
 import { MORE_MODELS } from './cargoModels3.js';
 import { PRANK_B_MODELS } from './cargoModelsPrankB.js';
+import { PRANK_C_MODELS } from './cargoModelsPrankC.js';
 
 export const TRANSITION = 0.5; // s an Evil item takes from one state to the next
 
@@ -587,6 +588,7 @@ export const CARGO_MODELS = {
   ...EVIL2_MODELS,
   ...MORE_MODELS,
   ...PRANK_B_MODELS,
+  ...PRANK_C_MODELS,
 };
 // the model for an id (a plain box if it is not one of them: a level naming an item nobody has drawn)
 export const makeCargoModel = (id) => {
