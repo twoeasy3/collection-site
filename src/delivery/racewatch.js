@@ -56,11 +56,11 @@ export const RaceWatch = {
       return last.slice(0, 2) + taken.size % 10;
     };
     this.racers.forEach((c, i) => {
-      c.driver = names[i % names.length];
-      c.abbr = abbr(c.driver);
+      c.driverName = names[i % names.length];
+      c.abbr = abbr(c.driverName);
       taken.add(c.abbr);
     });
-    this.racers.forEach((c, i) => Object.assign(c, { driver: names[i % names.length], wrecks: 0, kills: 0, hitBy: null, mishap: null, wasActive: true, splits: [], done: false }));
+    this.racers.forEach((c, i) => Object.assign(c, { driverName: names[i % names.length], wrecks: 0, kills: 0, hitBy: null, mishap: null, wasActive: true, splits: [], done: false }));
     this.finished = [];
     this.standings().forEach((c, i) => { c.grid = i + 1; }); // (where each started)
     this.ticker = { text: 'Lights out, and away we go!', at: 0 };
@@ -117,7 +117,7 @@ export const RaceWatch = {
   },
   update(dt) {
     let order = null; // (the running order, worked out only if there is news to put places to)
-    const P = (c) => 'P' + ((order ||= this.standings()).indexOf(c) + 1) + ' ' + c.driver;
+    const P = (c) => 'P' + ((order ||= this.standings()).indexOf(c) + 1) + ' ' + c.driverName;
     for (const c of this.racers) {
       if (c.wasActive && !c.active) { // wrecked: another racer's doing, if it hit it just now
         c.wrecks++;
@@ -140,7 +140,7 @@ export const RaceWatch = {
       if (!c.done && (c.laps || 0) >= LEVEL.laps) {
         c.done = true;
         this.finished.push({ car: c, time: Game.time });
-        if (this.finished.length === 1) this.ticker = { text: c.driver + ' wins from P' + c.grid + '!', at: Game.time };
+        if (this.finished.length === 1) this.ticker = { text: c.driverName + ' wins from P' + c.grid + '!', at: Game.time };
       }
     }
     // the coverage: another car now and then (and straight away once this one is home)
