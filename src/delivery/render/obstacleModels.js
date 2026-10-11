@@ -1089,6 +1089,47 @@ OBSTACLE_MODELS.sackStack = () => {
   sack(0, 1.26, 0, 0.3);
   return grounded(group, 1.4);
 };
+// Hong Kong's crate: a hawker's cart: a dark steel box on two big spoked wheels, a shelf of goods in front, a red-white-blue
+// striped awning on four poles over it, and a red lamp lit under the awning (what reads at night on a dark road)
+OBSTACLE_MODELS.hawkerCart = () => {
+  const steel = lambert(0x3a4048), red = lambert(0xd8262b), white = lambert(0xf2f2ee), blue = lambert(0x1f5fd0), group = new THREE.Group();
+  put(group, new THREE.BoxGeometry(1.2, 0.7, 1.1), steel, 0, 0.95, 0);                                 // the box
+  put(group, new THREE.BoxGeometry(1.24, 0.08, 1.14), lambert(0xa8b0b8), 0, 1.32, 0);                   // its steel top
+  for (const [x, z, c] of [[-0.35, -0.3, 0xffb020], [0.3, -0.25, 0x3aa655], [0, 0.3, 0xe86a1e], [0.4, 0.3, 0xf6e27a]]) put(group, new THREE.BoxGeometry(0.34, 0.3, 0.34), lambert(c), x, 1.5, z); // the goods
+  for (const x of [-0.4, 0.4]) put(group, new THREE.BoxGeometry(0.07, 0.07, 0.5), steel, x, 1.0, -0.78); // the handles, out the back
+  put(group, new THREE.BoxGeometry(0.9, 0.07, 0.07), steel, 0, 1.0, -1.0);
+  for (const x of [-0.68, 0.68]) {                                                                      // the wheels
+    put(group, new THREE.CylinderGeometry(0.5, 0.5, 0.08, 16).rotateZ(Math.PI / 2), lambert(0x1c1c1c), x, 0.5, 0);
+    put(group, new THREE.CylinderGeometry(0.42, 0.42, 0.09, 16).rotateZ(Math.PI / 2), white, x, 0.5, 0);
+    for (const a of [0, Math.PI / 3, Math.PI * 2 / 3]) put(group, new THREE.BoxGeometry(0.05, 0.8, 0.05), steel, x * 1.03, 0.5, 0).rotation.x = a;
+    put(group, new THREE.CylinderGeometry(0.1, 0.1, 0.14, 8).rotateZ(Math.PI / 2), red, x, 0.5, 0);
+  }
+  for (const x of [-0.55, 0.55]) for (const z of [-0.5, 0.5]) put(group, new THREE.BoxGeometry(0.06, 1.1, 0.06), steel, x, 1.85, z); // the awning's poles
+  for (let i = 0; i < 6; i++) put(group, new THREE.BoxGeometry(0.28, 0.1, 1.5), [red, white, blue][i % 3], -0.7 + i * 0.28, 2.42, 0); // the awning, striped
+  for (const x of [-0.84, 0.84]) put(group, new THREE.BoxGeometry(0.04, 0.26, 1.5), red, x, 2.26, 0);                               // its hanging edges
+  put(group, new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6), steel, 0, 2.22, 0);                       // the lamp on its cord
+  put(group, new THREE.SphereGeometry(0.17, 10, 8), new THREE.MeshBasicMaterial({ color: 0xff4a3a }), 0, 2.0, 0);
+  return grounded(group, 0.95);
+};
+// Hong Kong's bale: a heap of the red-white-blue nylon bags: fat striped bags stacked three, two and one, strapped down with black
+// cord, the stripes different ways on each
+OBSTACLE_MODELS.bagStack = () => {
+  const group = new THREE.Group(), cord = lambert(0x1c1c1c), stripes = [lambert(0xd8262b), lambert(0xf2f2ee), lambert(0x1f5fd0)];
+  const bag = (x, y, z, w, h, l, turn) => {
+    const b = new THREE.Group();
+    for (let i = 0; i < 6; i++) put(b, new THREE.BoxGeometry(w / 6, h, l), stripes[i % 3], -w / 2 + w / 12 + i * w / 6, 0, 0);
+    put(b, new THREE.BoxGeometry(w + 0.04, h + 0.04, 0.08), cord, 0, 0, l * 0.3);                        // the straps round it
+    put(b, new THREE.BoxGeometry(w + 0.04, h + 0.04, 0.08), cord, 0, 0, -l * 0.3);
+    put(b, new THREE.BoxGeometry(0.12, 0.3, 0.16), stripes[2], 0, h / 2 + 0.1, -l / 2 + 0.2);            // a handle sticking up
+    b.position.set(x, y, z);
+    b.rotation.y = turn;
+    group.add(b);
+  };
+  for (const z of [-0.72, 0, 0.72]) bag(0, 0.34, z, 1.6, 0.68, 0.7, 0.03 * z);
+  for (const z of [-0.4, 0.4]) bag(0, 1.0, z, 1.4, 0.64, 0.74, Math.PI / 2 + 0.05 * z);
+  bag(0, 1.62, 0, 1.3, 0.6, 0.8, 0.2);
+  return grounded(group, 1.3);
+};
 // hell's cone: a spike of brimstone, black at the foot and glowing to yellow at its tip. One mesh, and one geometry and one
 // material between all of them (All Heck has hundreds along its shoulders)
 let brimstoneParts = null;

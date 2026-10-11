@@ -225,6 +225,7 @@ const OBSTACLES = {
   beach: { bale: 'beachBall' },
   hell: { cone: 'brimstone' },
   fallout: { crate: 'wasteDrum' }, // (a yellow drum of waste, the trefoil on it; the cones and barriers are a checkpoint's own)
+  hongkong: { crate: 'hawkerCart', bale: 'bagStack' }, // (a hawker's cart under its awning; a heap of red-white-blue bags; the cones are roadworks and stay)
   // (the port keeps its crates, the farm and the Wild West their bales: there they belong)
 };
 // drifting: the same, for the things of a level's "drifters" alone, where what moves about the road wants to be

@@ -114,19 +114,19 @@
     { "s": 342, "lane": 3, "kind": "cone" },
     { "s": 354, "lane": 3, "kind": "barrier" },
     { "s": 1000, "lane": 4, "kind": "sign" },
-    { "s": 1012, "lane": 4, "kind": "cone" },
+    { "s": 1012, "lane": 4, "kind": "crate" },
     { "s": 1024, "lane": 4, "kind": "barrier" },
     { "s": 1680, "lane": 3, "kind": "cone" },
     { "s": 1692, "lane": 3, "kind": "cone" },
     { "s": 1704, "lane": 3, "kind": "sign" },
     { "s": 2230, "lane": 4, "kind": "barrier" },
     { "s": 2890, "lane": 3, "kind": "cone" },
-    { "s": 2902, "lane": 3, "kind": "cone" },
+    { "s": 2902, "lane": 3, "kind": "crate" },
     { "s": 2914, "lane": 3, "kind": "barrier" },
     { "s": 3200, "lane": 4, "kind": "sign" },
     { "s": 3212, "lane": 4, "kind": "barrier" },
     { "s": 3550, "lane": 3, "kind": "cone" },
-    { "s": 3562, "lane": 3, "kind": "cone" },
+    { "s": 3562, "lane": 3, "kind": "bale" },
     { "s": 3574, "lane": 3, "kind": "cone" }
   ]
 }

@@ -193,7 +193,12 @@
     "cargo": { "good": "toolbox", "evil": "parcel" }
   },
   "hong-kong": {
-    "cargo": { "good": "goldfish", "evil": "tentacle" }
+    "name": "Hong Kong Harbour",
+    "description": {
+      "good": "The harbour front by night, on the left: roadworks, cameras, fresh tar, the long tunnel, the sea over the low road, a second tunnel and home.",
+      "evil": "Taxis nose to tail, four cameras to ignore, wet tar, two tunnels and the harbour washing over the road. The best money is in the tram lane."
+    },
+    "cargo": { "good": "canary", "evil": "genie" }
   },
   "tokyo": {
     "name": "Tokyo Expressway",
