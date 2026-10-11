@@ -99,8 +99,8 @@ worktree (listed in section 3).
   items incl. Q13), `delivery-tests` (quick smoke repaired, groups runner, TESTS.md), `delivery-prank-c` (P8 to
   P10 and the cargo-check exemption), `delivery-crests` (files only). `git log --first-parent` on main shows the
   hashes. NOT merged, because the merge CONFLICTED and went back to the branch's agent (`git merge main`, keep
-  both sides): `delivery-prank-b` (cargo.js, cargoText.json, cargoModels.js) and `delivery-rework-b` Hong Kong
-  (config.js). Check `git branch --merged main` for which have since landed. The light checks on the new tip
+  both sides): `delivery-prank-b` (cargo.js, cargoText.json, cargoModels.js; the agent merged main, then it landed as `6a1aae9`) and `delivery-rework-b` Hong Kong
+  (config.js; STILL with its agent when this was written). Check `git branch --merged main` for which have since landed. The light checks on the new tip
   (levels, replay, words, cargo, mysteries, tiers, ufo, pursuit) were handed to the tests agent; the results are
   in the orchestrator's report to front, not here. The branch rows of section 3 for sweep, gimmicklogic, tests,
   prank-c and crests are therefore DONE; the unseen-stills branches (carfix, prank-ideas, garagetiers, prank-a,
