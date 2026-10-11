@@ -138,7 +138,7 @@ function App({ isPublic = false }) {
   useSelectedCardHighlight(gridPaneRef, selectedCar?.ID ?? null, selectedCarGroup);
   useAutoScrollToSelection({
     enabled: autoScroll && viewMode === 'gallery',
-    gridPaneRef, selectedCar, selectedCarGroup, groupsRef: groupedAndFilteredCarsRef,
+    gridPaneRef, selectedCar, selectedCarGroup, groupsRef: groupedAndFilteredCarsRef, ignoreBrand: groupView === 'class',
     scrollKey: `${debouncedSearchTerm}|${searchMode}|${groupView}|${classFilter}`,
   });
 
@@ -165,9 +165,9 @@ function App({ isPublic = false }) {
     if (!expandedStacks.size) return;
     const expandedBareKeys = new Set([...expandedStacks].map(k => k.slice(k.indexOf('::') + 2)));
     for (const car of cars) {
-      if (expandedBareKeys.has(getStackKey(car))) preloadImage(getSideImage(car, imageUpdates));
+      if (expandedBareKeys.has(getStackKey(car, groupView === 'class'))) preloadImage(getSideImage(car, imageUpdates));
     }
-  }, [expandedStacks, cars, imageUpdates]);
+  }, [expandedStacks, cars, imageUpdates, groupView]);
 
   useEffect(() => { setCurrentPage(1); }, [debouncedSearchTerm, searchMode, groupView, classFilter, viewMode]);
 
@@ -245,15 +245,16 @@ function App({ isPublic = false }) {
   // one entry (its cover), an expanded one contributes every variant.
   const navigableCars = useMemo(() => {
     const out = [];
+    const ignoreBrand = groupView === 'class';
     for (const { groupName, visibleGroupCars } of galleryGroups) {
       if (!stackingEnabled) {
-        visibleGroupCars.forEach(car => out.push({ car, groupName, stackKey: getStackKey(car), stackSize: 1 }));
+        visibleGroupCars.forEach(car => out.push({ car, groupName, stackKey: getStackKey(car, ignoreBrand), stackSize: 1 }));
         continue;
       }
       const stacks = new Map();
       const order = [];
       for (const car of visibleGroupCars) {
-        const key = getStackKey(car);
+        const key = getStackKey(car, ignoreBrand);
         if (!stacks.has(key)) { stacks.set(key, []); order.push(key); }
         stacks.get(key).push(car);
       }
@@ -264,7 +265,7 @@ function App({ isPublic = false }) {
       }
     }
     return out;
-  }, [galleryGroups, stackingEnabled, expandedStacks]);
+  }, [galleryGroups, stackingEnabled, expandedStacks, groupView]);
 
   const keyboardCtxRef = useRef(null);
   keyboardCtxRef.current = {

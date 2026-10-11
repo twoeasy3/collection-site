@@ -5,8 +5,9 @@ import ClassBadge from './ClassBadge';
 
 const CARD_BADGE_STYLE = { position: 'absolute', right: '3px', bottom: '3px', zIndex: 2 };
 
-export const getStackKey = (car) =>
-  `${(car.Year || '').trim()}||${(car.Make || '').trim()}||${(car.Model || '').trim()}||${(car.Brand || '').trim()}`;
+// ignoreBrand: the rating view stacks the same Year/Make/Model across brands.
+export const getStackKey = (car, ignoreBrand = false) =>
+  `${(car.Year || '').trim()}||${(car.Make || '').trim()}||${(car.Model || '').trim()}${ignoreBrand ? '' : `||${(car.Brand || '').trim()}`}`;
 
 // Stable card image — key on src forces a real DOM remount when imageUpdate
 // changes, busting both React's reconciler cache and the browser's in-memory cache.
