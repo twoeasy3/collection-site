@@ -1053,7 +1053,8 @@ const createTrack = () => {
       const name = 'low bridge at ' + b.s;
       if (b.road === 'side' || !(b.s >= 60 && b.s <= length - 30)) problems.push(name + ': on the expressway, 60 m from the start, 30 m from the finish');
       else if (b.clearance !== undefined && !(b.clearance >= 1 && b.clearance <= 5)) problems.push(name + ': clearance is 1 to 5 m');
-      else if (!exits.some(x => x.exitAt + 40 < b.s && x.mergeAt - 40 > b.s)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the way round for tall vehicles)');
+      else if (b.first !== undefined && b.first !== 'left' && b.first !== 'right') problems.push(name + ': first is left or right (the half that has the first bar)');
+      else if (!exits.some(x => x.exitAt + 40 < b.s && x.mergeAt - 40 > b.s + CONFIG.lowBridge.stagger)) problems.push(name + ': between an exit and its merge, 40 m clear of both (the side road is the way round for tall vehicles; its second bar is ' + CONFIG.lowBridge.stagger + ' m on)');
     }
     for (const f of LEVEL.fords || []) {
       const name = 'ford at ' + f.from;
