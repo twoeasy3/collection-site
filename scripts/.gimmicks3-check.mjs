@@ -602,7 +602,8 @@ try {
     g.run(0.6, () => { quiet(); P.speed = 25; g.drive(1, 0); });
     check(Gambles.rut && Gambles.rutJolts === 0 && Math.abs(P.lat - lane(3, P.s)) < 0.3 && P.health === P.maxHealth, 'ruts: steered against for less than ' + R.climb + ' s, the rut holds the car (back to ' + Math.abs(P.lat - lane(3, P.s)).toFixed(2) + ' m from its middle, at no cost)');
     const wrong = run(30, 4);
-    check(wrong.lost >= 25 && wrong.jolts === 0, 'ruts, the wrong rut picked and kept: lane 4 has the big cash and then a barrier: into it (' + (wrong.wrecks ? 'wrecked' : wrong.lost.toFixed(0) + ' health lost') + ')');
+    check(wrong.lost >= g.CONFIG.obstacleKinds.barrier.damage - 1 && wrong.jolts === 0, // (a barrier's cost: it was 30, and is 22 since damage went by size)
+       'ruts, the wrong rut picked and kept: lane 4 has the big cash and then a barrier: into it (' + (wrong.wrecks ? 'wrecked' : wrong.lost.toFixed(0) + ' health lost') + ')');
     const out = run(30, 4, 3, 4935);
     check(out.jolts === 1 && out.lost > 0 && out.lost < 15 && out.mud > 0 && out.slowest < 30 * R.keep + 0.5 && out.wrecks === 0, 'ruts, changing rut: out of lane 4 after its cash with one jolt (' + out.lost.toFixed(0) + ' health, down to ' + Math.round(out.slowest * 3.6) + ' km/h, ' + out.mud.toFixed(1) + ' s in the mud between) and into lane 3: past the barrier (' + out.t.toFixed(1) + ' s: ' + (out.t - clear.t).toFixed(1) + ' s slower than the right rut)');
     check(said('Out of the rut'), 'ruts: climbing out is said');
