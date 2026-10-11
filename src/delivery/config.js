@@ -1303,6 +1303,7 @@ export const CONFIG = {
     brakeGrip: 0.35,       // share of its braking (or braking by itself for a car ahead) that works on the water
     steerGrip: 0.3,        // share of its steering's grip: of how quickly the car takes up the way it is steered...
     laneSpeed: 0.55,       // ...and share of the speed it moves across the road at, steered
+    wetAfter: 45,          // m past its water the tyres stay wet: those three numbers fade back to normal over this distance (ice has no such tail: it lets go the moment the car is off it)
   },
   // rockfall (a level's "rockfall": { from, to, count, side }): rocks tumbling down from that side
   // onto the road as the player comes near. Obstacles: only the player can hit them

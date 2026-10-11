@@ -700,7 +700,7 @@ export const GROUPS = [
     } },
     { name: 'Burst water mains', color: 0x6fb6d8, has: (l) => l.waterMains?.length, rules: [
       `A main has burst under one lane: it sprays for ${H.main.on} s, then stops for ${H.main.off} s. You are warned ${H.main.warn} m out.`,
-      `While it sprays, ${H.main.length} m of that lane is as slippery as ice: brakes at ${pct(H.main.brakeGrip)}, steering at ${pct(H.main.steerGrip)}, and you cross the road at ${pct(H.main.laneSpeed)} of your speed. Between sprays the lane is dry.`,
+      `While it sprays, ${H.main.length} m of that lane is as slippery as ice: brakes at ${pct(H.main.brakeGrip)}, steering at ${pct(H.main.steerGrip)}, and you cross the road at ${pct(H.main.laneSpeed)} of your speed. Between sprays the lane is dry, but the tyres stay wet for ${H.main.wetAfter} m past the water, the grip coming back little by little (ice lets go the moment you are off it).`,
     ], build: () => {
       const g = road(9, 12);
       const wet = mesh(new THREE.PlaneGeometry(4.2, 9).rotateX(-Math.PI / 2), lambert(0x6fb6d8, { transparent: true, opacity: 0.6 }), 2.2, 0.03, -1);
