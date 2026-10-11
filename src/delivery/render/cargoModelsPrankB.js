@@ -94,8 +94,8 @@ const makePieCatapult = () => {
   // the arm: its shaft lying on the axle, the paddle and pie at the far end (-z when flat)
   const arm = sub(all, 0, 0.36, 0.2);
   part(arm, box(0.1, 0.04, 0.8), wood, 0, 0.045, -0.34);
-  part(arm, cyl(0.2, 0.2, 0.03, 16), woodDark, 0, 0.08, -0.7);
-  const onPaddle = pie(arm, 0, 0.095, -0.7);
+  part(arm, cyl(0.2, 0.2, 0.03, 16), woodDark, 0, 0.085, -0.7);
+  const onPaddle = pie(arm, 0, 0.1, -0.7);
   const cream = onPaddle.children[1];
   const flying = pie(all, 0, 0, 0);
   // the refills: four tins stacked beside the arm, the top one with its cream on
@@ -115,8 +115,8 @@ const makePieCatapult = () => {
     else if (u < 0.55) angle = 2.3 + Math.sin((u - 0.15) * 45) * 0.08 * (1 - (u - 0.15) / 0.4);
     else if (u < 0.85) angle = 2.3 * (1 - (u - 0.55) / 0.3);
     else angle = 0;
-    arm.rotation.x = calm * jitter(t, 1) * 0.012 + twitch * jerk * 0.22 + fire * angle;
-    latch.rotation.z = -(twitch * jerk * 0.4 + fire * 1.25);
+    arm.rotation.x = calm * jitter(t, 1) * 0.012 + twitch * (0.08 + jerk * 0.22) + fire * angle; // (agitated: lifted a few degrees off the latch, jerking higher)
+    latch.rotation.z = -(twitch * (0.25 + jerk * 0.4) + fire * 1.25);
     // the pie on the paddle: wobbling, sliding back as the arm jerks, and gone while one is in the air
     const loaded = u < 0.045 ? 1 : u > 0.88 ? clamp01((u - 0.88) / 0.07) : 0;
     show(onPaddle, mix(1, loaded, fire));
@@ -165,11 +165,11 @@ const makeAirHorn = () => {
   part(can, cyl(0.17, 0.17, 0.52, 18), canMat, 0, 0.26, 0);
   part(can, cyl(0.178, 0.178, 0.16, 18), label, 0, 0.3, 0);
   part(can, box(0.12, 0.07, 0.014), glow(0xf2b705), 0, 0.3, 0.182, 0, 0, 0.3); // (a lightning flash on the label)
-  part(can, cyl(0.15, 0.17, 0.04, 18), dark, 0, 0.54, 0);
-  const button = part(can, cyl(0.1, 0.1, 0.06, 14), dark, 0, 0.59, 0);
+  part(can, cyl(0.15, 0.17, 0.05, 18), dark, 0, 0.535, 0);
+  const button = part(can, cyl(0.1, 0.1, 0.07, 14), dark, 0, 0.585, 0);
   // the trumpet out of the side, tilted up; its mouth a black face with the rim standing proud of it
-  const horn = sub(can, 0, 0.4, 0.17);
-  horn.rotation.x = -0.35;
+  const horn = sub(can, 0.133, 0.4, 0.106); // (out of the side, to the right and forward, so the bell reads in profile from the front)
+  horn.rotation.set(-0.45, 0.9, 0);
   part(horn, cyl(0.035, 0.035, 0.14, 10), chrome, 0, 0, 0.07, FLAT);
   const bell = sub(horn, 0, 0, 0.14);
   part(bell, cyl(0.24, 0.045, 0.34, 20), chrome, 0, 0, 0.17, FLAT);
@@ -188,7 +188,7 @@ const makeAirHorn = () => {
     const blast = clamp01(parp * puff + blare);
     // the trumpet puffs out at each blast, and flares wide for the long one
     bell.scale.set(1 + parp * puff * 0.12 + blare * 0.4, 1 + parp * puff * 0.12 + blare * 0.4, 1 + blare * 0.1);
-    button.position.y = 0.59 - clamp01(parp + blare) * 0.02;
+    button.position.y = 0.585 - clamp01(parp + blare) * 0.02;
     cycle(rings, t, mix(1.2, 2.4, blare), (ring, v) => {
       ring.position.z = 0.48 + v * mix(0.5, 0.9, blare);
       ring.scale.setScalar(Math.max(0.001, blast * (0.5 + v * mix(1.8, 3.2, blare))));
@@ -226,7 +226,7 @@ const makeGhost = () => {
   const all = sub(group);
   // the trainers, toes out at the front
   const shoes = [-0.11, 0.11].map(x => {
-    const s = sub(all, x, 0, 0.1);
+    const s = sub(all, x, 0, 0.34);
     part(s, box(0.15, 0.03, 0.3), sole, 0, 0.015, 0);
     part(s, box(0.14, 0.08, 0.28), shoeMat, 0, 0.07, -0.01);
     part(s, box(0.142, 0.02, 0.1), stripe, 0, 0.085, 0.03);
@@ -240,7 +240,7 @@ const makeGhost = () => {
   const foldedEyes = [-0.1, 0.1].map(x => part(folded, sphere(0.055, 8, 6), eyeMat, x, 0.14, 0.03));
   for (const e of foldedEyes) e.scale.set(1, 0.35, 1.3);
   // the sheet: a rounded cone, a black face across its open bottom, a wavy hem, the eyeholes, the arms
-  const ghost = sub(all, 0, 0.12, 0);
+  const ghost = sub(all, 0, 0.16, 0);
   const cloth = part(ghost, SHEET, sheet);
   const under = part(ghost, cyl(0.4, 0.4, 0.01, 20), glow(0x0a0a0a), 0, 0.012, 0);
   const scallops = [];
@@ -262,7 +262,7 @@ const makeGhost = () => {
   part(bubble, sphere(0.022, 6, 5), ink, 0.22, -0.08, 0.04);
   return stated(group, (t, rise, boo) => {
     const up = clamp01(rise + boo), calm = 1 - up;
-    const H = mix(0.72, 1.25, boo), h = H * up, w = mix(0.6, 1, up) * (1 + boo * Math.sin(t * 8) * 0.05);
+    const H = mix(0.72, 1.15, boo), h = H * up, w = mix(0.6, 1, up) * (1 + boo * Math.sin(t * 8) * 0.05);
     // the folded square shrinks away as the sheet rises; folded, it twitches and a toe lifts
     const twitch = pulse(t, 0.6, 1);
     folded.scale.set(Math.max(0.001, calm), Math.max(0.001, calm * (1 + twitch * 0.12)), Math.max(0.001, calm));
@@ -271,7 +271,7 @@ const makeGhost = () => {
     under.scale.set(w, Math.max(0.001, up), w);
     for (const [s, a] of scallops) { s.position.set(Math.sin(a) * 0.42 * w, 0.03 + boo * Math.sin(t * 8 + a * 3) * 0.03, Math.cos(a) * 0.42 * w); s.scale.set(up, up * 0.7, up); }
     const r = sheetR(0.74) * w;
-    eyes.forEach((e, k) => { e.position.set((k ? 0.09 : -0.09) * w, 0.74 * h, Math.sqrt(Math.max(0, r * r - 0.0081 * w * w))); e.scale.set(up * (1 + boo * 0.3), up * 1.3, up * 0.5); });
+    eyes.forEach((e, k) => { e.position.set((k ? 0.09 : -0.09) * w, 0.74 * h, Math.sqrt(Math.max(0, r * r - 0.0081 * w * w))); e.scale.set(up * (1 + boo * 0.6), up * (1.3 + boo * 0.5), up * 0.5); });
     tint(eyeMat, 0x0e0c0a, 0xffe14a, boo);
     arms.forEach((root, k) => {
       const d = k ? 1 : -1;
@@ -286,7 +286,7 @@ const makeGhost = () => {
     shoes.forEach((s, k) => { s.rotation.x = -calm * twitch * (k ? 0.25 : 0) + boo * Math.sin(t * 10 + k * Math.PI) * 0.45; });
     // the bubble: a muffled one popping up and sinking / BOO! held up big
     const pop = clamp01(Math.sin(t * 2.2) * 1.6);
-    bubble.position.set(0.42 * w, h + 0.12 + 0.1 * boo + boo * Math.sin(t * 9) * 0.03, 0.1);
+    bubble.position.set(0.35 + 0.2 * w, 0.16 + h + 0.05 + boo * Math.sin(t * 9) * 0.03, 0.1);
     show(bubble, rise * 0.5 * pop + boo * (1 + Math.sin(t * 9) * 0.06));
   });
 };
