@@ -45,7 +45,7 @@
       "good": "A late delivery under the street lights. Lowriders cruise and a police chase may come through: headlights on, eyes up, parcel safe.",
       "evil": "A dark road, slow lowriders, and a getaway car screaming past with the law behind it. Nobody will notice one more troublemaker."
     },
-    "cargo": { "good": "clock", "evil": "doll" }
+    "cargo": { "good": "clock", "evil": "ghost" }
   },
   "mystery-meadows": {
     "name": "Mystery Meadows",
@@ -157,7 +157,7 @@
       "good": "The limit is 100 and ten cameras are counting: round the shops, over the hill, in the fog. Ease off for each, or let the radar detector earn its keep.",
       "evil": "Ten speed cameras, three jams to fly over and a getaway driver showing how it is done. Knock the cameras flat, or just smile for the photo."
     },
-    "cargo": { "good": "teaset", "evil": "cooker" }
+    "cargo": { "good": "teaset", "evil": "airhorn" }
   },
   "mountain-pass": {
     "name": "Mountain Pass",
@@ -328,7 +328,7 @@
       "good": "Stunt day on the one-way backlot: rain machines, a ramp over the jam, a plane coming down and extras on parade. Coffees to the director, none spilt.",
       "evil": "They are filming the big chase and you were not cast. Jump the queue, jump the drawbridge, drive through the explosion and steal the whole scene."
     },
-    "cargo": { "good": "coffee", "evil": "fireworks" }
+    "cargo": { "good": "coffee", "evil": "piecatapult" }
   },
   "ponti": {
     "name": "Seven Bridges",

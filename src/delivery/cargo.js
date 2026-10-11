@@ -87,6 +87,11 @@ export const CARGO = {
     { id: 'consultants', name: 'Crate of Consultants', states: ['Laser dot', 'Pages flipping', 'Pie chart spinning'] },
     { id: 'inlaws', name: "The In-Laws' Luggage", states: ['Neatly stacked', 'Bulging', 'Heaving apart'] },
     { id: 'band', name: 'Marching Band in a Box', states: ['A faint oompah', 'Trombone out', 'Full blast'] },
+    // the pranks (B): joke-shop goods and set-up pranks, things not people: calm a plain object with one tell,
+    // agitated the prank arming, furious the prank going off, over and over
+    { id: 'piecatapult', name: 'Custard Pie Catapult', states: ['Set', 'Twitching', 'Firing'] },
+    { id: 'airhorn', name: 'Air Horn under a Cushion', states: ['Primed', 'Parping', 'Blaring'] },
+    { id: 'ghost', name: 'Bedsheet Ghost', states: ['Folded', 'Rising', 'BOO'] },
   ],
 };
 // the names and the Evil states in cargoText.json come first, these the fallback (words.js: a bad entry is passed over)

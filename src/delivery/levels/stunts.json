@@ -5,7 +5,7 @@
   "tip": 320,
   "lanes": 4,
   "flow": "north",
-  "cargo": { "good": "coffee", "evil": "fireworks" },
+  "cargo": { "good": "coffee", "evil": "piecatapult" },
   "traffic": { "van": 0.16, "darkvan": 0.14, "pickup": 0.12, "bus": 0.1, "taxi": 0.08, "semi": 0.07, "hotrod": 0.07, "sport": 0.07, "lowrider": 0.05, "minivan": 0.07, "boyracer": 0.04, "police": 0.03 },
   "trafficCount": 14,
   "oncomingCount": 0,
