@@ -654,7 +654,8 @@ export const CONFIG = {
   kangarooHop: 0.9,        // ...this high...
   kangarooHops: 2.2,       // ...this many times a second (and it rests at each side like a cow)
   // drop bears (a level's "dropBears"): up in the trees over the road until the player comes within
-  // `near` m (a different distance for each), then down they drop, and there they stay
+  // `near` m (a different distance for each) plus the distance the car covers while a bear falls (about 2.2 s of
+  // its speed: a fast car is dropped on from further back, so it can't just outrun one), then down they drop, and there they stay
   dropBear: { height: 24, near: { min: 50, max: 110 } },
   cowRestMin: 0.5,         // s it stands at each side before turning back, random between min and max
   cowRestMax: 2.5,

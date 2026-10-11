@@ -622,7 +622,9 @@ export const Collision = (() => {
         }
       } else if (o.kind === 'dropBear') {
         if (o.h <= 0) continue; // (down, and staying there)
-        if (!o.fall && o.s - Player.s > 0 && o.s - Player.s < o.near) o.fall = 0.01; // the player is near: down it comes
+        // the player is near: down it comes. Near is reckoned in time as well as metres: the car covers the fall's
+        // distance while the bear is in the air, so a fast car is dropped on from that much further back
+        if (!o.fall && o.s - Player.s > 0 && o.s - Player.s < o.near + Math.max(0, Player.speed) * Math.sqrt(2 * CONFIG.dropBear.height / 9.8)) o.fall = 0.01;
         if (o.fall) {
           o.fall += 9.8 * dt;
           o.h = Math.max(0, o.h - o.fall * dt);

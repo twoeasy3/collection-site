@@ -216,7 +216,7 @@ export const GROUPS = [
       return { model: roo, tick: (t) => { roo.position.y = Math.abs(Math.sin(t * CONFIG.kangarooHops * Math.PI)) * CONFIG.kangarooHop; } };
     } },
     { name: 'Drop bears', color: 0x8a8f96, has: (l) => l.dropBears?.length, rules: [
-      `They wait up in the gum trees, ${CONFIG.dropBear.height} m over the road, and drop when you come within ${range(CONFIG.dropBear.near, ' m')} (a different distance for each). Down, they stay down.`,
+      `They wait up in the gum trees, ${CONFIG.dropBear.height} m over the road, and drop when you come within ${range(CONFIG.dropBear.near, ' m')} (a different distance for each), plus what you cover while they fall: the faster you go, the earlier they let go. Down, they stay down.`,
       `Hit one: ${CONFIG.obstacleKinds.dropBear.damage} damage, and you keep ${pct(CONFIG.obstacleKinds.dropBear.speedKept)} of your speed.`,
     ], build: () => {
       const bear = ob('dropBear');
