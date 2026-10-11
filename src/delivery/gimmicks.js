@@ -100,6 +100,7 @@ export const GROUPS = [
       'An exit lane opens beside the right-hand lane: take it, and the side road runs on beside the expressway and joins it again further up.',
       'Traffic takes it too, and it can be a way round a jam (or into one).',
       'No two need be alike: one runs straight, another swings far out or winds through a string of bends; some are one-way, others have traffic coming at you in the other lane.',
+      'Speed cameras, level crossings, potholes and the rest can stand on a side road too, so the way round has troubles of its own.',
     ], build: () => {
       const g = road(9, 14);
       const ramp = box(4, 0.1, 10, lambert(0x3b3e44), 6.2, 0.1, 2);
@@ -794,9 +795,6 @@ export const GROUPS = [
       g.add(first);
       return { model: g, tick: (t) => { const u = Math.min(1, (t % 5) / 1.6), e = u * u * (3 - 2 * u); first.rotation.y = e * 1.25; second.rotation.y = -e * 1.9; } };
     } },
-    { name: 'Side-road gimmicks', color: 0x2e8b4a, has: (l) => ['cameras', 'crossings', 'potholes', 'trolleys', 'stampedes', 'waterMains'].some(k => l[k]?.some(i => i.road === 'side')), rules: [
-      'Speed cameras, level crossings, potholes and the rest can stand on a side road too, so the way round has troubles of its own.',
-    ], build: () => { const g = road(5, 12), cam = ob('camera', { height: 4.2 }); cam.position.set(3.2, 0, 0); cam.rotation.y = Math.PI; g.add(cam); return { model: g }; } },
   ] },
   { name: 'City streets', cards: [
     { name: 'Tunnels', color: 0x4a4f5c, has: (l) => l.tunnels?.length, rules: [
