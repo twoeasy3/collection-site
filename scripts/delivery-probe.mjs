@@ -10,6 +10,11 @@ const IDS = process.argv.slice(2).filter(a => !a.startsWith('--'));
 if (!IDS.length) { console.log('Name the levels: node scripts/delivery-probe.mjs <id> ... [--secs=120] [--solid] [--evil] [--car=id]'); process.exit(1); }
 
 const g = await boot({ cars: ['commuter', 'sport', 'floatvan', arg('car', 'commuter')] }); // (floatvan: an amphibious car owned, or a run on an amphibious level is refused)
+// (the tiers are on by default: a tier level starts only in a car of its tier, else Game.start refuses and no level is built. Own every
+// car, so a level starts as a player's would; the rule is the game's own, only the garage is full. --car=id is then the pick, or the
+// tier's car for the level where it restricts)
+const { Progress } = await g.load('progress.js');
+Progress.data.cars = g.cars.CARS.map(c => c.id);
 let failed = false;
 try {
   for (const id of IDS) {

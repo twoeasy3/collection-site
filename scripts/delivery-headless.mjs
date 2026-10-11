@@ -20,7 +20,10 @@ export const logicServer = () => createServer({
   cacheDir: join(tmpdir(), 'delivery-vite-' + process.pid + '-' + Date.now().toString(36)),
 });
 
-export const boot = async ({ cars = ['commuter', 'sport', 'floatvan'] } = {}) => { // (floatvan: an amphibious car, for the amphibious levels)
+// ownAll: the player owns every car (the tiers are on by default: a tier level starts only in a car of its tier, and Game.start
+// refuses, building nothing, where none is owned; a check that drives levels headlessly owns them all, as a player's garage would).
+// tiers: false = the tiers off (as ?tiers=0), for a check of what a car does on a tier level, where the tier's car would be put in instead
+export const boot = async ({ cars = ['commuter', 'sport', 'floatvan'], ownAll = false, tiers = true } = {}) => { // (floatvan: an amphibious car, for the amphibious levels)
   // the game logic touches the DOM only to show / hide screens
   const element = () => ({ classList: { add() {}, remove() {}, toggle() {} }, addEventListener() {}, style: {}, textContent: '' });
   globalThis.window = globalThis.window || { addEventListener() {}, dispatchEvent() {} };
@@ -44,6 +47,7 @@ export const boot = async ({ cars = ['commuter', 'sport', 'floatvan'] } = {}) =>
     ...(await load('config.js')),
     ...(await load('messages.js')),
     cars: await load('cars.js'),
+    progress: (await load('progress.js')).Progress,
     close: () => server.close(),
     // pick a level by id (on the menu or hidden), or take a level object as it is
     select(level) {
@@ -73,5 +77,7 @@ export const boot = async ({ cars = ['commuter', 'sport', 'floatvan'] } = {}) =>
       return seconds;
     },
   };
+  if (!tiers) g.CONFIG.progression.tiers = false;
+  if (ownAll) g.progress.data.cars = g.cars.CARS.map(c => c.id);
   return g;
 };
