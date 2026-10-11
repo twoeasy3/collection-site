@@ -589,7 +589,7 @@ export const GROUPS = [
     } },
     { name: 'Funeral processions', color: 0x8a8a9a, has: (l) => l.processions, rules: [
       `Now and then a hearse and ${CONFIG.procession.cars} cars in black, nose to tail in one lane at ${kmh(CONFIG.procession.speed)}, either way. They keep their lane and never throw.`,
-      'Crash into any of them and the whole procession is furious with you.',
+      `Crash into any of them and the whole procession is furious with you, and for ${CONFIG.procession.jerkTime} s everyone on the road treats you as a jerk (as the Jerk mystery does).`,
     ], build: () => {
       const g = road(5, 26);
       const cars = ['hearse', ...CONFIG.procession.kinds.slice(0, CONFIG.procession.cars)];

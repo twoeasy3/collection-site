@@ -1278,6 +1278,7 @@ export const Traffic = (() => {
       car.emotion = 'angry';
       car.showMood = true;
     }
+    Player.startJerk(CONFIG.procession.jerkTime); // (and everyone on the road thinks the player a jerk for a while)
     if (said) Message.say('events', 'mourners');
   };
 

@@ -287,6 +287,16 @@ export const Player = {
       if (others.length) this.takeCar(() => lendCar(others[Math.floor(Math.random() * others.length)]));
     }
   },
+  // the Jerk mechanic for `time` s, set off by something other than the mystery pickup (crashing a funeral
+  // procession: see Traffic.mourn). Another mystery already running is left alone; a jerk's time is only ever topped up
+  startJerk(time) {
+    if (this.busted || (this.mystery && this.mystery !== 'jerk')) return false;
+    const fresh = this.mystery !== 'jerk';
+    this.mystery = 'jerk';
+    this.mysteryTime = Math.max(this.mysteryTime, time);
+    if (fresh) for (const car of Traffic.cars) car.showMood = true;
+    return fresh;
+  },
   // the mystery effect running, in a word or two, for the pickup status (messages.json: mysteryNames); '' with none
   get mysteryName() { return this.mystery ? Message.pick('mysteryNames', this.mystery) || this.mystery : ''; },
   endMystery() {

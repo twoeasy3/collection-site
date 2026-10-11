@@ -1213,13 +1213,14 @@ export const CONFIG = {
   },
   // a funeral procession (a level's "processions": see Traffic.startProcession): a hearse and its
   // cars, nose to tail, slow, in one lane; no lane changes, no throwing. Crash into any of them and
-  // the whole procession is angry with you
+  // the whole procession is angry with you, and the Jerk mechanic is on the player for jerkTime
   procession: {
     cars: 3,               // cars following the hearse
     kinds: ['commuter', 'wagon', 'minivan', 'suv'], // what they are (all in black)
     paint: 0x151515,
     speed: 11,             // m/s
     gap: 4,                // m nose to tail
+    jerkTime: 10,          // s the player is a jerk (the Jerk mystery's effect: everyone hates them) after crashing into one
   },
   // a level crossing (a level's "crossings": crossing.js): as the player comes near (or every so often
   // after), its lights flash and its booms come down across the lanes coming up to it, and a short
