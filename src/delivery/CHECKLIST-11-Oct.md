@@ -119,6 +119,8 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 
 **12-Oct, MERGED `delivery-beginner` (L1) and `delivery-sweep` (second merge: Q21 audit and removals, Q17, Q20 plan).** `delivery-carfix`: Q8 kangaroos and Q16 learner are code-complete but UNSEEN: do not merge until their stills are read; the Junker blurb fix goes in separately (`delivery-carfix-words`). Words check on main: gimmickText blasts and punctures too long (damage agent).
 
+**12-Oct, Good/Evil A (`delivery-underglow`, final `1c5853d`):** 1 and 2 read, 3 weak, 4 unconfirmed (Evil puff now a round dark ball, Good puff not caught); stills `%TEMP%\claude\ge\` (`fin\p-muscle-evil.png`, `p-commuter-good.png`); dark Good car and Good at night stills MISSING. Agent finished. Waiting on `delivery-ge-road` and `delivery-ge-ui` for one summary.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
