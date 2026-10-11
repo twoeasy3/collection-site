@@ -31,7 +31,8 @@ const ONE_YEAR = 60 * 60 * 24 * 365;
 // (batch F) Orders 44 to 46: After Hours, Eruption Day and Cattle Drive at 49 to 51, after those five.
 // (Order 27 was, for a few hours on 10-Oct and never on the live site, a cap at 46 with those levels after the
 // amphibious ones: no save was made with it outside a developer's machine.)
-const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34, 35, 36, 37, 35, 36, 37, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51]; // (for orders 2, 3, ...)
+// Order 47: Spring Thaw at 52, after those three; order 48: Hot Zone (the fallout level) at 53, after it.
+const INSERTED_AT = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, { cap: 41 }, 32, 33, 34, 35, 36, 37, 35, 36, 37, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53]; // (for orders 2, 3, ...)
 const LEVEL_ORDER = INSERTED_AT.length + 1;
 
 // races (the lapped levels, on the menu's Races tab) are always open, and never hold up the delivery levels: the
@@ -52,6 +53,8 @@ const fresh = () => ({
   evil: false,     // the side picked on the menu
   stats: {},       // milestone counters, by name (packagesLanded, copsOutrun, kmDriven...: see milestones.js), across every run
   levelOrder: LEVEL_ORDER, // the order of levels `unlocked` counts by
+  tierBase: null,  // the levels open (by position) when the tiers (tiers.js) were first looked at: they stay open. null: not yet
+  tierCars: {},    // the car last picked for each tier's levels while their medal is not earned, by tier (the player's own pick, `car`, is kept apart)
 });
 
 // The save is kept in local storage (BACKUP: the store of record, read first, the whole save, as big as it
@@ -89,6 +92,7 @@ const restore = (saved) => {
     const data = { ...fresh(), ...saved };
     data.bestTime = { good: {}, evil: {}, ...saved.bestTime }; // (a save from before best times has none)
     data.stats = { ...(saved.stats || {}) }; // (nor counters)
+    data.tierCars = { ...(saved.tierCars && typeof saved.tierCars === 'object' ? saved.tierCars : {}) };
     // (the Commuter and the Darkvan were saved as 'hatch' and 'coupe')
     const RENAMED = { hatch: 'commuter', coupe: 'darkvan' };
     data.cars = [...new Set(data.cars.map(id => RENAMED[id] || id))];
@@ -96,8 +100,9 @@ const restore = (saved) => {
     delete data.best; // (best tips, no longer kept)
     for (let order = saved.levelOrder || 1; order < LEVEL_ORDER; order++) {
       const at = INSERTED_AT[order - 1];
-      if (typeof at === 'object') data.unlocked = Math.min(data.unlocked, at.cap);
-      else if (data.unlocked >= at) data.unlocked++;
+      const moved = (n) => typeof at === 'object' ? Math.min(n, at.cap) : n >= at ? n + 1 : n;
+      data.unlocked = moved(data.unlocked);
+      if (typeof data.tierBase === 'number') data.tierBase = moved(data.tierBase); // (the levels the tiers keep open move with the others)
     }
     data.levelOrder = LEVEL_ORDER;
     data.unlocked = pastRaces(data.unlocked);
@@ -139,6 +144,8 @@ const tidy = (saved) => {
   clean.money = number(saved.money, 0) ?? 0;
   clean.unlocked = Math.floor(number(saved.unlocked, 1) ?? 1);
   clean.levelOrder = Math.floor(number(saved.levelOrder, 1) ?? 1);
+  if (number(saved.tierBase, 1) !== undefined) clean.tierBase = Math.floor(number(saved.tierBase, 1));
+  clean.tierCars = Object.fromEntries(Object.entries(saved.tierCars && typeof saved.tierCars === 'object' ? saved.tierCars : {}).filter(([k, v]) => /^d{1,2}$/.test(k) && word(v)).slice(0, 12));
   clean.tankPieces = Math.floor(number(saved.tankPieces, 0) ?? 0);
   clean.cars = [...new Set(['commuter', ...(Array.isArray(saved.cars) ? saved.cars : []).filter(word)])].slice(0, 200);
   clean.car = word(saved.car) ? saved.car : 'commuter';

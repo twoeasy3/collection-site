@@ -1,6 +1,6 @@
 // ---- the start screen's level select, car and side: the game's front end ---------------------------------
 // One screen, nothing scrolls. The level picked is the STAGE: its picture large, its number and name, its
-// description for the side picked, its clock, tip and best times with their medals. Under it the STRIP: the
+// description for the side picked, its clock, tip and best times with their medals, and (in the HUD's round window) the cargo it carries. Under it the STRIP: the
 // levels of its group, to step through; over it the groups, and over those the tabs (Deliveries, Races): the
 // same control one level up each time. Beside the stage the car (a way into the garage), the side (Good or
 // Evil: Evil recolours the screen) and START.
@@ -13,8 +13,12 @@
 // main.js); ?side=evil shows the Evil side for the visit; ?options opens the options; ?road the road card.
 import '../menu2.css';
 import { LEVELS, LEVEL, selectLevel, levelLabel, MAIN_LEVELS, AMPHIBIOUS_LEVELS, DELIVERY_LEVELS, RACE_LEVELS, isRace } from '../levels.js';
+import { levelName, levelDescription } from '../levelText.js';
+import { cargoFor } from '../cargo.js';
+import { cargoCircleView } from './cargoview.js';
 import { CARS, CAR, useLevelCar, earnedFor, amphibiousCars, stars, starColour } from '../cars.js';
 import { Progress } from '../progress.js';
+import { Tiers, tierStarsNode, richTiers } from '../tiers.js';
 import { Game, formatTime, clockFor } from '../game.js';
 import { medalFor, medalNeeds } from '../levelinfo.js';
 import { Garage, makeShowCar, paintShowCar, IDEA_TAG } from './garage.js';
@@ -36,6 +40,9 @@ const SHOT = { w: 600, h: 267, slack: 1.15 }; // (the small picture's size; and 
 // the stage's picture of a level: the small one, with the large one over it where there is one and the stage
 // draws its picture bigger than the small one is (in the screen's own pixels: a dense screen counts). The small
 // one is under it all the same: it shows until the large one has come, and if it never does
+// (A phone gets the large one too, as a desktop does: the owner asked for the high quality pictures there on 11-Oct,
+// reversing the small-only rule. phone() below still says whether the screen is a touch screen or a narrow window)
+const phone = () => !!window.matchMedia?.('(pointer: coarse), (max-width: 760px)').matches;
 const stageShot = (id) => {
   const small = LEVEL_SHOTS[id], large = LEVEL_SHOTS_LARGE[id];
   if (!small) return large ? `url("${large}")` : '';
@@ -77,12 +84,24 @@ for (let i = 0; i < MAIN_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Ma
   for (let i = specials; i < DELIVERY_LEVELS.length; i += 5) TABS.delivery.groups.push([i, Math.min(DELIVERY_LEVELS.length, i + 5)]);
 }
 for (let i = 0; i < RACE_LEVELS.length; i += 5) TABS.race.groups.push([i, Math.min(RACE_LEVELS.length, i + 5)]);
+// (the level tiers, tiers.js: the delivery tab in the table's order, a group a tier, then the levels outside them in
+// runs of one kind, five at most. A group's third item is its tier number)
+if (Tiers.on()) {
+  const list = [...Tiers.order, ...DELIVERY_LEVELS.filter(level => !Tiers.order.includes(level))], groups = [];
+  let i = 0;
+  Tiers.tiers.forEach((tier, k) => { if (tier.length) { groups.push([i, i + tier.length, k + 1]); i += tier.length; } });
+  const kind = (level) => AMPHIBIOUS_LEVELS.includes(level) ? 2 : MAIN_LEVELS.includes(level) ? 0 : 1;
+  while (i < list.length) { let j = i + 1; while (j < list.length && j - i < 5 && kind(list[j]) === kind(list[i])) j++; groups.push([i, j]); i = j; }
+  TABS.delivery.list = list;
+  TABS.delivery.groups = groups;
+}
 const tabOf = (level) => isRace(level) ? 'race' : 'delivery';
-const label = (level) => levelLabel(LEVELS.indexOf(level));
+// (under the tiers a level's number is its place in its tier, 1 to 5; its kind says which tier)
+const label = (level) => Tiers.on() && Tiers.place(level) ? String(Tiers.place(level).pos) : levelLabel(LEVELS.indexOf(level));
 // what kind of level it is, for the plate over its picture
-const kindOf = (level) => isRace(level) ? 'Race' : AMPHIBIOUS_LEVELS.includes(level) ? 'Amphibious' : MAIN_LEVELS.includes(level) ? 'Level' : 'Special';
+const kindOf = (level) => isRace(level) ? 'Race' : Tiers.on() && Tiers.place(level) ? tierStarsNode(Tiers.place(level).tier) : AMPHIBIOUS_LEVELS.includes(level) ? 'Amphibious' : MAIN_LEVELS.includes(level) ? 'Level' : 'Special';
 // a race is always open; a delivery level once the one before it has been delivered
-const isOpen = (level) => isRace(level) || LEVELS.indexOf(level) < Progress.data.unlocked;
+const isOpen = (level) => isRace(level) || (Tiers.on() ? Tiers.isOpen(level) : LEVELS.indexOf(level) < Progress.data.unlocked);
 // a level played on one side only (the Battlefield, All Heck: always Good)
 const oneSided = (level) => !!(level.battle || level.alwaysGood);
 
@@ -137,8 +156,8 @@ const pickSide = (evil) => {
 };
 
 // ---- drawing ---------------------------------------------------------------------------------------------
-// a side's half of the stage's ribbon: the side, the medal its best time earned, and the time (or a dash).
-// (The ribbon is two halves on purpose, Good's on the left and Evil's on the right: see the 10-Oct checklist)
+// a side's medal on the stage: the side, the grade its best time earned, and the time (or a dash). (Its CSS class and
+// the identifiers are still called ribbon / half: the strip of the two medals, Good's on the left and Evil's on the right)
 const ribbonHalf = (level, evil) => {
   const spare = Progress.bestTime(level.id, evil), medal = medalFor(level, evil, spare);
   const half = make('span', 'half ' + (evil ? 'evil' : 'good') + (medal ? ' ' + medal : ''),
@@ -158,11 +177,17 @@ const drawStage = () => {
   const picture = stageShot(level.id);
   if (picture) shot.style.backgroundImage = picture; // (the large picture where the stage is big enough to want it)
   else shot.classList.add('none'); // (no picture of it yet)
-  const plate = make('div', 'plate', make('small', '', kindOf(level)), make('b', '', label(level)));
+  const tiered = Tiers.on() ? Tiers.place(level) : null; // (under the tiers: the stars, then 1/5)
+  const plate = make('div', 'plate' + (tiered ? ' tiered' : ''), make('small', '', kindOf(level)), make('b', '', tiered ? tiered.pos + '/' + Tiers.tiers[tiered.tier - 1].length : label(level)));
+  if (tiered) plate.setAttribute('aria-label', Tiers.spoken(tiered.tier) + ', level ' + tiered.pos + ' of ' + Tiers.tiers[tiered.tier - 1].length);
   const ribbon = make('div', 'ribbon', ...(open ? (oneSided(level) ? [false] : [false, true]).map(side => ribbonHalf(level, side)) : []));
   // what the level needs (a line of its own: a car that floats, the vehicle it is driven in, the level before it)
   const prize = earnedFor(level.id);
-  const needs = !open ? 'Locked: deliver level ' + label(list[at - 1]) + ' on time to open it'
+  const place = Tiers.on() ? Tiers.place(level) : null, rule = Tiers.restriction(level, evil);
+  const cheapest = rule !== null ? Tiers.carsOfTier(rule).sort((a, b) => a.price - b.price)[0] : null;
+  const needs = !open ? (Tiers.on() ? Tiers.lockedBecause(level) : 'Locked: deliver level ' + label(list[at - 1]) + ' on time to open it')
+    : rule !== null ? (CAR.silhouette ? 'You own no ' + Tiers.tierName(rule) + ' car: buy one in the garage to play this level (the cheapest is the ' + cheapest.name + ', ' + money(cheapest.price) + ')'
+        : 'No medal on ' + (evil ? 'Evil' : 'Good') + ' yet: only ' + Tiers.tierName(rule) + ' cars may be driven. Earn it and any car will do on this side')
     : level.car ? 'Driven in the ' + CAR.name + ': the garage car returns on other levels'
       : level.amphibious ? (CAR.amphibious ? 'Amphibious cars only: you drive your ' + CAR.name
         : 'Needs an amphibious car: get the ' + cheapestAmphibious().name + ' (' + money(cheapestAmphibious().price) + ') in the garage')
@@ -170,16 +195,24 @@ const drawStage = () => {
   // (a special level's 6-star car, and the time to spare that earns it: see cars.js EARNED_CARS)
   const prizeLine = open && prize ? '6-star car: ' + prize.name + (Progress.earned(prize) ? ' (earned)'
     : ', for ' + formatTime(prize.earned.par.good) + (prize.earned.par.evil === undefined ? '' : ' Good and ' + formatTime(prize.earned.par.evil) + ' Evil') + ' to spare') : null;
-  const words = level.description?.[evil ? 'evil' : 'good'] || level.description?.good || '';
+  const words = levelDescription(level, evil); // (for the side picked: see levelText.js)
   const best = Progress.bestTime(level.id, evil);
+  // what is being delivered, for the side picked (cargo.js: levelText.json's, whatever is wrong with it; null on a
+  // race), in the HUD's own round window, turning, with its name under it: nothing on a level not open
+  const carried = open ? cargoFor(level, evil) : null;
+  const ring = carried ? make('span', 'ring') : null;
+  const cargo = carried ? make('div', 'cargo3d', ring, make('span', 'cargo-name', carried.name)) : null;
+  if (cargo) cargo.title = (evil ? 'What you are delivering as Evil: ' : 'What you are delivering as Good: ') + carried.name;
+  wantCargo(carried, ring);
   const info = make('div', 'info',
-    make('h2', '', level.name),
+    make('h2', '', levelName(level)),
     open && words ? make('p', 'desc', words) : null,
     open ? make('div', 'facts',
       fact('Clock', formatTime(clockFor(level, evil)) + (oneSided(level) ? ' (always Good)' : '')),
       fact('Tip', money(level.tip)),
       fact('Best to spare', best === undefined ? 'Not delivered yet' : formatTime(best))) : null,
-    needs ? make('p', 'needs' + (open && !Game.canStart ? ' warn' : ''), needs) : null,
+    needs ? make('p', 'needs' + (open && !Game.canStart ? ' warn' : ''), ...richTiers(needs)) : null,
+    open && place ? make('p', 'prize', tierStarsNode(place.tier), ' medals ' + Tiers.tierMedals(place.tier) + '/' + Tiers.tiers[place.tier - 1].length * 2) : null,
     prizeLine ? make('p', 'prize', prizeLine) : null,
     open && roadCard ? make('button', 'menu-chip road', 'What’s on this road') : null);
   info.querySelector('.road')?.addEventListener('click', () => roadCard(level));
@@ -190,7 +223,7 @@ const drawStage = () => {
   arrows[1].title = 'The next level (right)';
   arrows[0].addEventListener('click', () => step(-1));
   arrows[1].addEventListener('click', () => step(1));
-  stage.replaceChildren(shot, plate, ribbon, info, ...arrows);
+  stage.replaceChildren(shot, plate, ribbon, cargo, info, ...arrows);
   // (a new level slides in; the other side only swaps the words)
   stage.className = 'menu-stage' + (open ? '' : ' locked') + (drawn && !sameLevel ? ' enter' : drawn && drawn !== key ? ' flip' : '');
   drawn = key;
@@ -204,10 +237,10 @@ const drawStrip = (first, last) => {
     const pips = make('span', 'pips', ...(open ? (oneSided(level) ? [false] : [false, true]).map(evil =>
       make('i', (evil ? 'evil ' : 'good ') + (medalFor(level, evil, Progress.bestTime(level.id, evil)) || 'none'))) : []));
     const thumb = make('button', 'thumb' + (level === cursor ? ' current' : '') + (open ? '' : ' locked'),
-      make('b', '', label(level)), pips, make('span', 'name', level.name));
+      make('b', '', label(level)), pips, make('span', 'name', levelName(level)));
     if (LEVEL_SHOTS[level.id]) thumb.style.backgroundImage = `url("${LEVEL_SHOTS[level.id]}")`;
     else thumb.classList.add('none');
-    thumb.title = open ? level.name : level.name + ': not open yet';
+    thumb.title = open ? levelName(level) : levelName(level) + ': not open yet';
     thumb.addEventListener('click', () => { if (level !== cursor) blip('menuMove'); show(level); });
     return thumb;
   }));
@@ -239,7 +272,8 @@ const syncPicture = () => {
   if (carView?.canvas) carView.canvas.style.display = carLive ? 'block' : 'none';
 };
 const showCarModel = (evil) => {
-  carUrl = CAR_SHOTS[CAR.id + (evil ? '-evil' : '-good')] || '';
+  carUrl = CAR.silhouette ? '' : CAR_SHOTS[CAR.id + (evil ? '-evil' : '-good')] || '';
+  picture.classList.toggle('silhouette', !!CAR.silhouette);
   try {
     if (carView?.car === CAR) { // (the same car: the other side's paint, where it stands)
       if (carView.evil !== evil) paintShowCar(carView.model, CAR, carView.evil = evil);
@@ -269,16 +303,70 @@ const showCarModel = (evil) => {
     requestAnimationFrame(frame);
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    if (!carView || !menuUp() || Garage.isOpen) return;
-    const live = drawViews(sharedRenderer(), [carView], now / 1000, dt);
-    if (live !== carLive) { carLive = live; syncPicture(); }
+    if (!menuUp()) { dropCargo(); return; } // (a run has started: what the circle took is given back)
+    if (Garage.isOpen) return;
+    if (!cargoView && cargoWant) buildCargo(); // (the menu is back, and the stage has not been drawn again)
+    const views = [carView, cargoView && cargoDue(cargoView) ? cargoView : null].filter(Boolean);
+    if (!views.length) return;
+    const live = drawViews(sharedRenderer(), views, now / 1000, dt);
+    if (carView && live !== carLive) { carLive = live; syncPicture(); }
   };
   requestAnimationFrame(frame);
 }
+// The cargo: the HUD corner's round window (render/cargoview.js), in the stage's corner. Its model is drawn by the same
+// one renderer as the car's, into a canvas in its circle (no WebGL context of its own), turning at the corner's own
+// speed, on a phone as on a desktop (it stood still on a phone until 11-Oct), and under prefers-reduced-motion it
+// is stilled as the car is (modelviews.js drawViews).
+// Built when the item (or the way it is shown) changes, not when the stage is drawn again; given back when the
+// item changes, when no level on show carries one, and when the menu is left (the frame below). The stage's
+// own nodes are made afresh each time it is drawn, so the view is moved into the new circle.
+let cargoView = null;   // { id, still, el, scene, camera, step, stand, canvas, ctx }
+let cargoWant = null;   // { item, el }: what the stage last asked for (built again if the menu comes back)
+const dropCargo = () => {
+  if (!cargoView) return;
+  cargoView.canvas?.remove();
+  disposeViews([cargoView]);
+  cargoView = null;
+};
+const buildCargo = () => {
+  const item = cargoWant?.item;
+  if (!item || !cargoWant.el) return dropCargo();
+  const still = false; // (it turns on a phone too: the owner, 11-Oct, "the cargo on the level card does not rotate ... on mobile")
+  try {
+    if (cargoView && (cargoView.id !== item.id || cargoView.still !== still)) dropCargo();
+    if (!cargoView) {
+      if (!sharedRenderer()) return; // (no renderer to be had: the name under the circle stands alone)
+      cargoView = { id: item.id, still, ...cargoCircleView(item.id, { spin: !still }) };
+    }
+  } catch (error) { // (never a crash: the circle stays empty, with the name)
+    console.warn('No model for the cargo card: ' + (error?.message || error));
+    dropCargo();
+    return;
+  }
+  cargoView.canvas?.remove(); // (a new circle: the old one's canvas went with its node)
+  cargoView.canvas = cargoView.ctx = null;
+  cargoView.stillAt = undefined;
+  cargoView.el = cargoWant.el;
+};
+const wantCargo = (item, el) => { cargoWant = item ? { item, el } : null; buildCargo(); };
+// a still one is drawn when its circle is new or has changed size, a turning one every frame
+const cargoDue = (v) => {
+  if (!v.still) return true;
+  const r = v.el.getBoundingClientRect(), ratio = Math.min(window.devicePixelRatio || 1, 2);
+  if (!r.width || !r.height) return false;
+  return !v.canvas || v.canvas.width !== Math.round(r.width * ratio) || v.canvas.height !== Math.round(r.height * ratio);
+};
 const drawCar = () => {
   const evil = Game.evil && !oneSided(cursor);
   showCarModel(evil);
   // (a car idea, ideas.js, has no tier and so no stars: "Idea" stands where they would be)
+  if (CAR.silhouette) { // (a car of the level's tier is to be bought: a dark outline of the cheapest, and no figures)
+    shop.replaceChildren(picture,
+      make('span', 'words', make('strong', '', 'No car for this level'), make('span', 'stat', make('small', '', tierStarsNode(CAR.tierNeeded), ' only'))),
+      make('span', 'go', 'Garage'));
+    shop.title = 'This level needs a car of exactly its tier: open the garage to buy one (G)';
+    return;
+  }
   const starSpan = make('span', 'stars', CAR.tier ? stars(CAR) : IDEA_TAG.text);
   starSpan.style.color = CAR.tier ? starColour(CAR) : IDEA_TAG.colour;
   shop.replaceChildren(picture,
@@ -297,6 +385,7 @@ export const draw = () => {
   if (isOpen(cursor) && cursor !== LEVEL && LEVELS.includes(LEVEL)) { cursor = LEVEL; tab = tabOf(LEVEL); }
   if (!TABS[tab].list.includes(cursor)) cursor = lastOn[tab] || TABS[tab].list[0];
   lastOn[tab] = cursor;
+  if (Tiers.on() && isOpen(cursor)) useLevelCar(LEVEL.car, LEVEL.amphibious); // (the tier rule: it goes by the side and the medals, which change)
   const open = isOpen(cursor), evil = Game.evil && !oneSided(cursor);
   bank.replaceChildren(make('small', '', 'Bank'), money(Progress.data.money));
   for (const [name, button] of Object.entries(tabBtns)) button.classList.toggle('current', name === tab);
@@ -306,8 +395,11 @@ export const draw = () => {
   const { list, groups } = TABS[tab], at = list.indexOf(cursor);
   const shown = Math.max(0, groups.findIndex(([a, b]) => at >= a && at < b)), [first, last] = groups[shown];
   groupBox.replaceChildren(...groups.map(([a, b], g) => {
-    const button = make('button', (g === shown ? 'current' : '') + (isOpen(list[a]) ? '' : ' locked'), label(list[a]) + (b - a > 1 ? '–' + label(list[b - 1]) : ''));
-    button.title = isOpen(list[a]) ? '' : 'Not open yet';
+    const tierNo = groups[g][2]; // (under the tiers: the stars of the tier, gold or blue)
+    const button = make('button', (g === shown ? 'current' : '') + (isOpen(list[a]) ? '' : ' locked') + (tierNo ? (Tiers.tierIsBlue(tierNo) ? ' blue' : ' gold') : ''),
+      tierNo ? '★'.repeat(Tiers.tierStars(tierNo)) : label(list[a]) + (b - a > 1 ? '–' + label(list[b - 1]) : ''));
+    button.title = tierNo ? Tiers.spoken(tierNo) + (isOpen(list[a]) ? '' : ': not open yet') : isOpen(list[a]) ? '' : 'Not open yet';
+    if (tierNo) button.setAttribute('aria-label', Tiers.spoken(tierNo) + (isOpen(list[a]) ? '' : ', not open yet'));
     button.addEventListener('click', () => { if (g !== shown) { blip('menuMove'); show(list[a]); } });
     return button;
   }));
@@ -329,8 +421,9 @@ export const draw = () => {
     : cursor.noPackages ? (evil ? 'Less time on the clock.' : 'More time on the clock.') // (a race: nothing is thrown)
       : evil ? 'Less time. Flaming packages do real damage, and the police bust you for them.'
         : 'More time. Care packages increase your social standing and gains you benefits.';
-  startBtn.disabled = !open;
-  startBtn.firstElementChild.textContent = !open ? 'Locked' : tab === 'race' ? 'Race' : 'Start';
+  const noCar = Tiers.on() && CAR.silhouette; // (the level's tier rule allows only cars the player has none of)
+  startBtn.disabled = !open || noCar;
+  startBtn.firstElementChild.textContent = !open ? 'Locked' : noCar ? 'No car' : tab === 'race' ? 'Race' : 'Start';
 };
 
 // ---- the controls ----------------------------------------------------------------------------------------
@@ -380,7 +473,7 @@ const roadLine = (level, words) => {
   const closeBtn = make('button', 'menu-chip', 'Close');
   closeBtn.addEventListener('click', closeSheet);
   roadBox.replaceChildren(make('div', 'sheet-box road',
-    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', label(level) + '  ' + level.name)), closeBtn),
+    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', label(level) + '  ' + levelName(level))), closeBtn),
     make('div', 'sheet-main', make('div', 'sheet-body', make('p', 'road-wait', words)))));
 };
 const roadCard = async (level) => {
@@ -418,7 +511,7 @@ window.addEventListener('keydown', (e) => {
     // (a button reached with the keyboard is pressed by Enter, and nothing else happens)
     if (focused && focused !== startBtn && startScreen.contains(focused) && focused.matches('button, a') && focused.matches(':focus-visible')) { e.stopPropagation(); return; }
     e.preventDefault();
-    if (!isOpen(cursor)) e.stopPropagation();
+    if (startBtn.disabled) e.stopPropagation();
     else blip('menuPick');
     return;
   }

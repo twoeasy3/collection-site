@@ -88,8 +88,11 @@ const SAMPLES = {
   drum: null,                   // a parade's bass drum
   jingle: null,                 // an ice-cream van's chimes
   cargoDrop: ['Collide1', 'Plop Up'], // a load coming off a truck
-  menuMove: null,               // the start screen: a step to another level, group or tab (render/menustage.js)...
-  menuPick: null,               // ...and a choice made (the side, the garage, a sheet opened, START)
+  geiger: null,                 // the radiation counter's click, in a dose (radiation.js: faster the fuller the meter)
+  infected: null,               // the player infected: a falling alarm
+  menuMove: 'Plop Up',          // the start screen: a step to another level, group or tab (render/menustage.js)...
+  menuPick: 'Plop Up',          // ...and a choice made (the side, the garage, a sheet opened, START)
+  menuClick: 'Plop Up',         // ...and every other click on a menu, garage or dialog control (render/menuclick.js): all one sound
 };
 // the engine WAV for each car by id ('tank' is also any car in TANK RAGE), and its playback
 // rate at a standstill and at the car's top speed; fixed = always at its own pitch. With more
@@ -339,12 +342,18 @@ Object.assign(SYNTH, {
   gravel: (v) => { noise(3200, 1400, 0.2, 0.3 * v, 'bandpass'); noise(900, 400, 0.16, 0.22 * v, 'lowpass', 0.03); }, // (stones under the car, in a gravel trap)
   jingle: (v) => [659, 587, 523, 587, 659, 659, 659].forEach((f, i) => tone(f, f, 0.28, 0.14 * v, 'triangle', i * 0.22)), // (a nursery tune's first phrase)
   cargoDrop: (v) => { noise(900, 200, 0.2, 0.5 * v); tone(140, 60, 0.15, 0.3 * v, 'square'); },
+  // radiation (radiation.js): the counter's click, a crackle of a few ms; and the infection's alarm, three notes falling
+  geiger: (v) => { noise(5200, 2600, 0.018, 0.7 * v, 'bandpass'); tone(3200, 1800, 0.012, 0.25 * v, 'square'); },
+  infected: (v) => [660, 523, 392].forEach((f, i) => { tone(f, f * 0.94, 0.3, 0.26 * v, 'square', i * 0.26); noise(2400, 1200, 0.08, 0.2 * v, 'bandpass', i * 0.26); }),
   menuMove: (v) => tone(520, 660, 0.05, 0.12 * v, 'triangle'),                                        // (a short tick up)
   menuPick: (v) => { tone(660, 660, 0.06, 0.12 * v, 'triangle'); tone(990, 990, 0.1, 0.1 * v, 'triangle', 0.05); }, // (two notes)
+  menuClick: (v) => tone(520, 660, 0.05, 0.12 * v, 'triangle'), // (until the WAV has loaded)
 });
 
 export const Sound = {
+  menuAt: 0, // when a menu sound (menuMove, menuPick, menuClick) was last asked for: render/menuclick.js plays none of its own just after one
   play(name, volume = 1) {
+    if (name.startsWith('menu')) this.menuAt = performance.now();
     if (!ctx || ctx.state !== 'running' || volume <= 0.02) return;
     // the same sound many times in an instant (a pile-up) would just be a loud click
     if (ctx.currentTime - (lastPlayed[name] || -1) < 0.05) return;

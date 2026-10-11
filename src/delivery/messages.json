@@ -49,6 +49,11 @@
     "mourners": ["You crashed into a funeral procession!! The mourners are furious!"],
     "crossing": ["Level crossing! The lights are flashing!"],
     "fog": ["Fog bank ahead!"],
+    "radiation": ["RADIATION! Your health ticks away in the green."],
+    "radiationHigh": ["Radiation meter at three quarters! Get out of the green!"],
+    "infected": ["INFECTED! Your health ticks down all the way to the drop."],
+    "infectedCar": ["Infected car! Keep out of its ring, and never touch it."],
+    "radiationShield": ["The armour keeps the radiation out!"],
     "towed": ["Wreck cleared! That's what a tow truck is for."],
     "schoolCrossing": ["School crossing! Stop for the lollipop!"],
     "waterMain": ["Burst water main! It's slippery while it sprays."],
@@ -80,7 +85,7 @@
     "spray": ["Wet road: every lorry is dragging a cloud of spray. Hang back and see, or go through blind."],
     "lowSun": ["Low sun, dead ahead! Tuck into something tall's shadow to see, or drive into the glare."],
     "dust": ["Dust! Everything ahead is throwing it up, and the wind takes it across. Upwind of it is clear."],
-    "washboard": ["Washboard dirt! Fast and it skims smooth, or crawl. Not in between."],
+    "washboard": ["Washboard! It shakes the wheel and drags the speed off. Through it, or round it."],
     "jamRamp": ["Up the transporter! Hope that was fast enough."],
     "jamCleared": ["Sirens! The jam is clearing out of their way."],
     "jamAhead": ["Traffic jam ahead! The transporter's ramps are down..."],
@@ -118,6 +123,12 @@
     }
   },
   "zones": {
+    "ringEstate": ["Northfield estate"],
+    "ringRetail": ["Ringway Retail Park"],
+    "ringStadium": ["City Stadium - match day"],
+    "ringServices": ["Ringway Services"],
+    "ringTowers": ["Eastgate towers"],
+    "ringCentre": ["City centre - nearly there!"],
     "dingoFlat": ["Dingo Flat roadhouse: last fuel for 500 km"],
     "mulgaSiding": ["Mulga Siding - listen for the bells!"],
     "coolabah": ["Coolabah Station"],
@@ -151,7 +162,17 @@
     "cameraHill": ["Camera Hill - there is one over the brow!"],
     "retailPark": ["The retail park - it is backed up!"],
     "theParade": ["The Parade - two cameras in the fog!"],
-    "lastJam": ["The last jam - and the last camera!"]
+    "lastJam": ["The last jam - and the last camera!"],
+    "cornStreet": ["Corn Street - mind the burst main!"],
+    "marketSquare": ["The market square - 60 past the stalls!"],
+    "churchRow": ["Church Row - one more camera!"],
+    "townPark": ["The town park - the bypass is on the right!"],
+    "cattleMarket": ["The cattle market - one more train to beat!"],
+    "zoneGate": ["The checkpoint - exclusion zone ahead, nobody on the gate"],
+    "zonePylons": ["Under the pylons - the first green is on the right"],
+    "zonePlant": ["The plant - keep out of the green, mind the drums"],
+    "zoneTanks": ["The tank farm - the flare still burns"],
+    "zoneVillage": ["The dead village - the bypass is the clean way round"]
   },
   "bustCount": {
     "1": ["First Offence - "],
@@ -370,7 +391,8 @@
     "beached": ["Beached in the gravel"],
     "badGas": ["Bad gas"],
     "heavy": ["Heavy"],
-    "butterfingers": ["Butterfingers: no throwing"]
+    "butterfingers": ["Butterfingers: no throwing"],
+    "infected": ["Infected: health ticking down"]
   },
   "mysteryNames": {
     "rickety": ["Rickety"],

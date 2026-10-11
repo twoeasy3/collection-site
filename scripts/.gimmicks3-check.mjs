@@ -1,14 +1,42 @@
 // A check of Gimmick Road 3's gimmicks (src/delivery/gambles.js), one at a time, headless: for each, both sides
 // of its gamble (the risky line pays when it is driven right and costs when it is not), that the safe line
 // always works, that nothing forces a stop, and at the end that a run still finishes.
-//   node scripts/.gimmicks3-check.mjs [name ...]     (names: only those sections: wind crest ramp ...)
+// Seeded, so a run repeats: Math.random starts afresh for every section and for every scenario in it (each start()),
+// from the seed, the section's name and the scenario's number, so a section run alone is the same as in a full run,
+// and each section builds the level afresh. A failure prints its seed, section and scenario.
+//   node scripts/.gimmicks3-check.mjs [name ...] [--seed=n] [--seeds=k]
+//     names: only those sections (wind crest ramp washboard bridge ford cushions shade ruts tarmac spray sun dust finish)
+//     --seed=n: other dice (2026 if not given); --seeds=k: k seeds from there on, one after another, only the
+//     failures printed, and at the end how often each line failed
 import { boot } from './delivery-headless.mjs';
 
-const ONLY = process.argv.slice(2);
+const ONLY = process.argv.slice(2).filter(a => !a.startsWith('--'));
+const opt = (name, fallback) => Number((process.argv.find(a => a.startsWith('--' + name + '=')) || '').slice(name.length + 3) || fallback);
+const SEED = opt('seed', 2026) >>> 0, SEEDS = Math.max(1, opt('seeds', 1));
+// Math.random, seeded (mulberry32, as scripts/delivery-smoke.mjs)
+let state = SEED, seedNow = SEED, sectionNow = '', scenario = 0;
+Math.random = () => {
+  state = (state + 0x6D2B79F5) >>> 0;
+  let t = state;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
+// the dice for scenario n of a section under a seed: the same whatever ran before it
+const reseed = () => { let h = 2166136261 ^ seedNow; for (const ch of sectionNow + ':' + scenario) h = Math.imul(h ^ ch.charCodeAt(0), 16777619); state = h >>> 0; };
 const g = await boot({ cars: ['commuter', 'sport', 'darkvan', 'lowrider', 'liftedtruck', 'pickup', 'buggy', 'miata', 'floatvan'] });
 let failures = 0;
-const check = (ok, what) => { if (!ok) failures++; console.log((ok ? '  ok    ' : '  FAIL  ') + what); };
-const section = (name, run) => { if (!ONLY.length || ONLY.includes(name)) { console.log('---- ' + name); return run(); } };
+const QUIET = SEEDS > 1, tally = new Map(); // (over several seeds: each failing line, its numbers left out, and the seeds it failed on)
+const say = (line) => { if (!QUIET) console.log(line); };
+const check = (ok, what) => {
+  if (ok) return say('  ok    ' + what);
+  failures++;
+  const key = what.replace(/-?\d[\d.]*/g, '#').slice(0, 90);
+  tally.set(key, [...(tally.get(key) || []), seedNow]);
+  console.log('  FAIL  ' + what + '   [--seed=' + seedNow + ', section ' + (sectionNow || 'load') + ', scenario ' + scenario + ']');
+};
+let rebuild = () => {};
+const section = (name, run) => { if (!ONLY.length || ONLY.includes(name)) { say('---- ' + name); sectionNow = name; scenario = 0; reseed(); rebuild(); return run(); } };
 try {
   const { Gambles } = await g.load('gambles.js');
   const { Hazards } = await g.load('hazards.js');
@@ -18,7 +46,11 @@ try {
   const T = () => g.track.Track;
   const level = g.select('gimmick-road-3');
   const lane = (n, s) => T().laneOffset(n, s);
-  const quiet = () => { for (const car of g.Traffic.cars) if (!car.fixed) car.active = false; };
+  // the traffic taken off the road, and kept off: a slot only made inactive is dealt out again at the next step
+  // (Traffic.update), 60 to some hundreds of metres ahead of the player, and is on the road for that one step: enough
+  // for a vehicle a scenario is watching up there to brake or change lane for it. So each is pinned (cleared: a
+  // vehicle that has gone and is `fixed` stays gone), until the next start() deals the slots out afresh
+  const quiet = () => { for (const car of g.Traffic.cars) if (!car.fixed || car.cleared) Object.assign(car, { active: false, fixed: true, cleared: true }); };
   const said = (text) => g.said.some(line => line.includes(text));
   // a fresh run in `car`, set down at s in lane n doing v, no traffic to get in the way (the level's own
   // fixed vehicles stay)
@@ -27,6 +59,7 @@ try {
     P.testGhost = false;
     G.evil = false;
     g.said.length = 0;
+    scenario++; reseed(); // (the dice afresh for every scenario)
     G.start();
     if (!keep) quiet();
     Object.assign(P, { s, lat: lane(n, s), speed: v, launching: false, shield: 0 });
@@ -35,11 +68,15 @@ try {
     g.drive(1, 0);
   };
   // a traffic vehicle of a kind put at (s, lat) doing v the player's way, for a check
+  // (dealt out by the game itself, Traffic.outfit, which blanks the slot first: a slot only written over kept whatever
+  // its last vehicle was, a hesitant driver's brake taps and wandering among them; and then an ordinary driver of
+  // its kind: not hesitant, not evil, with no exit in mind)
   const put = (kind, s, lat, v) => {
-    const car = g.Traffic.cars.find(c => !c.active && c.dir > 0);
-    const type = C.vehicles[kind];
-    Object.assign(car, { active: true, fixed: true, kind, s, lat, lane: T().nearestLane(lat, s), vs: v, baseSpeed: v, hw: type.hw, hl: type.hl, height: type.height, mass: type.mass,
-      health: type.health, maxHealth: type.health, latVel: 0, yaw: 0, spin: 0, stun: 0, junction: null, parked: false, viaSide: false, evil: false });
+    const car = g.Traffic.cars.find(c => !c.active && c.dir > 0 && !c.jam && !c.parked);
+    car.s = s;
+    g.Traffic.outfit(car, kind, T().nearestLane(lat, s));
+    Object.assign(car, { active: true, fixed: true, cleared: false, s, lat, vs: v, baseSpeed: v, latVel: 0, yaw: 0, spin: 0, stun: 0, junction: null, parked: false, viaSide: false,
+      evil: false, defiant: false, hesitant: false, tap: 0, tapWait: 0, emotion: 'neutral', mood: 0 });
     return car;
   };
   // each real level that has `field`: loaded and started (it must load without problems), then back to Gimmick Road 3
@@ -54,8 +91,11 @@ try {
     g.select('gimmick-road-3');
     G.start();
   };
+  rebuild = () => { g.select('gimmick-road-3'); G.loaded = null; G.start(); }; // (the level built afresh from the section's dice, and loaded: a section may read its gambles before its first start())
+  for (let n = 0; n < SEEDS; n++) {
+  seedNow = (SEED + n) >>> 0; sectionNow = ''; scenario = 0; reseed(); rebuild();
   start(100, 3, 20);
-  console.log('Level problems: ' + (T().problems.join(' | ') || 'none'));
+  say('Level problems: ' + (T().problems.join(' | ') || 'none'));
   check(!T().problems.length, 'the level loads without problems');
 
   // ---- crosswind (300 - 900, blowing to the left: towards the oncoming lanes)
@@ -263,41 +303,55 @@ try {
   // 3200 (lanes 3 and 5) and 3330 (lane 4): the line through is lane 3, lane 4, lane 3)
   await section('washboard', async () => {
     const B = C.washboard, b = () => Gambles.boards[0];
-    // through it held at v, steering for the line through the barriers as a player would (at the stick's full
-    // throw towards the lane wanted, let go within 0.3 m of it)
+    // through it, in at v and never driven faster than that (the dirt may slow it), steering for the line through
+    // the barriers as a player would (at the stick's full throw towards the lane wanted, let go within 0.3 m of it)
     const through = (v, car = 'sport') => {
       start(2900, 3, v, { car });
       const health = P.health;
-      let off = 0, rough = 0, slowest = 99;
+      let off = 0, rough = 0, least = 1, slowest = 99, at40 = null;
       const t = g.run(120, () => {
         quiet();
         P.speed = Math.min(P.speed, v);
         const want = lane(P.s > 3140 && P.s < 3270 ? 4 : 3, P.s), d = want - P.lat;
         g.drive(1, Math.abs(d) < 0.3 ? 0 : Math.sign(d));
-        if (P.s > 2960 && P.s < 3440) { off = Math.max(off, Math.abs(d)); rough = Math.max(rough, Gambles.rough); slowest = Math.min(slowest, P.speed); }
+        if (P.s > 2960 && P.s < 3440) { off = Math.max(off, Math.abs(d)); rough = Math.max(rough, Gambles.rough); least = Math.min(least, Gambles.rough); slowest = Math.min(slowest, P.speed); }
+        if (at40 === null && P.s >= b().from + 40) at40 = P.speed;
         return P.s > 3460 || G.wrecks > 0;
       });
-      return { t, off, rough, slowest, lost: health - P.health, wrecks: G.wrecks, busted: P.busted };
+      return { t, off, rough, least, slowest, at40, lost: health - P.health, wrecks: G.wrecks, busted: P.busted };
     };
-    check(Gambles.roughness(B.calm) === 0 && Gambles.roughness(b().skim) === 0 && Gambles.roughness((B.calm + b().skim) / 2) === 1, 'washboard: smooth at ' + Math.round(B.calm * 3.6) + ' km/h or less and at ' + Math.round(b().skim * 3.6) + ' km/h or more, worst half way between');
-    const fast = through(b().skim + 4);
-    check(fast.rough === 0 && fast.lost === 0 && fast.wrecks === 0, 'washboard, the risk taken and right: at ' + Math.round((b().skim + 4) * 3.6) + ' km/h it skims: never rough, round all three barriers unhurt in ' + fast.t.toFixed(1) + ' s');
+    check(Gambles.roughness(0) === 0 && Gambles.roughness(B.full / 2) > 0.3 && Gambles.roughness(B.full / 2) < 1 && Gambles.roughness(B.full) === 1 && Gambles.roughness(40) === 1, 'washboard: rough at any speed, the faster the worse, all of it at ' + Math.round(B.full * 3.6) + ' km/h or more');
+    // fast: in at 25 m/s (90 km/h), slowed to its `most` and no further, shaken off the line, through and never stopped
+    const fast = through(25);
+    const lost40 = 25 - fast.at40;
+    check(fast.at40 !== null && lost40 >= 5 && lost40 <= 9, 'washboard, straight across at 90 km/h: ' + (lost40 * 3.6).toFixed(0) + ' km/h gone 40 m in (' + lost40.toFixed(1) + ' m/s: ' + (fast.at40 * 3.6).toFixed(0) + ' km/h), dragged at ' + B.drag + ' m/s^2');
+    check(fast.slowest >= B.most - 0.6 && fast.slowest <= B.most + 0.6, 'washboard, straight across: held at ' + Math.round(B.most * 3.6) + ' km/h over the rest of it, no slower (slowest ' + (fast.slowest * 3.6).toFixed(0) + ' km/h)');
+    check(fast.rough === 1 && !fast.busted && fast.slowest > 2, 'washboard, straight across: all of its rough, through in ' + fast.t.toFixed(1) + ' s, never stopped (' + (fast.wrecks ? 'wrecked on a barrier' : fast.lost.toFixed(0) + ' health lost') + ')');
     check(said('Washboard'), 'washboard: it is announced');
-    const mid = through((B.calm + b().skim) / 2);
-    check(mid.rough > 0.95 && (mid.lost > 0 || mid.wrecks > 0), 'washboard, the risk taken and wrong: at ' + Math.round((B.calm + b().skim) / 2 * 3.6) + ' km/h, the same steering: it hops, wanders ' + mid.off.toFixed(1) + ' m off the line and hits a barrier (' + (mid.wrecks ? 'wrecked' : mid.lost.toFixed(0) + ' health lost') + ')');
-    const slow = through(B.calm - 0.5);
-    check(slow.rough === 0 && slow.lost === 0 && slow.wrecks === 0 && !slow.busted && slow.slowest > B.calm - 1.5, 'washboard, the safe line: crawling at ' + Math.round((B.calm - 0.5) * 3.6) + ' km/h it is never rough: round all three unhurt, never stopped, in ' + slow.t.toFixed(1) + ' s (' + (slow.t - fast.t).toFixed(1) + ' s slower than skimming)');
-    // lifting off in it from above the skim speed drops the car into the rough
-    start(3000, 3, b().skim + 2);
-    let worst = 0;
-    g.run(6, () => { quiet(); g.drive(-1, 0); worst = Math.max(worst, Gambles.rough); return P.speed < B.calm; });
-    check(worst > 0.95, 'washboard: braking on it from skimming goes down through the rough (' + worst.toFixed(2) + ' at its worst)');
-    // every garage car here can reach the skim speed; a ghost feels nothing
-    check(g.cars.CARS.every(c => c.noWheels || c.maxSpeed > b().skim), 'washboard: every car in the garage has the speed to skim it (' + Math.round(b().skim * 3.6) + ' km/h)');
+    // hands off down the first straight of it (before the barrier at 3120): shaken about the lane, not out of it
+    const wobble = (v) => { start(2960, 3, v); const lat0 = P.lat; let most = 0; g.run(20, () => { quiet(); P.speed = Math.min(P.speed, v); g.drive(1, 0); if (P.s > 2970) most = Math.max(most, Math.abs(P.lat - lat0)); return P.s > 3100; }); return most; };
+    const wobbleFast = wobble(25), wobbleSlow = wobble(6);
+    check(wobbleFast > 0.3 && wobbleFast < 1.6, 'washboard, hands off at 90 km/h: shaken ' + wobbleFast.toFixed(2) + ' m about its line, not out of the lane');
+    check(wobbleSlow > 0.08 && wobbleSlow < wobbleFast, 'washboard, hands off crawling: shaken ' + wobbleSlow.toFixed(2) + ' m, less');
+    // crawling: still shaken, a little; not slowed at all; round the barriers unhurt; and slower than straight across
+    const slow = through(6);
+    check(slow.least > 0 && slow.rough < 0.8 && slow.rough > 0.3, 'washboard, crawling at 22 km/h: shaken the whole way, less (' + slow.rough.toFixed(2) + ' of the rough at most)');
+    check(slow.slowest > 5.4 && slow.lost === 0 && slow.wrecks === 0 && !slow.busted, 'washboard, crawling: keeps its speed (slowest ' + (slow.slowest * 3.6).toFixed(0) + ' km/h), round all three barriers unhurt, in ' + slow.t.toFixed(1) + ' s');
+    check(fast.t < slow.t, 'washboard: straight across is the quicker (' + (slow.t - fast.t).toFixed(1) + ' s quicker than crawling)');
+    // a car in under its `most`, foot down, pulls up to that and no more
+    start(2960, 3, 10);
+    let top = 0;
+    g.run(12, () => { quiet(); g.drive(1, 0); if (P.s > 2965 && P.s < 3440) top = Math.max(top, P.speed); return P.s > 3440; });
+    check(top >= B.most - 0.5 && top <= B.most + 0.5, 'washboard: in at 36 km/h, foot down, it pulls up to ' + Math.round(B.most * 3.6) + ' km/h and no more (' + (top * 3.6).toFixed(0) + ' km/h)');
+    // off it, the speed comes back: no cap past its end
+    start(3400, 3, B.most);
+    g.run(8, () => { quiet(); g.drive(1, 0); return P.s > 3600; });
+    check(P.speed > B.most + 4 && !P.corrugated, 'washboard: past its end the car pulls away again (' + (P.speed * 3.6).toFixed(0) + ' km/h at 3600)');
+    // a ghost feels nothing
     start(3000, 3, 14, { ghost: true });
     g.run(0.5, () => { P.speed = 14; });
-    check(Gambles.rough === 0, 'washboard: a ghost feels nothing of it');
-    real('washboards', () => check(Gambles.boards.length > 0, '  its washboard: ' + Gambles.boards.map(x => x.from + ' to ' + x.to + ' m, skims at ' + Math.round(x.skim * 3.6) + ' km/h').join('; ')));
+    check(Gambles.rough === 0 && !P.corrugated, 'washboard: a ghost feels nothing of it');
+    real('washboards', () => check(Gambles.boards.length > 0, '  its washboard: ' + Gambles.boards.map(x => x.from + ' to ' + x.to + ' m').join('; ')));
   });
 
   // ---- low bridge (the bar at 4400, 2 m; the exit at 4000 goes round it, back at 4800)
@@ -505,9 +559,17 @@ try {
     start(6000, 3, 0);
     const van = put('commuter', 6120, lane(5, 6120), 18);
     van.fixed = false;
-    let shaded = 0;
-    g.run(25, () => { for (const c of g.Traffic.cars) if (c !== van && !c.fixed) c.active = false; P.speed = 0; P.s = 6000; if (van.active && Gambles.shadeAt(van.s, van.lat)) shaded++; return !van.active || van.s > 6460; });
-    check(shaded === 0 && van.lane < 5, 'shade: a van coming up the shaded lane moves into the sun before it and never touches the shade');
+    // (its lane is read alongside the shade, not at the end of the run: past the shade's end it is free to go back
+    // to the lane it came up in, and some do at once)
+    let shaded = 0, alongside = 0, inSun = 0;
+    g.run(25, () => {
+      for (const c of g.Traffic.cars) if (c !== van && !c.fixed) c.active = false;
+      P.speed = 0; P.s = 6000;
+      if (van.active && Gambles.shadeAt(van.s, van.lat)) shaded++;
+      if (van.active && van.s >= z().from && van.s <= z().to) { alongside++; if (van.lane < z().first) inSun++; }
+      return !van.active || van.s > 6460;
+    });
+    check(shaded === 0 && alongside > 0 && inSun === alongside, 'shade: a van coming up the shaded lane moves into the sun before it and never touches the shade (in the sunny lane for all ' + (alongside / 60).toFixed(1) + ' s alongside it)');
     real('shade', () => check(Gambles.shades.length > 0, '  its shade: ' + Gambles.shades.map(x => x.from + ' to ' + x.to + ' m, lanes ' + x.first + ' to ' + x.last).join('; ')));
   });
 
@@ -711,6 +773,11 @@ try {
     check(G.state !== 'playing' && !P.busted && slowest > 5, 'a run finishes: ' + G.state + ' after ' + t.toFixed(0) + ' s, never under ' + Math.round(slowest * 3.6) + ' km/h after the start');
   });
 
+  } // (each seed)
+  if (QUIET) {
+    console.log(SEEDS + ' seeds from ' + SEED + (ONLY.length ? ', sections ' + ONLY.join(' ') : '') + ':');
+    for (const [key, seeds] of tally) console.log('  ' + seeds.length + ' of ' + SEEDS + '  ' + key + '   (seeds ' + seeds.join(' ') + ')');
+  }
   console.log(failures ? failures + ' FAILED' : 'all checks passed');
 } catch (e) {
   failures++;

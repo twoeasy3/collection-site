@@ -14,6 +14,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVELS, levelLabel } from '../levels.js';
+import { levelName } from '../levelText.js';
 import { CARS, LEVEL_CARS } from '../cars.js';
 import { Game } from '../game.js';
 import { levelNotes, levelPickups, mysteryPool, levelTraffic, vehicleInfo } from '../levelinfo.js';
@@ -34,10 +35,12 @@ const html = (tag, className, markup) => { const node = make(tag, className); no
 const hex = (color) => '#' + color.toString(16).padStart(6, '0');
 
 // the Gimmicks page's cards that are about vehicles: listed under Traffic here, not under Gimmicks
-const TRAFFIC_CARDS = new Set(['Emergency vehicles', 'Police pursuit', 'Wrong-way drivers', 'Traffic with quirks', 'Tractors', 'Funeral processions',
-  'Convoys', 'Boats', 'Falling cargo', 'Drive-bys', 'Police stretches', 'The UFO', 'The jetboat', 'Your 8x8']);
+// (by the card's id, not its name: gimmickText.json may rename a card; the id is its name as gimmicks.js has it)
+const TRAFFIC_CARDS = new Set(['emergency-vehicles', 'police-pursuit', 'wrong-way-drivers', 'traffic-with-quirks', 'tractors', 'funeral-processions',
+  'convoys', 'boats', 'falling-cargo', 'drive-bys', 'police-stretches', 'infected-cars', 'the-ufo', 'the-jetboat', 'your-8x8']);
+const OWN_VEHICLE_CARDS = ['the-ufo', 'the-jetboat', 'your-8x8'];
 // ...and the vehicle kinds one of those cards already shows (so the kind gets no tile of its own)
-const KIND_CARD = { ufo: 'The UFO', jetboat: 'The jetboat', apc: 'Your 8x8', tractor: 'Tractors', cargotruck: 'Falling cargo', driveby: 'Drive-bys' };
+const KIND_CARD = { ufo: 'the-ufo', jetboat: 'the-jetboat', apc: 'your-8x8', tractor: 'tractors', cargotruck: 'falling-cargo', driveby: 'drive-bys' };
 // a vehicle kind's own model, painted (a traffic kind's, or a level's own vehicle's)
 const CLOSE = 1.3; // (how much nearer than the pages' cards a tile's camera stands: its patch is small)
 const PAINTS = [0x3d7bd9, 0xd8463a, 0x3fa35a, 0xe0a52e, 0x8a5bd1, 0x2fb5b5, 0xd9d9d9];
@@ -86,9 +89,8 @@ export const showRoadCard = (box, level, close) => {
   const views = [];
   const evil = Game.evil && !level.battle && !level.alwaysGood;
   const cards = GROUPS.flatMap(g => g.cards).filter(card => card.has(level));
-  const gimmickTile = (card) => tile(views, standView(card.build(level), CLOSE), card.color, card.name, card.line?.(level) || card.rules[0]); // (the level: a card may show, and say, this level's own things)
-
-  const gimmicks = cards.filter(card => !TRAFFIC_CARDS.has(card.name)).map(gimmickTile);
+  const gimmickTile = (card) => tile(views, standView(card.build(level), CLOSE), card.color, card.name, card.blurb || card.line?.(level) || card.rules[0]); // (the words file's blurb first: gimmickText.json; the level: a card may show, and say, this level's own things)
+  const gimmicks = cards.filter(card => !TRAFFIC_CARDS.has(card.id)).map(gimmickTile);
 
   // (the mystery last of the pickups but for the target: its tile is a row to itself)
   const types = levelPickups(level), order = [...types.filter(t => t !== 'mystery' && t !== 'target'), ...types.filter(t => t === 'mystery'), ...types.filter(t => t === 'target')];
@@ -98,18 +100,18 @@ export const showRoadCard = (box, level, close) => {
     const color = card.color ?? PICKUP_COLOR[type];
     const pool = type === 'mystery' ? make('span', 'pool', mysteryPool().map(key => make('em', '', effectName(key)))) : null;
     return tile(views, pickupView(type, color, evil), color, card.name,
-      type === 'mystery' ? 'One of these, at random:' : card.rules[0], pool, card.time);
+      card.blurb || (type === 'mystery' ? 'One of these, at random:' : card.rules[0]), pool, card.time);
   }).filter(Boolean);
 
-  const named = new Set(cards.map(card => card.name));
+  const named = new Set(cards.map(card => card.id));
   const vehicles = levelTraffic(level).filter(({ kind }) => !named.has(KIND_CARD[kind])).map(({ kind, role }, n) => {
     const info = vehicleInfo(kind, role);
     const color = vehiclePaint(level, kind, n);
     const model = vehicleModel(kind, color);
     return tile(views, standView({ model, tick: (t) => model.userData.animate?.(t) }, CLOSE), color, info.name + (role === 'zone' ? ' (in places)' : ''), info.line);
   });
-  const traffic = [...cards.filter(card => ['The UFO', 'The jetboat', 'Your 8x8'].includes(card.name)).map(gimmickTile), ...vehicles,
-    ...cards.filter(card => TRAFFIC_CARDS.has(card.name) && !['The UFO', 'The jetboat', 'Your 8x8'].includes(card.name)).map(gimmickTile)];
+  const traffic = [...cards.filter(card => OWN_VEHICLE_CARDS.includes(card.id)).map(gimmickTile), ...vehicles,
+    ...cards.filter(card => TRAFFIC_CARDS.has(card.id) && !OWN_VEHICLE_CARDS.includes(card.id)).map(gimmickTile)];
 
   const closeBtn = make('button', 'menu-chip', 'Close');
   closeBtn.addEventListener('click', close);
@@ -120,7 +122,7 @@ export const showRoadCard = (box, level, close) => {
     group('Pickups', 'powerups.html', 'All the power-ups', pickups, 'None on this level.'),
     group('Traffic', 'gimmicks.html#vehicles', 'More about vehicles', traffic, 'No traffic at all.'));
   box.replaceChildren(make('div', 'sheet-box road',
-    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', levelLabel(LEVELS.indexOf(level)) + '  ' + level.name)), closeBtn),
+    make('div', 'sheet-bar', make('h2', '', 'On this road', make('small', '', levelLabel(LEVELS.indexOf(level)) + '  ' + levelName(level))), closeBtn),
     make('div', 'sheet-main', body)));
 
   const renderer = sharedRenderer(); // (the menu's one; null if none can be had: the card opens all the same, its tiles' pictures empty)

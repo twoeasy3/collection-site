@@ -1,7 +1,5 @@
 {
   "id": "backlot",
-  "name": "Quiet on Set",
-  "description": { "good": "Five film sets in one street: mind the cattle, the crew and the pyrotechnics, and get the trophy to its winner before the director calls cut.", "evil": "Stampede through the Western, buzz the spaceship, blow through New York. Every take is a stunt, and the alien in the back is nearly awake." },
   "theme": "backlot",
   "clock": { "good": 200, "evil": 150 },
   "tip": 300,

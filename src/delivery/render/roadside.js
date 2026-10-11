@@ -7,6 +7,7 @@
 import * as THREE from 'three';
 import { CONFIG } from '../config.js';
 import { LEVEL } from '../levels.js';
+import { THEMES } from '../themes.js';
 import { Track } from '../track.js';
 import { Game } from '../game.js';
 import { Player } from '../player.js';
@@ -17,6 +18,7 @@ import { SpeedCameras } from '../cameras.js';
 import { scene, camera, tmp, tmp2 } from './scene.js';
 import { buildStrip } from './road.js';
 import { makeCarriage } from './trainModel.js';
+import { makeLocomotive, makeTender, makeBoxcar, makeCarriage as makeWestCarriage, makeCaboose } from './themes/wildwestModels.js';
 import { makeWorker } from './siteModels.js';
 
 const lambert = (color) => new THREE.MeshLambertMaterial({ color });
@@ -137,16 +139,25 @@ Game.onLoad.push(() => {
     const ours = s - C.stopLine, theirs = s + C.stopLine;
     const lamps = [...crossingPost(ours, Track.hi(ours) - 0.6, 0), ...crossingPost(theirs, Track.lo(theirs) + 0.6, Math.PI)];
     const booms = [crossingBoom(ours, Track.laneHi(ours) + 0.4), crossingBoom(theirs, Track.laneLo(theirs) - 0.4)];
-    // the train: short, its carriages the bullet train's, cut down
-    const BT = CONFIG.bulletTrain;
-    const carriages = Array.from({ length: C.cars }, (_, i) => {
-      const carriage = makeCarriage(i === 0 || i === C.cars - 1, i === 0);
-      carriage.scale.set(C.hw / BT.hw, 1, C.carLength / BT.carLength);
-      carriage.visible = false;
-      group.add(carriage);
-      return carriage;
-    });
-    crossings.push({ lamps, booms, carriages });
+    // the train: short, its carriages the bullet train's, cut down; or the Wild West's steam train, the
+    // locomotive leading, its pieces spaced out to the same length. Each piece: { model, at (m from the nose
+    // to its middle), back (true: it faces the way it came) }
+    const length = Crossings.trainLength, carriages = [];
+    if (Crossings.model(c) === 'steam') {
+      const pieces = [[makeLocomotive(), 9.6], [makeTender(), 5], [makeBoxcar(), 8.6], [makeWestCarriage(), 10.2], [makeWestCarriage(), 10.2], [makeCaboose(), 7.2]];
+      const gap = (length - pieces.reduce((sum, [, l]) => sum + l, 0)) / (pieces.length - 1);
+      let at = 0;
+      for (const [model, l] of pieces) { carriages.push({ model, at: at + l / 2, back: false }); at += l + gap; }
+    } else {
+      const BT = CONFIG.bulletTrain;
+      for (let i = 0; i < C.cars; i++) {
+        const model = makeCarriage(i === 0 || i === C.cars - 1, i === 0);
+        model.scale.set(C.hw / BT.hw, 1, C.carLength / BT.carLength);
+        carriages.push({ model, at: (i + 0.5) * C.carLength, back: i === C.cars - 1 && i > 0 }); // (the last carriage's nose points back)
+      }
+    }
+    for (const { model } of carriages) { model.visible = false; group.add(model); }
+    crossings.push({ lamps, booms, carriages, steam: carriages[0].model.userData.animate });
   }
   // stop / go: the oncoming lane and its shoulder dug up, spoil beside them, and the workers with their signs
   for (const z of LEVEL.stopGo || []) {
@@ -208,11 +219,22 @@ Game.onLoad.push(() => {
 
 });
 
-// the fog bank: the scene's fog drawn in from its usual distances (and its colour towards grey) by
-// how deep in one the player is
+// the fog bank: the scene's fog drawn in from its usual distances (and its colour towards the fog's) by
+// how deep in one the player is. The fog's colour is the theme's: under a bright sky the usual pale grey
+// (CONFIG.fog.color), under a dark one that grey in the little light there is, so mostly the sky's own colour
+// (night: a dark blue-grey; the volcano going up: a red-brown murk; the sea bed: silt), the one running into
+// the other between CONFIG.fog.dark and .bright; or the colour the theme names (its "fogColor")
 const USUAL = { near: 120, far: 520 };
 const usualColor = new THREE.Color(), fogColor = new THREE.Color(CONFIG.fog.color);
-let fogged = 0;
+const fogColorOf = (theme) => {
+  if (theme.fogColor !== undefined) return theme.fogColor;
+  const F = CONFIG.fog, parts = (hex) => [hex >> 16 & 255, hex >> 8 & 255, hex & 255];
+  const sky = parts(theme.sky ?? 0x87ceeb), grey = parts(F.color);
+  const light = (0.299 * sky[0] + 0.587 * sky[1] + 0.114 * sky[2]) / 255; // (how bright the sky is, 0 .. 1)
+  const u = Math.min(1, Math.max(0, (light - F.dark) / (F.bright - F.dark))), share = F.lit + (1 - F.lit) * u * u * (3 - 2 * u);
+  return sky.reduce((hex, part, i) => hex * 256 + Math.round(part + (grey[i] - part) * share), 0);
+};
+let fogged = 0, fogFresh = true; // (fogFresh: a level just loaded, nothing of it drawn yet)
 const flashEl = document.getElementById('cameraFlash');
 
 export const syncRoadside = (dt) => {
@@ -227,15 +249,16 @@ export const syncRoadside = (dt) => {
       boom.visible = !c.broken[i];
       boom.rotation.z = (1 - down) * Math.PI / 2 * 0.95;
     });
-    mesh.carriages.forEach((carriage, i) => {
-      carriage.visible = c.state === 'train';
-      if (!carriage.visible) return;
-      const lat = Crossings.carriage(c, i);
+    for (const { model, at, back } of mesh.carriages) {
+      model.visible = c.state === 'train';
+      if (!model.visible) continue;
+      const lat = c.train - c.dir * at; // (each piece so far behind the nose)
       Track.toWorld(c.s, lat, tmp);
-      carriage.position.copy(tmp);
-      // (nose first the way it is going; the last carriage's nose points back)
-      carriage.rotation.y = across(c.s, lat, lat + c.dir) + (i === mesh.carriages.length - 1 && i > 0 ? Math.PI : 0);
-    });
+      model.position.copy(tmp);
+      // (nose first the way it is going; the bullet train's last carriage's nose points back)
+      model.rotation.y = across(c.s, lat, lat + c.dir) + (back ? Math.PI : 0);
+    }
+    if (c.state === 'train' && mesh.steam) mesh.steam(t); // (the locomotive's smoke)
   });
   for (const sign of signs) {
     const z = StopGo.list[sign.index];
@@ -246,6 +269,7 @@ export const syncRoadside = (dt) => {
   // the fog bank (the sky goes grey with it; out of it, the sky is whatever the level makes it)
   if (Game.state !== 'start') {
     const want = Track.foggy(Player.s);
+    if (fogFresh) { fogged = want; fogFresh = false; } // (a run that starts inside a bank, ?at= in the address, is in the fog at once: it did not drive into it)
     if (!fogged && !want) {
       usualColor.copy(scene.background);
     } else {
@@ -293,6 +317,9 @@ const syncFlash = () => {
 };
 Game.onLoad.push(() => { // (out of any fog left from the last run; a level's own sky is put up as it loads: see applySky)
   fogged = 0;
+  fogFresh = true;
+  fogColor.set(fogColorOf(THEMES[LEVEL.theme] || THEMES.city));
+  usualColor.set((THEMES[LEVEL.theme] || THEMES.city).sky ?? scene.background.getHex()); // (a run that starts inside a fog bank never saw the sky to come back out to: it was white)
   scene.fog.near = USUAL.near;
   scene.fog.far = USUAL.far;
 });

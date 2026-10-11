@@ -1,10 +1,5 @@
 {
   "id": "flood",
-  "name": "High Water",
-  "description": {
-    "good": "The city is under water. Four flooded stretches to float across, burst mains, loose trolleys, falling containers. Somebody still needs their parcel.",
-    "evil": "A flooded city, traffic stranded at every waterline, and you sailing past in a car. Rub it in. Mind the falling containers."
-  },
   "theme": "flooded",
   "flow": "north",
   "amphibious": true,

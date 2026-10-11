@@ -1,10 +1,5 @@
 {
   "id": "ponti",
-  "name": "Seven Bridges",
-  "description": {
-    "good": "The back alleys: seven humped bridges to hop, cobbles, wet paint and the bora off the lagoon. Fly each bridge straight and keep the tea set in one piece.",
-    "evil": "Seven bridges and a goose with a grudge. Skim the cobbles flat out, take the big notes off the wet tar and the quayside, and land every jump."
-  },
   "theme": "venice",
   "clock": { "good": 175, "evil": 135 },
   "tip": 300,

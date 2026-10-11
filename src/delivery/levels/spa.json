@@ -1,10 +1,5 @@
 {
   "id": "spa",
-  "name": "Spa-Francorchamps",
-  "description": {
-    "good": "Two laps, seven kilometres each, through the forest and over the hills. Smooth through the fast sweeps and stay out of the gravel.",
-    "evil": "Seven kilometres a lap of fast bends with gravel waiting on the outside. Put somebody in it at every corner."
-  },
   "theme": "spa",
   "car": "f1",
   "flow": "north",

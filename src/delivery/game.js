@@ -1,7 +1,8 @@
 import { CONFIG } from './config.js';
-import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial, nextOnTab } from './levels.js';
+import { LEVEL, LEVEL_INDEX, LEVELS, SCREENSAVER_LEVEL, selectLevel, selectSpecial, nextOnTab, isRace } from './levels.js';
 import { Progress } from './progress.js';
-import { useLevelCar, returnCar, earnedFor, ownedAmphibious } from './cars.js';
+import { useLevelCar, returnCar, earnedFor, ownedAmphibious, carAllowed, restrictedTier } from './cars.js';
+import { Tiers } from './tiers.js';
 import { Input } from './input.js';
 import { clamp } from './util.js';
 import { Track, buildTrack } from './track.js';
@@ -22,6 +23,7 @@ import { RaceWatch } from './racewatch.js';
 import { Site } from './site.js';
 import { Hazards } from './hazards.js';
 import { Gambles } from './gambles.js';
+import { Radiation } from './radiation.js';
 import { Social } from './social.js';
 import { Mysteries } from './mysteries.js';
 import { Milestones } from './milestones.js';
@@ -61,7 +63,8 @@ export const Game = {
   onFinish: [], // called when a run ends (the menu refreshes its cards)
   onRefused: [], // called when a run is not started: an amphibious level, and no amphibious car owned (the menu says so)
   // can a run on the level picked be started? Not an amphibious level (its "amphibious") without an amphibious car
-  get canStart() { return !LEVEL.amphibious || !!LEVEL.car || !!ownedAmphibious(); },
+  // (nor a level whose tier rule, tiers.js, allows only cars the player has none of: the menu shows the silhouette)
+  get canStart() { return (!LEVEL.amphibious || !!LEVEL.car || !!ownedAmphibious()) && carAllowed(); },
 
   // how far through the run the player is, 0 .. 1 (on a lapped level, all its laps)
   get progress() { return LEVEL.laps ? (this.lap + Track.progress(Player.s)) / LEVEL.laps : Track.progress(Player.s); },
@@ -78,6 +81,7 @@ export const Game = {
   load() {
     buildTrack();
     Gambles.build(); // (its lists: Traffic puts out a ramp's queue from them)
+    Radiation.build(); // (its areas, for the drawing)
     Hazards.attach(); // (its obstacles are loaded with the level's: see Collision.loaders)
     Collision.loadLevel();
     Pickups.load();
@@ -89,6 +93,7 @@ export const Game = {
   toMenu() {
     this.state = 'start';
     this.paused = false;
+    Tiers.hold = null; // (the run's car rule is over: the menu goes by the player's own pick again)
     returnCar(); // (a car lent by Car Swap goes back)
     if (this.screensaver) { // the menu's own level is picked again
       this.screensaver = false;
@@ -138,8 +143,9 @@ export const Game = {
   },
   // from the results screen: on to the next level, on the same side
   nextLevel() {
-    const next = LEVEL_INDEX < 0 ? null : nextOnTab(LEVEL); // (a hidden level has no next; a race's next is the next race)
-    if (!next) { this.toMenu(); return; }
+    let next = LEVEL_INDEX < 0 ? null : nextOnTab(LEVEL); // (a hidden level has no next; a race's next is the next race)
+    if (next && Tiers.on() && !isRace(LEVEL)) next = Tiers.next(LEVEL); // (the tiers' own order; and a level not open yet is not next)
+    if (!next || (Tiers.on() && !Tiers.isOpen(next))) { this.toMenu(); return; }
     selectLevel(LEVELS.indexOf(next));
     this.start();
   },
@@ -163,6 +169,8 @@ export const Game = {
     this.rivalsIn = 0;          // rivals over the line before the player
     this.rivalAhead = new Map(); // for each, whether it was ahead of the player when last looked
     if (this.loaded !== LEVEL) this.load(); // the level is only built when a run on it starts
+    Tiers.hold = null;
+    Tiers.hold = { tier: restrictedTier() }; // (the car rule as the run starts it: held to the menu, whatever the delivery earns)
     useLevelCar(LEVEL.car, LEVEL.amphibious); // a UFO on the space level, otherwise the garage's car (on an amphibious level, the player's amphibious one)
     Player.evil = this.evil && !LEVEL.battle && !LEVEL.alwaysGood; // (on the Battlefield the player is in the green army, the good one, whatever the side on the menu; a level can say so too)
     Mysteries.reset(); // (before the player: a side swap or a giant left from the last run is not undone over this one)
@@ -209,6 +217,7 @@ export const Game = {
     StopGo.reset();
     Hazards.reset();
     Gambles.reset();
+    Radiation.reset();
     Milestones.reset();
     Track.slicks.length = 0; // (a run starts with no patch of its own on the road: the shade's black ice lays its again, see Gambles.updateShade)
     Pursuit.reset();
@@ -274,6 +283,7 @@ export const Game = {
       this.respawn = CONFIG.respawnTime;
       this.respawnKind = 'wreck';
       this.wrecks++;
+      Radiation.wrecked(); // (the infection outlasts a wreck, unless CONFIG.radiation says a wreck cures it)
       this.grabLat = Player.lat;
       Player.prepareDrop();
       return;
@@ -386,6 +396,7 @@ export const Game = {
     if (playing) Site.update(dt);
     if (playing) Hazards.update(dt);
     if (playing) Gambles.update(dt); // (after Hazards: it has the last word on the car's height off the road)
+    if (playing) Radiation.update(dt); // (radiated areas and infected cars: after the traffic has moved, before the collisions push anything apart)
     if (playing) Mysteries.update(dt);
     if (playing) Milestones.update(dt); // (the counters watched each step: see milestones.js)
     if (playing) Social.update(dt);
@@ -421,6 +432,7 @@ export const Game = {
     }
   },
 };
+Tiers.sideIsEvil = () => !!Game.evil; // (the side picked on the menu: the car rule of a tier's level goes by it)
 
 // a message about a rival courier, by its name ("your rival" if it has none)
 export const sayRival = (key, rival, ...more) => {

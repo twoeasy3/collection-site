@@ -51,7 +51,8 @@ export const iceroad = ({ theme, add, instances, buildStrip, offRoads, beside, i
   starGeo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
   const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xdfe8ff, size: 1.6, sizeAttenuation: false, fog: false, depthWrite: false }));
   const moon = new THREE.Mesh(new THREE.SphereGeometry(16, 20, 14), new THREE.MeshBasicMaterial({ color: 0xf4f1dc, fog: false }));
-  for (const [thing, x, y, z] of [[stars, 0, 0, 0], [moon, -330, 250, 420]]) {
+  // (by day, the thaw's level, there are none of them: the dice for them are thrown all the same)
+  for (const [thing, x, y, z] of theme.night ? [[stars, 0, 0, 0], [moon, -330, 250, 420]] : []) {
     thing.frustumCulled = false;
     thing.renderOrder = -3;
     thing.onBeforeRender = (renderer, scene, camera) => {
@@ -60,7 +61,8 @@ export const iceroad = ({ theme, add, instances, buildStrip, offRoads, beside, i
     };
     levelGroup.add(thing);
   }
-  levelGroup.add(makeAurora(6, 430, 70, seed));
+  const aurora = makeAurora(6, 430, 70, seed);
+  if (theme.night) levelGroup.add(aurora);
 
   // ---- the road's own: a snowbank along each edge, lumpy; a marker pole every 24 m, a reflector at its top
   // (orange down the right, blue down the left); tongues of snow drifted in over the ice

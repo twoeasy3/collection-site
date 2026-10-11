@@ -4,6 +4,8 @@
 // and the editor both read the one list. Any theme can go on any level (?theme=snow in the address tries one
 // on the level picked): what a theme's scenery makes of something a level may have of its own (a runway,
 // zones, landmarks, grandstands) it does without where the level has none.
+// fogColor: the colour of a fog bank (a level's "fog") in this theme, if not the one worked out from its sky (pale grey
+// under a bright sky, mostly the sky's own colour under a dark one: see CONFIG.fog and render/roadside.js).
 // channel: { shallow, deep, glint }: the colours of the water of a water stage (a level's "water": see
 // render/water.js) in this theme, if not CONFIG.water.colours: a harbour at night, a muddy river, a fjord, a flood.
 // river: the colour of what runs under a drawbridge in this theme (render/hazards.js), if not its channel's deep water,
@@ -15,7 +17,10 @@
 // (on a circuit's trackside: a ring on a stalk on top of the catch fence, 4.7 m up, a beam of light over it)
 const FENCE_TOP = { style: 'wall', offset: 0.3, base: 4.7, height: 6.6, beam: true };
 export const THEMES = {
-  city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city' },
+  // (sets: the set-pieces a level's zones can ask for there, drawn by render/themes/extras.js and only where a
+  // level's own zones name them: a housing estate behind sound barriers, a retail park, a stadium, a service
+  // area, the towers of the centre. A city level with no zones is drawn as it always was)
+  city: { sky: 0x9fc4e8, ground: 0x5d8a4e, road: 0x3a3d42, scenery: 'city', sets: ['estate', 'retail', 'stadium', 'services', 'centre'] },
   // flooded: the city after the river broke its banks: the city's own scenery standing in brown flood water (the
   // ground is the water's colour), under a low sky, in the rain (rain: true). Made for water stages (a level's
   // "water": see water.js), whose channels are the avenues under water and whose dry stretches the rises between
@@ -57,7 +62,7 @@ export const THEMES = {
   hood: { sky: 0xbcc3c2, ground: 0x9a8d55, road: 0x46474a, scenery: 'suburb', rundown: true },
   // suburb: lawns, pavements, picket fences and houses in a row (sets: what a zone of a level can be there in place of
   // the houses: a row of shops, a market square, a retail park, a town park: see the suburb scenery in render/road.js)
-  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb', sets: ['highstreet', 'market', 'retail', 'park'] },
+  suburb: { sky: 0xa9d6f5, ground: 0x6aa84f, road: 0x484b50, scenery: 'suburb', sets: ['highstreet', 'market', 'retail', 'park', 'livestock'] },
   hell: { sky: 0x2a0704, ground: 0x3a120a, road: 0x1b1414, scenery: 'hell', line: 0xffb36b },
   // battlefield: a dirt track through a war (unmarked: only the ruts worn into it), churned mud under a smoky
   // sky, shell craters, sandbagged trenches, tank traps, barbed wire and shattered trees (and the pillboxes:
@@ -135,6 +140,11 @@ export const THEMES = {
   // iceroad: a ploughed road across a frozen lake at night (render/themes/iceroad.js): bare blue ice between snowbanks and marker poles, pressure ridges (a hump in the road is one), fishing huts with their windows lit, the dark shore far off, stars, a moon and the aurora
   iceroad: { sky: 0x06122a, ground: 0xdfe9f2, road: 0x6f9cbc, scenery: 'iceroad', line: 0xf2f7fb, centre: 0xffa23a, lit: true, headlights: true, night: true, channel: { shallow: 0x6f9fb8, deep: 0x16384f, glint: 0x8fc4dc },
     light: { sky: 0xa8c8ff, ground: 0x3a4a66, ambient: 0.95, sun: 0xcfe2ff, sunlight: 0.55 } },
+  // iceroadThaw: the same lake road by day, in the thaw (the second ice-road level): a pale spring sky, daylight, no headlights; the theme leaves out its stars, moon and aurora (night: its own)
+  // (soft: what a theme's soft ground is made of, where it is not earth: here mud and ruts are grey slush with dark wet tracks. mud, track, puddle: see render/road.js and render/gambles.js; its washboard is corrugated ice, WASHBOARDS below)
+  iceroadThaw: { sky: 0xb4d2e8, ground: 0xe6eef4, road: 0x7fa3ba, scenery: 'iceroad', line: 0xf2f7fb, centre: 0xffa23a, lit: true, channel: { shallow: 0x6f9fb8, deep: 0x16384f, glint: 0x8fc4dc },
+    soft: { mud: 0xc6d0d8, track: 0x4f6474, puddle: 0x5f8fae },
+    light: { sky: 0xffffff, ground: 0x8aa0b4, ambient: 1.2, sun: 0xfff2dc, sunlight: 0.9 } },
   // (batch B: film studio, Venice, ice road: new themes go above this line)
   // themepark: the road through a theme park (render/themes/themepark.js): a promenade behind candy-striped kerbs, bunting and rainbow arches over the road, striped tents and stalls, carousels and Ferris wheels turning, a rollercoaster over the road and beside it, a castle on the skyline; a tunnel is the ghost train's
   themepark: { sky: 0x6ec3f5, ground: 0x7fc66b, road: 0x4b4a55, scenery: 'themepark', tunnel: { wall: 0x5a2d82, tiles: 0xffd21f, roof: 0x24143a, face: 0xe23b3b, lamp: 0xff9ff0 } },
@@ -155,7 +165,7 @@ export const THEMES = {
   // (batch C: theme park, volcano island, container port: new themes go above this line)
   // wildwest: the old Wild West (render/themes/wildwest.js): a dirt road over red desert, a town of false-front wooden buildings
   // every 800 m with the road for its main street, a railway and its steam train along the left, mesas on the skyline
-  wildwest: { sky: 0x7fb8e6, ground: 0xc8754a, road: 0xd6b083, scenery: 'wildwest', unmarked: true,
+  wildwest: { sky: 0x7fb8e6, ground: 0xc8754a, road: 0xd6b083, scenery: 'wildwest', unmarked: true, train: 'steam', // (its level crossings' train: see crossing.js)
     target: { offset: 2, height: 4.6, beam: true }, // (at the street's edge, over the hitching rails: the buildings' faces are 6 m off)
     tunnel: { wall: 0x6b4a32, tiles: 0x8f6a44, roof: 0x4a3526, face: 0x97492f, lamp: 0xffc870 } },
   // favela: a hillside of houses (render/themes/favela.js): boxes in every colour stacked row over row up land that climbs with the
@@ -177,6 +187,14 @@ export const THEMES = {
     target: { height: 4.2, beam: true },
     light: { sky: 0xd8e2e0, ground: 0x44503e, ambient: 1.1, sun: 0xe8f0ea, sunlight: 0.6 } },
   // (batch D: Wild West, favela, rice terraces: new themes go above this line)
+  // fallout: the exclusion zone round a power plant that has gone wrong (render/themes/fallout.js): a sick green sky and
+  // a green haze over dead grey land, the plant's cooling towers and reactor dome on the skyline, pylons marching
+  // across the land, pipe racks and a tank farm by the road, chain-link fences hung with trefoils, abandoned
+  // checkpoints, a dead village; ash drifting down. Its radiated stretches are the level's "radiation" (radiation.js).
+  // sets: what a zone's scenery can ask for: the plant itself, the pylons, the tank farm, a checkpoint, the village
+  fallout: { sky: 0x9cc06e, ground: 0x6b6852, road: 0x3a3c3e, scenery: 'fallout', fogColor: 0xa9cc78, sets: ['pylons', 'checkpoint', 'plant', 'tankfarm', 'village'],
+    target: { height: 4.2, beam: true }, // (up over the fence)
+    light: { sky: 0xe4ffb8, ground: 0x3a3a2c, ambient: 1.3, sun: 0xf2ffd0, sunlight: 0.9 } },
 };
 
 // ---- the themes' own obstacles ---------------------------------------------------------------------------
@@ -206,6 +224,7 @@ const OBSTACLES = {
   mumbai: { bale: 'sackStack' },
   beach: { bale: 'beachBall' },
   hell: { cone: 'brimstone' },
+  fallout: { crate: 'wasteDrum' }, // (a yellow drum of waste, the trefoil on it; the cones and barriers are a checkpoint's own)
   // (the port keeps its crates, the farm and the Wild West their bales: there they belong)
 };
 // drifting: the same, for the things of a level's "drifters" alone, where what moves about the road wants to be
@@ -216,8 +235,27 @@ const DRIFTING = {
 };
 for (const [name, map] of Object.entries(OBSTACLES)) THEMES[name].obstacles = map;
 for (const [name, map] of Object.entries(DRIFTING)) THEMES[name].drifting = map;
+// a variant of a theme (themeparkNight, volcanoErupting, favelaRain...: a theme of another name drawn with that theme's
+// scenery) has that theme's obstacles, unless it is given some of its own above: so a new variant needs nothing here
+for (const T of Object.values(THEMES)) {
+  const parent = THEMES[T.scenery];
+  if (parent && parent !== T && !T.obstacles && !T.drifting) { T.obstacles = parent.obstacles; T.drifting = parent.drifting; }
+}
 // the kind a level's obstacle of `kind` is on a level of that theme (a level's "theme"); drifting: one of its drifters
 export const themedKind = (theme, kind, drifting = false) => {
   const T = THEMES[theme || 'city'];
   return (drifting && T?.drifting?.[kind]) || T?.obstacles?.[kind] || kind;
 };
+// What a theme's washboard (a level's "washboards": gambles.js) is made of: the same corrugations, the same cost, drawn
+// in the stuff of the place (render/gambles.js, WASHBOARD_LOOKS). A theme not named has 'dirt'; a variant (portNight,
+// volcanoErupting...) has its parent's. Wooden planks only where a corduroy of boards belongs: a dock, a quay, the West
+const WASHBOARDS = {
+  port: 'plates', construction: 'plates', airport: 'plates', seabed: 'plates', tokyo: 'plates', hongkong: 'plates',
+  moon: 'dust', beach: 'sand',
+  wildwest: 'planks', venice: 'planks', backlot: 'planks',
+  iceroad: 'ice', snow: 'ice', christmas: 'ice',
+  city: 'cobbles', suburb: 'cobbles', hood: 'cobbles', canberra: 'cobbles', montreal: 'cobbles', singapore: 'cobbles', favela: 'cobbles', mumbai: 'cobbles', flooded: 'cobbles',
+  toyroom: 'ribs', volcano: 'lava', hell: 'lava',
+};
+for (const [name, look] of Object.entries(WASHBOARDS)) THEMES[name].washboard = look;
+export const washboardLook = (theme) => { const T = THEMES[theme || 'city']; return T?.washboard || THEMES[T?.scenery]?.washboard || 'dirt'; };

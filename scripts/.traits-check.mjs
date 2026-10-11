@@ -53,15 +53,16 @@ try {
   const six = rocks('sixbysix'), pick = rocks('pickup');
   check(six.hit > 0 && six.health === 1 && pick.health < 1, `6x6: ran over ${six.hit} rocks at no cost (a Pick-Up, over ${pick.hit}: down to ${Math.round(pick.health * 100)}% health)`);
 
-  // ---- the Tow Truck and wreckage (Gimmick Road 2's road train, at 5050 across lanes 4 and 5)
+  // ---- the Tow Truck and wreckage (shelved trait) (Gimmick Road 2's road train, at 5050 across lanes 4 and 5)
   const wreck = (car) => {
     start(own('gimmick-road-2'), car, 4900, 5, 25);
     g.run(15, () => { quiet(); return P.s > 5120 || G.wrecks > 0; });
     return { wrecks: G.wrecks, cleared: !!Wreckage.list[0].cleared, blocked: Wreckage.blocked(5, 5050) };
   };
+  // (the 'tow' trait is shelved: the Tow Truck is wrecked by it like any car, and nothing is cleared)
   const tow = wreck('towtruck'), other = wreck('taxi');
-  check(tow.wrecks === 0 && tow.cleared && !tow.blocked && said !== null && other.wrecks === 1,
-    `Tow Truck: drove into the jackknifed road train and cleared it (wrecks ${tow.wrecks}; a Taxi: wrecks ${other.wrecks})`);
+  check(tow.wrecks === 1 && !tow.cleared && other.wrecks === 1 && !other.cleared,
+    `Tow Truck: wrecked by the jackknifed road train like a Taxi, nothing cleared (wrecks ${tow.wrecks}; a Taxi: wrecks ${other.wrecks})`);
 
   // ---- the Mini and a scrape down a car's side
   const scrape = (car) => {

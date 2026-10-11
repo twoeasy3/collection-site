@@ -12,7 +12,6 @@ import { LEVEL_INDEX } from './levels.js';
 import { Track } from './track.js';
 import { Progress } from './progress.js';
 import { Message } from './messages.js';
-import { sfx } from './physics.js';
 import { Player } from './player.js';
 import { Traffic } from './traffic.js';
 import { Social } from './social.js';
@@ -48,14 +47,13 @@ export const Milestones = {
   },
 };
 
-// a counter crossing one of its thresholds: the milestone's title, and a sound. Never while a level is
+// a counter crossing one of its thresholds: the milestone's title (no sound: it would play over the results jingle). Never while a level is
 // being driven (nothing of a milestone is an event of the run): only as the run ends (see onFinish)
 Progress.onCount = (key, before, after) => {
   if (Game.state === 'playing') return;
   for (const at of CONFIG.milestones[key] || []) {
     if (before < at && after >= at) {
       Message.say('milestones', key + '_' + at);
-      sfx('mystery');
     }
   }
 };

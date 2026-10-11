@@ -5,6 +5,7 @@ import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { Track } from './track.js';
 import { LEVEL, LEVELS, selectLevel, selectSpecial, HIDDEN_LEVELS, setRaceClass } from './levels.js';
+import { standsAlone } from './levelText.js';
 import { THEMES } from './themes.js';
 import { Progress } from './progress.js';
 import './render/demo.js'; // (?demo: before the menu)
@@ -36,6 +37,8 @@ import { syncSite } from './render/site.js';
 import { syncRoadside } from './render/roadside.js';
 import { syncHazards } from './render/hazards.js';
 import { syncGambles } from './render/gambles.js';
+import { syncRadiation } from './render/radiation.js';
+import { Radiation } from './radiation.js';
 import { syncBattle } from './render/battle.js';
 import { raceCamera, raceAudio, syncRaceWatch, auditCameras } from './render/racewatch.js';
 import { Fly, startFly, flyCamera } from './render/fly.js';
@@ -72,21 +75,36 @@ import { Message } from './messages.js';
 const params = new URLSearchParams(location.search);
 // A visit with any of these is a test, not play: it lends cars and opens levels, so none of it is saved
 // (Progress.noSave: the save stays as it was before the visit, whatever is delivered, bought or counted in it)
-if (['autostart', 'hidden', 'test', 'edited', 'pick', 'car', 'ghost', 'mystery', 'theme'].some(key => params.get(key) !== null)) Progress.noSave = true;
+if (['autostart', 'hidden', 'test', 'edited', 'pick', 'car', 'ghost', 'mystery', 'theme', 'beaten', 'owns'].some(key => params.get(key) !== null)) Progress.noSave = true;
+// ?beaten=expressway,back-roads:evil,farm:both and ?owns=lovebus,wagon&money=500: a state to look at (the level tiers:
+// medals are best times; nothing is saved). A level listed alone is a Good medal.
+if (params.get('beaten')) {
+  for (const token of params.get('beaten').split(',')) {
+    const [id, side = 'good'] = token.split(':');
+    for (const s of side === 'both' ? ['good', 'evil'] : [side]) Progress.data.bestTime[s][id] = 10;
+  }
+}
+if (params.get('owns')) for (const id of params.get('owns').split(',')) if (!Progress.data.cars.includes(id)) Progress.data.cars.push(id);
+if (params.get('money')) Progress.data.money = Number(params.get('money')) || 0;
+if (params.get('beaten') || params.get('owns') || params.get('money')) window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
+// (before ?garage, so a garage opened with &pick is the picked level's) ?pick=41 shows the menu with that level picked, open or not (for a look at its card: nothing starts; the levels
+// are all open for this visit); with &start, Start Game is pressed too (an amphibious level with no amphibious car)
+if (params.get('pick')) {
+  Progress.data.unlocked = Math.max(Progress.data.unlocked, LEVELS.length);
+  Progress.data.tierBase = Math.max(Progress.data.tierBase || 0, LEVELS.length); // (the tiers, tiers.js: all open too)
+  selectLevel(Number(params.get('pick')) - 1);
+  window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
+  if (params.get('start') !== null) Game.start();
+}
 // ?garage (or ?garage=evil) opens the garage; with it, ?hover=darkvan shows that car's tooltip.
 if (params.get('garage') !== null) {
   Garage.open(params.get('garage') === 'evil');
   if (params.get('tab')) Garage.tab(params.get('tab')); // (&tab=ideas: its Car ideas lot, where &look and &hover name an idea)
   if (params.get('hover')) Garage.hover(params.get('hover'));
   if (params.get('look')) Garage.look(params.get('look')); // (&look=sport: that car looked at, for its comparison card)
-}
-// ?pick=41 shows the menu with that level picked, open or not (for a look at its card: nothing starts; the levels
-// are all open for this visit); with &start, Start Game is pressed too (an amphibious level with no amphibious car)
-if (params.get('pick')) {
-  Progress.data.unlocked = Math.max(Progress.data.unlocked, LEVELS.length);
-  selectLevel(Number(params.get('pick')) - 1);
-  window.dispatchEvent(new Event('carchange')); // (the menu draws itself again)
-  if (params.get('start') !== null) Game.start();
+  // &click=<selector>: that control pressed once the garage is up (&click=%23garageAction on an unowned car: its buy
+  // sheet; &click=.view-pick%20.view-btn: the Sort list), for a picture of what it opens
+  if (params.get('click')) params.get('click').split('|').forEach((selector, i) => setTimeout(() => document.querySelector(selector)?.click(), 50 + i * 50)); // (several, with | between)
 }
 // ?screensaver starts the screensaver straight away (with ?ff=5 as above); ?racewatch the race one
 const autostart = params.get('autostart');
@@ -110,6 +128,7 @@ const editedLevel = () => {
   let level = null;
   try { level = JSON.parse(localStorage.getItem('delivery_editor_level')); } catch { /* (no level handed over) */ }
   if (level === null) return { level }; // (none handed over: the test track)
+  standsAlone(level); // (its name and description are its own, whatever its id: see levelText.js)
   const menuLevel = LEVELS.indexOf(LEVEL), road = level.segments;
   let problem = '';
   if (typeof level !== 'object' || Array.isArray(level)) problem = 'it is not a level';
@@ -155,6 +174,13 @@ if (params.get('racewatch') !== null) {
   else selectLevel((Number(params.get('level')) || 1) - 1);
   // ?theme=snow: the level in that theme, whatever its own (a copy of it: nothing of the run is saved)
   if (params.get('theme') && THEMES[params.get('theme')]) selectSpecial({ ...LEVEL, theme: params.get('theme') });
+  // ?rad=300-500 (or &rad=300-500:2, that lane only): a radiated area over that stretch on top of the level's own;
+  // ?radcar=0.5: that share of its traffic dealt out infected (bare ?radcar: half). Tests of radiation.js on any level
+  if (/^\d+-\d+(:\d+)?$/.test(params.get('rad') || '')) {
+    const [from, to, lane] = params.get('rad').split(/[-:]/).map(Number);
+    selectSpecial({ ...LEVEL, radiation: [...(LEVEL.radiation || []), lane >= 0 ? { from, to, lanes: [lane, lane] } : { from, to }] });
+  }
+  if (params.get('radcar') !== null) selectSpecial({ ...LEVEL, infectedTraffic: Math.min(1, Math.max(0, Number(params.get('radcar')) || 0.5)) });
   if (params.get('car')) { // ?car=lowrider: drive that car for this visit, owned or not (nothing is saved); ?car=super-sport: its Super version (cars.js superOf)
     Progress.data.cars.push(params.get('car').replace(/^super-/, ''));
     Progress.data.car = params.get('car').replace(/^super-/, '');
@@ -164,6 +190,8 @@ if (params.get('racewatch') !== null) {
   Game.start();
   if (params.get('car')?.startsWith('super-') && superOf(CAR)) Player.takeCar(() => lendCar(superOf(CAR)));
   if (params.get('at')) Player.s = Number(params.get('at'));
+  // ?infected: the player infected from the start (a picture of its glow; with ?infected=armour, under the armour too)
+  if (params.get('infected') !== null) { Radiation.infect(); if (params.get('infected') === 'armour') Player.armour = 600; }
   if (params.get('speed')) Object.assign(Player, { speed: Number(params.get('speed')), launching: false }); // ?speed=31: doing that many m/s from the start (with ?ff: hands off, the speed holds)
   if (params.get('lane')) Player.lat = Track.laneOffset(Number(params.get('lane')), Player.s); // ?lane=4: in that lane
   if (params.get('pieces')) Game.tankPieces = Math.min(CONFIG.tankPieces - 1, Number(params.get('pieces')) || 0); // ?pieces=3: that many pieces of the tank found already
@@ -296,6 +324,7 @@ const frame = (now) => {
     syncRoadside(dt);
     syncHazards(now);
     syncGambles(now, dt); // (after the car and the traffic are placed: it leans and shakes them)
+    syncRadiation(now, dt); // (after the traffic is placed: the infected cars' rings go with them)
     syncTunnel(); // (after the roadside's fog bank: a tunnel only ever closes the fog in further)
     syncReversible();
     syncBattle(dt);

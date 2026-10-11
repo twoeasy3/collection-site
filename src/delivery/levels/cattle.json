@@ -1,10 +1,5 @@
 {
   "id": "cattle",
-  "name": "Cattle Drive",
-  "description": {
-    "good": "Pancakes for the trail crew, still warm. Beat the train to both crossings, pick a wagon rut and keep to it, and take the bridge if the ford looks deep.",
-    "evil": "A cannonball for the cattle baron. Split the herds, race the train, wade the ford and duck the old trestle: the trail is long and the fuse is not."
-  },
   "theme": "wildwest",
   "clock": { "good": 255, "evil": 195 },
   "tip": 320,

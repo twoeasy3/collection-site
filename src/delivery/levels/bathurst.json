@@ -1,10 +1,5 @@
 {
   "id": "bathurst",
-  "name": "Mount Panorama",
-  "description": {
-    "good": "Two laps of the Mountain: up the hill, across the top between the walls, and flat out down the other side. Treat it with respect.",
-    "evil": "Two laps up and over the Mountain. The walls across the top are close enough to post somebody into. Do."
-  },
   "theme": "bathurst",
   "car": "f1",
   "flow": "north",

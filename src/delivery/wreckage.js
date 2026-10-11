@@ -160,7 +160,7 @@ export const Wreckage = {
         if (car.active && !car.junction && car.health > 0 && this.covers(e, car, margin)) car.health = 0; // (it blows up: Collision.check)
       }
       if (!Player.active || Player.shield > 0 || Player.health <= 0 || !this.covers(e, Player, margin)) continue;
-      // (the Tow Truck clears a wreck: once it has come to rest, driving into it drags it out of the lanes)
+      // (SHELVED: no car has the 'tow' trait now. The Tow Truck cleared a wreck: once it has come to rest, driving into it drags it out of the lanes)
       if (CAR.trait === 'tow' && Player.ghost <= 0 && e.kind !== 'blast' && !e.sliding && e.t > W.flight + W.towAfter) {
         e.cleared = true;
         Player.speed *= W.towKept;

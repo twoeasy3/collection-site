@@ -18,9 +18,10 @@
 //   corner     true = parked in the far corner bay of the garage
 //   tier       which tier of the garage it is in (1-5): its star rating, shown with its name
 //   trait      a perk of its own, by name: 'slim' (the Mini: a scrape down another car's side costs it nothing: see
-//              Collision), 'mud' (the Rally Car: mud neither slows it nor dulls its steering: see Player), 'tow' (the
-//              Tow Truck: it clears landed wreckage out of the lanes: see Wreckage), 'rocks' (the 6x6: a fallen rock
-//              is smashed aside at no cost: see Collision). perk: the words for it, shown in the garage
+//              Collision), 'mud' (the Rally Car: mud neither slows it nor dulls its steering: see Player), 'rocks' (the 6x6: a fallen rock
+//              is smashed aside at no cost: see Collision). perk: the words for it, shown in the garage.
+//              SHELVED: 'tow' (the Tow Truck clearing landed wreckage: see Wreckage, CONFIG.wreckage towAfter/towKept
+//              and the 'towed' message). No car has it now; give one trait: 'tow' and a perk to bring it back
 //   blue       true = a Blue Star car (the second season): better than a car of its tier with gold
 //              stars, but not as good as one a tier up; priced like a car two tiers up
 //   amphibious true = it floats: it drives down a slipway into a water stage (a level's "water") and on across
@@ -35,6 +36,7 @@
 import { Progress } from './progress.js';
 import { CONFIG } from './config.js';
 import { IDEA_CARS } from './ideas.js';
+import { applyNames } from './words.js';
 
 // The car ideas (ideas.js IDEA_CARS: thirty placeholders, tierless and free) are driven as garage cars are,
 // but kept out of CARS, which traffic, Car Swap, "Unlock everything", the garage's lot and its filters, the
@@ -57,7 +59,37 @@ export const stars = (car) => car.tier ? '★'.repeat(car.tier) : ''; // (only t
 export const STAR_COLOURS = { gold: '#ffd23f', blue: '#4fa8ff', earned: '#ff5fd2', amphibious: '#35d6b4' };
 export const starColour = (car) => car.earned ? STAR_COLOURS.earned : car.amphibious ? STAR_COLOURS.amphibious : car.blue ? STAR_COLOURS.blue : STAR_COLOURS.gold;
 // the Blue Star cars are in the garage once level CONFIG.blueStarsAfter is delivered (which opens the next)
-export const blueStarsOpen = () => Progress.data.unlocked > CONFIG.blueStarsAfter;
+export const blueStarsOpen = () => tierHooks.blueOpen?.() ?? Progress.data.unlocked > CONFIG.blueStarsAfter;
+// ---- the level tiers (tiers.js): which tier a car is in, and the car rule on a level not yet beaten ----
+// a car's tier number: 1 to 5 for the gold-star cars, 6 to 10 for the Blue Star ones (Blue 1 is 6); null for a car
+// outside the tiers (earned, amphibious, tierless, secret, a level's own vehicle)
+export const carTier = (car) => car && car.tier >= 1 && car.tier <= TIERS && !car.earned && !car.amphibious && !car.super && CARS.includes(car) ? car.tier + (car.blue ? 5 : 0) : null;
+// hooks tiers.js sets when it loads: restricted() the tier a car must be from on the level picked (null: any),
+// blueOpen() whether the Blue Star cars are in the garage (null: the old rule)
+const tierHooks = {};
+export const setTierHooks = (hooks) => Object.assign(tierHooks, hooks);
+// (evil: the side to ask for; left out, the side the garage is looking at while it is open, else the side being played)
+let viewSide = null;
+export const setViewSide = (evil) => { viewSide = evil === null || evil === undefined ? null : !!evil; };
+export const restrictedTier = (evil) => tierHooks.restricted?.(evil ?? viewSide) ?? null;
+// may this car be driven on the level picked, on that side (or the garage's side)? A car in no tier, an earned or idea
+// car, is not allowed where a tier is wanted; the null car is never allowed
+export const carAllowedOn = (car, evil) => { const t = restrictedTier(evil); return !!car && !car.silhouette && (t === null || carTier(car) === t); };
+// the silhouette shown where the player has no car the level allows: the cheapest car of the tier, drawn dark
+// (silhouette: true; id 'null-car'), never owned and never driven (Game.canStart is false while it is in use)
+const nullCars = {};
+export const nullCarFor = (tier) => nullCars[tier] ||= (() => {
+  const like = CARS.filter(car => carTier(car) === tier).sort((a, b) => a.price - b.price)[0] || CARS[0];
+  return { ...like, id: 'null-car', name: 'No car for this level', silhouette: true, tierNeeded: tier, price: 0 };
+})();
+// the car the level's rule puts the player in: their pick if it is allowed; else the car they last chose for that
+// tier (Progress.data.tierCars) or the best they own of it; else the null car. The pick itself is not touched
+const forcedCar = (pick, tier) => {
+  if (tier === null || carTier(pick) === tier) return pick;
+  const owned = CARS.filter(car => carTier(car) === tier && Progress.owns(car.id));
+  const chosen = owned.find(car => car.id === Progress.data.tierCars?.[tier]);
+  return chosen || owned.sort((a, b) => b.price - a.price)[0] || nullCarFor(tier);
+};
 // the cars the garage shows now (an earned car only once it is earned: see EARNED_CARS)
 export const garageCars = () => [...CARS.filter(car => !car.blue || blueStarsOpen()), ...EARNED_CARS.filter(car => Progress.earned(car))];
 // The amphibious cars (a car's "amphibious"): the garage's Amphibious section, there from the start, so an
@@ -126,7 +158,8 @@ export const CARS = [
     trait: 'mud', perk: 'Ignores mud: no slower in it, and it steers as well as ever' },
   { id: 'towtruck', tier: 3, blue: true, name: 'Tow Truck', price: 750, color: 0xeeeeee, evilColor: 0x2a6fb8, fixedLivery: true, model: 'towtruck',
     maxSpeed: 36, accel: 10, crossing: 0.8, health: 220, mass: 2.0, hw: 1.05, hl: 2.85, height: 2.1,
-    trait: 'tow', perk: 'Clears a wreck: it drags fallen wreckage out of the lanes instead of being wrecked by it' },
+    // (the 'tow' trait, which cleared landed wreckage, is shelved: see the note on trait above)
+  },
   { id: 'rotary', tier: 3, blue: true, name: 'Rotary Coupe', price: 780, color: 0xf2c218, evilColor: 0x1f8a5c, fixedLivery: true, model: 'rotary',
     maxSpeed: 40, accel: 14.8, agility: 1.45, crossing: 0.3, health: 120, hw: 0.88, hl: 2.15, height: 1.2 },
   // ---- tier 4
@@ -234,6 +267,10 @@ export const LEVEL_CARS = {
     cannon: { range: 72, cooldown: 1.1, direct: 2.6, splash: 7, damage: 40, scale: 0.8 },
     maxSpeed: 32, accel: 9, crossing: 1, agility: 0.9, health: 240, mass: 3, hw: 1.35, hl: 3.4, height: 2.5 },
 };
+// the garage's cars and the levels' own vehicles take their names (and a perk line) from carText.json, the table's
+// own being the fallback (words.js); the spreads below (EARNED_CARS) then carry them
+applyNames('car', CARS);
+applyNames('car', Object.values(LEVEL_CARS));
 
 // Secret vehicles: never parked in the garage or for sale, but once owned they are driven
 // like any other car, and the garage can swap back to a normal car. The way into each:
@@ -253,25 +290,25 @@ export const SECRET_CARS = {
 // is picked and driven like any other. Par: about a quarter of the Good clock, a fifth of the Evil one
 // (levels/*.json "clock"). They are kept out of CARS (which traffic, Car Swap and "Unlock everything"
 // go by), and a level's vehicle here has an id of its own ('earned-f1') and its `base` (whose engine
-// and horn it has). The tier's stats are held within NEXT_TIER_CAPS, whatever the vehicle does on its
-// own level: 49 to 52 m/s (EARNED_SPEED), and no more acceleration or health than the caps.
-const EARNED_SPEED = { min: 49, max: NEXT_TIER_CAPS.maxSpeed };
-const earnedCar = (level, par, car, base) => ({ ...car, ...(base ? { id: 'earned-' + base.id, base } : {}), tier: 6, price: 0, earned: { level, par },
-  maxSpeed: Math.max(EARNED_SPEED.min, Math.min(EARNED_SPEED.max, car.maxSpeed)), accel: Math.min(NEXT_TIER_CAPS.accel, car.accel), health: Math.min(NEXT_TIER_CAPS.health, car.health) });
+// and horn it has). Its six magenta stars are a mark, not a tier: these cars are outside the tiers, fun
+// extras, and each drives by the stats written for it here (a level's vehicle: as it does on its own
+// level, unless a figure is given), held to no cap.
+const earnedCar = (level, par, car, base) => ({ ...car, ...(base ? { id: 'earned-' + base.id, base } : {}), tier: 6, price: 0, earned: { level, par } });
 export const EARNED_CARS = [
   earnedCar('all-heck', { good: 39 }, { id: 'hellrod', name: 'Hell Rod', color: 0xff5a00, evilColor: 0x1a0608, model: 'hotrod',
     maxSpeed: 50, accel: 18, crossing: 0.4, health: 200, hw: 0.9, hl: 2.1, height: 1.2, perk: 'Straight out of All Heck' }),
   earnedCar('ufo', { good: 36, evil: 20 }, { ...LEVEL_CARS.ufo, name: 'Saucer', color: 0x9fe0c8, evilColor: 0x33184a }, LEVEL_CARS.ufo),
-  earnedCar('marina-bay', { good: 99, evil: 56 }, { ...LEVEL_CARS.gt, name: 'GT Racer', color: 0x6fb7d8, evilColor: 0x5a6b7a }, LEVEL_CARS.gt),
+  // (the three race cars are a little tamer on the road than on their circuits: about a tenth off the speed and the getaway)
+  earnedCar('marina-bay', { good: 99, evil: 56 }, { ...LEVEL_CARS.gt, name: 'GT Racer', maxSpeed: 57, accel: 13, color: 0x6fb7d8, evilColor: 0x5a6b7a }, LEVEL_CARS.gt),
   earnedCar('oh-mine', { good: 66, evil: 37 }, { ...LEVEL_CARS.jetboat, name: 'Land Jetboat', color: 0xf2f2f2, evilColor: 0x2a4a3a, perk: 'It drives on land too, somehow' }, LEVEL_CARS.jetboat),
-  earnedCar('montreal', { good: 87, evil: 49 }, { ...LEVEL_CARS.f1, name: 'Road F1', color: 0x1d3f9c, evilColor: 0x7a1fa8 }, LEVEL_CARS.f1),
-  earnedCar('bathurst', { good: 90, evil: 51 }, { ...LEVEL_CARS.lmp, name: 'Road Prototype', color: 0x18a35a, evilColor: 0x8a1a2a }, LEVEL_CARS.lmp),
+  earnedCar('montreal', { good: 87, evil: 49 }, { ...LEVEL_CARS.f1, name: 'Road F1', maxSpeed: 68, accel: 18, health: 80, color: 0x1d3f9c, evilColor: 0x7a1fa8 }, LEVEL_CARS.f1),
+  earnedCar('bathurst', { good: 90, evil: 51 }, { ...LEVEL_CARS.lmp, name: 'Road Prototype', maxSpeed: 68, accel: 18, health: 160, color: 0x18a35a, evilColor: 0x8a1a2a }, LEVEL_CARS.lmp),
   earnedCar('rival-run', { good: 75, evil: 57 }, { id: 'courier', name: 'Courier Special', color: 0xffb400, evilColor: 0x2b1a3a, model: 'sleeper',
     maxSpeed: 50, accel: 19, agility: 1.5, crossing: 0.6, health: 220, hw: 0.92, hl: 2.5, height: 1.45 }),
   earnedCar('showdown', { good: 50, evil: 38 }, { id: 'showdown', name: 'Showdown Muscle', color: 0x8a1030, evilColor: 0x1a1f3a, model: 'muscle',
     maxSpeed: 52, accel: 17, crossing: 0.45, health: 300, mass: 2, hw: 1.0, hl: 2.5, height: 1.35 }),
-  // (the toughest car there is: the tier's health cap)
-  earnedCar('battlefield', { good: 78 }, { ...LEVEL_CARS.apc, name: 'Road 8x8', health: NEXT_TIER_CAPS.health, color: 0x6b6f5a, evilColor: 0x4a4e3a, perk: 'Its gun fires in place of packages' }, LEVEL_CARS.apc),
+  // (the toughest car there is)
+  earnedCar('battlefield', { good: 78 }, { ...LEVEL_CARS.apc, name: 'Road 8x8', health: 450, color: 0x6b6f5a, evilColor: 0x4a4e3a, perk: 'Its gun fires in place of packages' }, LEVEL_CARS.apc),
 ];
 Progress.earnedCars = EARNED_CARS;
 // the car a special level earns (undefined for a level with none)
@@ -284,20 +321,30 @@ const find = () => [...CARS, ...EARNED_CARS, ...Object.values(SECRET_CARS), ...I
   .find(car => car.id === Progress.data.car && Progress.owns(car.id)) || CARS[0];
 export let CAR = find();
 // the car in use as the save has it, whatever the level picked has put the player in (the garage's ring and words)
-export const carInUse = find;
+export const carInUse = () => forcedCar(find(), restrictedTier());
+// can a run be started in what the level's rule puts the player in? (false: no car of the tier is owned)
+export const carAllowed = () => { const t = restrictedTier(); return t === null || forcedCar(find(), t).id !== 'null-car'; };
 
 // A level with a vehicle of its own puts the player in that; any other level gives back
 // the car picked in the garage. Called when a level is picked and when a run starts.
 // (amphibious: the level is an amphibious one, its "amphibious": the car in use if it floats, or else the best
 // amphibious car the player owns. With none owned the car in use stays, and Game.start won't start the level)
 export const useLevelCar = (id, amphibious) => {
-  CAR = (id && (LEVEL_CARS[id] || CARS.find(c => c.id === id))) || find(); // (a special vehicle, or one of the garage's)
+  CAR = (id && (LEVEL_CARS[id] || CARS.find(c => c.id === id))) || forcedCar(find(), amphibious ? null : restrictedTier()); // (a special vehicle, or one of the garage's, or what the level's tier rule allows)
   if (amphibious && !id && !CAR.amphibious) CAR = ownedAmphibious() || CAR;
   lent = null;
 };
 
 // switch to a car the player owns (saved to their progress)
 export const selectCar = (id) => {
+  const tier = restrictedTier(), car = CARS.find(c => c.id === id);
+  if (tier !== null && car && carTier(car) === tier && Progress.owns(id)) { // (picked for a level that restricts the car: kept apart from the player's own pick)
+    (Progress.data.tierCars ||= {})[tier] = id;
+    Progress.save();
+    CAR = forcedCar(find(), tier);
+    lent = null;
+    return;
+  }
   Progress.useCar(id);
   CAR = find();
   lent = null;
@@ -375,9 +422,15 @@ const superLivery = (car) => SUPER_LIVERIES[car.id] ||
   { good: [shade(car.color, 1.25, 1.4), shade(car.evilColor, 0.7, 1.2)], evil: [shade(car.evilColor, 0.6, 1.3), shade(car.color, 1.25, 1.4)] };
 const supers = {}; // the Super versions built so far, by the base car's id
 // the Super version of a garage car (null for a car that has none: one out of the tiers (the Tank, a car idea),
-// the Lowrider, a level's vehicle, an earned car, or a Super car itself): built once and kept. `base` is the car it is made from
+// a level's vehicle, an earned car, or a Super car itself): built once and kept. `base` is the car it is made from.
+// The Lowrider's is the garage's own Super Lowrider, as it stands there: its model, colours and figures, no kit
+const NO_KIT = { wing: false, scoop: false, exhausts: false, skirts: false, glow: false, stripe: false };
 export const superOf = (car) => {
-  if (!car || !car.tier || car.earned || car.id === 'lowrider' || car.super) return null;
+  if (!car || !car.tier || car.earned || car.super) return null;
+  if (!supers[car.id] && car.id === 'lowrider') {
+    const own = CARS.find(c => c.id === 'superlowrider');
+    supers[car.id] = { ...own, id: 'super-' + car.id, super: true, base: car, price: 0, kit: NO_KIT, stripe: own.color, evilStripe: own.evilColor };
+  }
   if (!supers[car.id]) {
     const S = CONFIG.superCar, livery = superLivery(car);
     supers[car.id] = { ...car, id: 'super-' + car.id, name: 'Super ' + car.name, super: true, base: car, price: 0, kit: livery.kit || {},

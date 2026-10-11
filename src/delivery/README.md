@@ -106,6 +106,7 @@ The core:
 | `cars.js` | The garage's cars, the levels' own vehicles, the secret ones |
 | `progress.js` | Saved progress: the whole of it in local storage, and the short of it (what is open, the bank, the cars) in a cookie as a fallback |
 | `messages.js`, `messages.json` | The lines that pop up during a run |
+| `levelText.js`, `levelText.json` | Every level's name and its description for Good and for Evil, by level id, in one file; `levelName(level)` and `levelDescription(level, evil)` read it, falling back to the level's own `name` and `description` |
 | `input.js` | Keys and touch turned into named actions and axes |
 | `track.js` | Builds the level's roads, lanes, ramps, flyovers and junctions; checks the level data |
 | `physics.js` | Helpers shared by all vehicles: damage, spin-outs, road limits, the effects queue |
@@ -205,6 +206,11 @@ ones, which are always open and open nothing.
     amphibious level and checks the water's rules on it. The save has room for any number of levels: it is kept in local
     storage, and the cookie beside it holds no best times (`node scripts/.save-check.mjs` saves and loads 100
     levels and 80 cars).
+  - Its words (its name, and a description for Good and one for Evil, 160 characters each at most) go in
+    `levelText.json` under its id, in the menu's order, not in the level's file. A level whose file still has
+    `name` and `description` works too (that is the fallback, and what a level downloaded from the editor
+    carries); when moving them into `levelText.json`, take them out of the level's file.
+    `node scripts/.descriptions-check.mjs` checks both places.
   - Its picture on the menu comes in two sizes, both from one `?cine` frame: `levelshots/<id>.jpg` (600x267:
     the strip, the album, a phone) and `levelshots/large/<id>.jpg` (1920x854: the stage on a desktop).
     `node scripts/shots.mjs --levels=<id> --write` makes both; `--write=<folder>` puts them in a folder to be
@@ -285,7 +291,7 @@ It is only a menu: a level is built when a run on it starts (`Game.load`), and n
 the page. It is one screen that fits the window (nothing scrolls), laid out as a game's front end:
 
 - **The stage:** the level picked, large: its picture, number and name, its description for the side picked,
-  its clock, tip and best time, a ribbon of two halves (Good's medal and best on the left, Evil's on the
+  its clock, tip and best time, its two medals (Good's grade and best time on the left, Evil's on the
   right), a line for what the level needs (an amphibious car, its own vehicle, the level before it), and
   **What's on this road**: a card of the level's gimmicks, pickups and traffic, each with its model turning.
 - **The strip** under it: the levels of its group (five at a time); over it the **groups**, and over those the

@@ -25,7 +25,7 @@ const HILL = new THREE.ConeGeometry(0.5, 1, 9);
 // lists of road-placed things by colour and shape ([s, lat, y, sx, sy, sz, to?]: see instances in road.js), each
 // drawn as one mesh; and world-placed ones (a point, a size, a turn; or a beam from one point to another), each
 // checked against every road as it is put down
-const makeKit = ({ instances, offRoads, levelGroup, cube }) => {
+export const makeKit = ({ instances, offRoads, levelGroup, cube }) => { // (exported: the fallout zone, a theme with a file of its own, builds with it too)
   const road = new Map(), world = new Map(), o = new THREE.Object3D(), va = new THREE.Vector3(), vb = new THREE.Vector3(), p = {};
   const key = (map, color, geometry, glowing) => {
     const k = geometry.uuid + ':' + color + ':' + (glowing ? 1 : 0);
@@ -66,7 +66,7 @@ const makeKit = ({ instances, offRoads, levelGroup, cube }) => {
 };
 // a level's zones for a theme with sets: [{ set, from, to }], the level's own (each zone's `scenery`, if it is one
 // of the theme's sets) or, on a level with none, the sets end to end in equal shares
-const setsOf = (theme) => {
+export const setsOf = (theme) => {
   const sets = theme.sets || [], own = (LEVEL.zones || []).filter(z => sets.includes(z.scenery));
   if (own.length) return own.map(z => ({ set: z.scenery, from: z.from, to: z.to }));
   return sets.map((set, i) => ({ set, from: Math.round(Track.length * i / sets.length), to: Math.round(Track.length * (i + 1) / sets.length) }));
@@ -194,6 +194,290 @@ const construction = (ctx) => {
         const a = kit.point(s + 1.2, beside(q.sg, s, d), y + 2.4), b = kit.point(s + 5.5, beside(q.sg, s, d - 1), y + 5.6), c = kit.point(s + 8.4, beside(q.sg, s, d - 2), y + 2.2);
         kit.span(YELLOW, a, b, 0.5, 0.6);
         kit.span(YELLOW, b, c, 0.4, 0.5);
+      }
+    }
+  }
+  kit.draw();
+};
+
+// ---- zones (the coast): race day, on a level with pelotons (Tour de Coast; nothing on a coast level without them):
+// an arch over the road at the start, before the cliff road (for the climb), into the harbour (for the sprint) and
+// with the finish in sight; crowd barriers hung with banners and a crowd behind them where a bunch sets off and all
+// down the finishing straight, team tents and camper vans on the verge, flags on poles through the harbour. And the
+// place: a lighthouse and its cottage on the headland, fishing boats off the causeway, a jetty of yachts and a
+// harbour light off the harbour. Nothing in the zone of the cliffs (the cliff stands on one side, the rail on the other)
+const raceDay = (ctx) => {
+  if (!(LEVEL.pelotons || []).length) return;
+  const { beside, cube, tube, cone } = ctx;
+  const kit = makeKit(ctx), rand = seeded(53);
+  const zones = LEVEL.zones || [], zoneAt = (s) => zones.find(z => s >= z.from && s < z.to), looks = (s) => zoneAt(s)?.scenery;
+  const BANNERS = [0xe23b3b, 0xf2c21a, 0x2f7fd0, 0x3aa655, 0xf4f4f0, 0xe8721c], SHIRTS = [0xd94b4b, 0x3f6fc4, 0xf0d24a, 0x4aa36a, 0xf2f2ee, 0x8a4fb0, 0x2f3542, 0xe98a3a];
+  const SKIN = [0xe6b894, 0xc98e63, 0x8a5a3c], WHITE = 0xf6f6f2, STEEL = 0x8a8f96;
+  // an arch over the whole road: two fat legs and a beam, a banner hung under it
+  const arch = (s, color, trim) => {
+    const lo = beside(-1, s, 1.3), hi = beside(1, s, 1.3), mid = (lo + hi) / 2;
+    for (const lat of [lo, hi]) kit.of(color, tube).push([s, lat, 3.3, 1.2, 6.6, 1.2]);
+    kit.of(color).push([s, mid, 7.1, hi - lo + 1.2, 1.3, 1.2]);
+    kit.of(trim).push([s - 0.7, mid, 5.7, (hi - lo) * 0.62, 1.8, 0.15]);
+    kit.of(color).push([s - 0.82, mid, 5.7, (hi - lo) * 0.5, 0.55, 0.1]);
+  };
+  // crowd barriers along a verge, a banner on every one, and people behind them (share: how many of the places are taken)
+  const crowd = (from, to, side, share) => {
+    for (let s = from, k = 0; s < to; s += 4, k++) {
+      kit.of(STEEL).push([s, beside(side, s, 0.9), 0.55, 0.1, 1.1, 3.8]);
+      kit.of(BANNERS[(k + (side > 0 ? 3 : 0)) % BANNERS.length]).push([s, beside(side, s, 0.82), 0.6, 0.06, 0.7, 3.4]);
+      for (const ds of [0.6, 2, 3.3]) {
+        if (rand() > share) continue;
+        const at = s - 1.8 + ds, d = 1.6 + rand() * 1.8, tall = 1.45 + rand() * 0.35;
+        kit.of(SHIRTS[Math.floor(rand() * SHIRTS.length)]).push([at, beside(side, at, d), tall / 2, 0.45, tall, 0.35]);
+        kit.of(SKIN[Math.floor(rand() * SKIN.length)]).push([at, beside(side, at, d), tall + 0.17, 0.3, 0.3, 0.3]);
+      }
+    }
+  };
+  // a team tent: four poles and a pointed roof
+  const tent = (s, side, d, color) => {
+    for (const [ds, dd] of [[-1.6, -1.6], [1.6, -1.6], [-1.6, 1.6], [1.6, 1.6]]) kit.of(WHITE).push([s + ds, beside(side, s, d + dd), 1.2, 0.12, 2.4, 0.12]);
+    kit.of(color, PYRAMID).push([s, beside(side, s, d), 3, 4, 1.3, 4]);
+  };
+  // a camper van come to watch: a white box, a coloured band, a pop-top
+  const camper = (s, side, d, color) => {
+    const lat = beside(side, s, d);
+    kit.of(WHITE).push([s, lat, 1.35, 2.1, 1.9, 5.2], [s - 0.4, lat, 2.5, 1.8, 0.4, 3]);
+    kit.of(color).push([s, lat, 1.05, 2.14, 0.45, 5.24]);
+    kit.of(0x1c1c1c).push([s - 1.6, lat, 0.4, 2.2, 0.8, 0.8], [s + 1.6, lat, 0.4, 2.2, 0.8, 0.8], [s + 2.1, lat, 1.75, 1.9, 0.6, 1.05]);
+  };
+  // a lighthouse: a white tower with a band, a lit lantern and a cap, at a point off the road
+  const lighthouse = (s, side, d, h, band, margin = 6) => {
+    const at = kit.point(s, beside(side, s, d));
+    if (!kit.at(WHITE, tube, at.x, at.y + h / 2, at.z, h * 0.2, h, h * 0.2, 0, false, margin)) return null;
+    kit.at(band, tube, at.x, at.y + h * 0.55, at.z, h * 0.205, h * 0.16, h * 0.205, 0, false, -1);
+    kit.at(0xfff3c4, tube, at.x, at.y + h + 1, at.z, h * 0.14, 2, h * 0.14, 0, true, -1);
+    kit.at(band, cone, at.x, at.y + h + 2.9, at.z, h * 0.2, 1.8, h * 0.2, 0, false, -1);
+    return at;
+  };
+
+  // the arches (none where the cliff road's sides leave no room for its legs, nor on the causeway, in the sea)
+  for (const [s, color, trim] of [[45, 0x2f7fd0, WHITE], [1385, WHITE, 0xe23b3b], [3640, 0x3aa655, WHITE], [4345, 0xe23b3b, WHITE]]) {
+    if (s < Track.end && !['seacliff', 'gois'].includes(looks(s))) arch(s, color, trim);
+  }
+  // where a bunch on the player's side sets off: the crowd on the right verge, a tent or two behind it
+  for (const p of LEVEL.pelotons) {
+    if (p.dir === -1 || p.road === 'side') continue;
+    const look = looks(p.s);
+    if (look === 'seacliff') continue;
+    const side = look === 'gois' ? -1 : 1; // (the right of the causeway is the sea)
+    crowd(p.s - 28, p.s + 36, side, 0.55);
+    tent(p.s - 14, side, 7.5, BANNERS[Math.floor(rand() * 4)]);
+    if (rand() < 0.6) tent(p.s + 12, side, 8.5, BANNERS[Math.floor(rand() * 4)]);
+  }
+  // the finishing straight: barriers and a crowd both sides, the last 420 m
+  crowd(Math.max(0, Track.length - 420), Track.length - 12, -1, 0.75);
+  crowd(Math.max(0, Track.length - 420), Track.length - 12, 1, 0.75);
+  for (const z of zones) {
+    if (z.scenery === 'bush') {
+      // camper vans and tents on the verges of the headland, and the lighthouse out on its point, a cottage by it
+      for (let s = z.from + 90, k = 0; s < z.to - 60; s += 110 + rand() * 70, k++) {
+        const side = k % 2 ? 1 : -1;
+        if (k % 3 === 2) tent(s, side, 9 + rand() * 4, BANNERS[k % 4]); else camper(s, side, 8 + rand() * 5, BANNERS[k % BANNERS.length]);
+      }
+      const at = lighthouse(z.to - 110, -1, 90, 28, 0xd22a2a); // (on the left, well off the road: the road bends right here so the tower stands ahead in the view; a tall thing at the edge of the picture leans with the camera, as every tree does)
+      if (at) {
+        const c = kit.point(z.to - 90, beside(-1, z.to - 90, 80));
+        kit.at(WHITE, cube, c.x, c.y + 1.6, c.z, 7, 3.2, 5, c.h, false, 4);
+        kit.at(0xb5462f, PYRAMID, c.x, c.y + 4.2, c.z, 8, 2.2, 6, c.h, false, -1);
+      }
+    } else if (z.scenery === 'seacliff') {
+      // the cliff road has the cliff on one side and the rail on the other, so no arch and no barriers: knots of
+      // fans out on the grass past the rail with their flags, and the race's helicopter hanging over the water
+      for (const [s, k] of [[z.from + 230, 0], [z.from + 560, 1], [z.from + 930, 2]]) {
+        for (let i = 0; i < 6; i++) {
+          const at = s + i * 1.5 + rand(), lat = beside(1, at, 3.4 + rand() * 1.2), tall = 1.5 + rand() * 0.3;
+          kit.of(SHIRTS[(k * 3 + i) % SHIRTS.length]).push([at, lat, tall / 2, 0.45, tall, 0.35]);
+          kit.of(SKIN[Math.floor(rand() * SKIN.length)]).push([at, lat, tall + 0.17, 0.3, 0.3, 0.3]);
+          if (i % 2 === 0) {
+            kit.of(WHITE).push([at + 0.5, lat, 2.4, 0.08, 4.8, 0.08]);
+            kit.of(BANNERS[(k + i) % BANNERS.length]).push([at + 0.5, lat, 4.1, 0.06, 1.4, 2.2]);
+          }
+        }
+      }
+      const hs = z.from + 700, h = kit.point(hs, beside(1, hs, 55), 17);
+      if (kit.at(WHITE, cube, h.x, h.y, h.z, 3, 3, 8.5, h.h, false, 0)) {
+        kit.at(0xe23b3b, cube, h.x, h.y - 0.5, h.z, 3.1, 0.8, 8.6, h.h, false, -1);
+        kit.at(WHITE, cube, h.x - Math.sin(h.h) * 7, h.y + 0.6, h.z - Math.cos(h.h) * 7, 0.6, 0.8, 7, h.h, false, -1);
+        kit.at(0x2f3542, cube, h.x, h.y + 2.1, h.z, 0.5, 1.2, 0.5, h.h, false, -1);
+        kit.at(0x2f3542, cube, h.x, h.y + 2.8, h.z, 12, 0.12, 0.5, h.h + 0.6, false, -1);
+        kit.at(0x2f3542, cube, h.x, h.y + 2.8, h.z, 12, 0.12, 0.5, h.h + 0.6 + Math.PI / 2, false, -1);
+        kit.at(0x9fd2f2, cube, h.x + Math.sin(h.h) * 3.4, h.y + 0.35, h.z + Math.cos(h.h) * 3.4, 2.7, 1.5, 2, h.h, false, -1);
+      }
+    } else if (z.scenery === 'gois') {
+      // fishing boats lying off the causeway, out on the water: the sand on that side runs 130 m from the road (LAND in
+      // road.js) and the sea begins there, so a boat is further out than that. Trawlers, seen from a road a good way off
+      for (let s = z.from + 110, k = 0; s < z.to - 60; s += 100 + rand() * 90, k++) {
+        const d = 144 + rand() * 60, lat = beside(1, s, d), hull = [0x2f5f8f, 0xb5462f, 0x2f7d5a, 0xf2f2ee][k % 4];
+        kit.of(hull).push([s, lat, 0.9, 6.6, 2.8, 21]);
+        kit.of(WHITE).push([s - 5.5, lat, 3.6, 5, 3.3, 6.5]);
+        kit.of(0x2f3542).push([s - 5.5, lat, 5.5, 5.3, 0.6, 6.8]);
+        kit.of(0x5b4632).push([s + 2, lat, 8, 0.4, 14, 0.4], [s + 2, lat, 13, 0.25, 0.25, 9]);
+      }
+    } else if (z.scenery === 'shellharbour') {
+      // flags on poles down both verges, a jetty with yachts moored along it, and the harbour light
+      for (let s = z.from + 20, k = 0; s < z.to - 430; s += 28, k++) for (const side of [-1, 1]) {
+        kit.of(WHITE).push([s, beside(side, s, 1.5), 2.6, 0.1, 5.2, 0.1]);
+        kit.of(BANNERS[(k + (side > 0 ? 2 : 0)) % BANNERS.length]).push([s + 0.75, beside(side, s, 1.5), 4.5, 0.05, 1, 1.5]);
+      }
+      const out = (z.sea ?? 8) + 34, js = z.from + 520;
+      if (js < z.to - 100) {
+        kit.of(0x9a7b55).push([js, beside(1, js, out + 24), 0.7, 52, 0.3, 2.6]);
+        for (let k = 0; k < 6; k++) {
+          kit.of(0x5b4632).push([js, beside(1, js, out + 2 + k * 9), 0.2, 0.4, 1.6, 0.4]);
+          const ys = js + (k % 2 ? 6.5 : -6.5), lat = beside(1, ys, out + 6 + k * 8);
+          kit.of(k % 3 ? WHITE : 0x2f5f8f).push([ys, lat, 0.5, 2.2, 1.1, 6.4]);
+          kit.of(0xd9d6cc).push([ys, lat, 5, 0.12, 8, 0.12]);
+          kit.of(WHITE, cone).push([ys - 1.3, lat, 4.6, 0.12, 6, 2.4]);
+        }
+      }
+      lighthouse(z.to - 150, 1, out + 80, 18, 0x2f7d5a); // (out on the water at the end of the finishing straight, in sight from the arch before it)
+    }
+  }
+  kit.draw();
+};
+
+// ---- city: a ring road's places, only where a level's own zones ask for them (the theme's "sets": a city level
+// with no zones is drawn as it always was, grey blocks and poles). Along the whole of such a level: a sign gantry
+// over the road before each exit and at each end, and the towers of the centre on the skyline to the left (the
+// inside of the ring). By zone: 'estate', sound barriers down both sides and slab blocks of flats behind them;
+// 'retail', big sheds with coloured fascias across their car park, and totem signs by the road; 'stadium', the
+// bowl with its roof and floodlight masts, and banners down the road; 'services', a fuel canopy, a shop, a sign
+// mast and lorries parked up; 'centre', glass towers close in on both sides. The big pieces stand on the left,
+// away from the exits' side roads; road.js leaves its own blocks out where one stands (cityKeepsClear)
+const CITY_SETS = ['estate', 'retail', 'stadium', 'services', 'centre'];
+const cityZones = () => (LEVEL.zones || []).filter(z => CITY_SETS.includes(z.scenery));
+const STADIUM = { reach: 190 }, SERVICES = { reach: 130 }; // m each way from the middle of its zone that it takes up
+// is that stretch of that side (-1 left, 1 right) kept clear of the theme's own blocks, for a set-piece?
+export const cityKeepsClear = (s, side) => cityZones().some(z => {
+  if (s < z.from || s >= z.to) return false;
+  const middle = (z.from + z.to) / 2;
+  return z.scenery === 'centre' || (side < 0 && (z.scenery === 'retail' || (z.scenery === 'stadium' && Math.abs(s - middle) < STADIUM.reach) || (z.scenery === 'services' && Math.abs(s - middle) < SERVICES.reach)));
+});
+const city = (ctx) => {
+  const zones = cityZones();
+  if (!zones.length) return;
+  const { add, flat, sideStrip, beside, cube, tube } = ctx;
+  const kit = makeKit(ctx), rand = seeded(53);
+  const STEEL = 0x8a8f96, DARK = 0x2c3440, WHITE = 0xf2f2ee, WINDOW = 0x3b4654, GLASS = [0x5f8fb4, 0x4a7396, 0x7aa6c2, 0x3f5f7d, 0x86b0b8];
+  const RED = 0xd8262b, BLUE = 0x1f5fa8, GREEN = 0x2f8a4a, FASCIA = [RED, BLUE, 0xf2c21a, GREEN, 0xe8731c];
+  const inZone = (set, s) => zones.some(z => z.scenery === set && s >= z.from && s < z.to);
+  // a sign gantry over the whole road: two legs, a truss, blue boards with white lettering (a green one for an exit)
+  const gantry = (s, exit) => {
+    const lo = Track.lo(s) - 1.2, hi = Track.hi(s) + 1.2, mid = (lo + hi) / 2, w = hi - lo;
+    kit.of(STEEL).push([s, lo, 3.6, 0.5, 7.2, 0.5], [s, hi, 3.6, 0.5, 7.2, 0.5], [s, mid, 7.0, w, 0.3, 0.5], [s, mid, 6.1, w, 0.2, 0.5]);
+    for (let lat = lo + 1.5; lat < hi; lat += 3) kit.of(STEEL).push([s, lat, 6.55, 0.12, 0.9, 0.12]);
+    for (const [share, colour] of exit ? [[0.3, BLUE], [0.78, GREEN]] : [[0.3, BLUE], [0.7, BLUE]]) {
+      const lat = lo + w * share, bw = w * 0.3;
+      kit.of(colour).push([s - 0.35, lat, 6.6, bw, 2.2, 0.15]);
+      kit.of(WHITE).push([s - 0.45, lat, 7.1, bw * 0.7, 0.28, 0.06], [s - 0.45, lat - bw * 0.12, 6.5, bw * 0.46, 0.22, 0.06], [s - 0.45, lat + bw * 0.3, 6.1, bw * 0.18, 0.5, 0.06]);
+    }
+  };
+  gantry(160, false);
+  for (const x of LEVEL.exits || []) gantry(x.exitAt - 130, true);
+  gantry(Track.length - 90, false);
+  // the centre on the skyline, inside the ring: towers a long way off to the left, taller and nearer towards the end
+  for (let s = 100, k = 0; s < Track.length; s += 55 + rand() * 60, k++) {
+    const near = s / Track.length, d = 230 - near * 70 + rand() * 170, h = 55 + rand() * 75 + near * 35, w = 16 + rand() * 14;
+    if (inZone('centre', s)) continue;
+    kit.of(GLASS[k % GLASS.length]).push([s, beside(-1, s, d), h / 2, w, h, w]);
+    if (k % 3 === 0) kit.of(DARK).push([s, beside(-1, s, d), h + 5, 1, 10, 1]);
+  }
+  // a slab block of flats: its bands of windows, a lift tower on the roof
+  const flats = (s, lat, colour) => {
+    const h = 30 + rand() * 18, w = 13, l = 30;
+    kit.of(colour).push([s, lat, h / 2, w, h, l]);
+    for (let y = 4; y < h - 1; y += 3.2) kit.of(WINDOW).push([s, lat, y, w + 0.15, 1.1, l - 2.4]);
+    kit.of(0x6b7078).push([s - 6, lat, h + 1.6, 5, 3.2, 5]);
+  };
+  // a totem: a mast by the road with a stack of boards on it
+  const totem = (s, lat, colours) => {
+    kit.of(STEEL).push([s, lat, 5, 0.5, 10, 0.5]);
+    colours.forEach((colour, i) => kit.of(colour).push([s, lat, 10.2 + i * 1.9, 4.6, 1.7, 0.5]));
+  };
+  for (const z of zones) {
+    const middle = (z.from + z.to) / 2;
+    if (z.scenery === 'estate') {
+      // sound barriers: concrete panels with a clear strip along the top, a green one every fourth, a post every other
+      for (const side of [-1, 1]) {
+        for (let s = z.from + 3, k = 0; s < z.to; s += 6, k++) {
+          const lat = beside(side, s, 3.2);
+          kit.of(k % 4 === 0 ? 0x6f9a78 : 0xb9b6ab).push([s, lat, 1.6, 0.25, 3.2, 5.9]);
+          kit.of(0xbfe0ea).push([s, lat, 3.55, 0.12, 0.7, 5.9]);
+          if (k % 2 === 0) kit.of(STEEL).push([s - 3, lat, 2, 0.35, 4, 0.35]);
+        }
+      }
+      for (let s = z.from + 50, k = 0; s < z.to - 20; s += 85, k++) flats(s, beside(k % 2 ? 1 : -1, s, 62 + rand() * 14), [0xd9cdb4, 0xb98a6a, 0xc9c4b8][k % 3]);
+    } else if (z.scenery === 'retail') {
+      // the car park, its lamps and the cars in it; the sheds across it, each with its fascia and its doors
+      add(sideStrip(z.from + 20, z.to - 20, (s) => beside(-1, s, 12), (s) => beside(-1, s, 60), 0.02, 6), flat(0x4a4d53));
+      for (let s = z.from + 60, k = 0; s < z.to - 50; s += 105, k++) {
+        const lat = beside(-1, s, 78);
+        kit.of(0xd6d3c8).push([s, lat, 5, 30, 10, 62]);
+        kit.of(FASCIA[k % FASCIA.length]).push([s, lat + 15.3, 8.2, 0.5, 2.6, 62]);
+        kit.of(WHITE).push([s, lat + 15.7, 8.2, 0.2, 1.1, 22]);
+        kit.of(0x9aa0a8).push([s, lat, 10.3, 31, 0.6, 63]);
+        kit.of(WINDOW).push([s, lat + 15.2, 2, 0.3, 3.4, 16]);
+      }
+      const PAINT = [RED, WHITE, 0x1f3f8f, 0x23262b, 0xc9ccd2, GREEN];
+      for (let s = z.from + 30, k = 0; s < z.to - 30; s += 44, k++) {
+        for (const d of [22, 46]) {
+          kit.of(STEEL).push([s, beside(-1, s, d), 4.5, 0.25, 9, 0.25]);
+          kit.of(0xfff3c4, cube, true).push([s, beside(-1, s, d), 9.1, 2.2, 0.2, 0.6]);
+        }
+        [17, 28, 40, 52].forEach((d, i) => { if ((k + i) % 3) kit.of(PAINT[(k * 3 + i) % PAINT.length]).push([s + 9, beside(-1, s + 9, d), 0.8, 1.9, 1.3, 4.3]); });
+      }
+      for (let s = z.from + 110, k = 0; s < z.to - 40; s += 210, k++) totem(s, beside(-1, s, 7), [FASCIA[k % 5], FASCIA[(k + 1) % 5], FASCIA[(k + 2) % 5]]);
+    } else if (z.scenery === 'stadium') {
+      const s = middle, lat = beside(-1, s, 150), R = 150;
+      kit.of(0xc9ccd2, tube).push([s, lat, 12, R, 24, R]);             // the bowl,
+      kit.of(RED, tube).push([s, lat, 17, R + 1, 3, R + 1]);           // a band of the club's red round it,
+      kit.of(WINDOW, tube).push([s, lat, 6, R + 0.6, 2.4, R + 0.6]);   // its concourse windows,
+      kit.of(WHITE, tube).push([s, lat, 25.2, R + 14, 2.4, R + 14]);   // and its roof, out over the stands
+      for (const [ds, dl] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) {    // four floodlight masts
+        const ms = s + ds * 82, ml = lat + dl * 82;
+        kit.of(STEEL).push([ms, ml, 26, 1.4, 52, 1.4]);
+        kit.of(DARK).push([ms, ml, 53.5, 12, 6, 0.6]);
+        kit.of(0xfff8d8, cube, true).push([ms, ml, 53.5, 11, 5, 1]);
+      }
+      // banners on masts down the road, in the club's red and white
+      for (let b = z.from + 20, k = 0; b < z.to - 10; b += 38, k++) {
+        for (const side of [-1, 1]) {
+          const bl = beside(side, b, 3.4);
+          kit.of(STEEL).push([b, bl, 3.5, 0.18, 7, 0.18]);
+          kit.of(k % 2 ? WHITE : RED).push([b, bl + side * 0.6, 5.4, 1, 2.6, 0.08]);
+        }
+      }
+    } else if (z.scenery === 'services') {
+      const s = middle, at = (ds, d) => [s + ds, beside(-1, s + ds, d)];
+      add(sideStrip(s - SERVICES.reach + 10, s + SERVICES.reach - 10, (q) => beside(-1, q, 6), (q) => beside(-1, q, 64), 0.02, 6), flat(0x4a4d53));
+      kit.of(WHITE).push([...at(0, 24), 6.2, 16, 0.9, 34]);            // the canopy,
+      kit.of(RED).push([...at(0, 24), 5.6, 16.3, 0.5, 34.3]);          // its red fascia,
+      for (const ds of [-12, 0, 12]) for (const dd of [-5, 5]) kit.of(STEEL).push([...at(ds, 24 + dd), 2.9, 0.5, 5.8, 0.5]);
+      for (const ds of [-12, -4, 4, 12]) kit.of(RED).push([...at(ds, 24), 0.9, 0.8, 1.8, 1.6]); // the pumps
+      kit.of(0xe6e1d2).push([...at(0, 50), 3, 14, 6, 44]);             // the shop and cafe, under a green roof
+      kit.of(GREEN).push([...at(0, 50), 6.3, 15, 0.6, 45]);
+      kit.of(WINDOW).push([...at(0, 42.9), 2.2, 0.3, 3, 36]);
+      totem(s - 96, beside(-1, s - 96, 7), [RED, WHITE, GREEN, 0xf2c21a]); // its sign, seen from well back
+      for (let ds = 40, k = 0; ds < SERVICES.reach - 20; ds += 7, k++) {   // lorries parked up side by side beyond it
+        kit.of([RED, BLUE, WHITE, GREEN][k % 4]).push([...at(ds, 22), 2.3, 2.6, 2.8, 2.6]);
+        kit.of([WHITE, 0xc9ccd2, 0xe8731c][k % 3]).push([...at(ds, 31), 2.6, 2.6, 3.6, 13]);
+      }
+    } else if (z.scenery === 'centre') {
+      // glass towers close in on both sides: bands of lit floors, a dark ground floor, masts on some
+      for (let s = z.from + 14, k = 0; s < z.to + 120; s += 30 + rand() * 14, k++) {
+        for (const side of [-1, 1]) {
+          const w = 16 + rand() * 10, h = 38 + rand() * 80, d = 9 + w / 2 + rand() * 26, lat = beside(side, s, d);
+          kit.of(GLASS[(k + (side > 0 ? 2 : 0)) % GLASS.length]).push([s, lat, h / 2, w, h, w]);
+          for (let y = 6; y < h - 2; y += 9) kit.of(0xdfeaf2).push([s, lat, y, w + 0.2, 0.7, w + 0.2]);
+          kit.of(WINDOW).push([s, lat, 2.2, w + 0.3, 4.4, w + 0.3]);
+          if ((k + (side > 0 ? 1 : 0)) % 3 === 0) kit.of(DARK).push([s, lat, h + 6, 0.8, 12, 0.8]);
+        }
       }
     }
   }
@@ -366,4 +650,4 @@ const bathurst = (ctx) => {
   kit.draw();
 };
 
-export const THEME_EXTRAS = { construction, bathurst };
+export const THEME_EXTRAS = { construction, city, bathurst, zones: raceDay };

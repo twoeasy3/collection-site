@@ -10,6 +10,8 @@
 import * as THREE from 'three';
 import { CONFIG } from './config.js';
 import { LEVELS, HIDDEN_LEVELS, levelLabel } from './levels.js';
+import { levelName } from './levelText.js';
+import { nameOf, blurbOf, slug } from './words.js';
 import { themedKind } from './themes.js';
 import { LEVEL_CARS, amphibiousCars } from './cars.js';
 import { MODELS, AMBULANCE_BOX } from './render/models.js';
@@ -26,6 +28,7 @@ import { makeAirliner, makeTower } from './render/airportModels.js';
 import { makeTractorModel, makeUfo } from './render/carExtras.js';
 import { makePillbox } from './render/battleModels.js';
 import { makeWindsock, makeTransporter, makeHeightBar, makeDepthPost, makeCushion, makeShadeTree } from './render/gambleModels.js';
+import { makeAreaPatch, makeInfection } from './render/radiationModels.js';
 
 const kmh = (ms) => Math.round(ms * 3.6) + ' km/h';
 const pct = (x) => Math.round(x * 100) + '%';
@@ -39,16 +42,19 @@ const ob = (kind, o = {}) => OBSTACLE_MODELS[kind](o);
 // the sizes the Drifting junk card builds its models at (the kinds that drift on some level; the themes' own take no size)
 const JUNK = { umbrella: { hw: 1.2, hl: 1.2, height: 3 }, surfboard: { hw: 0.6, hl: 0.25, height: 2.6 }, cooler: { hw: 0.8, hl: 0.6, height: 1.2 }, chair: { hw: 1, hl: 1, height: 3.4 },
   wreck: { hw: 1, hl: 2.1, height: 1.4 }, bale: { hw: 1.1, hl: 1.1, height: 1.5 }, crate: { hw: 0.6, hl: 0.6, height: 1.1 }, cone: {}, barrow: {}, trolley: {}, rock: { r: 1 },
-  toyBlock: {}, skittle: {}, divingHelmet: {}, supplyPod: {}, directorChair: {}, cameraDolly: {}, mooringPosts: {}, fuelDrum: {}, popcornCart: {}, barrel: {}, chairStack: {}, riceBasket: {}, present: {},
+  toyBlock: {}, skittle: {}, divingHelmet: {}, supplyPod: {}, directorChair: {}, cameraDolly: {}, mooringPosts: {}, fuelDrum: {}, popcornCart: {}, barrel: {}, chairStack: {}, riceBasket: {}, wasteDrum: {}, present: {},
   toyDrum: {}, cafeTable: {}, wheelieBin: {}, snowdrift: {}, sackStack: {}, beachBall: {}, tumbleweed: {}, flagStand: {}, brimstone: {}, lavaRock: { r: 1 } };
 // ...and what each is called, several of them, in the card's line about a level's own
 const JUNK_NAMES = { umbrella: 'beach umbrellas', surfboard: 'surfboards', cooler: 'ice boxes', chair: 'lifeguard chairs', wreck: 'wrecked cars', bale: 'hay bales', crate: 'crates',
   cone: 'cones', barrow: 'wheelbarrows', trolley: 'shopping trolleys', rock: 'rocks', toyBlock: 'alphabet blocks', skittle: 'skittles', divingHelmet: 'diving helmets', supplyPod: 'supply pods',
   directorChair: 'director\'s chairs', cameraDolly: 'camera dollies', mooringPosts: 'mooring posts', fuelDrum: 'fuel drums', popcornCart: 'popcorn carts', barrel: 'barrels',
-  chairStack: 'stacks of chairs', riceBasket: 'baskets of rice', present: 'presents', toyDrum: 'toy drums', cafeTable: 'cafe tables', wheelieBin: 'wheelie bins', snowdrift: 'heaps of snow',
-  sackStack: 'stacks of sacks', beachBall: 'beach balls', tumbleweed: 'tumbleweeds', flagStand: 'flags on stands', brimstone: 'spikes of brimstone', lavaRock: 'lava boulders' };
+  chairStack: 'stacks of chairs', riceBasket: 'baskets of rice', wasteDrum: 'drums of waste', present: 'presents', toyDrum: 'toy drums', cafeTable: 'cafe tables', wheelieBin: 'wheelie bins', snowdrift: 'heaps of snow',
+  sackStack: 'stacks of sacks', beachBall: 'beach balls', tumbleweed: 'tumbleweeds', flagStand: 'flags on stands', brimstone: 'spikes of brimstone', lavaRock: 'lava boulders', mine: 'sea mines' };
 // the kinds that drift on a level (not the darting ones: those are another card), as its theme has them
 const driftingKinds = (level) => [...new Set((level.drifters || []).filter(d => d.pattern !== 'dart').map(d => themedKind(level.theme, d.kind || 'cone', true)))].filter(k => JUNK[k]);
+// ...and the kinds that dart about on it (a placed obstacle with drift: 'dart', or drifters of that pattern)
+const dartingKinds = (level) => [...new Set([...(level.obstacles || []).filter(o => o.drift === 'dart').map(o => themedKind(level.theme, o.kind || 'barrier')),
+  ...(level.drifters || []).filter(d => d.pattern === 'dart').map(d => themedKind(level.theme, d.kind || 'cone', true))])].filter(k => k === 'mine' || JUNK[k]);
 const listed = (words) => words.length > 1 ? words.slice(0, -1).join(', ') + ' and ' + words[words.length - 1] : words[0];
 const vehicle = (kind, color) => MODELS[CONFIG.vehicles[kind].model]({ ...CONFIG.vehicles[kind], color });
 // a car's model painted (its body's material is its paint)
@@ -73,7 +79,7 @@ const sign = (text, bg, fg = '#fff', w = 3.2, h = 1.4) => {
 };
 // where the levels are: every level (on the menu) that has it, by its number and name; and the test
 // level, Gimmick Road (off the menu: ?hidden=gimmick-road), where the newest are tried out first
-export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${level.name}` : null),
+export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>${levelLabel(i)}</span> ${levelName(level)}` : null),
   has(HIDDEN_LEVELS['gimmick-road']) ? '<span>Test</span> Gimmick Road (?hidden=gimmick-road)' : null,
   has(HIDDEN_LEVELS['gimmick-road-2']) ? '<span>Test</span> Gimmick Road 2 (?hidden=gimmick-road-2)' : null,
   has(HIDDEN_LEVELS['gimmick-road-3']) ? '<span>Test</span> Gimmick Road 3 (?hidden=gimmick-road-3)' : null].filter(Boolean);
@@ -85,6 +91,7 @@ export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>$
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
+const RD = CONFIG.radiation; // (the fallout's: radiation.js)
 const GB = { wind: CONFIG.crosswind, crest: CONFIG.crest, ramp: CONFIG.jamRamp, board: CONFIG.washboard, bar: CONFIG.lowBridge, ford: CONFIG.ford, cushion: CONFIG.cushion, shade: CONFIG.shade, rut: CONFIG.rut, tar: CONFIG.tarmac, spray: CONFIG.spray, sun: CONFIG.lowSun, dust: CONFIG.dust }; // (Gimmick Road 3's: the road gambles)
 const D = CONFIG.drifters, GF = CONFIG.gunfire, DB = CONFIG.driveBy, PU = CONFIG.puncture, RV = CONFIG.rival, RC = CONFIG.race;
 export const GROUPS = [
@@ -255,8 +262,10 @@ export const GROUPS = [
     { name: 'Darting mines', color: 0xe0e0e0, has: (l) => l.obstacles?.some(o => o.drift === 'dart') || l.drifters?.some(d => d.pattern === 'dart'), rules: [
       `Sea mines that won't stay put: each sits ${range(D.dartRest, ' s')}, shivers for ${D.dartShiver} s (the only warning), then darts off at ${range(D.dartSpeed, ' m/s')}, up to ${D.dartAlong} m along and ${D.dartAcross} m across from its spot. Differently every run.`,
       `Hit one: ${CONFIG.obstacleKinds.mine.damage} damage, and you keep ${pct(CONFIG.obstacleKinds.mine.speedKept)} of your speed.`,
-    ], build: () => {
-      const m = ob('mine');
+    ], // (on a level's own card: what darts on that level, if not sea mines, in its line and its picture)
+    line: (level) => { const own = dartingKinds(level); return own.length && own[0] !== 'mine' ? `${listed(own.map(k => JUNK_NAMES[k])).replace(/^./, c => c.toUpperCase())} that won't stay put: each sits ${range(D.dartRest, ' s')}, shivers for ${D.dartShiver} s (the only warning), then darts off somewhere else. Differently every run.` : null; },
+    build: (level) => {
+      const own = level ? dartingKinds(level)[0] : null, m = own ? ob(own, JUNK[own]) : ob('mine');
       return { model: m, tick: (t) => {
         const from = Math.floor(t / 2.4) % 2 ? 1.6 : -1.6, u = t % 2.4;
         m.position.x = u < 1.5 ? from : u < 1.5 + D.dartShiver ? from + Math.sin(t * 70) * 0.1 : from - 2 * from * Math.min(1, (u - 1.5 - D.dartShiver) / 0.4);
@@ -596,7 +605,8 @@ export const GROUPS = [
     { name: 'Level crossings', color: 0xd8262b, has: (l) => l.crossings?.length, rules: [
       `It is timed to you: at the speed you are going, the train reaches the road between ${-CONFIG.crossing.timing.min} s before you would and ${CONFIG.crossing.timing.max} s after. The lights flash and the bell rings; the booms come down over ${CONFIG.crossing.lower} s, and ${CONFIG.crossing.warn} s on, a short train shoots across at ${kmh(CONFIG.crossing.speed)}, seen coming from ${CONFIG.crossing.reach} m down the line.`,
       'Traffic waits at the booms. Anything on the line as the train goes by is wrecked, you included (unless you are a ghost).',
-      `You can't stop, so ease off and arrive after it, or beat it across. A boom down is only a knock (${CONFIG.crossing.boomDamage} damage), and it breaks.`,
+      `You can't stop, so ease off and arrive after it, or beat it across. A boom down is only a knock (${CONFIG.crossing.boomDamage} damage, no slowing), and it breaks.`,
+      `The train is ${CONFIG.crossing.cars} carriages, ${CONFIG.crossing.cars * CONFIG.crossing.carLength} m: the bullet train's, cut down, or in the Wild West a steam train of the same length.`,
     ], build: () => {
       const g = road(9, 12);
       const line = group(box(16, 0.06, 2.8, lambert(0x5b544c), 0, 0.02, 0), box(16, 0.12, 0.1, lambert(0x9aa0a6), 0, 0.1, -0.75), box(16, 0.12, 0.1, lambert(0x9aa0a6), 0, 0.1, 0.75));
@@ -894,15 +904,16 @@ export const GROUPS = [
         car.position.set(0, y, z); car.rotation.x = on > 0 && on < GB.ramp.run ? -GB.ramp.angle : y > 0 ? -0.28 + 0.032 * (on - GB.ramp.run) : 0; } };
     } },
     { name: 'Washboard dirt', color: 0xa9865a, has: (l) => l.washboards?.length, rules: [
-      `A dirt road worn into corrugations right across. A board before it gives its speed: at ${kmh(GB.board.skim)} or more the car <strong>skims the tops</strong> and it runs smooth, with all its steering.`,
-      `Crawling (${kmh(GB.board.calm)} or less) it rides each one, and steers as ever. That always works, and it is slow.`,
-      `In between, the wheels hop: ${pct(GB.board.steerLoss)} of the steering is gone at the worst of it, the car wanders, and in a bend it is carried to the outside. Braking for something on the dirt drops you right into it.`,
-      'So come in fast and stay fast, round whatever is in the way, or come in slow. The cash is on the line that needs steering.',
+      'A road worn into corrugations right across, in whatever the place is made of: dirt, buckled steel plates in a port, rippled dust on the Moon, planks in the West, cobbles in a town. A board before it. On it the wheels hop, at any speed.',
+      `<strong>It slows the car</strong>: on it there is no going faster than ${kmh(GB.board.most)}, and a car in faster is dragged down to that at ${GB.board.drag} m/s² (in at 90 km/h, about 25 km/h gone over 40 m of it). Never stopped: under ${kmh(GB.board.most)} it keeps its speed.`,
+      `<strong>And it shakes</strong>, the faster the worse: at ${kmh(GB.board.full)} or more ${pct(GB.board.steerLoss)} of the steering is gone, the car wanders, and in a bend it is carried to the outside. Crawling, a little of all that.`,
+      'So it is a cost, not a wall: straight across loses speed and some say over the line, and is still the short way. A lane or shoulder it does not reach, or the way round, keeps both and takes longer. The cash is on the line that needs steering.',
     ], build: () => {
       const g = road(9, 16, 0xa9865a), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
       for (let z = -7.5; z < 8; z += 1.1) g.add(box(9, 0.06, 0.45, lambert(0x7a5d3c), 0, 0.03, z));
       g.add(car);
-      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4, slow = u < 0.5; car.position.set(slow ? Math.sin(t * 9) * 0.5 : 0, slow ? Math.abs(Math.sin(t * 22)) * 0.16 : 0.05, -7 + ((slow ? u * 2 : (u - 0.5) * 2)) * 14); car.rotation.z = slow ? Math.sin(t * 17) * 0.08 : 0; } };
+      // (in fast, slowing all the way across, hopping about the whole time)
+      return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4; car.position.set(Math.sin(t * 9) * 0.45, Math.abs(Math.sin(t * 22)) * 0.14, -7 + (1 - (1 - u) ** 2) * 14); car.rotation.z = Math.sin(t * 17) * 0.07; } };
     } },
     { name: 'Low bridge', color: 0xc1121f, has: (l) => l.lowBridges?.length, rules: [
       `A height bar across your side of the road, ${GB.bar.clearance.toFixed(1)} m up unless its board says otherwise, with an exit before it: the side road is the tall vehicles' way round, and the tall traffic takes it.`,
@@ -1039,7 +1050,42 @@ export const GROUPS = [
         car.position.set(-1.6, Math.max(Math.max(0, hill), arc + 0.1), z); car.rotation.x = z < -0.5 && hill > 0 ? -0.19 : z > 7 && hill > 0 ? 0.19 : arc > hill ? (z - 2.5) * 0.06 : 0; car.userData.animate?.(t); } };
     } },
   ] },
+  // (the fallout: see radiation.js. A dose is slow, a touch is for the run; the armour is the answer to all of it)
+  { name: 'Fallout', cards: [
+    { name: 'Radiated areas', color: 0x7dff2a, has: (l) => l.radiation?.length, rules: [
+      `A stretch of some lanes, or of the whole road, under a green haze between bright edges and hazard bands, a board ${RD.sign} m before it. In it your health ticks down, about ${pct(RD.tick * 8)} of the car's full health for each 8 s (a 200 m stretch at 25 m/s), and the <strong>radiation meter</strong> fills: full in ${RD.meterTime} s of dosing, so stay a dozen seconds and you are infected. Out of it the meter falls back, slowly (${RD.meterFall} s to empty): two stretches close together can fill it between them.`,
+      `A full meter <strong>infects you for the rest of the run</strong>: from then on the health ticks down everywhere, the whole car in about ${Math.round(1 / RD.infectedTick)} s, whatever you do. A wrench buys time (${Math.round(CONFIG.wrenchRepair / RD.infectedTick)} s each) and so does an armour; nothing cures it. A warning is said at ${pct(RD.high)}.`,
+      'It is the middle of the car that counts: the lane beside the green is clean, and so are the shoulders where the haze stops short of them. The armour keeps every bit of it out while it lasts.',
+      'The gamble: the big cash is in the green. A dash through costs a visible slice of health and over half the meter; a dwell in it infects you. Nothing in it stops the car.',
+    ], build: () => {
+      const g = road(9, 16), patch = makeAreaPatch(4.4, 12), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      patch.position.x = -2.2;
+      g.add(patch, car);
+      return { model: g, spin: false, tick: (t) => { const u = (t % 6) / 6, inside = u >= 0.5, v = (u % 0.5) * 2; car.position.set(inside ? -2.2 : 2.2, 0, -8 + v * 16); car.userData.animate?.(t); } };
+    } },
+    { name: 'Infected cars', color: 0xc8ff3a, has: (l) => l.radiation?.length || l.infectedTraffic > 0, rules: [
+      `A traffic car wearing a green glow, a trefoil over it and a ring on the road ${RD.radius} m out: within the ring you are dosed just as in a radiated area, and the meter fills. On a radiated level ${pct(RD.share)} of the traffic comes that way unless the level says otherwise, and a clean car driving in the green can catch it (${pct(RD.catch)} a second). ${RD.most} at most are about at once.`,
+      '<strong>Touching one infects you at once</strong>, whatever the meter reads: for the rest of the run. A ghost, a tank, or a car in the air over it does not touch it.',
+      'An infected car is not harmed by it, nor by another infected car, and drives as it always did: it does not come for you. The police, an ambulance, a pursuit, a convoy, a racer: never infected.',
+      'The armour keeps it out: no dose in the ring, and a touch does nothing. The gamble: pass it wide and lose the line, or thread the ring for the cash beside it and take a little meter.',
+    ], build: () => {
+      const g = road(9, 14), V = CONFIG.vehicles.commuter, sick = painted(vehicle('commuter', 0xffffff), 0x5a7a2a), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
+      const aura = makeInfection(V.hw, V.hl, V.height, 3.6);
+      sick.position.set(-2.2, 0, 0); aura.position.copy(sick.position);
+      g.add(sick, aura, car);
+      return { model: g, spin: false, tick: (t) => { aura.userData.pulse(t); car.position.set(2.6, 0, -7 + ((t * 3.5) % 14)); car.userData.animate?.(t); sick.userData.animate?.(t); } };
+    } },
+  ] },
 ];
+// gimmickText.json comes first (words.js): each card is given its id (its name as written above, in lower case with
+// dashes: the file's key, and what the road card tells the cards apart by), and then the file's name; `blurb`, the
+// line of its tile on a level's road card, only where the file has one (else the card's `line`, else its first rule)
+for (const group of GROUPS) for (const card of group.cards) {
+  card.id = card.id || slug(card.name);
+  card.name = nameOf('gimmick', card.id, card.name);
+  const blurb = blurbOf('gimmick', card.id);
+  if (blurb) card.blurb = blurb;
+}
 
 // ---- road dressing: the themes' own obstacles ---------------------------------------------------------------
 // NOT gimmicks, and not in GROUPS (so on no level's road card, and in no count of a level's gimmicks): the plain
@@ -1057,12 +1103,13 @@ const DRESS = [ // [kind, name, what it stands in for, where, the card's colour]
   ['chairStack', 'Stack of chairs', 'crate', 'the favela', 0xe0261f], ['riceBasket', 'Basket of rice', 'crate', 'the rice terraces', 0xd9a546],
   ['present', 'Present', 'bale', 'Christmas Eve', 0xd8262b], ['wheelieBin', 'Wheelie bin', 'cone', 'the hood', 0x2f9a48], ['sackStack', 'Stack of sacks', 'bale', 'Mumbai', 0xcfa868],
   ['beachBall', 'Beach ball', 'bale', 'the beach', 0x1a6be6], ['brimstone', 'Spike of brimstone', 'cone', 'hell', 0xff8a1e],
+  ['wasteDrum', 'Drum of waste', 'crate', 'the fallout zone', 0xffd23f],
 ];
 // the kinds of plain obstacle a level's road has, as its theme has them
 const dressingKinds = (l) => new Set([...(l.obstacles || []).map(o => themedKind(l.theme, o.kind || 'barrier')), ...(l.shoulderRows || []).map(r => themedKind(l.theme, r.kind || 'cone')),
   ...(l.drifters || []).map(d => themedKind(l.theme, d.kind || 'cone', true))]);
 export const DRESSING = { name: 'Road dressing', about: 'Not gimmicks: the plain obstacles, as each theme has them. Each is a crate, a bale, a cone or a rock in another shape: the same size, the same cost, standing where the level put it.',
-  cards: DRESS.map(([kind, name, like, place, color]) => ({ name, color, has: (l) => dressingKinds(l).has(kind), rules: [
+  cards: DRESS.map(([kind, name, like, place, color]) => ({ id: kind, name: nameOf('obstacle', kind, name), blurb: blurbOf('obstacle', kind) || undefined, color, has: (l) => dressingKinds(l).has(kind), rules: [
     `What a ${like} is in ${place}.`,
     `It hits as a ${like} does: ${CONFIG.obstacleKinds[kind].damage} damage, and you keep ${pct(CONFIG.obstacleKinds[kind].speedKept)} of your speed.`,
   ], build: () => ({ model: ob(kind, JUNK[kind]) }) })) };

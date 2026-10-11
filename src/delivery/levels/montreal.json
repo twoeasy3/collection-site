@@ -1,10 +1,5 @@
 {
   "id": "montreal",
-  "name": "Montreal",
-  "description": {
-    "good": "Three laps of the island circuit: long straights, hard stops and walls close on the exits. Brake early, pass cleanly, finish in time.",
-    "evil": "Long straights, big braking zones and a wall at every exit. Brake late, lean on whoever is alongside, and let the wall have them."
-  },
   "theme": "montreal",
   "car": "f1",
   "flow": "north",

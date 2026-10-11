@@ -1,5 +1,6 @@
 import { CONFIG } from './config.js';
 import { LEVEL } from './levels.js';
+import { levelName } from './levelText.js';
 
 // ============================================================================
 // TRACK - path sampled by distance along track (s) and lateral offset (lat)
@@ -648,10 +649,19 @@ const createTrack = () => {
     return dir < 0 ? [0, LEFT - 1] : [LEFT + MID, LANES - 1]; // (never the median)
   };
 
-  // where the player's lane assist pulls to: a lane centre, or the middle of a wide shoulder
+  // where the player's lane assist pulls to: a lane centre, or the middle of a wide shoulder (the shoulder's own
+  // width, SH: run-off is wider than that, and a car in it is not drawn to the middle of it, tens of metres from the
+  // lanes. The first SH m of run-off behave as the shoulder they are; past that the assist does nothing, the
+  // car stays where it is left, and steering is as free as ever)
   const assistOffset = (lat, s) => {
-    if (lat > laneHi(s) && hi(s) - laneHi(s) >= LW * 0.8) return (laneHi(s) + hi(s)) / 2;
-    if (lat < laneLo(s) && laneLo(s) - lo(s) >= LW * 0.8) return (laneLo(s) + lo(s)) / 2;
+    const hiW = hi(s) - laneHi(s), loW = laneLo(s) - lo(s);
+    if (lat > laneHi(s)) {
+      if (hiW > SH + 0.01 && lat > laneHi(s) + SH) return lat;
+      if (Math.min(hiW, SH) >= LW * 0.8) return laneHi(s) + Math.min(hiW, SH) / 2;
+    } else if (lat < laneLo(s)) {
+      if (loW > SH + 0.01 && lat < laneLo(s) - SH) return lat;
+      if (Math.min(loW, SH) >= LW * 0.8) return laneLo(s) - Math.min(loW, SH) / 2;
+    }
     return laneOffset(nearestLane(lat, s), s);
   };
 
@@ -1077,7 +1087,6 @@ const createTrack = () => {
     }
     for (const b of LEVEL.washboards || []) {
       if (!mainStretch(b)) problems.push('washboard at ' + b.from + ': from before to, on the expressway');
-      else if (b.skim !== undefined && !(b.skim >= CONFIG.washboard.calm + 4 && b.skim <= 40)) problems.push('washboard at ' + b.from + ': skim is ' + (CONFIG.washboard.calm + 4) + ' to 40 m/s');
     }
     for (const r of LEVEL.jamRamps || []) {
       const J = CONFIG.jamRamp, far = r.s + J.run + J.gap + (r.queue ?? J.queue) * J.spacing + 40, name = 'ramp over the jam at ' + r.s;
@@ -1241,7 +1250,7 @@ const createTrack = () => {
         problems.push(name + ': at a junction');
       }
     }
-    for (const text of problems) console.warn('Level "' + LEVEL.name + '": ' + text);
+    for (const text of problems) console.warn('Level "' + levelName(LEVEL) + '": ' + text);
   }
 
   return {

@@ -6,17 +6,19 @@ struck from here. Nothing below blocks the agents now at work unless it says so.
 
 ## Levels
 
-1. **Quarry Run's finale.** The last rock blast (at 4290 m) comes down across both lanes; the way round is
+1. ~~**Quarry Run's finale.**~~ ANSWERED 11-Oct ("fine"): stays. (Was: The last rock blast (at 4290 m) comes down across both lanes; the way round is
    the right shoulder or the merge side. Is that too much? Pictures sent (the crag before, the blast after).
    Left alone: it stays. Pick: keep it; it is the level's finale and there are two ways round.
-2. **Cattle Drive's one-lane bridge.** On the new Wild West level the bridge at 1280 m narrows the player's
+2. ~~**Cattle Drive's one-lane bridge.**~~ ANSWERED 11-Oct ("fine"): stays. (Was: On the new Wild West level the bridge at 1280 m narrows the player's
    side to one lane for 190 m; with tractors and processions about, the only way past is the oncoming lane
    (a 20 sits there). Is that too close to an imposed crawl? A picture is to come. Left alone: it stays.
    Dropping the narrowing is a one-line change.
-3. **The cargo truck's load.** With tyres gone it sheds crates and bales half and half (it was half crates,
+3. ~~**The cargo truck's load.**~~ ANSWERED 11-Oct: "It is fine" (half crates, half bales stays). Plus a new
+   task: an alternative state of this truck's model with an open door, so players can tell which truck drops
+   items (on `CHECKLIST-11-Oct.md`). (Was: With tyres gone it sheds crates and bales half and half (it was half crates,
    a quarter bales, a quarter tyres). The tyre was the light one, so shed cargo hurts a little more on
    average. Lean it back toward crates (two crates to one bale)? Left alone: half and half.
-4. **Brakes on ice and burst mains.** You asked for weaker brakes and weaker lane changes. The brakes were
+4. ~~**Brakes on ice and burst mains.**~~ ANSWERED 11-Oct ("This is fine"): as built. (Was: You asked for weaker brakes and weaker lane changes. The brakes were
    already at 35% (20 m dry against 57 m on ice from 30 to 10 m/s), so only the lane change was changed
    (0.47 s dry, 1.02 s on ice; it was 0.67 s). Weaker brakes still? One number each in `config.js`.
 5. **Moving things on the batch E levels.** Toy Box Derby and Seaquake keep their drifting crates (to become
@@ -38,7 +40,58 @@ struck from here. Nothing below blocks the agents now at work unless it says so.
 5i. **Suburbia's clock** reads 35 / 25 s for a 3200 m level (the tool says 100 / 65). It looks like a
    mistake in the level file. Set it to the tool's figure?
 
+5j. **Stop / go roadworks impose a wait on the safe line.** Seen plainly on Market Town: the player's GO is
+   9 s of every 28. The fast lines are running the STOP (no bust, but oncoming traffic in your lane; a 20
+   is inside the works) or the shoulder past the queue; the way that never stops is the side road round,
+   which has wrong-way drivers. By your rule ("stops the game imposes have zero counterplay") is that
+   enough counterplay, or should stop / go change everywhere (a longer GO, or a queue that keeps rolling)?
+   It is one of the kinds on Market Town, Mountain Pass and Quarry Run.
+5k. **Tranquility Base's crest** has a barrier in one lane just beyond the top; a cone on the way up is its
+   only warning. A bigger marker, or move the barrier? Also there: flying that crest at 130 km/h costs 30
+   health on landing even in a clear lane (as it was before today).
+ANSWERED 11-Oct: 15 (good for later), 16 (drop it: clean the worktree, drop the stash), 17 (deferred, investigate
+whether the origin's game commits can be dropped), 18 (leave for the rebalance), 19 (drop all but the tram fix),
+20 (no need), 21 (yes, bumped up). See `CHECKLIST-11-Oct.md`, section I. Only 12 and 5l remain open.
+
+ANSWERED 11-Oct: 9 (works fine); 10 (current order, 1-5, 6-10 per tier); 13 (calculate tip money for a
+rushed playthrough: task H2); 14 (Blue 1 opens after level 5 of 5 star; levels easy to rearrange amongst
+tiers, special levels may go in: task H4). Still open: 12 and 15 to 21. See `CHECKLIST-11-Oct.md`, section H.
+
+ANSWERED 11-Oct: 6 (small pictures on a phone), 7 (remove the finish-line milestone sound): section G,
+tasks G8 and G9 of `CHECKLIST-11-Oct.md`. 8 ("Looks good to me"): the sea bed tube and the drawbridge stay
+as in the pictures sent.
+
+ANSWERED 11-Oct, last: 12 (half a ribbon on every stage of the blue tier), 5l (fog by theme stays as built),
+41 (one file per kind, named consistently), 44 (extra middle carriage), 32 (ideas: yes), 5c (not pressing).
+No questions are open. See `CHECKLIST-11-Oct.md`, section J.
+
+ANSWERED 11-Oct for 5c2 (traffic by the level's tier at the rebalance; stats held), 5c3, 5d, 5e (low bridges
+get an update), 5f, 5g (no car exceeds a lane, ever): see `CHECKLIST-11-Oct.md`, section G.
+
+ANSWERED 11-Oct for 5 to 5k (details in `CHECKLIST-11-Oct.md`, section G): 5 thematic larger obstacles; 5a
+too extreme, bad placement; 5b thematic washboard, slows and shakes steering at all speeds; 5c needs an
+image; 5h later sweep; 5i left, not rebalancing; 5j fine; 5k signs before crests, Moon airtime to be looked
+into.
+
+5l. **STILL OPEN, answer unclear:** the owner wrote "No. Green frogs are fine." Which fog shades should
+    change, and is the frog level's green the one to keep? (Orchestrator's reading: the first guesses are
+    not fine, the green stays.) **Fog's colour by theme:** the shades are first guesses (night dark blue-grey, the volcano red-brown, the
+   sea bed blue silt). Fine? One number or a colour per theme changes them.
+
 ## Cars
+
+5c2. **Delivery: what is being wrecked? (BLOCKS the merge of the two new stats.)** A thrown package only ever
+    hits TRAFFIC, and a traffic vehicle's health is fixed by its kind (commuter 45, van 90, bus 180, semi
+    320); it does not rise with the level or the player's tier. So a Delivery stat that rises by tier makes
+    a higher-tier car wreck traffic MORE easily (a semi: 13 packages at tier 1, 9 at tier 5), the opposite
+    of "it should still be harder to wreck higher tier cars overall". Choose: (a) traffic gets tougher on
+    later levels or tiers, by more than Delivery rises, so packages-to-wreck climbs gently (this is the
+    rebalance); (b) Delivery stays flat across tiers for now, with only the small spread by body (vans up,
+    two-seaters down), until that rebalance; (c) merge as built and accept easier wrecking at high tiers
+    meanwhile. Pick: (b). Also to say: should Delivery scale a Good package's small damage (it does not
+    now); should the earned six-star cars sit one step above tier 5 (they do now) or at 1.
+5c3. **Nerve as built:** band 0.8 to 1.3 by the car's character (Tow Truck 1.3, EV Saloon 1.25, Post Van and
+    Taxi 1.2 ... Hot Rod 0.8), on a 3 s allowance, cap 8 s. Fine as first values?
 
 5d. **The Blue 4 cars' first figures** (not play-tested; inside the rule "under tier 5's gold best"):
     Stainless Gullwing 42.5 m/s, accel 12, health 330, $920; Rear-Engine Coupe 44.5, 15.5, 175, $960; Snake
@@ -81,7 +134,7 @@ struck from here. Nothing below blocks the agents now at work unless it says so.
 14. **Assumptions written down for you to overrule:** the races stay on their own tab outside the tiers;
     cars with no tier (the Tank, the bus, earned cars, amphibious cars, the idea cars) cannot start a level
     whose ribbon half is not yet earned; "beating" a level means delivered on time; beating gold 5's last
-    level replaces "after level 20" for opening the Blue season; medals are kept beside ribbons; half-ribbons
+    level replaces "after level 20" for opening the Blue season; medals are kept beside ribbons; medals
     count only within their own tier.
 
 ## The code audit (`AUDIT-10-Oct.md`)
@@ -111,3 +164,7 @@ struck from here. Nothing below blocks the agents now at work unless it says so.
 20. **A link to the game from the site.** Nothing on the site links to `/delivery/`. Where should one go?
 21. **More cargo.** Twenty more ideas (C41 to C60, the "malicious deliveries") are drafted in the checklist
     and not built. Build them?
+
+## Asked 11-Oct, late
+
+22. **What do players get for earning both medals on a level?** As built, nothing beyond the unlock counts and the per-side bronze, silver or gold grade. Options: a one-time tip bonus scaled to the tier (orchestrator pick, stays inside the existing systems); a cosmetic mark on the plate and card and a tier-complete mark; a cosmetic unlock (a livery or trail) for a whole tier; a cargo collection page or special Evil cargo state. Left alone: no reward.

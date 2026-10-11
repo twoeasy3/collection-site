@@ -5,11 +5,15 @@
 // switches and buttons of the options sheet, the race controls, the secret bus, and the results screen's buttons.
 import { CONFIG } from '../config.js';
 import { LEVELS, LEVEL_INDEX, LEVEL, selectLevel, nextOnTab, setRaceClass, RACE_CLASSES } from '../levels.js';
-import { CARS, SECRET_CARS, useLevelCar, selectCar, amphibiousCars } from '../cars.js';
+import { levelName } from '../levelText.js';
+import { CARS, SECRET_CARS, useLevelCar, selectCar, amphibiousCars, restrictedTier } from '../cars.js';
+import { Tiers } from '../tiers.js';
 import { Progress } from '../progress.js';
 import { Game } from '../game.js';
 import { Garage } from './garage.js';
 import { Sound } from './audio.js';
+import './menuclick.js'; // (every click on a menu plays one sound)
+import { ask } from './dialog.js';
 import { Input } from '../input.js';
 import { draw, MenuStage } from './menustage.js';
 export { LEVEL_SHOTS } from './menustage.js'; // (the postcard album's pictures: render/album.js)
@@ -23,7 +27,9 @@ window.addEventListener('carchange', () => { useLevelCar(LEVEL.car, LEVEL.amphib
 Game.onRefused.push(() => {
   draw();
   Garage.open();
-  Garage.look(amphibiousCars().sort((a, b) => a.price - b.price)[0].id); // (the cheapest)
+  const tier = restrictedTier(); // (a level whose tier rule allows only cars the player has none of: the cheapest of the tier)
+  const wanted = tier !== null ? Tiers.carsOfTier(tier) : amphibiousCars();
+  Garage.look(wanted.sort((a, b) => a.price - b.price)[0].id); // (the cheapest)
 });
 
 // sound on / off: this button, or the M key at any time
@@ -60,7 +66,7 @@ const raceTrackBtn = document.getElementById('raceTrackBtn');
 const raceTracks = () => [...LEVELS.filter(l => l.laps).map(l => l.id), 'all'];
 const showRaceTrack = () => {
   const level = LEVELS.find(l => l.laps && l.id === Progress.data.raceTrack);
-  raceTrackBtn.textContent = 'Race track: ' + (level ? level.name : 'All in turn');
+  raceTrackBtn.textContent = 'Race track: ' + (level ? levelName(level) : 'All in turn');
 };
 raceTrackBtn.addEventListener('click', () => {
   const tracks = raceTracks(), at = tracks.indexOf(Progress.data.raceTrack);
@@ -80,8 +86,8 @@ showRaceClass();
 draw();
 
 // a complete savegame, written to the progress cookie like any other progress
-document.getElementById('completeBtn').addEventListener('click', () => {
-  if (!confirm('Open every level, buy every car and fill the bank?')) return;
+document.getElementById('completeBtn').addEventListener('click', async () => {
+  if (!await ask({ title: 'Complete save', lines: ['Open every level, buy every car and fill the bank?'], ok: 'Do it' })) return;
   Progress.complete({
     levels: LEVELS.length,
     cars: CARS.map(car => car.id),
@@ -106,8 +112,8 @@ document.getElementById('completeBtn').addEventListener('click', () => {
   });
 }
 
-document.getElementById('resetBtn').addEventListener('click', () => {
-  if (!confirm('Erase your bank, unlocked levels and cars?')) return;
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (!await ask({ title: 'Reset progress', lines: ['Erase your bank, unlocked levels and cars?'], ok: 'Erase', danger: true })) return;
   Progress.reset();
   selectLevel(0);
   window.dispatchEvent(new Event('carchange')); // (the car in use may have been one that was bought)
@@ -119,7 +125,9 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 // a save brought in by its code (render/savecode.js): everything the menu shows is the new save's
 window.addEventListener('progresschange', () => {
   Game.evil = !!Progress.data.evil;
-  selectLevel(Math.min(Math.max(0, LEVEL_INDEX), Progress.data.unlocked - 1)); // (never left on a level it has not opened)
+  // (never left on a level it has not opened)
+  if (Tiers.on()) selectLevel(Tiers.isOpen(LEVELS[Math.max(0, LEVEL_INDEX)]) ? Math.max(0, LEVEL_INDEX) : 0);
+  else selectLevel(Math.min(Math.max(0, LEVEL_INDEX), Progress.data.unlocked - 1));
   selectCar(Progress.data.car);
   window.dispatchEvent(new Event('carchange'));
   Sound.toggleMute(); toggleMute(); // (twice, so as it was saved: this sets the volume by it, and the button's words)

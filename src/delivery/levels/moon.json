@@ -2,8 +2,8 @@
   "id": "moon",
   "name": "Tranquility Base",
   "description": {
-    "good": "A delivery to the Moon base: craters for potholes, machines crossing, and meteors now and then. Lift for the crests and look up.",
-    "evil": "Nobody hears a crash in a vacuum. Thread the meteor showers, cut across the bulldozer and take every crest at full speed."
+    "good": "A delivery to the Moon base: craters for potholes, ruts in the dust, machines crossing, and meteors now and then. Lift for the crests and look up.",
+    "evil": "Nobody hears a crash in a vacuum. Thread the meteor showers, cut across the bulldozer, take the rut with the money and every crest at full speed."
   },
   "theme": "moon",
   "clock": { "good": 230, "evil": 175 },
@@ -84,6 +84,9 @@
   "tractors": [
     { "s": 1250, "lane": 4 }
   ],
+  "ruts": [
+    { "from": 620, "to": 820 }
+  ],
   "parked": [
     { "s": 520, "side": "right" },
     { "s": 3140, "side": "right" }
@@ -97,7 +100,10 @@
     { "type": "cash5", "s": 330, "lane": 2 },
     { "type": "turbo", "s": 330, "lane": 3 },
     { "type": "cash5", "s": 330, "lane": 4 },
+    { "type": "cash20", "s": 478, "lane": 2 },
     { "type": "cash10", "s": 478, "lane": 3 },
+    { "type": "cash20", "s": 478, "lane": "right" },
+    { "type": "cash20", "s": 700, "lane": 3 },
     { "type": "cash10", "s": 720, "lane": 2 },
     { "type": "cash10", "s": 720, "lane": 4 },
     { "type": "cash20", "s": 968, "lane": 3 },
@@ -138,6 +144,9 @@
     { "type": "cash5", "s": 4870, "lane": 4 }
   ],
   "obstacles": [
+    { "s": 385, "lane": 4, "kind": "cone" },
+    { "s": 470, "lane": 4, "kind": "barrier" },
+    { "s": 795, "lane": 3, "kind": "barrier" },
     { "s": 2760, "lane": 2, "kind": "crate" },
     { "s": 2790, "lane": 4, "kind": "crate" },
     { "s": 3305, "lane": 3, "kind": "barrier" },

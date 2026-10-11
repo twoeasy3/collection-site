@@ -42,7 +42,7 @@ try {
   amphibious.forEach((l, k) => { if (labels[LEVELS.indexOf(l)] !== 'A' + (k + 1)) fail(l.id + ': labelled ' + labels[LEVELS.indexOf(l)] + ', not A' + (k + 1)); if (!l.amphibious) fail(l.id + ': among the amphibious levels, but not "amphibious"'); });
   for (const l of LEVELS) { const next = nextOnTab(l); if (next && isRace(next) !== isRace(l)) fail(l.id + ': its next level is on the other tab'); }
   if (LEVELS.slice(-3).map(l => l.id).join() !== 'monza,spa,albert-park') fail('the circuits are not last in LEVELS: ' + LEVELS.slice(-3).map(l => l.id).join());
-  console.log('races: ' + RACE_LEVELS.map(l => labels[LEVELS.indexOf(l)] + ' ' + l.name).join(', '));
+  console.log('races: ' + RACE_LEVELS.map(l => labels[LEVELS.indexOf(l)] + ' ' + g.levels.levelName(l)).join(', '));
   // ---- every race starts and is driven ----
   for (const level of RACE_LEVELS) {
     if (IDS.length && !IDS.includes(level.id)) continue;

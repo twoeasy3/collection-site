@@ -612,6 +612,7 @@ export const CONFIG = {
     barrel: { damage: 18, speedKept: 0.75 },        // the Wild West's
     chairStack: { damage: 18, speedKept: 0.75 },    // the favela's: a stack of plastic chairs
     riceBasket: { damage: 18, speedKept: 0.75 },    // the rice terraces': a basket heaped with rice
+    wasteDrum: { damage: 18, speedKept: 0.75 },     // the fallout zone's: a yellow drum of waste, the trefoil on it
     // ...for a bale:
     cameraDolly: { damage: 20, speedKept: 0.75 },   // the film studio's: a camera on its dolly
     present: { damage: 20, speedKept: 0.75 },       // Christmas Eve's: a wrapped present
@@ -1064,6 +1065,10 @@ export const CONFIG = {
   // the Blue Star cars (the garage's second season) stay out of the garage, lot and all, until this
   // numbered level has been delivered
   blueStarsAfter: 20,
+  // The level progression rework (tiers.js, tiers.json): levels in tiers of five, a medal for each side on each, and
+  // exactly that tier's cars on a half not yet earned. true (the default) = the tiers; false = the old rule (each level opens by delivering the one
+  // before it; the Blue Stars after level 20). ?tiers=1 / ?tiers=0 in the address overrides it for a visit.
+  progression: { tiers: true },
   // the clock: each level has its own, for each side ("clock": { good, evil }), worked out by
   // scripts/level-clocks.mjs from a clean run (a ghost, flat out) in the reference car: that run's time
   // times good or evil, to the nearest `round` s, less `timePlus` s for each time plus on the level (the time
@@ -1153,6 +1158,7 @@ export const CONFIG = {
       'powerups.mystery.swapSides': 'mystery',       // ...on the other side: the packages do something else
       'powerups.mystery.blackout': 'mystery',        // ...the lights out
       'powerups.mystery.earthquake': 'mystery',      // ...the road heaving
+      'events.infected': 'infected',                 // infected with radiation (a full meter, or an infected car touched): for the rest of the run (radiation.js)
       // (the good ones are left to the pickup status, which names them while they run: toad, angel,
       // invincible, soupedUp, giant, magnet, trafficFreeze; and sundayDrivers, rushHour, carSwap, moodSwing)
     },
@@ -1227,13 +1233,17 @@ export const CONFIG = {
     every: { min: 14, max: 24 }, // s between trains after that, while the player hasn't gone by...
     again: 300,            // ...and is within this many m of it
     speed: 80,             // m/s the train goes at...
-    cars: 2,               // ...carriages...
+    cars: 3,               // ...carriages (the hit boxes, whatever train is drawn: see `train`)...
     carLength: 18,         // ...each this long...
     hw: 1.6,               // ...and half this wide
     reach: 300,            // m either side of the road the line runs out to (the train comes from that far, seen coming)
     stopLine: 6,           // m short of the line traffic stops at (the booms stand there)
-    boomDamage: 10,        // health a lowered boom costs the player driving through it...
-    boomKept: 0.8,         // ...and the share of its speed kept
+    boomDamage: 10,        // health a lowered boom costs the player driving through it (it costs no speed: the train is the danger)
+    // the train drawn (a crossing's "train", or its theme's; else `usual`): 'bullet', the bullet train's carriages
+    // cut down, or 'steam', the Wild West's locomotive, tender, boxcar, two passenger cars and caboose, the
+    // same cars x carLength long in all (render/roadside.js draws them)
+    trains: ['bullet', 'steam'],
+    usual: 'bullet',
   },
   // stop / go roadworks (a level's "stopGo": stopgo.js): the oncoming side dug up, so both ways take
   // turns through the one lane left, a worker at each end turning a STOP / GO sign. Evil drivers
@@ -1257,7 +1267,11 @@ export const CONFIG = {
     far: 70,               // ...and where it is solid (the usual: 520)
     edge: 60,              // m it thickens over, at each end
     policeSight: 0.4,      // share of their usual sight the police have in it
-    color: 0xc4c9ce,
+    color: 0xc4c9ce,       // its colour under a bright sky. Under a dark one it is mostly the sky's own colour (see
+                           // render/roadside.js; a theme can name a "fogColor" of its own instead):
+    bright: 0.5,           // how bright a sky (0 .. 1) has fog of that colour and no other...
+    dark: 0.3,             // ...and how dark a one has fog that is only...
+    lit: 0.25,             // ...this share that colour, the rest the sky's
   },
   // a tunnel (a level's "tunnels": { from, to }): the road goes under cover: the sky and the ground gone, the
   // fog closed in to the tunnel's lamps, the player's headlights on, the engine echoing off the walls
@@ -1489,6 +1503,23 @@ export const CONFIG = {
   // off it, it wears off in `clean` s. With the tyres full the car's top speed is down by `slow` of itself (in
   // proportion with less), brought down at `bite` m/s^2. A board `sign` m before; a cone every `cone` m
   tarmac: { fill: 4, clean: 3, slow: 0.9, bite: 45, queue: 8, keepClear: 160, sign: 120, cone: 14 },
+  // radiation ("radiation": [{ from, to, lanes?, side? }] and "infectedTraffic": radiation.js). In a radiated area,
+  // or within `radius` m of an infected car, the player's car loses `tick` of its FULL health a second and its
+  // radiation meter fills in `meterTime` s; out of both, the meter empties again in `meterFall` s (Infinity: it
+  // never falls). At `high` of the meter a warning is said; full, the player is infected for the rest of the
+  // run and loses `infectedTick` of its full health a second everywhere (in a dose, the greater of the two, not
+  // both). Touching an infected car infects at once. The Armour pickup (and a helicopter drop's shield, the
+  // SuperCar, a ghost, a tank) keeps all of it out, and stops an infected car's ticking while it lasts.
+  // `share` of a radiated level's traffic is dealt out infected (a level's "infectedTraffic" says otherwise) and
+  // a clean vehicle driving in an area has `catch` chance a second of catching it, `most` infected about at
+  // once; never the kinds in `immune` (nor an emergency, a pursuit, a racer, a convoy...: see Radiation.can).
+  // wreckCures: a car wrecked comes back clean (false: infected is for the run). click: s between the counter's
+  // clicks with the meter empty (slow) and full (fast). sign: m before an area its warning board stands
+  // (At 25 m/s a 200 m area is 8 s: 15% of the car's health and 60% of the meter, so two in a row infect; 13 s
+  // in one does it alone. Infected, the whole car lasts 90 s, less what its wrenches give back: a quarter each,
+  // 23 s, and what an armour's 12 s stops)
+  radiation: { tick: 0.019, meterTime: 13, meterFall: 120, high: 0.75, infectedTick: 0.011, radius: 7, share: 0.12, catch: 0.08, most: 5,
+    immune: ['police', 'ambulance', 'tank', 'interceptor', 'getaway'], wreckCures: false, click: { slow: 0.45, fast: 0.07, volume: 0.5 }, sign: 110 },
   // (traffic that one of these slows comes down to its pace over the `reach` m before: perMetre m/s more for each m short of it)
   gambleApproach: { reach: 60, perMetre: 0.25 },
   // the veil over the picture when something takes the view (spray, the sun, dust: see Gambles.veil): it closes
@@ -1510,13 +1541,15 @@ export const CONFIG = {
   // `spread` m more either side, carried `drift` m to the side the wind blows to by its far end. In it `most` of
   // the view is gone at its head, less in proportion further back. A board and a windsock `sign` m before
   dust: { slowest: 4, length: 60, fullAt: 16, spread: 0.9, drift: 4.5, most: 0.9, sign: 120 },
-  // washboard dirt ("washboards": { from, to, skim? }): corrugations right across the road. At `calm` m/s or less the
-  // car rides them; at `skim` m/s or more (the stretch's own, or this) it skims their tops, smooth. Between the two
-  // (worst in the middle: a sine, to the power `shape`) the wheels hop: steerLoss of the steering's bite is gone,
-  // the car wanders (`wander` m/s^2 sideways, to and fro) and in a bend it is carried to the outside (`slide` of
-  // what the bend asks, speed^2 x curvature, up to slideMost m/s^2), the screen shaking (`shake`). Boards `sign` m
-  // before it give the speed; ripples every `ripple` m are drawn across it
-  washboard: { calm: 9, skim: 20, shape: 0.6, steerLoss: 0.88, wander: 9, slide: 1.6, slideMost: 14, shake: 0.4, soundEvery: 0.22, sign: 120, ripple: 2.4 },
+  // washboard dirt ("washboards": { from, to }): corrugations right across the road. On them the wheels hop at any
+  // speed: the roughness grows with the speed (speed / `full`, to the power `shape`: all of it at `full` m/s or more),
+  // and with it steerLoss of the steering's bite is gone, the car wanders (`wander` m/s^2 sideways, to and fro), in a
+  // bend it is carried to the outside (`slide` of what the bend asks, speed^2 x curvature, up to slideMost m/s^2), the
+  // screen shakes (`shake`) and the wheels rattle (a sound every soundEvery s). And it slows the car: on it there is no
+  // going faster than `most` m/s, and one on it faster is dragged down to that at `drag` m/s^2 (never stopped: a car
+  // under `most` keeps its speed, and can pull up to it). Boards `sign` m before it; ripples every `ripple` m are
+  // drawn across it, in the stuff the theme makes them of (themes.js, WASHBOARDS)
+  washboard: { full: 14, shape: 0.6, steerLoss: 0.55, wander: 5, slide: 1.2, slideMost: 10, shake: 0.35, soundEvery: 0.22, most: 18, drag: 4, sign: 120, ripple: 2.4 },
   crest: { gravity: 20, slack: 0.02, landSoft: 7, landDamage: 2, hop: 0.25, fastest: 65, signUnder: 45, sign: 110, camFrom: 90, camEase: 40, camHeight: 6, camBack: 11, sayAfter: 0.35 },
 
   // photo mode (render/photo.js): the camera starts start.far m from the car, start.yaw round from dead ahead of it
