@@ -82,6 +82,12 @@ door; where idle agents go next; question 22; surplus levels in the tier table; 
 `delivery-sweep` (a4d86b2): Q14, Q46, gimmick page Q25 to Q28, Q29, Q30. `delivery-prank-ideas` (affdde1, Fable): Q42, Q38, Q31, Q39.
 Not yet given out: Q50/Q51 vehicle audit (large, heavy), Stelvio, Tokyo, Mumbai, Night Shift, Q2, Q3, Q12, Q15, Q17, Q20, Q21, Q24, Q32, Q45.
 
+**12-Oct, owner's answers, BUMPED:** (A) prank cargo K3: "1. Build all ten. 2. No. Cosmetic only. 3. No need for an additional state."
+Draft at `bcc7570` on `delivery-prank-ideas` (`IDEAS-prank-cargo-12-Oct.md`, not merged). Building: `delivery-prank-a` (a38fcd2, Fable: P1 to P4),
+`delivery-prank-b` (a064ede, Fable: P5 to P7), `delivery-prank-c` (add6f36, Fable: P8 to P10); sight only, no in-play effect, available as Evil cargo,
+not wired to levels. (B) Good/Evil indicator, idea 2 (underglow with a pulse): "for 2) have the agent model and show it": `delivery-underglow`
+(a3b461d, Sonnet Medium), behind a CONFIG flag; DO NOT MERGE until the owner has seen the before/after stills.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
