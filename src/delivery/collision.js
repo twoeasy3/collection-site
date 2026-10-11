@@ -200,7 +200,7 @@ export const Collision = (() => {
       // (each remembers who hit it, and when: a wreck soon after is that one's doing, see RaceWatch)
       a.hitBy = b; b.hitBy = a;
       a.hitAt = b.hitAt = Game.time;
-      const damage = impact * CONFIG.damagePerSpeed;
+      const damage = Math.min(impact, CONFIG.damageSpeedCap) * CONFIG.damagePerSpeed; // (capped: see CONFIG.damageSpeedCap)
       // (a rival courier takes little of it, and dishes out more: see CONFIG.rival.ram)
       const hit = (v, share) => v === courier ? share * R.share / 0.5 : courier ? share * R.damage : share;
       // (a Mini slips through the gap: a scrape down another car's side costs it nothing: CARS' trait 'slim')
