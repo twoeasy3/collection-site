@@ -171,25 +171,38 @@ const buildBridge = (from, to, style) => {
   if (style === 'harbour' || style === 'seacliff') { buildStyledBridge(from, to, style); return; }
 
   // (the top chords and cross beams stand well above the camera, which would otherwise drive through them)
-  const BAY = 20, TOP = Math.max(CONFIG.camHeight, CONFIG.screensaver.camHeight) + 4;
-  const parts = []; // [s, lat, y, width, height, length]
+  // (the girders and top chords are runs laid from where the edge is at one post to where it is at the next, so that
+  // where the road narrows they taper with it, and are not stepped: bays of 8 m)
+  const BAY = 8, TOP = Math.max(CONFIG.camHeight, CONFIG.screensaver.camHeight) + 4;
+  const parts = []; // [s, lat, y, width, height, length] or, for a run, [s, lat, y, width, height, s1, lat1]
   for (let s = from; s < to; s += BAY) {
-    const len = Math.min(BAY, to - s);
-    const wall = (side) => Track.edge(s, side) + wallInset; // (bridges are on the expressway)
+    const s1 = Math.min(s + BAY, to);
+    const wall = (side, at = s) => Track.edge(at, side) + wallInset; // (bridges are on the expressway)
     const width = Math.max(0.05, Track.shoulder - wallInset);
     for (const side of [-1, 1]) {
-      parts.push([s + len / 2, side * (wall(side) + width / 2), 0.9, width, 1.8, len]); // deck girder filling the shoulder
-      parts.push([s, side * (wall(side) + 0.5), TOP / 2, 1, TOP, 1]);                    // post
-      parts.push([s + len / 2, side * (wall(side) + 0.5), TOP, 1, 1, len]);               // top chord
+      parts.push([s, side * (wall(side) + width / 2), 0.9, width, 1.8, s1, side * (wall(side, s1) + width / 2)]); // deck girder filling the shoulder
+      parts.push([s, side * (wall(side) + 0.5), TOP / 2, 1, TOP, 1]);                                          // post
+      parts.push([s, side * (wall(side) + 0.5), TOP, 1, 1, s1, side * (wall(side, s1) + 0.5)]);               // top chord
     }
     parts.push([s, (wall(1) - wall(-1)) / 2, TOP, wall(1) + wall(-1) + 2, 1, 1]);        // cross beam
   }
   const truss = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), lambert(0x9c4a3a), parts.length);
-  const dummy = new THREE.Object3D();
-  parts.forEach(([s, lat, y, width, height, length], i) => {
-    dummy.rotation.y = Track.toWorld(s, lat, tmp);
-    dummy.position.set(tmp.x, tmp.y + y, tmp.z);
-    dummy.scale.set(width, height, length);
+  const dummy = new THREE.Object3D(), pa = new THREE.Vector3(), pb = new THREE.Vector3();
+  parts.forEach(([s, lat, y, width, height, length, lat1], i) => {
+    if (lat1 !== undefined) { // (a run from (s, lat) to (length, lat1), as it is for a rail: turned to the line between)
+      Track.toWorld(s, lat, tmp); pa.set(tmp.x, tmp.y, tmp.z);
+      Track.toWorld(length, lat1, tmp); pb.set(tmp.x, tmp.y, tmp.z);
+      const run = Math.hypot(pb.x - pa.x, pb.z - pa.z);
+      dummy.rotation.order = 'YXZ';
+      dummy.rotation.y = Math.atan2(pb.x - pa.x, pb.z - pa.z);
+      dummy.rotation.x = -Math.atan2(pb.y - pa.y, run);
+      dummy.position.set((pa.x + pb.x) / 2, (pa.y + pb.y) / 2 + y, (pa.z + pb.z) / 2);
+      dummy.scale.set(width, height, Math.hypot(run, pb.y - pa.y) + 0.02);
+    } else {
+      dummy.rotation.set(0, Track.toWorld(s, lat, tmp), 0);
+      dummy.position.set(tmp.x, tmp.y + y, tmp.z);
+      dummy.scale.set(width, height, length);
+    }
     dummy.updateMatrix();
     truss.setMatrixAt(i, dummy.matrix);
   });
