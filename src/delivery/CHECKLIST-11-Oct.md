@@ -107,6 +107,8 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 
 **12-Oct, NEW ASSIGNMENT PAUSED AGAIN by the owner ("No more new tasks by the way."):** no new tasks or agents; agents only finish, verify, correct and merge what they hold. Sweep's Q21, Q17, Q20 not to start unless already started; damage's Q15, Q3, Q12 not to start; Q50/Q51 not started. `delivery-i2` plan merged (docs only): open question 28.
 
+**12-Oct, Good/Evil ideas 1 to 4 BUILT (`delivery-underglow`, not merged):** `?ge=1..4` / `?ge=all`; stills in `%TEMP%\claude\ge\` (i2c, i1a, i1b, i3a, i3b, i4b); agent's ratings: 1 ring/horn arcs reads best, 2 underglow reads well (pulse unseen in a still), 3 tail lights weak, 4 exhaust weakest (being corrected). Waiting for ideas 5 to 12, then one summary for the owner.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
