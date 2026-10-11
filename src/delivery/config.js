@@ -1025,8 +1025,10 @@ export const CONFIG = {
 
   // damage
   damagePerSpeed: 1.5,     // health lost per m/s of impact (split by mass)
-  damageSpeedCap: 15,      // m/s: the most impact speed that counts towards the damage of a car-on-car crash, so a very
-                           // fast car does not one-shot a low-health one in a rear-end (the push and the stun are not capped)
+  // (a car-on-car hit takes at most this share of the victim's full health, by the MASS of what hit it: speed alone cannot
+  // wreck a weak car, but a heavy vehicle can. frac = clamp(base + perMass x (mass - 1), base, most): a light car (mass 1 or less)
+  // does at most `base` of it, so it takes two hits to wreck a commuter; a bus (4) 1.8x: it can wreck anything at speed)
+  damageCap: { base: 0.75, perMass: 0.35, most: 3 },
   // spin-outs: a traffic car that takes damage may lose control, arc away and blow up.
   // chance per hit = spinPerDamage x (share of full health this hit took)
   //                  x (1 + spinRamp x (share of health now gone) squared)
