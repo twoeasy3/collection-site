@@ -291,7 +291,7 @@ export const Packages = (() => {
   };
 
   // a police car (not one turned into a toad in TOAD RAGE): it has reactions of its own
-  const cop = (car) => car.kind === 'police' && !car.toad;
+  const cop = (car) => (car.kind === 'police' || car.kind === 'interceptor') && !car.toad; // (a pursuit's interceptor too: assaulting it is a bust; it sees nothing else, being busy: see Traffic.policeNear)
   // the player's care package arriving
   const deliver = (p, car) => {
     Progress.count('packagesLanded'); // (a milestone counter: see milestones.js)

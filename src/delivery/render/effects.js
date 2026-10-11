@@ -116,10 +116,10 @@ const throwTyres = (x, y, z, vx, vz) => { // y = the height of the road there
     t.floor = y + 0.38;
     t.mesh.rotation.set(0, Math.random() * Math.PI, 0);
     t.vx = vx * 1.5 + rnd(11);
-    t.vy = 6 + Math.random() * 9;
+    t.vy = 9 + Math.random() * 10; // (up and away: a good hop, not a drop)
     t.vz = vz * 1.5 + rnd(11);
     t.spin = 6 + Math.random() * 14;
-    t.life = 3.5;
+    t.life = 4.5;
   }
 };
 const updateTyres = (dt) => {
@@ -132,7 +132,7 @@ const updateTyres = (dt) => {
     p.x += t.vx * dt; p.y += t.vy * dt; p.z += t.vz * dt;
     if (p.y < t.floor) { // bounce, losing speed each time
       p.y = t.floor;
-      t.vy = t.vy < -2 ? -t.vy * 0.5 : 0;
+      t.vy = t.vy < -2 ? -t.vy * 0.6 : 0; // (a bounce: three or four of them, each lower)
       t.vx *= 0.8; t.vz *= 0.8;
     }
     t.mesh.rotation.x += t.spin * dt;

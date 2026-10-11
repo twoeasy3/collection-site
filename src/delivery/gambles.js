@@ -87,8 +87,16 @@ export const Gambles = {
       strength: w.strength ?? W.strength, every: w.every ?? W.every, length: w.length ?? W.length }));
     this.buildCrests();
     this.boards = (LEVEL.washboards || []).map(b => ({ from: b.from, to: b.to }));
-    this.bars = (LEVEL.lowBridges || []).map((b) => ({ s: b.s, clearance: b.clearance ?? CONFIG.lowBridge.clearance, lo: Track.laneOffset(Track.laneRange(1, b.s)[0], b.s) - CONFIG.laneWidth / 2, hi: Track.hi(b.s),
-      exit: Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null, hits: 0 }));
+    // (a low bridge is two bars over the player's side, one over each half of it, the second CONFIG.lowBridge.stagger m on from
+    // the first, so the way through is a slalom: the half that is left clear at each. `first: 'right'` puts the right half first)
+    this.bars = (LEVEL.lowBridges || []).flatMap((b) => {
+      const LB = CONFIG.lowBridge, [first, last] = Track.laneRange(1, b.s), clearance = b.clearance ?? LB.clearance;
+      const lo = Track.laneOffset(first, b.s) - CONFIG.laneWidth / 2, mid = (lo + Track.laneOffset(last, b.s) + CONFIG.laneWidth / 2) / 2;
+      const exit = Track.exits.find(x => x.exitAt < b.s && x.mergeAt > b.s) || null;
+      const halves = [{ lo, hi: mid }, { lo: mid, hi: Track.hi(b.s) }];
+      if (b.first === 'right') halves.reverse();
+      return halves.map((h, k) => ({ s: b.s + k * LB.stagger, entry: b.s, clearance, lo: h.lo, hi: h.hi, exit, hits: 0 }));
+    });
     // (a ford that `fills` is a flooded underpass: its depth is `depth` as the run starts and rises to fills.to over fills.over s)
     this.fords = (LEVEL.fords || []).map((f) => ({ from: f.from, to: f.to, depth: f.depth ?? CONFIG.ford.depth, dry: f.depth ?? CONFIG.ford.depth, fills: f.fills || null, underpass: !!f.underpass, exit: Track.exits.find(x => x.exitAt < f.from && x.mergeAt > f.to) || null }));
     this.rows = [];
@@ -398,7 +406,7 @@ export const Gambles = {
   },
 
   // ---- low bridges ---------------------------------------------------------------------------------------
-  // A height bar across the player's side of the road (and its shoulder), `clearance` m off it, between an exit
+  // (A bridge is two bars, each over a half of that side, the second further on: see build.) A height bar over the player's side of the road (and its shoulder), `clearance` m off it, between an exit
   // and its merge: the side road is the tall vehicles' way round, and tall traffic takes it. A car no taller
   // than the bar goes under; a taller one that goes at it anyway takes the knock (health, by how much too tall,
   // and most of its speed) and is through: it is never stopped. The oncoming side is not barred
@@ -408,17 +416,12 @@ export const Gambles = {
     this.barS = P.s;
     for (const bar of this.bars) {
       const from = (bar.exit ? bar.exit.exitAt : bar.s) - L.warn;
-      if (P.active && Track.isMain(P.s) && P.s > from && P.s < bar.s && !this.said['bar' + bar.s]) {
-        this.said['bar' + bar.s] = true;
+      if (P.active && Track.isMain(P.s) && P.s > from && P.s < bar.entry && !this.said['bar' + bar.entry]) {
+        this.said['bar' + bar.entry] = true;
         const line = Message.say('events', this.fits(bar) ? 'lowBridgeFits' : 'lowBridgeTall');
         if (line) line.text += ' (' + P.height.toFixed(1) + ' m under ' + bar.clearance.toFixed(1) + ' m)';
       }
-      // tall traffic goes round by the exit (and one that turns up beyond the exit, far from the player, is taken away)
-      for (const car of Traffic.cars) {
-        if (!car.active || car.dir < 0 || car.fixed || this.event(car) || car.height <= bar.clearance || !Track.isMain(car.s) || car.s > bar.s) continue;
-        if (bar.exit && car.s < bar.exit.exitAt) car.viaSide = true;
-        else if (car.s > bar.s - L.traffic && Math.abs(car.s - P.s) > L.unseen) car.active = false;
-      }
+      // (tall traffic is not troubled by a bar, and troubles nobody: it goes straight through, whatever lane it is in)
       if (!P.active || !Track.isMain(P.s) || !(was < bar.s && P.s >= bar.s) || P.s - was > 30) continue;
       if (P.lat + P.hw < bar.lo || P.lat - P.hw > bar.hi || this.fits(bar, P.height + P.air) || P.ghost > 0) continue;
       bar.hits++;

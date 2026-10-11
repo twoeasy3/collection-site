@@ -38,12 +38,6 @@
   "exits": [
     { "exitAt": 2000, "mergeAt": 2800, "out": 70, "oncoming": false }
   ],
-  "potholes": [
-    { "s": 255, "lane": 3, "r": 1 },
-    { "s": 322, "lane": 4, "r": 1.1 },
-    { "s": 2880, "lane": 3, "r": 1 },
-    { "s": 330, "lane": 0, "r": 1, "road": "side" }
-  ],
   "drifters": [
     { "from": 4160, "to": 4360, "kind": "cone", "count": 7, "pattern": "figure8" }
   ],
@@ -62,12 +56,6 @@
   ],
   "drawbridges": [
     { "s": 3050 }
-  ],
-  "tunnels": [
-    { "from": 3340, "to": 3560 }
-  ],
-  "waterMains": [
-    { "s": 3500, "lane": 3 }
   ],
   "balloons": [
     { "s": 3720, "lanes": [3, 4] }

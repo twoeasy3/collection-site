@@ -319,7 +319,8 @@
 //              `lanes` ([first, last]: the player's whole side if not said). Driven up at the speed on its board or
 //              more, the car flies the queue; slower, it comes down in it. The way round is whatever the level leaves
 //              open: a lane, the shoulder (its rules apply), the oncoming side. On straight, level road
-//   lowBridges { s, clearance? }: a low bridge: a height bar across the player's side of the expressway and its shoulder,
+//   lowBridges { s, clearance?, first? }: a low bridge: two height bars over the player's side of the expressway (and its shoulder), one over each
+//              half, the second CONFIG.lowBridge.stagger m on from the first (first: 'left' | 'right', the half with the first), to slalom round,
 //              `clearance` m off the road (CONFIG.lowBridge.clearance if not said), between an exit and its merge:
 //              the side road is the way round for tall vehicles, and tall traffic takes it. A car no taller than the
 //              bar (its `height` in cars.js) goes straight under; a taller one that goes at it loses health and most

@@ -65,5 +65,8 @@
   "wardens": { "name": "Parking Wardens", "blurb": "Parking wardens in a box.", "states": ["Cap on the box","Writing tickets","Tickets flying"] },
   "consultants": { "name": "Crate of Consultants", "blurb": "A crate of consultants with their flip chart.", "states": ["Laser dot","Pages flipping","Pie chart spinning"] },
   "inlaws": { "name": "The In-Laws' Luggage", "blurb": "The in-laws' luggage, a neat stack of it.", "states": ["Neatly stacked","Bulging","Heaving apart"] },
-  "band": { "name": "Marching Band in a Box", "blurb": "A whole marching band in an open box.", "states": ["A faint oompah","Trombone out","Full blast"] }
+  "band": { "name": "Marching Band in a Box", "blurb": "A whole marching band in an open box.", "states": ["A faint oompah","Trombone out","Full blast"] },
+  "nestedboxes": { "name": "Boxes within Boxes", "blurb": "A huge present with a smaller box inside, and so on.", "states": ["Wrapped","Opening","Gotcha"] },
+  "spider": { "name": "Spider on a Fishing Line", "blurb": "A rubber spider dangled from a rod, price tag and all.", "states": ["Hanging","Bobbing","Dropped"] },
+  "ink": { "name": "Disappearing Ink", "blurb": "A bottle of disappearing ink and a quill, on a blotter.", "states": ["Corked","Blotting","Splashing"] }
 }

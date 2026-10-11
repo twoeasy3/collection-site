@@ -1,7 +1,7 @@
 // ============================================================================
 // UFO AIR STRIKE - one of the mystery pickup's effects. A flying saucer comes down over the
-// player's car, hovers there, and flies off; as it leaves, every vehicle on the road at that
-// moment starts to burn up, losing health faster and faster until it blows (most within 3-5 s).
+// player's car and hovers there; as it settles, every vehicle on the road at that moment starts
+// to burn up (while it hovers, not after it has gone), losing health faster and faster until it blows (most within 3-5 s).
 // This is only the timeline and the damage; render/ufostrike.js draws the saucer.
 // ============================================================================
 import { CONFIG } from './config.js';
@@ -28,7 +28,7 @@ export const UfoStrike = {
     if (this.phase) {
       this.t += dt;
       if (this.t >= U[this.phase]) {
-        if (this.phase === 'hover') { // flying off: everything on the road now is doomed
+        if (this.phase === 'arrive') { // hovering over the car now: everything on the road is doomed, and starts to burn at once
           for (const car of Traffic.cars) if (car.active && !car.junction) car.ufoBurning = true;
           this.burn = 0;
         }

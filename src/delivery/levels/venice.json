@@ -41,23 +41,11 @@
   "iceCreamStops": [
     { "s": 1080, "lane": 3, "wait": 8 }
   ],
-  "potholes": [
-    { "s": 1180, "lane": 2 },
-    { "s": 1215, "lane": 3, "r": 1.2 },
-    { "s": 1250, "lane": 2 }
-  ],
   "parades": [
     { "s": 1450 }
   ],
   "drawbridges": [
     { "s": 1700 }
-  ],
-  "waterMains": [
-    { "s": 1880, "lane": 3 },
-    { "s": 1960, "lane": 2 }
-  ],
-  "tunnels": [
-    { "from": 2450, "to": 2700 }
   ],
   "fog": [
     { "from": 2760, "to": 3060 }

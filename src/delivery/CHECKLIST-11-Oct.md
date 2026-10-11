@@ -41,6 +41,90 @@ performance and bloat work, and the clock sweep (for the rebalance).
 players get for both medals); the surplus levels' tier places; picks from the Good/Evil ideas and the Moon
 airtime options; the smoke test's 74 failures (cause not known: a bisect was stopped by the owner).
 
+**12-Oct session (new orchestrator):** agent 1 (`delivery-tests`, Sonnet 5.5, High: the owner lifted agent and
+effort limits for the day) runs the QUICK smoke only, fixes stale tests, and groups tests so a future agent runs
+only the relevant set (runner + `TESTS.md`). Owner: "Agent 2 should do something else." Phone card note: the
+still taken at 390x844 is taller than most phones (the visible viewport under the browser bars is nearer
+360x640 to 390x700); any phone-card work must be judged at those sizes, not 844. The phone card task is not
+assigned yet.
+Owner, 12-Oct: (1) the pause on new tasks is LIFTED; (2) TWO heavy locks now:
+`delivery-heavy.lock` and `delivery-heavy-2.lock` in `%LOCALAPPDATA%\Temp` (take whichever is free, one heavy
+job per agent); (3) the phone card task is SHELVED for now; (4) no pictures in chat unprompted, show them after
+the owner answers. Running: 1 `delivery-tests` (quick smoke fixes, test groups), 2a `delivery-rework-b` (Hong
+Kong scenery, Fable), 2b `delivery-sweep` (worktree sweep, left-drive board, crest still, toys WIP), 3
+`delivery-prank-ideas` (K3 ideas, Fable).
+
+## 12-Oct STATE: who is running (orchestrator's record; agents work in their own worktrees, never push)
+
+Owner, 12-Oct: agent and effort limits lifted for the day; two heavy locks (`delivery-heavy.lock`, `delivery-heavy-2.lock`);
+the pause is lifted; the phone level-card task is SHELVED. Fable for creative work, Sonnet 5.5 for code, effort Medium.
+
+| Agent (id) | Branch | Task | Status |
+|---|---|---|---|
+| acd4f98bc65c965bb | `delivery-tests` (Sonnet 5.5 High) | QUICK smoke, repair stale tests, test groups (runner + `TESTS.md`) | running |
+| af38a22b45231d1f5 | `delivery-rework-b` (worktree `delivery-themes-c`, Fable) | Hong Kong (27) scenery, obstacles, menu picture; `PLAN-hongkong-12-Oct.md` first | running |
+| affdde1c80717c32a | `delivery-prank-ideas` (Fable) | K3 prank-cargo ideas document (`bcc7570`) | FINISHED, idle; owner to pick ideas |
+| a4d86b2298daa7cef | `delivery-sweep` (Sonnet) | worktree sweep (`SWEEP-12-Oct.md`, its "26 merged" tally needs a recount), left-drive board fix `975de0d` in `render/gambles.js` (one still, no checks), crest still | FINISHED, idle |
+| a1634b04827d0d100 | `delivery-gimmicklogic` (Sonnet Medium) | Q40, Q5, Q7, Q43, Q11, Q13 | running |
+| a45c0b14b794d70a9 | `delivery-damage` (Sonnet Medium) | Q18, Q19, Q4, Q10, Q9 | running |
+| a2e16dea304c48593 | `delivery-i2` (Sonnet Medium) | I2: investigation only, `INVESTIGATION-drop-game-history-12-Oct.md` | running |
+| aeb34f3293c74514d | `delivery-garagetiers` (Sonnet Medium) | L4, L5, L6, L7 (BUMPED) | running |
+| a960fb420786cf591 | `delivery-carfix` (Sonnet Medium) | L2 (Darkvan, Junker faster), L3 (race screensaver) (BUMPED) | FINISHED (`1a90c09`, `fda0149`) |
+| ae2a93594691d35c4 | `delivery-beginner` (Fable Medium) | L1 shorten and simplify Beginner levels; `PLAN-beginner-12-Oct.md` first (BUMPED) | running |
+
+Other branches: `delivery-crests` (files only, safe to merge; owner has not OK'd), `delivery-stats` (HELD until the
+rebalance), `delivery-themes-toys-wip` (old; the sweep recommends mining it for parts).
+Open with the owner (via front): merge `delivery-crests`; crest boards naming the hazard beyond; when to merge the
+left-drive board fix; which prank ideas to build / whether a furious prank does anything in play / prank at the
+door; where idle agents go next; question 22; surplus levels in the tier table; Good/Evil picks; Moon airtime option.
+
+**12-Oct assignments after the first merges (orchestrator):** `delivery-carfix` (a960fb4): L2 measurement, L3 still, then Q16 and Q8.
+`delivery-sweep` (a4d86b2): Q14, Q46, gimmick page Q25 to Q28, Q29, Q30. `delivery-prank-ideas` (affdde1, Fable): Q42, Q38, Q31, Q39.
+Not yet given out: Q50/Q51 vehicle audit (large, heavy), Stelvio, Tokyo, Mumbai, Night Shift, Q2, Q3, Q12, Q15, Q17, Q20, Q21, Q24, Q32, Q45.
+
+**12-Oct, owner's answers, BUMPED:** (A) prank cargo K3: "1. Build all ten. 2. No. Cosmetic only. 3. No need for an additional state."
+Draft at `bcc7570` on `delivery-prank-ideas` (`IDEAS-prank-cargo-12-Oct.md`, not merged). Building: `delivery-prank-a` (a38fcd2, Fable: P1 to P4),
+`delivery-prank-b` (a064ede, Fable: P5 to P7), `delivery-prank-c` (add6f36, Fable: P8 to P10); sight only, no in-play effect, available as Evil cargo,
+not wired to levels. (B) Good/Evil indicator, idea 2 (underglow with a pulse): "for 2) have the agent model and show it": `delivery-underglow`
+(a3b461d, Sonnet Medium), behind a CONFIG flag; DO NOT MERGE until the owner has seen the before/after stills.
+
+**12-Oct, Good/Evil indicator widened (owner: "Just try all of them and report back."):** all 12 ideas behind `?ge=1,5,8` / `?ge=all` (shared `src/delivery/sidecues.js`,
+none on by default), nothing merges until the owner has seen the stills: `delivery-underglow` (a3b461d: ideas 1 to 4), `delivery-ge-road` (af95595: 5 to 7),
+`delivery-ge-ui` (a834466: 8 to 12; 11 and 12 are sound: not heard).
+**12-Oct, MERGED `delivery-damage`:** Q18 damage speed cap 15 m/s (`CONFIG.damageSpeedCap`), Q19 explosive obstacle damage 10 + 6.5 x sqrt(volume), Q4 45 m wet after a
+burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 24). Not checked in a browser; levels and replay checks passed.
+
+**12-Oct, owner's feedback on the merged damage work (BUMPED, `delivery-damage` a45c0b1):** Q18 "I think the clamp is too harsh. 25 is barely any damage. ... I was complaining about sportcars (weak cars) oneshotting commuters with speed. Take weight into account." (replace the flat clamp with a mass-aware rule); Q19 "The lower end of obstacles do little damage" (raise the floor to about 25 to 30). Q15, Q3, Q12 parked behind them.
+
+**12-Oct, owner's heavy-lock priority:** Beginner stills (L1), then the damage rework Q18/Q19 checks, then carfix stills, then the rest. `delivery-i2` merged (docs only; open question 25: the owner decides on the history drop).
+
+**12-Oct, MERGED `delivery-sweep`:** Q14 (crosswinds removed from backlot and morro; CONFIG.crosswind stronger), Q46 (the Cattle Drive truss now tapers), Q25 to Q28 (gimmick page), Q29 (tyre bounce raised; cause not confirmed), Q30 (Gullwing doors only in the garage), SWEEP-12-Oct.md, the left-drive board fix. Levels check passed; C and D not seen/run.
+**HELD `delivery-gimmicklogic` (a1634b0):** Q40, Q5, Q7, Q43, Q11, Q13 done and headless-verified; held until the owner answers open questions 26 (Q5 meaning) and 27 (Q13 override); light checks to run meanwhile (behind the lock priority).
+
+**12-Oct, owner on the history investigation:** "I still only have the one domain, and would like it on the /delivery/ subdomain." Read as: the game on a subdomain of the one domain, in a repo of its own. `delivery-i2` (a2e16de) writes `PLAN-delivery-subdomain-12-Oct.md` (plan only: no pushes, no Cloudflare/GitHub changes; owner steps, the save-data question as a subdomain is a new origin).
+
+**12-Oct, NEW ASSIGNMENT PAUSED AGAIN BY THE OWNER ("No more new tasks by the way."):** no new tasks or agents; running agents only finish, verify, correct and merge what they hold (prank models, Good/Evil cues, Beginner, damage Q18/Q19, carfix stills, the subdomain plan, held gimmicklogic, the sweep's stills job). Not to be started: Q15, Q3, Q12 (damage agent), Q21, Q17, Q20 (sweep agent), Q50/Q51 audit, and everything else in section D.
+
+**12-Oct, NEW ASSIGNMENT PAUSED AGAIN by the owner ("No more new tasks by the way."):** no new tasks or agents; agents only finish, verify, correct and merge what they hold. Sweep's Q21, Q17, Q20 not to start unless already started; damage's Q15, Q3, Q12 not to start; Q50/Q51 not started. `delivery-i2` plan merged (docs only): open question 28.
+
+**12-Oct, Good/Evil ideas 1 to 4 BUILT (`delivery-underglow`, not merged):** `?ge=1..4` / `?ge=all`; stills in `%TEMP%\claude\ge\` (i2c, i1a, i1b, i3a, i3b, i4b); agent's ratings: 1 ring/horn arcs reads best, 2 underglow reads well (pulse unseen in a still), 3 tail lights weak, 4 exhaust weakest (being corrected). Waiting for ideas 5 to 12, then one summary for the owner.
+
+**12-Oct, OWNER: "Get the agents to stop any new models they might have to create next and finish their current work."** Every model-building agent told to start no further model, finish the one in hand, look at it in stills, correct, commit, report done / unstarted. Commits seen on the branches at that moment (not yet looked at, none merged):
+- Prank cargo (sight only): `delivery-prank-b`: P5 piecatapult, P6 airhorn, P7 ghost: ONE "first cut" commit `51466c8` (all three; not yet seen in stills as far as known). `delivery-prank-a` (P1 to P4) and `delivery-prank-c` (P8 to P10): NO commits yet; whatever they have not begun stays UNBUILT.
+- `delivery-prank-ideas`: Q42 volcano floor (`943eab2`), Q31 Evil palettes for the tier-4 Blue Stars and amphibious cars (`d2b5ef7`), Q39 Hell Rod / Courier Special / Showdown Muscle on their Super bodies (`8de4db6`), Q38 the Saucer hovers in the garage (`1375e57`): all four committed; stills not yet reported.
+- Good/Evil cues: 1 to 4 built (`delivery-underglow`), 5 to 7 built (`delivery-ge-road`), 8 to 12 built (`delivery-ge-ui`, 11 and 12 sound not heard); none merged.
+- Hong Kong (`delivery-rework-b`): re-laid, own obstacles, scenery committed (`97faba8`); Beginner (`delivery-beginner`): five levels shortened (`1b8b24f`). Final lists to be recorded when the agents report.
+
+**12-Oct, MERGED `delivery-beginner` (L1)** and `delivery-sweep` (Q21 audit and removals, Q17, Q20 plan). Cargo check decision: the ten prank items are exempted from "every item turns up" by one array in `.cargo-check.mjs` (made by `delivery-prank-c`); not named in levelText.json (owner: available, not wired).
+
+**12-Oct, MERGED `delivery-beginner` (L1) and `delivery-sweep` (second merge: Q21 audit and removals, Q17, Q20 plan).** `delivery-carfix`: Q8 kangaroos and Q16 learner are code-complete but UNSEEN: do not merge until their stills are read; the Junker blurb fix goes in separately (`delivery-carfix-words`). Words check on main: gimmickText blasts and punctures too long (damage agent).
+
+**12-Oct, Good/Evil A (`delivery-underglow`, final `1c5853d`):** 1 and 2 read, 3 weak, 4 unconfirmed (Evil puff now a round dark ball, Good puff not caught); stills `%TEMP%\claude\ge\` (`fin\p-muscle-evil.png`, `p-commuter-good.png`); dark Good car and Good at night stills MISSING. Agent finished. Waiting on `delivery-ge-road` and `delivery-ge-ui` for one summary.
+
+**12-Oct, owner's answers:** Q21 doubtful cases: "Remove the above" (sweep agent removes them); Q5: "Yes, supercharger = turbo" (confirmed); Q13: "For the funeral procession, yes" (the Jerk overrides a running mystery; gimmicklogic agent changes it, then I merge all six items). The subdomain plan: the owner will come back; nothing to do. Open questions 26, 27, 29 closed.
+
+**12-Oct, MERGED `delivery-damage` (second merge) and `delivery-carfix-words`:** Q18 mass-aware cap (victim loses at most maxHealth x clamp(0.75 + 0.35 x (attacker mass - 1), 0.75, 3) per hit; `CONFIG.damageCap`; a sports car cannot one-shot a commuter, a bus/semi/tank still wrecks one); Q19 floor 25 + 4.9 x sqrt(volume), machinery 70, light kinds unchanged; Q15 low bridges (two bars, slalom; bars not seen rendered, open question 30); blasts and punctures blurbs shortened; Junker blurb fits. Q3 and Q12 not started.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
@@ -511,6 +595,19 @@ The owner's words, as in `CHECKLIST-10-Oct.md`. Q52 and Q53 are done and left ou
     ten large pictures across themes (a night one, a snowy one, a busy city one).
   - Nine levels' words to move into the level-text JSON when their branches land: `hong-kong`,
     `tour-de-coast`, `ring-road`, `market-town`, `stelvio`, `toys`, `leaks`, `moon`, `morro`.
+## L. The owner's new-player experience list, 12-Oct: BUMPED (start at once)
+
+"add to the list, and bump these because this was my new player experience."
+- [x] **L1.** "Shorten Beginner levels and simplify them" (the first tier's levels; agent `delivery-beginner`). MERGED 12-Oct (`1b8b24f`): expressway 2000 m 110/85 s, back-roads 1800 m 115/90, farm 2000 m 105/80, big-business 2400 m 125/95, hurricane 2400 m 130/100; one idea each; not played by hand; starter-car margins being re-measured by carfix.
+- [x] **L2.** "Darkvan and Junker need to be faster" (agent `delivery-carfix`). MERGED 12-Oct: Junker 22/8 to 25/9.5, Darkvan 21/7 to 24/8.5; cruising time against the Beginner clocks NOT measured yet (follow-up sent).
+- [x] **L3.** "Race screensaver broken" (agent `delivery-carfix`). MERGED 12-Oct: racewatch stored names in `car.driver`, which the pursuit made a function; now `car.driverName`. Headless 60 s on six circuits OK; no still yet (follow-up sent).
+- [ ] **L4.** "Cars from locked tiers should not appear in garage. Let's have the cars in the immediate next tier
+      be black silhouettes but unpurchaseable" (agent `delivery-garagetiers`).
+- [ ] **L5.** "Back Button should return to previous page" (agent `delivery-garagetiers`).
+- [ ] **L6.** "Drop progression requirement for 4th level from 4 medals to 3" (agent `delivery-garagetiers`).
+- [ ] **L7.** "Mobile garage: Show the stats for the selected car even when not in compare mode" (agent
+      `delivery-garagetiers`).
+
 - [ ] "**Levels 28 Tokyo and 29 Mumbai** to the standard: never started; the plans are in
       `SCRATCHPAD-10-Oct.md` ("Levels 26 to 30")."
 

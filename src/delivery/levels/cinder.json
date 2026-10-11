@@ -48,14 +48,6 @@
     { "s": 260, "lane": 1, "road": "side" },
     { "s": 300, "lane": 0, "r": 1.1, "road": "side" }
   ],
-  "waterMains": [
-    { "s": 480, "lane": 3 },
-    { "s": 540, "lane": 4 },
-    { "s": 2760, "lane": 2 },
-    { "s": 2800, "lane": 3 },
-    { "s": 4000, "lane": 3 },
-    { "s": 4060, "lane": 2 }
-  ],
   "crosswinds": [
     { "from": 620, "to": 880, "dir": "left" }
   ],

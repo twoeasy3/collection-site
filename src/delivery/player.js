@@ -39,6 +39,7 @@ export const Player = {
   brakeLight: false,   // braking at all: the brake lights are on
   onIce: false,        // on an ice patch (see CONFIG.ice), or anything as slippery (see Track.icy)...
   onWater: false,      // ...and that being a burst main's water (see CONFIG.waterMain: its own share of the brakes and the steering)
+  wetTyres: 0,         // 1 .. 0: after a burst main's water, the tyres stay wet for CONFIG.waterMain.wetAfter m (ice lets go the moment the car is off it)
   wading: 0,           // how deep the tide's water is where the car is (see Tide): 0 = dry, 1 = full depth
   afloat: false,       // afloat on a water stage (see Water), and how deep its water is where the car is: 0 = dry road .. 1
   waterDepth: 0,
@@ -160,6 +161,7 @@ export const Player = {
     this.stun = 0;
     this.onIce = false;
     this.onWater = false;
+    this.wetTyres = 0;
     this.wading = 0;
     this.afloat = false;
     this.waterDepth = 0;
@@ -263,8 +265,10 @@ export const Player = {
     for (let i = 0; i < effects.length; i++) if ((roll -= weights[i]) < 0) { drawn = effects[i]; break; }
     let effect = this.tank > 0 ? 'ufo'
       : [...effects, ...extraEffects].find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || drawn; // (?mystery=UFO works too, and picks from the unused pool)
-    // (one that doesn't suit this level, or this car: souped up, in a car with no Super version. Another in its place)
-    if (!Mysteries.fits(effect) || (effect === 'soupedUp' && !superOf(CAR))) effect = CONFIG.mystery.fallback;
+    // (one that doesn't suit this level: another in its place)
+    if (!Mysteries.fits(effect)) effect = CONFIG.mystery.fallback;
+    // (souped up, in a car with no Super version: nothing is upgraded, and the line says so)
+    if (effect === 'soupedUp' && !superOf(CAR)) return Message.say('powerups', 'mystery', 'soupedUpNone');
     Message.say('powerups', 'mystery', effect);
     if (effect === 'ufo') UfoStrike.start();
     if (effect === 'bulletTrain') BulletTrain.start();
@@ -284,6 +288,18 @@ export const Player = {
       const others = CARS.includes(CAR) || CAR.idea ?CARS.filter(c => c !== CAR && !c.tank && !c.earned && (!LEVEL.amphibious || c.amphibious)) : [];
       if (others.length) this.takeCar(() => lendCar(others[Math.floor(Math.random() * others.length)]));
     }
+  },
+  // the Jerk mechanic for `time` s, set off by something other than the mystery pickup (crashing a funeral
+  // procession: see Traffic.mourn). Another mystery already running is ended cleanly first (endMystery: the
+  // car swap given back, the toad calmed, and so on); a jerk's time is only ever topped up
+  startJerk(time) {
+    if (this.busted) return false;
+    if (this.mystery && this.mystery !== 'jerk') this.endMystery();
+    const fresh = this.mystery !== 'jerk';
+    this.mystery = 'jerk';
+    this.mysteryTime = Math.max(this.mysteryTime, time);
+    if (fresh) for (const car of Traffic.cars) car.showMood = true;
+    return fresh;
   },
   // the mystery effect running, in a word or two, for the pickup status (messages.json: mysteryNames); '' with none
   get mysteryName() { return this.mystery ? Message.pick('mysteryNames', this.mystery) || this.mystery : ''; },
@@ -343,6 +359,9 @@ export const Player = {
     // hands off, the speed simply holds; pulling away and recovering from a hit are automatic
     const boosted = this.turbo > 0;
     this.turbo = Math.max(0, this.turbo - dt);
+    // (the same turbo as a share of the car's own top speed: its bends are taken that much faster too)
+    const baseTop = this.tank > 0 ? (this.rageTank ? this.rageTank.maxSpeed : CONFIG.tankMaxSpeed) : CAR.maxSpeed;
+    const turboCorner = boosted && baseTop > 0 ? 1 + CONFIG.turboBoost / baseTop : 1;
     // (a turbo adds the same to every car's top speed: a slow car stays the slower one)
     // (bad gas and the weight hold the car back: a share of its top speed and acceleration)
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
@@ -371,7 +390,7 @@ export const Player = {
     }
     // in a bend, a lower top speed: the sharper, and the heavier and less agile the car, the lower
     // (but not on ice, nor where cars understeer, nor with no brakes: there they slide wide instead)
-    if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility));
+    if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility) * turboCorner);
     // in a gravel trap (see CONFIG.gravel): a far lower top speed, little drive, and a drag that grows with the
     // speed; stopped in it, the car is beached for a while, then crawls out
     const GR = CONFIG.gravel, gravel = this.inGravel = this.active && this.ghost <= 0 && this.tank <= 0 && !CAR.noWheels && Track.gravelAt(this.s, this.lat);
@@ -405,7 +424,7 @@ export const Player = {
     // the slowest the brakes bring it: on a lapped circuit, minSpeed; anywhere else, to a stop, for as long
     // as the brake is held (let go, it rolls on up to minSpeed again by itself)
     const slowest = LEVEL.laps ? CONFIG.minSpeed : 0;
-    const grip = this.onIce ? (this.onWater ? CONFIG.waterMain : CONFIG.ice).brakeGrip : 1; // (braking on ice, or on a burst main's water)
+    const grip = this.onIce ? (this.onWater ? CONFIG.waterMain : CONFIG.ice).brakeGrip : 1 - (1 - CONFIG.waterMain.brakeGrip) * this.wetTyres; // (braking on ice, or on a burst main's water, or on the wet tyres it leaves)
     // (but with a flat tyre, not: the car can be brought to a stop to change it, and stays there)
     if (drive <= 0 && (this.launching || this.speed < CONFIG.minSpeed) && !this.puncture && !(drive < 0 && !this.launching && slowest < CONFIG.minSpeed)) drive = 1;
     if (drive === 0 && boosted && !lifting) drive = 1; // the turbo pulls unless you brake (or lift off)
@@ -474,7 +493,12 @@ export const Player = {
     if (icy) this.yawVel += (Math.random() - 0.5) * 8 * Math.min(1, this.speed / 25) * dt; // (and twitches about on it)
     this.onIce = icy;
     this.onWater = icy && !!patch.water; // (a burst main's water: slippery by its own numbers, see CONFIG.waterMain)
-    const slippery = icy ? (this.onWater ? CONFIG.waterMain : CONFIG.ice) : null;
+    // water leaves wet tyres: for wetAfter m past a burst main's water, its braking, steering and lane-change numbers fade back
+    // to normal (it's no ice: no sliding, no understeer). Ice lets go the moment the car is off it
+    const WM = CONFIG.waterMain;
+    this.wetTyres = this.onWater ? 1 : icy ? 0 : Math.max(0, this.wetTyres - this.speed * dt / WM.wetAfter);
+    const wetMix = (key) => 1 - (1 - WM[key]) * this.wetTyres;
+    const slippery = icy ? (this.onWater ? WM : CONFIG.ice) : this.wetTyres > 0 ? { steerGrip: wetMix('steerGrip'), laneSpeed: wetMix('laneSpeed') } : null;
     // the tide: in deep water the car is damaged, the more so the worse it wades (a ghost skims
     // over the water, and a car just set down is spared)
     this.wading = this.ghost > 0 ? 0 : Tide.depth(this.s, this.lat);

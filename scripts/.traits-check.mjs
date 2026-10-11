@@ -3,7 +3,7 @@
 import { boot } from './delivery-headless.mjs';
 
 const ALL = ['commuter', 'sport', 'mini', 'rally', 'towtruck', 'sixbysix', 'pickup', 'taxi'];
-const g = await boot({ cars: ALL });
+const g = await boot({ cars: ALL, ownAll: true, tiers: false });
 let failures = 0;
 const check = (ok, what) => { if (!ok) failures++; console.log((ok ? '  ok    ' : '  FAIL  ') + what); };
 try {

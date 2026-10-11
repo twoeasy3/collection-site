@@ -43,12 +43,6 @@
     { "s": 330, "lane": 4 },
     { "s": 4620, "lane": 2, "wait": 10 }
   ],
-  "waterMains": [
-    { "s": 560, "lane": 3 },
-    { "s": 640, "lane": 2 },
-    { "s": 4400, "lane": 4 },
-    { "s": 4470, "lane": 3 }
-  ],
   "marathons": [
     { "s": 840, "lane": 4, "count": 10, "water": 1010 }
   ],
