@@ -614,7 +614,9 @@ export const CONFIG = {
     chairStack: { damage: 31, speedKept: 0.75 },    // the favela's: a stack of plastic chairs
     riceBasket: { damage: 31, speedKept: 0.75 },    // the rice terraces': a basket heaped with rice
     wasteDrum: { damage: 31, speedKept: 0.75 },     // the fallout zone's: a yellow drum of waste, the trefoil on it
+    hawkerCart: { damage: 31, speedKept: 0.75 },    // Hong Kong's: a hawker's cart under its striped awning, a red lamp lit
     // ...for a bale:
+    bagStack: { damage: 38, speedKept: 0.75 },      // Hong Kong's: a heap of red-white-blue nylon bags, strapped
     cameraDolly: { damage: 38, speedKept: 0.75 },   // the film studio's: a camera on its dolly
     present: { damage: 38, speedKept: 0.75 },       // Christmas Eve's: a wrapped present
     toyDrum: { damage: 38, speedKept: 0.75 },       // the toy room's: a toy drum

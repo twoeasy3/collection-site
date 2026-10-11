@@ -650,4 +650,135 @@ const bathurst = (ctx) => {
   kit.draw();
 };
 
-export const THEME_EXTRAS = { construction, city, bathurst, zones: raceDay };
+// ---- hong kong: the harbour front's places, over what road.js draws (the towers, the neon arms, the promenade, the
+// water and Kowloon). Placed by the level's own data, no zones: a podium of lit shop fronts under awnings at the
+// towers' feet on the city side, tall vertical neon signs standing out from the tower faces; a clock tower on the
+// promenade by each ferry pier (the piers movers.js builds, every 1200 m from s 500) and a string of red lanterns
+// across the promenade there; bamboo scaffolding on a tower face at each of the roadworks (the level's fresh tar on
+// the city side) and one near the start; a typhoon shelter along the tide's stretch: a rubble breakwater out on the
+// water and junks and sampans moored in rafts inside it; and the Peak behind the towers on the city side, a dark
+// ridge standing over them with lit windows up its lower slopes, the Peak Tower on top and the tram's lights up to it
+const hongkong = (ctx) => {
+  const { theme, beside, cube, tube, cone } = ctx;
+  const kit = makeKit(ctx), rand = seeded(47);
+  const SEA = theme.sea || 14, CITY = -1, HARBOUR = 1;
+  const NEON = [0xff2d95, 0x27e7ff, 0xffe12b, 0x7cff3a, 0xff6a1e], AWNING = [0xd8262b, 0x2f8a4a, 0xf2c21a, 0x1f5fd0];
+  const DARK = 0x14171f, STONE = 0xd9d2c0, STEEL = 0x3a3f47, BAMBOO = 0xc9a961, NET = 0x2f8f5a, RED = 0xd8262b, WARM = 0xfff0c0;
+  const inTunnel = (s, pad = 12) => (LEVEL.tunnels || []).some(t => s > t.from - pad && s < t.to + pad);
+  // the scaffolds: at the middle of each fresh-tar stretch and near the start (none in a tunnel, none twice within 60 m)
+  const scaffolds = [];
+  for (const s of [160, ...(LEVEL.tarmac || []).map(t => Math.round((t.from + t.to) / 2))]) {
+    if (s < 40 || s > Track.length - 60 || inTunnel(s, 30) || scaffolds.some(q => Math.abs(q - s) < 60)) continue;
+    scaffolds.push(s);
+  }
+  const underScaffold = (s) => scaffolds.some(q => Math.abs(q - s) < 10);
+  // the podium of shop fronts: a low dark block at the towers' feet (d 4.6 to 6.4), its lit windows and a fascia with a glowing
+  // strip of sign along it, an awning out over the pavement in a colour a shop; every 8 m, skipping tunnels and scaffolds
+  for (let s = Track.start + 4, k = 0; s < Track.end - 4; s += 8, k++) {
+    if (inTunnel(s) || underScaffold(s)) continue;
+    const lat = beside(CITY, s, 5.5);
+    kit.of(DARK).push([s, lat, 2.1, 1.8, 4.2, 8.02]);
+    kit.of(k % 5 === 3 ? 0x2a2f3a : WARM, cube, k % 5 !== 3).push([s, beside(CITY, s, 4.55), 1.5, 0.1, 2.2, 6.6]);  // the window (one in five shut)
+    kit.of(NEON[k % NEON.length], cube, true).push([s, beside(CITY, s, 4.5), 3.6, 0.1, 0.5, 5.2]);                 // the sign strip over it
+    kit.of(AWNING[(k >> 1) % AWNING.length]).push([s, beside(CITY, s, 3.9), 3.05, 1.5, 0.1, 7]);                     // the awning
+    if (k % 3 === 0) kit.of(0x2a2f3a).push([s - 3, beside(CITY, s - 3, 4.0), 1.2, 0.5, 2.4, 0.7]);                   // a vending machine or a shrine by the door
+  }
+  // vertical neon signs standing out from the tower faces, 8 to 16 m up: a glowing slab on edge with dark bars for the
+  // characters, hung from a bracket back to the face; every 26 m, skipping tunnels
+  for (let s = Track.start + 30, k = 0; s < Track.end - 20; s += 26, k++) {
+    if (inTunnel(s, 20) || underScaffold(s)) continue;
+    const h = 4.5 + rand() * 3, y = 8.5 + rand() * 5 + h / 2, lat = beside(CITY, s, 5.0), colour = NEON[(k * 2 + 1) % NEON.length];
+    kit.of(colour, cube, true).push([s, lat, y, 0.3, h, 1.3]);
+    for (let b = -h / 2 + 0.6; b < h / 2 - 0.4; b += 1.05) kit.of(DARK).push([s, lat, y + b, 0.36, 0.34, 0.9]);
+    kit.of(STEEL).push([s, beside(CITY, s, 5.5), y + h / 2 - 0.2, 1.2, 0.12, 0.12], [s, beside(CITY, s, 5.5), y - h / 2 + 0.2, 1.2, 0.12, 0.12]);
+  }
+  // bamboo scaffolding: a lattice of poles 16 m along and 28 m up a tower face, green netting behind the poles, a plank
+  // walkway half way up, the poles' feet on the pavement's edge
+  for (const s of scaffolds) {
+    const W = 16, H = 28;
+    kit.of(NET).push([s, beside(CITY, s, 5.2), H / 2, 0.08, H, W]);
+    for (let q = s - W / 2; q <= s + W / 2 + 0.1; q += 1.6) kit.of(BAMBOO).push([q, beside(CITY, q, 4.6), H / 2, 0.14, H, 0.14], [q, beside(CITY, q, 4.0), H / 2 + 0.4, 0.12, H - 0.8, 0.12]);
+    for (let y = 1.8; y < H; y += 2.0) kit.of(BAMBOO).push([s, beside(CITY, s, 4.6), y, 0.14, 0.14, W + 0.3], [s, beside(CITY, s, 4.3), y + 0.04, 0.72, 0.1, 0.1]);
+    for (let y = 1.8; y < H; y += 2.0) for (let q = s - W / 2; q < s + W / 2; q += 1.6) kit.of(BAMBOO).push([q + 0.8, beside(CITY, q + 0.8, 4.3), y, 0.74, 0.1, 0.1]);
+    kit.of(0x8a6a3a).push([s, beside(CITY, s, 4.3), 12.1, 0.8, 0.08, W]);
+    kit.of(RED).push([s, beside(CITY, s, 3.9), 2.0, 0.08, 1.2, 3.2]); // a red works board at the foot
+    kit.of(0xf4f4f4).push([s, beside(CITY, s, 3.85), 2.0, 0.06, 0.4, 2.6]);
+  }
+  // a clock tower on the promenade by each ferry pier: a stone shaft, a lit clock face each side with its hands, a green roof and
+  // a finial; and a string of red lanterns across the promenade on red poles, before it
+  for (let p = 500; p < Track.length - 300; p += 1200) {
+    const s = p - 24, lat = beside(HARBOUR, s, SEA / 2 + 0.6), H = 26;
+    if (inTunnel(s, 20)) continue;
+    kit.of(STONE).push([s, lat, H / 2, 4.4, H, 4.4], [s, lat, 0.5, 6, 1, 6]);
+    kit.of(0x9a948a).push([s, lat, H - 4.6, 4.8, 0.5, 4.8], [s, lat, H - 0.3, 4.9, 0.6, 4.9]);
+    for (const [ds, dl, w, l] of [[0, -2.25, 0.1, 3.4], [0, 2.25, 0.1, 3.4], [-2.25, 0, 3.4, 0.1], [2.25, 0, 3.4, 0.1]]) {
+      kit.of(DARK).push([s + ds, lat + dl, H - 2.6, w > 1 ? 3.8 : 0.12, 3.8, l > 1 ? 3.8 : 0.12]);             // a dark surround
+      kit.of(WARM, cube, true).push([s + ds * 1.04, lat + dl * 1.04, H - 2.6, w, 3.4, l]);                       // the lit face
+      kit.of(DARK).push([s + ds * 1.08, lat + dl * 1.08, H - 2.6, w > 1 ? 0.36 : 0.12, 2.4, l > 1 ? 0.36 : 0.12]); // the hands: one dark bar up the face
+      kit.of(DARK).push([s + ds * 1.08, lat + dl * 1.08, H - 2.1, w > 1 ? 1.8 : 0.12, 0.36, l > 1 ? 1.8 : 0.12]); // ...and one across, at ten to two
+    }
+    kit.of(0x2f7d5a, PYRAMID).push([s, lat, H + 2.2, 6, 4.4, 6]);
+    kit.of(STEEL).push([s, lat, H + 5.4, 0.2, 2.4, 0.2]);
+    const ls = s - 16, a = beside(HARBOUR, ls, 1.2), b = beside(HARBOUR, ls, SEA - 1.6);
+    for (const l of [a, b]) kit.of(RED).push([ls, l, 2.6, 0.14, 5.2, 0.14]);
+    kit.of(0x1c1c1c).push([ls, a, 5.1, 0.04, 0.04, b - a, [ls, b]]);
+    for (let l = a + 1; l < b - 0.5; l += 1.5) kit.of(0xff3a2a, SPHERE, true).push([ls, l, 4.65, 0.5, 0.6, 0.5]);
+  }
+  // the typhoon shelter along the tide's stretch: a rubble breakwater with a lamp at each end, and junks and sampans moored in
+  // rafts inside it (the harbour's drifting junks pass outside it: movers.js)
+  const tide = LEVEL.tide;
+  if (tide) {
+    const from = tide.from - 40, to = tide.to + 40;
+    for (let s = from; s <= to; s += 4) kit.of([0x3a3d42, 0x4a4d52, 0x2f3236][Math.floor(rand() * 3)]).push([s, beside(HARBOUR, s, SEA + 68 + rand() * 1.5), 0.5, 3.2 + rand(), 1.4 + rand() * 0.8, 4.4]);
+    for (const s of [from, to]) {
+      kit.of(STEEL).push([s, beside(HARBOUR, s, SEA + 68), 3, 0.3, 6, 0.3]);
+      kit.of(0x3aff7a, SPHERE, true).push([s, beside(HARBOUR, s, SEA + 68), 6.3, 0.9, 0.9, 0.9]);
+    }
+    for (let s = from + 30, k = 0; s < to - 30; s += 13 + rand() * 8, k++) {
+      const d = SEA + 26 + rand() * 30, lat = beside(HARBOUR, s, d);
+      if (k % 3 === 2) { // a sampan: a low hull under a tan awning
+        kit.of(0x5a3f2a).push([s, lat, 0.5, 2.0, 0.9, 5.2]);
+        kit.of(0xc9b08a).push([s - 0.6, lat, 1.6, 1.9, 0.5, 2.8]);
+      } else { // a junk: a dark hull, a raised stern, a mast with the sail furled, a lamp on some
+        const hull = [0x4a3324, 0x5b4632, 0x2f2a2a][k % 3];
+        kit.of(hull).push([s, lat, 0.75, 3.2, 1.5, 9.6], [s - 3.2, lat, 1.9, 2.6, 1.0, 2.8]);
+        kit.of(0x8a6a3a).push([s, lat, 1.55, 3.4, 0.12, 9.8]);
+        kit.of(0x6b5a45).push([s + 0.6, lat, 5.6, 0.26, 9.2, 0.26], [s + 0.6, lat, 2.4, 0.6, 0.6, 5.2]);
+        if (k % 2 === 0) kit.of(0xffb347, SPHERE, true).push([s + 0.6, lat, 10.4, 0.6, 0.6, 0.6]);
+      }
+    }
+  }
+  // the Peak: a ridge of dark hills behind the towers on the city side (their summits about 330 m off, their feet behind the
+  // second row), lit windows scattered up the near slopes, the Peak Tower's bowl on the middle summit and the tram's lamps up to it
+  const hills = [];
+  for (let k = 0; k < 6; k++) {
+    // (nearer and lower than the real one: the camera's far plane is 700 m and the fog ends at 520, so a ridge whose summit
+    // stood 330 m off would be fogged out ahead; this one shows between the towers and over the far ones)
+    const s = (k + 0.5) / 6 * Track.length + (rand() - 0.5) * 120, r = 150 + rand() * 40, h = 190 + rand() * 60, off = 70 + r;
+    const q = kit.point(s, beside(CITY, s, off));
+    kit.at(k % 2 ? 0x11181a : 0x141c1e, HILL, q.x, q.y + h / 2 - 6, q.z, r * 2, h, r * 2, 0, false, -1);
+    hills.push({ s, r, h, off });
+  }
+  for (const { s, r, h, off } of hills) {
+    for (let i = 0; i < 28; i++) { // windows on the near slope: a point f of the way up sits r (1 - f) from the summit
+      const f = 0.08 + rand() * 0.5, ds = (rand() - 0.5) * r * (1 - f) * 1.1, out = off - r * (1 - f) * Math.sqrt(1 - (ds / (r * (1 - f) + 1)) ** 2);
+      const q = kit.point(s + ds, beside(CITY, s + ds, out));
+      kit.at(rand() < 0.3 ? 0xdfe8ff : WARM, cube, q.x, q.y + f * h - 6 + 1, q.z, 2.2, 1.6, 2.2, 0, true, -1);
+    }
+  }
+  const top = hills[Math.floor(hills.length / 2)];
+  if (top) {
+    const q = kit.point(top.s, beside(CITY, top.s, top.off)), y = q.y + top.h - 6;
+    kit.at(0x3a3f47, tube, q.x, y + 9, q.z, 9, 18, 9, 0, false, -1);                         // the Peak Tower: its stalk
+    kit.at(0x5a6068, cube, q.x, y + 20, q.z, 30, 9, 30, 0, false, -1);                        // its bowl
+    kit.at(WARM, cube, q.x, y + 20, q.z, 30.4, 2.4, 30.4, 0, true, -1);                       // the band of lit windows round it
+    for (let i = 0; i <= 14; i++) {                                                             // the tram's lamps, up the slope
+      const f = 0.05 + i / 14 * 0.9, out = top.off - top.r * (1 - f);
+      const t = kit.point(top.s + 40 - f * 30, beside(CITY, top.s + 40 - f * 30, out));
+      kit.at(0xd8e4ff, cube, t.x, t.y + f * top.h - 6 + 1.5, t.z, 2.4, 1.2, 2.4, 0, true, -1);
+    }
+  }
+  kit.draw();
+};
+
+export const THEME_EXTRAS = { construction, city, bathurst, zones: raceDay, hongkong };
