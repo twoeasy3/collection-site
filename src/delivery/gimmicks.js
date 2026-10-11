@@ -933,10 +933,10 @@ export const GROUPS = [
       return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4; car.position.set(Math.sin(t * 9) * 0.45, Math.abs(Math.sin(t * 22)) * 0.14, -7 + (1 - (1 - u) ** 2) * 14); car.rotation.z = Math.sin(t * 17) * 0.07; } };
     } },
     { name: 'Low bridge', color: 0xc1121f, has: (l) => l.lowBridges?.length, rules: [
-      `A height bar across your side of the road, ${GB.bar.clearance.toFixed(1)} m up unless its board says otherwise, with an exit before it: the side road is the tall vehicles' way round, and the tall traffic takes it.`,
+      `A height bar over your side of the road, ${GB.bar.clearance.toFixed(1)} m up unless its board says otherwise, with an exit before it: the side road is the tall vehicles' way round. It is two bars, one over each half of your side, the second ${GB.bar.stagger} m on from the first, so the way through is a slalom.`,
       'On the way in you are told what your car measures against it. <strong>A car that fits goes straight under</strong>: the short way, with the road to itself.',
-      `A car that is too tall can take the exit and lose the time, or go at the bar anyway: it costs ${GB.bar.damage} health and ${GB.bar.perMetre} more for every metre too tall, and ${pct(1 - GB.bar.keep)} of its speed. It is never stopped.`,
-      'The gamble is made in the garage, and again at the sign. (The oncoming side has no bar.)',
+      `A car that is too tall can take the exit and lose the time, or go at the bar anyway: it costs ${GB.bar.damage} health (a massive knock) and ${GB.bar.perMetre} more for every metre too tall, and ${pct(1 - GB.bar.keep)} of its speed. It is never stopped.`,
+      'The gamble is made in the garage, and again at the sign. Tall traffic goes straight through the bars at no cost. (The oncoming side has no bar.)',
     ], build: () => {
       const g = road(9, 14), bar = makeHeightBar(-4.5, 0, 2), low = painted(vehicle('sport', 0xffffff), 0x39ff14), tall = vehicle('bus', 0xd8262b);
       bar.position.z = 1;
