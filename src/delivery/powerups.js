@@ -15,7 +15,7 @@ export const says = (...path) => { let e = MESSAGES; for (const k of path) e = e
 const M = CONFIG.mystery, S = CONFIG.sirenPickup;
 export const CARDS = [
   { type: 'turbo', name: 'Turbo', time: CONFIG.turboTime, says: says('powerups', 'turbo'), rules: [
-    `Your car pulls itself up to <strong>${kmh(CONFIG.turboBoost)}</strong> over its own top speed, even with your foot off.`,
+    `Your car pulls itself up to <strong>${kmh(CONFIG.turboBoost)}</strong> over its own top speed, even with your foot off, and your bends are taken that much faster too.`,
     'Braking still works; when it runs out you ease back down to your normal top speed.',
   ] },
   { type: 'ghost', name: 'Ghost', time: CONFIG.ghostTime, says: says('powerups', 'ghost'), rules: [

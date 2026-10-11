@@ -345,6 +345,9 @@ export const Player = {
     // hands off, the speed simply holds; pulling away and recovering from a hit are automatic
     const boosted = this.turbo > 0;
     this.turbo = Math.max(0, this.turbo - dt);
+    // (the same turbo as a share of the car's own top speed: its bends are taken that much faster too)
+    const baseTop = this.tank > 0 ? (this.rageTank ? this.rageTank.maxSpeed : CONFIG.tankMaxSpeed) : CAR.maxSpeed;
+    const turboCorner = boosted && baseTop > 0 ? 1 + CONFIG.turboBoost / baseTop : 1;
     // (a turbo adds the same to every car's top speed: a slow car stays the slower one)
     // (bad gas and the weight hold the car back: a share of its top speed and acceleration)
     const held = this.badGas > 0 ? CONFIG.badGas : this.heavy > 0 ? CONFIG.heavyMass : null;
@@ -373,7 +376,7 @@ export const Player = {
     }
     // in a bend, a lower top speed: the sharper, and the heavier and less agile the car, the lower
     // (but not on ice, nor where cars understeer, nor with no brakes: there they slide wide instead)
-    if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility));
+    if (!this.onIce && !LEVEL.understeer && this.mystery !== 'noBrakes') top = Math.min(top, cornerSpeed(this.s, this.weight, this.agility) * turboCorner);
     // in a gravel trap (see CONFIG.gravel): a far lower top speed, little drive, and a drag that grows with the
     // speed; stopped in it, the car is beached for a while, then crawls out
     const GR = CONFIG.gravel, gravel = this.inGravel = this.active && this.ghost <= 0 && this.tank <= 0 && !CAR.noWheels && Track.gravelAt(this.s, this.lat);
