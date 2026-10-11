@@ -57,12 +57,6 @@
   "herds": [
     { "from": 1320, "to": 1440, "count": 5, "kind": "cow" }
   ],
-  "potholes": [
-    { "s": 1490, "lane": 1, "r": 1 },
-    { "s": 1530, "lane": 2, "r": 1.1 },
-    { "s": 3120, "lane": 2, "r": 1 },
-    { "s": 3170, "lane": 1, "r": 1.1 }
-  ],
   "potties": [
     { "s": 1960, "pattern": "hop", "lanes": [0, 1, 2, 3] },
     { "s": 3230, "pattern": "wave", "lanes": [0, 1, 2, 3] }
