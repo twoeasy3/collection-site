@@ -101,10 +101,12 @@ try {
       // (no patrol cars about: a bust of theirs, for the lane the player is in, would be none of the pursuit's doing)
       g.run(70, () => { for (const c of g.Traffic.cars) if (c.kind === 'police') c.active = false; how(); return !Pursuit.cars.length || !P.active; });
       if (P.health < health) bumped++;
-      if (G.cash === 0 && G.busts === 0 && !P.busted && Social.level <= standing + 1e-9) clean++;
+      // (ramming the interceptor is the one thing it will bust you for, Q11: a bust there is no fault of the pursuit's; the rest is still nothing against)
+      const rams = what.includes('interceptor');
+      if (G.cash === 0 && (rams || (G.busts === 0 && !P.busted && Social.level <= standing + 1e-9))) clean++;
       else console.log('        (run ' + n + ': cash ' + G.cash + ', busts ' + G.busts + ', standing ' + standing.toFixed(2) + ' to ' + Social.level.toFixed(2) + '; said: ' + g.said.slice(-3).join(' | ') + ')');
     }
-    check(clean === 4, (evil ? 'Evil, ' : 'Good, ') + what + ': no cash, no bust, no standing gained in ' + clean + ' of 4 runs (the car damaged in ' + bumped + ')');
+    check(clean === 4, (evil ? 'Evil, ' : 'Good, ') + what + ': no cash' + (what.includes('interceptor') ? ' (a bust for ramming it is allowed)' : ', no bust, no standing gained') + ' in ' + clean + ' of 4 runs (the car damaged in ' + bumped + ')');
   }
 
   // ---- a run with pursuits in it still finishes

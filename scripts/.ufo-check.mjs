@@ -37,9 +37,9 @@ try {
     Player.nextMystery = 'ufo';
     Player.collect('mystery');
     if (UfoStrike.phase === 'arrive') strikes++;
-    // (coming in and hovering: nothing burns yet)
-    for (let i = 0; i < HZ * (U.arrive + U.hover) - 2; i++) { step(); early += burning().length; }
-    for (let i = 0; i < 4; i++) step(); // (over the moment it starts to leave)
+    // (coming in: nothing burns yet)
+    for (let i = 0; i < HZ * U.arrive - 2; i++) { step(); early += burning().length; }
+    for (let i = 0; i < 4; i++) step(); // (over the moment it starts to hover: the burn begins, Q43)
     const onRoad = Traffic.cars.filter(c => c.active && c.health > 0);
     missed += onRoad.filter(c => !c.ufoBurning).length;
     const doomed = burning().map(car => ({ car, spun: false, died: 0, gone: false }));
@@ -64,16 +64,16 @@ try {
   }
   deaths.sort((a, b) => a - b);
   const at = (q) => deaths[Math.floor(q * (deaths.length - 1))], pct = (q) => at(q).toFixed(1);
-  console.log(`${total} cars wrecked, ${spun} spun out on the way, ${smokingBy1s} smoking 1 s after the saucer started to leave; wrecked ${pct(0)}-${pct(1)} s after (10% by ${pct(0.1)}, median ${pct(0.5)}, 90% by ${pct(0.9)})`);
+  console.log(`${total} cars wrecked, ${spun} spun out on the way, ${smokingBy1s} smoking 1 s after the burn began; wrecked ${pct(0)}-${pct(1)} s after (10% by ${pct(0.1)}, median ${pct(0.5)}, 90% by ${pct(0.9)})`);
   check(strikes === 4, 'the mystery calls the saucer in, every time (' + strikes + ' of 4)');
-  check(early === 0, 'nothing burns while it comes in and hovers (' + (U.arrive + U.hover) + ' s)');
-  check(total >= 20 && missed === 0, 'as it leaves, every vehicle on the road is set alight (' + total + ' in four strikes' + (missed ? ', ' + missed + ' missed' : '') + ')');
+  check(early === 0, 'nothing burns while it comes in (' + U.arrive + ' s)');
+  check(total >= 20 && missed === 0, 'as it starts to hover, every vehicle on the road is set alight (' + total + ' in four strikes' + (missed ? ', ' + missed + ' missed' : '') + ')');
   check(survived === 0, 'none of them is still driving ' + WATCH + ' s later' + (survived ? ' (' + survived + ' are)' : ''));
   check(smokingBy1s > 0, 'some are smoking within a second (' + smokingBy1s + ')');
-  check(at(0.5) >= 2.5 && at(0.5) <= 5 && at(0.9) <= 5.5, 'most are wrecked 2.5 to 5 s after it leaves (median ' + pct(0.5) + ' s, 90% by ' + pct(0.9) + ' s)');
+  check(at(0.5) >= 2.5 && at(0.5) <= 5 && at(0.9) <= 5.5, 'most are wrecked 2.5 to 5 s after the burn begins (median ' + pct(0.5) + ' s, 90% by ' + pct(0.9) + ' s)');
   check(at(1) <= 6, 'and the last of them within 6 s (' + pct(1) + ' s)');
   check(lateBurners === 0, 'nothing that turns up afterwards burns');
-  check(stillOn === 0, 'the strike is over by then (' + (U.leave) + ' s to fly away)');
+  check(stillOn === 0, 'the strike is over by then (' + (U.hover + U.leave) + ' s to hover and fly away)');
 } catch (error) {
   failures++;
   console.log(error.stack);

@@ -37,7 +37,8 @@
       "magnet": ["Magnet! The pickups are coming to you."],
       "blackout": ["Blackout! Headlights only..."],
       "trafficFreeze": ["TRAFFIC FREEZE! Everything but you stands still."],
-      "soupedUp": ["Your car has been souped up!"]
+      "soupedUp": ["Your car has been souped up!"],
+      "soupedUpNone": ["We were gonna upgrade your car, but your car has no super variant!"]
     }
   },
   "events": {

@@ -115,8 +115,8 @@ export const CONFIG = {
     //   magnet         pickups ahead drift toward the car
     //   blackout       every light off but the headlights
     //   trafficFreeze  everything but the player stops dead
-    // (one with a `time` of its own lasts that long instead of `time` below. One that doesn't suit the level or
-    // the car, a Super version of a car that has none, say, is `fallback` instead)
+    // (one with a `time` of its own lasts that long instead of `time` below. One that doesn't suit the level is `fallback`
+    // instead. Souped up, in a car with no Super version, upgrades nothing and says so: messages.json soupedUpNone)
     fallback: 'invincible',
     soupedUp: { time: 15 },
     earthquake: { time: 10, every: 3, amp: 0.35, wavelength: 24, speed: 9, shake: 0.35, kick: 3 }, // s; s between bounces; m the road heaves; m of the wave; rad/s; camera shake kept up; m/s a bounced car is shoved
@@ -538,11 +538,11 @@ export const CONFIG = {
   },
   ufoStrike: {
     arrive: 1.5,           // s to fly in...
-    hover: 4,              // ...over the player's car...
+    hover: 4,              // ...over the player's car (the burn starts as it begins)...
     leave: 2,              // ...and away again
     height: 14,            // m above the car it hovers (clear of the chase camera's view of the car)...
     ahead: 8,              // ...and this far ahead of it, so it sits near the top of the screen
-    burnRate: 7,           // health a second every vehicle loses from the moment the saucer starts to leave...
+    burnRate: 7,           // health a second every vehicle loses from the moment the saucer starts to hover...
     burnGrowth: 0.5,       // ...growing by e^(this x seconds): smoking within a second or so, gone 2.5-5 s later
   },
 
@@ -655,7 +655,8 @@ export const CONFIG = {
   kangarooHop: 0.9,        // ...this high...
   kangarooHops: 2.2,       // ...this many times a second (and it rests at each side like a cow)
   // drop bears (a level's "dropBears"): up in the trees over the road until the player comes within
-  // `near` m (a different distance for each), then down they drop, and there they stay
+  // `near` m (a different distance for each) plus the distance the car covers while a bear falls (about 2.2 s of
+  // its speed: a fast car is dropped on from further back, so it can't just outrun one), then down they drop, and there they stay
   dropBear: { height: 24, near: { min: 50, max: 110 } },
   cowRestMin: 0.5,         // s it stands at each side before turning back, random between min and max
   cowRestMax: 2.5,
@@ -1217,13 +1218,14 @@ export const CONFIG = {
   },
   // a funeral procession (a level's "processions": see Traffic.startProcession): a hearse and its
   // cars, nose to tail, slow, in one lane; no lane changes, no throwing. Crash into any of them and
-  // the whole procession is angry with you
+  // the whole procession is angry with you, and the Jerk mechanic is on the player for jerkTime
   procession: {
     cars: 3,               // cars following the hearse
     kinds: ['commuter', 'wagon', 'minivan', 'suv'], // what they are (all in black)
     paint: 0x151515,
     speed: 11,             // m/s
     gap: 4,                // m nose to tail
+    jerkTime: 10,          // s the player is a jerk (the Jerk mystery's effect: everyone hates them) after crashing into one
   },
   // a level crossing (a level's "crossings": crossing.js): as the player comes near (or every so often
   // after), its lights flash and its booms come down across the lanes coming up to it, and a short
