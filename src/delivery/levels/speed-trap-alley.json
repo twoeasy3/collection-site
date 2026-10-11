@@ -3,7 +3,7 @@
   "theme": "suburb",
   "clock": { "good": 240, "evil": 180 },
   "tip": 150,
-  "cargo": { "good": "teaset", "evil": "airhorn" },
+  "cargo": { "good": "teaset", "evil": "cooker" },
   "pursuits": { "every": { "min": 35, "max": 60 } },
   "speedLimit": 100,
   "traffic": { "suv": 0.24, "taxi": 0.18, "miata": 0.18, "minivan": 0.14, "commuter": 0.12, "hotrod": 0.06, "postvan": 0.05, "police": 0.04 },

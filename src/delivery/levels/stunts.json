@@ -5,7 +5,7 @@
   "tip": 320,
   "lanes": 4,
   "flow": "north",
-  "cargo": { "good": "coffee", "evil": "piecatapult" },
+  "cargo": { "good": "coffee", "evil": "fireworks" },
   "traffic": { "van": 0.16, "darkvan": 0.14, "pickup": 0.12, "bus": 0.1, "taxi": 0.08, "semi": 0.07, "hotrod": 0.07, "sport": 0.07, "lowrider": 0.05, "minivan": 0.07, "boyracer": 0.04, "police": 0.03 },
   "trafficCount": 14,
   "oncomingCount": 0,
@@ -41,12 +41,6 @@
   "trafficZones": [
     { "from": 0, "to": 900, "traffic": { "taxi": 0.5, "bus": 0.16, "hotrod": 0, "pickup": 0.04 } },
     { "from": 1700, "to": 2600, "traffic": { "pickup": 0.35, "hotrod": 0.18, "junker": 0.2, "taxi": 0, "sport": 0, "semi": 0 } }
-  ],
-  "potholes": [
-    { "s": 230, "lane": 1, "r": 1 },
-    { "s": 262, "lane": 2, "r": 1.1 },
-    { "s": 2610, "lane": 2, "r": 1.1 },
-    { "s": 2640, "lane": 1, "r": 1 }
   ],
   "spray": [
     { "from": 320, "to": 700 }
