@@ -290,9 +290,11 @@ export const Player = {
     }
   },
   // the Jerk mechanic for `time` s, set off by something other than the mystery pickup (crashing a funeral
-  // procession: see Traffic.mourn). Another mystery already running is left alone; a jerk's time is only ever topped up
+  // procession: see Traffic.mourn). Another mystery already running is ended cleanly first (endMystery: the
+  // car swap given back, the toad calmed, and so on); a jerk's time is only ever topped up
   startJerk(time) {
-    if (this.busted || (this.mystery && this.mystery !== 'jerk')) return false;
+    if (this.busted) return false;
+    if (this.mystery && this.mystery !== 'jerk') this.endMystery();
     const fresh = this.mystery !== 'jerk';
     this.mystery = 'jerk';
     this.mysteryTime = Math.max(this.mysteryTime, time);
