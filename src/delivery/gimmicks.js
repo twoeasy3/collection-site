@@ -386,10 +386,10 @@ export const GROUPS = [
       const car = painted(vehicle('driveby', 0xffffff), 0x3a1840);
       return { model: car, tick: (t) => { car.userData.firing?.(t % 2.4 < 1.1); } };
     } },
-    { name: 'Punctures', color: 0xffb03a, has: (l) => l.gunfire?.length || l.traffic?.driveby, rules: [
-      `A shot can puncture a tyre. Traffic with a flat pulls over onto the shoulder and stops. You get ${pct(PU.topSpeed)} of your top speed and acceleration, and the car pulls to the flat side.`,
+    { name: 'Punctures', color: 0xffb03a, has: (l) => l.gunfire?.length || l.traffic?.driveby || (l.battle && l.pillboxes) || l.potholes?.length || l.siteWorks?.some(w => w.kind === 'trench'), rules: [
+      `A tyre can be punctured by a shot (a gang house's, a drive-by's, a pillbox's: ${pct(GF.puncture)} a hit), by a pothole (${pct(S.potholePuncture)} a jolt) or by a gap in a trench (${pct(S.trenchPuncture)} a jolt), on the side that took it. Traffic with a flat pulls over onto the shoulder and stops. You get ${pct(PU.topSpeed)} of your top speed and acceleration, and the car pulls to the flat side.`,
       `Stop to change it: ${PU.fixTime} s stopped in all (braking with a flat takes you right down to a stop). A wrench fixes it on the spot.`,
-      `While punctured, and for ${PU.grace} s after, the shoulder's police meter leaves you alone. Armour keeps your tyres from being shot out; a ghost lets the bullets pass straight through; nothing without wheels can be punctured.`,
+      `While punctured, and for ${PU.grace} s after, the shoulder's police meter leaves you alone. Armour keeps your tyres from being punctured at all; a ghost lets the bullets pass straight through (and carries over potholes and trenches); nothing without wheels can be punctured.`,
     ], build: () => {
       const car = painted(vehicle('commuter', 0xffffff), 0xff8a1a);
       car.rotation.z = 0.07;

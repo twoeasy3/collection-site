@@ -28,7 +28,7 @@
   "the-control-tower": { "name": "The control tower", "blurb": "The control tower comes crashing down across the old road." },
   "gang-houses": { "name": "Gang houses", "blurb": "Gang houses marked out for all to see, windows glowing red." },
   "drive-bys": { "name": "Drive-bys", "blurb": "A low sedan that pulls up beside a target and opens fire." },
-  "punctures": { "name": "Punctures", "blurb": "A shot can puncture a tyre: the flat car pulls to its side." },
+  "punctures": { "name": "Punctures", "blurb": "A shot, a pothole or a trench can puncture a tyre: the flat car pulls to its side." },
   "police-stretches": { "name": "Police stretches", "blurb": "Police only in some stretches: heavy there, none elsewhere." },
   "races": { "name": "Races", "blurb": "Laps of a real circuit against a full grid." },
   "rival-couriers": { "name": "Rival couriers", "blurb": "Other couriers racing you to the drop, each marked by an arrow." },
