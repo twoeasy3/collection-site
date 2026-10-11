@@ -297,7 +297,7 @@ export const GROUPS = [
   { name: 'Construction site and airport', cards: [
     { name: 'Construction machinery', color: 0xf2b51c, has: (l) => l.machinery?.length, rules: [
       `Bulldozers, excavators and dump trucks trundle right across the road and back at ${MA.speed} m/s, waiting a moment off it at each side; road rollers crawl along the shoulder and forklifts back out onto it.`,
-      `They're solid: running into one costs ${MA.damage} damage and you keep ${pct(MA.speedKept)} of your speed (it's blown up). Traffic passes through them.`,
+      `They're solid: running into one costs ${MA.damage} damage (${MA.damages.roller} for a roller, ${MA.damages.forklift} for a forklift) and you keep ${pct(MA.speedKept)} of your speed (it's blown up). Traffic passes through them.`,
     ], build: () => {
       const m = makeMachine('bulldozer');
       return { model: m, tick: (t) => { if (m.userData.beacon) m.userData.beacon.material = Math.floor(t * 4) % 2 ? BEACON_ON : BEACON_OFF; } };

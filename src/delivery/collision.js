@@ -938,5 +938,5 @@ export const Collision = (() => {
     }
   };
 
-  return { get bodies() { return getBodies(); }, obstacles, loaders, loadLevel, resetObstacles, updateObstacles, atRoadLevel, check, overlap };
+  return { get bodies() { return getBodies(); }, obstacles, loaders, loadLevel, resetObstacles, updateObstacles, atRoadLevel, check, overlap, size: SIZE };
 })();

@@ -82,7 +82,7 @@ export const Machinery = {
       if (!Collision.overlap(box, Player)) continue;
       m.gone = true;
       if (Player.tank <= 0) {
-        hurt(Player, M.damage);
+        hurt(Player, M.damages[m.kind] ?? M.damage);
         Player.speed *= M.speedKept;
         Player.stun = Math.max(Player.stun, CONFIG.stunTime * 0.5);
       }
