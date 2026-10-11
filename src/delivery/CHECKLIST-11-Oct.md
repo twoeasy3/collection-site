@@ -123,6 +123,8 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 
 **12-Oct, owner's answers:** Q21 doubtful cases: "Remove the above" (sweep agent removes them); Q5: "Yes, supercharger = turbo" (confirmed); Q13: "For the funeral procession, yes" (the Jerk overrides a running mystery; gimmicklogic agent changes it, then I merge all six items). The subdomain plan: the owner will come back; nothing to do. Open questions 26, 27, 29 closed.
 
+**12-Oct, MERGED `delivery-damage` (second merge) and `delivery-carfix-words`:** Q18 mass-aware cap (victim loses at most maxHealth x clamp(0.75 + 0.35 x (attacker mass - 1), 0.75, 3) per hit; `CONFIG.damageCap`; a sports car cannot one-shot a commuter, a bus/semi/tank still wrecks one); Q19 floor 25 + 4.9 x sqrt(volume), machinery 70, light kinds unchanged; Q15 low bridges (two bars, slalom; bars not seen rendered, open question 30); blasts and punctures blurbs shortened; Junker blurb fits. Q3 and Q12 not started.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
