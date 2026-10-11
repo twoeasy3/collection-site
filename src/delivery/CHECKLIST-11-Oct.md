@@ -41,6 +41,43 @@ performance and bloat work, and the clock sweep (for the rebalance).
 players get for both medals); the surplus levels' tier places; picks from the Good/Evil ideas and the Moon
 airtime options; the smoke test's 74 failures (cause not known: a bisect was stopped by the owner).
 
+**12-Oct session (new orchestrator):** agent 1 (`delivery-tests`, Sonnet 5.5, High: the owner lifted agent and
+effort limits for the day) runs the QUICK smoke only, fixes stale tests, and groups tests so a future agent runs
+only the relevant set (runner + `TESTS.md`). Owner: "Agent 2 should do something else." Phone card note: the
+still taken at 390x844 is taller than most phones (the visible viewport under the browser bars is nearer
+360x640 to 390x700); any phone-card work must be judged at those sizes, not 844. The phone card task is not
+assigned yet.
+Owner, 12-Oct: (1) the pause on new tasks is LIFTED; (2) TWO heavy locks now:
+`delivery-heavy.lock` and `delivery-heavy-2.lock` in `%LOCALAPPDATA%\Temp` (take whichever is free, one heavy
+job per agent); (3) the phone card task is SHELVED for now; (4) no pictures in chat unprompted, show them after
+the owner answers. Running: 1 `delivery-tests` (quick smoke fixes, test groups), 2a `delivery-rework-b` (Hong
+Kong scenery, Fable), 2b `delivery-sweep` (worktree sweep, left-drive board, crest still, toys WIP), 3
+`delivery-prank-ideas` (K3 ideas, Fable).
+
+## 12-Oct STATE: who is running (orchestrator's record; agents work in their own worktrees, never push)
+
+Owner, 12-Oct: agent and effort limits lifted for the day; two heavy locks (`delivery-heavy.lock`, `delivery-heavy-2.lock`);
+the pause is lifted; the phone level-card task is SHELVED. Fable for creative work, Sonnet 5.5 for code, effort Medium.
+
+| Agent (id) | Branch | Task | Status |
+|---|---|---|---|
+| acd4f98bc65c965bb | `delivery-tests` (Sonnet 5.5 High) | QUICK smoke, repair stale tests, test groups (runner + `TESTS.md`) | running |
+| af38a22b45231d1f5 | `delivery-rework-b` (worktree `delivery-themes-c`, Fable) | Hong Kong (27) scenery, obstacles, menu picture; `PLAN-hongkong-12-Oct.md` first | running |
+| affdde1c80717c32a | `delivery-prank-ideas` (Fable) | K3 prank-cargo ideas document (`bcc7570`) | FINISHED, idle; owner to pick ideas |
+| a4d86b2298daa7cef | `delivery-sweep` (Sonnet) | worktree sweep (`SWEEP-12-Oct.md`, its "26 merged" tally needs a recount), left-drive board fix `975de0d` in `render/gambles.js` (one still, no checks), crest still | FINISHED, idle |
+| a1634b04827d0d100 | `delivery-gimmicklogic` (Sonnet Medium) | Q40, Q5, Q7, Q43, Q11, Q13 | running |
+| a45c0b14b794d70a9 | `delivery-damage` (Sonnet Medium) | Q18, Q19, Q4, Q10, Q9 | running |
+| a2e16dea304c48593 | `delivery-i2` (Sonnet Medium) | I2: investigation only, `INVESTIGATION-drop-game-history-12-Oct.md` | running |
+| aeb34f3293c74514d | `delivery-garagetiers` (Sonnet Medium) | L4, L5, L6, L7 (BUMPED) | running |
+| a960fb420786cf591 | `delivery-carfix` (Sonnet Medium) | L2 (Darkvan, Junker faster), L3 (race screensaver) (BUMPED) | FINISHED (`1a90c09`, `fda0149`) |
+| ae2a93594691d35c4 | `delivery-beginner` (Fable Medium) | L1 shorten and simplify Beginner levels; `PLAN-beginner-12-Oct.md` first (BUMPED) | running |
+
+Other branches: `delivery-crests` (files only, safe to merge; owner has not OK'd), `delivery-stats` (HELD until the
+rebalance), `delivery-themes-toys-wip` (old; the sweep recommends mining it for parts).
+Open with the owner (via front): merge `delivery-crests`; crest boards naming the hazard beyond; when to merge the
+left-drive board fix; which prank ideas to build / whether a furious prank does anything in play / prank at the
+door; where idle agents go next; question 22; surplus levels in the tier table; Good/Evil picks; Moon airtime option.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
@@ -511,6 +548,19 @@ The owner's words, as in `CHECKLIST-10-Oct.md`. Q52 and Q53 are done and left ou
     ten large pictures across themes (a night one, a snowy one, a busy city one).
   - Nine levels' words to move into the level-text JSON when their branches land: `hong-kong`,
     `tour-de-coast`, `ring-road`, `market-town`, `stelvio`, `toys`, `leaks`, `moon`, `morro`.
+## L. The owner's new-player experience list, 12-Oct: BUMPED (start at once)
+
+"add to the list, and bump these because this was my new player experience."
+- [ ] **L1.** "Shorten Beginner levels and simplify them" (the first tier's levels; agent `delivery-beginner`).
+- [ ] **L2.** "Darkvan and Junker need to be faster" (agent `delivery-carfix`).
+- [ ] **L3.** "Race screensaver broken" (agent `delivery-carfix`).
+- [ ] **L4.** "Cars from locked tiers should not appear in garage. Let's have the cars in the immediate next tier
+      be black silhouettes but unpurchaseable" (agent `delivery-garagetiers`).
+- [ ] **L5.** "Back Button should return to previous page" (agent `delivery-garagetiers`).
+- [ ] **L6.** "Drop progression requirement for 4th level from 4 medals to 3" (agent `delivery-garagetiers`).
+- [ ] **L7.** "Mobile garage: Show the stats for the selected car even when not in compare mode" (agent
+      `delivery-garagetiers`).
+
 - [ ] "**Levels 28 Tokyo and 29 Mumbai** to the standard: never started; the plans are in
       `SCRATCHPAD-10-Oct.md` ("Levels 26 to 30")."
 
