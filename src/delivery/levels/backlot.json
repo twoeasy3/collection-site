@@ -57,11 +57,6 @@
   "fog": [
     { "from": 2330, "to": 2520 }
   ],
-  "waterMains": [
-    { "s": 2580, "lane": 3 },
-    { "s": 2660, "lane": 4 },
-    { "s": 2740, "lane": 2 }
-  ],
   "wideLoads": [
     { "s": 2900, "lanes": [3, 4] }
   ],
@@ -73,9 +68,6 @@
   ],
   "balloons": [
     { "s": 3460, "lanes": [2, 3] }
-  ],
-  "crosswinds": [
-    { "from": 3560, "to": 3900, "dir": "left" }
   ],
   "potties": [
     { "s": 3990, "pattern": "wave", "lanes": [2, 3, 4] }

@@ -2,7 +2,7 @@
   "id": "farm",
   "cargo": { "good": "cactus", "evil": "bees" },
   "theme": "farm",
-  "clock": { "good": 234, "evil": 166 },
+  "clock": { "good": 105, "evil": 80 },
   "traffic": { "darkvan": 0.42, "commuter": 0.19, "van": 0.33, "bus": 0.03, "police": 0.03 },
   "trafficCount": 11,
   "oncomingCount": 8,
@@ -12,66 +12,52 @@
     { "length": 400, "curve": 0.0015, "grade": 0.04 },
     { "length": 300, "curve": 0, "grade": 0 },
     { "length": 500, "curve": -0.002, "grade": -0.035 },
-    { "length": 400, "curve": 0, "grade": 0.025 },
-    { "length": 400, "curve": 0.0012, "grade": -0.04 },
-    { "length": 300, "curve": -0.001, "grade": 0.03 },
-    { "length": 400, "curve": 0, "grade": 0 }
+    { "length": 500, "curve": 0, "grade": 0 }
   ],
   "narrows": [
-    { "from": 250, "to": 1150, "lanesPerSide": 1 },
-    { "from": 1550, "to": 2500, "lanesPerSide": 1 }
+    { "from": 250, "to": 1150, "lanesPerSide": 1 }
   ],
   "bridges": [],
   "exits": [],
   "obstacles": [
-    { "s": 2945, "lane": 3, "kind": "bale" },
     { "s": 180, "lane": 3, "kind": "bale" },
     { "s": 460, "lane": 2, "kind": "bale" },
-    { "s": 700, "lane": 1, "kind": "bale" },
     { "s": 880, "lane": 2, "kind": "bale" },
-    { "s": 1250, "lane": 3, "kind": "bale" },
-    { "s": 1340, "lane": 2, "kind": "bale" },
-    { "s": 1430, "lane": 3, "kind": "bale" },
+    { "s": 1320, "lane": 3, "kind": "bale" },
+    { "s": 1430, "lane": 2, "kind": "bale" },
     { "s": 1720, "lane": 2, "kind": "bale" },
-    { "s": 1980, "lane": 2, "kind": "bale" },
-    { "s": 2250, "lane": 1, "kind": "bale" },
-    { "s": 2620, "lane": 3, "kind": "bale" },
-    { "s": 2700, "lane": 2, "kind": "bale" },
-    { "s": 2780, "lane": 3, "kind": "bale" }
+    { "s": 1900, "lane": 3, "kind": "bale" }
   ],
   "herds": [
     { "from": 560, "to": 640, "count": 3, "kind": "cow" },
-    { "from": 1200, "to": 1300, "count": 4, "kind": "cow" },
-    { "from": 2060, "to": 2160, "count": 3, "kind": "cow" }
+    { "from": 1500, "to": 1600, "count": 3, "kind": "cow" }
   ],
   "tractors": [
     { "s": 380, "lane": 2 },
-    { "s": 1000, "lane": 2 },
-    { "s": 1640, "lane": 2 },
-    { "s": 2380, "lane": 1 }
+    { "s": 1250, "lane": 2 }
   ],
-  "frogs": [
-    { "from": 2540, "to": 2600 }
-  ],
+  "frogs": [],
   "targets": [
     { "s": 900, "side": "right" },
-    { "s": 2200, "side": "left" }
+    { "s": 1800, "side": "left" }
   ],
-  "ruts": [
-    { "from": 2810, "to": 2970 }
-  ],
+  "ruts": [],
   "pickups": [
-    { "type": "cash10", "s": 2860, "lane": 2 },
-    { "type": "cash20", "s": 2860, "lane": 3 },
-    { "type": "wrench", "s": 2720, "lane": 2 },
-    { "type": "wrench", "s": 1350, "lane": 3 },
     { "type": "turbo", "s": 120, "lane": 2 },
-    { "type": "passenger", "s": 380, "lane": 2 },
+    { "type": "cash10", "s": 300, "lane": 2 },
+    { "type": "cash5", "s": 300, "lane": "right" },
+    { "type": "cash10", "s": 720, "lane": 2 },
+    { "type": "cash5", "s": 720, "lane": "right" },
     { "type": "wrench", "s": 800, "lane": 2 },
-    { "type": "ghost", "s": 1180, "lane": 3 },
-    { "type": "turbo", "s": 1470, "lane": 2 },
-    { "type": "passenger", "s": 1560, "lane": 2 },
-    { "type": "wrench", "s": 2020, "lane": 2 },
-    { "type": "turbo", "s": 2520, "lane": 3 }
+    { "type": "cash20", "s": 1000, "lane": 2 },
+    { "type": "cash5", "s": 1000, "lane": "right" },
+    { "type": "turbo", "s": 1180, "lane": 2 },
+    { "type": "cash10", "s": 1350, "lane": "right" },
+    { "type": "cash10", "s": 1350, "lane": 2 },
+    { "type": "cash10", "s": 1350, "lane": 3 },
+    { "type": "wrench", "s": 1650, "lane": 2 },
+    { "type": "cash10", "s": 1800, "lane": "right" },
+    { "type": "cash20", "s": 1800, "lane": 2 },
+    { "type": "cash10", "s": 1800, "lane": 3 }
   ]
 }

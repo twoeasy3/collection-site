@@ -457,7 +457,8 @@ export const CONFIG = {
     hw: 3.6,               // m, half its length (it crosses the road)
     beyond: 9,             // m off the road it goes before turning back...
     rest: { min: 1, max: 3 }, // ...after waiting there this many s
-    damage: 30,            // health the player's car loses running into one (and blowing it up)...
+    damage: 70,            // health the player's car loses running into one (and blowing it up): a bulldozer, an excavator, a dump truck...
+    damages: { roller: 49, forklift: 42 }, // ...a roller and a forklift are smaller (damage is by size: 25 + 4.9 x the square root of the box's volume in m3, as the obstacles'; the roller 2.3x4.8x2.2 m, the forklift 2x2.8x2.2, the big three about 3.6x7.2x3.3)
     speedKept: 0.6,        // ...and the share of its speed it keeps
     rollerSpeed: 1.5,      // m/s a road roller crawls along its shoulder
     pokeOut: 7,            // m off the road a forklift backs off to
@@ -480,7 +481,7 @@ export const CONFIG = {
     reach: 9.5,            // ...its bucket this far from it...
     swingPeriod: 5,        // ...swinging out and back in this many s
     bucket: 1.2,           // m, half the bucket's size
-    bucketDamage: 30,      // health its bucket costs the player (blowing the excavator up)...
+    bucketDamage: 50,      // health its bucket costs the player (blowing the excavator up; the bucket alone is 2.4 m of a big machine)...
     bucketKept: 0.6,       // ...and the share of speed kept
     walkSpeed: 1.2,        // m/s a worker pushes a barrow at...
     diveNear: 28,          // ...diving clear with the player this near behind...
@@ -556,70 +557,70 @@ export const CONFIG = {
   frogHearing: 120,        // m from a frog within which its croaking is heard
   // what hitting each kind costs: health, and the share of the player's speed left afterwards
   obstacleKinds: {
-    barrier: { damage: 30, speedKept: 0.6 },
+    barrier: { damage: 34, speedKept: 0.6 },
     // (trainProof: the bullet train goes straight through it, and leaves it standing)
-    railBarrier: { damage: 30, speedKept: 0.6, trainProof: true },
-    bale: { damage: 20, speedKept: 0.75 },
-    frog: { damage: 30, speedKept: 0.6 },
-    cow: { damage: 30, speedKept: 0.6 },
-    kangaroo: { damage: 25, speedKept: 0.7 },
-    dropBear: { damage: 20, speedKept: 0.75 },
-    wildebeest: { damage: 25, speedKept: 0.7 },
+    railBarrier: { damage: 33, speedKept: 0.6, trainProof: true },
+    bale: { damage: 38, speedKept: 0.75 },
+    frog: { damage: 42, speedKept: 0.6 },
+    cow: { damage: 36, speedKept: 0.6 },
+    kangaroo: { damage: 33, speedKept: 0.7 },
+    dropBear: { damage: 31, speedKept: 0.75 },
+    wildebeest: { damage: 34, speedKept: 0.7 },
     // the construction site's
-    potty: { damage: 20, speedKept: 0.7 },
-    sewage: { damage: 10, speedKept: 0.55 },
-    pile: { damage: 15, speedKept: 0.6 },
+    potty: { damage: 36, speedKept: 0.7 },
+    sewage: { damage: 35, speedKept: 0.55 },
+    pile: { damage: 42, speedKept: 0.6 },
     beam: { damage: 35, speedKept: 0.5 },
     barrow: { damage: 10, speedKept: 0.85, light: true },
-    pipe: { damage: 25, speedKept: 0.55 },
-    zebra: { damage: 25, speedKept: 0.7 },
+    pipe: { damage: 39, speedKept: 0.55 },
+    zebra: { damage: 34, speedKept: 0.7 },
     asteroid: { damage: 14, maxDamage: 70, speedKept: 0.7 }, // damage is per metre of radius, up to maxDamage
     // (light: true = a small thing: it doesn't knock the steering, and barely shakes the camera)
     cone: { damage: 3, speedKept: 0.94, light: true },
     mine: { damage: 30, speedKept: 0.55 }, // a sea mine (Oh Mine!)
-    sign: { damage: 12, speedKept: 0.8 },
-    limitSign: { damage: 8, speedKept: 0.85 }, // (a speed camera's limit sign: see CONFIG.speedCamera)
+    sign: { damage: 32, speedKept: 0.8 },
+    limitSign: { damage: 30, speedKept: 0.85 }, // (a speed camera's limit sign: see CONFIG.speedCamera)
     // the beach's junk (Hurricane)
-    umbrella: { damage: 15, speedKept: 0.85 },
-    surfboard: { damage: 18, speedKept: 0.8 },
+    umbrella: { damage: 45, speedKept: 0.85 },
+    surfboard: { damage: 31, speedKept: 0.8 },
     cooler: { damage: 6, speedKept: 0.92, light: true },
-    chair: { damage: 30, speedKept: 0.6 },
-    wreck: { damage: 35, speedKept: 0.5 },
+    chair: { damage: 43, speedKept: 0.6 },
+    wreck: { damage: 42, speedKept: 0.5 },
     // the hidden gimmicks level's
     camera: { damage: 8, speedKept: 0.85, light: true }, // a speed camera on its pole
-    rock: { damage: 25, speedKept: 0.6 },
+    rock: { damage: 39, speedKept: 0.6 },
     cyclist: { damage: 12, speedKept: 0.85, light: true },
     landmine: { damage: 0, speedKept: 1 }, // (no ordinary knock: it destroys whatever touches it outright, see Collision)
     // Gimmick Road 2's (see hazards.js)
     trolley: { damage: 8, speedKept: 0.88, light: true },
     runner: { damage: 10, speedKept: 0.88, light: true },
     waterTable: { damage: 6, speedKept: 0.9, light: true },
-    paceCar: { damage: 30, speedKept: 0.5 },
+    paceCar: { damage: 42, speedKept: 0.5 },
     wideLoad: { damage: 12, speedKept: 0.6, sideDamage: 6, sideKept: 0.85 }, // (a knock: see CONFIG.wideLoad)
     escort: { damage: 8, speedKept: 0.6, sideDamage: 4, sideKept: 0.9 },
     marcher: { damage: 10, speedKept: 0.88, light: true }, // a bandsman in a parade (knocked down in front of the police: a bust)
     // falling cargo (a shedding truck's load: see CONFIG.cargo): bales and crates
-    crate: { damage: 18, speedKept: 0.75 },
+    crate: { damage: 31, speedKept: 0.75 },
     // the themes' own (a theme's `obstacles` in themes.js): each a plain kind in another shape, so each costs
     // exactly what the kind it stands in for costs (scripts/.obstacles-check.mjs holds them to it). For a crate:
-    toyBlock: { damage: 18, speedKept: 0.75 },      // the toy room's: alphabet blocks
-    divingHelmet: { damage: 18, speedKept: 0.75 },  // the sea bed's: a brass diving helmet
-    supplyPod: { damage: 18, speedKept: 0.75 },     // the Moon's: a supply pod on its legs
-    directorChair: { damage: 18, speedKept: 0.75 }, // the film studio's
-    mooringPosts: { damage: 18, speedKept: 0.75 },  // Venice's: three striped mooring posts
-    fuelDrum: { damage: 18, speedKept: 0.75 },      // the ice road's: a red drum under a cap of snow
-    popcornCart: { damage: 18, speedKept: 0.75 },   // the theme park's
-    barrel: { damage: 18, speedKept: 0.75 },        // the Wild West's
-    chairStack: { damage: 18, speedKept: 0.75 },    // the favela's: a stack of plastic chairs
-    riceBasket: { damage: 18, speedKept: 0.75 },    // the rice terraces': a basket heaped with rice
-    wasteDrum: { damage: 18, speedKept: 0.75 },     // the fallout zone's: a yellow drum of waste, the trefoil on it
+    toyBlock: { damage: 31, speedKept: 0.75 },      // the toy room's: alphabet blocks
+    divingHelmet: { damage: 31, speedKept: 0.75 },  // the sea bed's: a brass diving helmet
+    supplyPod: { damage: 31, speedKept: 0.75 },     // the Moon's: a supply pod on its legs
+    directorChair: { damage: 31, speedKept: 0.75 }, // the film studio's
+    mooringPosts: { damage: 31, speedKept: 0.75 },  // Venice's: three striped mooring posts
+    fuelDrum: { damage: 31, speedKept: 0.75 },      // the ice road's: a red drum under a cap of snow
+    popcornCart: { damage: 31, speedKept: 0.75 },   // the theme park's
+    barrel: { damage: 31, speedKept: 0.75 },        // the Wild West's
+    chairStack: { damage: 31, speedKept: 0.75 },    // the favela's: a stack of plastic chairs
+    riceBasket: { damage: 31, speedKept: 0.75 },    // the rice terraces': a basket heaped with rice
+    wasteDrum: { damage: 31, speedKept: 0.75 },     // the fallout zone's: a yellow drum of waste, the trefoil on it
     // ...for a bale:
-    cameraDolly: { damage: 20, speedKept: 0.75 },   // the film studio's: a camera on its dolly
-    present: { damage: 20, speedKept: 0.75 },       // Christmas Eve's: a wrapped present
-    toyDrum: { damage: 20, speedKept: 0.75 },       // the toy room's: a toy drum
-    sackStack: { damage: 20, speedKept: 0.75 },     // Mumbai's: a stack of jute sacks
-    beachBall: { damage: 20, speedKept: 0.75 },     // the beach's: a great beach ball (it rolls, as a bale does)
-    tumbleweed: { damage: 20, speedKept: 0.75 },    // the Wild West's, for a bale that drifts (it rolls too)
+    cameraDolly: { damage: 38, speedKept: 0.75 },   // the film studio's: a camera on its dolly
+    present: { damage: 38, speedKept: 0.75 },       // Christmas Eve's: a wrapped present
+    toyDrum: { damage: 38, speedKept: 0.75 },       // the toy room's: a toy drum
+    sackStack: { damage: 38, speedKept: 0.75 },     // Mumbai's: a stack of jute sacks
+    beachBall: { damage: 38, speedKept: 0.75 },     // the beach's: a great beach ball (it rolls, as a bale does)
+    tumbleweed: { damage: 38, speedKept: 0.75 },    // the Wild West's, for a bale that drifts (it rolls too)
     // ...for a cone:
     skittle: { damage: 3, speedKept: 0.94, light: true }, // the toy room's (an orange cone is lost on its orange track)
     cafeTable: { damage: 3, speedKept: 0.94, light: true },  // Venice's: a cafe table under its shut parasol
@@ -628,7 +629,7 @@ export const CONFIG = {
     brimstone: { damage: 3, speedKept: 0.94, light: true },  // hell's: a glowing spike
     flagStand: { damage: 3, speedKept: 0.94, light: true },  // the Moon's, for a cone that drifts: a flag on a stand
     // ...for a rock (sized by its radius, as a rock is):
-    lavaRock: { damage: 25, speedKept: 0.6 },       // the volcano's: cooled lava, glowing in its cracks
+    lavaRock: { damage: 39, speedKept: 0.6 },       // the volcano's: cooled lava, glowing in its cracks
   },
   // drifters: obstacles moving about the road in patterns (a level's "drifters")
   drifters: {
@@ -1024,6 +1025,10 @@ export const CONFIG = {
 
   // damage
   damagePerSpeed: 1.5,     // health lost per m/s of impact (split by mass)
+  // (a car-on-car hit takes at most this share of the victim's full health, by the MASS of what hit it: speed alone cannot
+  // wreck a weak car, but a heavy vehicle can. frac = clamp(base + perMass x (mass - 1), base, most): a light car (mass 1 or less)
+  // does at most `base` of it, so it takes two hits to wreck a commuter; a bus (4) 1.8x: it can wreck anything at speed)
+  damageCap: { base: 0.75, perMass: 0.35, most: 3 },
   // spin-outs: a traffic car that takes damage may lose control, arc away and blow up.
   // chance per hit = spinPerDamage x (share of full health this hit took)
   //                  x (1 + spinRamp x (share of health now gone) squared)
@@ -1300,6 +1305,7 @@ export const CONFIG = {
     brakeGrip: 0.35,       // share of its braking (or braking by itself for a car ahead) that works on the water
     steerGrip: 0.3,        // share of its steering's grip: of how quickly the car takes up the way it is steered...
     laneSpeed: 0.55,       // ...and share of the speed it moves across the road at, steered
+    wetAfter: 45,          // m past its water the tyres stay wet: those three numbers fade back to normal over this distance (ice has no such tail: it lets go the moment the car is off it)
   },
   // rockfall (a level's "rockfall": { from, to, count, side }): rocks tumbling down from that side
   // onto the road as the player comes near. Obstacles: only the player can hit them
@@ -1439,7 +1445,7 @@ export const CONFIG = {
   // and within leeReach m, the car feels only `lee` of it; as it clears that vehicle the wind is back at once, with
   // a shove of `shove` m/s on top. Traffic feels `traffic` of the push (it drifts in its lane, and leans `lean`
   // rad per m/s^2). Windsocks stand `ahead` m before the stretch and every sockEvery m along it
-  crosswind: { strength: 7, lull: 0.3, every: 6, length: 2.6, rise: 0.6, heightRef: 1.45, heightPower: 1.5, leeHeight: 2, leeReach: 5.5, lee: 0.1, shove: 2.4,
+  crosswind: { strength: 11, lull: 0.4, every: 5, length: 3, rise: 0.6, heightRef: 1.45, heightPower: 1.5, leeHeight: 2, leeReach: 5.5, lee: 0.1, shove: 2.4,
     traffic: 0.35, lean: 0.006, ahead: 90, sockEvery: 150 },
   // crests (no field of their own: a level's segments, their "grade" and "ease"): where the road falls away under
   // the car faster than `gravity` m/s^2 (the game's, as the drawbridge's) can pull the car down after it, the car
@@ -1465,10 +1471,10 @@ export const CONFIG = {
   jamRamp: { release: 320, crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
   // a low bridge ("lowBridges": { s, clearance? }): a height bar across the player's side and its shoulder, `clearance`
   // m off the road (the bridge's own, or this), between an exit and its merge. A car taller than that which goes at
-  // it loses `damage` health and perMetre more for each m too tall, keeps `keep` of its speed, and is through. Said
-  // from `warn` m before the exit; boards `sign` m before the exit and at it. Tall traffic takes the exit (one found
-  // within `traffic` m of the bar, more than `unseen` m from the player, is taken off the road)
-  lowBridge: { clearance: 2, damage: 30, perMetre: 25, keep: 0.4, warn: 260, sign: 200, traffic: 120, unseen: 140 },
+  // it loses `damage` health (a great deal) and perMetre more for each m too tall, keeps `keep` of its speed, and is through. A bridge is
+  // two bars, one over each half of the player's side, the second `stagger` m on from the first, to slalom round. Said
+  // from `warn` m before the exit; boards `sign` m before the exit and at it. Tall traffic goes through them without a scratch
+  lowBridge: { clearance: 2, damage: 100, perMetre: 40, keep: 0.4, stagger: 60, warn: 260, sign: 200 },
   // a ford ("fords": { from, to, depth? }): the road through a river `depth` m deep (the ford's own, or this), between
   // an exit and its merge: the side road is the bridge. A car wades `shallow` m (crossing 0) to `deepest` m (crossing
   // 1). In water no deeper than it wades it is slowed, to `fast` m/s in next to none and `slow` m/s at its limit;

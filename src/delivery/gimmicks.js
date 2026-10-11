@@ -87,7 +87,7 @@ export const where = (has) => [...LEVELS.map((level, i) => has(level) ? `<span>$
 // ---- every gimmick, by group ---------------------------------------------------------------------
 // { name, has: (level) => bool (the levels it is in), rules: [...], build: (level?) => { model, tick?(t, dt) },
 //   line: (level) => the card's line on that level's own road card, if not rules[0] (null: rules[0]),
-//   spin: false (the model doesn't turn on its stand), color (its card's glow) }
+//   color (its card's glow) }
 const S = CONFIG.site, MA = CONFIG.machinery, W = CONFIG.wreckage, BT = CONFIG.bulletTrain, TI = CONFIG.tide, IC = CONFIG.ice;
 const H = { school: CONFIG.schoolCrossing, main: CONFIG.waterMain, balloon: CONFIG.balloon, bridge: CONFIG.drawbridge, load: CONFIG.wideLoad, run: CONFIG.marathon, herd: CONFIG.stampede }; // (Gimmick Road 2's)
 const T = CONFIG.tunnel, PA = CONFIG.parade, RB = CONFIG.roadblock, CG = CONFIG.cargo, IS = CONFIG.iceCream, RL = CONFIG.reversible, CV = CONFIG.convoy, RN = CONFIG.rubberneck; // (the city streets')
@@ -100,6 +100,7 @@ export const GROUPS = [
       'An exit lane opens beside the right-hand lane: take it, and the side road runs on beside the expressway and joins it again further up.',
       'Traffic takes it too, and it can be a way round a jam (or into one).',
       'No two need be alike: one runs straight, another swings far out or winds through a string of bends; some are one-way, others have traffic coming at you in the other lane.',
+      'Speed cameras, level crossings, potholes and the rest can stand on a side road too, so the way round has troubles of its own.',
     ], build: () => {
       const g = road(9, 14);
       const ramp = box(4, 0.1, 10, lambert(0x3b3e44), 6.2, 0.1, 2);
@@ -124,11 +125,23 @@ export const GROUPS = [
       'The outer lanes close: each side of the road drops to fewer lanes for a stretch, and everyone has to squeeze in.',
       'Calm good drivers signal and merge early; evil and angry ones barge in at the last moment.',
     ], build: () => {
-      const g = road(9, 14);
-      for (let k = 0; k < 6; k++) { const c = ob('cone'); c.position.set(4.3 - k * 0.45, 0, 4 - k * 2); g.add(c); }
-      const arrow = sign('⇦', '#ff8a1a', '#111', 1.6, 1.6);
-      arrow.position.set(3.2, 0, 6);
-      g.add(arrow);
+      // as it is in the game: no cones and no board; the outer lane's edge eases in over the stretch (the
+      // taper is a smoothstep, CONFIG.taper long) until the lane is gone, its line running on as the road's edge
+      const g = group(), ease = (u) => { const k = Math.max(0, Math.min(1, u)); return k * k * (3 - 2 * k); };
+      const edgeX = (z) => 4.5 - 3 * ease((z + 5) / 10); // (the right-hand edge: x = 4.5 at first, 1.5 at the end)
+      const ribbon = (xa, xb, y, material) => { // (the strip between two x(z) curves, along the whole 14 m)
+        const pos = [], idx = [], N = 28;
+        for (let k = 0; k <= N; k++) { const z = -7 + 14 * k / N; pos.push(xa(z), y, z, xb(z), y, z); if (k) { const i = (k - 1) * 2; idx.push(i, i + 2, i + 1, i + 1, i + 2, i + 3); } }
+        const geo = new THREE.BufferGeometry();
+        geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        return new THREE.Mesh(geo, material);
+      };
+      const asphalt = lambert(0x3b3e44, { side: THREE.DoubleSide }), verge = lambert(0x4f7d3f, { side: THREE.DoubleSide }), line = new THREE.MeshBasicMaterial({ color: 0xe8e8e8, side: THREE.DoubleSide });
+      g.add(ribbon(() => -4.5, edgeX, 0, asphalt), ribbon(edgeX, () => 7.5, -0.02, verge));
+      g.add(ribbon(() => -4.5, () => -4.35, 0.01, line), ribbon((z) => edgeX(z) - 0.15, edgeX, 0.01, line)); // (the edge lines)
+      for (let z = -6; z < 7; z += 4) { g.add(box(0.15, 0.02, 2, line, -1.5, 0.01, z)); if (z < -4) g.add(box(0.15, 0.02, 2, line, 1.5, 0.01, z)); } // (the lane lines, and the closing lane's)
       return { model: g };
     } },
     { name: 'Bridges', color: 0x9c4a3a, has: (l) => l.bridges?.length, rules: [
@@ -193,7 +206,7 @@ export const GROUPS = [
       train.visible = true;
       g.add(sleepers, train);
       g.rotation.y = Math.PI / 2;
-      return { model: group(g), spin: false, tick: (t) => { sleepers.position.z = 0.6 - ((t * 5) % 1.2); } };
+      return { model: group(g), tick: (t) => { sleepers.position.z = 0.6 - ((t * 5) % 1.2); } };
     } },
   ] },
   { name: 'Wildlife', cards: [
@@ -255,7 +268,7 @@ export const GROUPS = [
       const own = level ? driftingKinds(level).slice(0, 3) : [];
       const junk = (own.length ? own : ['umbrella', 'surfboard', 'cooler']).map(k => ob(k, JUNK[k]));
       const g = group(...junk);
-      return { model: g, spin: false, tick: (t) => {
+      return { model: g, tick: (t) => {
         junk.forEach((m, i) => { const a = t * 0.9 + i * 2.1; m.position.set(Math.cos(a) * 2.6, 0, Math.sin(a) * 1.6); m.rotation.y = -a; });
       } };
     } },
@@ -277,7 +290,7 @@ export const GROUPS = [
     ], build: () => {
       const car = painted(vehicle('junker', 0xffffff), 0x8a9a6a), spinner = group(car); // (turning about its middle)
       car.position.y = -CONFIG.vehicles.junker.height / 2;
-      return { model: spinner, spin: false, tick: (t, dt) => { spinner.rotation.x += dt * 1.7; spinner.rotation.z += dt * 1.1; spinner.rotation.y += dt * 0.6; } };
+      return { model: spinner, tick: (t, dt) => { spinner.rotation.x += dt * 1.7; spinner.rotation.z += dt * 1.1; spinner.rotation.y += dt * 0.6; } };
     } },
     { name: 'Asteroid fields', color: 0x8d8174, has: (l) => l.asteroidFields?.length, rules: [
       'Rocks of every size scattered over space. About half sit at the road\'s level; the rest pass just over or under it, unmarked, so you can\'t always tell which.',
@@ -291,13 +304,13 @@ export const GROUPS = [
       `Hit one and it bursts open: ${CONFIG.obstacleKinds.potty.damage} damage.`,
     ], build: () => {
       const row = [0, 1, 2].map(k => { const p = ob('potty'); p.position.x = (k - 1) * 2.6; return p; });
-      return { model: group(...row), spin: false, tick: (t) => { row.forEach((p, k) => { const u = ((t / CONFIG.potties.period - k * 0.18) % 1 + 1) % 1; p.position.y = Math.sin(u * Math.PI) * 2.2; }); } };
+      return { model: group(...row), tick: (t) => { row.forEach((p, k) => { const u = ((t / CONFIG.potties.period - k * 0.18) % 1 + 1) % 1; p.position.y = Math.sin(u * Math.PI) * 2.2; }); } };
     } },
   ] },
   { name: 'Construction site and airport', cards: [
     { name: 'Construction machinery', color: 0xf2b51c, has: (l) => l.machinery?.length, rules: [
       `Bulldozers, excavators and dump trucks trundle right across the road and back at ${MA.speed} m/s, waiting a moment off it at each side; road rollers crawl along the shoulder and forklifts back out onto it.`,
-      `They're solid: running into one costs ${MA.damage} damage and you keep ${pct(MA.speedKept)} of your speed (it's blown up). Traffic passes through them.`,
+      `They're solid: running into one costs ${MA.damage} damage (${MA.damages.roller} for a roller, ${MA.damages.forklift} for a forklift) and you keep ${pct(MA.speedKept)} of your speed (it's blown up). Traffic passes through them.`,
     ], build: () => {
       const m = makeMachine('bulldozer');
       return { model: m, tick: (t) => { if (m.userData.beacon) m.userData.beacon.material = Math.floor(t * 4) % 2 ? BEACON_ON : BEACON_OFF; } };
@@ -327,22 +340,29 @@ export const GROUPS = [
       pipe.position.set(2.6, 0, -1);
       return { model: group(worker, barrow, pipe) };
     } },
-    { name: 'Falling wreckage', color: 0xff5a2a, has: (l) => l.wreckage?.length, rules: [
+    { name: 'Falling wreckage', color: 0xff5a2a, has: (l) => l.wreckage?.some(e => e.kind !== 'blast' && e.kind !== 'boulders'), rules: [
       'Scripted destruction as you come near: tankers, containers and hangars go up beside the road, a plane falls out of the sky, an airliner comes in to land and slides across the lanes.',
-      'Whatever its wreckage lands on is wrecked, and it blocks those lanes for good; traffic pulls over for it. A building can blow out across the road too: keep up and you\'ll be past it, or not.',
+      'Whatever its wreckage lands on is wrecked, and it blocks those lanes for good; traffic pulls over for it. (A building blowing out is a Blast: its own card.)',
     ], build: () => ({ model: makeAirliner(14, 30, true) }) },
-    { name: 'Quarries and blasts', color: 0xb9a37c, has: (l) => l.quarries?.length, rules: [
+    { name: 'Quarries', color: 0xb9a37c, has: (l) => l.quarries?.length, rules: [
       `A quarry is cut into the hillside beside the road: ${CONFIG.quarry.benches} benches, each ${CONFIG.quarry.benchHeight} m high and ${CONFIG.quarry.benchDepth} m deep, with the works on its floor.`,
-      `Now and then a crag of the face is blasted out across the road. Its red box flashes for ${W.blastWarn} s first, then rock and dust sweep over the lanes in ${W.blastTime} s: whatever is in the box is wrecked, you included.`,
-      'It is timed to your pace, not to a spot: keep up and you are just short of it as it goes; ease off, or be through it already. The road is left clear afterwards.',
+      'Its face is scenery until a level blasts it (see Blasts) or sends boulders off it (see Boulders).',
     ], build: () => {
       const g = road(9, 14), rock = lambert(0xb9a37c), dark = lambert(0x8f7c5c), Q = CONFIG.quarry;
       for (let k = 0; k < Q.benches; k++) g.add(box(3, 1.5, 14, k % 2 ? dark : rock, 7.5 + k * 3, 0.75 + k * 1.5, 0));
+      return { model: g, spin: false };
+    } },
+    { name: 'Blasts', color: 0xe0642a, has: (l) => l.wreckage?.some(e => e.kind === 'blast'), rules: [
+      `Now and then a building beside the road, or a crag of a quarry's face, is blasted out across the road. Its red box flashes for ${W.blastWarn} s first, then fire (or rock and dust) sweeps over the lanes in ${W.blastTime} s: whatever is in the box is wrecked, you included.`,
+      'It is timed to your pace, not to a spot: keep up and you are just short of it as it goes; ease off, or be through it already. The road is left clear afterwards.',
+    ], build: () => {
+      const g = road(9, 14), rock = lambert(0xb9a37c), dark = lambert(0x8f7c5c);
+      for (let k = 0; k < 2; k++) g.add(box(3, 1.5, 14, k % 2 ? dark : rock, 7.5 + k * 3, 0.75 + k * 1.5, 0));
       const boxMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
       const warn = mesh(new THREE.PlaneGeometry(9, 5).rotateX(-Math.PI / 2), boxMat, 0, 0.06, -1);
       const dust = [0, 1, 2, 3].map(k => mesh(new THREE.SphereGeometry(1.1, 10, 8), lambert(0xcbb894, { transparent: true, opacity: 0.8 }), 0, 1, -1 + (k % 2 ? 1 : -1)));
       g.add(warn, ...dust);
-      return { model: g, spin: false, tick: (t) => {
+      return { model: g, tick: (t) => {
         const u = t % 4;
         warn.visible = u < 2 && Math.floor(t * 6) % 2 === 0;
         dust.forEach((d, k) => { const v = (u - 2 - k * 0.1) / 1.2; d.visible = v > 0 && v < 1; d.position.x = 6 - v * 10; d.scale.setScalar(0.6 + v * 1.6); d.material.opacity = 0.8 * (1 - v); });
@@ -386,10 +406,10 @@ export const GROUPS = [
       const car = painted(vehicle('driveby', 0xffffff), 0x3a1840);
       return { model: car, tick: (t) => { car.userData.firing?.(t % 2.4 < 1.1); } };
     } },
-    { name: 'Punctures', color: 0xffb03a, has: (l) => l.gunfire?.length || l.traffic?.driveby, rules: [
-      `A shot can puncture a tyre. Traffic with a flat pulls over onto the shoulder and stops. You get ${pct(PU.topSpeed)} of your top speed and acceleration, and the car pulls to the flat side.`,
+    { name: 'Punctures', color: 0xffb03a, has: (l) => l.gunfire?.length || l.traffic?.driveby || (l.battle && l.pillboxes) || l.potholes?.length || l.siteWorks?.some(w => w.kind === 'trench'), rules: [
+      `A tyre can be punctured by a shot (a gang house's, a drive-by's, a pillbox's: ${pct(GF.puncture)} a hit), by a pothole (${pct(S.potholePuncture)} a jolt) or by a gap in a trench (${pct(S.trenchPuncture)} a jolt), on the side that took it. Traffic with a flat pulls over onto the shoulder and stops. You get ${pct(PU.topSpeed)} of your top speed and acceleration, and the car pulls to the flat side.`,
       `Stop to change it: ${PU.fixTime} s stopped in all (braking with a flat takes you right down to a stop). A wrench fixes it on the spot.`,
-      `While punctured, and for ${PU.grace} s after, the shoulder's police meter leaves you alone. Armour keeps your tyres from being shot out; a ghost lets the bullets pass straight through; nothing without wheels can be punctured.`,
+      `While punctured, and for ${PU.grace} s after, the shoulder's police meter leaves you alone. Armour keeps your tyres from being punctured at all; a ghost lets the bullets pass straight through (and carries over potholes and trenches); nothing without wheels can be punctured.`,
     ], build: () => {
       const car = painted(vehicle('commuter', 0xffffff), 0xff8a1a);
       car.rotation.z = 0.07;
@@ -696,11 +716,11 @@ export const GROUPS = [
       worker.add(box(0.06, 2.2, 0.06, lambert(0xf4f4f4), 0.35, 1.7, 0.2), face);
       const kids = [0xff4f8b, 0x2f7de1, 0xffd23f, 0x39d353].map((color, k) => { const kid = group(box(0.34, 0.5, 0.24, lambert(color), 0, 0.75, 0), box(0.3, 0.5, 0.2, lambert(0x2b2f38), 0, 0.25, 0), mesh(new THREE.SphereGeometry(0.17, 10, 8), lambert(0xf2c09a), 0, 1.17, 0)); kid.position.z = (k - 1.5) * 0.7; g.add(kid); return kid; });
       g.add(worker);
-      return { model: g, spin: false, tick: (t) => { const u = (t * 0.25) % 1; kids.forEach((kid) => { kid.position.x = 4.5 - u * 9; }); face.material.color.setHex(u < 0.85 ? 0xd8262b : 0xf2c21c); } };
+      return { model: g, tick: (t) => { const u = (t * 0.25) % 1; kids.forEach((kid) => { kid.position.x = 4.5 - u * 9; }); face.material.color.setHex(u < 0.85 ? 0xd8262b : 0xf2c21c); } };
     } },
     { name: 'Burst water mains', color: 0x6fb6d8, has: (l) => l.waterMains?.length, rules: [
       `A main has burst under one lane: it sprays for ${H.main.on} s, then stops for ${H.main.off} s. You are warned ${H.main.warn} m out.`,
-      `While it sprays, ${H.main.length} m of that lane is as slippery as ice: brakes at ${pct(H.main.brakeGrip)}, steering at ${pct(H.main.steerGrip)}, and you cross the road at ${pct(H.main.laneSpeed)} of your speed. Between sprays the lane is dry.`,
+      `While it sprays, ${H.main.length} m of that lane is as slippery as ice: brakes at ${pct(H.main.brakeGrip)}, steering at ${pct(H.main.steerGrip)}, and you cross the road at ${pct(H.main.laneSpeed)} of your speed. Between sprays the lane is dry, but the tyres stay wet for ${H.main.wetAfter} m past the water, the grip coming back little by little (ice lets go the moment you are off it).`,
     ], build: () => {
       const g = road(9, 12);
       const wet = mesh(new THREE.PlaneGeometry(4.2, 9).rotateX(-Math.PI / 2), lambert(0x6fb6d8, { transparent: true, opacity: 0.6 }), 2.2, 0.03, -1);
@@ -773,11 +793,8 @@ export const GROUPS = [
       first.add(box(2.5, 2.9, 5, lambert(0xd8dadc), 0, 2.05, -2.8), second);
       second.add(box(2.5, 2.9, 5, lambert(0x2f6fa8), 0, 2.05, -2.8));
       g.add(first);
-      return { model: g, spin: false, tick: (t) => { const u = Math.min(1, (t % 5) / 1.6), e = u * u * (3 - 2 * u); first.rotation.y = e * 1.25; second.rotation.y = -e * 1.9; } };
+      return { model: g, tick: (t) => { const u = Math.min(1, (t % 5) / 1.6), e = u * u * (3 - 2 * u); first.rotation.y = e * 1.25; second.rotation.y = -e * 1.9; } };
     } },
-    { name: 'Side-road gimmicks', color: 0x2e8b4a, has: (l) => ['cameras', 'crossings', 'potholes', 'trolleys', 'stampedes', 'waterMains'].some(k => l[k]?.some(i => i.road === 'side')), rules: [
-      'Speed cameras, level crossings, potholes and the rest can stand on a side road too, so the way round has troubles of its own.',
-    ], build: () => { const g = road(5, 12), cam = ob('camera', { height: 4.2 }); cam.position.set(3.2, 0, 0); cam.rotation.y = Math.PI; g.add(cam); return { model: g }; } },
   ] },
   { name: 'City streets', cards: [
     { name: 'Tunnels', color: 0x4a4f5c, has: (l) => l.tunnels?.length, rules: [
@@ -848,7 +865,7 @@ export const GROUPS = [
       const car = painted(vehicle('commuter', 0xffffff), 0x24242b);
       car.position.set(-0.1, 0, -3); car.rotation.y = Math.PI;
       g.add(car);
-      return { model: g, spin: false, tick: (t) => { const flipped = t % 6 > 2.5; arrow.visible = !flipped; cross.visible = car.visible = flipped; car.position.z = -6 + ((t % 6) - 2.5) * 2.4; } };
+      return { model: g, tick: (t) => { const flipped = t % 6 > 2.5; arrow.visible = !flipped; cross.visible = car.visible = flipped; car.position.z = 6 - ((t % 6) - 2.5) * 2.4; } };
     } },
     { name: 'Convoys', color: 0x6b7343, has: (l) => l.convoys, rules: [
       `Now and then a convoy: ${CV.size} vehicles of a kind (a level can say how many, and what), nose to tail ${CV.gap} m apart in one lane, moving as one.`,
@@ -885,7 +902,7 @@ export const GROUPS = [
       const g = road(9, 14), sock = makeWindsock(5, 3), bus = vehicle('bus', 0xd8262b);
       sock.position.set(-5.4, 0, 2); bus.position.set(-2.2, 0, 0);
       g.add(sock, bus);
-      return { model: g, spin: false, tick: (t) => { const u = t % GB.wind.every, level = GB.wind.lull + (1 - GB.wind.lull) * Math.max(0, Math.min(1, Math.min(u, GB.wind.length - u) / GB.wind.rise)); sock.userData.set(level, 1, t); bus.rotation.z = -level * 0.08; bus.userData.animate?.(t); } };
+      return { model: g, tick: (t) => { const u = t % GB.wind.every, level = GB.wind.lull + (1 - GB.wind.lull) * Math.max(0, Math.min(1, Math.min(u, GB.wind.length - u) / GB.wind.rise)); sock.userData.set(level, 1, t); bus.rotation.z = -level * 0.08; bus.userData.animate?.(t); } };
     } },
     { name: 'Ramp over the jam', color: 0xc23b22, has: (l) => l.jamRamps?.length, rules: [
       `A traffic jam: stopped cars across your side of the road, and at the back of it a car transporter with its ramps down, a ${GB.ramp.run} m slope up to a lip ${(GB.ramp.run * Math.tan(GB.ramp.angle)).toFixed(1)} m high. A board on the way in names its lane and the speed that clears the queue.`,
@@ -899,7 +916,7 @@ export const GROUPS = [
       const queue = [0, 1, 2].flatMap((k) => [-3.6, 0, 3.6].filter((x) => x || k > 0).map((x, i) => { const c = painted(vehicle('commuter', 0xffffff), paints[(k * 3 + i) % 6]); c.position.set(x, 0, (x ? -8 : 1) + k * 6.5); return c; }));
       g.add(truck, car, ...queue);
       const top = GB.ramp.run * Math.tan(GB.ramp.angle);
-      return { model: g, spin: false, tick: (t) => { const u = (t % 3.4) / 3.4, z = -21 + u * 44, on = z + 14;
+      return { model: g, tick: (t) => { const u = (t % 3.4) / 3.4, z = -21 + u * 44, on = z + 14;
         const y = on < 0 ? 0 : on < GB.ramp.run ? on * top / GB.ramp.run : Math.max(0, top + (on - GB.ramp.run) * 0.28 - 0.016 * (on - GB.ramp.run) ** 2);
         car.position.set(0, y, z); car.rotation.x = on > 0 && on < GB.ramp.run ? -GB.ramp.angle : y > 0 ? -0.28 + 0.032 * (on - GB.ramp.run) : 0; } };
     } },
@@ -916,15 +933,15 @@ export const GROUPS = [
       return { model: g, spin: true, tick: (t) => { const u = (t % 4) / 4; car.position.set(Math.sin(t * 9) * 0.45, Math.abs(Math.sin(t * 22)) * 0.14, -7 + (1 - (1 - u) ** 2) * 14); car.rotation.z = Math.sin(t * 17) * 0.07; } };
     } },
     { name: 'Low bridge', color: 0xc1121f, has: (l) => l.lowBridges?.length, rules: [
-      `A height bar across your side of the road, ${GB.bar.clearance.toFixed(1)} m up unless its board says otherwise, with an exit before it: the side road is the tall vehicles' way round, and the tall traffic takes it.`,
+      `A height bar over your side of the road, ${GB.bar.clearance.toFixed(1)} m up unless its board says otherwise, with an exit before it: the side road is the tall vehicles' way round. It is two bars, one over each half of your side, the second ${GB.bar.stagger} m on from the first, so the way through is a slalom.`,
       'On the way in you are told what your car measures against it. <strong>A car that fits goes straight under</strong>: the short way, with the road to itself.',
-      `A car that is too tall can take the exit and lose the time, or go at the bar anyway: it costs ${GB.bar.damage} health and ${GB.bar.perMetre} more for every metre too tall, and ${pct(1 - GB.bar.keep)} of its speed. It is never stopped.`,
-      'The gamble is made in the garage, and again at the sign. (The oncoming side has no bar.)',
+      `A car that is too tall can take the exit and lose the time, or go at the bar anyway: it costs ${GB.bar.damage} health (a massive knock) and ${GB.bar.perMetre} more for every metre too tall, and ${pct(1 - GB.bar.keep)} of its speed. It is never stopped.`,
+      'The gamble is made in the garage, and again at the sign. Tall traffic goes straight through the bars at no cost. (The oncoming side has no bar.)',
     ], build: () => {
       const g = road(9, 14), bar = makeHeightBar(-4.5, 0, 2), low = painted(vehicle('sport', 0xffffff), 0x39ff14), tall = vehicle('bus', 0xd8262b);
       bar.position.z = 1;
       g.add(bar, low, tall);
-      return { model: g, spin: false, tick: (t) => { const u = (t % 5) / 5; low.position.set(-2.4, 0, -7 + Math.min(1, u * 2.5) * 14); low.visible = u < 0.4; tall.visible = u >= 0.4; const v = (u - 0.4) / 0.6; tall.position.set(-2.4 + Math.max(0, v - 0.25) * 12, 0, -9 + Math.min(v, 0.55) * 12); } };
+      return { model: g, tick: (t) => { const u = (t % 5) / 5; low.position.set(-2.4, 0, -7 + Math.min(1, u * 2.5) * 14); low.visible = u < 0.4; tall.visible = u >= 0.4; const v = (u - 0.4) / 0.6; const x = -2.4 + Math.max(0, v - 0.25) * 12, z = -9 + Math.min(v, 0.55) * 12; if (v < 0.02) tall.rotation.y = 0; else tall.rotation.y = Math.atan2(x - tall.position.x, z - tall.position.z); tall.position.set(x, 0, z); } };
     } },
     { name: 'Ford', color: 0x2f7fb8, has: (l) => l.fords?.some(f => !f.fills), rules: [
       'The road runs straight through a river, and the bridge is the exit before it: the side road, the longer way. Each ford is its own depth: the boards and the red on the depth posts show it.',
@@ -1007,7 +1024,7 @@ export const GROUPS = [
       const shade = box(2.6, 0.02, 9, new THREE.MeshBasicMaterial({ color: 0x05070c, transparent: true, opacity: 0.45 }), -2.25, 0.02, -4.5);
       truck.position.set(-2.25, 0, 4);
       g.add(truck, car, sun, shade);
-      return { model: g, spin: false, tick: (t) => { const u = (t % 6) / 6, out = u > 0.5; car.position.set(out ? 2.25 : -2.25, 0, -6 + Math.sin(t * 1.3) * 0.8); } };
+      return { model: g, tick: (t) => { const u = (t % 6) / 6, out = u > 0.5; car.position.set(out ? 2.25 : -2.25, 0, -6 + Math.sin(t * 1.3) * 0.8); } };
     } },
     { name: 'Dust trail', color: 0xc9aa7c, has: (l) => l.dust?.length, rules: [
       `A dry dirt road. Everything moving on it throws a plume of dust ${GB.dust.length} m long, and the wind (the windsock before it shows which way) carries the plume across the road as it goes.`,
@@ -1046,7 +1063,7 @@ export const GROUPS = [
       const car = painted(vehicle('commuter', 0xffffff), 0x39ff14), block = ob('barrier', { hw: 1.4, hl: 0.4, height: 1 });
       block.position.set(0, 0.55, 5.6); block.rotation.x = 0.19;
       g.add(up, down, car, block, box(7, 0.1, 3, tar, 0, -0.05, -9.2), box(7, 0.1, 3, tar, 0, -0.05, 9.2));
-      return { model: g, spin: false, tick: (t) => { const u = (t % 3) / 3, z = -9 + u * 20, hill = 1.55 - Math.abs(z) * 0.19, arc = z > -0.5 && z < 7 ? 1.6 + (z + 0.5) * 0.19 - 0.075 * (z + 0.5) * (z + 0.5) * 0.6 : 0;
+      return { model: g, tick: (t) => { const u = (t % 3) / 3, z = -9 + u * 20, hill = 1.55 - Math.abs(z) * 0.19, arc = z > -0.5 && z < 7 ? 1.6 + (z + 0.5) * 0.19 - 0.075 * (z + 0.5) * (z + 0.5) * 0.6 : 0;
         car.position.set(-1.6, Math.max(Math.max(0, hill), arc + 0.1), z); car.rotation.x = z < -0.5 && hill > 0 ? -0.19 : z > 7 && hill > 0 ? 0.19 : arc > hill ? (z - 2.5) * 0.06 : 0; car.userData.animate?.(t); } };
     } },
   ] },
@@ -1061,7 +1078,7 @@ export const GROUPS = [
       const g = road(9, 16), patch = makeAreaPatch(4.4, 12), car = painted(vehicle('commuter', 0xffffff), 0x39ff14);
       patch.position.x = -2.2;
       g.add(patch, car);
-      return { model: g, spin: false, tick: (t) => { const u = (t % 6) / 6, inside = u >= 0.5, v = (u % 0.5) * 2; car.position.set(inside ? -2.2 : 2.2, 0, -8 + v * 16); car.userData.animate?.(t); } };
+      return { model: g, tick: (t) => { const u = (t % 6) / 6, inside = u >= 0.5, v = (u % 0.5) * 2; car.position.set(inside ? -2.2 : 2.2, 0, -8 + v * 16); car.userData.animate?.(t); } };
     } },
     { name: 'Infected cars', color: 0xc8ff3a, has: (l) => l.radiation?.length || l.infectedTraffic > 0, rules: [
       `A traffic car wearing a green glow, a trefoil over it and a ring on the road ${RD.radius} m out: within the ring you are dosed just as in a radiated area, and the meter fills. On a radiated level ${pct(RD.share)} of the traffic comes that way unless the level says otherwise, and a clean car driving in the green can catch it (${pct(RD.catch)} a second). ${RD.most} at most are about at once.`,
@@ -1073,7 +1090,7 @@ export const GROUPS = [
       const aura = makeInfection(V.hw, V.hl, V.height, 3.6);
       sick.position.set(-2.2, 0, 0); aura.position.copy(sick.position);
       g.add(sick, aura, car);
-      return { model: g, spin: false, tick: (t) => { aura.userData.pulse(t); car.position.set(2.6, 0, -7 + ((t * 3.5) % 14)); car.userData.animate?.(t); sick.userData.animate?.(t); } };
+      return { model: g, tick: (t) => { aura.userData.pulse(t); car.position.set(2.6, 0, -7 + ((t * 3.5) % 14)); car.userData.animate?.(t); sick.userData.animate?.(t); } };
     } },
   ] },
 ];
