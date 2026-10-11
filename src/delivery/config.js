@@ -1439,7 +1439,7 @@ export const CONFIG = {
   // and within leeReach m, the car feels only `lee` of it; as it clears that vehicle the wind is back at once, with
   // a shove of `shove` m/s on top. Traffic feels `traffic` of the push (it drifts in its lane, and leans `lean`
   // rad per m/s^2). Windsocks stand `ahead` m before the stretch and every sockEvery m along it
-  crosswind: { strength: 7, lull: 0.3, every: 6, length: 2.6, rise: 0.6, heightRef: 1.45, heightPower: 1.5, leeHeight: 2, leeReach: 5.5, lee: 0.1, shove: 2.4,
+  crosswind: { strength: 11, lull: 0.4, every: 5, length: 3, rise: 0.6, heightRef: 1.45, heightPower: 1.5, leeHeight: 2, leeReach: 5.5, lee: 0.1, shove: 2.4,
     traffic: 0.35, lean: 0.006, ahead: 90, sockEvery: 150 },
   // crests (no field of their own: a level's segments, their "grade" and "ease"): where the road falls away under
   // the car faster than `gravity` m/s^2 (the game's, as the drawbridge's) can pull the car down after it, the car

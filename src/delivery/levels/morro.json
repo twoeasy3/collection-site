@@ -94,9 +94,6 @@
   "tunnels": [
     { "from": 3016, "to": 3216 }
   ],
-  "crosswinds": [
-    { "from": 3271, "to": 3511, "dir": "right" }
-  ],
   "cushions": [
     { "from": 1490, "to": 1670 }
   ],
