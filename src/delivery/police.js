@@ -38,8 +38,8 @@ document.getElementById('page').innerHTML = `
   ${table(['Offence', 'What the police say', 'When'], [
     ['Too long on the shoulder', quote('shoulder'), `The shoulder meter runs out: ${C.dangerTime} s of shoulder driving, refilling at ${C.dangerCooldown} s a second back in the lanes.`],
     ['Seen on the shoulder', quote('seen'), `Any time you're on the shoulder with a police car watching, meter or not.`],
-    ['Hitting a police car', quote('bump'), 'Any contact that was your doing (see below). That includes a pursuit's interceptor: it is too busy chasing to see you on the shoulder or anything else, but ramming it is a bust.'],
-    ['Attacking a police car', quote('assaultCop'), 'Evil only: a flaming package hits a police car (or a pursuit's interceptor).'],
+    ['Hitting a police car', quote('bump'), 'Any contact that was your doing (see below). That includes a pursuit\'s interceptor: it is too busy chasing to see you on the shoulder or anything else, but ramming it is a bust.'],
+    ['Attacking a police car', quote('assaultCop'), 'Evil only: a flaming package hits a police car (or a pursuit\'s interceptor).'],
     ['Attacking anyone in view', quote('assault'), 'Evil only: a flaming package hits any car while a police car is watching.'],
     ['Blocking an ambulance', quote('emergency'), `An ambulance comes up within ${m(E.reach)} behind you in its lane, and you're still in its way ${E.giveWay} s later.`],
   ])}
