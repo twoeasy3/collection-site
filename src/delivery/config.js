@@ -1469,10 +1469,10 @@ export const CONFIG = {
   jamRamp: { release: 320, crawl: 4, longest: 2.6, tallest: 2.45, run: 15, angle: 0.27, half: 1.5, foot: 3, cab: 3, gap: 6, spacing: 7.5, queue: 4, margin: 5, sign: 170, keepClear: 160, commit: 90 },
   // a low bridge ("lowBridges": { s, clearance? }): a height bar across the player's side and its shoulder, `clearance`
   // m off the road (the bridge's own, or this), between an exit and its merge. A car taller than that which goes at
-  // it loses `damage` health and perMetre more for each m too tall, keeps `keep` of its speed, and is through. Said
-  // from `warn` m before the exit; boards `sign` m before the exit and at it. Tall traffic takes the exit (one found
-  // within `traffic` m of the bar, more than `unseen` m from the player, is taken off the road)
-  lowBridge: { clearance: 2, damage: 30, perMetre: 25, keep: 0.4, warn: 260, sign: 200, traffic: 120, unseen: 140 },
+  // it loses `damage` health (a great deal) and perMetre more for each m too tall, keeps `keep` of its speed, and is through. A bridge is
+  // two bars, one over each half of the player's side, the second `stagger` m on from the first, to slalom round. Said
+  // from `warn` m before the exit; boards `sign` m before the exit and at it. Tall traffic goes through them without a scratch
+  lowBridge: { clearance: 2, damage: 100, perMetre: 40, keep: 0.4, stagger: 60, warn: 260, sign: 200 },
   // a ford ("fords": { from, to, depth? }): the road through a river `depth` m deep (the ford's own, or this), between
   // an exit and its merge: the side road is the bridge. A car wades `shallow` m (crossing 0) to `deepest` m (crossing
   // 1). In water no deeper than it wades it is slowed, to `fast` m/s in next to none and `slow` m/s at its limit;

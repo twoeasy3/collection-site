@@ -99,6 +99,7 @@ Game.onLoad.push(() => {
   for (const bar of Gambles.bars) {
     const L = CONFIG.lowBridge;
     at(bar.s, 0).add(makeHeightBar(-bar.hi, -bar.lo, bar.clearance)); // (the group's +x is the road's left)
+    if (bar.s !== bar.entry) continue; // (the second bar of a bridge: the boards are the first's)
     const text = 'LOW BRIDGE ' + bar.clearance.toFixed(1) + ' m';
     for (const s of bar.exit ? [bar.exit.exitAt - L.sign, bar.exit.exitAt - 30] : [bar.s - L.sign]) {
       if (s > 5) at(s, Track.hi(s) - 0.6).add(makeSign(text + (bar.exit ? '\nTALL: EXIT' : ''), '#fff', '#c1121f', 6, 2.6));
