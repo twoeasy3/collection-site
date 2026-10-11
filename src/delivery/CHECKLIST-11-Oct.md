@@ -78,6 +78,10 @@ Open with the owner (via front): merge `delivery-crests`; crest boards naming th
 left-drive board fix; which prank ideas to build / whether a furious prank does anything in play / prank at the
 door; where idle agents go next; question 22; surplus levels in the tier table; Good/Evil picks; Moon airtime option.
 
+**12-Oct assignments after the first merges (orchestrator):** `delivery-carfix` (a960fb4): L2 measurement, L3 still, then Q16 and Q8.
+`delivery-sweep` (a4d86b2): Q14, Q46, gimmick page Q25 to Q28, Q29, Q30. `delivery-prank-ideas` (affdde1, Fable): Q42, Q38, Q31, Q39.
+Not yet given out: Q50/Q51 vehicle audit (large, heavy), Stelvio, Tokyo, Mumbai, Night Shift, Q2, Q3, Q12, Q15, Q17, Q20, Q21, Q24, Q32, Q45.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
@@ -552,8 +556,8 @@ The owner's words, as in `CHECKLIST-10-Oct.md`. Q52 and Q53 are done and left ou
 
 "add to the list, and bump these because this was my new player experience."
 - [ ] **L1.** "Shorten Beginner levels and simplify them" (the first tier's levels; agent `delivery-beginner`).
-- [ ] **L2.** "Darkvan and Junker need to be faster" (agent `delivery-carfix`).
-- [ ] **L3.** "Race screensaver broken" (agent `delivery-carfix`).
+- [x] **L2.** "Darkvan and Junker need to be faster" (agent `delivery-carfix`). MERGED 12-Oct: Junker 22/8 to 25/9.5, Darkvan 21/7 to 24/8.5; cruising time against the Beginner clocks NOT measured yet (follow-up sent).
+- [x] **L3.** "Race screensaver broken" (agent `delivery-carfix`). MERGED 12-Oct: racewatch stored names in `car.driver`, which the pursuit made a function; now `car.driverName`. Headless 60 s on six circuits OK; no still yet (follow-up sent).
 - [ ] **L4.** "Cars from locked tiers should not appear in garage. Let's have the cars in the immediate next tier
       be black silhouettes but unpurchaseable" (agent `delivery-garagetiers`).
 - [ ] **L5.** "Back Button should return to previous page" (agent `delivery-garagetiers`).
