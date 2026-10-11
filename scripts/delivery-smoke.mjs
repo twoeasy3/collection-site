@@ -32,6 +32,8 @@ const reseed = (...parts) => { // (FNV-1a over the seed and the parts)
 const server = await logicServer();
 let failures = 0;
 const QUICK = process.argv.includes('--quick');
+// --levels=id,id: only the per-level checks (the first section), for those levels (a menu level's id, as levels/<file>.json has it)
+const ONLY_LEVELS = (() => { const ids = (process.argv.find(a => a.startsWith('--levels=')) || '').slice(9).split(',').filter(Boolean); return ids.length ? ids : null; })();
 // a section's heading, after how long the one before took
 const started = Date.now();
 let sectionStart = started;
@@ -75,6 +77,7 @@ try {
 
   for (let n = 0; n < levels.LEVELS.length; n++) {
     levels.selectLevel(n);
+    if (ONLY_LEVELS && !ONLY_LEVELS.includes(levels.LEVEL.id)) continue;
     section(`level ${n + 1}: ${levels.levelName(levels.LEVEL)}`);
 
     // drive flat out, throwing packages, kept alive so the whole course is covered
@@ -291,6 +294,12 @@ try {
         `running into a tractor is a crash: it takes ${(before - t.health).toFixed(0)} damage, the player ${(Player.maxHealth - Player.health).toFixed(0)}, and it is shoved forward`);
     }
 
+  }
+
+  if (ONLY_LEVELS) { // (--levels=id,id: only the per-level checks above, for the levels named: seconds; the other sections are not run)
+    const missing = ONLY_LEVELS.filter(id => !levels.LEVELS.some(l => l.id === id));
+    if (missing.length) { failures++; console.log('  FAIL  no such level on the menu: ' + missing.join(', ')); }
+    throw 'levels only';
   }
 
   // the clock: sitting still runs it out and drains the tip. On a level of the test's own, with a clock of 30 s
@@ -2921,8 +2930,10 @@ try {
     !Progress.owns('bus') && Progress.data.money === CONFIG.completeBank && Progress.bestTime('expressway', false) === undefined,
     `a complete savegame: ${Progress.data.unlocked} levels open, ${Progress.data.cars.length} cars owned, $${Progress.data.money} banked, the bus still secret`);
 } catch (error) {
-  failures++;
-  console.error(error);
+  if (error !== 'levels only') { // (thrown to end a --levels run early)
+    failures++;
+    console.error(error);
+  }
 } finally {
   await server.close();
 }
