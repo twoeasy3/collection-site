@@ -101,6 +101,12 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 **12-Oct, MERGED `delivery-sweep`:** Q14 (crosswinds removed from backlot and morro; CONFIG.crosswind stronger), Q46 (the Cattle Drive truss now tapers), Q25 to Q28 (gimmick page), Q29 (tyre bounce raised; cause not confirmed), Q30 (Gullwing doors only in the garage), SWEEP-12-Oct.md, the left-drive board fix. Levels check passed; C and D not seen/run.
 **HELD `delivery-gimmicklogic` (a1634b0):** Q40, Q5, Q7, Q43, Q11, Q13 done and headless-verified; held until the owner answers open questions 26 (Q5 meaning) and 27 (Q13 override); light checks to run meanwhile (behind the lock priority).
 
+**12-Oct, owner on the history investigation:** "I still only have the one domain, and would like it on the /delivery/ subdomain." Read as: the game on a subdomain of the one domain, in a repo of its own. `delivery-i2` (a2e16de) writes `PLAN-delivery-subdomain-12-Oct.md` (plan only: no pushes, no Cloudflare/GitHub changes; owner steps, the save-data question as a subdomain is a new origin).
+
+**12-Oct, NEW ASSIGNMENT PAUSED AGAIN BY THE OWNER ("No more new tasks by the way."):** no new tasks or agents; running agents only finish, verify, correct and merge what they hold (prank models, Good/Evil cues, Beginner, damage Q18/Q19, carfix stills, the subdomain plan, held gimmicklogic, the sweep's stills job). Not to be started: Q15, Q3, Q12 (damage agent), Q21, Q17, Q20 (sweep agent), Q50/Q51 audit, and everything else in section D.
+
+**12-Oct, NEW ASSIGNMENT PAUSED AGAIN by the owner ("No more new tasks by the way."):** no new tasks or agents; agents only finish, verify, correct and merge what they hold. Sweep's Q21, Q17, Q20 not to start unless already started; damage's Q15, Q3, Q12 not to start; Q50/Q51 not started. `delivery-i2` plan merged (docs only): open question 28.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
