@@ -54,3 +54,10 @@ potholes (4), stunts potholes (4), venice tunnels (1). Nothing is added. Doubtfu
 ## Counts after
 
 Burst mains in 13 level files (was 17), potholes in 19 (was 22), tunnels in 18 (was 19).
+
+## Second removal (the owner: "Remove the above", on the doubtful cases)
+
+Every (x) above that the owner named is now removed too: burst mains on park (4), ponti (2), venice (2), morro (5)
+and leaks (8); potholes on ponti (4), venice (3) and leaks (4); the toys tunnel (1). Their verdicts are now X
+(removed). Counts after both removals: burst mains in 8 level files, potholes in 16, tunnels in 17. Left as they
+were: noon's tunnel, the showcase levels' gimmicks.
