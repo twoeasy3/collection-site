@@ -26,7 +26,11 @@ try {
     console.log('  ' + level.id.padEnd(18) + (good ? good.id.padEnd(10) + evil.id + (level.cargo ? '   (its own)' : '') : '-'));
   }
   ok('every level\'s "cargo" names items there are', !bad.length, bad.join(' | '));
-  ok('every item turns up', seen.good.size === CARGO.good.length && seen.evil.size === CARGO.evil.length, [...seen.good, ...seen.evil].join(' '));
+  // the prank cargo, available but not dealt to a level (owner, 12-Oct): every unnamed level already carries one of the
+  // older items, so these turn up only where a level names one in levelText.json. Every other test here covers them
+  const UNASSIGNED = ['whoopee', 'bucket', 'squirter', 'teeth', 'piecatapult', 'airhorn', 'ghost', 'nestedboxes', 'spider', 'ink'];
+  const missing = (side) => CARGO[side].filter(item => !seen[side].has(item.id) && !UNASSIGNED.includes(item.id)).map(item => item.id);
+  ok('every item turns up (but the unassigned pranks)', !missing('good').length && !missing('evil').length, [...seen.good, ...seen.evil].join(' ') + (missing('good').length + missing('evil').length ? '  MISSING ' + [...missing('good'), ...missing('evil')].join(' ') : ''));
   // ---- where the cargo is named: levelText.json, then the level's own file
   const filed = [], shape = [], differ = [], dealtToday = [];
   for (const [id, words] of Object.entries(LEVEL_TEXT)) {

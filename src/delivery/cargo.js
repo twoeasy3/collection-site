@@ -87,6 +87,10 @@ export const CARGO = {
     { id: 'consultants', name: 'Crate of Consultants', states: ['Laser dot', 'Pages flipping', 'Pie chart spinning'] },
     { id: 'inlaws', name: "The In-Laws' Luggage", states: ['Neatly stacked', 'Bulging', 'Heaving apart'] },
     { id: 'band', name: 'Marching Band in a Box', states: ['A faint oompah', 'Trombone out', 'Full blast'] },
+    // the pranks (IDEAS-prank-cargo-12-Oct.md): joke-shop goods and set-up pranks, things and not people
+    { id: 'nestedboxes', name: 'Boxes within Boxes', states: ['Wrapped', 'Opening', 'Gotcha'] },
+    { id: 'spider', name: 'Spider on a Fishing Line', states: ['Hanging', 'Bobbing', 'Dropped'] },
+    { id: 'ink', name: 'Disappearing Ink', states: ['Corked', 'Blotting', 'Splashing'] },
   ],
 };
 // the names and the Evil states in cargoText.json come first, these the fallback (words.js: a bad entry is passed over)
