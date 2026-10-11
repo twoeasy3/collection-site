@@ -101,6 +101,28 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 **12-Oct, MERGED `delivery-sweep`:** Q14 (crosswinds removed from backlot and morro; CONFIG.crosswind stronger), Q46 (the Cattle Drive truss now tapers), Q25 to Q28 (gimmick page), Q29 (tyre bounce raised; cause not confirmed), Q30 (Gullwing doors only in the garage), SWEEP-12-Oct.md, the left-drive board fix. Levels check passed; C and D not seen/run.
 **HELD `delivery-gimmicklogic` (a1634b0):** Q40, Q5, Q7, Q43, Q11, Q13 done and headless-verified; held until the owner answers open questions 26 (Q5 meaning) and 27 (Q13 override); light checks to run meanwhile (behind the lock priority).
 
+**12-Oct, owner on the history investigation:** "I still only have the one domain, and would like it on the /delivery/ subdomain." Read as: the game on a subdomain of the one domain, in a repo of its own. `delivery-i2` (a2e16de) writes `PLAN-delivery-subdomain-12-Oct.md` (plan only: no pushes, no Cloudflare/GitHub changes; owner steps, the save-data question as a subdomain is a new origin).
+
+**12-Oct, NEW ASSIGNMENT PAUSED AGAIN BY THE OWNER ("No more new tasks by the way."):** no new tasks or agents; running agents only finish, verify, correct and merge what they hold (prank models, Good/Evil cues, Beginner, damage Q18/Q19, carfix stills, the subdomain plan, held gimmicklogic, the sweep's stills job). Not to be started: Q15, Q3, Q12 (damage agent), Q21, Q17, Q20 (sweep agent), Q50/Q51 audit, and everything else in section D.
+
+**12-Oct, NEW ASSIGNMENT PAUSED AGAIN by the owner ("No more new tasks by the way."):** no new tasks or agents; agents only finish, verify, correct and merge what they hold. Sweep's Q21, Q17, Q20 not to start unless already started; damage's Q15, Q3, Q12 not to start; Q50/Q51 not started. `delivery-i2` plan merged (docs only): open question 28.
+
+**12-Oct, Good/Evil ideas 1 to 4 BUILT (`delivery-underglow`, not merged):** `?ge=1..4` / `?ge=all`; stills in `%TEMP%\claude\ge\` (i2c, i1a, i1b, i3a, i3b, i4b); agent's ratings: 1 ring/horn arcs reads best, 2 underglow reads well (pulse unseen in a still), 3 tail lights weak, 4 exhaust weakest (being corrected). Waiting for ideas 5 to 12, then one summary for the owner.
+
+**12-Oct, OWNER: "Get the agents to stop any new models they might have to create next and finish their current work."** Every model-building agent told to start no further model, finish the one in hand, look at it in stills, correct, commit, report done / unstarted. Commits seen on the branches at that moment (not yet looked at, none merged):
+- Prank cargo (sight only): `delivery-prank-b`: P5 piecatapult, P6 airhorn, P7 ghost: ONE "first cut" commit `51466c8` (all three; not yet seen in stills as far as known). `delivery-prank-a` (P1 to P4) and `delivery-prank-c` (P8 to P10): NO commits yet; whatever they have not begun stays UNBUILT.
+- `delivery-prank-ideas`: Q42 volcano floor (`943eab2`), Q31 Evil palettes for the tier-4 Blue Stars and amphibious cars (`d2b5ef7`), Q39 Hell Rod / Courier Special / Showdown Muscle on their Super bodies (`8de4db6`), Q38 the Saucer hovers in the garage (`1375e57`): all four committed; stills not yet reported.
+- Good/Evil cues: 1 to 4 built (`delivery-underglow`), 5 to 7 built (`delivery-ge-road`), 8 to 12 built (`delivery-ge-ui`, 11 and 12 sound not heard); none merged.
+- Hong Kong (`delivery-rework-b`): re-laid, own obstacles, scenery committed (`97faba8`); Beginner (`delivery-beginner`): five levels shortened (`1b8b24f`). Final lists to be recorded when the agents report.
+
+**12-Oct, MERGED `delivery-beginner` (L1)** and `delivery-sweep` (Q21 audit and removals, Q17, Q20 plan). Cargo check decision: the ten prank items are exempted from "every item turns up" by one array in `.cargo-check.mjs` (made by `delivery-prank-c`); not named in levelText.json (owner: available, not wired).
+
+**12-Oct, MERGED `delivery-beginner` (L1) and `delivery-sweep` (second merge: Q21 audit and removals, Q17, Q20 plan).** `delivery-carfix`: Q8 kangaroos and Q16 learner are code-complete but UNSEEN: do not merge until their stills are read; the Junker blurb fix goes in separately (`delivery-carfix-words`). Words check on main: gimmickText blasts and punctures too long (damage agent).
+
+**12-Oct, Good/Evil A (`delivery-underglow`, final `1c5853d`):** 1 and 2 read, 3 weak, 4 unconfirmed (Evil puff now a round dark ball, Good puff not caught); stills `%TEMP%\claude\ge\` (`fin\p-muscle-evil.png`, `p-commuter-good.png`); dark Good car and Good at night stills MISSING. Agent finished. Waiting on `delivery-ge-road` and `delivery-ge-ui` for one summary.
+
+**12-Oct, owner's answers:** Q21 doubtful cases: "Remove the above" (sweep agent removes them); Q5: "Yes, supercharger = turbo" (confirmed); Q13: "For the funeral procession, yes" (the Jerk overrides a running mystery; gimmicklogic agent changes it, then I merge all six items). The subdomain plan: the owner will come back; nothing to do. Open questions 26, 27, 29 closed.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
@@ -574,7 +596,7 @@ The owner's words, as in `CHECKLIST-10-Oct.md`. Q52 and Q53 are done and left ou
 ## L. The owner's new-player experience list, 12-Oct: BUMPED (start at once)
 
 "add to the list, and bump these because this was my new player experience."
-- [ ] **L1.** "Shorten Beginner levels and simplify them" (the first tier's levels; agent `delivery-beginner`).
+- [x] **L1.** "Shorten Beginner levels and simplify them" (the first tier's levels; agent `delivery-beginner`). MERGED 12-Oct (`1b8b24f`): expressway 2000 m 110/85 s, back-roads 1800 m 115/90, farm 2000 m 105/80, big-business 2400 m 125/95, hurricane 2400 m 130/100; one idea each; not played by hand; starter-car margins being re-measured by carfix.
 - [x] **L2.** "Darkvan and Junker need to be faster" (agent `delivery-carfix`). MERGED 12-Oct: Junker 22/8 to 25/9.5, Darkvan 21/7 to 24/8.5; cruising time against the Beginner clocks NOT measured yet (follow-up sent).
 - [x] **L3.** "Race screensaver broken" (agent `delivery-carfix`). MERGED 12-Oct: racewatch stored names in `car.driver`, which the pursuit made a function; now `car.driverName`. Headless 60 s on six circuits OK; no still yet (follow-up sent).
 - [ ] **L4.** "Cars from locked tiers should not appear in garage. Let's have the cars in the immediate next tier
