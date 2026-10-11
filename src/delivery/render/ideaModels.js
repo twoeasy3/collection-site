@@ -820,6 +820,7 @@ export const IDEA_MODELS = {
     }
     group.userData = {
       body,
+      garageOnly: true, // (its doors move in the garage and on the car card only: the road draws it with them shut: render/cars.js)
       animate: (t) => {
         const open = Math.max(0, Math.min(1, Math.sin(t * 0.6) * 1.6 + 0.3)), ease = open * open * (3 - 2 * open);
         for (const [door, side] of doors) door.rotation.z = side * ease * 1.15;
