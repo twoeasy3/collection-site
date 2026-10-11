@@ -318,9 +318,9 @@ const makeInk = () => {
   part(quill, cyl(0.008, 0.012, QL, 7), featherMat, 0, QL / 2, 0);
   part(quill, cone(0.012, 0.07, 6), brass, 0, 0.0, 0, Math.PI);
   for (const d of [-1, 1]) {
-    const vane = part(quill, plane(0.075, QL * 0.58), featherMat, d * 0.045, QL * 0.69, 0, 0, FLAT);
-    vane.rotation.z = -d * 0.08;
-    part(quill, plane(0.05, QL * 0.2), lambert(0x6b7a95, { side: THREE.DoubleSide }), d * 0.03, QL * 0.98, 0, 0, FLAT);
+    // (the vanes stand in the shaft's plane, one each side of it, so the feather reads broad from the front)
+    part(quill, plane(0.09, QL * 0.58), featherMat, d * 0.052, QL * 0.69, 0, 0, 0, -d * 0.06);
+    part(quill, plane(0.06, QL * 0.2), lambert(0x6b7a95, { side: THREE.DoubleSide }), d * 0.036, QL * 0.98, 0.002, 0, 0, -d * 0.06);
   }
   // the blots: flat discs on the blotter, two on the glass, and a fan that flies out of the neck
   const spots = [[0.1, 0.22], [0.26, -0.1], [0.0, -0.22], [0.32, 0.08], [-0.3, -0.2], [0.14, 0.02], [-0.32, 0.22]];
