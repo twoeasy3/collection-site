@@ -286,7 +286,7 @@ export const syncTraffic = () => {
       own.userData.firing?.(car.driveBy?.state === 'fire'); // (a drive-by, shooting)
       own.userData.accent?.(Math.floor(car.paint / F1_PAINTS.length));
       own.userData.style?.(Math.floor(car.paint / GT_PAINTS.length)); // (a GT car's shape)
-      own.userData.animate(performance.now() / 1000 + i);
+      if (!own.userData.garageOnly) own.userData.animate(performance.now() / 1000 + i); // (a model whose moving parts are for the garage keeps them still on the road)
       own.userData.aim?.(car.turret || 0); // (an army's gun, turned to its target: see Traffic's battle)
       own.userData.broken?.(!!car.tracksBroken); // (a tank's thrown track)
     }
