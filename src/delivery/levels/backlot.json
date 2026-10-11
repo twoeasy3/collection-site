@@ -74,9 +74,6 @@
   "balloons": [
     { "s": 3460, "lanes": [2, 3] }
   ],
-  "crosswinds": [
-    { "from": 3560, "to": 3900, "dir": "left" }
-  ],
   "potties": [
     { "s": 3990, "pattern": "wave", "lanes": [2, 3, 4] }
   ],

@@ -94,6 +94,15 @@ none on by default), nothing merges until the owner has seen the stills: `delive
 **12-Oct, MERGED `delivery-damage`:** Q18 damage speed cap 15 m/s (`CONFIG.damageSpeedCap`), Q19 explosive obstacle damage 10 + 6.5 x sqrt(volume), Q4 45 m wet after a
 burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 24). Not checked in a browser; levels and replay checks passed.
 
+**12-Oct, owner's feedback on the merged damage work (BUMPED, `delivery-damage` a45c0b1):** Q18 "I think the clamp is too harsh. 25 is barely any damage. ... I was complaining about sportcars (weak cars) oneshotting commuters with speed. Take weight into account." (replace the flat clamp with a mass-aware rule); Q19 "The lower end of obstacles do little damage" (raise the floor to about 25 to 30). Q15, Q3, Q12 parked behind them.
+
+**12-Oct, owner's heavy-lock priority:** Beginner stills (L1), then the damage rework Q18/Q19 checks, then carfix stills, then the rest. `delivery-i2` merged (docs only; open question 25: the owner decides on the history drop).
+
+**12-Oct, MERGED `delivery-sweep`:** Q14 (crosswinds removed from backlot and morro; CONFIG.crosswind stronger), Q46 (the Cattle Drive truss now tapers), Q25 to Q28 (gimmick page), Q29 (tyre bounce raised; cause not confirmed), Q30 (Gullwing doors only in the garage), SWEEP-12-Oct.md, the left-drive board fix. Levels check passed; C and D not seen/run.
+**HELD `delivery-gimmicklogic` (a1634b0):** Q40, Q5, Q7, Q43, Q11, Q13 done and headless-verified; held until the owner answers open questions 26 (Q5 meaning) and 27 (Q13 override); light checks to run meanwhile (behind the lock priority).
+
+**12-Oct, owner on the history investigation:** "I still only have the one domain, and would like it on the /delivery/ subdomain." Read as: the game on a subdomain of the one domain, in a repo of its own. `delivery-i2` (a2e16de) writes `PLAN-delivery-subdomain-12-Oct.md` (plan only: no pushes, no Cloudflare/GitHub changes; owner steps, the save-data question as a subdomain is a new origin).
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a

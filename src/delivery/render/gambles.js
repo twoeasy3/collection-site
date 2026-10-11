@@ -240,6 +240,8 @@ Game.onLoad.push(() => {
       }
     }
   });
+  // ---- every board's lettering mirrored back on a left-hand level (which is drawn mirrored), so that it still reads
+  if (Track.mirrored) group.traverse((mesh) => { if (mesh.isMesh && mesh.geometry.type === 'PlaneGeometry' && mesh.material.map) mesh.scale.x = -1; });
 });
 
 export const syncGambles = (now) => {
