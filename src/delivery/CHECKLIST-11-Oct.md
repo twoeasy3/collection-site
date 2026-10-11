@@ -117,6 +117,8 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 
 **12-Oct, MERGED `delivery-beginner` (L1)** and `delivery-sweep` (Q21 audit and removals, Q17, Q20 plan). Cargo check decision: the ten prank items are exempted from "every item turns up" by one array in `.cargo-check.mjs` (made by `delivery-prank-c`); not named in levelText.json (owner: available, not wired).
 
+**12-Oct, MERGED `delivery-beginner` (L1) and `delivery-sweep` (second merge: Q21 audit and removals, Q17, Q20 plan).** `delivery-carfix`: Q8 kangaroos and Q16 learner are code-complete but UNSEEN: do not merge until their stills are read; the Junker blurb fix goes in separately (`delivery-carfix-words`). Words check on main: gimmickText blasts and punctures too long (damage agent).
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
