@@ -109,6 +109,12 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 
 **12-Oct, Good/Evil ideas 1 to 4 BUILT (`delivery-underglow`, not merged):** `?ge=1..4` / `?ge=all`; stills in `%TEMP%\claude\ge\` (i2c, i1a, i1b, i3a, i3b, i4b); agent's ratings: 1 ring/horn arcs reads best, 2 underglow reads well (pulse unseen in a still), 3 tail lights weak, 4 exhaust weakest (being corrected). Waiting for ideas 5 to 12, then one summary for the owner.
 
+**12-Oct, OWNER: "Get the agents to stop any new models they might have to create next and finish their current work."** Every model-building agent told to start no further model, finish the one in hand, look at it in stills, correct, commit, report done / unstarted. Commits seen on the branches at that moment (not yet looked at, none merged):
+- Prank cargo (sight only): `delivery-prank-b`: P5 piecatapult, P6 airhorn, P7 ghost: ONE "first cut" commit `51466c8` (all three; not yet seen in stills as far as known). `delivery-prank-a` (P1 to P4) and `delivery-prank-c` (P8 to P10): NO commits yet; whatever they have not begun stays UNBUILT.
+- `delivery-prank-ideas`: Q42 volcano floor (`943eab2`), Q31 Evil palettes for the tier-4 Blue Stars and amphibious cars (`d2b5ef7`), Q39 Hell Rod / Courier Special / Showdown Muscle on their Super bodies (`8de4db6`), Q38 the Saucer hovers in the garage (`1375e57`): all four committed; stills not yet reported.
+- Good/Evil cues: 1 to 4 built (`delivery-underglow`), 5 to 7 built (`delivery-ge-road`), 8 to 12 built (`delivery-ge-ui`, 11 and 12 sound not heard); none merged.
+- Hong Kong (`delivery-rework-b`): re-laid, own obstacles, scenery committed (`97faba8`); Beginner (`delivery-beginner`): five levels shortened (`1b8b24f`). Final lists to be recorded when the agents report.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
