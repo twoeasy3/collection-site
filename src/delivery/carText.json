@@ -1,6 +1,6 @@
 {
   "commuter": { "name": "Commuter", "blurb": "The everyday small car: nothing fancy, and it gets there." },
-  "junker": { "name": "Junker", "blurb": "Cheap and dented, rattling along faster than it looks, and tougher than a commuter." },
+  "junker": { "name": "Junker", "blurb": "Cheap and dented, but quicker than it looks and tougher than a commuter." },
   "darkvan": { "name": "Darkvan", "blurb": "A panel van that keeps up and takes a lot of punishment." },
   "postvan": { "name": "Post Van", "blurb": "A sturdy post van, a little quicker than the starter cars." },
   "keitruck": { "name": "Kei Truck", "blurb": "A tiny truck, nimble sideways and light on its feet." },
