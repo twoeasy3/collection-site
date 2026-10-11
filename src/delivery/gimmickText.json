@@ -63,7 +63,6 @@
   "marathons": { "name": "Marathons", "blurb": "Runners two abreast, a pace car ahead, a water station beyond." },
   "stampedes": { "name": "Stampedes", "blurb": "Cows or kangaroos charge down the road at you, weaving." },
   "road-train-jackknife": { "name": "Road-train jackknife", "blurb": "A road train locks its brakes and its trailers swing across." },
-  "side-road-gimmicks": { "name": "Side-road gimmicks", "blurb": "Cameras, crossings and potholes can stand on a side road too." },
   "tunnels": { "name": "Tunnels", "blurb": "No sky, the dark closing in, and only lamps and headlights." },
   "parades": { "name": "Parades", "blurb": "Floats abreast in every lane, a marching band behind them." },
   "police-roadblocks": { "name": "Police roadblocks", "blurb": "Police cars across every lane but one: find the gap." },
