@@ -115,8 +115,8 @@ export const CONFIG = {
     //   magnet         pickups ahead drift toward the car
     //   blackout       every light off but the headlights
     //   trafficFreeze  everything but the player stops dead
-    // (one with a `time` of its own lasts that long instead of `time` below. One that doesn't suit the level or
-    // the car, a Super version of a car that has none, say, is `fallback` instead)
+    // (one with a `time` of its own lasts that long instead of `time` below. One that doesn't suit the level is `fallback`
+    // instead. Souped up, in a car with no Super version, upgrades nothing and says so: messages.json soupedUpNone)
     fallback: 'invincible',
     soupedUp: { time: 15 },
     earthquake: { time: 10, every: 3, amp: 0.35, wavelength: 24, speed: 9, shake: 0.35, kick: 3 }, // s; s between bounces; m the road heaves; m of the wave; rad/s; camera shake kept up; m/s a bounced car is shoved

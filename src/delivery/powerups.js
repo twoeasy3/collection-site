@@ -96,7 +96,7 @@ export const CARDS = [
     ['insuranceDown', 'Just the news.'],
     ['ufo', 'A flying saucer hovers over you, then flies off, and every car on the road burns up within a few seconds.'],
     ['bulletTrain', `A bullet train turns up the road in your lane and comes straight down it at ${kmh(CONFIG.bulletTrain.speed)}: you have about ${CONFIG.bulletTrain.warning} s to get out of its way. It destroys everything it touches, you included (unless you are a ghost), and steering into its side is just as deadly. While it is about, the shoulder's police meter runs down at half speed, and nobody busts you for being on the shoulder until ${CONFIG.bulletTrain.mercyAfter} s after it has gone.`],
-    ['soupedUp', `Your car is swapped for its Super version for ${M.soupedUp.time} s: ${kmh(CONFIG.superCar.maxSpeed)} faster, quicker off the line and tougher, with a body kit and a livery of its own. (A car with no Super version is made invincible instead.)`],
+    ['soupedUp', `Your car is swapped for its Super version for ${M.soupedUp.time} s: ${kmh(CONFIG.superCar.maxSpeed)} faster, quicker off the line and tougher, with a body kit and a livery of its own. (A car with no Super version is told so, and nothing happens.)`],
     ['earthquake', `The road ripples for ${M.earthquake.time} s, and every ${M.earthquake.every} s every car is bounced into the lane beside it.`],
     ['rewind', `Everything goes back ${M.rewind.seconds} s: you, the traffic, the obstacles and the clock, so you gain the time. Over at once. (Not in a race or on a lapped level.)`],
     ['giant', `Your car is ${M.giant.scale}&times; its size for ${M.giant.time} s: any traffic it touches is crushed, and it takes no harm from it. It no longer fits a lane.`],

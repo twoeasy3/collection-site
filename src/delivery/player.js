@@ -263,8 +263,10 @@ export const Player = {
     for (let i = 0; i < effects.length; i++) if ((roll -= weights[i]) < 0) { drawn = effects[i]; break; }
     let effect = this.tank > 0 ? 'ufo'
       : [...effects, ...extraEffects].find(e => e.toLowerCase() === this.nextMystery.toLowerCase()) || drawn; // (?mystery=UFO works too, and picks from the unused pool)
-    // (one that doesn't suit this level, or this car: souped up, in a car with no Super version. Another in its place)
-    if (!Mysteries.fits(effect) || (effect === 'soupedUp' && !superOf(CAR))) effect = CONFIG.mystery.fallback;
+    // (one that doesn't suit this level: another in its place)
+    if (!Mysteries.fits(effect)) effect = CONFIG.mystery.fallback;
+    // (souped up, in a car with no Super version: nothing is upgraded, and the line says so)
+    if (effect === 'soupedUp' && !superOf(CAR)) return Message.say('powerups', 'mystery', 'soupedUpNone');
     Message.say('powerups', 'mystery', effect);
     if (effect === 'ufo') UfoStrike.start();
     if (effect === 'bulletTrain') BulletTrain.start();
