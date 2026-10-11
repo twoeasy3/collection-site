@@ -252,7 +252,7 @@ export const syncRaceWatch = (now) => {
       : gap === null ? '' : '+' + gap.toFixed(3);
     rows.push(`<div class="row${c === RaceWatch.focus ? ' focus' : ''}${c === RaceWatch.pinned ? ' pinned' : ''}${c.active ? '' : ' out'}" data-i="${RaceWatch.racers.indexOf(c)}">` +
       `<span class="pos">${pos}</span><span class="side">${SIDES[c.evil ? 'evil' : 'good']}</span><span class="dot" style="background:${hex(racePaint(c))}"></span>` +
-      `<span class="name">${c.driver}</span><span class="gap">${split}</span>` +
+      `<span class="name">${c.driverName}</span><span class="gap">${split}</span>` +
       `<span class="gain ${pos < c.grid ? 'up' : pos > c.grid ? 'down' : ''}">${pos < c.grid ? '▲' + (c.grid - pos) : pos > c.grid ? '▼' + (pos - c.grid) : '–'}</span>` +
       `<span class="kills">${c.kills || ''}</span><span class="wrecks">${c.wrecks || ''}</span>` +
       `<span class="mood">${FACES[emotionOf(c.mood)]}</span>` +
@@ -275,7 +275,7 @@ export const syncRaceWatch = (now) => {
   };
   const ahead = c && between(front, c, '▲ '), behind = c && between(c, back, '▼ ');
   directorBtn.style.display = RaceWatch.pinned ? '' : 'none';
-  caption.innerHTML = (c ? `<b>P${at + 1}</b> ${c.driver} <i>${SHOTS[RaceWatch.shot]}</i>` +
+  caption.innerHTML = (c ? `<b>P${at + 1}</b> ${c.driverName} <i>${SHOTS[RaceWatch.shot]}</i>` +
     (c === RaceWatch.pinned ? ' <i>FOLLOWING</i>' : '') +
     (c.slingLeft > 0 && !(c.tow > 0.2) ? ' <i class="tow sling">SLINGSHOT</i>' : c.tow > 0.2 ? ' <i class="tow">SLIPSTREAM</i>' : '') +
     (ahead || behind ? `<div class="gaps">${ahead ? `<span>P${at} ${ahead}</span>` : ''}${behind ? `<span>P${at + 2} ${behind}</span>` : ''}</div>` : '') : '') +

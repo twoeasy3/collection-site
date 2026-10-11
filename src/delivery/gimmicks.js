@@ -297,7 +297,7 @@ export const GROUPS = [
   { name: 'Construction site and airport', cards: [
     { name: 'Construction machinery', color: 0xf2b51c, has: (l) => l.machinery?.length, rules: [
       `Bulldozers, excavators and dump trucks trundle right across the road and back at ${MA.speed} m/s, waiting a moment off it at each side; road rollers crawl along the shoulder and forklifts back out onto it.`,
-      `They're solid: running into one costs ${MA.damage} damage and you keep ${pct(MA.speedKept)} of your speed (it's blown up). Traffic passes through them.`,
+      `They're solid: running into one costs ${MA.damage} damage (${MA.damages.roller} for a roller, ${MA.damages.forklift} for a forklift) and you keep ${pct(MA.speedKept)} of your speed (it's blown up). Traffic passes through them.`,
     ], build: () => {
       const m = makeMachine('bulldozer');
       return { model: m, tick: (t) => { if (m.userData.beacon) m.userData.beacon.material = Math.floor(t * 4) % 2 ? BEACON_ON : BEACON_OFF; } };
@@ -327,17 +327,24 @@ export const GROUPS = [
       pipe.position.set(2.6, 0, -1);
       return { model: group(worker, barrow, pipe) };
     } },
-    { name: 'Falling wreckage', color: 0xff5a2a, has: (l) => l.wreckage?.length, rules: [
+    { name: 'Falling wreckage', color: 0xff5a2a, has: (l) => l.wreckage?.some(e => e.kind !== 'blast' && e.kind !== 'boulders'), rules: [
       'Scripted destruction as you come near: tankers, containers and hangars go up beside the road, a plane falls out of the sky, an airliner comes in to land and slides across the lanes.',
-      'Whatever its wreckage lands on is wrecked, and it blocks those lanes for good; traffic pulls over for it. A building can blow out across the road too: keep up and you\'ll be past it, or not.',
+      'Whatever its wreckage lands on is wrecked, and it blocks those lanes for good; traffic pulls over for it. (A building blowing out is a Blast: its own card.)',
     ], build: () => ({ model: makeAirliner(14, 30, true) }) },
-    { name: 'Quarries and blasts', color: 0xb9a37c, has: (l) => l.quarries?.length, rules: [
+    { name: 'Quarries', color: 0xb9a37c, has: (l) => l.quarries?.length, rules: [
       `A quarry is cut into the hillside beside the road: ${CONFIG.quarry.benches} benches, each ${CONFIG.quarry.benchHeight} m high and ${CONFIG.quarry.benchDepth} m deep, with the works on its floor.`,
-      `Now and then a crag of the face is blasted out across the road. Its red box flashes for ${W.blastWarn} s first, then rock and dust sweep over the lanes in ${W.blastTime} s: whatever is in the box is wrecked, you included.`,
-      'It is timed to your pace, not to a spot: keep up and you are just short of it as it goes; ease off, or be through it already. The road is left clear afterwards.',
+      'Its face is scenery until a level blasts it (see Blasts) or sends boulders off it (see Boulders).',
     ], build: () => {
       const g = road(9, 14), rock = lambert(0xb9a37c), dark = lambert(0x8f7c5c), Q = CONFIG.quarry;
       for (let k = 0; k < Q.benches; k++) g.add(box(3, 1.5, 14, k % 2 ? dark : rock, 7.5 + k * 3, 0.75 + k * 1.5, 0));
+      return { model: g, spin: false };
+    } },
+    { name: 'Blasts', color: 0xe0642a, has: (l) => l.wreckage?.some(e => e.kind === 'blast'), rules: [
+      `Now and then a building beside the road, or a crag of a quarry's face, is blasted out across the road. Its red box flashes for ${W.blastWarn} s first, then fire (or rock and dust) sweeps over the lanes in ${W.blastTime} s: whatever is in the box is wrecked, you included.`,
+      'It is timed to your pace, not to a spot: keep up and you are just short of it as it goes; ease off, or be through it already. The road is left clear afterwards.',
+    ], build: () => {
+      const g = road(9, 14), rock = lambert(0xb9a37c), dark = lambert(0x8f7c5c);
+      for (let k = 0; k < 2; k++) g.add(box(3, 1.5, 14, k % 2 ? dark : rock, 7.5 + k * 3, 0.75 + k * 1.5, 0));
       const boxMat = new THREE.MeshBasicMaterial({ color: 0xff2a1a, transparent: true, opacity: 0.4, side: THREE.DoubleSide });
       const warn = mesh(new THREE.PlaneGeometry(9, 5).rotateX(-Math.PI / 2), boxMat, 0, 0.06, -1);
       const dust = [0, 1, 2, 3].map(k => mesh(new THREE.SphereGeometry(1.1, 10, 8), lambert(0xcbb894, { transparent: true, opacity: 0.8 }), 0, 1, -1 + (k % 2 ? 1 : -1)));
@@ -386,10 +393,10 @@ export const GROUPS = [
       const car = painted(vehicle('driveby', 0xffffff), 0x3a1840);
       return { model: car, tick: (t) => { car.userData.firing?.(t % 2.4 < 1.1); } };
     } },
-    { name: 'Punctures', color: 0xffb03a, has: (l) => l.gunfire?.length || l.traffic?.driveby, rules: [
-      `A shot can puncture a tyre. Traffic with a flat pulls over onto the shoulder and stops. You get ${pct(PU.topSpeed)} of your top speed and acceleration, and the car pulls to the flat side.`,
+    { name: 'Punctures', color: 0xffb03a, has: (l) => l.gunfire?.length || l.traffic?.driveby || (l.battle && l.pillboxes) || l.potholes?.length || l.siteWorks?.some(w => w.kind === 'trench'), rules: [
+      `A tyre can be punctured by a shot (a gang house's, a drive-by's, a pillbox's: ${pct(GF.puncture)} a hit), by a pothole (${pct(S.potholePuncture)} a jolt) or by a gap in a trench (${pct(S.trenchPuncture)} a jolt), on the side that took it. Traffic with a flat pulls over onto the shoulder and stops. You get ${pct(PU.topSpeed)} of your top speed and acceleration, and the car pulls to the flat side.`,
       `Stop to change it: ${PU.fixTime} s stopped in all (braking with a flat takes you right down to a stop). A wrench fixes it on the spot.`,
-      `While punctured, and for ${PU.grace} s after, the shoulder's police meter leaves you alone. Armour keeps your tyres from being shot out; a ghost lets the bullets pass straight through; nothing without wheels can be punctured.`,
+      `While punctured, and for ${PU.grace} s after, the shoulder's police meter leaves you alone. Armour keeps your tyres from being punctured at all; a ghost lets the bullets pass straight through (and carries over potholes and trenches); nothing without wheels can be punctured.`,
     ], build: () => {
       const car = painted(vehicle('commuter', 0xffffff), 0xff8a1a);
       car.rotation.z = 0.07;
@@ -700,7 +707,7 @@ export const GROUPS = [
     } },
     { name: 'Burst water mains', color: 0x6fb6d8, has: (l) => l.waterMains?.length, rules: [
       `A main has burst under one lane: it sprays for ${H.main.on} s, then stops for ${H.main.off} s. You are warned ${H.main.warn} m out.`,
-      `While it sprays, ${H.main.length} m of that lane is as slippery as ice: brakes at ${pct(H.main.brakeGrip)}, steering at ${pct(H.main.steerGrip)}, and you cross the road at ${pct(H.main.laneSpeed)} of your speed. Between sprays the lane is dry.`,
+      `While it sprays, ${H.main.length} m of that lane is as slippery as ice: brakes at ${pct(H.main.brakeGrip)}, steering at ${pct(H.main.steerGrip)}, and you cross the road at ${pct(H.main.laneSpeed)} of your speed. Between sprays the lane is dry, but the tyres stay wet for ${H.main.wetAfter} m past the water, the grip coming back little by little (ice lets go the moment you are off it).`,
     ], build: () => {
       const g = road(9, 12);
       const wet = mesh(new THREE.PlaneGeometry(4.2, 9).rotateX(-Math.PI / 2), lambert(0x6fb6d8, { transparent: true, opacity: 0.6 }), 2.2, 0.03, -1);
