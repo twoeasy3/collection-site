@@ -115,6 +115,8 @@ burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 2
 - Good/Evil cues: 1 to 4 built (`delivery-underglow`), 5 to 7 built (`delivery-ge-road`), 8 to 12 built (`delivery-ge-ui`, 11 and 12 sound not heard); none merged.
 - Hong Kong (`delivery-rework-b`): re-laid, own obstacles, scenery committed (`97faba8`); Beginner (`delivery-beginner`): five levels shortened (`1b8b24f`). Final lists to be recorded when the agents report.
 
+**12-Oct, MERGED `delivery-beginner` (L1)** and `delivery-sweep` (Q21 audit and removals, Q17, Q20 plan). Cargo check decision: the ten prank items are exempted from "every item turns up" by one array in `.cargo-check.mjs` (made by `delivery-prank-c`); not named in levelText.json (owner: available, not wired).
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
@@ -588,7 +590,7 @@ The owner's words, as in `CHECKLIST-10-Oct.md`. Q52 and Q53 are done and left ou
 ## L. The owner's new-player experience list, 12-Oct: BUMPED (start at once)
 
 "add to the list, and bump these because this was my new player experience."
-- [ ] **L1.** "Shorten Beginner levels and simplify them" (the first tier's levels; agent `delivery-beginner`).
+- [x] **L1.** "Shorten Beginner levels and simplify them" (the first tier's levels; agent `delivery-beginner`). MERGED 12-Oct (`1b8b24f`): expressway 2000 m 110/85 s, back-roads 1800 m 115/90, farm 2000 m 105/80, big-business 2400 m 125/95, hurricane 2400 m 130/100; one idea each; not played by hand; starter-car margins being re-measured by carfix.
 - [x] **L2.** "Darkvan and Junker need to be faster" (agent `delivery-carfix`). MERGED 12-Oct: Junker 22/8 to 25/9.5, Darkvan 21/7 to 24/8.5; cruising time against the Beginner clocks NOT measured yet (follow-up sent).
 - [x] **L3.** "Race screensaver broken" (agent `delivery-carfix`). MERGED 12-Oct: racewatch stored names in `car.driver`, which the pursuit made a function; now `car.driverName`. Headless 60 s on six circuits OK; no still yet (follow-up sent).
 - [ ] **L4.** "Cars from locked tiers should not appear in garage. Let's have the cars in the immediate next tier
