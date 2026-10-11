@@ -94,6 +94,8 @@ none on by default), nothing merges until the owner has seen the stills: `delive
 **12-Oct, MERGED `delivery-damage`:** Q18 damage speed cap 15 m/s (`CONFIG.damageSpeedCap`), Q19 explosive obstacle damage 10 + 6.5 x sqrt(volume), Q4 45 m wet after a
 burst main, Q10 punctures card, Q9 as a card split only (open questions 23 and 24). Not checked in a browser; levels and replay checks passed.
 
+**12-Oct, owner's feedback on the merged damage work (BUMPED, `delivery-damage` a45c0b1):** Q18 "I think the clamp is too harsh. 25 is barely any damage. ... I was complaining about sportcars (weak cars) oneshotting commuters with speed. Take weight into account." (replace the flat clamp with a mass-aware rule); Q19 "The lower end of obstacles do little damage" (raise the floor to about 25 to 30). Q15, Q3, Q12 parked behind them.
+
 ## Owner's direction, 11-Oct (goes in every level and theme brief)
 
 - "Good levels to follow are from level 32 onwards, with the exception of gimmick cramming." (Models for a
