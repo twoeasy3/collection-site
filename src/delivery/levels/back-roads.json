@@ -1,6 +1,6 @@
 {
   "id": "back-roads",
-  "clock": { "good": 168, "evil": 119 },
+  "clock": { "good": 115, "evil": 90 },
   "traffic": { "darkvan": 0.43, "commuter": 0.27, "van": 0.21, "bus": 0.04, "police": 0.05 },
   "trafficCount": 11,
   "oncomingCount": 8,
@@ -9,60 +9,56 @@
     { "length": 400, "curve": 0 },
     { "length": 300, "curve": 0.002 },
     { "length": 500, "curve": 0 },
-    { "length": 250, "curve": -0.004 },
-    { "length": 500, "curve": 0.003 },
-    { "length": 250, "curve": -0.002 },
-    { "length": 500, "curve": 0 }
+    { "length": 300, "curve": -0.003 },
+    { "length": 300, "curve": 0 }
   ],
-  "narrows": [
-    { "from": 150, "to": 380, "lanesPerSide": 1 }
-  ],
-  "bridges": [
-    { "from": 740, "to": 900 }
-  ],
+  "narrows": [],
+  "bridges": [],
   "exits": [
-    { "exitAt": 1200, "mergeAt": 2200, "bends": { "count": 5, "size": 14 }, "oncoming": true }
+    {
+      "exitAt": 700,
+      "mergeAt": 1500,
+      "out": 60,
+      "bends": { "count": 3, "size": 12 }
+    }
   ],
-  "frogs": [
-    { "from": 950, "to": 1110 },
-    { "from": 1500, "to": 1700 }
-  ],
+  "frogs": [],
   "targets": [
     { "s": 560, "side": "right" },
-    { "s": 1750, "side": "left" },
-    { "s": 460, "side": "right", "road": "side" }
+    { "s": 1650, "side": "left" },
+    { "s": 400, "side": "right", "road": "side" }
   ],
-  "fords": [
-    { "from": 1790, "to": 1850, "depth": 0.45 }
-  ],
+  "fords": [],
   "pickups": [
-    { "type": "cash10", "s": 1820, "lane": 2 },
-    { "type": "cash10", "s": 1820, "lane": 3 },
-    { "type": "siren", "s": 60, "lane": 2 },
-    { "type": "radarDetector", "s": 2200, "lane": 2 },
-    { "type": "wrench", "s": 2370, "lane": 3 },
-    { "type": "wrench", "s": 1250, "lane": 2 },
-    { "type": "turbo", "s": 100, "lane": 3 },
-    { "type": "wrench", "s": 500, "lane": 2 },
-    { "type": "passenger", "s": 620, "lane": 3 },
-    { "type": "ghost", "s": 800, "lane": 2 },
-    { "type": "turbo", "s": 1040, "lane": 3 },
-    { "type": "turbo", "s": 1500, "lane": 2 },
-    { "type": "wrench", "s": 1900, "lane": 3 },
-    { "type": "turbo", "s": 2500, "lane": 2 },
-    { "type": "turbo", "s": 200, "lane": 1, "road": "side" },
-    { "type": "ghost", "s": 600, "lane": 1, "road": "side" }
+    { "type": "cash10", "s": 180, "lane": 2 },
+    { "type": "cash10", "s": 180, "lane": 3 },
+    { "type": "turbo", "s": 350, "lane": 3 },
+    { "type": "cash10", "s": 520, "lane": "right" },
+    { "type": "cash10", "s": 520, "lane": 2 },
+    { "type": "cash10", "s": 520, "lane": 3 },
+    { "type": "wrench", "s": 650, "lane": 2 },
+    { "type": "cash10", "s": 900, "lane": 2 },
+    { "type": "cash10", "s": 900, "lane": 3 },
+    { "type": "turbo", "s": 1100, "lane": 3 },
+    { "type": "cash20", "s": 1250, "lane": "right" },
+    { "type": "cash10", "s": 1250, "lane": 2 },
+    { "type": "cash10", "s": 1250, "lane": 3 },
+    { "type": "wrench", "s": 1550, "lane": 2 },
+    { "type": "cash10", "s": 1680, "lane": 2 },
+    { "type": "cash10", "s": 1680, "lane": 3 },
+    { "type": "cash10", "s": 150, "lane": 0, "road": "side" },
+    { "type": "cash10", "s": 150, "lane": 1, "road": "side" },
+    { "type": "turbo", "s": 300, "lane": 1, "road": "side" },
+    { "type": "cash20", "s": 500, "lane": 0, "road": "side" },
+    { "type": "cash20", "s": 500, "lane": 1, "road": "side" }
   ],
   "obstacles": [
     { "s": 450, "lane": 3 },
-    { "s": 650, "lane": 2 },
-    { "s": 1000, "lane": 2 },
-    { "s": 1400, "lane": 3 },
-    { "s": 1700, "lane": 2 },
-    { "s": 2050, "lane": 2 },
-    { "s": 2350, "lane": 3 },
+    { "s": 800, "lane": 2 },
+    { "s": 1050, "lane": 3 },
+    { "s": 1350, "lane": 3 },
+    { "s": 1600, "lane": 2 },
     { "s": 400, "lane": 1, "road": "side" },
-    { "s": 520, "lane": 0, "road": "side" },
-    { "s": 750, "lane": 1, "road": "side" }
+    { "s": 620, "lane": 0, "road": "side" }
   ]
 }
