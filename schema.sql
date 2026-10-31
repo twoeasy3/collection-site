@@ -55,3 +55,19 @@ CREATE TABLE IF NOT EXISTS vehicle_stats (
   edited     INTEGER NOT NULL DEFAULT 0,
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Secret Santa (private page at /secret-santa). One row per possible entrant,
+-- loaded from the admin panel on that page (paste a JSON list of {name, code}).
+-- The code itself is never stored, only a SHA-256 of it. `pairing` is the
+-- giver's assigned giftee id, AES-GCM-encrypted (see src/secretSanta/api.js) so
+-- browsing this table doesn't show who has whom. It's NULL until the draw;
+-- a non-NULL `pairing` on any row means the pool is closed.
+CREATE TABLE IF NOT EXISTS santa_entrants (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL,
+  code_hash  TEXT NOT NULL UNIQUE,
+  joined     INTEGER NOT NULL DEFAULT 0,
+  wants      TEXT NOT NULL DEFAULT '[]',  -- JSON array of strings
+  pairing    TEXT,                        -- encrypted giftee id, NULL before the draw
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

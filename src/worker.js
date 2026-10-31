@@ -1,3 +1,5 @@
+import { handleSantaAPI } from './secretSanta/api.js';
+
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
@@ -33,6 +35,9 @@ function parseVisitDates(raw) {
 }
 
 async function handleAPI(request, env, url) {
+  const santa = await handleSantaAPI(request, env, url, { json, isAuthorized });
+  if (santa) return santa;
+
   // All makes with their countries (public)
   if (url.pathname === '/api/makes' && request.method === 'GET') {
     const { results } = await env.DB.prepare('SELECT name, countries FROM makes ORDER BY name').all();
