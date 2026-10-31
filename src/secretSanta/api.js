@@ -102,12 +102,13 @@ async function viewFor(env, me) {
     name: me.name,
     joined: !!me.joined,
     wants: parseWants(me.wants),
+    avoid: parseWants(me.avoid),
     status: drawn ? 'drawn' : 'open',
   };
   if (drawn && me.pairing) {
     const gifteeId = await decryptPairing(await pairingKey(env), me.id, me.pairing);
-    const giftee = await env.DB.prepare('SELECT name, wants FROM santa_entrants WHERE id = ?').bind(gifteeId).first();
-    if (giftee) view.giftee = { name: giftee.name, wants: parseWants(giftee.wants) };
+    const giftee = await env.DB.prepare('SELECT name, wants, avoid FROM santa_entrants WHERE id = ?').bind(gifteeId).first();
+    if (giftee) view.giftee = { name: giftee.name, wants: parseWants(giftee.wants), avoid: parseWants(giftee.avoid) };
   }
   return view;
 }
@@ -136,13 +137,15 @@ export async function handleSantaAPI(request, env, url, { json, isAuthorized }) 
   }
 
   if (path === '/api/santa/join' && request.method === 'POST') {
-    const { code, wants } = await readBody(request);
+    const { code, wants, avoid } = await readBody(request);
     const me = await findByCode(env, code);
     if (!me) return json({ error: "That code doesn't match anyone." }, 404);
     if (await isDrawn(env)) return json({ error: 'The pool is already closed.' }, 409);
-    await env.DB.prepare("UPDATE santa_entrants SET joined = 1, wants = ?, updated_at = datetime('now') WHERE id = ?")
-      .bind(JSON.stringify(cleanWants(wants)), me.id).run();
-    return json(await viewFor(env, { ...me, joined: 1, wants: JSON.stringify(cleanWants(wants)) }));
+    const w = JSON.stringify(cleanWants(wants));
+    const a = JSON.stringify(cleanWants(avoid));
+    await env.DB.prepare("UPDATE santa_entrants SET joined = 1, wants = ?, avoid = ?, updated_at = datetime('now') WHERE id = ?")
+      .bind(w, a, me.id).run();
+    return json(await viewFor(env, { ...me, joined: 1, wants: w, avoid: a }));
   }
 
   if (path === '/api/santa/leave' && request.method === 'POST') {
@@ -154,16 +157,17 @@ export async function handleSantaAPI(request, env, url, { json, isAuthorized }) 
     return json(await viewFor(env, { ...me, joined: 0 }));
   }
 
-  // Editing your wishlist is allowed before and after the draw (your Santa
+  // Editing your wishlist and don't-buy list is allowed before and after the draw (your Santa
   // sees the latest version).
   if (path === '/api/santa/wants' && request.method === 'POST') {
-    const { code, wants } = await readBody(request);
+    const { code, wants, avoid } = await readBody(request);
     const me = await findByCode(env, code);
     if (!me) return json({ error: "That code doesn't match anyone." }, 404);
     if (!me.joined) return json({ error: "You haven't joined." }, 409);
-    const cleaned = JSON.stringify(cleanWants(wants));
-    await env.DB.prepare("UPDATE santa_entrants SET wants = ?, updated_at = datetime('now') WHERE id = ?").bind(cleaned, me.id).run();
-    return json(await viewFor(env, { ...me, wants: cleaned }));
+    const w = JSON.stringify(cleanWants(wants));
+    const a = JSON.stringify(cleanWants(avoid));
+    await env.DB.prepare("UPDATE santa_entrants SET wants = ?, avoid = ?, updated_at = datetime('now') WHERE id = ?").bind(w, a, me.id).run();
+    return json(await viewFor(env, { ...me, wants: w, avoid: a }));
   }
 
   // ---------- Admin routes (Bearer API_KEY). Never return pairings. ----------

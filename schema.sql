@@ -68,6 +68,7 @@ CREATE TABLE IF NOT EXISTS santa_entrants (
   code_hash  TEXT NOT NULL UNIQUE,
   joined     INTEGER NOT NULL DEFAULT 0,
   wants      TEXT NOT NULL DEFAULT '[]',  -- JSON array of strings
+  avoid      TEXT NOT NULL DEFAULT '[]',  -- JSON array of strings: "please don't buy me"
   pairing    TEXT,                        -- encrypted giftee id, NULL before the draw
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

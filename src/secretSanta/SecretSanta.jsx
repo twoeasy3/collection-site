@@ -27,7 +27,7 @@ async function post(path, body) {
   return data;
 }
 
-function WantsEditor({ wants, onChange, disabled }) {
+function WantsEditor({ wants, onChange, disabled, placeholder = 'Something you’d like, a size, a link, a hint…' }) {
   const [draft, setDraft] = useState('');
 
   const add = () => {
@@ -59,7 +59,7 @@ function WantsEditor({ wants, onChange, disabled }) {
           className="ss-input"
           value={draft}
           disabled={disabled}
-          placeholder={wants.length ? 'Add another…' : 'Something you’d like, a size, a link, a hint…'}
+          placeholder={wants.length ? 'Add another…' : placeholder}
           onChange={e => setDraft(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           onBlur={add}
@@ -70,29 +70,48 @@ function WantsEditor({ wants, onChange, disabled }) {
   );
 }
 
-function WantsView({ wants }) {
+const AVOID_PLACEHOLDER = 'Something you don’t want, already have, or can’t use…';
+
+const clean = (list) => list.map(w => w.trim()).filter(Boolean);
+
+// Wishlist + don't-buy editors, used both when joining and when editing later.
+function ListsEditor({ wants, setWants, avoid, setAvoid, disabled }) {
+  return (
+    <>
+      <h3 className="ss-h3 ss-h3-first">I’d like</h3>
+      <WantsEditor wants={wants} onChange={setWants} disabled={disabled} />
+      <h3 className="ss-h3 ss-h3-avoid">Please don’t buy me</h3>
+      <WantsEditor wants={avoid} onChange={setAvoid} disabled={disabled} placeholder={AVOID_PLACEHOLDER} />
+    </>
+  );
+}
+
+function WantsView({ wants, avoid = false }) {
   if (!wants.length) return <p className="ss-muted">No wishlist yet. Check back later, or go with your gut.</p>;
   return (
-    <ul className="ss-wants-readonly">
+    <ul className={avoid ? 'ss-wants-readonly ss-avoid-readonly' : 'ss-wants-readonly'}>
       {wants.map((w, i) => <li key={i}>{w}</li>)}
     </ul>
   );
 }
 
-// Your own wishlist with a save button (shown whenever you're joined).
+// Your own lists with a save button (shown whenever you're joined).
 function MyWishlist({ code, view, setView, title, hint }) {
   const [wants, setWants] = useState(view.wants);
+  const [avoid, setAvoid] = useState(view.avoid);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
-  const dirty = JSON.stringify(wants.map(w => w.trim()).filter(Boolean)) !== JSON.stringify(view.wants);
+  const dirty = JSON.stringify(clean(wants)) !== JSON.stringify(view.wants)
+    || JSON.stringify(clean(avoid)) !== JSON.stringify(view.avoid);
 
   useEffect(() => { setWants(view.wants); }, [view.wants]);
+  useEffect(() => { setAvoid(view.avoid); }, [view.avoid]);
 
   const save = async () => {
     setSaving(true);
     setMessage('');
     try {
-      const next = await post('wants', { code, wants });
+      const next = await post('wants', { code, wants, avoid });
       setView(next);
       setMessage('Saved.');
     } catch (e) {
@@ -106,9 +125,15 @@ function MyWishlist({ code, view, setView, title, hint }) {
     <section className="ss-card">
       <h2 className="ss-h2">{title}</h2>
       <p className="ss-muted">{hint}</p>
-      <WantsEditor wants={wants} onChange={w => { setWants(w); setMessage(''); }} disabled={saving} />
+      <ListsEditor
+        wants={wants}
+        setWants={w => { setWants(w); setMessage(''); }}
+        avoid={avoid}
+        setAvoid={a => { setAvoid(a); setMessage(''); }}
+        disabled={saving}
+      />
       <div className="ss-actions">
-        <button className="ss-btn ss-btn-primary" disabled={saving || !dirty} onClick={save}>{saving ? 'Saving…' : 'Save wishlist'}</button>
+        <button className="ss-btn ss-btn-primary" disabled={saving || !dirty} onClick={save}>{saving ? 'Saving…' : 'Save'}</button>
         {message && <span className="ss-note">{message}</span>}
       </div>
     </section>
@@ -117,6 +142,7 @@ function MyWishlist({ code, view, setView, title, hint }) {
 
 function JoinCard({ code, view, setView }) {
   const [wants, setWants] = useState(view.wants);
+  const [avoid, setAvoid] = useState(view.avoid);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -124,7 +150,7 @@ function JoinCard({ code, view, setView }) {
     setBusy(true);
     setError('');
     try {
-      setView(await post('join', { code, wants }));
+      setView(await post('join', { code, wants, avoid }));
     } catch (e) {
       setError(e.message);
     } finally {
@@ -135,8 +161,8 @@ function JoinCard({ code, view, setView }) {
   return (
     <section className="ss-card">
       <h2 className="ss-h2">Join the Secret Santa?</h2>
-      <p className="ss-muted">Add a few things you’d like. You can change them any time, even after names are drawn.</p>
-      <WantsEditor wants={wants} onChange={setWants} disabled={busy} />
+      <p className="ss-muted">Add a few things you’d like, and anything you’d rather not get. You can change both any time, even after names are drawn.</p>
+      <ListsEditor wants={wants} setWants={setWants} avoid={avoid} setAvoid={setAvoid} disabled={busy} />
       <div className="ss-actions">
         <button className="ss-btn ss-btn-primary" disabled={busy} onClick={join}>{busy ? 'Joining…' : 'I’m in'}</button>
         {error && <span className="ss-error">{error}</span>}
@@ -155,6 +181,12 @@ function GifteeCard({ giftee }) {
           <div className="ss-giftee-name">{giftee.name}</div>
           <h3 className="ss-h3">Their wishlist</h3>
           <WantsView wants={giftee.wants} />
+          {giftee.avoid?.length > 0 && (
+            <>
+              <h3 className="ss-h3 ss-h3-avoid">Please don’t buy them</h3>
+              <WantsView wants={giftee.avoid} avoid />
+            </>
+          )}
           <button className="ss-link-btn" onClick={() => setRevealed(false)}>Hide</button>
         </>
       ) : (
@@ -269,14 +301,14 @@ function SecretSanta() {
               <p className="ss-muted">Names haven’t been drawn yet. Come back with the same code once they are to see who you’re buying for.</p>
               <button className="ss-link-btn" disabled={leaving} onClick={leave}>Leave the pool</button>
             </section>
-            <MyWishlist code={code} view={view} setView={setView} title="Your wishlist" hint="Your Secret Santa will see this list." />
+            <MyWishlist code={code} view={view} setView={setView} title="Your lists" hint="Your Secret Santa will see both lists." />
           </>
         )}
 
         {status === 'drawn' && joined && giftee && (
           <>
             <GifteeCard giftee={giftee} />
-            <MyWishlist code={code} view={view} setView={setView} title="Your own wishlist" hint="Your Secret Santa sees the latest version, so you can still change it." />
+            <MyWishlist code={code} view={view} setView={setView} title="Your own lists" hint="Your Secret Santa sees the latest version, so you can still change them." />
           </>
         )}
 
