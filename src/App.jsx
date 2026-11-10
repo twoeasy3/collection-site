@@ -21,6 +21,7 @@ import { useCarFilters } from './hooks/useCarFilters';
 import { useListEditing } from './hooks/useListEditing';
 import { useListPagination } from './hooks/useListPagination';
 import { useCarMutations } from './hooks/useCarMutations';
+import { useAiFill } from './hooks/useAiFill';
 import { useCastingCopy } from './hooks/useCastingCopy';
 import { useMissingImages } from './hooks/useMissingImages';
 import { useColumnCount, useSelectedCardHighlight, useAutoScrollToSelection } from './hooks/useGalleryDom';
@@ -129,6 +130,8 @@ function App({ isPublic = false }) {
     viewMode, sidebarView: groupView, selectedLetter, showToast, dialog, refreshCars, listEditing, setCurrentPage,
   });
   const { saveSingleCar, saveToDB, handleCreateNew, handleSwapIds, handleDeleteGallery, cancelGalleryEdits, undoSave, backupAvailable } = mutations;
+
+  const aiFill = useAiFill({ cars, setCars, setSelectedCar, showToast, dialog });
 
   const castingCopy = useCastingCopy({ cars, setCars, selectedCar, setSelectedCar, setIsGalleryEditing, saveSingleCar, showToast, dialog });
   const missing = useMissingImages({ cars, viewMode, showToast });
@@ -397,6 +400,7 @@ function App({ isPublic = false }) {
         {viewMode === 'missing' && (
           <MaintenanceView
             cars={cars}
+            aiFill={hasAdminKey ? aiFill : null}
             onEditCar={(car) => openCarInGallery(car, true)}
             missingData={missing.missingData} missingLoading={missing.missingLoading}
             missingSubTab={missing.missingSubTab} setMissingSubTab={missing.setMissingSubTab} onRefresh={missing.fetchMissingData}

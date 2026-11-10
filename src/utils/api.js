@@ -21,6 +21,13 @@ export const putCarsBulk = (rows) => fetch('/api/cars/bulk', { method: 'PUT', he
 export const deleteCar = (id) => fetch(`/api/cars/${id}`, { method: 'DELETE', headers: authHeaders() });
 export const deleteCarsBulk = (ids) => fetch('/api/cars/bulk-delete', { method: 'POST', headers: jsonAuthHeaders(), body: JSON.stringify({ ids }) });
 
+// ── AI field completion (Claude vision, runs in the Worker) ──
+// The Anthropic API key lives in localStorage like the admin key and is only
+// ever sent to our own Worker, which forwards it to Anthropic.
+export const getAnthropicKey = () => localStorage.getItem('anthropicApiKey') || '';
+export const setAnthropicKey = (key) => (key ? localStorage.setItem('anthropicApiKey', key) : localStorage.removeItem('anthropicApiKey'));
+export const aiSuggestCar = (id) => fetch(`/api/cars/${id}/ai-suggest`, { method: 'POST', headers: { ...authHeaders(), 'X-Anthropic-Key': getAnthropicKey() } });
+
 // ── Local Flask helper ──
 export const localPost = (path, init = {}) => fetch(`${LOCAL_SERVER}${path}`, { method: 'POST', ...init });
 export const localPostJson = (path, body) => localPost(path, { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });

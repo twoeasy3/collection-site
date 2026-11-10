@@ -1,6 +1,7 @@
 import { thStyle, tdStyle } from '../constants';
 import { AI_FIELD_TO_APP_FIELD } from '../utils/carUtils';
 import DataQualityView from './DataQualityView';
+import { useState } from 'react';
 
 const tabBtn = (active) => ({ padding: '5px 12px', fontSize: '0.8em', fontWeight: 'bold', backgroundColor: active ? '#fd7e14' : 'transparent', color: active ? '#fff' : '#fd7e14', border: 'none', cursor: 'pointer' });
 const tableWrap = { flexGrow: 1, overflow: 'auto', padding: '0 10px', contain: 'content' };
@@ -82,6 +83,29 @@ function BrokenImagesTable({ brokenCars, onSelectCar }) {
   );
 }
 
+function AiRunPanel({ aiFill }) {
+  const { candidates, running, progress, hasKey, handleSetKey, run, stop } = aiFill;
+  const [count, setCount] = useState(10);
+  const btn = (bg, disabled) => ({ padding: '5px 12px', fontSize: '0.8em', backgroundColor: bg, color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: disabled ? 'not-allowed' : 'pointer', opacity: disabled ? 0.6 : 1 });
+  const n = Math.max(1, Math.min(parseInt(count) || 1, candidates.length));
+  return (
+    <div style={{ padding: '10px 15px', display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', fontSize: '0.85em', color: 'var(--tx-2)' }}>
+      <span><b>{candidates.length}</b> cars with no Year</span>
+      <input type="number" min="1" value={count} onChange={e => setCount(e.target.value)} disabled={running} style={{ width: '60px', backgroundColor: 'var(--bg-input)', color: 'var(--tx)', border: '1px solid var(--bd-2)', borderRadius: '3px', padding: '3px' }} />
+      {!running
+        ? <button disabled={!candidates.length} onClick={() => run(candidates.slice(0, n).map(c => c.ID))} style={btn('#fd7e14', !candidates.length)}>Ask Claude to fill {candidates.length ? n : 0}</button>
+        : <button onClick={stop} style={btn('#dc3545')}>Stop</button>}
+      <button onClick={handleSetKey} disabled={running} style={btn('var(--bg-card-sel)', running)}>{hasKey ? 'Change API key' : 'Set API key'}</button>
+      {progress && (
+        <span>
+          {running ? `Working on ${progress.current}… ` : ''}{progress.done}/{progress.total} · {progress.filled} filled · {progress.skipped} skipped · {progress.failed} failed
+          {progress.error && <span style={{ color: '#dc3545' }}> — {progress.error}</span>}
+        </span>
+      )}
+    </div>
+  );
+}
+
 function AiSuggestionsTable({ pendingAiSuggestions, onEditCar, onApprove, onReject }) {
   const actBtn = (bg, extra = {}) => ({ padding: '3px 8px', fontSize: '0.85em', backgroundColor: bg, color: '#fff', border: 'none', borderRadius: '4px', fontWeight: 'bold', cursor: 'pointer', ...extra });
   return (
@@ -131,7 +155,7 @@ function MaintenanceView({
   cars, missingData, missingLoading, missingSubTab, setMissingSubTab, onRefresh,
   brokenCars, onSelectBrokenCar,
   pendingAiSuggestions, onEditSuggestionCar, onApproveSuggestion, onRejectSuggestion,
-  onEditCar,
+  onEditCar, aiFill,
 }) {
   return (
     <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -150,6 +174,7 @@ function MaintenanceView({
       </div>
       {missingSubTab === 'missing' && <MissingFilesTable missingData={missingData} missingLoading={missingLoading} />}
       {missingSubTab === 'broken' && <BrokenImagesTable brokenCars={brokenCars} onSelectCar={onSelectBrokenCar} />}
+      {missingSubTab === 'aiSuggestions' && aiFill && <AiRunPanel aiFill={aiFill} />}
       {missingSubTab === 'aiSuggestions' && (
         <AiSuggestionsTable pendingAiSuggestions={pendingAiSuggestions} onEditCar={onEditSuggestionCar} onApprove={onApproveSuggestion} onReject={onRejectSuggestion} />
       )}

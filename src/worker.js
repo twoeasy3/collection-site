@@ -1,9 +1,10 @@
 import { handleSantaAPI } from './secretSanta/api.js';
+import { handleAiAPI } from './aiFill.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Anthropic-Key',
 };
 
 function json(data, status = 200) {
@@ -37,6 +38,9 @@ function parseVisitDates(raw) {
 async function handleAPI(request, env, url) {
   const santa = await handleSantaAPI(request, env, url, { json, isAuthorized });
   if (santa) return santa;
+
+  const ai = await handleAiAPI(request, env, url, { json, isAuthorized });
+  if (ai) return ai;
 
   // All makes with their countries (public)
   if (url.pathname === '/api/makes' && request.method === 'GET') {
