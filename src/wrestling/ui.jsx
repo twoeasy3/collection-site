@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+export const slug = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 // PNGs live in public/plushies/. A plushie's `image` field wins; otherwise the
 // file is <slugified name>.png (e.g. "Sir Hops" -> sir-hops.png).
 export const imageUrl = (w) => `/plushies/${w.image || `${slug(w.name)}.png`}`;
@@ -14,7 +14,7 @@ export function PlushieImg({ w, color = '#777', className = '' }) {
   if (!w) return <div className={`wr-img wr-img-ph ${className}`} />;
   if (failed) {
     return (
-      <div className={`wr-img wr-img-ph ${className}`} style={{ background: `linear-gradient(160deg, ${color}, #1b1b1b)` }} title={`Add public/plushies/${imageFileHint(w)}`}>
+      <div className={`wr-img wr-img-ph ${className}`} style={{ background: `linear-gradient(160deg, ${color}, #1b1b1b)` }} title={`Upload an image in Setup, or pick one for ${w.name}`}>
         <svg viewBox="0 0 100 100" aria-hidden="true">
           <circle cx="29" cy="28" r="12" fill="rgba(255,255,255,.22)" /><circle cx="71" cy="28" r="12" fill="rgba(255,255,255,.22)" />
           <circle cx="50" cy="55" r="32" fill="rgba(255,255,255,.2)" />

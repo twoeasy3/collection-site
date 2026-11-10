@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { wr, WEEKDAYS } from '../wrApi';
-import { Btn } from '../ui';
+import { Btn, slug } from '../ui';
+import ImageLibrary, { imageUsage } from '../ImageLibrary';
 
 // Inline-editable table for a simple wr_* table. Each row saves/deletes on its own.
 function CrudSection({ title, hint, endpoint, rows, fields, blank, reload, showToast, dialog }) {
@@ -80,7 +81,8 @@ export default function SetupTab(props) {
 
       <section className="wr-setup">
         <h3>Plushie images</h3>
-        <p className="wr-sub">Drop PNGs in <code>public/plushies/</code>. A plushie uses the file named in its <b>Image file</b> field, or else its name as a lowercase slug (“Sir Hops” → <code>sir-hops.png</code>). Until the file exists a coloured placeholder is shown. Portrait images around 600×800 work best on the roster cards.</p>
+        <p className="wr-sub">Drag and drop images to upload them in bulk, then choose one when you create or edit a plushie (Roster → plushie → Choose image). Portrait images around 600×800 work best on the roster cards. A plushie with no image chosen uses a file named after it (“Sir Hops” → <code>sir-hops.png</code>).</p>
+        <ImageLibrary used={imageUsage(L.wrestlers, slug)} showToast={props.showToast} dialog={props.dialog} onChange={props.reload} />
       </section>
     </div>
   );

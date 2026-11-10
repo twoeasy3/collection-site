@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { wr, byRating, ratingBand, ratingColor, ALIGNMENTS, daysSince, prettyDate } from '../wrApi';
-import { PlushieImg, Modal, Field, Select, Btn, AlignPip, FormDots, recordText, winPct, imageFileHint, ALIGN_COLOR } from '../ui';
+import { PlushieImg, Modal, Field, Select, Btn, AlignPip, FormDots, recordText, winPct, imageFileHint, ALIGN_COLOR, slug } from '../ui';
+import ImageLibrary, { imageUsage } from '../ImageLibrary';
 
 const blank = (brand_id = '') => ({ name: '', species: '', brand_id, image: '', alignment: 'face', card_rating: 50, status: 'active', finisher: '', gimmick: '', bio: '' });
 
@@ -57,6 +58,7 @@ function WrestlerModal({ w, L, reload, showToast, dialog, goLog, onClose }) {
   const [history, setHistory] = useState(null);
   const [changes, setChanges] = useState(null);
   const set = (k, v) => setDraft(d => ({ ...d, [k]: v }));
+  const [picking, setPicking] = useState(false);
   const rec = L.records[w.id];
 
   useEffect(() => {
@@ -84,8 +86,9 @@ function WrestlerModal({ w, L, reload, showToast, dialog, goLog, onClose }) {
     <Modal title={isNew ? 'New plushie' : w.name} onClose={onClose} wide>
       <div className="wr-wmodal">
         <div className="wr-wmodal-img">
-          <PlushieImg w={draft.name ? draft : w} color={L.brandColor(draft.brand_id ? Number(draft.brand_id) : null)} />
-          <small>PNG: <code>public/plushies/{imageFileHint(draft.name ? draft : w)}</code></small>
+          <PlushieImg w={draft.name || draft.image ? draft : w} color={L.brandColor(draft.brand_id ? Number(draft.brand_id) : null)} />
+          <small>{draft.image ? <code>{draft.image}</code> : <>No image chosen (looks for <code>{imageFileHint(draft)}</code>)</>}</small>
+          <Btn onClick={() => setPicking(true)}>{draft.image ? 'Change image' : 'Choose image'}</Btn>
           {!isNew && (
             <div className="wr-stats">
               <div><b>{recordText(rec)}</b><span>record</span></div>
@@ -99,7 +102,7 @@ function WrestlerModal({ w, L, reload, showToast, dialog, goLog, onClose }) {
           <Field label="Name"><input className="wr-input" value={draft.name} onChange={e => set('name', e.target.value)} autoFocus={isNew} /></Field>
           <Field label="Animal / species"><input className="wr-input" value={draft.species} onChange={e => set('species', e.target.value)} placeholder="Bear" /></Field>
           <Field label="Brand"><Select value={draft.brand_id ?? ''} onChange={v => set('brand_id', v)} placeholder="Free agent" options={L.brands.map(b => [b.id, b.name])} /></Field>
-          <Field label="Image file" hint="Blank = name as a slug"><input className="wr-input" value={draft.image} onChange={e => set('image', e.target.value)} placeholder="bruno.png" /></Field>
+          <Field label="Image" hint="Pick from your uploads (drag & drop to add more)"><div className="wr-imgfield"><span>{draft.image || 'None'}</span><Btn onClick={() => setPicking(true)}>Choose…</Btn>{draft.image && <Btn onClick={() => set('image', '')}>Clear</Btn>}</div></Field>
           <Field label="Alignment" hint="A change here is logged in their history"><Select value={draft.alignment} onChange={v => set('alignment', v)} options={ALIGNMENTS} /></Field>
           <Field label={`Card rating: ${draft.card_rating} (${ratingBand(Number(draft.card_rating))})`} hint="0-99. Where they sit on the card; Claude may nudge it.">
             <div className="wr-rating-edit">
@@ -113,6 +116,12 @@ function WrestlerModal({ w, L, reload, showToast, dialog, goLog, onClose }) {
           <Field label="Backstory"><textarea className="wr-input wide" rows={3} value={draft.bio} onChange={e => set('bio', e.target.value)} /></Field>
         </div>
       </div>
+
+      {picking && (
+        <Modal title="Choose image" onClose={() => setPicking(false)} wide>
+          <ImageLibrary onPick={(n) => { set('image', n); setPicking(false); }} selected={draft.image} used={imageUsage(L.wrestlers.filter(x => x.id !== w.id), slug)} showToast={showToast} dialog={dialog} compact />
+        </Modal>
+      )}
 
       {!isNew && (
         <div className="wr-facts">
