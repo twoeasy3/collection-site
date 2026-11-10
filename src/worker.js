@@ -1,5 +1,6 @@
 import { handleSantaAPI } from './secretSanta/api.js';
 import { handleAiAPI } from './aiFill.js';
+import { handleWrestlingAPI } from './wrestling/api.js';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -41,6 +42,9 @@ async function handleAPI(request, env, url) {
 
   const ai = await handleAiAPI(request, env, url, { json, isAuthorized });
   if (ai) return ai;
+
+  const wr = await handleWrestlingAPI(request, env, url, { json, isAuthorized });
+  if (wr) return wr;
 
   // All makes with their countries (public)
   if (url.pathname === '/api/makes' && request.method === 'GET') {

@@ -41,6 +41,7 @@ function ViewControls({ isPublic, viewMode, setViewMode, stackingEnabled, setSta
         </div>
       )}
       {!isPublic && <button onClick={() => setViewMode('missing')} style={{ width: '100%', padding: '4px', fontSize: '0.7em', fontWeight: 'bold', backgroundColor: viewMode === 'missing' ? '#fd7e14' : 'transparent', color: viewMode === 'missing' ? '#fff' : '#fd7e14', border: '1px solid #fd7e14', borderRadius: '4px', cursor: 'pointer' }}>MAINTENANCE</button>}
+      {!isPublic && <a href="/wrestling" title="Admin-only plushie wrestling booking office" style={{ display: 'block', boxSizing: 'border-box', width: '100%', marginTop: '4px', padding: '4px', fontSize: '0.7em', fontWeight: 'bold', textAlign: 'center', textDecoration: 'none', color: '#8e6fd1', border: '1px solid #8e6fd1', borderRadius: '4px' }}>🧸 WRESTLING</a>}
       <div style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
         <ThemeToggle theme={theme} setTheme={setTheme} grow />
         <button onClick={() => setSoundEnabled(s => !s)} title={soundEnabled ? 'Sound ON — click to mute' : 'Sound OFF — click to enable'} style={{ padding: '4px 8px', fontSize: '0.85em', fontWeight: 'bold', backgroundColor: soundEnabled ? '#6f42c1' : 'transparent', color: soundEnabled ? '#fff' : '#888', border: '1px solid #bbb', borderRadius: '4px', cursor: 'pointer', flexShrink: 0 }}>{soundEnabled ? '♪' : '♩'}</button>
