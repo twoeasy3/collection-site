@@ -17,6 +17,7 @@
 import categoryOrder from './category_order.json';
 
 const DEFAULT_MODEL = 'claude-sonnet-5-5';
+const DEFAULT_IMAGE_BASE = 'https://pingmathehippo.com'; // public domain in front of the R2 bucket (REMOTE_BASE); override with IMAGE_BASE
 const MODEL_NAME_SIMILARITY_THRESHOLD = 0.85;
 const YEAR_CLUSTER_MAX_SPREAD = 2;
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // Anthropic's per-image limit
@@ -182,14 +183,24 @@ function buildPrompt(car, need, baseCountries) {
   return lines.join('\n');
 }
 
-function toBase64(buf) {
-  const bytes = new Uint8Array(buf);
-  let bin = '';
-  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-  return btoa(bin);
+// Encoding a hero image to base64 in plain JS costs tens of ms of CPU, which is
+// enough to blow a Worker's CPU limit (Cloudflare answers 503 / error 1102). So:
+// use the native Uint8Array.toBase64() when this runtime has it, else let Claude
+// fetch the image by URL from the public image domain (zero Worker CPU).
+async function heroImageSource(env, key) {
+  const head = await env.IMAGES.head(key);
+  if (!head) return { skipped: 'no hero image' };
+  if (head.size > MAX_IMAGE_BYTES) return { skipped: 'hero image over 5MB' };
+  if (typeof Uint8Array.prototype.toBase64 === 'function') {
+    const obj = await env.IMAGES.get(key);
+    const data = new Uint8Array(await obj.arrayBuffer()).toBase64();
+    return { source: { type: 'base64', media_type: 'image/jpeg', data } };
+  }
+  const base = (env.IMAGE_BASE || DEFAULT_IMAGE_BASE).replace(/\/+$/, '');
+  return { source: { type: 'url', url: `${base}/${encodeURI(key)}` } };
 }
 
-async function callClaude(apiKey, model, imageB64, prompt, tool) {
+async function callClaude(apiKey, model, imageSource, prompt, tool) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -207,7 +218,7 @@ async function callClaude(apiKey, model, imageB64, prompt, tool) {
       messages: [{
         role: 'user',
         content: [
-          { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: imageB64 } },
+          { type: 'image', source: imageSource },
           { type: 'text', text: prompt },
         ],
       }],
@@ -296,9 +307,8 @@ async function suggestForCar(env, id, apiKey) {
   const need = determineNeedFields(car);
   if (!need.length) return { status: 200, body: { skipped: 'nothing to fill', car } };
 
-  const hero = await env.IMAGES.get(`standard_hero_shots/${id} (2).jpg`);
-  if (!hero) return { status: 200, body: { skipped: 'no hero image', car } };
-  if (hero.size > MAX_IMAGE_BYTES) return { status: 200, body: { skipped: 'hero image over 5MB', car } };
+  const hero = await heroImageSource(env, `standard_hero_shots/${id} (2).jpg`);
+  if (hero.skipped) return { status: 200, body: { skipped: hero.skipped, car } };
 
   const [{ results: others }, makeRow] = await Promise.all([
     env.DB.prepare('SELECT id, year, make, model, brand, description, ai_suggested FROM cars WHERE make = ? AND brand = ?').bind(car.make || '', car.brand || '').all(),
@@ -306,7 +316,7 @@ async function suggestForCar(env, id, apiKey) {
   ]);
   const baseCountries = parseJson(makeRow?.countries, []);
 
-  const result = await callClaude(apiKey, env.AI_MODEL, toBase64(await hero.arrayBuffer()), buildPrompt(car, need, baseCountries), buildTool(need));
+  const result = await callClaude(apiKey, env.AI_MODEL, hero.source, buildPrompt(car, need, baseCountries), buildTool(need));
   const fields = applyResult(car, others, need, result);
 
   // Targeted UPDATE (not INSERT OR REPLACE) so nothing else on the row is touched.
