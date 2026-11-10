@@ -81,7 +81,7 @@ export default function SetupTab(props) {
 
       <section className="wr-setup">
         <h3>Plushie images</h3>
-        <p className="wr-sub">Drag and drop images to upload them in bulk, then choose one when you create or edit a plushie (Roster → plushie → Choose image). Portrait images around 600×800 work best on the roster cards. A plushie with no image chosen uses a file named after it (“Sir Hops” → <code>sir-hops.png</code>).</p>
+        <p className="wr-sub">Drag and drop images to upload them in bulk, then choose one when you create or edit a plushie (Roster → plushie → Choose image). Square images (e.g. 864×864 transparent PNGs) work best; they are shown uncropped on a dark tile. A plushie with no image chosen uses a file named after it (“Sir Hops” → <code>sir-hops.png</code>).</p>
         <ImageLibrary used={imageUsage(L.wrestlers, slug)} showToast={props.showToast} dialog={props.dialog} onChange={props.reload} />
       </section>
     </div>
