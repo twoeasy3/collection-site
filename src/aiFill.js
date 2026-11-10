@@ -150,7 +150,7 @@ function buildPrompt(car, need, baseCountries) {
   if ((car.ai_rejected || '').trim()) {
     lines.push('', `A previous AI suggestion for this car was rejected by the owner with this note -- take it into account and don't repeat the mistake: "${car.ai_rejected.trim()}"`);
   }
-  lines.push('', 'Fill in ONLY the following fields, via the report_fields tool:');
+  lines.push('', 'Respond ONLY by calling the report_fields tool (no other text). Fill in ONLY the following fields:');
   if (need.includes('year')) {
     lines.push(
       "- year: the REAL vehicle's model year (not a toy release year), inferred from body-style/design-era cues. " +
@@ -201,7 +201,9 @@ async function callClaude(apiKey, model, imageB64, prompt, tool) {
       model: model || DEFAULT_MODEL,
       max_tokens: 1024,
       tools: [tool],
-      tool_choice: { type: 'tool', name: tool.name },
+      // Forced tool_choice ({type:'tool'}) is rejected by newer models, so leave it on auto
+      // and instruct the model in the prompt to answer via the tool.
+      tool_choice: { type: 'auto' },
       messages: [{
         role: 'user',
         content: [
@@ -219,7 +221,11 @@ async function callClaude(apiKey, model, imageB64, prompt, tool) {
   }
   const data = await res.json();
   const block = (data.content || []).find(b => b.type === 'tool_use' && b.name === tool.name);
-  return block ? block.input : {};
+  if (!block) {
+    const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join(' ').slice(0, 200);
+    throw new Error(`Claude did not call ${tool.name}${text ? `: ${text}` : ''}`);
+  }
+  return block.input;
 }
 
 const conf = (info, fallback = 0.5) => {
