@@ -3,11 +3,9 @@
 // Tables are the wr_* ones in schema.sql.
 
 import { aiBook } from './ai.js';
+import { int, str, isDate, num, HttpError, fail, count, ROLES, isCompetitor, sanitizeParticipants, endOpenReign, startReign, ensureEvent, insertParticipants } from './common.js';
+import { loadTournaments, createTournament, updateTournament, deleteTournament, bookTie, unbookTie, onMatchResult, onMatchReset, unlinkTies } from './tournaments.js';
 
-const int = (v, d = null) => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : d; };
-const str = (v) => String(v ?? '').trim();
-const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s);
-const num = (v) => { if (v === '' || v == null) return null; const n = Number(v); return Number.isFinite(n) ? n : null; };
 
 export const ENUMS = {
   brandKind: ['major', 'developmental'],
@@ -37,11 +35,6 @@ const TABLES = {
   feuds: { table: 'wr_feuds', cols: { name: 's', brand_id: 'n', status: 'e:feudStatus', heat: 'i', description: 's', planned_finale: 's', started_date: 's', ended_date: 's' }, defaults: { status: 'building', heat: 1 } },
   stipulations: { table: 'wr_stipulations', cols: { name: 's', kind: 'e:stipKind', description: 's', min_sides: 'i', max_sides: 'i' }, defaults: { kind: 'standard', min_sides: 2, max_sides: 2 } },
 };
-
-class HttpError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
-}
-const fail = (status, message) => { throw new HttpError(status, message); };
 
 function cleanRow(cfg, body) {
   const out = {};
@@ -80,7 +73,6 @@ async function upsertSimple(env, cfg, body) {
   }
 }
 
-const count = async (env, sql, ...binds) => (await env.DB.prepare(sql).bind(...binds).first())?.n || 0;
 
 async function deleteSimple(env, name, id) {
   const stmts = [];
@@ -150,7 +142,8 @@ async function loadState(env) {
   for (const t of teams) t.members = teamMembers.filter(m => m.team_id === t.id).map(({ wrestler_id, role }) => ({ wrestler_id, role }));
   for (const f of feuds) f.participants = feudParts.filter(p => p.feud_id === f.id).map(({ wrestler_id, side }) => ({ wrestler_id, side }));
 
-  return { brands, shows, wrestlers, titles, teams, feuds, stipulations, records };
+  const tournaments = await loadTournaments(env);
+  return { brands, shows, wrestlers, titles, teams, feuds, stipulations, records, tournaments };
 }
 
 async function loadEvents(env, { from, to, ids } = {}) {
@@ -159,11 +152,11 @@ async function loadEvents(env, { from, to, ids } = {}) {
   else { where = 'e.event_date BETWEEN ? AND ?'; binds = [from, to]; }
   const [{ results: events }, { results: matches }, { results: parts }] = await Promise.all([
     env.DB.prepare(`SELECT e.* FROM wr_events e WHERE ${where} ORDER BY e.event_date, e.id`).bind(...binds).all(),
-    env.DB.prepare(`SELECT m.* FROM wr_matches m JOIN wr_events e ON e.id=m.event_id WHERE ${where} ORDER BY m.card_order, m.id`).bind(...binds).all(),
+    env.DB.prepare(`SELECT m.*, (SELECT t.id FROM wr_tournament_ties t WHERE t.match_id = m.id) AS tournament_tie_id FROM wr_matches m JOIN wr_events e ON e.id=m.event_id WHERE ${where} ORDER BY m.card_order, m.id`).bind(...binds).all(),
     env.DB.prepare(`SELECT p.* FROM wr_match_participants p JOIN wr_matches m ON m.id=p.match_id JOIN wr_events e ON e.id=m.event_id WHERE ${where} ORDER BY p.side, p.id`).bind(...binds).all(),
   ]);
   const partsBy = {};
-  for (const p of parts) (partsBy[p.match_id] ||= []).push({ wrestler_id: p.wrestler_id, team_id: p.team_id, side: p.side, result: p.result });
+  for (const p of parts) (partsBy[p.match_id] ||= []).push({ wrestler_id: p.wrestler_id, team_id: p.team_id, side: p.side, result: p.result, role: p.role, note: p.note });
   const matchesBy = {};
   for (const m of matches) (matchesBy[m.event_id] ||= []).push({ ...m, participants: partsBy[m.id] || [] });
   return events.map(e => ({ ...e, matches: matchesBy[e.id] || [] }));
@@ -179,7 +172,7 @@ async function loadLog(env, { limit, wrestlerId, feudId }) {
     env.DB.prepare(`SELECT m.*, e.event_date, e.name AS event_name, e.show_id, s.name AS show_name, st.name AS stipulation_name, t.name AS title_name, f.name AS feud_name
       FROM wr_matches m JOIN wr_events e ON e.id=m.event_id LEFT JOIN wr_shows s ON s.id=e.show_id LEFT JOIN wr_stipulations st ON st.id=m.stipulation_id LEFT JOIN wr_titles t ON t.id=m.title_id LEFT JOIN wr_feuds f ON f.id=m.feud_id
       WHERE m.id IN (${idSub}) ORDER BY e.event_date DESC, m.id DESC`).bind(...binds, limit).all(),
-    env.DB.prepare(`SELECT p.match_id, p.wrestler_id, p.team_id, p.side, p.result FROM wr_match_participants p WHERE p.match_id IN (${idSub}) ORDER BY p.side, p.id`).bind(...binds, limit).all(),
+    env.DB.prepare(`SELECT p.match_id, p.wrestler_id, p.team_id, p.side, p.result, p.role, p.note FROM wr_match_participants p WHERE p.match_id IN (${idSub}) ORDER BY p.side, p.id`).bind(...binds, limit).all(),
   ]);
   const partsBy = {};
   for (const p of parts) (partsBy[p.match_id] ||= []).push(p);
@@ -187,16 +180,6 @@ async function loadLog(env, { limit, wrestlerId, feudId }) {
 }
 
 // ── Titles ───────────────────────────────────────────────────────────────────
-
-async function endOpenReign(env, titleId, date) {
-  await env.DB.prepare('UPDATE wr_title_reigns SET end_date=? WHERE title_id=? AND end_date IS NULL').bind(date, titleId).run();
-}
-
-async function startReign(env, titleId, wrestlerIds, date, matchId, notes = '') {
-  const { meta } = await env.DB.prepare('INSERT INTO wr_title_reigns (title_id, start_date, won_match_id, notes) VALUES (?,?,?,?)').bind(titleId, date, matchId ?? null, notes).run();
-  await env.DB.batch(wrestlerIds.map(w => env.DB.prepare('INSERT OR IGNORE INTO wr_reign_holders (reign_id, wrestler_id) VALUES (?,?)').bind(meta.last_row_id, w)));
-  return meta.last_row_id;
-}
 
 // Undo the championship effects of a completed match (used when its result is
 // edited or reset): remove the reign it created and re-open the one it ended.
@@ -223,19 +206,6 @@ async function loadReigns(env, titleId) {
 
 // ── Events / cards ───────────────────────────────────────────────────────────
 
-const sanitizeParticipants = (list) => {
-  const seen = new Set();
-  const out = [];
-  for (const p of Array.isArray(list) ? list : []) {
-    const wrestler_id = int(p.wrestler_id);
-    if (!wrestler_id) continue;
-    if (seen.has(wrestler_id)) fail(400, 'A plushie appears twice in the same match.');
-    seen.add(wrestler_id);
-    out.push({ wrestler_id, team_id: int(p.team_id), side: Math.max(1, int(p.side, 1)) });
-  }
-  return out;
-};
-
 async function saveEvent(env, body) {
   const show_id = int(body.show_id);
   const event_date = str(body.event_date);
@@ -253,7 +223,7 @@ async function saveEvent(env, body) {
   const cleaned = Array.isArray(body.matches) ? body.matches.map(m => {
     const segment = str(m.segment_type) || 'match';
     if (!ENUMS.segment.includes(segment)) fail(400, 'Invalid segment_type');
-    return { ...m, segment, participants: sanitizeParticipants(m.participants) };
+    return { ...m, segment, tie_id: int(m.tournament_tie_id), participants: sanitizeParticipants(m.participants) };
   }) : null;
 
   const fields = [show_id, event_date, pick('name'), status, pick('notes'), pick('ai_rationale')];
@@ -276,6 +246,7 @@ async function saveEvent(env, body) {
     // Drop removed matches, but never a completed one (results stay until explicitly deleted).
     const dropIds = existing.filter(m => !keep.has(m.id) && m.status !== 'completed').map(m => m.id);
     if (dropIds.length) {
+      await unlinkTies(env, dropIds);
       await env.DB.batch(dropIds.flatMap(mid => [
         env.DB.prepare('DELETE FROM wr_match_participants WHERE match_id=?').bind(mid),
         env.DB.prepare('DELETE FROM wr_matches WHERE id=?').bind(mid),
@@ -297,9 +268,9 @@ async function saveEvent(env, body) {
         const { meta } = await env.DB.prepare('INSERT INTO wr_matches (segment_type, stipulation_id, title_id, feud_id, is_main_event, planned_notes, card_order, event_id) VALUES (?,?,?,?,?,?,?,?)').bind(...planned, id).run();
         matchId = meta.last_row_id;
       }
-      if (participants.length) {
-        await env.DB.batch(participants.map(p => env.DB.prepare('INSERT INTO wr_match_participants (match_id, wrestler_id, team_id, side) VALUES (?,?,?,?)').bind(matchId, p.wrestler_id, p.team_id, p.side)));
-      }
+      await insertParticipants(env, matchId, participants);
+      // A match booked for a tournament tie keeps that link (only while the tie is undecided).
+      if (m.tie_id) await env.DB.prepare('UPDATE wr_tournament_ties SET match_id=? WHERE id=? AND winner_entrant_id IS NULL AND (match_id IS NULL OR match_id=?)').bind(matchId, m.tie_id, matchId).run();
     }
   }
   return (await loadEvents(env, { ids: [id] }))[0];
@@ -307,7 +278,8 @@ async function saveEvent(env, body) {
 
 async function deleteEvent(env, id) {
   const { results: matches } = await env.DB.prepare('SELECT m.id, e.event_date FROM wr_matches m JOIN wr_events e ON e.id=m.event_id WHERE e.id=?').bind(id).all();
-  for (const m of matches) await revertTitleEffects(env, m.id, m.event_date);
+  for (const m of matches) { await onMatchReset(env, m.id); await revertTitleEffects(env, m.id, m.event_date); }
+  await unlinkTies(env, matches.map(m => m.id));
   await env.DB.batch([
     env.DB.prepare('DELETE FROM wr_match_participants WHERE match_id IN (SELECT id FROM wr_matches WHERE event_id=?)').bind(id),
     env.DB.prepare('DELETE FROM wr_matches WHERE event_id=?').bind(id),
@@ -333,7 +305,7 @@ async function syncEventStatus(env, eventId) {
 
 async function recordResult(env, matchId, body) {
   const { match, participants } = await loadMatch(env, matchId);
-  if (match.status === 'completed') await revertTitleEffects(env, matchId, match.event_date);
+  if (match.status === 'completed') { await onMatchReset(env, matchId); await revertTitleEffects(env, matchId, match.event_date); }
 
   const results = body.results || {};
   const resultOf = (p) => {
@@ -342,8 +314,9 @@ async function recordResult(env, matchId, body) {
     return v;
   };
   const isMatch = match.segment_type === 'match';
-  const resolved = participants.map(p => ({ ...p, result: isMatch ? resultOf(p) : '' }));
-  if (isMatch && participants.length && !resolved.some(p => p.result)) fail(400, 'Pick a result for at least one plushie.');
+  // Only competitors get a result: corner plushies, interferers and run-ins never touch records.
+  const resolved = participants.map(p => ({ ...p, result: isMatch && isCompetitor(p) ? resultOf(p) : '' }));
+  if (isMatch && participants.some(isCompetitor) && !resolved.some(p => p.result)) fail(400, 'Pick a result for at least one plushie.');
 
   const titleChanged = isMatch && match.title_id && body.title_changed ? 1 : 0;
   const winners = resolved.filter(p => p.result === 'win').map(p => p.wrestler_id);
@@ -361,11 +334,13 @@ async function recordResult(env, matchId, body) {
     await endOpenReign(env, match.title_id, match.event_date);
     await startReign(env, match.title_id, winners.slice(0, title?.holders_count || 1), match.event_date, matchId);
   }
+  if (isMatch) await onMatchResult(env, match, resolved, match.event_date, titleChanged);
   await syncEventStatus(env, match.event_id);
 }
 
 async function resetResult(env, matchId) {
   const { match } = await loadMatch(env, matchId);
+  await onMatchReset(env, matchId);
   await revertTitleEffects(env, matchId, match.event_date);
   await env.DB.batch([
     env.DB.prepare("UPDATE wr_match_participants SET result='' WHERE match_id=?").bind(matchId),
@@ -376,7 +351,9 @@ async function resetResult(env, matchId) {
 
 async function deleteMatch(env, matchId) {
   const { match } = await loadMatch(env, matchId);
+  await onMatchReset(env, matchId);
   await revertTitleEffects(env, matchId, match.event_date);
+  await unlinkTies(env, [matchId]);
   await env.DB.batch([
     env.DB.prepare('DELETE FROM wr_match_participants WHERE match_id=?').bind(matchId),
     env.DB.prepare('DELETE FROM wr_matches WHERE id=?').bind(matchId),
@@ -460,6 +437,20 @@ export async function handleWrestlingAPI(request, env, url, { json, isAuthorized
       if (!c && method === 'DELETE') { await deleteMatch(env, id); return json({ ok: true }); }
     }
 
+    if (a === 'tournaments') {
+      if (!b && method === 'PUT') {
+        const data = await body();
+        if (int(data.id)) { await updateTournament(env, int(data.id), data); return json({ ok: true, id: int(data.id) }); }
+        return json({ ok: true, tournament: await createTournament(env, data) });
+      }
+      if (id && !c && method === 'DELETE') { await deleteTournament(env, id); return json({ ok: true }); }
+      const tieId = int(parts[3]);
+      if (id && c === 'ties' && tieId && parts[4] === 'book') {
+        if (method === 'POST') return json({ ok: true, ...(await bookTie(env, id, tieId, await body())) });
+        if (method === 'DELETE') { await unbookTie(env, id, tieId); return json({ ok: true }); }
+      }
+    }
+
     if (a === 'log' && method === 'GET') {
       const limit = Math.min(300, Math.max(1, int(url.searchParams.get("limit"), 40)));
       return json(await loadLog(env, { limit, wrestlerId: int(url.searchParams.get('wrestler_id')), feudId: int(url.searchParams.get('feud_id')) }));
@@ -474,8 +465,8 @@ export async function handleWrestlingAPI(request, env, url, { json, isAuthorized
     return json({ error: 'Not found' }, 404);
   } catch (e) {
     if (e instanceof HttpError) return json({ error: e.message }, e.status);
-    if (/no such table: wr_/i.test(String(e.message))) {
-      return json({ error: 'The wrestling tables are missing from the database. Run: wrangler d1 execute collection-data --remote --file=schema.sql' }, 500);
+    if (/no such table: wr_|no such column: (role|note)|has no column named (role|note)/i.test(String(e.message))) {
+      return json({ error: 'The wrestling database is out of date. Run schema.sql, then migrations/wrestling-roles.sql once (see the project notes), then reload.' }, 500);
     }
     // ai.js sets a 4xx/5xx status on its errors (400 for bad input, 401/429/529 from Anthropic so
     // the client can stop a run, 502 for other upstream failures).

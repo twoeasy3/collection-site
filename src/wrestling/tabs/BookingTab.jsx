@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { wr, aiBook, todayISO, addDaysISO, weekdayOf, prettyDate, WEEKDAYS } from '../wrApi';
 import { Modal, Btn, Pill } from '../ui';
-import MatchEditor, { sidesOf } from './MatchEditor';
+import MatchEditor, { sidesOf, isComp, ROLE_LABEL } from './MatchEditor';
 
 const clone = (x) => JSON.parse(JSON.stringify(x));
 const payload = (e) => ({
   id: e.id, show_id: e.show_id, event_date: e.event_date, name: e.name || '', status: e.status, notes: e.notes || '', ai_rationale: e.ai_rationale || '',
   matches: e.matches.map(m => ({
     id: m.id, segment_type: m.segment_type, stipulation_id: m.stipulation_id ?? null, title_id: m.title_id ?? null, feud_id: m.feud_id ?? null,
-    is_main_event: m.is_main_event ? 1 : 0, planned_notes: m.planned_notes || '',
-    participants: m.participants.map(p => ({ wrestler_id: p.wrestler_id, team_id: p.team_id ?? null, side: p.side })),
+    is_main_event: m.is_main_event ? 1 : 0, planned_notes: m.planned_notes || '', tournament_tie_id: m.tournament_tie_id ?? null,
+    participants: m.participants.map(p => ({ wrestler_id: p.wrestler_id, team_id: p.team_id ?? null, side: p.side, role: p.role || 'competitor', note: p.note || '' })),
   })),
 });
 let keySeq = 1;
@@ -29,9 +29,11 @@ function AiPreview({ L, suggestion, warnings, onApply, onClose, onReroll, applyi
                 <b>{m.segment_type === 'match' ? (stip?.name || 'Match') : m.segment_type === 'promo' ? 'Promo' : 'Angle'}</b>
                 {m.title_id && <Pill color="#b08a1a">👑 {L.tMap[m.title_id]?.name}</Pill>}
                 {m.feud_id && <Pill color="#8e6fd1">{L.fMap[m.feud_id]?.name}</Pill>}
+                {m.tournament_tie_id && <Pill color="#2d6fb0">🏆 Tournament</Pill>}
                 {m.is_main_event ? <Pill color="#c0392b">Main event</Pill> : null}
               </div>
-              <div className="wr-preview-sides">{sides.map(s => m.participants.filter(p => p.side === s).map(p => L.wMap[p.wrestler_id]?.name).join(' & ')).join('  vs  ')}</div>
+              <div className="wr-preview-sides">{sides.map(s => m.participants.filter(p => isComp(p) && p.side === s).map(p => L.wMap[p.wrestler_id]?.name).join(' & ')).join('  vs  ')}</div>
+              {m.participants.filter(p => !isComp(p)).map(p => <div key={p.wrestler_id} className="wr-preview-extra">↳ <b>{L.wMap[p.wrestler_id]?.name}</b> ({ROLE_LABEL[p.role]}, backs {m.participants.filter(c => isComp(c) && c.side === p.side).map(c => L.wMap[c.wrestler_id]?.name).join(' & ')}){p.note && <> — {p.note}</>}</div>)}
               {m.planned_notes && <p>{m.planned_notes}</p>}
             </li>
           );
@@ -52,7 +54,7 @@ function EventEditor({ L, show, event, dayEvents, reload, reloadEvents, showToas
   const dirty = JSON.stringify(payload(draft)) !== JSON.stringify(payload(event));
   const otherDay = useMemo(() => {
     const s = new Set();
-    for (const e of dayEvents) if (e.id !== event.id) for (const m of e.matches) for (const p of m.participants) s.add(p.wrestler_id);
+    for (const e of dayEvents) if (e.id !== event.id) for (const m of e.matches) for (const p of m.participants) if (isComp(p)) s.add(p.wrestler_id);
     return s;
   }, [dayEvents, event.id]);
 

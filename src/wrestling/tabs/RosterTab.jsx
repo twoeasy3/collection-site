@@ -115,8 +115,9 @@ function WrestlerModal({ w, L, reload, showToast, dialog, goLog, onClose }) {
             <b>Recent matches</b>
             {history == null ? ' …' : history.length === 0 ? <em> none yet</em> : history.map(m => {
               const me = m.participants.find(p => p.wrestler_id === w.id);
-              const foes = m.participants.filter(p => p.side !== me?.side).map(p => L.wMap[p.wrestler_id]?.name).filter(Boolean);
-              return <div key={m.id} className={`r-${me?.result}`}><span>{me?.result === 'win' ? 'W' : me?.result === 'loss' ? 'L' : me?.result === 'draw' ? 'D' : '·'}</span> {m.event_date} vs {foes.join(', ') || '—'} <em>({m.stipulation_name || m.segment_type})</em></div>;
+              const foes = m.participants.filter(p => (p.role || 'competitor') === 'competitor' && p.side !== me?.side).map(p => L.wMap[p.wrestler_id]?.name).filter(Boolean);
+              const role = me?.role && me.role !== 'competitor' ? me.role.replace('_', '-') : null;
+              return <div key={m.id} className={`r-${me?.result}`}><span>{me?.result === 'win' ? 'W' : me?.result === 'loss' ? 'L' : me?.result === 'draw' ? 'D' : '·'}</span> {m.event_date} {role ? <>({role}) in </> : 'vs '}{foes.join(', ') || '—'} <em>({m.stipulation_name || m.segment_type})</em></div>;
             })}
             <button className="wr-link" onClick={() => { onClose(); goLog({ wrestler_id: w.id }); }}>Full match log →</button>
           </div>

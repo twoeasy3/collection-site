@@ -9,7 +9,10 @@
 // Anthropic key: X-Anthropic-Key header from the browser (same localStorage key
 // as the car AI fill), or an ANTHROPIC_API_KEY Worker secret. Model: AI_MODEL var.
 
+import { loadTournaments } from './tournaments.js';
+
 const DEFAULT_MODEL = 'claude-sonnet-5-5';
+const EXTRA_ROLES = ['corner', 'interference', 'run_in'];
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -28,6 +31,8 @@ How to book well:
 - Balance the card: faces vs heels, tiers (main_event wrestlers headline, enhancement wrestlers lose to push others), and variety of stipulations. Keep stipulation matches for feuds that earn them. Put the main event last and set is_main_event true on exactly one match.
 - Brand integrity: weekly shows only use their own brand's roster. Pay-Per-Views and specials draw from both major brands. The developmental brand's show is for newcomers and building prospects, with simpler matches.
 - Typical size: weekly show 5-7 segments, developmental 4-6, PPV/special 7-9. Include promo/angle segments (no stipulation) where a feud needs a non-match beat.
+- Non-fighting participants: besides competitors, a participant can have role "corner" (stands in a competitor's corner, doesn't fight), "interference" (interferes mid-match) or "run_in" (runs in after/around the bell). For these, "side" is the competitor side they BACK, and "note" says what they do ("slides a chair in", "pulls the referee out"). Use them sparingly to advance feuds, protect finishes, introduce a new alliance or tease a betrayal; heels interfere more than faces. A plushie can't be both a competitor and a non-competitor in the same match. A non-competitor does not count as "booked" for the rest of the card.
+- Tournaments: if the league state lists tournament ties that are ready to be played, advance them: set tournament_tie_id on a match (the entrants are filled in automatically). A tournament's rounds should be spread across shows, with the final on a Pay-Per-View or special.
 - If the user gave booking notes, follow them.
 
 Respond ONLY by calling the book_show tool.`;
@@ -50,13 +55,19 @@ const TOOL = {
             stipulation_id: { type: ['integer', 'null'], description: 'Required for matches; null for promo/angle.' },
             title_id: { type: ['integer', 'null'], description: 'Set when this is a championship match.' },
             feud_id: { type: ['integer', 'null'], description: 'The feud this advances, if any.' },
+            tournament_tie_id: { type: ['integer', 'null'], description: 'A ready tournament tie to play in this match; entrants are filled in automatically.' },
             is_main_event: { type: 'boolean' },
             planned_notes: { type: 'string', description: 'The story beat / intent in 1-3 sentences. Not the finish.' },
             participants: {
               type: 'array',
               items: {
                 type: 'object',
-                properties: { wrestler_id: { type: 'integer' }, side: { type: 'integer', description: 'Partners share a side; N-way: all different.' } },
+                properties: {
+                  wrestler_id: { type: 'integer' },
+                  side: { type: 'integer', description: 'Competitors: partners share a side, N-way all different. Non-competitors: the competitor side they back.' },
+                  role: { type: 'string', enum: ['competitor', 'corner', 'interference', 'run_in'], description: 'Default competitor.' },
+                  note: { type: 'string', description: 'For non-competitors: what they do.' },
+                },
                 required: ['wrestler_id', 'side'],
               },
             },
@@ -73,7 +84,7 @@ async function gatherContext(env, show, date) {
   const all = (sql, ...b) => env.DB.prepare(sql).bind(...b).all().then(r => r.results);
   const crossBrand = show.brand_id == null;
 
-  const [brands, wrestlers, titles, teams, teamMembers, feuds, feudParts, stips, records, bookedElsewhere, recent, upcoming] = await Promise.all([
+  const [brands, wrestlers, titles, teams, teamMembers, feuds, feudParts, stips, records, bookedElsewhere, recent, upcoming, tournaments] = await Promise.all([
     all('SELECT * FROM wr_brands'),
     all('SELECT * FROM wr_wrestlers WHERE status != ?', 'retired'),
     all("SELECT * FROM wr_titles WHERE status='active'"),
@@ -88,6 +99,7 @@ async function gatherContext(env, show, date) {
     all(`SELECT m.*, e.event_date, e.name AS event_name, s.name AS show_name, st.name AS stip FROM wr_matches m JOIN wr_events e ON e.id=m.event_id JOIN wr_shows s ON s.id=e.show_id LEFT JOIN wr_stipulations st ON st.id=m.stipulation_id
       WHERE m.status='completed' AND e.event_date < ? ${crossBrand ? '' : 'AND (s.brand_id = ? OR s.brand_id IS NULL)'} ORDER BY e.event_date DESC, m.id DESC LIMIT 30`, ...(crossBrand ? [date] : [date, show.brand_id])),
     all('SELECT e.id, e.event_date, e.name, s.name AS show_name, s.type FROM wr_events e JOIN wr_shows s ON s.id=e.show_id WHERE e.event_date > ? AND e.event_date <= ? ORDER BY e.event_date', date, addDays(date, 28)),
+    loadTournaments(env),
   ]);
 
   const majorIds = new Set(brands.filter(b => b.kind === 'major').map(b => b.id));
@@ -145,8 +157,11 @@ async function gatherContext(env, show, date) {
   if (recentIds.length) recentParts = await all(`SELECT * FROM wr_match_participants WHERE match_id IN (${recentIds.map(() => '?').join(',')})`, ...recentIds);
   const recentLines = recent.map(m => {
     const ps = recentParts.filter(p => p.match_id === m.id);
-    const sides = [...new Set(ps.map(p => p.side))].sort((a, b) => a - b);
-    const text = sides.map(s => ps.filter(p => p.side === s).map(p => `${wById[p.wrestler_id]?.name ?? '?'}${p.result === 'win' ? '(W)' : p.result === 'loss' ? '(L)' : ''}`).join(' & ')).join(' vs ');
+    const comps = ps.filter(p => (p.role || 'competitor') === 'competitor');
+    const extras = ps.filter(p => (p.role || 'competitor') !== 'competitor');
+    const sides = [...new Set(comps.map(p => p.side))].sort((a, b) => a - b);
+    const text = sides.map(s => comps.filter(p => p.side === s).map(p => `${wById[p.wrestler_id]?.name ?? '?'}${p.result === 'win' ? '(W)' : p.result === 'loss' ? '(L)' : ''}`).join(' & ')).join(' vs ')
+      + (extras.length ? ` [${extras.map(p => `${p.role.replace('_', '-')}: ${wById[p.wrestler_id]?.name ?? '?'} for ${comps.filter(c => c.side === p.side).map(c => wById[c.wrestler_id]?.name).filter(Boolean).join(' & ') || `side ${p.side}`}${p.note ? ` (${clip(p.note, 60)})` : ''}`).join('; ')}]` : '');
     return `${m.event_date} ${m.show_name}${m.title_id ? ' [TITLE]' : ''}${m.title_changed ? ' [NEW CHAMPION]' : ''} ${m.stip || m.segment_type}: ${text || '(no participants)'}${m.finish_type ? ` via ${m.finish_type}` : ''}${m.feud_id ? ` (feud#${m.feud_id})` : ''}. ${clip(m.report, 240)}`;
   });
 
@@ -155,6 +170,15 @@ async function gatherContext(env, show, date) {
     const ms = await all('SELECT planned_notes, is_main_event FROM wr_matches WHERE event_id=? ORDER BY card_order', e.id);
     upcomingLines.push(`${e.event_date} ${e.show_name} (${e.type})${e.name ? ` "${e.name}"` : ''}: ${ms.map(m => clip(m.planned_notes, 80)).filter(Boolean).join(' | ') || 'not yet booked'}`);
   }
+
+  const nameOfEntrant = (e) => e.name || e.members.map(m => wById[m]?.name ?? '?').join(' & ');
+  const tourneyLines = tournaments.filter(t => t.status === 'active').map(t => ({
+    id: t.id, name: t.name, winner_gets_title: t.title_id ? (titles.find(x => x.id === t.title_id)?.name ?? 'a title') : undefined, rounds: t.rounds,
+    ready_ties_to_book: t.ties.filter(x => x.ready && !x.match_id).map(x => ({ tie_id: x.id, round: x.round_name, a: nameOfEntrant(t.entrants.find(e => e.id === x.a)), b: nameOfEntrant(t.entrants.find(e => e.id === x.b)) })),
+    already_booked: t.ties.filter(x => x.match_id && x.match?.status !== 'completed').length,
+  })).filter(t => t.ready_ties_to_book.length || t.already_booked);
+  const tieIndex = new Map();
+  for (const t of tournaments.filter(x => x.status === 'active')) for (const x of t.ties) if (x.ready && !x.match_id) tieIndex.set(x.id, { a: t.entrants.find(e => e.id === x.a), b: t.entrants.find(e => e.id === x.b), final: x.round === t.rounds });
 
   const wl = (w) => ({
     id: w.id, name: w.name, species: w.species, brand: w.brand_id ? brandName[w.brand_id] : 'free agent', alignment: w.alignment, tier: w.tier,
@@ -172,7 +196,8 @@ async function gatherContext(env, show, date) {
     stipulations: stips.map(s => ({ id: s.id, name: s.name, kind: s.kind, min_sides: s.min_sides, max_sides: s.max_sides })),
     recent_results_newest_first: recentLines,
     upcoming_cards: upcomingLines,
-    _valid: { available: new Set(available.map(w => w.id)), stips: new Map(stips.map(s => [s.id, s])), titles: new Set(titleLines.map(t => t.id)), feuds: new Set(feudLines.map(f => f.id)), teams: teams.map(t => ({ id: t.id, members: teamMembers.filter(m => m.team_id === t.id).map(m => m.wrestler_id) })), scopedIds },
+    tournaments: tourneyLines,
+    _valid: { available: new Set(available.map(w => w.id)), stips: new Map(stips.map(s => [s.id, s])), titles: new Set(titleLines.map(t => t.id)), feuds: new Set(feudLines.map(f => f.id)), teams: teams.map(t => ({ id: t.id, members: teamMembers.filter(m => m.team_id === t.id).map(m => m.wrestler_id) })), scopedIds, ties: tieIndex, nameOf: (id) => wById[id]?.name || `#${id}` },
   };
 }
 
@@ -209,39 +234,78 @@ async function callClaude(env, apiKey, model, context, notes) {
 // Drop anything that isn't a real id, keep the rest, and say what was changed.
 function validate(raw, valid) {
   const warnings = [];
-  const used = new Set();
+  const usedCompetitors = new Set(); // a plushie fights at most once per card (non-fighters may appear more than once)
+  const usedTies = new Set();
   const matches = [];
+  const stipNamed = (name) => [...valid.stips.values()].find(s => s.name === name);
   for (const m of Array.isArray(raw.matches) ? raw.matches : []) {
     const segment = ['match', 'promo', 'angle'].includes(m.segment_type) ? m.segment_type : 'match';
-    const stip = valid.stips.get(m.stipulation_id);
-    const participants = [];
+    let stip = valid.stips.get(m.stipulation_id);
+    let competitors = [];
+    const extras = [];
+    const inMatch = new Set();
     for (const p of Array.isArray(m.participants) ? m.participants : []) {
       const id = Number(p.wrestler_id);
-      if (!valid.available.has(id)) { warnings.push(`Dropped unavailable/unknown wrestler #${p.wrestler_id}.`); continue; }
-      if (used.has(id)) { warnings.push(`Wrestler #${id} was booked twice; kept the first booking.`); continue; }
-      used.add(id);
-      participants.push({ wrestler_id: id, side: Math.max(1, parseInt(p.side, 10) || 1), team_id: null });
+      const role = EXTRA_ROLES.includes(p.role) ? p.role : 'competitor';
+      if (!valid.available.has(id)) { warnings.push(`Dropped ${valid.nameOf(id)}: unavailable or unknown.`); continue; }
+      if (inMatch.has(id)) { warnings.push(`${valid.nameOf(id)} was listed twice in one match; kept the first.`); continue; }
+      if (role === 'competitor') {
+        if (usedCompetitors.has(id)) { warnings.push(`${valid.nameOf(id)} was booked to fight twice; kept the first booking.`); continue; }
+        usedCompetitors.add(id);
+      }
+      inMatch.add(id);
+      const row = { wrestler_id: id, side: Math.max(1, parseInt(p.side, 10) || 1), team_id: null, role, note: role === 'competitor' ? '' : String(p.note || '').trim().slice(0, 300) };
+      (role === 'competitor' ? competitors : extras).push(row);
     }
-    const sides = new Set(participants.map(p => p.side));
+
+    // A tournament tie: the entrants are filled in for real, whatever Claude listed.
+    let tieId = null;
+    const tie = segment === 'match' ? valid.ties.get(Number(m.tournament_tie_id)) : null;
+    if (tie && !usedTies.has(Number(m.tournament_tie_id))) {
+      tieId = Number(m.tournament_tie_id);
+      usedTies.add(tieId);
+      competitors.forEach(c => usedCompetitors.delete(c.wrestler_id));
+      competitors = [];
+      for (const [entrant, side] of [[tie.a, 1], [tie.b, 2]]) {
+        for (const w of entrant.members) {
+          if (!valid.available.has(w)) warnings.push(`Tournament entrant ${valid.nameOf(w)} isn’t available on this show; adjust by hand.`);
+          usedCompetitors.add(w);
+          competitors.push({ wrestler_id: w, side, team_id: entrant.team_id ?? null, role: 'competitor', note: '' });
+        }
+      }
+      const clash = new Set(competitors.map(c => c.wrestler_id));
+      for (let i = extras.length - 1; i >= 0; i--) if (clash.has(extras[i].wrestler_id)) extras.splice(i, 1);
+      if (!stip) stip = stipNamed(Math.max(tie.a.members.length, tie.b.members.length) >= 2 ? 'Tag Team' : 'Singles');
+    } else if (m.tournament_tie_id) {
+      warnings.push('Ignored a tournament tie that is not ready to be played.');
+    }
+
+    const sides = new Set(competitors.map(p => p.side));
     if (segment === 'match') {
       if (sides.size < 2) { warnings.push(`Dropped a match with fewer than two sides ("${clip(m.planned_notes, 50)}").`); continue; }
       if (stip && (sides.size < stip.min_sides || sides.size > stip.max_sides)) warnings.push(`${stip.name} expects ${stip.min_sides}-${stip.max_sides} sides but got ${sides.size}.`);
-      if (!stip) warnings.push(`A match had no valid stipulation; set it by hand.`);
+      if (!stip) warnings.push('A match had no valid stipulation; set it by hand.');
     }
     // A side that is exactly a team's full line-up wrestles as that team.
     for (const side of sides) {
-      const ids = participants.filter(p => p.side === side).map(p => p.wrestler_id);
+      const ids = competitors.filter(p => p.side === side).map(p => p.wrestler_id);
       const team = valid.teams.find(t => t.members.length >= 2 && t.members.length === ids.length && t.members.every(x => ids.includes(x)));
-      if (team) participants.filter(p => p.side === side).forEach(p => { p.team_id = team.id; });
+      if (team) competitors.filter(p => p.side === side && !p.team_id).forEach(p => { p.team_id = team.id; });
     }
+    // Corner / interference / run-ins must back a side that actually competes.
+    const keptExtras = extras.filter(e => {
+      if (segment === 'match' && !sides.has(e.side)) { warnings.push(`Dropped ${e.role.replace('_', '-')} by ${valid.nameOf(e.wrestler_id)}: it backs side ${e.side}, which doesn’t exist.`); return false; }
+      return true;
+    });
     matches.push({
       segment_type: segment,
       stipulation_id: segment === 'match' && stip ? stip.id : null,
       title_id: valid.titles.has(m.title_id) ? m.title_id : null,
       feud_id: valid.feuds.has(m.feud_id) ? m.feud_id : null,
-      is_main_event: !!m.is_main_event,
+      tournament_tie_id: tieId,
+      is_main_event: !!m.is_main_event || (tieId != null && tie?.final && m.is_main_event !== false),
       planned_notes: String(m.planned_notes || '').trim(),
-      participants,
+      participants: [...competitors, ...keptExtras],
     });
   }
   const mains = matches.filter(m => m.is_main_event);

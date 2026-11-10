@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { wr, prettyDate, FINISH_TYPES } from '../wrApi';
 import { Select, Btn, Pill, Stars } from '../ui';
 
+const ROLE_LABEL = { corner: 'In the corner', interference: 'Interference', run_in: 'Run-in' };
+const isComp = (p) => (p.role || 'competitor') === 'competitor';
+
 // Completed matches with their reports and results: the memory Claude reads
 // when it books the next show.
 export default function LogTab({ L, filter, setFilter, showToast }) {
@@ -16,7 +19,8 @@ export default function LogTab({ L, filter, setFilter, showToast }) {
     wr('GET', `/log?${qs}`).then(setRows).catch(e => { showToast(e.message, 'error'); setRows([]); });
   }, [limit, filter.wrestler_id, filter.feud_id, showToast]);
 
-  const sides = (m) => [...new Set(m.participants.map(p => p.side))].sort((a, b) => a - b);
+  const sides = (m) => [...new Set(m.participants.filter(isComp).map(p => p.side))].sort((a, b) => a - b);
+  const backs = (m, side) => m.participants.filter(c => isComp(c) && c.side === side).map(c => L.wMap[c.wrestler_id]?.name).filter(Boolean).join(' & ') || `side ${side}`;
   return (
     <div>
       <div className="wr-toolbar">
@@ -38,11 +42,16 @@ export default function LogTab({ L, filter, setFilter, showToast }) {
           </div>
           <div className="wr-log-sides">
             {sides(m).map((s, i) => (
-              <span key={s}>{i > 0 && <em> vs </em>}{m.participants.filter(p => p.side === s).map((p, j) => (
+              <span key={s}>{i > 0 && <em> vs </em>}{m.participants.filter(p => isComp(p) && p.side === s).map((p, j) => (
                 <span key={p.wrestler_id} className={`r-${p.result}`}>{j > 0 && ' & '}{L.wMap[p.wrestler_id]?.name || '?'}{p.result === 'win' ? ' ✔' : ''}</span>
               ))}</span>
             ))}
           </div>
+          {m.participants.some(p => !isComp(p)) && (
+            <ul className="wr-log-extras">
+              {m.participants.filter(p => !isComp(p)).map(p => <li key={p.wrestler_id}><b>{L.wMap[p.wrestler_id]?.name || '?'}</b> <Pill color="#8e6fd1">{ROLE_LABEL[p.role] || p.role}</Pill> for {backs(m, p.side)}{p.note && <em> — {p.note}</em>}</li>)}
+            </ul>
+          )}
           <div className="wr-sub">
             {m.finish_type && FINISH_TYPES.find(f => f[0] === m.finish_type)?.[1]}{m.duration_min != null && ` · ${m.duration_min} min`} <Stars value={m.rating} />
           </div>

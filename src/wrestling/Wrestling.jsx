@@ -11,6 +11,7 @@ import BookingTab from './tabs/BookingTab';
 import TitlesTab from './tabs/TitlesTab';
 import StorylinesTab from './tabs/StorylinesTab';
 import LogTab from './tabs/LogTab';
+import TournamentsTab from './tabs/TournamentsTab';
 import SetupTab from './tabs/SetupTab';
 
 // Plushie Wrestling booking league. Admin-only: the whole page is gated on the
@@ -20,7 +21,7 @@ import SetupTab from './tabs/SetupTab';
 
 const TABS = [
   ['roster', 'Roster'], ['booking', 'Booking'], ['titles', 'Titles'],
-  ['storylines', 'Feuds & Teams'], ['log', 'Match Log'], ['setup', 'Setup'],
+  ['storylines', 'Feuds & Teams'], ['tournaments', 'Tournaments'], ['log', 'Match Log'], ['setup', 'Setup'],
 ];
 const readKey = () => { try { return localStorage.getItem('adminApiKey') || ''; } catch { return ''; } };
 
@@ -107,6 +108,7 @@ export default function Wrestling() {
             {tab === 'booking' && <BookingTab {...ctx} />}
             {tab === 'titles' && <TitlesTab {...ctx} />}
             {tab === 'storylines' && <StorylinesTab {...ctx} />}
+            {tab === 'tournaments' && <TournamentsTab {...ctx} />}
             {tab === 'log' && <LogTab {...ctx} filter={logFilter} setFilter={setLogFilter} />}
             {tab === 'setup' && <SetupTab {...ctx} />}
           </>

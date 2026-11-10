@@ -233,9 +233,12 @@ CREATE TABLE IF NOT EXISTS wr_match_participants (
   match_id    INTEGER NOT NULL,
   wrestler_id INTEGER NOT NULL,
   team_id     INTEGER,                         -- set when they entered as a team
-  side        INTEGER NOT NULL DEFAULT 1,
-  result      TEXT NOT NULL DEFAULT ''         -- '' | 'win' | 'loss' | 'draw' | 'nc'
+  side        INTEGER NOT NULL DEFAULT 1,      -- competitors: their side. Non-competitors: the side they back
+  result      TEXT NOT NULL DEFAULT '',        -- '' | 'win' | 'loss' | 'draw' | 'nc' (competitors only)
+  role        TEXT NOT NULL DEFAULT 'competitor', -- 'competitor' | 'corner' | 'interference' | 'run_in'
+  note        TEXT NOT NULL DEFAULT ''         -- what a non-competitor did, e.g. 'hits Bruno with a chair'
 );
+-- Existing databases: run migrations/wrestling-roles.sql once to add role + note.
 CREATE INDEX IF NOT EXISTS idx_wr_mp_match ON wr_match_participants (match_id);
 CREATE INDEX IF NOT EXISTS idx_wr_mp_wrestler ON wr_match_participants (wrestler_id);
 
@@ -271,3 +274,39 @@ INSERT OR IGNORE INTO wr_stipulations (name, kind, description, min_sides, max_s
   ('Last Plushie Standing', 'gimmick', 'Falls count only once the opponent cannot answer the ten-count.', 2, 2),
   ('I Quit', 'gimmick', 'Win only when the opponent says it.', 2, 2),
   ('Tables Match', 'gimmick', 'Put your opponent through a table.', 2, 2);
+
+-- Tournaments: single-elimination brackets. Round-1 ties store the two entrants
+-- (byes = NULL); later rounds are derived from the winners of the previous round.
+-- Each tie can be booked onto a card as a normal match (match_id); recording
+-- that match's result advances the winner, and the final can crown a champion.
+CREATE TABLE IF NOT EXISTS wr_tournaments (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  name         TEXT NOT NULL,
+  brand_id     INTEGER,                        -- NULL = cross-brand
+  title_id     INTEGER,                        -- the winner is crowned champion of this title, if set
+  entrant_size INTEGER NOT NULL DEFAULT 1,     -- 1 singles, 2 tag teams, 3 trios
+  status       TEXT NOT NULL DEFAULT 'active', -- 'active' | 'completed'
+  description  TEXT NOT NULL DEFAULT '',
+  winner_entrant_id INTEGER,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS wr_tournament_entrants (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  tournament_id INTEGER NOT NULL,
+  seed          INTEGER NOT NULL,
+  name          TEXT NOT NULL DEFAULT '',      -- team name; blank = the members' names
+  team_id       INTEGER,
+  members       TEXT NOT NULL DEFAULT '[]'     -- JSON array of wrestler ids
+);
+CREATE INDEX IF NOT EXISTS idx_wr_tent_t ON wr_tournament_entrants (tournament_id);
+CREATE TABLE IF NOT EXISTS wr_tournament_ties (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  tournament_id INTEGER NOT NULL,
+  round         INTEGER NOT NULL,              -- 1 = first round
+  pos           INTEGER NOT NULL,              -- position within the round, from 0
+  a_entrant_id  INTEGER,                       -- round 1 only
+  b_entrant_id  INTEGER,                       -- round 1 only
+  winner_entrant_id INTEGER,
+  match_id      INTEGER,                       -- the booked/played wr_matches row
+  UNIQUE (tournament_id, round, pos)
+);
