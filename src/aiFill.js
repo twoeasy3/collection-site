@@ -71,33 +71,24 @@ const median = (nums) => {
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
-function findYearCrossReference(car, others) {
+// `rows` are pre-filtered in SQL (same brand+make, non-empty year, year not itself an
+// unconfirmed AI guess) and carry only {model, year}, so this loop stays tiny -- the
+// free Workers plan allows ~10ms of CPU per request.
+function findYearCrossReference(car, rows) {
+  const model = (car.model || '').trim().toLowerCase();
   const years = [];
-  for (const o of others) {
-    if (String(o.id) === String(car.id)) continue;
-    if ((o.brand || '') !== (car.brand || '') || (o.make || '') !== (car.make || '')) continue;
-    const y = (o.year || '').trim();
-    if (!y) continue;
-    if ('year' in parseJson(o.ai_suggested, {})) continue; // never bootstrap off another unconfirmed guess
-    if (similar(o.model, car.model) >= MODEL_NAME_SIMILARITY_THRESHOLD) {
-      const n = parseInt(y, 10);
+  for (const o of rows) {
+    const other = (o.model || '').trim().toLowerCase();
+    // Cheap prune: a ratio >= threshold needs lengths within ~(1-t)/(1+t) of each other.
+    const lo = Math.min(model.length, other.length), hi = Math.max(model.length, other.length);
+    if (other !== model && (2 * lo) / (lo + hi) < MODEL_NAME_SIMILARITY_THRESHOLD) continue;
+    if (other === model || similar(model, other) >= MODEL_NAME_SIMILARITY_THRESHOLD) {
+      const n = parseInt(o.year, 10);
       if (!Number.isNaN(n)) years.push(n);
     }
   }
   if (!years.length || Math.max(...years) - Math.min(...years) > YEAR_CLUSTER_MAX_SPREAD) return null;
   return Math.round(median(years));
-}
-
-function findStackDescription(car, others, year) {
-  if (!year) return null;
-  for (const o of others) {
-    if (String(o.id) === String(car.id)) continue;
-    if (String(o.year || '').trim() !== String(year).trim()) continue;
-    if ((o.brand || '') !== (car.brand || '') || (o.make || '') !== (car.make || '') || (o.model || '') !== (car.model || '')) continue;
-    const d = (o.description || '').trim();
-    if (d) return d;
-  }
-  return null;
 }
 
 function determineNeedFields(car) {
@@ -245,7 +236,7 @@ const conf = (info, fallback = 0.5) => {
 };
 
 // Applies a model result to `car`, returning the columns to write.
-function applyResult(car, others, need, result) {
+async function applyResult(car, xrefRows, need, result, findStack) {
   const aiSuggested = parseJson(car.ai_suggested, {});
   const out = {
     year: car.year || '', series: car.series || '', category: car.category || '[]',
@@ -255,7 +246,7 @@ function applyResult(car, others, need, result) {
   if (need.includes('year') && String(result.year?.value ?? '').trim()) {
     let year = String(result.year.value).trim();
     let c = conf(result.year);
-    const xref = findYearCrossReference(car, others);
+    const xref = findYearCrossReference(car, xrefRows);
     if (xref !== null) {
       const v = parseInt(year, 10);
       if (!Number.isNaN(v) && Math.abs(v - xref) <= 1) c = Math.max(c, 0.95);
@@ -277,7 +268,7 @@ function applyResult(car, others, need, result) {
   }
 
   if (need.includes('description')) {
-    const stack = findStackDescription(car, others, resolvedYear);
+    const stack = await findStack(resolvedYear);
     if (stack) {
       out.description = stack;
       aiSuggested.description = 0.9;
@@ -310,14 +301,24 @@ async function suggestForCar(env, id, apiKey) {
   const hero = await heroImageSource(env, `standard_hero_shots/${id} (2).jpg`);
   if (hero.skipped) return { status: 200, body: { skipped: hero.skipped, car } };
 
-  const [{ results: others }, makeRow] = await Promise.all([
-    env.DB.prepare('SELECT id, year, make, model, brand, description, ai_suggested FROM cars WHERE make = ? AND brand = ?').bind(car.make || '', car.brand || '').all(),
-    env.DB.prepare('SELECT countries FROM makes WHERE name = ?').bind(car.make || '').first(),
+  // Only what the cross-checks need, filtered in SQL (D1 work isn't Worker CPU).
+  const [xref, makeRow] = await Promise.all([
+    need.includes('year')
+      ? env.DB.prepare("SELECT model, year FROM cars WHERE brand = ? AND make = ? AND id != ? AND year != '' AND ai_suggested NOT LIKE '%\"year\"%'").bind(car.brand || '', car.make || '', id).all()
+      : Promise.resolve({ results: [] }),
+    need.includes('country') ? env.DB.prepare('SELECT countries FROM makes WHERE name = ?').bind(car.make || '').first() : Promise.resolve(null),
   ]);
   const baseCountries = parseJson(makeRow?.countries, []);
 
   const result = await callClaude(apiKey, env.AI_MODEL, hero.source, buildPrompt(car, need, baseCountries), buildTool(need));
-  const fields = applyResult(car, others, need, result);
+  // An identical car (year+brand+make+model) with a description: reuse it verbatim.
+  const findStack = async (year) => {
+    if (!year) return null;
+    const row = await env.DB.prepare("SELECT description FROM cars WHERE id != ? AND year = ? AND brand = ? AND make = ? AND model = ? AND description != '' LIMIT 1")
+      .bind(id, String(year).trim(), car.brand || '', car.make || '', car.model || '').first();
+    return row ? row.description.trim() : null;
+  };
+  const fields = await applyResult(car, xref.results, need, result, findStack);
 
   // Targeted UPDATE (not INSERT OR REPLACE) so nothing else on the row is touched.
   // ai_rejected is cleared: the note has now been shown to the model.
