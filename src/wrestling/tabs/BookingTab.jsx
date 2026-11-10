@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { wr, aiBook, todayISO, addDaysISO, weekdayOf, prettyDate, WEEKDAYS } from '../wrApi';
+import { wr, aiBook, todayISO, addDaysISO, weekdayOf, prettyDate, WEEKDAYS, SEGMENT_KINDS, SEGMENT_KIND_LABEL, segmentTypeOf, ratingColor } from '../wrApi';
 import { Modal, Btn, Pill } from '../ui';
 import MatchEditor, { sidesOf, isComp, ROLE_LABEL } from './MatchEditor';
 
@@ -7,41 +7,64 @@ const clone = (x) => JSON.parse(JSON.stringify(x));
 const payload = (e) => ({
   id: e.id, show_id: e.show_id, event_date: e.event_date, name: e.name || '', status: e.status, notes: e.notes || '', ai_rationale: e.ai_rationale || '',
   matches: e.matches.map(m => ({
-    id: m.id, segment_type: m.segment_type, stipulation_id: m.stipulation_id ?? null, title_id: m.title_id ?? null, feud_id: m.feud_id ?? null,
+    id: m.id, segment_type: m.segment_type, segment_kind: m.segment_kind || '', title: m.title || '', stipulation_id: m.stipulation_id ?? null, title_id: m.title_id ?? null, feud_id: m.feud_id ?? null,
     is_main_event: m.is_main_event ? 1 : 0, planned_notes: m.planned_notes || '', tournament_tie_id: m.tournament_tie_id ?? null,
-    participants: m.participants.map(p => ({ wrestler_id: p.wrestler_id, team_id: p.team_id ?? null, side: p.side, role: p.role || 'competitor', note: p.note || '' })),
+    participants: m.participants.map(p => ({ wrestler_id: p.wrestler_id, team_id: p.team_id ?? null, side: p.side, role: p.role || 'competitor', note: p.note || '', turn_to: p.turn_to || '' })),
   })),
 });
 let keySeq = 1;
-const blankMatch = () => ({ _k: `n${keySeq++}`, segment_type: 'match', stipulation_id: null, title_id: null, feud_id: null, is_main_event: 0, planned_notes: '', status: 'booked', participants: [] });
+const blankMatch = () => ({ _k: `n${keySeq++}`, segment_type: 'match', segment_kind: '', title: '', stipulation_id: null, title_id: null, feud_id: null, is_main_event: 0, planned_notes: '', status: 'booked', participants: [] });
+
+const blankSegment = (kind) => ({ ...blankMatch(), segment_type: segmentTypeOf(kind), segment_kind: kind });
 
 function AiPreview({ L, suggestion, warnings, onApply, onClose, onReroll, applying }) {
+  const nudges = suggestion.rating_changes || [];
+  const [picked, setPicked] = useState(() => new Set(nudges.map(c => c.wrestler_id)));
+  const toggle = (id) => setPicked(p => { const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   return (
     <Modal title={`✨ Claude’s card: ${suggestion.event_name || 'Untitled'}`} onClose={onClose} wide>
       {suggestion.rationale && <p className="wr-rationale">{suggestion.rationale}</p>}
       <ol className="wr-preview">
         {suggestion.matches.map((m, i) => {
           const stip = L.stMap[m.stipulation_id];
+          const isMatch = m.segment_type === 'match';
           const sides = sidesOf(m.participants);
+          const nameOf = (p) => L.wMap[p.wrestler_id]?.name;
           return (
             <li key={i} className={m.is_main_event ? 'main' : ''}>
               <div className="wr-preview-top">
-                <b>{m.segment_type === 'match' ? (stip?.name || 'Match') : m.segment_type === 'promo' ? 'Promo' : 'Angle'}</b>
+                <b>{isMatch ? (stip?.name || 'Match') : `🎤 ${SEGMENT_KIND_LABEL[m.segment_kind] || 'Segment'}${m.title ? `: ${m.title}` : ''}`}</b>
                 {m.title_id && <Pill color="#b08a1a">👑 {L.tMap[m.title_id]?.name}</Pill>}
                 {m.feud_id && <Pill color="#8e6fd1">{L.fMap[m.feud_id]?.name}</Pill>}
                 {m.tournament_tie_id && <Pill color="#2d6fb0">🏆 Tournament</Pill>}
                 {m.is_main_event ? <Pill color="#c0392b">Main event</Pill> : null}
               </div>
-              <div className="wr-preview-sides">{sides.map(s => m.participants.filter(p => isComp(p) && p.side === s).map(p => L.wMap[p.wrestler_id]?.name).join(' & ')).join('  vs  ')}</div>
-              {m.participants.filter(p => !isComp(p)).map(p => <div key={p.wrestler_id} className="wr-preview-extra">↳ <b>{L.wMap[p.wrestler_id]?.name}</b> ({ROLE_LABEL[p.role]}, backs {m.participants.filter(c => isComp(c) && c.side === p.side).map(c => L.wMap[c.wrestler_id]?.name).join(' & ')}){p.note && <> — {p.note}</>}</div>)}
+              {isMatch
+                ? <div className="wr-preview-sides">{sides.map(s => m.participants.filter(p => isComp(p) && p.side === s).map(nameOf).join(' & ')).join('  vs  ')}</div>
+                : <div className="wr-preview-sides">{m.participants.map(p => <span key={p.wrestler_id}>{nameOf(p)}{p.note && <em className="wr-sub"> — {p.note}</em>}<br /></span>)}</div>}
+              {m.participants.filter(p => !isComp(p)).map(p => <div key={p.wrestler_id} className="wr-preview-extra">↳ <b>{nameOf(p)}</b> ({ROLE_LABEL[p.role]}, backs {m.participants.filter(c => isComp(c) && c.side === p.side).map(nameOf).join(' & ')}){p.note && <> — {p.note}</>}</div>)}
+              {m.participants.filter(p => p.turn_to).map(p => <div key={`t${p.wrestler_id}`} className="wr-preview-turn">↻ <b>{nameOf(p)}</b> is planned to turn <b>{p.turn_to}</b> (you confirm it when recording the result)</div>)}
               {m.planned_notes && <p>{m.planned_notes}</p>}
             </li>
           );
         })}
       </ol>
+      {nudges.length > 0 && (
+        <div className="wr-nudges">
+          <div className="wr-side-head">Card-rating nudges Claude suggests (untick any you don’t want)</div>
+          {nudges.map(c => (
+            <label key={c.wrestler_id} className="wr-nudge">
+              <input type="checkbox" checked={picked.has(c.wrestler_id)} onChange={() => toggle(c.wrestler_id)} />
+              <b>{L.wMap[c.wrestler_id]?.name}</b>
+              <span className="wr-nudge-num" style={{ color: ratingColor(c.to) }}>{c.from} → {c.to} ({c.delta > 0 ? '+' : ''}{c.delta})</span>
+              <em className="wr-sub">{c.reason}</em>
+            </label>
+          ))}
+        </div>
+      )}
       {warnings.length > 0 && <ul className="wr-warn">{warnings.map((w, i) => <li key={i}>⚠ {w}</li>)}</ul>}
-      <div className="wr-hint">Applying saves this as a <b>draft</b> card (replacing any unplayed matches). You can edit everything afterwards.</div>
-      <div className="wr-actions"><Btn onClick={onClose}>Discard</Btn><Btn onClick={onReroll} disabled={applying}>↻ Re-roll</Btn><Btn kind="primary" disabled={applying} onClick={onApply}>{applying ? 'Applying…' : 'Apply as draft'}</Btn></div>
+      <div className="wr-hint">Applying saves this as a <b>draft</b> card (replacing any unplayed segments) and applies the ticked rating nudges. You can edit everything afterwards.</div>
+      <div className="wr-actions"><Btn onClick={onClose}>Discard</Btn><Btn onClick={onReroll} disabled={applying}>↻ Re-roll</Btn><Btn kind="primary" disabled={applying} onClick={() => onApply(nudges.filter(c => picked.has(c.wrestler_id)))}>{applying ? 'Applying…' : 'Apply as draft'}</Btn></div>
     </Modal>
   );
 }
@@ -96,12 +119,16 @@ function EventEditor({ L, show, event, dayEvents, reload, reloadEvents, showToas
           onChange={(nm) => setMatch(i, nm)} onMove={(d) => move(i, d)} onRemove={() => remove(i)}
           onNeedSave={async () => (dirty ? save() : true)} onResultSaved={afterResult} showToast={showToast} dialog={dialog} />
       ))}
-      {draft.matches.length === 0 && <div className="wr-empty small">No segments yet.</div>}
+      {draft.matches.length === 0 && <div className="wr-empty small">Nothing booked yet. Add a match or a promo / segment.</div>}
 
       <textarea className="wr-input notes" rows={2} placeholder="Show notes (optional)" value={draft.notes || ''} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} />
       <div className="wr-actions">
         <Btn kind="danger" onClick={removeEvent}>Delete card</Btn>
-        <Btn onClick={() => setDraft(d => ({ ...d, matches: [...d.matches, blankMatch()] }))}>+ Add segment</Btn>
+        <Btn onClick={() => setDraft(d => ({ ...d, matches: [...d.matches, blankMatch()] }))}>+ Add match</Btn>
+        <select className="wr-input addseg" value="" onChange={e => { const k = e.target.value; if (k) setDraft(d => ({ ...d, matches: [...d.matches, blankSegment(k)] })); }}>
+          <option value="">🎤 + Add promo / segment…</option>
+          {SEGMENT_KINDS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+        </select>
         <Btn disabled={aiBusy} onClick={onAi}>{aiBusy ? '✨ Thinking…' : '✨ Re-book with Claude'}</Btn>
         <span style={{ flex: 1 }} />
         {dirty && <Btn onClick={() => setDraft(clone(event))}>Revert</Btn>}
@@ -125,12 +152,14 @@ function ShowSection({ L, show, date, event, dayEvents, scheduled, reload, reloa
     catch (e) { showToast(e.message, 'error'); }
     setAiBusy(false);
   };
-  const apply = async () => {
+  const apply = async (nudges = []) => {
     setApplying(true);
     try {
       const s = preview.suggestion;
-      await wr('PUT', '/events', { show_id: show.id, event_date: date, name: s.event_name, status: 'draft', ai_rationale: s.rationale, matches: [...(event?.matches.filter(m => m.status === 'completed').map(m => ({ ...m })) || []), ...s.matches] });
-      showToast('Claude’s card saved as a draft');
+      const saved = await wr('PUT', '/events', { show_id: show.id, event_date: date, name: s.event_name, status: 'draft', ai_rationale: s.rationale, matches: [...(event?.matches.filter(m => m.status === 'completed').map(m => ({ ...m })) || []), ...s.matches] });
+      if (nudges.length) await wr('POST', '/rating-changes', { source: 'ai', event_id: saved.id, event_date: date, changes: nudges.map(c => ({ wrestler_id: c.wrestler_id, delta: c.delta, reason: c.reason })) });
+      showToast(nudges.length ? `Claude’s card saved as a draft, ${nudges.length} rating nudge${nudges.length > 1 ? 's' : ''} applied` : 'Claude’s card saved as a draft');
+      if (nudges.length) reload();
       setPreview(null);
       await reloadEvents();
     } catch (e) { showToast(e.message, 'error'); }
@@ -199,13 +228,15 @@ export default function BookingTab({ L, reload, showToast, dialog, hasAiKey, set
     const todo = L.shows.filter(s => isScheduled(s) && !eventOf(s));
     if (!todo.length) { showToast('Every scheduled show already has a card.'); return; }
     if (!hasAiKey) { await setAiKey(); if (!localStorage.getItem('anthropicApiKey')) return; }
-    if (!(await dialog.confirm({ title: `Book ${todo.length} show${todo.length > 1 ? 's' : ''} with Claude?`, message: `${todo.map(s => s.name).join(', ')} on ${prettyDate(date)}. Cards are saved as drafts (one Claude call per show, in order, so later shows see earlier ones).`, confirmLabel: 'Book the day' }))) return;
+    if (!(await dialog.confirm({ title: `Book ${todo.length} show${todo.length > 1 ? 's' : ''} with Claude?`, message: `${todo.map(s => s.name).join(', ')} on ${prettyDate(date)}. Cards are saved as drafts and Claude’s card-rating nudges are applied too (one Claude call per show, in order, so later shows see earlier ones).`, confirmLabel: 'Book the day' }))) return;
     const bookedIds = [];
     for (const s of todo) {
       setDayBusy(`Booking ${s.name}…`);
       try {
         const r = await aiBook(date, s.id, '');
-        await wr('PUT', '/events', { show_id: s.id, event_date: date, name: r.suggestion.event_name, status: 'draft', ai_rationale: r.suggestion.rationale, matches: r.suggestion.matches });
+        const saved = await wr('PUT', '/events', { show_id: s.id, event_date: date, name: r.suggestion.event_name, status: 'draft', ai_rationale: r.suggestion.rationale, matches: r.suggestion.matches });
+        const nudges = r.suggestion.rating_changes || [];
+        if (nudges.length) { await wr('POST', '/rating-changes', { source: 'ai', event_id: saved.id, event_date: date, changes: nudges.map(c => ({ wrestler_id: c.wrestler_id, delta: c.delta, reason: c.reason })) }); reload(); }
         bookedIds.push(s.name);
         await reloadEvents();
       } catch (e) { showToast(`${s.name}: ${e.message}`, 'error'); if ([400, 401, 429, 529].includes(e.status)) break; }

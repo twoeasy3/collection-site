@@ -111,7 +111,8 @@ CREATE TABLE IF NOT EXISTS wr_wrestlers (
   brand_id  INTEGER,                           -- NULL = free agent
   image     TEXT NOT NULL DEFAULT '',          -- e.g. 'bruno.png'
   alignment TEXT NOT NULL DEFAULT 'face',      -- 'face' | 'heel' | 'tweener'
-  tier      TEXT NOT NULL DEFAULT 'mid_card',  -- 'main_event' | 'upper_card' | 'mid_card' | 'lower_card' | 'enhancement'
+  tier      TEXT NOT NULL DEFAULT 'mid_card',  -- LEGACY, no longer used: replaced by card_rating
+  card_rating INTEGER NOT NULL DEFAULT 50,     -- 0-99 position on the card (80+ main event, 65-79 upper, 40-64 mid, 20-39 lower, <20 enhancement)
   status    TEXT NOT NULL DEFAULT 'active',    -- 'active' | 'injured' | 'retired'
   finisher  TEXT NOT NULL DEFAULT '',
   gimmick   TEXT NOT NULL DEFAULT '',
@@ -222,7 +223,9 @@ CREATE TABLE IF NOT EXISTS wr_matches (
   duration_min  INTEGER,
   rating        REAL,                          -- 0-5 stars
   title_changed INTEGER NOT NULL DEFAULT 0,
-  report        TEXT NOT NULL DEFAULT ''       -- match report / what happened
+  report        TEXT NOT NULL DEFAULT '',      -- match report / what happened
+  segment_kind  TEXT NOT NULL DEFAULT '',      -- promos/angles: 'promo' | 'interview' | 'backstage' | 'contract_signing' | 'brawl' | 'celebration' | 'video' | 'announcement' | 'other'
+  title         TEXT NOT NULL DEFAULT ''       -- short headline for a segment
 );
 CREATE INDEX IF NOT EXISTS idx_wr_matches_event ON wr_matches (event_id);
 
@@ -236,9 +239,10 @@ CREATE TABLE IF NOT EXISTS wr_match_participants (
   side        INTEGER NOT NULL DEFAULT 1,      -- competitors: their side. Non-competitors: the side they back
   result      TEXT NOT NULL DEFAULT '',        -- '' | 'win' | 'loss' | 'draw' | 'nc' (competitors only)
   role        TEXT NOT NULL DEFAULT 'competitor', -- 'competitor' | 'corner' | 'interference' | 'run_in'
-  note        TEXT NOT NULL DEFAULT ''         -- what a non-competitor did, e.g. 'hits Bruno with a chair'
+  note        TEXT NOT NULL DEFAULT '',        -- what they did / said, e.g. 'hits Bruno with a chair'
+  turn_to     TEXT NOT NULL DEFAULT ''         -- planned alignment turn in this segment: '' | 'face' | 'heel' | 'tweener'
 );
--- Existing databases: run migrations/wrestling-roles.sql once to add role + note.
+-- Existing databases: run the files in migrations/ once, in order.
 CREATE INDEX IF NOT EXISTS idx_wr_mp_match ON wr_match_participants (match_id);
 CREATE INDEX IF NOT EXISTS idx_wr_mp_wrestler ON wr_match_participants (wrestler_id);
 
@@ -310,3 +314,34 @@ CREATE TABLE IF NOT EXISTS wr_tournament_ties (
   match_id      INTEGER,                       -- the booked/played wr_matches row
   UNIQUE (tournament_id, round, pos)
 );
+
+-- Every alignment turn (face / heel / tweener), whether it happened in a match or
+-- segment (match_id set) or was edited by hand (match_id NULL). Resetting a
+-- result undoes the turns it recorded.
+CREATE TABLE IF NOT EXISTS wr_alignment_changes (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  wrestler_id    INTEGER NOT NULL,
+  from_alignment TEXT NOT NULL,
+  to_alignment   TEXT NOT NULL,
+  match_id       INTEGER,
+  event_date     TEXT NOT NULL,
+  reason         TEXT NOT NULL DEFAULT '',
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_wr_align_w ON wr_alignment_changes (wrestler_id);
+CREATE INDEX IF NOT EXISTS idx_wr_align_m ON wr_alignment_changes (match_id);
+
+-- Every change to a card rating: nudges suggested by Claude (source 'ai'), or
+-- manual edits. old_rating -> new_rating, with the reason.
+CREATE TABLE IF NOT EXISTS wr_rating_changes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  wrestler_id INTEGER NOT NULL,
+  old_rating  INTEGER NOT NULL,
+  new_rating  INTEGER NOT NULL,
+  reason      TEXT NOT NULL DEFAULT '',
+  source      TEXT NOT NULL DEFAULT 'manual',  -- 'manual' | 'ai'
+  event_id    INTEGER,
+  event_date  TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_wr_rating_w ON wr_rating_changes (wrestler_id);

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import { wr, FINISH_TYPES, TIER_RANK } from '../wrApi';
-import { PlushieImg, Select, Btn, Pill, Stars } from '../ui';
+import { wr, FINISH_TYPES, byRating, ALIGNMENTS, SEGMENT_KINDS, SEGMENT_KIND_LABEL, segmentTypeOf } from '../wrApi';
+import { PlushieImg, Select, Btn, Pill, Stars, AlignPip } from '../ui';
 
 const names = (L, ids) => ids.map(id => L.wMap[id]?.name).filter(Boolean).join(' & ');
 // A participant either competes (counts toward records) or is on the card without
@@ -12,6 +12,7 @@ const sideNames = (L, parts, side) => names(L, parts.filter(p => isComp(p) && p.
 
 // Everything wrong or suspicious about a booked match, as human strings.
 export function matchWarnings(L, show, m, allMatches, otherDayWrestlerIds) {
+  if (m.segment_type !== 'match') return []; // promos and angles aren't fights: nothing to validate
   const w = [];
   const parts = m.participants;
   const comps = parts.filter(isComp);
@@ -38,14 +39,14 @@ export function matchWarnings(L, show, m, allMatches, otherDayWrestlerIds) {
     }
     if (wr_.status !== 'active') w.push(`${wr_.name} is ${wr_.status}.`);
     if (show?.brand_id && wr_.brand_id !== show.brand_id) w.push(`${wr_.name} is ${wr_.brand_id ? `on ${L.brandName(wr_.brand_id)}` : 'a free agent'}, not ${L.brandName(show.brand_id)}.`);
-    if (allMatches.some(o => o !== m && o.participants.some(q => isComp(q) && q.wrestler_id === p.wrestler_id))) w.push(`${wr_.name} is booked to fight in more than one segment on this card.`);
+    if (allMatches.some(o => o !== m && o.segment_type === 'match' && o.participants.some(q => isComp(q) && q.wrestler_id === p.wrestler_id))) w.push(`${wr_.name} is booked to fight in more than one segment on this card.`);
     if (otherDayWrestlerIds.has(p.wrestler_id)) w.push(`${wr_.name} is also booked on another show today.`);
   }
   return [...new Set(w)];
 }
 
-function Lineup({ L, show, m, onChange, locked, lockCompetitors }) {
-  const taken = new Set(m.participants.map(p => p.wrestler_id));
+// Plushie dropdown: this show's brand first, everyone else under "cross-brand".
+function PlushiePicker({ L, show, taken, onPick, text }) {
   const brandId = show?.brand_id;
   const groups = useMemo(() => {
     const mine = [], rest = [];
@@ -53,18 +54,33 @@ function Lineup({ L, show, m, onChange, locked, lockCompetitors }) {
       const inScope = brandId ? w.brand_id === brandId : (w.brand_id == null || L.bMap[w.brand_id]?.kind === 'major');
       (inScope ? mine : rest).push(w);
     }
-    const sort = (a, b) => (TIER_RANK[a.tier] - TIER_RANK[b.tier]) || a.name.localeCompare(b.name);
-    return [mine.sort(sort), rest.sort(sort)];
+    return [mine.sort(byRating), rest.sort(byRating)];
   }, [L.wrestlers, taken.size, brandId]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const label = (w) => `${w.name}${w.species ? ` (${w.species})` : ''}${w.status !== 'active' ? ` — ${w.status}` : ''}`;
-  const Picker = ({ onPick, text }) => (
+  const label = (w) => `${w.name}${w.species ? ` (${w.species})` : ''} · ${w.card_rating}${w.status !== 'active' ? ` — ${w.status}` : ''}`;
+  return (
     <select className="wr-input pick" value="" onChange={e => { if (e.target.value) onPick(Number(e.target.value)); }}>
       <option value="">{text}</option>
       <optgroup label={brandId ? L.brandName(brandId) : 'Major brands'}>{groups[0].map(w => <option key={w.id} value={w.id}>{label(w)}</option>)}</optgroup>
       {groups[1].length > 0 && <optgroup label="Other (cross-brand)">{groups[1].map(w => <option key={w.id} value={w.id}>{label(w)} · {L.brandName(w.brand_id)}</option>)}</optgroup>}
     </select>
   );
+}
+
+// Plan an alignment turn for a plushie in this match/segment (confirmed when the result is recorded).
+function TurnPick({ L, p, onChange, locked }) {
+  const cur = L.wMap[p.wrestler_id]?.alignment;
+  if (locked) return p.turn_to ? <Pill color="#d0453f" title="Planned turn">↻ {p.turn_to}</Pill> : null;
+  return (
+    <select className={`wr-turn ${p.turn_to ? 'on' : ''}`} value={p.turn_to || ''} onChange={e => onChange(e.target.value)} title={`Plan an alignment turn (now ${cur}); you confirm it when you record the result`}>
+      <option value="">↻ turn?</option>
+      {ALIGNMENTS.filter(([k]) => k !== cur).map(([k, l]) => <option key={k} value={k}>→ {l}</option>)}
+    </select>
+  );
+}
+
+function Lineup({ L, show, m, onChange, locked, lockCompetitors }) {
+  const taken = new Set(m.participants.map(p => p.wrestler_id));
+  const Picker = ({ onPick, text }) => <PlushiePicker L={L} show={show} taken={taken} onPick={onPick} text={text} />;
 
   const comps = m.participants.filter(isComp);
   const extras = m.participants.filter(p => !isComp(p));
@@ -96,6 +112,7 @@ function Lineup({ L, show, m, onChange, locked, lockCompetitors }) {
                   <div key={p.wrestler_id} className={`wr-chip res-${p.result || ''}`}>
                     <PlushieImg w={w} color={L.brandColor(w?.brand_id)} />
                     <span>{w?.name || `#${p.wrestler_id}`}{p.result === 'win' && ' 🏆'}</span>
+                    <TurnPick L={L} p={p} locked={locked} onChange={(v) => patch(p.wrestler_id, { turn_to: v })} />
                     {!compLocked && <button onClick={() => drop(p.wrestler_id)} aria-label="Remove">✕</button>}
                   </div>
                 );
@@ -140,6 +157,7 @@ function Lineup({ L, show, m, onChange, locked, lockCompetitors }) {
                     {(sides.length ? sides : [p.side]).map(s => <option key={s} value={s}>Backs {sideNames(L, m.participants, s) || `side ${s}`}</option>)}
                   </select>
                 )}
+                <TurnPick L={L} p={p} locked={locked} onChange={(v) => patch(p.wrestler_id, { turn_to: v })} />
                 {locked ? (p.note && <em className="wr-sub">“{p.note}”</em>) : (
                   <input className="wr-input note" placeholder="What do they do? (slides in a chair, makes the save…)" value={p.note || ''} onChange={e => patch(p.wrestler_id, { note: e.target.value })} />
                 )}
@@ -150,6 +168,33 @@ function Lineup({ L, show, m, onChange, locked, lockCompetitors }) {
           {!locked && <Picker onPick={addExtra} text="+ corner / interference / run-in…" />}
         </div>
       )}
+    </div>
+  );
+}
+
+// Promos / angles: no sides, no VS. Just who is involved, and what each says or does.
+function SegmentBody({ L, show, m, onChange, locked }) {
+  const taken = new Set(m.participants.map(p => p.wrestler_id));
+  const patch = (id, changes) => onChange(m.participants.map(p => (p.wrestler_id === id ? { ...p, ...changes } : p)));
+  return (
+    <div className="wr-segment">
+      {m.participants.map(p => {
+        const w = L.wMap[p.wrestler_id];
+        return (
+          <div key={p.wrestler_id} className="wr-extra">
+            <PlushieImg w={w} color={L.brandColor(w?.brand_id)} />
+            <b>{w?.name || `#${p.wrestler_id}`}</b>
+            {w && <AlignPip a={w.alignment} />}
+            {locked ? (p.note && <em className="wr-sub">“{p.note}”</em>) : (
+              <input className="wr-input note" placeholder="What do they say or do?" value={p.note || ''} onChange={e => patch(p.wrestler_id, { note: e.target.value })} />
+            )}
+            <TurnPick L={L} p={p} locked={locked} onChange={(v) => patch(p.wrestler_id, { turn_to: v })} />
+            {!locked && <button className="wr-icon danger" onClick={() => onChange(m.participants.filter(x => x.wrestler_id !== p.wrestler_id))} aria-label="Remove">✕</button>}
+          </div>
+        );
+      })}
+      {!locked && <PlushiePicker L={L} show={show} taken={taken} onPick={(id) => onChange([...m.participants, { wrestler_id: id, team_id: null, side: 1, role: 'competitor', note: '', turn_to: '' }])} text="+ add a plushie to this segment…" />}
+      {m.participants.length === 0 && locked && <div className="wr-sub">No plushies were part of this segment.</div>}
     </div>
   );
 }
@@ -177,13 +222,21 @@ function ResultPanel({ L, m, onSaved, onCancel, showToast }) {
   const [changeOverride, setChangeOverride] = useState(m.status === 'completed' ? !!m.title_changed : null);
   const titleChanged = changeOverride ?? defaultChange;
   const [busy, setBusy] = useState(false);
+  // Alignment turns: prefill from what was recorded (editing) or from the planned turns (new).
+  const [turns, setTurns] = useState(() => {
+    const t = {};
+    if (m.status === 'completed') for (const c of m.alignment_changes || []) t[c.wrestler_id] = { to: c.to_alignment, reason: c.reason || '' };
+    else for (const p of m.participants) if (p.turn_to && p.turn_to !== L.wMap[p.wrestler_id]?.alignment) t[p.wrestler_id] = { to: p.turn_to, reason: p.note || '' };
+    return t;
+  });
+  const setTurn = (id, changes) => setTurns(t => ({ ...t, [id]: { to: '', reason: '', ...(t[id] || {}), ...changes } }));
 
   const save = async () => {
     const results = {};
     for (const p of m.participants.filter(isComp)) results[p.wrestler_id] = outcome === 'draw' ? 'draw' : outcome === 'nc' ? 'nc' : p.side === winnerSide ? 'win' : 'loss';
     setBusy(true);
     try {
-      await wr('POST', `/matches/${m.id}/result`, { results, finish_type: isMatch ? finish : '', duration_min: duration === '' ? null : Number(duration), rating: rating === '' ? null : Number(rating), report, title_changed: isMatch && titleChanged });
+      await wr('POST', `/matches/${m.id}/result`, { results, finish_type: isMatch ? finish : '', duration_min: duration === '' ? null : Number(duration), rating: rating === '' ? null : Number(rating), report, title_changed: isMatch && titleChanged, alignment_changes: Object.entries(turns).filter(([, v]) => v.to).map(([id, v]) => ({ wrestler_id: Number(id), to: v.to, reason: v.reason || '' })) });
       showToast(titleChanged ? 'Result saved — new champion crowned!' : 'Result saved');
       await onSaved();
     } catch (e) { showToast(e.message, 'error'); }
@@ -207,6 +260,26 @@ function ResultPanel({ L, m, onSaved, onCancel, showToast }) {
       )}
       {isMatch && title && (
         <label className="wr-check"><input type="checkbox" checked={titleChanged} onChange={e => setChangeOverride(e.target.checked)} /> 👑 {title.name} changes hands{titleChanged && winners.length > 0 && <> → <b>{names(L, winners)}</b> {winners.length > title.holders_count && <em>(only the first {title.holders_count} become champion)</em>}</>}</label>
+      )}
+      {m.participants.length > 0 && (
+        <div className="wr-turns">
+          <div className="wr-side-head">↻ Alignment changes (optional): did anyone turn?</div>
+          {m.participants.map(p => {
+            const w = L.wMap[p.wrestler_id];
+            if (!w) return null;
+            const sel = turns[p.wrestler_id]?.to || '';
+            return (
+              <div key={p.wrestler_id} className="wr-turnrow">
+                <PlushieImg w={w} color={L.brandColor(w.brand_id)} /><b>{w.name}</b><AlignPip a={w.alignment} />
+                <select className="wr-input sm" value={sel} onChange={e => setTurn(p.wrestler_id, { to: e.target.value })}>
+                  <option value="">No change</option>
+                  {ALIGNMENTS.filter(([k]) => k !== w.alignment || k === sel).map(([k, l]) => <option key={k} value={k}>→ {l}</option>)}
+                </select>
+                {sel && <input className="wr-input note" placeholder="Why? (the betrayal, the redemption…)" value={turns[p.wrestler_id]?.reason || ''} onChange={e => setTurn(p.wrestler_id, { reason: e.target.value })} />}
+              </div>
+            );
+          })}
+        </div>
       )}
       <label className="wr-block">Match report {isMatch ? '' : '(what happened)'}<small> — Claude reads this to keep the storylines going</small>
         <textarea className="wr-input" rows={4} value={report} onChange={e => setReport(e.target.value)} placeholder="Hops hit Bruno with the briefcase while the ref was down…" />
@@ -243,13 +316,16 @@ export default function MatchEditor({ L, show, m, idx, total, allMatches, otherD
     <div className={`wr-match ${done ? 'done' : ''} ${m.is_main_event ? 'main' : ''}`}>
       <div className="wr-match-head">
         <span className="wr-num">{idx + 1}</span>
-        <select className="wr-input sm" value={m.segment_type} disabled={done} onChange={e => set('segment_type', e.target.value)}>
-          <option value="match">Match</option><option value="promo">Promo</option><option value="angle">Angle</option>
+        <select className="wr-input" value={isMatch ? 'match' : (m.segment_kind || 'promo')} disabled={done} title="Match, or what kind of segment this is"
+          onChange={e => { const v = e.target.value; onChange(v === 'match' ? { ...m, segment_type: 'match', segment_kind: '' } : { ...m, segment_type: segmentTypeOf(v), segment_kind: v, stipulation_id: null, title_id: null }); }}>
+          <option value="match">🥊 Match</option>
+          <optgroup label="Promos & segments">{SEGMENT_KINDS.map(([k, l]) => <option key={k} value={k}>🎤 {l}</option>)}</optgroup>
         </select>
+        {!isMatch && <input className="wr-input title" placeholder="Segment title (e.g. The belt bag signing)" value={m.title || ''} disabled={done} onChange={e => set('title', e.target.value)} />}
         {isMatch && <Select value={m.stipulation_id ?? ''} disabled={done} onChange={v => set('stipulation_id', intInput(v))} placeholder="Stipulation…" options={L.stipulations.map(s => [s.id, s.name])} />}
         {isMatch && <Select value={m.title_id ?? ''} disabled={done} onChange={v => set('title_id', intInput(v))} placeholder="Non-title" options={titleOptions} />}
         <Select value={m.feud_id ?? ''} onChange={v => set('feud_id', intInput(v))} placeholder="No feud" options={feudOptions} />
-        <label className="wr-check inline"><input type="checkbox" checked={!!m.is_main_event} onChange={e => set('is_main_event', e.target.checked ? 1 : 0)} /> Main event</label>
+        {isMatch && <label className="wr-check inline"><input type="checkbox" checked={!!m.is_main_event} onChange={e => set('is_main_event', e.target.checked ? 1 : 0)} /> Main event</label>}
         <span style={{ flex: 1 }} />
         {done && <Pill color="#2e7d4f">Completed</Pill>}
         {m.title_id && <Pill color="#b08a1a">{L.tMap[m.title_id]?.name || 'Title'}</Pill>}
@@ -259,7 +335,9 @@ export default function MatchEditor({ L, show, m, idx, total, allMatches, otherD
         {!done && <button className="wr-icon danger" onClick={onRemove} title="Remove">✕</button>}
       </div>
 
-      {(m.participants.length > 0 || !done) && <Lineup L={L} show={show} m={m} locked={done} lockCompetitors={!!tieInfo} onChange={(participants) => set('participants', participants)} />}
+      {isMatch
+        ? (m.participants.length > 0 || !done) && <Lineup L={L} show={show} m={m} locked={done} lockCompetitors={!!tieInfo} onChange={(participants) => set('participants', participants)} />
+        : <SegmentBody L={L} show={show} m={m} locked={done} onChange={(participants) => set('participants', participants)} />}
 
       <textarea className="wr-input notes" rows={2} placeholder="Story / booking notes: what is this segment about? (Claude reads these too)" value={m.planned_notes || ''} onChange={e => set('planned_notes', e.target.value)} />
 
@@ -268,17 +346,18 @@ export default function MatchEditor({ L, show, m, idx, total, allMatches, otherD
       {done && !resultOpen && (
         <div className="wr-done">
           <div>
-            {isMatch && <b>{winners.length ? `${names(L, winners.map(p => p.wrestler_id))} won` : 'No winner'}</b>}
+            {isMatch ? <b>{winners.length ? `${names(L, winners.map(p => p.wrestler_id))} won` : 'No winner'}</b> : <b>{SEGMENT_KIND_LABEL[m.segment_kind] || 'Segment'}{m.title ? `: ${m.title}` : ''}</b>}
             {m.finish_type && <span> · {FINISH_TYPES.find(f => f[0] === m.finish_type)?.[1] || m.finish_type}</span>}
             {m.duration_min != null && <span> · {m.duration_min} min</span>} <Stars value={m.rating} />
             {m.title_changed ? <Pill color="#b08a1a">NEW CHAMPION</Pill> : null}
           </div>
           {tieInfo && winners.length > 0 && <div className="wr-sub">Advances in {tieInfo.t.name}.</div>}
+          {(m.alignment_changes || []).map(c => <div key={c.id} className="wr-turned">↻ <b>{L.wMap[c.wrestler_id]?.name || '?'}</b> turned <b>{c.to_alignment}</b> <span>(was {c.from_alignment})</span>{c.reason && <em> — {c.reason}</em>}</div>)}
           {m.report && <p>{m.report}</p>}
           <div className="wr-actions left"><Btn onClick={() => setResultOpen(true)}>Edit result</Btn><Btn kind="danger" onClick={reset}>Reset</Btn></div>
         </div>
       )}
-      {!done && !resultOpen && m.id && (m.participants.length > 0 || !isMatch) && <div className="wr-actions left"><Btn kind="primary" onClick={openResult}>Record result</Btn></div>}
+      {!done && !resultOpen && m.id && (m.participants.length > 0 || !isMatch) && <div className="wr-actions left"><Btn kind="primary" onClick={openResult}>{isMatch ? 'Record result' : 'Log what happened'}</Btn></div>}
       {!done && !m.id && m.participants.length > 0 && <div className="wr-hint">Save the card to record a result.</div>}
       {resultOpen && <ResultPanel L={L} m={m} showToast={showToast} onCancel={() => setResultOpen(false)} onSaved={async () => { setResultOpen(false); await onResultSaved(); }} />}
     </div>

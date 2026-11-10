@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { wr, TIERS, TIER_LABEL, TIER_RANK, daysSince, prettyDate } from '../wrApi';
+import { wr, byRating, ratingBand, ratingColor, ALIGNMENTS, daysSince, prettyDate } from '../wrApi';
 import { PlushieImg, Modal, Field, Select, Btn, AlignPip, FormDots, recordText, winPct, imageFileHint, ALIGN_COLOR } from '../ui';
 
-const blank = (brand_id = '') => ({ name: '', species: '', brand_id, image: '', alignment: 'face', tier: 'mid_card', status: 'active', finisher: '', gimmick: '', bio: '' });
+const blank = (brand_id = '') => ({ name: '', species: '', brand_id, image: '', alignment: 'face', card_rating: 50, status: 'active', finisher: '', gimmick: '', bio: '' });
 
 function ChampionsStrip({ L }) {
   const titles = L.titles.filter(t => t.status === 'active');
@@ -41,9 +41,10 @@ function Card({ w, L, champTitles, onOpen }) {
         <AlignPip a={w.alignment} />
         {champTitles.length > 0 && <span className="wr-crown" title={champTitles.map(t => t.name).join(', ')}>👑</span>}
         {w.status !== 'active' && <span className="wr-status">{w.status}</span>}
+        <span className="wr-rating" style={{ background: ratingColor(w.card_rating) }} title={`Card rating ${w.card_rating} (${ratingBand(w.card_rating)})`}>{w.card_rating}</span>
       </div>
       <div className="wr-card-name">{w.name}</div>
-      <div className="wr-card-sub">{w.species}{w.species && ' · '}{TIER_LABEL[w.tier]}</div>
+      <div className="wr-card-sub">{w.species}{w.species && ' · '}{ratingBand(w.card_rating)}</div>
       {champTitles.length > 0 && <div className="wr-card-champ">{champTitles.map(t => t.name).join(' · ')}</div>}
       <div className="wr-card-rec"><b>{recordText(rec)}</b><FormDots form={rec?.form} /></div>
     </button>
@@ -54,12 +55,14 @@ function WrestlerModal({ w, L, reload, showToast, dialog, goLog, onClose }) {
   const isNew = !w.id;
   const [draft, setDraft] = useState(w);
   const [history, setHistory] = useState(null);
+  const [changes, setChanges] = useState(null);
   const set = (k, v) => setDraft(d => ({ ...d, [k]: v }));
   const rec = L.records[w.id];
 
   useEffect(() => {
     if (!w.id) return;
     wr('GET', `/log?wrestler_id=${w.id}&limit=6`).then(setHistory).catch(() => setHistory([]));
+    wr('GET', `/wrestlers/${w.id}/history`).then(setChanges).catch(() => setChanges({ alignment: [], rating: [] }));
   }, [w.id]);
 
   const save = async () => {
@@ -97,8 +100,13 @@ function WrestlerModal({ w, L, reload, showToast, dialog, goLog, onClose }) {
           <Field label="Animal / species"><input className="wr-input" value={draft.species} onChange={e => set('species', e.target.value)} placeholder="Bear" /></Field>
           <Field label="Brand"><Select value={draft.brand_id ?? ''} onChange={v => set('brand_id', v)} placeholder="Free agent" options={L.brands.map(b => [b.id, b.name])} /></Field>
           <Field label="Image file" hint="Blank = name as a slug"><input className="wr-input" value={draft.image} onChange={e => set('image', e.target.value)} placeholder="bruno.png" /></Field>
-          <Field label="Alignment"><Select value={draft.alignment} onChange={v => set('alignment', v)} options={[['face', 'Face (good guy)'], ['heel', 'Heel (bad guy)'], ['tweener', 'Tweener']]} /></Field>
-          <Field label="Card position"><Select value={draft.tier} onChange={v => set('tier', v)} options={TIERS} /></Field>
+          <Field label="Alignment" hint="A change here is logged in their history"><Select value={draft.alignment} onChange={v => set('alignment', v)} options={ALIGNMENTS} /></Field>
+          <Field label={`Card rating: ${draft.card_rating} (${ratingBand(Number(draft.card_rating))})`} hint="0-99. Where they sit on the card; Claude may nudge it.">
+            <div className="wr-rating-edit">
+              <input type="range" min="0" max="99" value={draft.card_rating} onChange={e => set('card_rating', Number(e.target.value))} style={{ accentColor: ratingColor(Number(draft.card_rating)) }} />
+              <input className="wr-input sm" type="number" min="0" max="99" value={draft.card_rating} onChange={e => set('card_rating', Math.min(99, Math.max(0, Number(e.target.value) || 0)))} />
+            </div>
+          </Field>
           <Field label="Status"><Select value={draft.status} onChange={v => set('status', v)} options={[['active', 'Active'], ['injured', 'Injured'], ['retired', 'Retired']]} /></Field>
           <Field label="Finisher"><input className="wr-input" value={draft.finisher} onChange={e => set('finisher', e.target.value)} /></Field>
           <Field label="Gimmick / character"><input className="wr-input wide" value={draft.gimmick} onChange={e => set('gimmick', e.target.value)} /></Field>
@@ -121,6 +129,12 @@ function WrestlerModal({ w, L, reload, showToast, dialog, goLog, onClose }) {
             })}
             <button className="wr-link" onClick={() => { onClose(); goLog({ wrestler_id: w.id }); }}>Full match log →</button>
           </div>
+          {changes && (changes.alignment.length > 0 || changes.rating.length > 0) && (
+            <div className="wr-hist">
+              {changes.alignment.length > 0 && <><b>Alignment turns</b>{changes.alignment.slice(0, 6).map(c => <div key={`a${c.id}`}><span>↻</span> {c.event_date}: {c.from_alignment} → <b>{c.to_alignment}</b>{c.reason && <em> ({c.reason})</em>}</div>)}</>}
+              {changes.rating.length > 0 && <><b style={{ display: 'block', marginTop: 8 }}>Card rating changes</b>{changes.rating.slice(0, 6).map(c => <div key={`r${c.id}`}><span>{c.new_rating > c.old_rating ? '▲' : '▼'}</span> {c.event_date}: {c.old_rating} → <b>{c.new_rating}</b> <em>({c.source === 'ai' ? 'Claude' : 'by hand'}{c.reason && c.reason !== 'Edited by hand' ? `: ${c.reason}` : ''})</em></div>)}</>}
+            </div>
+          )}
         </div>
       )}
       <div className="wr-actions">
@@ -139,6 +153,7 @@ export default function RosterTab(props) {
   const [q, setQ] = useState('');
   const [align, setAlign] = useState('');
   const [open, setOpen] = useState(null);
+  const [sortBy, setSortBy] = useState('rating');
 
   const champsOf = useMemo(() => {
     const m = {};
@@ -147,7 +162,8 @@ export default function RosterTab(props) {
   }, [L.titles]);
 
   const matches = (w) => (!q || `${w.name} ${w.species}`.toLowerCase().includes(q.toLowerCase())) && (!align || w.alignment === align);
-  const sortW = (a, b) => (TIER_RANK[a.tier] - TIER_RANK[b.tier]) || ((L.records[b.id]?.w || 0) - (L.records[a.id]?.w || 0)) || a.name.localeCompare(b.name);
+  const wins = (x) => L.records[x.id]?.w || 0;
+  const sortW = sortBy === 'name' ? (a, b) => a.name.localeCompare(b.name) : sortBy === 'wins' ? (a, b) => (wins(b) - wins(a)) || byRating(a, b) : byRating;
 
   const divisions = [...L.brands.map(b => ({ key: String(b.id), brand: b, name: b.name })), { key: 'free', brand: null, name: 'Free agents' }]
     .filter(d => brandF === 'all' || brandF === d.key);
@@ -166,6 +182,7 @@ export default function RosterTab(props) {
         </div>
         <input className="wr-input" placeholder="Search plushies…" value={q} onChange={e => setQ(e.target.value)} />
         <Select value={align} onChange={setAlign} placeholder="Any alignment" options={[['face', 'Faces'], ['heel', 'Heels'], ['tweener', 'Tweeners']]} />
+        <Select value={sortBy} onChange={setSortBy} options={[['rating', 'Sort: card rating'], ['wins', 'Sort: wins'], ['name', 'Sort: name']]} />
         <Btn kind="primary" onClick={() => setOpen(blank(brandF !== 'all' && brandF !== 'free' ? brandF : ''))}>+ Add plushie</Btn>
       </div>
 

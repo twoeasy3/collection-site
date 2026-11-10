@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { wr, TIER_RANK } from '../wrApi';
+import { wr, byRating } from '../wrApi';
 import { PlushieImg, Modal, Field, Select, Btn, Pill } from '../ui';
 
 const SIDES = ['A', 'B', 'C', 'D', 'E', 'F'];
 const FEUD_STATUS = [['building', 'Building'], ['active', 'Active'], ['blow_off', 'Heading to blow-off'], ['ended', 'Ended']];
 const TEAM_KIND = [['tag_team', 'Tag team'], ['stable', 'Stable'], ['alliance', 'Alliance']];
 
-const wrestlerOptions = (L) => L.wrestlers.filter(w => w.status !== 'retired').sort((a, b) => (TIER_RANK[a.tier] - TIER_RANK[b.tier]) || a.name.localeCompare(b.name)).map(w => [w.id, `${w.name} (${w.species || '?'})`]);
+const wrestlerOptions = (L) => L.wrestlers.filter(w => w.status !== 'retired').sort(byRating).map(w => [w.id, `${w.name} (${w.species || '?'})`]);
 
 function FeudForm({ f, L, reload, showToast, dialog, onClose }) {
   const [d, setD] = useState({ ...f });

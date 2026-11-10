@@ -13,6 +13,9 @@ import { loadTournaments } from './tournaments.js';
 
 const DEFAULT_MODEL = 'claude-sonnet-5-5';
 const EXTRA_ROLES = ['corner', 'interference', 'run_in'];
+const ALIGN = ['face', 'heel', 'tweener'];
+const KINDS = ['promo', 'interview', 'backstage', 'contract_signing', 'brawl', 'celebration', 'video', 'announcement', 'other'];
+const MAX_NUDGE = 8;
 
 const httpError = (status, message) => Object.assign(new Error(message), { status });
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s);
@@ -28,9 +31,11 @@ How to book well:
 - Feuds: advance active feuds with a segment that moves the story. Heat 1-2 = build slowly with non-finish matches; heat 3-4 = escalate (stipulation upgrade, tag-team involvement, run-ins); heat 5 or a planned_finale = blow-off. Blow-offs belong on Pay-Per-Views unless the notes say otherwise. Don't end a feud on a weekly show without a reason.
 - Titles: champions defend regularly (check last defence date), challengers must be earned from recent wins or an active feud. Tag titles use tag matches with two plushies per side. Title changes are decided later when results are entered, so don't pre-decide winners; planned_notes should describe the story and the stakes, not the finish.
 - Sides: partners share the same side number; in N-way matches (triple threat, fatal 4-way, etc.) every wrestler gets a different side number. Handicap matches are N-on-1. Respect each stipulation's allowed side count (min_sides/max_sides).
-- Balance the card: faces vs heels, tiers (main_event wrestlers headline, enhancement wrestlers lose to push others), and variety of stipulations. Keep stipulation matches for feuds that earn them. Put the main event last and set is_main_event true on exactly one match.
+- Card rating: every plushie has a card rating from 0-99 (80+ main event, 65-79 upper card, 40-64 mid card, 20-39 lower card, under 20 enhancement/jobber). It decides how high on the card they appear: put the highest-rated plushies in the main event and top matches; it is a spectrum, not boxes. Balance the card: faces vs heels, ratings across the card (high-rated plushies win more, low-rated ones are used to build others up), and variety of stipulations. Keep stipulation matches for feuds that earn them. Put the main event last and set is_main_event true on exactly one match.
 - Brand integrity: weekly shows only use their own brand's roster. Pay-Per-Views and specials draw from both major brands. The developmental brand's show is for newcomers and building prospects, with simpler matches.
-- Typical size: weekly show 5-7 segments, developmental 4-6, PPV/special 7-9. Include promo/angle segments (no stipulation) where a feud needs a non-match beat.
+- Typical size: weekly show 5-7 segments, developmental 4-6, PPV/special 7-9. Include promo/angle segments (no stipulation) where a feud needs a non-match beat. For segments set segment_kind (promo, interview, backstage, contract_signing, brawl, celebration, video, announcement, other) and a short title, list the plushies involved as participants (side is ignored) and give each a note saying what they say or do. Segments are not fights, so a plushie in a promo can still wrestle later on the card.
+- Alignment turns (face/heel/tweener): a plushie can turn during a match or segment when the story earns it (betrayal, redemption, a snapped temper). Set turn_to on that participant and explain the beat in planned_notes. Use turns rarely and build to them: look at recent results and the alignment history, and don't flip-flop someone who just turned.
+- Rating nudges: after planning the card, you may return rating_changes to move a plushie's card rating by a few points (delta -8..+8, mostly 1-5) when the story justifies it: a big win over a higher-rated plushie, a breakout promo, a losing streak, a return from injury, a push or burial. Give a short reason. Don't nudge everyone: usually 0-4 changes. They're logged and the owner can untick any of them.
 - Non-fighting participants: besides competitors, a participant can have role "corner" (stands in a competitor's corner, doesn't fight), "interference" (interferes mid-match) or "run_in" (runs in after/around the bell). For these, "side" is the competitor side they BACK, and "note" says what they do ("slides a chair in", "pulls the referee out"). Use them sparingly to advance feuds, protect finishes, introduce a new alliance or tease a betrayal; heels interfere more than faces. A plushie can't be both a competitor and a non-competitor in the same match. A non-competitor does not count as "booked" for the rest of the card.
 - Tournaments: if the league state lists tournament ties that are ready to be played, advance them: set tournament_tie_id on a match (the entrants are filled in automatically). A tournament's rounds should be spread across shows, with the final on a Pay-Per-View or special.
 - If the user gave booking notes, follow them.
@@ -45,13 +50,20 @@ const TOOL = {
     properties: {
       event_name: { type: 'string', description: 'Episode title, or the PPV/special name.' },
       rationale: { type: 'string', description: '2-4 sentences: the storyline logic of this card.' },
+      rating_changes: {
+        type: 'array',
+        description: 'Optional small card-rating nudges justified by this card and the recent storylines.',
+        items: { type: 'object', properties: { wrestler_id: { type: 'integer' }, delta: { type: 'integer', description: '-8 to +8' }, reason: { type: 'string' } }, required: ['wrestler_id', 'delta', 'reason'] },
+      },
       matches: {
         type: 'array',
         description: 'The card in running order, main event last.',
         items: {
           type: 'object',
           properties: {
-            segment_type: { type: 'string', enum: ['match', 'promo', 'angle'] },
+            segment_type: { type: 'string', enum: ['match', 'promo', 'angle'], description: 'promo = talking segment; angle = backstage/in-ring story segment.' },
+            segment_kind: { type: 'string', enum: KINDS, description: 'For promo/angle segments only.' },
+            title: { type: 'string', description: 'Short headline for a segment, e.g. "Hops reveals the briefcase".' },
             stipulation_id: { type: ['integer', 'null'], description: 'Required for matches; null for promo/angle.' },
             title_id: { type: ['integer', 'null'], description: 'Set when this is a championship match.' },
             feud_id: { type: ['integer', 'null'], description: 'The feud this advances, if any.' },
@@ -66,7 +78,8 @@ const TOOL = {
                   wrestler_id: { type: 'integer' },
                   side: { type: 'integer', description: 'Competitors: partners share a side, N-way all different. Non-competitors: the competitor side they back.' },
                   role: { type: 'string', enum: ['competitor', 'corner', 'interference', 'run_in'], description: 'Default competitor.' },
-                  note: { type: 'string', description: 'For non-competitors: what they do.' },
+                  note: { type: 'string', description: 'Non-competitors, or anyone in a promo/segment: what they say or do.' },
+                  turn_to: { type: 'string', enum: ['face', 'heel', 'tweener'], description: 'Set only if this plushie turns alignment during this match/segment.' },
                 },
                 required: ['wrestler_id', 'side'],
               },
@@ -84,7 +97,7 @@ async function gatherContext(env, show, date) {
   const all = (sql, ...b) => env.DB.prepare(sql).bind(...b).all().then(r => r.results);
   const crossBrand = show.brand_id == null;
 
-  const [brands, wrestlers, titles, teams, teamMembers, feuds, feudParts, stips, records, bookedElsewhere, recent, upcoming, tournaments] = await Promise.all([
+  const [brands, wrestlers, titles, teams, teamMembers, feuds, feudParts, stips, records, bookedElsewhere, recent, upcoming, tournaments, turns, nudges] = await Promise.all([
     all('SELECT * FROM wr_brands'),
     all('SELECT * FROM wr_wrestlers WHERE status != ?', 'retired'),
     all("SELECT * FROM wr_titles WHERE status='active'"),
@@ -100,6 +113,8 @@ async function gatherContext(env, show, date) {
       WHERE m.status='completed' AND e.event_date < ? ${crossBrand ? '' : 'AND (s.brand_id = ? OR s.brand_id IS NULL)'} ORDER BY e.event_date DESC, m.id DESC LIMIT 30`, ...(crossBrand ? [date] : [date, show.brand_id])),
     all('SELECT e.id, e.event_date, e.name, s.name AS show_name, s.type FROM wr_events e JOIN wr_shows s ON s.id=e.show_id WHERE e.event_date > ? AND e.event_date <= ? ORDER BY e.event_date', date, addDays(date, 28)),
     loadTournaments(env),
+    all('SELECT * FROM wr_alignment_changes ORDER BY id DESC LIMIT 15'),
+    all('SELECT * FROM wr_rating_changes ORDER BY id DESC LIMIT 15'),
   ]);
 
   const majorIds = new Set(brands.filter(b => b.kind === 'major').map(b => b.id));
@@ -162,7 +177,9 @@ async function gatherContext(env, show, date) {
     const sides = [...new Set(comps.map(p => p.side))].sort((a, b) => a - b);
     const text = sides.map(s => comps.filter(p => p.side === s).map(p => `${wById[p.wrestler_id]?.name ?? '?'}${p.result === 'win' ? '(W)' : p.result === 'loss' ? '(L)' : ''}`).join(' & ')).join(' vs ')
       + (extras.length ? ` [${extras.map(p => `${p.role.replace('_', '-')}: ${wById[p.wrestler_id]?.name ?? '?'} for ${comps.filter(c => c.side === p.side).map(c => wById[c.wrestler_id]?.name).filter(Boolean).join(' & ') || `side ${p.side}`}${p.note ? ` (${clip(p.note, 60)})` : ''}`).join('; ')}]` : '');
-    return `${m.event_date} ${m.show_name}${m.title_id ? ' [TITLE]' : ''}${m.title_changed ? ' [NEW CHAMPION]' : ''} ${m.stip || m.segment_type}: ${text || '(no participants)'}${m.finish_type ? ` via ${m.finish_type}` : ''}${m.feud_id ? ` (feud#${m.feud_id})` : ''}. ${clip(m.report, 240)}`;
+    const label = m.segment_type === 'match' ? (m.stip || 'match') : `${(m.segment_kind || m.segment_type).replace('_', ' ')}${m.title ? ` "${m.title}"` : ''}`;
+    const said = m.segment_type === 'match' ? '' : comps.filter(p => p.note).map(p => `${wById[p.wrestler_id]?.name ?? '?'}: ${clip(p.note, 80)}`).join('; ');
+    return `${m.event_date} ${m.show_name}${m.title_id ? ' [TITLE]' : ''}${m.title_changed ? ' [NEW CHAMPION]' : ''} ${label}: ${m.segment_type === 'match' ? (text || '(no participants)') : (comps.map(p => wById[p.wrestler_id]?.name ?? '?').join(', ') || '(nobody)')}${said ? ` (${said})` : ''}${m.finish_type ? ` via ${m.finish_type}` : ''}${m.feud_id ? ` (feud#${m.feud_id})` : ''}. ${clip(m.report, 240)}`;
   });
 
   const upcomingLines = [];
@@ -181,7 +198,7 @@ async function gatherContext(env, show, date) {
   for (const t of tournaments.filter(x => x.status === 'active')) for (const x of t.ties) if (x.ready && !x.match_id) tieIndex.set(x.id, { a: t.entrants.find(e => e.id === x.a), b: t.entrants.find(e => e.id === x.b), final: x.round === t.rounds });
 
   const wl = (w) => ({
-    id: w.id, name: w.name, species: w.species, brand: w.brand_id ? brandName[w.brand_id] : 'free agent', alignment: w.alignment, tier: w.tier,
+    id: w.id, name: w.name, species: w.species, brand: w.brand_id ? brandName[w.brand_id] : 'free agent', alignment: w.alignment, card_rating: w.card_rating,
     record: `${rec[w.id]?.w || 0}-${rec[w.id]?.l || 0}`, gimmick: clip(w.gimmick, 80) || undefined, finisher: w.finisher || undefined,
   });
 
@@ -195,9 +212,11 @@ async function gatherContext(env, show, date) {
     teams: teamLines,
     stipulations: stips.map(s => ({ id: s.id, name: s.name, kind: s.kind, min_sides: s.min_sides, max_sides: s.max_sides })),
     recent_results_newest_first: recentLines,
+    recent_alignment_turns: turns.map(t => `${t.event_date}: ${wById[t.wrestler_id]?.name ?? '?'} ${t.from_alignment} -> ${t.to_alignment}${t.reason ? ` (${clip(t.reason, 80)})` : ''}`),
+    recent_rating_changes: nudges.map(n => `${n.event_date}: ${wById[n.wrestler_id]?.name ?? '?'} ${n.old_rating} -> ${n.new_rating}${n.reason ? ` (${clip(n.reason, 80)})` : ''}`),
     upcoming_cards: upcomingLines,
     tournaments: tourneyLines,
-    _valid: { available: new Set(available.map(w => w.id)), stips: new Map(stips.map(s => [s.id, s])), titles: new Set(titleLines.map(t => t.id)), feuds: new Set(feudLines.map(f => f.id)), teams: teams.map(t => ({ id: t.id, members: teamMembers.filter(m => m.team_id === t.id).map(m => m.wrestler_id) })), scopedIds, ties: tieIndex, nameOf: (id) => wById[id]?.name || `#${id}` },
+    _valid: { available: new Set(available.map(w => w.id)), stips: new Map(stips.map(s => [s.id, s])), titles: new Set(titleLines.map(t => t.id)), feuds: new Set(feudLines.map(f => f.id)), teams: teams.map(t => ({ id: t.id, members: teamMembers.filter(m => m.team_id === t.id).map(m => m.wrestler_id) })), scopedIds, ties: tieIndex, nameOf: (id) => wById[id]?.name || `#${id}`, alignment: new Map(wrestlers.map(w => [w.id, w.alignment])), rating: new Map(wrestlers.map(w => [w.id, w.card_rating ?? 50])) },
   };
 }
 
@@ -240,21 +259,27 @@ function validate(raw, valid) {
   const stipNamed = (name) => [...valid.stips.values()].find(s => s.name === name);
   for (const m of Array.isArray(raw.matches) ? raw.matches : []) {
     const segment = ['match', 'promo', 'angle'].includes(m.segment_type) ? m.segment_type : 'match';
+    const isSeg = segment !== 'match';
     let stip = valid.stips.get(m.stipulation_id);
     let competitors = [];
     const extras = [];
     const inMatch = new Set();
     for (const p of Array.isArray(m.participants) ? m.participants : []) {
       const id = Number(p.wrestler_id);
-      const role = EXTRA_ROLES.includes(p.role) ? p.role : 'competitor';
+      const role = !isSeg && EXTRA_ROLES.includes(p.role) ? p.role : 'competitor';
       if (!valid.available.has(id)) { warnings.push(`Dropped ${valid.nameOf(id)}: unavailable or unknown.`); continue; }
       if (inMatch.has(id)) { warnings.push(`${valid.nameOf(id)} was listed twice in one match; kept the first.`); continue; }
-      if (role === 'competitor') {
+      if (role === 'competitor' && !isSeg) {
         if (usedCompetitors.has(id)) { warnings.push(`${valid.nameOf(id)} was booked to fight twice; kept the first booking.`); continue; }
         usedCompetitors.add(id);
       }
       inMatch.add(id);
-      const row = { wrestler_id: id, side: Math.max(1, parseInt(p.side, 10) || 1), team_id: null, role, note: role === 'competitor' ? '' : String(p.note || '').trim().slice(0, 300) };
+      // Segments aren't fights: no sides, and being in a promo doesn't stop a plushie wrestling later.
+      const row = {
+        wrestler_id: id, side: isSeg ? 1 : Math.max(1, parseInt(p.side, 10) || 1), team_id: null, role,
+        note: String(p.note || '').trim().slice(0, 300), turn_to: ALIGN.includes(p.turn_to) ? p.turn_to : '',
+      };
+      if (row.turn_to && valid.alignment.get(id) === row.turn_to) { warnings.push(`${valid.nameOf(id)} is already a ${row.turn_to}; ignored the planned turn.`); row.turn_to = ''; }
       (role === 'competitor' ? competitors : extras).push(row);
     }
 
@@ -270,7 +295,7 @@ function validate(raw, valid) {
         for (const w of entrant.members) {
           if (!valid.available.has(w)) warnings.push(`Tournament entrant ${valid.nameOf(w)} isn’t available on this show; adjust by hand.`);
           usedCompetitors.add(w);
-          competitors.push({ wrestler_id: w, side, team_id: entrant.team_id ?? null, role: 'competitor', note: '' });
+          competitors.push({ wrestler_id: w, side, team_id: entrant.team_id ?? null, role: 'competitor', note: '', turn_to: '' });
         }
       }
       const clash = new Set(competitors.map(c => c.wrestler_id));
@@ -299,6 +324,8 @@ function validate(raw, valid) {
     });
     matches.push({
       segment_type: segment,
+      segment_kind: isSeg ? (KINDS.includes(m.segment_kind) ? m.segment_kind : (segment === 'promo' ? 'promo' : 'other')) : '',
+      title: isSeg ? String(m.title || '').trim().slice(0, 120) : '',
       stipulation_id: segment === 'match' && stip ? stip.id : null,
       title_id: valid.titles.has(m.title_id) ? m.title_id : null,
       feud_id: valid.feuds.has(m.feud_id) ? m.feud_id : null,
@@ -313,7 +340,23 @@ function validate(raw, valid) {
     matches.forEach(m => { m.is_main_event = false; });
     matches[matches.length - 1].is_main_event = true;
   }
-  return { event_name: String(raw.event_name || '').trim(), rationale: String(raw.rationale || '').trim(), matches, warnings };
+  // Rating nudges: real, non-retired plushies; small integer steps; at most a handful.
+  const seenNudge = new Set();
+  const rating_changes = [];
+  for (const c of Array.isArray(raw.rating_changes) ? raw.rating_changes : []) {
+    const id = Number(c.wrestler_id);
+    const from = valid.rating.get(id);
+    if (from == null) { warnings.push(`Ignored a rating change for unknown plushie #${c.wrestler_id}.`); continue; }
+    if (seenNudge.has(id)) continue;
+    const delta = Math.max(-MAX_NUDGE, Math.min(MAX_NUDGE, Math.round(Number(c.delta))));
+    if (!Number.isFinite(delta) || delta === 0) continue;
+    const to = Math.min(99, Math.max(0, from + delta));
+    if (to === from) continue;
+    seenNudge.add(id);
+    rating_changes.push({ wrestler_id: id, from, to, delta: to - from, reason: String(c.reason || '').trim().slice(0, 200) });
+    if (rating_changes.length >= 6) break;
+  }
+  return { event_name: String(raw.event_name || '').trim(), rationale: String(raw.rationale || '').trim(), matches, rating_changes, warnings };
 }
 
 export async function aiBook(env, apiKey, body) {
